@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(fkie_node_manager)
+project(fkie_mas_gui)
 
 
 # Update the policy setting to avoid an error when loading the ament_cmake package
