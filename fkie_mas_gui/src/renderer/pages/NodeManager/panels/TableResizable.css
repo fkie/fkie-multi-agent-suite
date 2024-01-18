@@ -1,0 +1,30 @@
+.tableCell {
+  /* border: 1px solid black !important; */
+  padding: 10px 0;
+
+  &.resizable {
+    position: relative;
+  }
+
+  &.emptyCell {
+    width: "auto"
+  }
+}
+
+.resizeLine {
+  position: absolute;
+  height: 100%;
+  width: 6px;
+  top: 0;
+  right: 0px;
+  cursor: col-resize;
+
+  &:hover {
+    background-color: #0AA1DD;
+  }
+
+  &:active {
+    background-color: #0AA1DD;
+
+  }
+}

@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+import fkie_mas_daemon
+fkie_mas_daemon.start_server()

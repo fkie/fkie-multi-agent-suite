@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fkie_mas_sync</name>
+  <!-- <replace>master_sync_fkie</replace> -->
+  <description>
+     Synchronize the local ROS master to the remote masters 
+     discovered by fkie_mas_discovery node. The registration
+     of topics and services is only perform by local ROS master.
+  </description>
+  <version>1.3.2</version>
+  <license>MIT</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://ros.org/wiki/master_sync_fkie</url>
+  
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <buildtool_depend>python3-setuptools</buildtool_depend>
+
+  <build_depend condition="$ROS_VERSION == 1">fkie_mas_discovery</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">fkie_mas_msgs</build_depend>
+  <build_export_depend condition="$ROS_VERSION == 1">fkie_mas_discovery</build_export_depend>
+  <build_export_depend condition="$ROS_VERSION == 1">fkie_mas_msgs</build_export_depend>
+
+  <exec_depend condition="$ROS_VERSION == 1">rospy</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">roslib</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">rosgraph</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_mas_msgs</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_mas_discovery</exec_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+
+</package>

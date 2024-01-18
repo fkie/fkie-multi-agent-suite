@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fkie_mas_pylib</name>
+  <description>
+     Python helpers required by multi agent suite packages.
+  </description>
+  <version>2.0.0</version>
+  <license>MIT</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://github.com/fkie/fkie-multi-agent-suite</url>
+
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-catkin-pkg</depend>
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-catkin-pkg</depend>
+  <depend condition="$ROS_VERSION == 2 or $ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
+  <depend condition="$ROS_VERSION == 1">rospy</depend>
+  <depend condition="$ROS_VERSION == 2">rclpy</depend>
+  <depend>fkie_mas_msgs</depend>
+
+  <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">python3-pytest</test_depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_python</build_type>
+  </export>
+
+
+</package>

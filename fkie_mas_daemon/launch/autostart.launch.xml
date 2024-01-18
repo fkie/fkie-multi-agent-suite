@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- <executable cmd="pub topic_name std_msgs/String '{data: delayed start}' -r 1" cwd="/home/ros2" launch-prefix="ros2 topic">
+  </executable> -->
+
+  <executable cmd="echo topic_name" cwd="/home/ros2" launch-prefix="ros2 topic">
+  </executable>
+
+  <executable cmd="echo respawn" cwd="/home/ros2" launch-prefix="ros2 topic">
+  </executable>
+
+</launch>

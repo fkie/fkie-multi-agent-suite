@@ -1,0 +1,58 @@
+{
+  "source": {
+    "includePattern": "\\.(jsx|js|ts|tsx)$",
+    "excludePattern": ".+\\.(test|spec|d).ts",
+    "include": [
+      "."
+    ],
+    "exclude": [
+      "node_modules",
+      "src/node_modules",
+      "release/app/node_modules"
+    ]
+  },
+  "plugins": [
+    "plugins/markdown",
+    "node_modules/jsdoc-babel"
+  ],
+  "babel": {
+    "extensions": [
+      "ts",
+      "tsx"
+    ],
+    "ignore": [
+      "**/*.(test|spec|d).ts"
+    ],
+    "babelrc": false,
+    "presets": [
+      [
+        "@babel/preset-env",
+        "@babel/preset-react",
+        {
+          "runtime": "automatic"
+        }
+      ],
+      "@babel/preset-typescript"
+    ],
+    "plugins": [
+      [
+        "@babel/plugin-proposal-decorators",
+        {
+          "legacy": true
+        }
+      ],
+      "@babel/proposal-class-properties",
+      "@babel/proposal-object-rest-spread"
+    ]
+  },
+  "recurseDepth": 10,
+  "opts": {
+    "destination": "./docs/",
+    "recurse": true
+  },
+  "tags": {
+    "allowUnknownTags": [
+      "optional"
+    ]
+  }
+}

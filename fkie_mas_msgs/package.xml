@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fkie_mas_msgs</name>
+  <description>
+     The messages required by multimaster packages.
+  </description>
+  <version>2.0.0</version>
+  <license>MIT</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://github.com/fkie/fkie-multi-agent-suite</url>
+
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+
+  <build_depend condition="$ROS_VERSION == 1">message_generation</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">std_msgs</build_depend>
+  <build_export_depend condition="$ROS_VERSION == 1">std_msgs</build_export_depend>
+  <exec_depend condition="$ROS_VERSION == 1">message_runtime</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">std_msgs</exec_depend>
+
+  <build_depend condition="$ROS_VERSION == 2">builtin_interfaces</build_depend>
+  <build_depend condition="$ROS_VERSION == 2">rosidl_default_generators</build_depend>
+  <exec_depend condition="$ROS_VERSION == 2">builtin_interfaces</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
+
+  <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+
+</package>
