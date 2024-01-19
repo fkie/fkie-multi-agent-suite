@@ -13,9 +13,7 @@ find_package(ament_cmake QUIET)
 if ( ament_cmake_FOUND )
 
     add_definitions( -DUSING_ROS2 )
-    message(STATUS "--------------------------------------------------")
-    message(STATUS "FKIE multi-agent-suite is being built using AMENT.")
-    message(STATUS "--------------------------------------------------")
+    message(STATUS "--------------------------------------------------\nFKIE multi-agent-suite is being built using AMENT.\n--------------------------------------------------")
     # only to avoid warnings while build
     message(STATUS "install prefix: ${CATKIN_INSTALL_INTO_PREFIX_ROOT}")
     message(STATUS "symlink install: ${CATKIN_SYMLINK_INSTALL}")
@@ -24,14 +22,8 @@ if ( ament_cmake_FOUND )
 
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
-    set(catkin_FOUND 1)
-    add_definitions( -DUSING_ROS )
     find_package(catkin REQUIRED )
-
-    message(STATUS "---------------------------------------------------")
-    message(STATUS "FKIE multi-agent-suite is being built using CATKIN.")
-    message(STATUS "export compile commads: ${CMAKE_EXPORT_COMPILE_COMMANDS}")
-    message(STATUS "---------------------------------------------------")
+    message(STATUS "---------------------------------------------------\nFKIE multi-agent-suite is being built using CATKIN.\nexport compile commads: ${CMAKE_EXPORT_COMPILE_COMMANDS}\n---------------------------------------------------")
 
     catkin_package()
 

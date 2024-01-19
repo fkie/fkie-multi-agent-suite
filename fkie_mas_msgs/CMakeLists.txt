@@ -12,9 +12,7 @@ find_package(ament_cmake QUIET)
 if ( ament_cmake_FOUND )
 
     add_definitions( -DUSING_ROS2 )
-    message(STATUS "------------------------------------------")
-    message(STATUS "FKIE multimaster msgs is being built using AMENT.")
-    message(STATUS "------------------------------------------")
+    message(STATUS "-----------------------------------------\nFKIE mas_msgs is being built using AMENT.\n-----------------------------------------")
 
     find_package(builtin_interfaces REQUIRED)
     find_package(rosidl_default_generators REQUIRED)
@@ -34,12 +32,7 @@ if ( ament_cmake_FOUND )
     ament_package()
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
-    set(catkin_FOUND 1)
-    add_definitions( -DUSING_ROS )
-
-    message(STATUS "------------------------------------------")
-    message(STATUS "FKIE multimaster msgs is being built using CATKIN.")
-    message(STATUS "------------------------------------------")
+    message(STATUS "------------------------------------------\nFKIE mas_msgs is being built using CATKIN.\n------------------------------------------")
 
     find_package(catkin REQUIRED COMPONENTS message_generation std_msgs)
 

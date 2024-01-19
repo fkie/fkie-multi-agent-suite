@@ -138,7 +138,6 @@ class CfgId(object):
 
 class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     '''
-    Handles GRPC-requests defined in `launch.proto`.
     '''
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, ros_domain_id=-1):

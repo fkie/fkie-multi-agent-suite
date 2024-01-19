@@ -25,10 +25,8 @@ import unittest
 import time
 import rospkg
 
-from fkie_mas_pylib.system import host
 from fkie_mas_pylib.system import ros1_masteruri
 from fkie_mas_pylib.system import url
-from fkie_mas_pylib.defines import GRPC_SERVER_PORT_OFFSET
 
 PKG = 'fkie_mas_daemon'
 
@@ -61,25 +59,6 @@ class TestUrlLib(unittest.TestCase):
         self.assertEqual(
             port, None, "wrong port from `https://host:s21`, got: %s, expected: %s" % (port, None))
 
-    def test_masteruri(self):
-        grpc_url = 'grpc://localhost:12321'
-        muri_exp = 'http://localhost:11311/'
-        muri_res = ros1_masteruri.from_grpc(grpc_url)
-        self.assertEqual(muri_exp, muri_res, "wrong masteruri from default grpc url, expected: %s, got: %s" % (
-            muri_exp, muri_res))
-        grpc_url = ''
-        muri_exp = ros1_masteruri.from_master(True)
-        muri_res = ros1_masteruri.from_grpc(grpc_url)
-        self.assertEqual(muri_exp, muri_res, "wrong masteruri from empty grpc url, expected: %s, got: %s" % (
-            muri_exp, muri_res))
-        grpc_url = 'localhost:1232'
-        muri_exp = ''
-        try:
-            muri_res = ros1_masteruri.from_grpc(grpc_url)
-            self.assertEqual(muri_exp, muri_res, "missed exeption on grpc url without scheme, expected: %s, got: %s" % (
-                'ValueError', muri_res))
-        except ValueError:
-            pass
 
 if __name__ == '__main__':
     import rosunit

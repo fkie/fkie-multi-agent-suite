@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 from concurrent import futures
-import grpc
 import json
 import rospy
 import os

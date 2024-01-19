@@ -12,12 +12,7 @@ find_package(ament_cmake QUIET)
 if ( ament_cmake_FOUND )
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
-    set(catkin_FOUND 1)
-    add_definitions( -DUSING_ROS )
-
-    message(STATUS "------------------------------------------")
-    message(STATUS "FKIE multimaster lib is being built using CATKIN.")
-    message(STATUS "------------------------------------------")
+    message(STATUS "-------------------------------------------------\nFKIE MAS pylib is being built using CATKIN.\n-------------------------------------------------")
 
     find_package(catkin REQUIRED COMPONENTS
       fkie_mas_msgs

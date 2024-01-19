@@ -135,7 +135,6 @@ class CfgId(object):
 
 class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     """
-    Handles GRPC-requests defined in `launch.proto`.
     """
 
     def __init__(

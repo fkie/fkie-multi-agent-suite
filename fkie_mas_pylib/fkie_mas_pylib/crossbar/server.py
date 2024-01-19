@@ -4,7 +4,6 @@ import os
 import subprocess
 import shutil
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.defines import GRPC_SERVER_PORT_OFFSET
 from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
 
 

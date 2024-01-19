@@ -26,7 +26,6 @@ import roslib
 import rospy
 from urllib.parse import urlparse
 import xmlrpc.client as xmlrpcclient
-from fkie_mas_pylib.defines import GRPC_SERVER_PORT_OFFSET
 
 
 MASTERURI = None

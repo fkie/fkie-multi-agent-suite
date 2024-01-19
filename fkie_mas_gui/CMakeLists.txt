@@ -13,19 +13,18 @@ find_package(ament_cmake QUIET)
 if ( ament_cmake_FOUND )
 
     add_definitions( -DUSING_ROS2 )
-    message(STATUS "-----------------------------------------------------")
-    message(STATUS "use yarn to build FKIE node_manager.")
-    message(STATUS "-----------------------------------------------------")
+    message(WARNING " -----------------------------------------------------\n use yarn to build FKIE MAS gui. \n -----------------------------------------------------")
     # only to avoid warnings while build
-    message(STATUS "install prefix: ${CATKIN_INSTALL_INTO_PREFIX_ROOT}")
-    message(STATUS "symlink install: ${CATKIN_SYMLINK_INSTALL}")
+    ament_package()
 
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
-    set(catkin_FOUND 1)
-    add_definitions( -DUSING_ROS )
+    # set(catkin_FOUND 1)
+    # add_definitions( -DUSING_ROS )
 
-    message(WARNING " -----------------------------------------------------\n use yarn to build FKIE node_manager. \n -----------------------------------------------------")
-
+    message(WARNING " -----------------------------------------------------\n use yarn to build FKIE MAS gui. \n -----------------------------------------------------")
+    # only to avoid warnings while build
+    find_package(catkin REQUIRED)
+    catkin_package()
 
 endif()

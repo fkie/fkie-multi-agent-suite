@@ -30,9 +30,7 @@ find_package(fkie_mas_msgs REQUIRED)
 if ( ament_cmake_FOUND )
 
     add_definitions( -DUSING_ROS2 )
-    message(STATUS "------------------------------------------")
-    message(STATUS "FKIE Master Discovery is being built using AMENT.")
-    message(STATUS "------------------------------------------")
+    message(STATUS "-------------------------------------------------\nFKIE MAS Discovery is being built using AMENT.\n-------------------------------------------------")
 
     set(BUILD_TOOL_INCLUDE_DIRS ${ament_INCLUDE_DIRS})
 
@@ -45,14 +43,10 @@ if ( ament_cmake_FOUND )
 
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
-    set(catkin_FOUND 1)
-    add_definitions( -DUSING_ROS )
     find_package(catkin REQUIRED COMPONENTS fkie_mas_pylib rosgraph roslib rospy std_srvs)
     find_package(GTest)
 
-    message(STATUS "------------------------------------------")
-    message(STATUS "FKIE Master Discovery is being built using CATKIN.")
-    message(STATUS "------------------------------------------")
+    message(STATUS "--------------------------------------------------\nFKIE MAS Discovery is being built using CATKIN.\n--------------------------------------------------")
 
     catkin_python_setup()
     catkin_package( CATKIN_DEPENDS fkie_mas_msgs fkie_mas_pylib rosgraph roslib rospy std_srvs )
