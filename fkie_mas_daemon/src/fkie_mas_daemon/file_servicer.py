@@ -211,28 +211,32 @@ class FileServicer(CrossbarBaseSession):
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         Log.info("Request to [ros.packages.get_list]")
         clear_cache = False
-        if clear_cache:
-            try:
-                from roslaunch import substitution_args
-                import rospkg
+        try:
+            if clear_cache:
+                try:
+                    from roslaunch import substitution_args
+                    import rospkg
 
-                substitution_args._rospack = rospkg.RosPack()
-            except Exception as err:
-                Log.warn("Cannot reset package cache: %s" % utf8(err))
-        package_list: List[RosPackage] = []
-        # fill the input fields
-        root_paths = [
-            os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(":")
-        ]
-        packages = []
-        for p in root_paths:
-            ret = ros_pkg.get_packages(p)
-            for name, path in ret.items():
-                if name not in packages:
-                    package = RosPackage(name=name, path=path)
-                    package_list.append(package)
-                    packages.append(name)
-        return json.dumps(package_list, cls=SelfEncoder)
+                    substitution_args._rospack = rospkg.RosPack()
+                except Exception as err:
+                    Log.warn("Cannot reset package cache: %s" % utf8(err))
+            package_list: List[RosPackage] = []
+            # fill the input fields
+            root_paths = [
+                os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(":")
+            ]
+            packages = []
+            for p in root_paths:
+                ret = ros_pkg.get_packages(p)
+                for name, path in ret.items():
+                    if name not in packages:
+                        package = RosPackage(name=name, path=path)
+                        package_list.append(package)
+                        packages.append(name)
+            return json.dumps(package_list, cls=SelfEncoder)
+        except Exception:
+            import traceback
+            raise Exception(traceback.format_exc())
 
     @wamp.register("ros.path.get_log_paths")
     def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
