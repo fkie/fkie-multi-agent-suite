@@ -806,6 +806,14 @@ export function RosProviderReact(
                 resultStartTerminal.message,
               );
               allStarted = false;
+              // wait a little longer to make sure the processes are fully started
+              if (config.daemon.enable || config.discovery.enable) {
+                logCtx.info(
+                  `Connect to '${config.host}' in 3 seconds`,
+                  '',
+                );
+                setTimeout(() => {connectToProvider(provider);}, 3000);
+              }
               return false;
             }
           }
