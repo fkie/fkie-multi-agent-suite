@@ -17,7 +17,13 @@ sudo snap install crossbar
 sudo apt install nodejs yarn libsecret-1-dev
 ```
 
-In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
+> In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
+
+You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
+
+```bash
+sudo snap install ttyd --classic
+```
 
 #### Update yarn to latest version
 

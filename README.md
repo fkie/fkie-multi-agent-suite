@@ -16,6 +16,15 @@ The code have been tested with `Crossbar v22.2.1`:
 
 ```bash
 sudo snap install crossbar
+sudo apt install nodejs yarn libsecret-1-dev
+```
+
+> In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
+
+You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
+
+```bash
+sudo snap install ttyd --classic
 ```
 
 ### Build ROS FKIE packages
@@ -29,7 +38,6 @@ rosdep update
 rosdep install -i --as-root pip:false --reinstall --from-paths fkie-multi-agent-suite
 ```
 
-
 Then build all packages:
 
 ```bash
@@ -42,13 +50,13 @@ or
 colcon build --packages-select fkie_mas_meta
 ```
 
-
 ### Build GUI
 
 ```bash
 cd ros_workspace/src/fkie-multi-agent-suite/fkie_mas_gui
+yarn install
 yarn package
-sudo dpkg -i release/build/fkie-mas-gui_1.0.0_amd64.deb 
+chmod +x release/build/fkie-mas-gui-1.0.1.AppImage
 ```
 
 ## Documentation
