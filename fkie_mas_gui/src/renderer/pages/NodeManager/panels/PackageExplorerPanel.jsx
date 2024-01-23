@@ -44,7 +44,6 @@ function PackageExplorerPanel() {
 
       const provider = rosCtx.getProviderById(providerId);
       if (!provider || !provider.isReady() || !provider.getPackageList) return;
-      console.log(`get Pacakge list for ${provider.name()}`);
       const pl = await provider.getPackageList();
       setPackageList(() => pl);
     },
