@@ -161,6 +161,11 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: 'none',
     default: '/{SYSTEM}',
   },
+  tooltipEnterDelay: {
+    label: 'The number of milliseconds to wait before showing the tooltip.',
+    type: 'none',
+    default: 1500,
+  },
 };
 
 interface ISettingProvider {

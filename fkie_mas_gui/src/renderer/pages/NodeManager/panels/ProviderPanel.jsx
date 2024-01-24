@@ -56,6 +56,7 @@ function ProviderPanel() {
   const [providersActivity] = useState(new Map());
   // use updateActivity as trigger state to avoid copy of the providersActivity-Map
   const [updateActivity, setUpdateActivity] = useState(1);
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const closeProviderHandler = async (providerId) => {
     const provider = rosCtx.getProviderById(providerId);
@@ -360,7 +361,12 @@ function ProviderPanel() {
           // fullWidth={true}
         />
         <ConnectToProviderModal />
-        <Tooltip title="Refresh provider list" placement="bottom">
+        <Tooltip
+          title="Refresh provider list"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+        >
           <IconButton
             edge="start"
             aria-label="refresh provider list"

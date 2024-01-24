@@ -121,7 +121,7 @@ function HostTreeViewItem({
     setFocus(false);
   };
 
-  const tooltipDelay = 1000;
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const handleMenuTimeItemClick = (event, index) => {
     if (index === 0) {

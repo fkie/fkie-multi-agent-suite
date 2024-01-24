@@ -74,6 +74,7 @@ function TopicEchoPanel({
     setQosAnchorEl(null);
   };
   let receivedIndex = 0;
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   // set default topic if defined
   useEffect(() => {
@@ -231,8 +232,10 @@ function TopicEchoPanel({
           {showOptions && (
             <Stack spacing={0.5} margin={0.5} direction="row">
               <Tooltip
-                title={noData ? 'show message data' : 'hide message data'}
+                title={'show message data'}
                 placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
               >
                 <ToggleButton
                   size="small"
@@ -244,8 +247,10 @@ function TopicEchoPanel({
                 </ToggleButton>
               </Tooltip>
               <Tooltip
-                title={noArr ? 'show arrays' : 'hide arrays'}
+                title={'show arrays'}
                 placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
               >
                 <ToggleButton
                   size="small"
@@ -257,8 +262,10 @@ function TopicEchoPanel({
                 </ToggleButton>
               </Tooltip>
               <Tooltip
-                title={noStr ? 'show strings' : 'hide strings'}
+                title={'show strings'}
                 placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
               >
                 <ToggleButton
                   size="small"
@@ -270,12 +277,10 @@ function TopicEchoPanel({
                 </ToggleButton>
               </Tooltip>
               <Tooltip
-                title={
-                  hz === 1.0
-                    ? 'unlimit message forward'
-                    : 'limit message forward to 1 Hz'
-                }
+                title={'limit message forward to 1 Hz'}
                 placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
               >
                 <ToggleButton
                   size="small"
@@ -288,8 +293,10 @@ function TopicEchoPanel({
               </Tooltip>
               <Divider orientation="vertical" />
               <Tooltip
-                title={showStatistics ? 'hide statistics' : 'show statistics'}
+                title={'show statistics'}
                 placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
               >
                 <ToggleButton
                   size="small"
@@ -348,6 +355,8 @@ function TopicEchoPanel({
               <Tooltip
                 title={pause ? 'start subscriber' : 'stop subscriber'}
                 placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
               >
                 <IconButton
                   size="medium"
@@ -358,7 +367,12 @@ function TopicEchoPanel({
                   {pause ? <PlayArrowIcon /> : <StopIcon />}
                 </IconButton>
               </Tooltip>
-              <Tooltip title="clear messages" placement="bottom">
+              <Tooltip
+                title="clear messages"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
                 <IconButton
                   size="medium"
                   onClick={() => {
@@ -369,7 +383,12 @@ function TopicEchoPanel({
                 </IconButton>
               </Tooltip>
               <Divider orientation="vertical" />
-              <Tooltip title="count of displayed messages" placement="bottom">
+              <Tooltip
+                title="count of displayed messages"
+                placement="right"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
                 <Select
                   id="select-msg-count"
                   autoWidth={false}

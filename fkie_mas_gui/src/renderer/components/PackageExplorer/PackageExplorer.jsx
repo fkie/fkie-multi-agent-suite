@@ -60,6 +60,7 @@ const comparePackageItems = (a, b) => {
 function PackageExplorer({ packageList, selectedProvider }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const [launchFileHistory, setLaunchFileHistory] = useLocalStorage(
     'PackageExplorer:launchFileHistory',
@@ -458,7 +459,12 @@ function PackageExplorer({ packageList, selectedProvider }) {
               orientation="vertical"
               aria-label="launch file control group"
             >
-              <Tooltip title="Edit File" placement="left">
+              <Tooltip
+                title="Edit File"
+                placement="left"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
                 <span>
                   <IconButton
                     disabled={!selectedFile}
@@ -472,7 +478,12 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title="Launch" placement="left">
+              <Tooltip
+                title="Load"
+                placement="left"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
                 <span>
                   <IconButton
                     disabled={
@@ -484,7 +495,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                       )
                     }
                     size="medium"
-                    aria-label="Launch"
+                    aria-label="load"
                     onClick={() => {
                       setSelectedLaunchFile({ ...selectedFile });
                     }}

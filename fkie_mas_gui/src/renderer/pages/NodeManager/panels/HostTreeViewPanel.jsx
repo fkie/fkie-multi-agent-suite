@@ -92,6 +92,7 @@ function HostTreeViewPanel() {
     failed: failedQueueMain,
     addStatus: addStatusQueueMain,
   } = useQueue(setProgressQueueMain);
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   /**
    * Get list of nodes from a list of TreeItem IDs
@@ -981,7 +982,12 @@ function HostTreeViewPanel() {
               defaultValue={filterText}
               fullWidth
             />
-            <Tooltip title="Reload node list" placement="left">
+            <Tooltip
+              title="Reload node list"
+              placement="left"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
               <IconButton
                 size="small"
                 onClick={() => {
@@ -1051,7 +1057,12 @@ function HostTreeViewPanel() {
                     orientation="vertical"
                     aria-label="provider control group"
                   >
-                    <Tooltip title="Start All" placement="left">
+                    <Tooltip
+                      title="Start All"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Start All"
@@ -1070,7 +1081,12 @@ function HostTreeViewPanel() {
                         <PlayArrowIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Stop All" placement="left">
+                    <Tooltip
+                      title="Stop All"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Stop All"
@@ -1084,7 +1100,12 @@ function HostTreeViewPanel() {
                       </IconButton>
                     </Tooltip>
                     <Divider />
-                    <Tooltip title="Restart All" placement="left">
+                    <Tooltip
+                      title="Restart All"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Restart All"
@@ -1111,7 +1132,12 @@ function HostTreeViewPanel() {
                     orientation="vertical"
                     aria-label="ros node control group"
                   >
-                    <Tooltip title="Open Terminal" placement="left">
+                    <Tooltip
+                      title="Open Terminal"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Open Terminal"
@@ -1130,7 +1156,12 @@ function HostTreeViewPanel() {
                         <TerminalIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Select screens" placement="left">
+                    <Tooltip
+                      title="Select screens"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Select screens"
@@ -1159,7 +1190,12 @@ function HostTreeViewPanel() {
                         <DynamicFeedOutlinedIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Parameters" placement="left">
+                    <Tooltip
+                      title="Parameters"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Parameters"
@@ -1171,7 +1207,12 @@ function HostTreeViewPanel() {
                       </IconButton>
                     </Tooltip>
 
-                    <Tooltip title="ros clean purge" placement="left">
+                    <Tooltip
+                      title="ros clean purge"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="ros clean purge"
@@ -1189,7 +1230,12 @@ function HostTreeViewPanel() {
                   orientation="vertical"
                   aria-label="ros node control group"
                 >
-                  <Tooltip title="Start" placement="left">
+                  <Tooltip
+                    title="Start"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
                     <IconButton
                       size="medium"
                       aria-label="Start"
@@ -1200,7 +1246,12 @@ function HostTreeViewPanel() {
                       <PlayArrowIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Stop" placement="left">
+                  <Tooltip
+                    title="Stop"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
                     <IconButton
                       size="medium"
                       aria-label="Stop"
@@ -1212,7 +1263,12 @@ function HostTreeViewPanel() {
                     </IconButton>
                   </Tooltip>
                   <Divider />
-                  <Tooltip title="Restart" placement="left">
+                  <Tooltip
+                    title="Restart"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
                     <IconButton
                       size="medium"
                       aria-label="Restart"
@@ -1261,7 +1317,12 @@ function HostTreeViewPanel() {
                   aria-label="ros node control group"
                 >
                   {navCtx.selectedProviders.length === 0 && (
-                    <Tooltip title="Edit" placement="left">
+                    <Tooltip
+                      title="Edit"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Edit"
@@ -1275,7 +1336,12 @@ function HostTreeViewPanel() {
                   )}
 
                   {navCtx.selectedProviders.length === 0 && (
-                    <Tooltip title="Parameters" placement="left">
+                    <Tooltip
+                      title="Parameters"
+                      placement="left"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Parameters"
