@@ -236,12 +236,15 @@ function LaunchFileModal({
     console.log(`set launch file to ${JSON.stringify(selectedLaunchFile)}`);
   }, [getLaunchFile, selectedLaunchFile]);
 
+  const handleClose = (event, reason) => {
+    if (reason && reason === 'backdropClick') return;
+    setOpen(false);
+  };
+
   return (
     <Dialog
       open={open}
-      onClose={() => {
-        setOpen(false);
-      }}
+      onClose={handleClose}
       scroll="paper"
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
@@ -301,7 +304,7 @@ function LaunchFileModal({
           variant="contained"
           onClick={launchSelectedFile}
         >
-          Launch
+          Load
         </Button>
       </DialogActions>
     </Dialog>
