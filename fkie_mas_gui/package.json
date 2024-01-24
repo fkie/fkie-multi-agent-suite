@@ -24,6 +24,7 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
+    "package-publish": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always && npm run build:dll",
     "portable": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never -l portable",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
@@ -280,16 +281,18 @@
       ]
     },
     "win": {
+      "artifactName": "mas-gui-portable.${ext}",
       "target": [
+        "portable",
         "nsis"
       ]
     },
     "linux": {
       "target": [
         "AppImage",
-        "deb",
         "dir"
       ],
+      "artifactName": "mas-gui.${ext}",
       "category": "Development",
       "synopsis": "Manage and control ROS nodes"
     },
@@ -304,15 +307,11 @@
     "extraResources": [
       "./assets/**"
     ],
-    "extraFiles": [
-      {
-        "from": "./backend/dist/app",
-        "to": "backend/dist/app/",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
+    "publish": {
+      "provider": "github",
+      "owner": "fkie",
+      "repo": "fkie-multi-agent-suite"
+    }
   },
   "devEngines": {
     "node": ">=14.x",

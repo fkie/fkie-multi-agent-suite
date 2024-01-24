@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "GUI to manage running ROS components",
   "license": "MIT",
-  "author": {
-    "name": "Francisco Garcia",
-    "email": "francisco.garcia.rosas@fkie.fraunhofer.de"
-  },
+  "contributors": [
+    "Alexander Tiderko <alexander.tiderko@fkie.fraunhofer.de>",
+    "Carlos Tampier <carlos.tampier.cotoras@fkie.fraunhofer.de>",
+    "Francisco Garcia"
+  ],
   "main": "./dist/main/main.js",
   "scripts": {
     "rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",

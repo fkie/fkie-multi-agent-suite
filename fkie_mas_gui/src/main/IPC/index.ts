@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 import { ICredential } from '../models/ICredential';
+import AutoUpdateManager from './AutoUpdateManager';
 import CommandExecutor from './CommandExecutor';
-// import FileManagerWrapper from './FileManagerWrapper';
 import MultimasterManager from './MultimasterManager';
 import PasswordManager from './PasswordManager';
 import { IROSInfo, ROSInfo } from './ROSInfo';
@@ -9,7 +9,6 @@ import { ISystemInfo, SystemInfo } from './SystemInfo';
 import TerminalManager from './TerminalManager';
 
 const sPasswordManager = new PasswordManager();
-// const fileManagerWrapper = new FileManagerWrapper();
 const sCommandExecutor = new CommandExecutor();
 const sMultimasterManager = new MultimasterManager();
 
@@ -28,43 +27,6 @@ export const registerHandlers = () => {
       return sPasswordManager.deletePassword(service, account);
     },
   );
-
-  // TODO remove SFTP if crossbar ros.file.get and ros.file.save works
-  // // SFTP Manager
-  // ipcMain.handle(
-  //   'FileManagerWrapper:checkPassword',
-  //   (event, credential: ICredential) => {
-  //     return fileManagerWrapper.checkPassword(credential);
-  //   }
-  // );
-
-  // ipcMain.handle(
-  //   'FileManagerWrapper:exist',
-  //   (event, credential: ICredential, path: string) => {
-  //     return fileManagerWrapper.exist(credential, path);
-  //   }
-  // );
-
-  // ipcMain.handle(
-  //   'FileManagerWrapper:stat',
-  //   (event, credential: ICredential, path: string) => {
-  //     return fileManagerWrapper.stat(credential, path);
-  //   }
-  // );
-
-  // ipcMain.handle(
-  //   'FileManagerWrapper:get',
-  //   (event, credential: ICredential, path: string) => {
-  //     return fileManagerWrapper.get(credential, path);
-  //   }
-  // );
-
-  // ipcMain.handle(
-  //   'FileManagerWrapper:put',
-  //   (event, credential: ICredential, content: string, path: string) => {
-  //     return fileManagerWrapper.put(credential, content, path);
-  //   }
-  // );
 
   // SSH Manager
   ipcMain.handle(
@@ -153,10 +115,9 @@ export const registerHandlers = () => {
     },
   );
 };
-// };
-//  FileManagerWrapper,
 
 export {
+  AutoUpdateManager,
   IROSInfo,
   ISystemInfo,
   MultimasterManager,

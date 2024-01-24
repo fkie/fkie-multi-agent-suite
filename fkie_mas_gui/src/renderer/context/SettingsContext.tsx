@@ -166,6 +166,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: 'none',
     default: 1500,
   },
+  checkForUpdates: {
+    label: 'Check for updates on start',
+    default: true,
+    type: 'boolean',
+    description: '',
+  },
 };
 
 interface ISettingProvider {

@@ -8,25 +8,18 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { app, BrowserWindow, shell } from 'electron';
-import log from 'electron-log';
-import { autoUpdater } from 'electron-updater';
+import { app, BrowserWindow, dialog, shell } from 'electron';
 import path from 'path';
+import { registerArguments } from './CommandLineInterface';
+import { AutoUpdateManager, registerHandlers } from './IPC';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
-import { registerArguments } from './CommandLineInterface';
-import { registerHandlers } from './IPC';
-
-export default class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
+// Disable security warnings and set react app path on dev env
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 let mainWindow: BrowserWindow | null = null;
+let autoUpdateManager: AutoUpdateManager | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -89,7 +82,7 @@ const createWindow = async () => {
     if (process.env.START_MINIMIZED) {
       mainWindow.minimize();
     } else {
-      mainWindow.maximize();
+      // mainWindow.maximize();
       mainWindow.show();
     }
   });
@@ -108,8 +101,7 @@ const createWindow = async () => {
   });
 
   // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
-  // new AppUpdater();
+  autoUpdateManager = new AutoUpdateManager(mainWindow);
 };
 
 /**

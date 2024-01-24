@@ -5983,9 +5983,9 @@ electron-updater@^6.1.4:
     tiny-typed-emitter "^2.1.0"
 
 electron@^26.2.1:
-  version "26.6.4"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-26.6.4.tgz#2da6d3ceaf015ec2a56e46904b7041a54c294408"
-  integrity sha512-PCoUFpxSit5djNMeahrRXOp9A4dCQHVMU2ZGCEkY16cbGwrBavupVZEQ+wpr50kncThPooVMMzklBzsHjZWgXg==
+  version "26.6.7"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-26.6.7.tgz#ba9a5d2b857f54f3f3cba9fe1d2da7c33f6501ab"
+  integrity sha512-2iG08Q2KAPTBlxPqEB3qmVUqDdmcPAvgGhiULggkeoLTznhg5yqkOJPe+Hpuc176i4gjsQVTpK7zbhq21Y3FoQ==
   dependencies:
     "@electron/get" "^2.0.0"
     "@types/node" "^18.11.18"
