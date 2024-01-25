@@ -109,7 +109,11 @@ function SettingsModal() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Tooltip title="Settings" placement="right">
+      <Tooltip
+        title="Settings"
+        placement="right"
+        enterDelay={settingsCtx.get('tooltipEnterDelay')}
+      >
         <MenuItem
           sx={{
             padding: '0.8em',

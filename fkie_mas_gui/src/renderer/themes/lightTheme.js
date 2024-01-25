@@ -35,10 +35,13 @@ const lightTheme = createTheme({
             borderBottom: '1px solid #f3f3f3',
           },
           '& .dock-tab-close-btn': {
-            color: '#ddd',
+            color: '#929292',
+          },
+          '& .dock-tab-close-btn:before': {
+            content: '"\\2297"',
           },
           '& .dock-tab-close-btn:focus': {
-            color: '#666',
+            color: '#000000',
           },
           '& .dock-nav-more': {
             color: 'rgba(0, 0, 0, 0.85)',

@@ -34,6 +34,7 @@ function PackageExplorerPanel() {
   //   settingsCtx.get('backgroundColor'),
   // );
   const [hostStyle, setHostStyle] = useState({});
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const updatePackageList = useCallback(
     async (providerId) => {
@@ -117,7 +118,12 @@ function PackageExplorerPanel() {
               />
             </FormControl>
             {showReloadButton && (
-              <Tooltip title="Reload package list" placement="bottom">
+              <Tooltip
+                title="Reload package list"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
                 <IconButton
                   size="small"
                   onClick={() => {

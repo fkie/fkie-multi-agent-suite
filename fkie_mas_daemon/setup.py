@@ -8,7 +8,7 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
 
     d = generate_distutils_setup(
         # don't do this unless you want a globally visible script
-        scripts=['nodes/mas-daemon', 'nodes/mas-subscriber'],
+        # scripts=['nodes/mas-daemon', 'nodes/mas-subscriber'],
         packages=[package_name, f'{package_name}.monitor'],
         package_dir={'': 'src'}
     )

@@ -24,6 +24,7 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
+    "package-publish": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always && npm run build:dll",
     "portable": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never -l portable",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
@@ -123,8 +124,10 @@
     "child_process": "^1.0.2",
     "clsx": "^2.1.0",
     "decko": "^1.2.0",
+    "electron": "^26.2.1",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
+    "electron-settings": "^4.0.2",
     "electron-updater": "^6.1.4",
     "file-saver": "^2.0.5",
     "find-process": "^1.4.7",
@@ -194,7 +197,6 @@
     "css-minimizer-webpack-plugin": "^5.0.1",
     "csstype": "^3.0.10",
     "detect-port": "^1.5.1",
-    "electron": "^26.2.1",
     "electron-builder": "^24.6.4",
     "electron-devtools-installer": "^3.2.0",
     "electronmon": "^2.0.2",
@@ -281,16 +283,18 @@
       ]
     },
     "win": {
+      "artifactName": "mas-gui-portable.${ext}",
       "target": [
+        "portable",
         "nsis"
       ]
     },
     "linux": {
       "target": [
         "AppImage",
-        "deb",
         "dir"
       ],
+      "artifactName": "mas-gui.${ext}",
       "category": "Development",
       "synopsis": "Manage and control ROS nodes"
     },
@@ -305,15 +309,11 @@
     "extraResources": [
       "./assets/**"
     ],
-    "extraFiles": [
-      {
-        "from": "./backend/dist/app",
-        "to": "backend/dist/app/",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
+    "publish": {
+      "provider": "github",
+      "owner": "fkie",
+      "repo": "fkie-multi-agent-suite"
+    }
   },
   "devEngines": {
     "node": ">=14.x",

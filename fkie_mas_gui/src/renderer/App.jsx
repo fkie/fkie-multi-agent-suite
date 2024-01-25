@@ -43,6 +43,7 @@ export default function App() {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const windowHeight = useWindowHeight();
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const handleWindowError = (e) => {
     // fix "ResizeObserver loop limit exceeded" while change size of the editor
@@ -115,7 +116,11 @@ export default function App() {
                   },
                 }}
               >
-                <Tooltip title="Topics" placement="right">
+                <Tooltip
+                  title="Topics"
+                  placement="right"
+                  enterDelay={tooltipDelay}
+                >
                   <span>
                     <MenuItem
                       onClick={() =>
@@ -137,7 +142,11 @@ export default function App() {
                     </MenuItem>
                   </span>
                 </Tooltip>
-                <Tooltip title="Services" placement="right">
+                <Tooltip
+                  title="Services"
+                  placement="right"
+                  enterDelay={tooltipDelay}
+                >
                   <span>
                     <MenuItem
                       onClick={() =>
@@ -159,7 +168,11 @@ export default function App() {
                     </MenuItem>
                   </span>
                 </Tooltip>
-                <Tooltip title="Parameter" placement="right">
+                <Tooltip
+                  title="Parameter"
+                  placement="right"
+                  enterDelay={tooltipDelay}
+                >
                   <span>
                     <MenuItem
                       onClick={() =>
@@ -181,7 +194,16 @@ export default function App() {
                     </MenuItem>
                   </span>
                 </Tooltip>
-                <Tooltip title="Logging" placement="right">
+                <Divider orientation="horizontal" />
+
+                {/* Only show External apps modal, if IPC back-end is available */}
+                {window.CommandExecutor && <ExternalAppsModal />}
+
+                <Tooltip
+                  title="Logging (mas gui)"
+                  placement="right"
+                  enterDelay={tooltipDelay}
+                >
                   <span>
                     <MenuItem
                       onClick={() =>
@@ -205,7 +227,7 @@ export default function App() {
                           // variant="standard"
                           // anchorOrigin="top"
                         >
-                          <DesktopWindowsOutlinedIcon sx={{ fontSize: 28 }} />
+                          <DesktopWindowsOutlinedIcon sx={{ fontSize: 22 }} />
                         </Badge>
                       }
                     >
@@ -213,10 +235,6 @@ export default function App() {
                     </MenuItem>
                   </span>
                 </Tooltip>
-                <Divider orientation="horizontal" />
-
-                {/* Only show External apps modal, if IPC back-end is available */}
-                {window.CommandExecutor && <ExternalAppsModal />}
 
                 <SettingsModal />
               </Menu>

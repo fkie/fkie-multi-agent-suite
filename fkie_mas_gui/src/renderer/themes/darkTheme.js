@@ -39,6 +39,9 @@ const darkTheme = createTheme({
           '& .dock-tab-close-btn': {
             color: '#444',
           },
+          '& .dock-tab-close-btn:before': {
+            content: '"\\2297"',
+          },
           '& .dock-tab-close-btn:focus': {
             color: '#fff',
           },

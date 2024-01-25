@@ -20,11 +20,12 @@ import {
 
 import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
 import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
-import PlayArrowOutlinedIcon from '@mui/icons-material/PlayArrowOutlined';
-import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
-import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import { blue, grey, orange } from '@mui/material/colors';
+
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import StopIcon from '@mui/icons-material/Stop';
 
 import { SettingsContext } from '../../context/SettingsContext';
 import ContentComponentItemTree from '../ContentComponentItemTree/ContentComponentItemTree';
@@ -121,7 +122,7 @@ function HostTreeViewItem({
     setFocus(false);
   };
 
-  const tooltipDelay = 1000;
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const handleMenuTimeItemClick = (event, index) => {
     if (index === 0) {
@@ -292,7 +293,7 @@ function HostTreeViewItem({
                         }}
                         disabled={!onStartClick}
                       >
-                        <PlayArrowOutlinedIcon
+                        <PlayArrowIcon
                           style={{ fontSize: 'inherit', pointerEvents: 'none' }}
                         />
                       </IconButton>
@@ -313,7 +314,7 @@ function HostTreeViewItem({
                         }}
                         disabled={!onStopClick}
                       >
-                        <StopOutlinedIcon
+                        <StopIcon
                           style={{ fontSize: 'inherit', pointerEvents: 'none' }}
                         />
                       </IconButton>
@@ -334,7 +335,7 @@ function HostTreeViewItem({
                         }}
                         disabled={!onRestartClick}
                       >
-                        <RestartAltOutlinedIcon
+                        <RestartAltIcon
                           style={{ fontSize: 'inherit', pointerEvents: 'none' }}
                         />
                       </IconButton>

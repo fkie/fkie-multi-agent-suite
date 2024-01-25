@@ -180,7 +180,11 @@ function ExternalAppsModal() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Tooltip title="Apps" placement="right">
+      <Tooltip
+        title="Apps"
+        placement="right"
+        enterDelay={settingsCtx.get('tooltipEnterDelay')}
+      >
         <MenuItem
           sx={{
             padding: '0.8em',

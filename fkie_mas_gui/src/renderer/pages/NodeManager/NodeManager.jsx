@@ -69,6 +69,9 @@ const SAVEABLE_TABS = {
   SERVICES: 'services-tab',
   LOGGING: 'logging-tab',
 };
+var SAVEABLE_TABS_LIST = Object.keys(SAVEABLE_TABS).map(function (key) {
+  return SAVEABLE_TABS[key];
+});
 
 const DEFAULT_LAYOUT = {
   dockbox: {
@@ -336,7 +339,12 @@ function NodeManager() {
   };
 
   useCustomEventListener(EVENT_OPEN_COMPONENT, (data) => {
-    if (data.id in layoutComponents) {
+    if (data.id in SAVEABLE_TABS_LIST) {
+      // activate already existing tab.
+      if (dockLayoutRef.current) {
+        dockLayoutRef.current.updateTab(data.id, loadTab(data));
+      }
+    } else if (data.id in layoutComponents) {
       // activate already existing tab.
       if (dockLayoutRef.current) {
         dockLayoutRef.current.updateTab(data.id, layoutComponents[data.id]);
