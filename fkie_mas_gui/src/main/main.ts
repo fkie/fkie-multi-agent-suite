@@ -8,7 +8,7 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { app, BrowserWindow, shell } from 'electron';
+import { BrowserWindow, app, dialog, shell } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import path from 'path';
@@ -92,6 +92,43 @@ const createWindow = async () => {
       mainWindow.maximize();
       mainWindow.show();
     }
+  });
+
+  mainWindow.on('close', (e) => {
+    e.preventDefault();
+    dialog
+      .showMessageBox({
+        type: 'question',
+        buttons: ['Just close the GUI', 'Kill all subprocesses'],
+        defaultId: 0,
+        cancelId: 0,
+        title: 'Kill on exit?',
+        message: 'Would you like to kill all subprocesses before exiting?',
+      })
+      .then(({ response }) => {
+        if (response) {
+          const find = require('find-process');
+          find('name', 'SCREEN', true).then((list: any[]) => {
+            list = list.filter(
+              (p) => p.cmd.includes('ros.fkie') || p.cmd.includes('crossbar'),
+            );
+            console.log('Killing %s screens', list.length);
+            list.forEach((p: any) => {
+              console.log(p.cmd);
+              process.kill(p.pid);
+            });
+            if (mainWindow) {
+              mainWindow.destroy();
+            }
+            app.quit();
+          });
+        } else {
+          if (mainWindow) {
+            mainWindow.destroy();
+          }
+          app.quit();
+        }
+      });
   });
 
   mainWindow.on('closed', () => {
