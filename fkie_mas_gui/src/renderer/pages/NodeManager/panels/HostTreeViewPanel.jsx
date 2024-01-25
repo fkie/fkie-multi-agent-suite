@@ -283,6 +283,11 @@ function HostTreeViewPanel() {
   const handleSelect = useCallback(
     (itemIds) => {
       setSelectedTreeItems(itemIds);
+      // inform details panel tab about selected nodes by user
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent('node-details-tab', 'default', {}, false),
+      );
     },
     [setSelectedTreeItems],
   );
