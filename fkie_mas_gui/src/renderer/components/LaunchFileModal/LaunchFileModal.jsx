@@ -1,20 +1,25 @@
+import DeleteIcon from '@mui/icons-material/Delete';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import {
   Alert,
   AlertTitle,
+  Autocomplete,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
 
 import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
+import useLocalStorage from '../../hooks/useLocalStorage';
 import { LaunchArgument, LaunchLoadRequest, getFileName } from '../../models';
 import DraggablePaper from '../UI/DraggablePaper';
 import Tag from '../UI/Tag';
@@ -30,10 +35,11 @@ function LaunchFileModal({
   const [open, setOpen] = useState(false);
   const [selectedLaunch, setSelectedLaunch] = useState(null);
   const [messageLaunchLoaded, setMessageLaunchLoaded] = useState('');
-
-  const { control, setValue, getValues } = useForm({
-    defaultValues: {},
-  });
+  const [argHistory, setArgHistory] = useLocalStorage(
+    'history:loadLaunchArgs',
+    {},
+  );
+  const [currentArgs, setCurrentArgs] = useState([]);
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
   const getLaunchFile = useCallback(
@@ -88,12 +94,22 @@ function LaunchFileModal({
           setSelectedLaunch(() => result);
 
           // set default values to arguments in form
+          const argList = [];
           result.args.forEach((arg) => {
-            setValue(
-              `${arg.name}`,
-              !arg.value ? `${arg.default_value}` : `${arg.value}`,
-            );
+            const argValue = !arg.value ? arg.default_value : arg.value;
+            let historyList = argHistory[arg.name];
+            if (historyList === undefined) {
+              historyList = [];
+              // historyList = options.filter((value) => value !== argValue);
+            }
+            argList.push({
+              name: arg.name,
+              value: argValue,
+              history: historyList,
+              choices: arg.choices,
+            });
           });
+          setCurrentArgs(argList);
 
           setMessageLaunchLoaded('');
         }
@@ -137,10 +153,10 @@ function LaunchFileModal({
     // Do not include [logCtx] or [rosCtx] as dependency, because it will cause infinity loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      argHistory,
       rosCtx.initialized,
       rosCtx.providers,
       selectedProvider,
-      setValue,
       // rosCtx.updateLaunchList,
     ],
   );
@@ -172,9 +188,19 @@ function LaunchFileModal({
       // fill arguments
       const args = [];
 
-      Object.entries(getValues()).forEach(([argName, argValue]) => {
-        args.push(new LaunchArgument(argName, argValue));
+      currentArgs.forEach((arg) => {
+        args.push(new LaunchArgument(arg.name, arg.value));
+        // update history
+        let hList = argHistory[arg.name];
+        if (hList !== undefined) {
+          hList = hList.filter((value) => value !== arg.value);
+        } else {
+          hList = [];
+        }
+        hList.unshift(arg.value);
+        argHistory[arg.name] = hList;
       });
+      setArgHistory(argHistory);
 
       const request = new LaunchLoadRequest(
         rosPackage,
@@ -228,17 +254,77 @@ function LaunchFileModal({
     // rosCtx.updateNodeList(provider.name());
     // rosCtx.updateLaunchList(provider.name());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getValues, selectedLaunch, selectedProvider, setSelectedLaunchFile]);
+  }, [currentArgs, selectedLaunch, selectedProvider, setSelectedLaunchFile]);
 
   // Request file and load arguments
   useEffect(() => {
     getLaunchFile(selectedLaunchFile.path);
-    console.log(`set launch file to ${JSON.stringify(selectedLaunchFile)}`);
-  }, [getLaunchFile, selectedLaunchFile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLaunchFile]);
 
   const handleClose = (event, reason) => {
     if (reason && reason === 'backdropClick') return;
     setOpen(false);
+  };
+
+  const deleteHistoryOption = useCallback(
+    (argName, option) => {
+      setCurrentArgs(
+        currentArgs.map((arg) => {
+          if (arg.name === argName) {
+            arg.history = arg.history.filter((value) => value !== option);
+          }
+          return arg;
+        }),
+      );
+      const newHistory = {};
+      // eslint-disable-next-line no-restricted-syntax
+      for (const [key, value] of Object.entries(argHistory)) {
+        if (key === argName) {
+          newHistory[key] = value.filter((val) => val !== option);
+        } else {
+          newHistory[key] = value;
+        }
+      }
+      setArgHistory(newHistory);
+    },
+    [argHistory, currentArgs, setArgHistory, setCurrentArgs],
+  );
+
+  const openFileDialog = useCallback(
+    async (argName) => {
+      const filePath = await window.electronAPI.openFile();
+      if (filePath) {
+        setCurrentArgs(
+          currentArgs.map((arg) => {
+            if (arg.name === argName) {
+              arg.value = filePath;
+            }
+            return arg;
+          }),
+        );
+      }
+    },
+    [currentArgs],
+  );
+
+  const isPathParam = (name) => {
+    if (name.includes('file')) {
+      return true;
+    }
+    if (name.includes('path')) {
+      return true;
+    }
+    if (name.includes('bag')) {
+      return true;
+    }
+    if (name.includes('config')) {
+      return true;
+    }
+    if (name.includes('world_name')) {
+      return true;
+    }
+    return false;
   };
 
   return (
@@ -257,24 +343,91 @@ function LaunchFileModal({
           <Stack>
             <Tag color="info" text={selectedLaunch.paths[0]} wrap />
             <Stack>
-              {selectedLaunch.args.map((arg) => {
+              {currentArgs.map((arg) => {
                 return (
-                  <Controller
-                    key={arg.name}
-                    name={arg.name}
-                    control={control}
-                    render={({ field: { onChange, value } }) => (
-                      <TextField
-                        id={arg.name}
-                        label={arg.name}
-                        defaultValue={!value ? '' : value}
-                        variant="filled"
-                        size="small"
-                        onChange={onChange}
-                        focused
-                      />
+                  <Stack key={`stack-launch-load-${arg.name}`} direction="row">
+                    <Autocomplete
+                      key={`autocomplete-launch-load-${arg.name}`}
+                      size="small"
+                      fullWidth
+                      autoHighlight
+                      clearOnEscape
+                      disableListWrap
+                      // noOptionsText="Package not found"
+                      options={arg.choices ? arg.choices : arg.history}
+                      getOptionLabel={(option) => option}
+                      // This prevents warnings on invalid autocomplete values
+                      value={arg.value}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label={arg.name}
+                          color="info"
+                          variant="outlined"
+                          margin="dense"
+                          size="small"
+                          autoFocus
+                          sx={{ fontSize: 10 }}
+                        />
+                      )}
+                      renderOption={(props, option) => (
+                        <Stack {...props} direction="row">
+                          <Typography width="stretch">{option}</Typography>
+                          <IconButton
+                            component="label"
+                            onClick={(event) => {
+                              deleteHistoryOption(arg.name, option);
+                              event.stopPropagation();
+                            }}
+                          >
+                            <DeleteIcon fontSize="1em" />
+                          </IconButton>
+                        </Stack>
+                      )}
+                      onChange={(event, newArgValue) => {
+                        setCurrentArgs(
+                          currentArgs.map((item) => {
+                            if (item.name === arg.name) {
+                              item.value = newArgValue;
+                            }
+                            return item;
+                          }),
+                        );
+                      }}
+                      onInputChange={(event, newInputValue) => {
+                        setCurrentArgs(
+                          currentArgs.map((item) => {
+                            if (item.name === arg.name) {
+                              item.value = newInputValue;
+                            }
+                            return item;
+                          }),
+                        );
+                      }}
+                      isOptionEqualToValue={(option, value) => {
+                        return (
+                          value === undefined ||
+                          value === '' ||
+                          option.path === value.path
+                        );
+                      }}
+                    />
+                    {isPathParam(arg.name) && (
+                      <IconButton
+                        component="label"
+                        // sx={{
+                        //   visibility: isPathParam(arg.name)
+                        //     ? 'visible'
+                        //     : 'hidden',
+                        // }}
+                        onClick={() => {
+                          openFileDialog(arg.name);
+                        }}
+                      >
+                        <MoreHorizIcon />
+                      </IconButton>
                     )}
-                  />
+                  </Stack>
                 );
               })}
             </Stack>

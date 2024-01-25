@@ -9,11 +9,9 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import { BrowserWindow, app, dialog, shell } from 'electron';
-import log from 'electron-log';
-import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import { registerArguments } from './CommandLineInterface';
-import { AutoUpdateManager, registerHandlers } from './IPC';
+import { AutoUpdateManager, DialogManager, registerHandlers } from './IPC';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import windowStateKeeper from './windowStateKeeper';
@@ -23,6 +21,7 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
+let dialogManager: DialogManager | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -146,6 +145,8 @@ const createWindow = async () => {
     shell.openExternal(data.url);
     return { action: 'deny' };
   });
+
+  dialogManager = new DialogManager(mainWindow);
 
   // Remove this if your app does not use auto updates
   autoUpdateManager = new AutoUpdateManager(mainWindow);

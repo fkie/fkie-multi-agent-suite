@@ -123,13 +123,13 @@ contextBridge.exposeInMainWorld('MultimasterManager', {
 contextBridge.exposeInMainWorld('autoUpdate', {
   send: (channel: string, data: any) => {
     // whitelist channels
-    let validChannels = ['check-for-updates', 'quit-and-install'];
+    const validChannels = ['check-for-updates', 'quit-and-install'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
   },
   receive: (channel: string, func) => {
-    let validChannels = [
+    const validChannels = [
       'checking-for-update',
       'update-available',
       'update-not-available',
@@ -141,9 +141,11 @@ contextBridge.exposeInMainWorld('autoUpdate', {
       // Deliberately strip event as it includes `sender`
       ipcRenderer.on(channel, (event, ...args) => {
         func(...args);
-        // event.;
       });
     }
   },
 });
-// }
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  openFile: () => ipcRenderer.invoke('dialog:openFile'),
+});

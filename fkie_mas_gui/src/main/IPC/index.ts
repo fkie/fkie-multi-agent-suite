@@ -1,7 +1,8 @@
-import { ipcMain } from 'electron';
+import { dialog, ipcMain } from 'electron';
 import { ICredential } from '../models/ICredential';
 import AutoUpdateManager from './AutoUpdateManager';
 import CommandExecutor from './CommandExecutor';
+import DialogManager from './DialogManager';
 import MultimasterManager from './MultimasterManager';
 import PasswordManager from './PasswordManager';
 import { IROSInfo, ROSInfo } from './ROSInfo';
@@ -114,10 +115,20 @@ export const registerHandlers = () => {
       );
     },
   );
+
+  async function handleFileOpen() {
+    const { canceled, filePaths } = await dialog.showOpenDialog({});
+    if (!canceled) {
+      return filePaths[0];
+    }
+    return null;
+  }
+  ipcMain.handle('dialog:openFile', handleFileOpen);
 };
 
 export {
   AutoUpdateManager,
+  DialogManager,
   IROSInfo,
   ISystemInfo,
   MultimasterManager,
