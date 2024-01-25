@@ -3,9 +3,9 @@
 
 
 "@types/hostile@^1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@types/hostile/-/hostile-1.3.0.tgz#53f0fa5533922d2d970106cc66428cfc4a329d07"
-  integrity sha512-HayfH8m3sHCHPT4LBNr+MnuFIuoU13NKXXj82b+Q4rXaqN/XeNYGrb5dQKIkbNUJR8Q2Rx1xGBV61VXLn1zeDA==
+  version "1.3.5"
+  resolved "https://registry.yarnpkg.com/@types/hostile/-/hostile-1.3.5.tgz#6149691c4c07f36386b0275d91d63aeaf89dc12a"
+  integrity sha512-NvElcxcjEEBZdJ2Xfl8GEFx+c79PTCk5q1mlkCBv8ED+I6n3EfCQzQ4x1IbiOM2nFHMqBOe/MTZwLMtn30WYaQ==
 
 "@types/node@*":
   version "18.7.23"
