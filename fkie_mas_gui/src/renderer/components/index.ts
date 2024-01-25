@@ -4,6 +4,7 @@ import MapSelectionModal from './SelectionModal/MapSelectionModal';
 
 import ConnectToProviderModal from './ConnectToProviderModal/ConnectToProviderModal';
 import ParameterTreeItem from './ParameterTreeView/ParameterTreeItem';
+import ConfirmModal from './SelectionModal/ConfirmModal';
 import {
   TagColors,
   colorFromHostname,
@@ -22,6 +23,7 @@ import TabPanel from './UI/TabPanel';
 import Tag from './UI/Tag';
 
 export {
+  ConfirmModal,
   ConnectToProviderModal,
   CopyButton,
   DraggablePaper,

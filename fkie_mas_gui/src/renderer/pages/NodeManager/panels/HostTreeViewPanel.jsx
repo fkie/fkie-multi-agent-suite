@@ -29,6 +29,7 @@ import {
 import { useDebounceCallback } from '@react-hook/debounce';
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 import {
+  ConfirmModal,
   HostTreeView,
   MapSelectionModal,
   SearchBar,
@@ -75,6 +76,7 @@ function HostTreeViewPanel() {
   const [nodeMap, setNodeMap] = useState(new Map());
   // items selected by user in the tree
   const [selectedTreeItems, setSelectedTreeItems] = useState([]);
+  const [rosCleanPurge, setRosCleanPurge] = useState(false);
   const [nodeScreens, setNodeScreens] = useState(null);
   const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
   const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
@@ -1222,7 +1224,7 @@ function HostTreeViewPanel() {
                         size="medium"
                         aria-label="ros clean purge"
                         onClick={() => {
-                          clearProviderLogs(navCtx.selectedProviders);
+                          setRosCleanPurge(true);
                         }}
                       >
                         <DeleteSweepIcon fontSize="inherit" />
@@ -1427,6 +1429,20 @@ function HostTreeViewPanel() {
           </Box>
         </Stack>
       </Stack>
+
+      {rosCleanPurge && (
+        <ConfirmModal
+          title="Question"
+          message="Confirm to remove all ros log files."
+          onConfirmCallback={() => {
+            setRosCleanPurge(false);
+            clearProviderLogs(navCtx.selectedProviders);
+          }}
+          onCancelCallback={() => {
+            setRosCleanPurge(false);
+          }}
+        />
+      )}
 
       {nodeScreens && (
         <MapSelectionModal

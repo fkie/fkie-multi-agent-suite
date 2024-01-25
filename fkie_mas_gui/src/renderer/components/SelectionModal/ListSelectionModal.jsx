@@ -34,7 +34,7 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
   };
 
   const handleClose = (event, reason) => {
-    if (reason && reason == 'backdropClick') return;
+    if (reason && reason === 'backdropClick') return;
     setList(null);
     setSelectedItems(null);
     setOpen(false);
