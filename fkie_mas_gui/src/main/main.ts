@@ -8,15 +8,16 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import path from 'path';
 import { registerArguments } from './CommandLineInterface';
 import { AutoUpdateManager, registerHandlers } from './IPC';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import windowStateKeeper from './windowStateKeeper';
 
 // Disable security warnings and set react app path on dev env
-process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
@@ -59,19 +60,26 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  const mainWindowStateKeeper = await windowStateKeeper('main');
+
   mainWindow = new BrowserWindow({
     show: false,
     frame: true,
-    width: 1024,
-    height: 728,
+    x: mainWindowStateKeeper.x,
+    y: mainWindowStateKeeper.y,
+    width: mainWindowStateKeeper.width,
+    height: mainWindowStateKeeper.height,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       sandbox: false,
+      nodeIntegration: true,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+  // Track window state
+  mainWindowStateKeeper.track(mainWindow);
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
@@ -82,7 +90,7 @@ const createWindow = async () => {
     if (process.env.START_MINIMIZED) {
       mainWindow.minimize();
     } else {
-      // mainWindow.maximize();
+      if (mainWindowStateKeeper.isMaximized) mainWindow.maximize();
       mainWindow.show();
     }
   });
