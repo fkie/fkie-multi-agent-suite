@@ -1254,7 +1254,8 @@ class CrossbarIOProvider {
           }
         });
       });
-      this.rosNodes.sort(compareRosNodes);
+      // do not sort nodes -> start order defined by capability_group
+      // this.rosNodes.sort(compareRosNodes);
       await this.updateScreens(null);
       this.daemon = true;
       emitCustomEvent(
@@ -2210,7 +2211,8 @@ class CrossbarIOProvider {
         n.launchInfo = oldNode.launchInfo;
       }
     });
-    nl.sort(compareRosNodes);
+    // do not sort nodes -> start order defined by capability_group
+    // nl.sort(compareRosNodes);
 
     this.rosNodes = nl;
     emitCustomEvent(
