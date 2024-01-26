@@ -89,7 +89,7 @@ class MultimasterManager {
     }
     // uses ROS1 method
     let cmdMasterDiscovery = null;
-    const namespace = versStr === '2' ? '/node_manager' : '';
+    const namespace = versStr === '2' ? '/mas' : '';
     const nameArg = `--name=${namespace}/${dName}`;
 
     if (versStr === '1') {
@@ -209,7 +209,7 @@ class MultimasterManager {
       }
     }
     let daemonType = 'mas-daemon';
-    const namespace = versStr === '2' ? '/node_manager' : '';
+    const namespace = versStr === '2' ? '/mas' : '';
     const nameArg = `--name=${namespace}/${dName}`;
     if (versStr === '2') {
       daemonType = 'mas-daemon';

@@ -104,7 +104,7 @@
     <param name="capability_group" value="Test"/>
   </node>
 
-  <node name="not_exists_package" pkg="node_manager_daemon" type="test_node.py" args="additional args">
+  <node name="not_exists_package" pkg="no_fkie_mas_daemon" type="test_node.py" args="additional args">
     <param name="capability_group" value="Test"/>
   </node>
 

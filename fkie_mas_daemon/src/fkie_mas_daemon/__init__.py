@@ -128,7 +128,7 @@ def start_server(node_name='mas_daemon'):
         os.kill(os.getpid(), signal.SIGKILL)
 
 
-def create_subscriber(node_name='node_manager_subscriber'):
+def create_subscriber(node_name='mas_subscriber'):
     '''
     Creates a subscriber to forward received messages to crossbar server.
     '''
