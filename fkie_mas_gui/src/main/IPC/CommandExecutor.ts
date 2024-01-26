@@ -1,6 +1,8 @@
 import { spawn, StdioOptions } from 'child_process';
 import log from 'electron-log';
+import fs from 'fs';
 import os from 'os';
+import path from 'path';
 import { Client, ConnectConfig } from 'ssh2';
 
 import { ARGUMENTS, getArgument } from '../CommandLineInterface';
@@ -18,6 +20,22 @@ class CommandExecutor {
   pm: PasswordManager;
 
   systemInfo?: ISystemInfo;
+
+  terminalOptions: {
+    terminals: string[];
+    exec: string;
+    noClose: string;
+    title: string;
+  } = {
+    terminals: [
+      '/usr/bin/x-terminal-emulator',
+      '/usr/bin/xterm',
+      '/opt/x11/bin/xterm',
+    ],
+    exec: 'e',
+    noClose: '',
+    title: '-T',
+  };
 
   constructor() {
     this.pm = new PasswordManager();
@@ -41,7 +59,7 @@ class CommandExecutor {
 
   /**
    * Executes a command using a SSH connection
-   * @param {ICredential} credential - SSH credential
+   * @param {ICredential} credential - SSH credential, null for local host.
    * @param {string} command - Remote directory path
    * @return {Promise<{result: boolean, message: string}>} Returns response
    */
@@ -80,6 +98,7 @@ class CommandExecutor {
       return new Promise((resolve, reject) => {
         try {
           let errorString = '';
+          log.info(`<cmd>${command}`);
           const child = spawn(command, [], {
             shell: true,
             stdio: stdioOptions,
@@ -143,52 +162,58 @@ class CommandExecutor {
       try {
         conn
           .on('ready', () => {
-            conn.exec(command, (err: Error | undefined, sshStream: any) => {
-              if (err) {
-                resolve({
-                  result: false,
-                  message: err?.message,
-                });
-              }
-              let errorString = '';
-              // .on('close', (code: string, signal: string) => {
-              sshStream
-                .on('close', (code: number, signal: string) => {
-                  // TODO: Check code/signal to validate response or errors
-                  // command executed correctly and no response
-                  if (code !== 0) {
-                    resolve({
-                      result: false,
-                      message: errorString,
-                    });
-                  } else {
+            conn.exec(
+              command,
+              { x11: true },
+              (err: Error | undefined, sshStream: any) => {
+                if (c)
+                  log.info(`<ssh:${c.username}@${c.host}:${c.port}>${command}`);
+                if (err) {
+                  resolve({
+                    result: false,
+                    message: err?.message,
+                  });
+                }
+                let errorString = '';
+                // .on('close', (code: string, signal: string) => {
+                sshStream
+                  .on('close', (code: number, signal: string) => {
+                    // TODO: Check code/signal to validate response or errors
+                    // command executed correctly and no response
+                    if (code !== 0) {
+                      resolve({
+                        result: false,
+                        message: errorString,
+                      });
+                    } else {
+                      resolve({
+                        result: true,
+                        message: '',
+                      });
+                    }
+                    conn.end();
+                  })
+                  .stdout.on('data', (data: Buffer) => {
+                    if (parentOut) {
+                      console.log(`${textDecoder.decode(data)}`);
+                    }
                     resolve({
                       result: true,
-                      message: '',
+                      message: textDecoder.decode(data),
                     });
-                  }
-                  conn.end();
-                })
-                .stdout.on('data', (data: Buffer) => {
-                  if (parentOut) {
-                    console.log(`${textDecoder.decode(data)}`);
-                  }
-                  resolve({
-                    result: true,
-                    message: textDecoder.decode(data),
+                  })
+                  .stderr.on('data', (data: Buffer) => {
+                    if (parentOut) {
+                      console.error(`${textDecoder.decode(data)}`);
+                    }
+                    errorString += textDecoder.decode(data);
+                    resolve({
+                      result: false,
+                      message: textDecoder.decode(data),
+                    });
                   });
-                })
-                .stderr.on('data', (data: Buffer) => {
-                  if (parentOut) {
-                    console.error(`${textDecoder.decode(data)}`);
-                  }
-                  errorString += textDecoder.decode(data);
-                  resolve({
-                    result: true,
-                    message: textDecoder.decode(data),
-                  });
-                });
-            });
+              },
+            );
           })
           .connect(connectionConfig);
         conn.on('error', (error: any) => {
@@ -206,6 +231,93 @@ class CommandExecutor {
         });
       }
     });
+  };
+
+  /**
+   * Executes a command in an external Terminal (using a SSH connection on remote hosts)
+   * @param {ICredential} credential - SSH credential, null for local host
+   * @param {string} title - Remote directory path
+   * @param {string} command - Remote directory path
+   * @return {Promise<{result: boolean, message: string}>} Returns response
+   */
+  public execTerminal: (
+    credential: ICredential | null,
+    title: string,
+    command: string,
+  ) => Promise<{ result: boolean; message: string }> = async (
+    credential,
+    title,
+    command,
+  ) => {
+    let terminalEmulator = '';
+    let terminalTitleOpt = this.terminalOptions.title;
+    let noCloseOpt = this.terminalOptions.noClose;
+    let terminalExecOpt = this.terminalOptions.exec;
+    // eslint-disable-next-line no-restricted-syntax
+    for (const t of this.terminalOptions.terminals) {
+      // eslint-disable-next-line no-loop-func
+      try {
+        fs.accessSync(t, fs.constants.X_OK);
+        // workaround to support the command parameter in different terminal
+        const resolvedPath = fs.realpathSync(t, null);
+        const basename = path.basename(resolvedPath);
+        if (
+          ['terminator', 'gnome-terminal', 'xfce4-terminal'].includes(basename)
+        ) {
+          terminalExecOpt = '-x';
+        } else {
+          terminalExecOpt = '-e';
+        }
+        if (
+          ['terminator', 'gnome-terminal', 'gnome-terminal.wrapper'].includes(
+            basename,
+          )
+        ) {
+          // If your external terminal close after the execution, you can change this behavior in profiles.
+          // You can also create a profile with name 'hold'. This profile will be then load by node_manager.
+          noCloseOpt = '--profile hold';
+        } else if (
+          ['xfce4-terminal', 'xterm', 'lxterm', 'uxterm'].includes(basename)
+        ) {
+          noCloseOpt = '';
+          terminalTitleOpt = '-T';
+        }
+        terminalEmulator = t;
+        break;
+      } catch (error) {
+        // continue with next terminal
+      }
+    }
+
+    if (!terminalEmulator) {
+      return new Promise((resolve) => {
+        resolve({
+          result: false,
+          message: `No Terminal found! Please install one of ${this.terminalOptions.terminals}`,
+        });
+      });
+    }
+
+    let terminalTitle = '';
+    if (title && terminalTitleOpt) {
+      terminalTitle = `${terminalTitleOpt} ${title}`;
+    }
+    let sshCmd = '';
+    if (credential) {
+      // generate string for SSH command
+      sshCmd = [
+        '/usr/bin/ssh',
+        '-aqtxXC',
+        '-oClearAllForwardings=yes',
+        '-oConnectTimeout=5',
+        '-oStrictHostKeyChecking=no',
+        '-oVerifyHostKeyDNS=no',
+        '-oCheckHostIP=no',
+        [credential.username, credential.host].join('@'),
+      ].join(' ');
+    }
+    const cmd = `${terminalEmulator} ${terminalTitle} ${noCloseOpt} ${terminalExecOpt} ${sshCmd} ${command}`;
+    return this.exec(null, cmd);
   };
 
   /**

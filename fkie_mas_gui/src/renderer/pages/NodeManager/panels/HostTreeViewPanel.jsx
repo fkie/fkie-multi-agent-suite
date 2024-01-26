@@ -297,24 +297,90 @@ function HostTreeViewPanel() {
   /**
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
    */
-  const createSingleTerminalPanel = useCallback((type, node, screen) => {
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        `${type}-${screen}-${node.name}@${node.providerName}`,
-        `${type} - ${node.name}@${node.providerName}`,
-        <SingleTerminalPanel
-          type={type}
-          providerId={node.providerId}
-          node={node}
-          screen={screen}
-        />,
-        false,
-        true,
-        `${type}`,
-      ),
-    );
-  }, []);
+  const createSingleTerminalPanel = useCallback(
+    async (type, node, screen, external = false) => {
+      if (external) {
+        // open screen in a new terminal
+        // create a terminal command
+        const provider = rosCtx.getProviderById(node.providerId);
+        let cmd = '';
+        switch (type) {
+          case 'cmd':
+            cmd = `${cmd} \r`;
+            break;
+          case 'screen':
+            if (screen && screen.length > 0) {
+              cmd = `screen -d -r ${screen} \r`;
+            } else {
+              // search screen with node name
+              let screenName = '';
+              if (provider?.rosState.ros_version === '1') {
+                screenName = node.name
+                  .substring(1)
+                  .replaceAll('_', '__')
+                  .replaceAll('/', '_');
+              } else if (provider?.rosState.ros_version === '2') {
+                screenName = node.name.substring(1).replaceAll('/', '.');
+              }
+              cmd = `screen -d -r $(ps aux | grep "/usr/bin/SCREEN" | grep "${screenName}" | awk '{print $2}') \r`;
+            }
+            break;
+          case 'log':
+            const request = [node.name];
+            const logPaths = await provider?.getLogPaths(request);
+            if (logPaths.length > 0) {
+              // `tail -f ${logPaths[0].screen_log} \r`,
+              cmd = `/usr/bin/less -fKLnQrSU ${logPaths[0].screen_log} \r`;
+            }
+            break;
+          case 'terminal':
+            cmd = ``;
+            break;
+
+        }
+        try {
+          const result = await window.CommandExecutor?.execTerminal(
+            provider.isLocalHost
+              ? null
+              : SSHCtx.getCredentialHost(provider.host()),
+            `"${type.toLocaleUpperCase()} ${node.name}@${provider.host()}"`,
+            cmd,
+          );
+          if (!result.result) {
+            logCtx.error(
+              `Can't open external terminal for ${node.name}`,
+              result.message,
+              true,
+            );
+          }
+        } catch (error) {
+          logCtx.error(
+            `Can't open external terminal for ${node.name}`,
+            error,
+            true,
+          );
+        }
+      } else {
+        emitCustomEvent(
+          EVENT_OPEN_COMPONENT,
+          eventOpenComponent(
+            `${type}-${screen}-${node.name}@${node.providerName}`,
+            `${type} - ${node.name}@${node.providerName}`,
+            <SingleTerminalPanel
+              type={type}
+              providerId={node.providerId}
+              node={node}
+              screen={screen}
+            />,
+            false,
+            true,
+            `${type}`,
+          ),
+        );
+      }
+    },
+    [rosCtx, SSHCtx],
+  );
 
   /**
    * Create and open a new panel with a [createFileEditorPanel] for selected nodes
@@ -1140,7 +1206,7 @@ function HostTreeViewPanel() {
                     aria-label="ros node control group"
                   >
                     <Tooltip
-                      title="Open Terminal"
+                      title="Open Terminal (external terminal with shift+click)"
                       placement="left"
                       enterDelay={tooltipDelay}
                       enterNextDelay={tooltipDelay}
@@ -1148,7 +1214,7 @@ function HostTreeViewPanel() {
                       <IconButton
                         size="medium"
                         aria-label="Open Terminal"
-                        onClick={() => {
+                        onClick={(event) => {
                           // open a new terminal for each selected provider
                           navCtx.selectedProviders.forEach((providerId) => {
                             const prov = rosCtx.getProviderById(providerId);
@@ -1156,7 +1222,12 @@ function HostTreeViewPanel() {
                             emptyNode.name = 'terminal';
                             emptyNode.providerId = providerId;
                             emptyNode.providerName = prov?.name();
-                            createSingleTerminalPanel('terminal', emptyNode);
+                            createSingleTerminalPanel(
+                              'terminal',
+                              emptyNode,
+                              '',
+                              event.nativeEvent.shiftKey,
+                            );
                           });
                         }}
                       >
@@ -1164,7 +1235,7 @@ function HostTreeViewPanel() {
                       </IconButton>
                     </Tooltip>
                     <Tooltip
-                      title="Select screens"
+                      title="Select screens (external terminal with shift+click)"
                       placement="left"
                       enterDelay={tooltipDelay}
                       enterNextDelay={tooltipDelay}
@@ -1172,7 +1243,7 @@ function HostTreeViewPanel() {
                       <IconButton
                         size="medium"
                         aria-label="Select screens"
-                        onClick={() => {
+                        onClick={(event) => {
                           navCtx.selectedProviders.forEach((providerId) => {
                             const prov = rosCtx.getProviderById(providerId);
                             const emptyNode = new RosNode();
@@ -1186,10 +1257,12 @@ function HostTreeViewPanel() {
                                 ...screen.screens,
                               ];
                             });
+                            const sl = {
+                              node: emptyNode,
+                              external: event.nativeEvent.shiftKey,
+                            };
                             setNodeScreens((prevNodes) =>
-                              prevNodes
-                                ? [...prevNodes, emptyNode]
-                                : [emptyNode],
+                              prevNodes ? [...prevNodes, sl] : [sl],
                             );
                           });
                         }}
@@ -1362,11 +1435,14 @@ function HostTreeViewPanel() {
                   )}
                   <Divider />
                   {navCtx.selectedProviders.length === 0 && (
-                    <Tooltip title="Screen" placement="left">
+                    <Tooltip
+                      title="Screen (external terminal with shift+click)"
+                      placement="left"
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Screen"
-                        onClick={() => {
+                        onClick={(event) => {
                           navCtx.selectedNodes.forEach((node) => {
                             if (node.screens.length === 1) {
                               // 1 screen available
@@ -1375,16 +1451,35 @@ function HostTreeViewPanel() {
                                   'screen',
                                   node,
                                   screen,
+                                  event.nativeEvent.shiftKey,
                                 );
                               });
                             } else if (node.screens.length > 1) {
                               // Multiple screens available
                               setNodeScreens((prevNodes) =>
-                                prevNodes ? [...prevNodes, node] : [node],
+                                prevNodes
+                                  ? [
+                                      ...prevNodes,
+                                      {
+                                        node,
+                                        external: event.nativeEvent.shiftKey,
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        node,
+                                        external: event.nativeEvent.shiftKey,
+                                      },
+                                    ],
                               );
                             } else {
                               // no screens, try to find by node name instead
-                              createSingleTerminalPanel('screen', node);
+                              createSingleTerminalPanel(
+                                'screen',
+                                node,
+                                undefined,
+                                event.nativeEvent.shiftKey,
+                              );
                             }
                           });
                         }}
@@ -1395,13 +1490,21 @@ function HostTreeViewPanel() {
                   )}
 
                   {navCtx.selectedProviders.length === 0 && (
-                    <Tooltip title="Log" placement="left">
+                    <Tooltip
+                      title="Log (external terminal with shift+click)"
+                      placement="left"
+                    >
                       <IconButton
                         size="medium"
                         aria-label="Log"
-                        onClick={() => {
+                        onClick={(event) => {
                           navCtx.selectedNodes.forEach((node) => {
-                            createSingleTerminalPanel('log', node);
+                            createSingleTerminalPanel(
+                              'log',
+                              node,
+                              undefined,
+                              event.nativeEvent.shiftKey,
+                            );
                           });
                         }}
                       >
@@ -1446,17 +1549,26 @@ function HostTreeViewPanel() {
 
       {nodeScreens && (
         <MapSelectionModal
-          list={nodeScreens.reduce((prev, node) => {
-            prev.push({ title: node.name, list: node.screens });
+          list={nodeScreens.reduce((prev, item) => {
+            prev.push({
+              title: item.node.name,
+              list: item.node.screens,
+              external: item.external,
+            });
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
             items.forEach((item) => {
               item.list.forEach((screen) => {
-                const node = nodeScreens.find((nodeMultiple) =>
-                  nodeMultiple.screens.includes(screen),
+                const nodeWithOpt = nodeScreens.find((nodeMultiple) =>
+                  nodeMultiple.node.screens.includes(screen),
                 );
-                createSingleTerminalPanel('screen', node, screen);
+                createSingleTerminalPanel(
+                  'screen',
+                  nodeWithOpt.node,
+                  screen,
+                  nodeWithOpt.external,
+                );
               });
             });
             setNodeScreens(null);

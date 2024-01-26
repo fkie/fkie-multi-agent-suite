@@ -37,6 +37,14 @@ export const registerHandlers = () => {
     },
   );
 
+  // SSH Manager
+  ipcMain.handle(
+    'CommandExecutor:execTerminal',
+    (event, credential: ICredential, title: string, command: string) => {
+      return sCommandExecutor.execTerminal(credential, title, command);
+    },
+  );
+
   // ROSInfo
   ipcMain.handle('ROSInfo:getInfo', () => {
     return new ROSInfo().getInfo();

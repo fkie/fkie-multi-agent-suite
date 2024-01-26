@@ -41,6 +41,14 @@ contextBridge.exposeInMainWorld('PasswordManager', {
 contextBridge.exposeInMainWorld('CommandExecutor', {
   exec: (credential: ICredential, command: string) =>
     ipcRenderer.invoke('CommandExecutor:exec', credential, command),
+
+  execTerminal: (credential: ICredential, title: string, command: string) =>
+    ipcRenderer.invoke(
+      'CommandExecutor:execTerminal',
+      credential,
+      title,
+      command,
+    ),
 });
 
 // Register ROS Info
