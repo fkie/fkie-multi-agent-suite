@@ -50,7 +50,7 @@ catkin build fkie_mas_meta
 or
 
 ```bash
-colcon build --packages-select fkie_mas_meta
+colcon build --packages-up-to fkie_mas_daemon
 ```
 
 ### Download GUI
