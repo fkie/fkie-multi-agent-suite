@@ -1,5 +1,5 @@
 import { useDebounceCallback } from '@react-hook/debounce';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useReducer, useState } from 'react';
 
 import {
   Button,
@@ -56,6 +56,7 @@ function ProviderPanel() {
   const [providersActivity] = useState(new Map());
   // use updateActivity as trigger state to avoid copy of the providersActivity-Map
   const [updateActivity, setUpdateActivity] = useState(1);
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const closeProviderHandler = async (providerId) => {
@@ -128,6 +129,7 @@ function ProviderPanel() {
     if (config) {
       config.autoConnect = enabled;
       rosCtx.saveProviderConfig(config);
+      forceUpdate();
     }
   };
 
