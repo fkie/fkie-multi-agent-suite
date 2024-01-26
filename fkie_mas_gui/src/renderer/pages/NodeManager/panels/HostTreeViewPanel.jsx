@@ -299,7 +299,7 @@ function HostTreeViewPanel() {
    */
   const createSingleTerminalPanel = useCallback(
     async (type, node, screen, external = false) => {
-      if (external) {
+      if (external && window.CommandExecutor) {
         // open screen in a new terminal
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);
@@ -336,7 +336,6 @@ function HostTreeViewPanel() {
           case 'terminal':
             cmd = ``;
             break;
-
         }
         try {
           const result = await window.CommandExecutor?.execTerminal(

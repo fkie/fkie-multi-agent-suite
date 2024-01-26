@@ -1,5 +1,7 @@
-function About() {
-  return <div>About component</div>;
+import About from '../../components/SettingsModal/About';
+
+function AboutPage() {
+  return <About />;
 }
 
-export default About;
+export default AboutPage;

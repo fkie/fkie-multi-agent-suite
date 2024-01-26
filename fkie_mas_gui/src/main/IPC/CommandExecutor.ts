@@ -162,58 +162,54 @@ class CommandExecutor {
       try {
         conn
           .on('ready', () => {
-            conn.exec(
-              command,
-              { x11: true },
-              (err: Error | undefined, sshStream: any) => {
-                if (c)
-                  log.info(`<ssh:${c.username}@${c.host}:${c.port}>${command}`);
-                if (err) {
-                  resolve({
-                    result: false,
-                    message: err?.message,
-                  });
-                }
-                let errorString = '';
-                // .on('close', (code: string, signal: string) => {
-                sshStream
-                  .on('close', (code: number, signal: string) => {
-                    // TODO: Check code/signal to validate response or errors
-                    // command executed correctly and no response
-                    if (code !== 0) {
-                      resolve({
-                        result: false,
-                        message: errorString,
-                      });
-                    } else {
-                      resolve({
-                        result: true,
-                        message: '',
-                      });
-                    }
-                    conn.end();
-                  })
-                  .stdout.on('data', (data: Buffer) => {
-                    if (parentOut) {
-                      console.log(`${textDecoder.decode(data)}`);
-                    }
-                    resolve({
-                      result: true,
-                      message: textDecoder.decode(data),
-                    });
-                  })
-                  .stderr.on('data', (data: Buffer) => {
-                    if (parentOut) {
-                      console.error(`${textDecoder.decode(data)}`);
-                    }
-                    errorString += textDecoder.decode(data);
+            conn.exec(command, (err: Error | undefined, sshStream: any) => {
+              if (c)
+                log.info(`<ssh:${c.username}@${c.host}:${c.port}>${command}`);
+              if (err) {
+                resolve({
+                  result: false,
+                  message: err?.message,
+                });
+              }
+              let errorString = '';
+              // .on('close', (code: string, signal: string) => {
+              sshStream
+                .on('close', (code: number, signal: string) => {
+                  // TODO: Check code/signal to validate response or errors
+                  // command executed correctly and no response
+                  if (code !== 0) {
                     resolve({
                       result: false,
-                      message: textDecoder.decode(data),
+                      message: errorString,
                     });
+                  } else {
+                    resolve({
+                      result: true,
+                      message: '',
+                    });
+                  }
+                  conn.end();
+                })
+                .stdout.on('data', (data: Buffer) => {
+                  if (parentOut) {
+                    console.log(`${textDecoder.decode(data)}`);
+                  }
+                  resolve({
+                    result: true,
+                    message: textDecoder.decode(data),
                   });
-              },
-            );
+                })
+                .stderr.on('data', (data: Buffer) => {
+                  if (parentOut) {
+                    console.error(`${textDecoder.decode(data)}`);
+                  }
+                  errorString += textDecoder.decode(data);
+                  resolve({
+                    result: false,
+                    message: textDecoder.decode(data),
+                  });
+                });
+            });
           })
           .connect(connectionConfig);
         conn.on('error', (error: any) => {

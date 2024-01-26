@@ -52,6 +52,8 @@ function About() {
 
   // register icp events published by ICP/AutoUpdateManager
   useEffect(() => {
+    if (!window.autoUpdate) return;
+
     window.autoUpdate.receive('checking-for-update', (data) => {
       setCheckingForUpdate(true);
     });
@@ -95,48 +97,52 @@ function About() {
         </Typography>
         <Typography variant="body">{packageJson.version}</Typography>
 
-        <Stack spacing={0.2} direction="row">
-          {checkingForUpdate && (
-            <Box sx={{ display: 'flex' }}>
-              <CircularProgress size="1em" />
-            </Box>
-          )}
-          <Typography variant="body" color="red">
-            {updateError}
-          </Typography>
-          {updateAvailable && !updateDownloaded && (
-            <Stack spacing={0.2} direction="row">
+        {window.autoUpdate && (
+          <Stack spacing={0.2} direction="row">
+            {checkingForUpdate && (
+              <Box sx={{ display: 'flex' }}>
+                <CircularProgress size="1em" />
+              </Box>
+            )}
+            <Typography variant="body" color="red">
+              {updateError}
+            </Typography>
+            {updateAvailable && !updateDownloaded && (
+              <Stack spacing={0.2} direction="row">
+                <Typography variant="body">
+                  downloading {updateAvailable.version}
+                </Typography>
+                {downloadedProgress && downloadedProgress.percent < 100 && (
+                  <Box sx={{ width: '100%' }}>
+                    <LinearProgressWithLabel
+                      value={downloadedProgress?.percent}
+                    />
+                  </Box>
+                )}
+              </Stack>
+            )}
+            {updateNotAvailable && (
               <Typography variant="body">
-                downloading {updateAvailable.version}
+                Your version is up to date!
               </Typography>
-              {downloadedProgress && downloadedProgress.percent < 100 && (
-                <Box sx={{ width: '100%' }}>
-                  <LinearProgressWithLabel
-                    value={downloadedProgress?.percent}
-                  />
-                </Box>
-              )}
-            </Stack>
-          )}
-          {updateNotAvailable && (
-            <Typography variant="body">Your version is up to date!</Typography>
-          )}
-          {updateDownloaded && (
-            <Stack spacing={0.2} direction="row">
-              <Typography variant="body">
-                Version {updateAvailable?.version} downloaded
-              </Typography>
-              <Button color="primary" onClick={installUpdate} variant="text">
-                Restart and Install
+            )}
+            {updateDownloaded && (
+              <Stack spacing={0.2} direction="row">
+                <Typography variant="body">
+                  Version {updateAvailable?.version} downloaded
+                </Typography>
+                <Button color="primary" onClick={installUpdate} variant="text">
+                  Restart and Install
+                </Button>
+              </Stack>
+            )}
+            {!checkingForUpdate && (
+              <Button color="primary" onClick={checkForUpdate} variant="text">
+                check for updates
               </Button>
-            </Stack>
-          )}
-          {!checkingForUpdate && (
-            <Button color="primary" onClick={checkForUpdate} variant="text">
-              check for updates
-            </Button>
-          )}
-        </Stack>
+            )}
+          </Stack>
+        )}
       </Stack>
       <Stack spacing={1} direction="row">
         <Typography variant="body" sx={{ fontWeight: 'bold' }}>
@@ -165,11 +171,11 @@ function About() {
         <Typography variant="body">
           <Stack>
             <Link
-              href="https://github.com/fkie/multimaster_fkie"
+              href="https://snapcraft.io/crossbar"
               target="_blank"
               rel="noopener"
             >
-              https://github.com/fkie/multimaster_fkie
+              https://snapcraft.io/crossbar
             </Link>
             <Link
               href="https://github.com/tsl0922/ttyd"
@@ -178,9 +184,16 @@ function About() {
             >
               https://github.com/tsl0922/ttyd
             </Link>
+            <Link
+              href="https://github.com/fkie/fkie-multi-agent-suite"
+              target="_blank"
+              rel="noopener"
+            >
+              https://github.com/fkie/fkie-multi-agent-suite
+            </Link>
           </Stack>
         </Typography>
-      </Stack>{' '}
+      </Stack>
     </Stack>
   );
 }

@@ -247,14 +247,16 @@ export default class MenuBuilder {
             label: 'Search Issues',
             click() {
               shell.openExternal(
-                'https://github.com/fkie/multimaster_fkie/issues',
+                'https://github.com/fkie/fkie-multi-agent-suite/issues',
               );
             },
           },
           {
             label: 'About',
             click: () => {
-              shell.openExternal('https://github.com/fkie/multimaster_fkie');
+              shell.openExternal(
+                'https://github.com/fkie/fkie-multi-agent-suite',
+              );
             },
           },
         ],

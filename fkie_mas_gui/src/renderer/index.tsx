@@ -10,6 +10,7 @@ import 'react-app-polyfill/stable';
 
 import './index.scss';
 
+import { BrowserRouter } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -40,10 +41,12 @@ if (container) {
           <SSHProvider>
             <RosProviderReact>
               <NavigationProvider>
-                {/* TODO: Monaco is not required to be global */}
-                <MonacoProvider>
-                  <App />
-                </MonacoProvider>
+                <BrowserRouter>
+                  {/* TODO: Monaco is not required to be global */}
+                  <MonacoProvider>
+                    <App />
+                  </MonacoProvider>
+                </BrowserRouter>
               </NavigationProvider>
             </RosProviderReact>
           </SSHProvider>
