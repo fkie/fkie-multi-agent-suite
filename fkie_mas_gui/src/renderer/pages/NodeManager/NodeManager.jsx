@@ -28,6 +28,18 @@ const PANEL_GROUPS = {
     closable: true,
     panelExtra: (panelData, context) => {
       const buttons = [];
+      if (!window.CommandExecutor) {
+        buttons.push(
+          <span
+            className="dock-panel-new-window-btn"
+            key="new-window"
+            title="Open in new window"
+            onClick={() => context.dockMove(panelData, null, 'new-window')}
+          >
+            ⇪
+          </span>,
+        );
+      }
       if (panelData.parent.mode !== 'window') {
         buttons.push(
           <div
@@ -54,6 +66,44 @@ const PANEL_GROUPS = {
           onClick={() => context.dockMove(panelData, null, 'remove')}
         />,
       );
+      return <div className="dock-extra-content">{buttons}</div>;
+    },
+  },
+  'new-win': {
+    floatable: true,
+    closable: true,
+    panelExtra: (panelData, context) => {
+      const buttons = [];
+      if (!window.CommandExecutor) {
+        buttons.push(
+          <span
+            className="dock-panel-new-window-btn"
+            key="new-window"
+            title="Open in new window"
+            onClick={() => context.dockMove(panelData, null, 'new-window')}
+          >
+            ⇪
+          </span>,
+        );
+      }
+      if (panelData.parent.mode !== 'window') {
+        buttons.push(
+          <div
+            className={
+              panelData.parent.mode === 'maximize'
+                ? 'dock-panel-min-btn'
+                : 'dock-panel-max-btn'
+            }
+            key="maximize"
+            title={
+              panelData.parent.mode === 'maximize' ? 'Restore' : 'Maximize'
+            }
+            onClick={() => context.dockMove(panelData, null, 'maximize')}
+          >
+            {/* {panelData.parent.mode === 'maximize' ? '▬' : '▣'} */}
+          </div>,
+        );
+      }
       return <div className="dock-extra-content">{buttons}</div>;
     },
   },
@@ -127,6 +177,11 @@ function NodeManager() {
   );
   const [layout, setLayout] = useState(layoutSaved);
   const [layoutSizesAssigned] = useState([]);
+  const nonePanels = {
+    screen: [],
+    log: [],
+    editor: [],
+  };
 
   // rc-dock method to load a tab
   const loadTab = (data) => {
@@ -143,6 +198,8 @@ function NodeManager() {
           closable: false,
           content: <HostTreeViewPanel key="host-panel" />,
           panelGroup: 'main',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.PACKAGES:
@@ -152,6 +209,8 @@ function NodeManager() {
           closable: false,
           content: <PackageExplorerPanel key="pkg-panel" />,
           panelGroup: 'explorer',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.PROVIDER:
@@ -161,6 +220,8 @@ function NodeManager() {
           closable: false,
           content: <ProviderPanel key="providers-panel" />,
           panelGroup: 'providers',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.NODE_DETAILS:
@@ -174,6 +235,8 @@ function NodeManager() {
           closable: false,
           content: <NodesDetailsPanel key="details-panel" />,
           panelGroup: 'details',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.PARAMETER:
@@ -183,6 +246,8 @@ function NodeManager() {
           closable: true,
           content: <ParameterPanel nodes={null} providers={null} />,
           panelGroup: 'main',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.TOPICS:
@@ -192,6 +257,8 @@ function NodeManager() {
           closable: true,
           content: <TopicsPanel />,
           panelGroup: 'main',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.SERVICES:
@@ -201,6 +268,8 @@ function NodeManager() {
           closable: true,
           content: <ServicesPanel />,
           panelGroup: 'main',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       case SAVEABLE_TABS.LOGGING:
@@ -210,10 +279,26 @@ function NodeManager() {
           closable: true,
           content: <LoggingPanel />,
           panelGroup: 'main',
+          minWidth: 3,
+          minHeight: 3,
         };
         break;
       default:
         tab = null;
+        if (!data.panelGroup) {
+          const prefix = data.id.split('-')[0];
+          // allow only few
+          if (Object.keys(nonePanels).includes(prefix)) {
+            if (nonePanels[prefix].length === 0) {
+              nonePanels[prefix].push(data.id);
+              data.panelGroup = prefix;
+              data.title = prefix + 's';
+              data.closable = false;
+              data.id = prefix + '-' + nonePanels[prefix].length;
+              tab = data;
+            }
+          }
+        }
     }
     if (tab !== null) {
       layoutComponents[data.id] = tab;
@@ -227,7 +312,7 @@ function NodeManager() {
       for (let i = 0; i < subLayout.children.length; i += 1) {
         const child = subLayout.children[i];
         if (child.children?.length > 0) {
-          const found = getPanelFromLayout(idPrefix, child.children);
+          const found = getPanelFromLayout(idPrefix, child);
           if (found) {
             return found;
           }
@@ -357,6 +442,8 @@ function NodeManager() {
         closable: data.closable,
         content: data.component,
         panelGroup: data.panelGroup,
+        minWidth: 15,
+        minHeight: 15,
       };
       layoutComponents[data.id] = tab;
       // store new tabs using useEffect so dockMove() can create panels if events comes to fast
@@ -381,11 +468,6 @@ function NodeManager() {
             dockLayoutRef.current.state.layout.floatbox,
           );
         }
-      }
-      if (panel && hasOnlyCloseableTabs(panel)) {
-        // add close button to panel, so we can close multiple tabs at once.
-        // after this the tabs of this panel can not be added to 'main', 'details' or other panels.
-        panel.group = 'close-all';
       }
       dockLayoutRef.current.dockMove(tab, panel, panel ? 'middle' : 'float');
     }
@@ -422,6 +504,13 @@ function NodeManager() {
       }
       // TODO: set origin X/Y position of panel
       layoutSizesAssigned.push(panelId);
+      if (hasOnlyCloseableTabs(panelData)) {
+        // add close button to panel, so we can close multiple tabs at once.
+        // after this the tabs of this panel can not be added to 'main', 'details' or other panels.
+        panelData.group = 'close-all';
+      } else if (panelData?.tabs[0].closable) {
+        panelData.group = 'new-win';
+      }
     }
     // console.log('panelData:', Object.getOwnPropertyNames(panelData));
     // console.log('panelData. id:', panelData.id);
@@ -429,7 +518,7 @@ function NodeManager() {
     // console.log('panelData. h:', panelData.h);
     // console.log('panelData. size:', panelData.size);
     // console.log('panelData. group:', panelData.group);
-    // console.log('panelData panelGroup:', panelData.tabs[0].panelGroup);
+    // console.log('panelData panelGroup:', panelData.tabs[0]?.panelGroup);
   };
 
   return (
