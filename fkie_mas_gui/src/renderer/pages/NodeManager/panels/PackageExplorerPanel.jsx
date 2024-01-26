@@ -102,7 +102,6 @@ function PackageExplorerPanel() {
     <Box
       width="100%"
       height="100%"
-      overflow="auto"
       style={{
         background: settingsCtx.get('backgroundColor'),
       }}
@@ -143,11 +142,7 @@ function PackageExplorerPanel() {
           </Alert>
         )}
         {selectedProvider && selectedProvider.length > 0 && (
-          <Stack
-          // style={{
-          //   background: hostColor,
-          // }}
-          >
+          <Stack overflow="auto">
             <PackageExplorer
               selectedProvider={selectedProvider}
               packageList={packageList}

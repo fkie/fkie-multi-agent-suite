@@ -1,7 +1,7 @@
 import { createTheme } from '@mui/material';
 import darkScrollbar from '@mui/material/darkScrollbar';
 
-const background = '#282828'
+const background = '#282828';
 
 const darkTheme = createTheme({
   backgroundColor: background,
@@ -16,7 +16,7 @@ const darkTheme = createTheme({
       styleOverrides: {
         html: {
           ...darkScrollbar(undefined),
-          //scrollbarWidth for Firefox
+          // scrollbarWidth for Firefox
           scrollbarWidth: 'thin',
         },
         body: {
@@ -26,14 +26,14 @@ const darkTheme = createTheme({
               '0 0 8px rgba(255, 255, 255, 0.1), inset 0 0 8px rgba(255, 255, 255, 0.1)',
           },
           '& .dock-tab': {
-            background: background,
+            background,
             borderBottom: '1px solid #434343;',
           },
           '& .dock-tab:hover': {
             color: '#40a5ed',
           },
           '& .dock-top .dock-bar': {
-            background: background,
+            background,
             borderBottom: '1px solid #383838',
           },
           '& .dock-tab-close-btn': {
@@ -42,8 +42,9 @@ const darkTheme = createTheme({
           '& .dock-tab-close-btn:before': {
             content: '"\\2297"',
           },
-          '& .dock-tab-close-btn:focus': {
+          '& .dock-tab-close-btn:hover, & .dock-tab-close-btn:focus': {
             color: '#fff',
+            transform: 'scale(1.6)',
           },
           '& .dock-nav-more': {
             color: 'rgba(255, 255, 255, 0.85)',
@@ -62,7 +63,7 @@ const darkTheme = createTheme({
           },
           '& .dock-panel': {
             color: 'rgba(255, 255, 255, 0.85)',
-            background: background,
+            background,
             border: '1px solid #434343',
           },
           '& .dock-panel-drag-size-b-r': {
@@ -80,7 +81,7 @@ const darkTheme = createTheme({
           },
           '& .dock-drop-layer .dock-drop-square': {
             color: '#444',
-            background: background,
+            background,
           },
           '& .dock-drop-layer .dock-drop-square .dock-drop-square-box': {
             border: '1px solid #434343',
@@ -95,20 +96,20 @@ const darkTheme = createTheme({
             borderBottom: '1px solid #282828;',
           },
           '& .dock-panel.dock-style-main .dock-tab': {
-            background: background,
+            background,
           },
           '& .dock-panel.dock-style-card .dock-tab': {
             border: '1px solid #434343',
           },
           '& .dock-panel.dock-style-card .dock-tab.dock-tab-active': {
-            background: background,
+            background,
             borderBottom: '1px solid #141414;',
           },
           '& .dock-panel.dock-style-card .dock-bar': {
             borderBottom: '1px solid #434343;',
           },
           '& .dock-panel.dock-style-card .dock-ink-bar': {
-            background: background,
+            background,
           },
         },
       },

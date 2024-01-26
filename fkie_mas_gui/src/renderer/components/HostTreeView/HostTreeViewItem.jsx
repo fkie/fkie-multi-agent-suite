@@ -185,8 +185,6 @@ function HostTreeViewItem({
             <Tooltip
               title={timeSyncText}
               placement="right-end"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
             >
               <Box>
                 <IconButton

@@ -14,7 +14,7 @@ const lightTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         html: {
-          //scrollbarWidth for Firefox
+          // scrollbarWidth for Firefox
           scrollbarWidth: 'thin',
         },
         body: {
@@ -24,14 +24,14 @@ const lightTheme = createTheme({
               '0 0 8px rgba(0, 0, 0, 0.1), inset 0 0 8px rgba(0, 0, 0, 0.1)',
           },
           '& .dock-tab': {
-            background: background,
+            background,
             borderBottom: '1px solid #ddd;',
           },
           '& .dock-tab:hover': {
             color: '#349fec',
           },
           '& .dock-top .dock-bar': {
-            background: background,
+            background,
             borderBottom: '1px solid #f3f3f3',
           },
           '& .dock-tab-close-btn': {
@@ -40,8 +40,9 @@ const lightTheme = createTheme({
           '& .dock-tab-close-btn:before': {
             content: '"\\2297"',
           },
-          '& .dock-tab-close-btn:focus': {
+          '& .dock-tab-close-btn:hover, & .dock-tab-close-btn:focus': {
             color: '#000000',
+            transform: 'scale(1.6)',
           },
           '& .dock-nav-more': {
             color: 'rgba(0, 0, 0, 0.85)',
@@ -60,7 +61,7 @@ const lightTheme = createTheme({
           },
           '& .dock-panel': {
             color: 'rgba(0, 0, 0, 0.85)',
-            background: background,
+            background,
             border: '1px solid #ddd',
           },
           '& .dock-panel-drag-size-b-r': {
@@ -78,7 +79,7 @@ const lightTheme = createTheme({
           },
           '& .dock-drop-layer .dock-drop-square': {
             color: '#ddd',
-            background: background,
+            background,
           },
           '& .dock-drop-layer .dock-drop-square .dock-drop-square-box': {
             border: '1px solid #ddd',
@@ -93,20 +94,20 @@ const lightTheme = createTheme({
             borderBottom: '1px solid #eee;',
           },
           '& .dock-panel.dock-style-main .dock-tab': {
-            background: background,
+            background,
           },
           '& .dock-panel.dock-style-card .dock-tab': {
             border: '1px solid #ddd',
           },
           '& .dock-panel.dock-style-card .dock-tab.dock-tab-active': {
-            background: background,
+            background,
             borderBottom: '1px solid #fff;',
           },
           '& .dock-panel.dock-style-card .dock-bar': {
             borderBottom: '1px solid #ddd;',
           },
           '& .dock-panel.dock-style-card .dock-ink-bar': {
-            background: background,
+            background,
           },
         },
       },
