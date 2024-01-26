@@ -25,7 +25,7 @@ import asyncio
 from autobahn import wamp
 import json
 
-from fkie_mas_daemon.monitor import Service
+from fkie_mas_daemon.monitor.service import Service
 
 from fkie_mas_pylib.crossbar.runtime_interface import DiagnosticArray
 from fkie_mas_pylib.crossbar.runtime_interface import DiagnosticStatus
