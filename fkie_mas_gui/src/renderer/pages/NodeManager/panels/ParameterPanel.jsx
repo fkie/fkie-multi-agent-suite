@@ -2,7 +2,14 @@ import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
-import { Box, IconButton, Stack, Tooltip } from '@mui/material';
+import {
+  Box,
+  ButtonGroup,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip,
+} from '@mui/material';
 
 import { TreeView } from '@mui/x-tree-view';
 
@@ -27,6 +34,7 @@ export default function ParameterPanel({ nodes, providers }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const [roots, setRoots] = useState(new Map('', {}));
   const [rootData, setRootData] = useState(new Map('', {}));
@@ -35,6 +43,7 @@ export default function ParameterPanel({ nodes, providers }) {
   const [expanded, setExpanded] = useState([]);
   const [nodeFilter, setNodeFilter] = useState(false);
   const [searched, setSearched] = useState('');
+  const [selectedItems, setSelectedItems] = useState(null);
 
   // debounced search callback
   // search in the origin parameter list and create a new one
@@ -158,6 +167,42 @@ export default function ParameterPanel({ nodes, providers }) {
     }
   }, 300);
 
+  const deleteParameters = useCallback(
+    (paramsMap) => {
+      Array.from(paramsMap).map(async ([providerId, params]) => {
+        const provider = rosCtx.getProviderById(providerId);
+        if (!provider || !provider.isAvailable()) return;
+
+        if (!provider.deleteParameters) {
+          logCtx.error(
+            `Provider ${rosCtx.getProviderName(
+              providerId,
+            )} does not support [deleteParameters] method`,
+            DEFAULT_BUG_TEXT,
+          );
+          return;
+        }
+
+        const result = await provider.deleteParameters(params);
+
+        if (result) {
+          logCtx.success(
+            `Parameter deleted successfully from ${provider.name()}`,
+            `${JSON.stringify(params)}`,
+          );
+        } else {
+          logCtx.error(
+            `Could not delete parameters from ${provider.name()}`,
+            DEFAULT_BUG_TEXT,
+          );
+        }
+        // TODO: update only involved provider / nodes
+        getParameterList();
+      });
+    },
+    [getParameterList, logCtx, rosCtx],
+  );
+
   // callback when deleting parameters
   const onDeleteParameters = useCallback(async () => {
     if (!rootDataFiltered || rootDataFiltered.size === 0) {
@@ -174,40 +219,11 @@ export default function ParameterPanel({ nodes, providers }) {
       }
       paramsToBeDeleted.get(p.providerId).push(p.name);
     });
-    Array.from(paramsToBeDeleted).map(async ([providerId, params]) => {
-      const provider = rosCtx.getProviderById(providerId);
-      if (!provider || !provider.isAvailable()) return;
-
-      if (!provider.deleteParameters) {
-        logCtx.error(
-          `Provider ${rosCtx.getProviderName(
-            providerId,
-          )} does not support [deleteParameters] method`,
-          DEFAULT_BUG_TEXT,
-        );
-        return;
-      }
-
-      const result = await provider.deleteParameters(params);
-
-      if (result) {
-        logCtx.success(
-          `Parameter deleted successfully from ${provider.name()}`,
-          `${JSON.stringify(params)}`,
-        );
-      } else {
-        logCtx.error(
-          `Could not delete parameters from ${provider.name()}`,
-          DEFAULT_BUG_TEXT,
-        );
-      }
-      // TODO: update only involved provider / nodes
-      getParameterList();
-    });
+    deleteParameters(paramsToBeDeleted);
 
     // Do we need to get the whole list of parameters again?
     // getParameterList();
-  }, [rootDataFiltered, logCtx, rosCtx, getParameterList]);
+  }, [rootDataFiltered, deleteParameters, logCtx]);
 
   useEffect(() => {
     if (!rosCtx.initialized) return;
@@ -239,11 +255,14 @@ export default function ParameterPanel({ nodes, providers }) {
 
   // get group name from id of group tree item
   const fromGroupId = (id) => {
-    const sepIdx = id.indexOf('#');
-    if (sepIdx > 0) {
+    if (id.endsWith('#')) {
+      const trimmed = id.slice(0, -1);
       return {
-        groupName: id.substring(0, sepIdx),
-        fullPrefix: id.substring(sepIdx + 1),
+        groupName: trimmed.substr(
+          trimmed.lastIndexOf('/') + 1,
+          trimmed.length - 1,
+        ),
+        fullPrefix: trimmed.substr(0, id.lastIndexOf('/')),
       };
     }
     return { groupName: id, fullPrefix: id };
@@ -251,7 +270,7 @@ export default function ParameterPanel({ nodes, providers }) {
 
   // create id for group tree item
   const toGroupId = (groupName, fullPrefix) => {
-    return `${groupName}#${fullPrefix}`;
+    return `${fullPrefix}/${groupName}#`;
   };
 
   // create tree based on parameter namespace
@@ -363,6 +382,31 @@ export default function ParameterPanel({ nodes, providers }) {
     });
   };
 
+  const paramsFromIds = (treeItemId) => {
+    // Sort parameter by provider
+    const paramsToBeDeleted = new Map('', []);
+    rootData.forEach((paramList, rootName) => {
+      paramList.forEach((p) => {
+        let addParam = false;
+        if (rootName === treeItemId) {
+          addParam = true;
+        } else if (p.id === treeItemId) {
+          addParam = true;
+        } else if (treeItemId.endsWith('#')) {
+          const trimmed = treeItemId.slice(0, treeItemId.length - 2);
+          addParam = p.name.startsWith(trimmed);
+        }
+        if (addParam) {
+          if (!paramsToBeDeleted.has(p.providerId)) {
+            paramsToBeDeleted.set(p.providerId, []);
+          }
+          paramsToBeDeleted.get(p.providerId).push(p.name);
+        }
+      });
+    });
+    deleteParameters(paramsToBeDeleted);
+  };
+
   return (
     <Box
       height="100%"
@@ -401,46 +445,79 @@ export default function ParameterPanel({ nodes, providers }) {
             </Tooltip>
           )}
         </Stack>
-        <TreeView
-          aria-label="parameters"
-          expanded={expanded}
-          defaultCollapseIcon={<ArrowDropDownIcon />}
-          defaultExpandIcon={<ArrowRightIcon />}
-          // defaultEndIcon={<div style={{ width: 24 }} />}
-          onNodeSelect={(event, nodeId) => {
-            const index = expanded.indexOf(nodeId);
-            const copyExpanded = [...expanded];
-            if (index === -1) {
-              copyExpanded.push(nodeId);
-            } else {
-              copyExpanded.splice(index, 1);
-            }
-            setExpanded(copyExpanded);
-          }}
-        >
-          {Array.from(roots).map(([rootId, rootObj]) => {
-            const filteredItems = rootDataFiltered.get(rootId);
-            return (
-              <ParameterTreeItem
-                key={rootId}
-                nodeId={`${rootId}`}
-                labelText={`${
-                  rootObj?.constructor.name === 'RosNode'
-                    ? rootId
-                    : rosCtx.getProviderName(rootId)
-                }`}
-                labelIcon={getIcon(rootObj)}
-                labelCount={filteredItems ? filteredItems.length : null}
-                requestData={!rootData.has(rootId)}
+        <Stack direction="row" height="100%" overflow="auto">
+          <Box width="100%" height="100%" overflow="auto">
+            <TreeView
+              aria-label="parameters"
+              expanded={expanded}
+              defaultCollapseIcon={<ArrowDropDownIcon />}
+              defaultExpandIcon={<ArrowRightIcon />}
+              // defaultEndIcon={<div style={{ width: 24 }} />}
+              onNodeSelect={(event, nodeId) => {
+                setSelectedItems(nodeId);
+                const index = expanded.indexOf(nodeId);
+                const copyExpanded = [...expanded];
+                if (index === -1) {
+                  copyExpanded.push(nodeId);
+                } else {
+                  copyExpanded.splice(index, 1);
+                }
+                setExpanded(copyExpanded);
+              }}
+            >
+              {Array.from(roots).map(([rootId, rootObj]) => {
+                const filteredItems = rootDataFiltered.get(rootId);
+                return (
+                  <ParameterTreeItem
+                    key={rootId}
+                    nodeId={`${rootId}`}
+                    labelText={`${
+                      rootObj?.constructor.name === 'RosNode'
+                        ? rootId
+                        : rosCtx.getProviderName(rootId)
+                    }`}
+                    labelIcon={getIcon(rootObj)}
+                    labelCount={filteredItems ? filteredItems.length : null}
+                    requestData={!rootData.has(rootId)}
+                  >
+                    {paramTreeToStyledItems(
+                      nodeFilter ? `${rootId}` : '',
+                      rootDataTree.get(rootId),
+                    )}
+                  </ParameterTreeItem>
+                );
+              })}
+            </TreeView>
+          </Box>
+          <Box>
+            <Paper elevation={2}>
+              <ButtonGroup
+                orientation="vertical"
+                aria-label="launch file control group"
               >
-                {paramTreeToStyledItems(
-                  nodeFilter ? `${rootId}` : '',
-                  rootDataTree.get(rootId),
-                )}
-              </ParameterTreeItem>
-            );
-          })}
-        </TreeView>
+                <Tooltip
+                  title="Edit File"
+                  placement="left"
+                  enterDelay={tooltipDelay}
+                  enterNextDelay={tooltipDelay}
+                >
+                  <span>
+                    <IconButton
+                      disabled={!selectedItems}
+                      size="medium"
+                      aria-label="Edit File"
+                      onClick={() => {
+                        paramsFromIds(selectedItems);
+                      }}
+                    >
+                      <DeleteIcon fontSize="inherit" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </ButtonGroup>
+            </Paper>
+          </Box>
+        </Stack>
       </Stack>
     </Box>
   );
