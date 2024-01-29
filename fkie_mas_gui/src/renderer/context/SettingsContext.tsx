@@ -172,6 +172,17 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: 'boolean',
     description: '',
   },
+  actionOnChangeLaunch: {
+    label: 'Action on loaded launch file change detection',
+    type: 'string',
+    default: 'ASK',
+    options: [
+      'ASK',
+      'DISMISS',
+      'RELOAD',
+    ],
+    description: '',
+  },
 };
 
 interface ISettingProvider {

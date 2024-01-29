@@ -1,11 +1,19 @@
-import { forwardRef, useCallback, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Button,
   Card,
   CardActions,
+  Checkbox,
   Collapse,
+  FormControlLabel,
   IconButton,
   Paper,
   Stack,
@@ -17,6 +25,7 @@ import {
   SnackbarMessage,
   useSnackbar,
 } from 'notistack';
+import SettingsContext from '../../context/SettingsContext';
 import { PATH_EVENT_TYPE } from '../../models';
 import { CrossbarIOProvider } from '../../providers';
 
@@ -44,16 +53,42 @@ const ReloadFileAlertComponent = forwardRef<
     onReload,
   } = props;
 
+  const settingsCtx = useContext(SettingsContext);
   const { closeSnackbar } = useSnackbar();
   const [expanded, setExpanded] = useState(false);
+  const [rememberChange, setRememberChange] = useState(false);
 
   const handleExpandClick = useCallback(() => {
     setExpanded((oldExpanded) => !oldExpanded);
   }, []);
 
-  const handleDismiss = useCallback(() => {
+  const handleReload = useCallback(() => {
+    if (rememberChange) {
+      settingsCtx.set('actionOnChangeLaunch', 'RELOAD');
+    }
+    if (onReload) onReload(provider.id, launchFile);
     closeSnackbar(id);
-  }, [id, closeSnackbar]);
+  }, [id, closeSnackbar, rememberChange]);
+
+  const handleDismiss = useCallback(() => {
+    if (rememberChange) {
+      settingsCtx.set('actionOnChangeLaunch', 'DISMISS');
+    }
+    closeSnackbar(id);
+  }, [id, closeSnackbar, rememberChange]);
+
+  useEffect(() => {
+    switch (settingsCtx.get('actionOnChangeLaunch')) {
+      case 'RELOAD':
+        handleReload();
+        break;
+      case 'DISMISS':
+        handleDismiss();
+        break;
+      default:
+        break;
+    }
+  }, [settingsCtx]);
 
   return (
     <SnackbarContent ref={ref}>
@@ -73,9 +108,22 @@ const ReloadFileAlertComponent = forwardRef<
             >
               <ExpandMoreIcon />
             </IconButton>
-
-            <Typography variant="body2">{message}</Typography>
-            <Typography variant="subtitle2">{provider.name()}</Typography>
+            <Stack direction="column">
+              <Stack direction="row" spacing="1em">
+                <Typography variant="subtitle1">{message}</Typography>
+              </Stack>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    onChange={(event) => {
+                      setRememberChange(event.target.checked);
+                    }}
+                    sx={{ '& .MuiSvgIcon-root': { fontSize: 12 } }}
+                  />
+                }
+                label="remember the decision"
+              />
+            </Stack>
 
             <Button size="small" onClick={handleDismiss}>
               Dismiss
@@ -86,9 +134,7 @@ const ReloadFileAlertComponent = forwardRef<
               color="success"
               variant="contained"
               onClick={() => {
-                if (onReload) onReload(provider.id, launchFile);
-
-                handleDismiss();
+                handleReload();
               }}
             >
               Reload
@@ -100,6 +146,7 @@ const ReloadFileAlertComponent = forwardRef<
             <Typography variant="body1">
               {modification}: {modifiedFile}
             </Typography>
+            <Typography variant="body1">provider: {provider.name()}</Typography>
           </Paper>
         </Collapse>
       </Card>

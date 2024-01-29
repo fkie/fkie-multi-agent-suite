@@ -10,9 +10,9 @@ import 'react-app-polyfill/stable';
 
 import './index.scss';
 
-import { BrowserRouter } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 
 import { LoggingProvider } from './context/LoggingContext';
@@ -26,17 +26,17 @@ const container = document.getElementById('root');
 if (container) {
   const root = createRoot(container);
   root.render(
-    <SnackbarProvider
-      maxSnack={4}
-      autoHideDuration={4000}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'right',
-      }}
-      dense
-      preventDuplicate
-    >
-      <SettingsProvider>
+    <SettingsProvider>
+      <SnackbarProvider
+        maxSnack={4}
+        autoHideDuration={4000}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        dense
+        preventDuplicate
+      >
         <LoggingProvider>
           <SSHProvider>
             <RosProviderReact>
@@ -51,7 +51,7 @@ if (container) {
             </RosProviderReact>
           </SSHProvider>
         </LoggingProvider>
-      </SettingsProvider>
-    </SnackbarProvider>,
+      </SnackbarProvider>
+    </SettingsProvider>,
   );
 }

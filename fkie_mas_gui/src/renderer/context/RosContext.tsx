@@ -1105,7 +1105,7 @@ export function RosProviderReact(
     (data: EventProviderPathEvent) => {
       data.path.affected.forEach((arg: string) => {
         enqueueSnackbar(
-          `Do you want to reload file [${getFileName(arg)}] on `,
+          `Do you want to reload file [${getFileName(arg)}]`,
           {
             persist: true,
             anchorOrigin: {
