@@ -9,7 +9,13 @@ import {
   Tooltip,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from 'react';
 
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -60,6 +66,7 @@ const comparePackageItems = (a, b) => {
 function PackageExplorer({ packageList, selectedProvider }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
+  const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const [launchFileHistory, setLaunchFileHistory] = useLocalStorage(
@@ -115,6 +122,11 @@ function PackageExplorer({ packageList, selectedProvider }) {
       }
       return prevHistory;
     });
+    // inform host panel tab about loaded launch file
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent('hosts-tab', 'default', {}, false),
+    );
   }, [
     rosCtx,
     selectedProvider,
@@ -126,7 +138,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
   /**
    * Reset all states considering launch file history.
    */
-  const resetStates = useCallback(() => {
+  const updateStates = useCallback(() => {
     const provider = rosCtx.getProviderById(selectedProvider);
     let hostLaunchFileHistory = [];
     if (provider) {
@@ -134,8 +146,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         (file) => file.host === provider.host(),
       );
     }
-    setSelectedFile(null);
-    setSelectedLaunchFile(null);
+    if (selectedPackage) return;
     const pit = hostLaunchFileHistory.reduce((prev, curr) => {
       prev[curr.name] = {
         fileName: curr.name,
@@ -151,12 +162,18 @@ function PackageExplorer({ packageList, selectedProvider }) {
     const sortedPackages = packageList.sort(comparePackages);
     setPackageListFiltered(sortedPackages);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packageList, rosCtx, selectedProvider]);
+  }, [
+    packageList,
+    rosCtx,
+    selectedProvider,
+    selectedPackage,
+    launchFileHistory,
+  ]);
 
   // Reset states upon packageList or history modification.
   useEffect(() => {
-    resetStates();
-  }, [resetStates]);
+    updateStates();
+  }, [selectedPackage, launchFileHistory]);
 
   /**
    * Callback function when a package is selected.
@@ -164,8 +181,6 @@ function PackageExplorer({ packageList, selectedProvider }) {
   const handleOnSelectPackage = useCallback(
     async (newSelectedPackage) => {
       if (!newSelectedPackage) return;
-
-      resetStates();
 
       const packagePath = newSelectedPackage.path;
       const packageName = newSelectedPackage.name;
@@ -268,7 +283,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
       setPackageItemList(itemList);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.getProviderById, selectedProvider],
+    [rosCtx.getProviderById, selectedProvider, setSelectedPackage],
   );
 
   /**
@@ -306,7 +321,6 @@ function PackageExplorer({ packageList, selectedProvider }) {
   const handleSelect = useCallback(
     (event, itemId) => {
       const callbackFile = packageItemList.find((item) => item.id === itemId);
-
       if (callbackFile) {
         setSelectedFile(callbackFile);
       } else {
@@ -390,7 +404,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
           getOptionLabel={(option) => option.name}
           // sx={{ flexGrow: 1 }}
           // This prevents warnings on invalid autocomplete values
-          value={null}
+          value={selectedPackage}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -404,18 +418,20 @@ function PackageExplorer({ packageList, selectedProvider }) {
             />
           )}
           onChange={(event, newSelectedPackage) => {
+            if (!newSelectedPackage) {
+              setSelectedPackage(null);
+            }
             setSelectedPackage(newSelectedPackage);
-            if (!newSelectedPackage) return;
             handleOnSelectPackage(newSelectedPackage);
           }}
           onInputChange={(event, newInputValue) => {
             searchCallback(newInputValue);
           }}
-          isOptionEqualToValue={(option, value) => {
-            return (
-              value === undefined || value === '' || option.path === value.path
-            );
-          }}
+          // isOptionEqualToValue={(option, value) => {
+          //   return (
+          //     value === undefined || value === '' || option.path === value.path
+          //   );
+          // }}
         />
         {ignoringNonRelevantPackageFiles && (
           <Tag
