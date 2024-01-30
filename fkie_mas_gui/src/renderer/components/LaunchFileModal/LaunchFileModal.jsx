@@ -198,6 +198,7 @@ function LaunchFileModal({
           hList = [];
         }
         hList.unshift(arg.value);
+        hList = hList.slice(0, 10);
         argHistory[arg.name] = hList;
       });
       setArgHistory(argHistory);
@@ -308,23 +309,19 @@ function LaunchFileModal({
     [currentArgs],
   );
 
-  const isPathParam = (name) => {
-    if (name.includes('file')) {
-      return true;
+  const isPathParam = (name, value) => {
+    const lValue = value.toLocaleLowerCase();
+    if (['true', 'false'].includes(lValue)) {
+      return false;
     }
-    if (name.includes('path')) {
-      return true;
+    const lName = name.toLocaleLowerCase();
+    if (lName.includes('frame')) {
+      return false;
     }
-    if (name.includes('bag')) {
-      return true;
+    if (lName.includes('[')) {
+      return false;
     }
-    if (name.includes('config')) {
-      return true;
-    }
-    if (name.includes('world_name')) {
-      return true;
-    }
-    return false;
+    return Number.isNaN(Number(value));
   };
 
   return (
@@ -412,7 +409,7 @@ function LaunchFileModal({
                         );
                       }}
                     />
-                    {isPathParam(arg.name) && (
+                    {isPathParam(arg.name, arg.value) && (
                       <IconButton
                         component="label"
                         // sx={{
