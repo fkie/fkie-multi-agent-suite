@@ -125,9 +125,11 @@ var SAVEABLE_TABS_LIST = Object.keys(SAVEABLE_TABS).map(function (key) {
 
 const DEFAULT_LAYOUT = {
   dockbox: {
+    id: 'root',
     mode: 'vertical',
     children: [
       {
+        id: 'hRoot',
         mode: 'horizontal',
         children: [
           {
@@ -160,7 +162,7 @@ const PANEL_SIZES = {
   screen: { w: 820, h: 450 },
   log: { w: 800, h: 550 },
   terminal: { w: 720, h: 480 },
-  editor: { w: 1240, h: 720 },
+  editor: { w: 1024, h: 720 },
   providers: { w: 800, h: 550 },
   'echo-topic': { w: 750, h: 550 },
 };
@@ -186,12 +188,14 @@ function NodeManager() {
   // rc-dock method to load a tab
   const loadTab = (data) => {
     const { id } = data;
+    console.log(`load ID: ${data.id}`);
     if (data.id in layoutComponents) {
       return layoutComponents[data.id];
     }
     let tab = null;
     switch (id) {
       case SAVEABLE_TABS.HOSTS:
+        console.log(`create new hosts`);
         tab = {
           id: SAVEABLE_TABS.HOSTS,
           title: 'Hosts',
@@ -454,7 +458,7 @@ function NodeManager() {
   // adds tabs to layout after event to create new tab was received and the 'addToLayout' was updated.
   useEffect(() => {
     if (addToLayout.length > 0) {
-      const tab = addToLayout.pop();
+      let tab = addToLayout.pop();
       setAddToLayout([...addToLayout]);
       let panel = null;
       if (tab.panelGroup && dockLayoutRef.current) {
@@ -469,7 +473,24 @@ function NodeManager() {
           );
         }
       }
-      dockLayoutRef.current.dockMove(tab, panel, panel ? 'middle' : 'float');
+      if (!panel && ['screen', 'log'].includes(tab.id.split('-')[0])) {
+        tab = {
+          size: 120,
+          tabs: [tab],
+          activeId: tab.id,
+        };
+        const hostPanel = getPanelFromLayout(
+          'main',
+          dockLayoutRef.current.state.layout.dockbox,
+        );
+        dockLayoutRef.current.dockMove(
+          tab,
+          hostPanel ? hostPanel : dockLayoutRef.current.state.layout.dockbox,
+          'bottom',
+        );
+      } else {
+        dockLayoutRef.current.dockMove(tab, panel, panel ? 'middle' : 'float');
+      }
     }
   }, [addToLayout, getPanelFromLayout]);
 
