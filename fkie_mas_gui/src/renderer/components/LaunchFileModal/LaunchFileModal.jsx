@@ -310,6 +310,10 @@ function LaunchFileModal({
   );
 
   const isPathParam = (name, value) => {
+    if (!value) {
+      // offer path select dialog on empty string
+      return true;
+    }
     const lValue = value.toLocaleLowerCase();
     if (['true', 'false'].includes(lValue)) {
       return false;
