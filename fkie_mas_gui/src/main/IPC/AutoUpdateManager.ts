@@ -41,7 +41,7 @@ class AutoUpdateManager {
     });
     autoUpdater.on('error', (err) => {
       if (this.mainWindow)
-        this.mainWindow.webContents.send('update-error', err);
+        this.mainWindow.webContents.send('update-error', err.message);
     });
     autoUpdater.on('download-progress', (progressObj) => {
       if (this.mainWindow)
@@ -54,14 +54,17 @@ class AutoUpdateManager {
 
     ipcMain.on('check-for-updates', () => {
       if (this.isChecking) return;
-      autoUpdater.checkForUpdates();
       if (process.env.APPIMAGE === undefined) {
         if (this.mainWindow)
           this.mainWindow.webContents.send(
             'update-error',
             'APPIMAGE env is not defined, current application is not an AppImage',
           );
+        return;
       }
+      autoUpdater.checkForUpdates().catch(() => {
+        this.isChecking = false;
+      });
     });
     ipcMain.on('quit-and-install', () => {
       autoUpdater.quitAndInstall();

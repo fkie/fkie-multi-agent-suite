@@ -1,4 +1,12 @@
-import { Box, Button, Link, Stack, Typography } from '@mui/material';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import {
+  Box,
+  Button,
+  IconButton,
+  Link,
+  Stack,
+  Typography,
+} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
 import { useContext, useEffect, useState } from 'react';
@@ -6,6 +14,7 @@ import { useContext, useEffect, useState } from 'react';
 import packageJson from '../../../../package.json';
 import { LoggingContext } from '../../context/LoggingContext';
 import { SettingsContext } from '../../context/SettingsContext';
+import CopyButton from '../UI/CopyButton';
 
 function LinearProgressWithLabel(props) {
   return (
@@ -31,6 +40,7 @@ function About() {
   const [updateNotAvailable, setUpdateNotAvailable] = useState(null);
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [downloadedProgress, setDownloadedProgress] = useState(null);
+  const [openErrorTooltip, setOpenErrorTooltip] = useState(false);
 
   function checkForUpdate() {
     logCtx.debug(
@@ -82,6 +92,7 @@ function About() {
     window.autoUpdate.receive('update-error', (data) => {
       setCheckingForUpdate(false);
       setUpdateError(data);
+      logCtx.debug('update failed', data);
     });
 
     if (settingsCtx.get('checkForUpdates')) {
@@ -98,48 +109,73 @@ function About() {
         <Typography variant="body">{packageJson.version}</Typography>
 
         {window.autoUpdate && (
-          <Stack spacing={0.2} direction="row">
-            {checkingForUpdate && (
-              <Box sx={{ display: 'flex' }}>
-                <CircularProgress size="1em" />
-              </Box>
-            )}
-            <Typography variant="body" color="red">
-              {updateError}
-            </Typography>
-            {updateAvailable && !updateDownloaded && (
-              <Stack spacing={0.2} direction="row">
+          <Stack spacing={0.2} direction="column">
+            <Stack spacing={0.2} direction="row">
+              {checkingForUpdate && (
+                <Box sx={{ display: 'flex' }}>
+                  <CircularProgress size="1em" />
+                </Box>
+              )}
+              {updateAvailable && !updateDownloaded && (
+                <Stack spacing={0.2} direction="row">
+                  <Typography variant="body">
+                    downloading {updateAvailable.version}
+                  </Typography>
+                  {downloadedProgress && downloadedProgress.percent < 100 && (
+                    <Box sx={{ width: '100%' }}>
+                      <LinearProgressWithLabel
+                        value={downloadedProgress?.percent}
+                      />
+                    </Box>
+                  )}
+                </Stack>
+              )}
+              {updateNotAvailable && (
                 <Typography variant="body">
-                  downloading {updateAvailable.version}
+                  Your version is up to date!
                 </Typography>
-                {downloadedProgress && downloadedProgress.percent < 100 && (
-                  <Box sx={{ width: '100%' }}>
-                    <LinearProgressWithLabel
-                      value={downloadedProgress?.percent}
-                    />
-                  </Box>
-                )}
-              </Stack>
-            )}
-            {updateNotAvailable && (
-              <Typography variant="body">
-                Your version is up to date!
-              </Typography>
-            )}
-            {updateDownloaded && (
-              <Stack spacing={0.2} direction="row">
-                <Typography variant="body">
-                  Version {updateAvailable?.version} downloaded
-                </Typography>
-                <Button color="primary" onClick={installUpdate} variant="text">
-                  Restart and Install
+              )}
+              {updateDownloaded && (
+                <Stack spacing={0.2} direction="row">
+                  <Typography variant="body">
+                    Version {updateAvailable?.version} downloaded
+                  </Typography>
+                  <Button
+                    color="primary"
+                    onClick={installUpdate}
+                    variant="text"
+                  >
+                    Restart and Install
+                  </Button>
+                </Stack>
+              )}
+              {!checkingForUpdate && (
+                <Button color="primary" onClick={checkForUpdate} variant="text">
+                  check for updates
                 </Button>
+              )}
+              <IconButton
+                edge="start"
+                aria-label="error message"
+                onClick={() => {
+                  setOpenErrorTooltip(!openErrorTooltip);
+                }}
+              >
+                <ErrorOutlineIcon
+                  sx={{
+                    fontSize: 'inherit',
+                    color: 'red',
+                  }}
+                />
+              </IconButton>
+            </Stack>
+            {openErrorTooltip && (
+              <Stack mt={1} direction="row" justifyContent="center">
+                <CopyButton value={updateError} />
+                <Typography variant="body" color="red">
+                  {updateError}
+                </Typography>
               </Stack>
-            )}
-            {!checkingForUpdate && (
-              <Button color="primary" onClick={checkForUpdate} variant="text">
-                check for updates
-              </Button>
             )}
           </Stack>
         )}
