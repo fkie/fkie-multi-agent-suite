@@ -7,7 +7,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
+  IconButton,
   Tab,
   Tabs,
   Tooltip,
@@ -60,7 +60,7 @@ function SettingsModal() {
     <div>
       <Dialog
         keepMounted
-        id="connect-to-ros-modal"
+        id="settings-dialog"
         scroll="paper"
         PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
@@ -114,7 +114,7 @@ function SettingsModal() {
         placement="right"
         enterDelay={settingsCtx.get('tooltipEnterDelay')}
       >
-        <MenuItem
+        <IconButton
           sx={{
             padding: '0.8em',
             color: settingsCtx.get('useDarkMode')
@@ -123,8 +123,8 @@ function SettingsModal() {
           }}
           onClick={handleOpen}
         >
-          <SettingsIcon sx={{ fontSize: 28 }} />
-        </MenuItem>
+          <SettingsIcon sx={{ fontSize: 'inherit' }} />
+        </IconButton>
       </Tooltip>
     </div>
   );

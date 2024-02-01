@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  MenuItem,
+  Link,
   Stack,
   Table,
   TableBody,
@@ -17,6 +17,7 @@ import {
   TableHead,
   TableRow,
   Tooltip,
+  Typography,
 } from '@mui/material';
 
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -146,7 +147,27 @@ function ExternalAppsModal() {
                       sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                     >
                       <TableCell component="th" scope="row">
-                        {row.application}
+                        {!command && (
+                          <Typography variant="body2">
+                            {row.application}
+                          </Typography>
+                        )}
+                        {command && (
+                          <Link
+                            noWrap
+                            href="#"
+                            underline="none"
+                            color="inherit"
+                            onClick={() => {
+                              runApp(command);
+                              handleClose();
+                            }}
+                          >
+                            <Typography variant="body2">
+                              {row.application}
+                            </Typography>
+                          </Link>
+                        )}
                       </TableCell>
                       <TableCell>
                         {command && (
@@ -181,11 +202,11 @@ function ExternalAppsModal() {
         </DialogActions>
       </Dialog>
       <Tooltip
-        title="Apps"
+        title="External Apps"
         placement="right"
         enterDelay={settingsCtx.get('tooltipEnterDelay')}
       >
-        <MenuItem
+        <IconButton
           sx={{
             padding: '0.8em',
             color: settingsCtx.get('useDarkMode')
@@ -194,8 +215,8 @@ function ExternalAppsModal() {
           }}
           onClick={handleOpen}
         >
-          <AppsIcon sx={{ fontSize: 28 }} />
-        </MenuItem>
+          <AppsIcon sx={{ fontSize: 'inherit' }} />
+        </IconButton>
       </Tooltip>
     </Stack>
   );

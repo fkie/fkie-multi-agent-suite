@@ -64,7 +64,7 @@ function OverflowMenuNodeDetails({}) {
 
   return (
     <OverflowMenu
-      icon={<MoreVertSharpIcon sx={{ fontSize: 16 }} />}
+      icon={<MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />}
       options={nodeDetailsOptions}
       id="node-details-options"
     />

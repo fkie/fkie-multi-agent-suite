@@ -4,9 +4,8 @@ import { useContext, useState } from 'react';
 import MoreVertSharpIcon from '@mui/icons-material/MoreVert';
 import { Badge, Fade, IconButton, Menu, MenuItem } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { colorFromHostname } from '../../components/UI/Colors';
-import { LoggingContext } from '../../context/LoggingContext';
 import { SettingsContext } from '../../context/SettingsContext';
+import { colorFromHostname } from './Colors';
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   '& .MuiBadge-badge': {
@@ -20,8 +19,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const OverflowMenu = ({ icon, options, id, showBadge, colorizeItems }) => {
-  const logCtx = useContext(LoggingContext);
+function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
   const settingsCtx = useContext(SettingsContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -42,71 +40,69 @@ const OverflowMenu = ({ icon, options, id, showBadge, colorizeItems }) => {
         borderLeftWidth: '10px',
         fontSize: settingsCtx.fontSize,
       };
-    } else {
-      return { fontSize: settingsCtx.fontSize };
     }
+    return { fontSize: settingsCtx.fontSize };
   };
 
   return (
-    <>
-      <StyledBadge
-        color="default"
-        badgeContent={`${options.length}`}
-        invisible={!showBadge || options.length === 0}
-        // variant="dot"
-        // anchorOrigin={{
-        //   vertical: 'bottom',
-        //   horizontal: 'right',
+    <StyledBadge
+      color="default"
+      badgeContent={`${options.length}`}
+      invisible={!showBadge || options.length === 0}
+      // variant="dot"
+      // anchorOrigin={{
+      //   vertical: 'bottom',
+      //   horizontal: 'right',
+      // }}
+    >
+      <IconButton
+        aria-label={`${id}-icon`}
+        id={`${id}-icon`}
+        size="small"
+        aria-controls={open ? 'long-menu' : undefined}
+        aria-expanded={open ? 'true' : undefined}
+        aria-haspopup="true"
+        onClick={handleClick}
+        onMouseDown={handleClick}
+      >
+        {icon}
+      </IconButton>
+      <Menu
+        id={`${id}-menu`}
+        size="small"
+        MenuListProps={{
+          'aria-labelledby': 'long-button',
+        }}
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        TransitionComponent={Fade}
+        // PaperProps={{
+        //   style: {
+        //     maxHeight: 10 * 4.5,
+        //     width: '20ch',
+        //   },
         // }}
       >
-        <IconButton
-          aria-label={`${id}-icon`}
-          id={`${id}-icon`}
-          size="small"
-          aria-controls={open ? 'long-menu' : undefined}
-          aria-expanded={open ? 'true' : undefined}
-          aria-haspopup="true"
-          onClick={handleClick}
-        >
-          {icon}
-        </IconButton>
-        <Menu
-          id={`${id}-menu`}
-          size="small"
-          MenuListProps={{
-            'aria-labelledby': 'long-button',
-          }}
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleClose}
-          TransitionComponent={Fade}
-          // PaperProps={{
-          //   style: {
-          //     maxHeight: 10 * 4.5,
-          //     width: '20ch',
-          //   },
-          // }}
-        >
-          {options.map((option) => {
-            return (
-              <MenuItem
-                size="small"
-                key={option.key}
-                onClick={() => {
-                  option.onClick();
-                  handleClose();
-                }}
-                sx={getSxPropByName(option.name)}
-              >
-                {option.name}
-              </MenuItem>
-            );
-          })}
-        </Menu>
-      </StyledBadge>
-    </>
+        {options.map((option) => {
+          return (
+            <MenuItem
+              size="small"
+              key={option.key}
+              onClick={() => {
+                option.onClick();
+                handleClose();
+              }}
+              sx={getSxPropByName(option.name)}
+            >
+              {option.name}
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </StyledBadge>
   );
-};
+}
 
 OverflowMenu.defaultProps = {
   icon: <MoreVertSharpIcon sx={{ fontSize: 16 }} />,

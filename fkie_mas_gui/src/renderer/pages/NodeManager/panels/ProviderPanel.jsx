@@ -45,6 +45,7 @@ import {
   eventOpenSettings,
 } from '../../../utils/events';
 
+import { LAYOUT_TABS } from '../layout';
 import OverflowMenuProvider from './OverflowMenuProvider';
 import SystemInformationPanel from './SystemInformationPanel';
 
@@ -114,7 +115,7 @@ function ProviderPanel() {
           <SystemInformationPanel providerId={providerId} />,
           false,
           true,
-          'providers',
+          LAYOUT_TABS.PROVIDER,
         ),
       );
       return;

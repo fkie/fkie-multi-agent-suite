@@ -19,6 +19,7 @@ import { emitCustomEvent } from 'react-custom-events';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { getFileName } from '../../models';
+import { LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
 import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
 import LaunchFilePanel from '../../pages/NodeManager/panels/LaunchFilePanel';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
@@ -90,7 +91,7 @@ function LaunchFileList({
           <LaunchFilePanel launchContent={launchContent} />,
           true,
           true,
-          '',
+          LAYOUT_TAB_SETS.BORDER_TOP,
         ),
       );
     },

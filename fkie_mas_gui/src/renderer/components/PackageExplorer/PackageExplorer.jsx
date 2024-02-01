@@ -30,6 +30,8 @@ import {
   SettingsContext,
 } from '../../context/SettingsContext';
 
+import { LAYOUT_TABS, LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
+
 import { getFileExtension, getFileName } from '../../models';
 
 import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
@@ -125,7 +127,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
     // inform host panel tab about loaded launch file
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
-      eventOpenComponent('hosts-tab', 'default', {}, false),
+      eventOpenComponent(LAYOUT_TABS.HOSTS, 'default', {}, false),
     );
   }, [
     rosCtx,
@@ -346,7 +348,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
           />,
           false,
           true,
-          'editor',
+          LAYOUT_TAB_SETS.BORDER_TOP,
         ),
       );
     },

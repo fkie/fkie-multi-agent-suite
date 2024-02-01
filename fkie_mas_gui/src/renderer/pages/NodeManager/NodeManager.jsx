@@ -1,14 +1,23 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
-import { Stack } from '@mui/material';
-import DockLayout from 'rc-dock';
+import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
+import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
+import TopicIcon from '@mui/icons-material/Topic';
+import TuneIcon from '@mui/icons-material/Tune';
+import { Badge, IconButton, Stack, Tooltip } from '@mui/material';
+import { useDebounceCallback } from '@react-hook/debounce';
+import { Actions, DockLocation, Layout, Model } from 'flexlayout-react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useCustomEventListener } from 'react-custom-events';
+import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 
+import ExternalAppsModal from '../../components/ExternalAppsModal/ExternalAppsModal';
+import ProviderSelectionModal from '../../components/SelectionModal/ProviderSelectionModal';
+import SettingsModal from '../../components/SettingsModal/SettingsModal';
 import { ElectronContext } from '../../context/ElectronContext';
+import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
-import { EVENT_OPEN_COMPONENT } from '../../utils/events';
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
 import HostTreeViewPanel from './panels/HostTreeViewPanel';
 import LoggingPanel from './panels/LoggingPanel';
 import NodesDetailsPanel from './panels/NodesDetailsPanel';
@@ -21,572 +30,351 @@ import TopicsPanel from './panels/TopicsPanel';
 
 import useLocalStorage from '../../hooks/useLocalStorage';
 
-import ProviderSelectionModal from '../../components/SelectionModal/ProviderSelectionModal';
-
 import './NodeManager.css';
-
-// add close button to panel if only closable tabs are inside
-const PANEL_GROUPS = {
-  'close-all': {
-    floatable: true,
-    closable: true,
-    panelExtra: (panelData, context) => {
-      const buttons = [];
-      if (!window.CommandExecutor) {
-        buttons.push(
-          <span
-            className="dock-panel-new-window-btn"
-            key="new-window"
-            title="Open in new window"
-            onClick={() => context.dockMove(panelData, null, 'new-window')}
-          >
-            ⇪
-          </span>,
-        );
-      }
-      if (panelData.parent.mode !== 'window') {
-        buttons.push(
-          <div
-            className={
-              panelData.parent.mode === 'maximize'
-                ? 'dock-panel-min-btn'
-                : 'dock-panel-max-btn'
-            }
-            key="maximize"
-            title={
-              panelData.parent.mode === 'maximize' ? 'Restore' : 'Maximize'
-            }
-            onClick={() => context.dockMove(panelData, null, 'maximize')}
-          >
-            {/* {panelData.parent.mode === 'maximize' ? '▬' : '▣'} */}
-          </div>,
-        );
-      }
-      buttons.push(
-        <div
-          className="dock-panel-close-btn"
-          key="close"
-          title="Close Panel"
-          onClick={() => context.dockMove(panelData, null, 'remove')}
-        />,
-      );
-      return <div className="dock-extra-content">{buttons}</div>;
-    },
-  },
-  'new-win': {
-    floatable: true,
-    closable: true,
-    panelExtra: (panelData, context) => {
-      const buttons = [];
-      if (!window.CommandExecutor) {
-        buttons.push(
-          <span
-            className="dock-panel-new-window-btn"
-            key="new-window"
-            title="Open in new window"
-            onClick={() => context.dockMove(panelData, null, 'new-window')}
-          >
-            ⇪
-          </span>,
-        );
-      }
-      if (panelData.parent.mode !== 'window') {
-        buttons.push(
-          <div
-            className={
-              panelData.parent.mode === 'maximize'
-                ? 'dock-panel-min-btn'
-                : 'dock-panel-max-btn'
-            }
-            key="maximize"
-            title={
-              panelData.parent.mode === 'maximize' ? 'Restore' : 'Maximize'
-            }
-            onClick={() => context.dockMove(panelData, null, 'maximize')}
-          >
-            {/* {panelData.parent.mode === 'maximize' ? '▬' : '▣'} */}
-          </div>,
-        );
-      }
-      return <div className="dock-extra-content">{buttons}</div>;
-    },
-  },
-};
-
-const SAVEABLE_TABS = {
-  HOSTS: 'hosts-tab',
-  PACKAGES: 'packages-tab',
-  PROVIDER: 'provider-tab',
-  NODE_DETAILS: 'node-details-tab',
-  PARAMETER: 'parameter-tab',
-  TOPICS: 'topics-tab',
-  SERVICES: 'services-tab',
-  LOGGING: 'logging-tab',
-};
-var SAVEABLE_TABS_LIST = Object.keys(SAVEABLE_TABS).map(function (key) {
-  return SAVEABLE_TABS[key];
-});
-
-const DEFAULT_LAYOUT = {
-  dockbox: {
-    id: 'root',
-    mode: 'vertical',
-    children: [
-      {
-        id: 'hRoot',
-        mode: 'horizontal',
-        children: [
-          {
-            mode: 'vertical',
-            children: [
-              {
-                tabs: [{ id: SAVEABLE_TABS.PROVIDER, title: 'Providers' }],
-              },
-              {
-                tabs: [{ id: SAVEABLE_TABS.PACKAGES, title: 'Packages' }],
-              },
-              {
-                tabs: [
-                  { id: SAVEABLE_TABS.NODE_DETAILS, title: 'Node Details' },
-                ],
-              },
-            ],
-          },
-          {
-            tabs: [{ id: SAVEABLE_TABS.HOSTS, title: 'Hosts' }],
-          },
-        ],
-      },
-    ],
-  },
-};
-
-const PANEL_SIZES = {
-  parameter: { w: 720, h: 500 },
-  screen: { w: 820, h: 450 },
-  log: { w: 800, h: 550 },
-  terminal: { w: 720, h: 480 },
-  editor: { w: 1024, h: 720 },
-  providers: { w: 800, h: 550 },
-  'echo-topic': { w: 750, h: 550 },
-};
+import {
+  DEFAULT_LAYOUT,
+  LAYOUT_TABS,
+  LAYOUT_TAB_LIST,
+  LAYOUT_TAB_SETS,
+} from './layout';
 
 function NodeManager() {
-  // const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useContext(RosContext);
-  const dockLayoutRef = useRef(null);
+  const logCtx = useContext(LoggingContext);
+  const settingsCtx = useContext(SettingsContext);
+  const [layoutJson, setLayoutJson] = useLocalStorage('layout', DEFAULT_LAYOUT);
+  const [model, setModel] = useState(Model.fromJson(layoutJson));
+  const layoutRef = useRef(null);
   const [layoutComponents] = useState({});
   const [addToLayout, setAddToLayout] = useState([]);
-  const [layoutSaved, setLayoutSaved] = useLocalStorage(
-    'NodeManager:layout',
-    DEFAULT_LAYOUT,
-  );
-  const [layout, setLayout] = useState(layoutSaved);
-  const [layoutSizesAssigned] = useState([]);
-  const nonePanels = {
-    screen: [],
-    log: [],
-    editor: [],
-  };
 
-  // rc-dock method to load a tab
-  const loadTab = (data) => {
-    const { id } = data;
-    console.log(`load ID: ${data.id}`);
-    if (data.id in layoutComponents) {
-      return layoutComponents[data.id];
-    }
-    let tab = null;
-    switch (id) {
-      case SAVEABLE_TABS.HOSTS:
-        console.log(`create new hosts`);
-        tab = {
-          id: SAVEABLE_TABS.HOSTS,
-          title: 'Hosts',
-          closable: false,
-          content: <HostTreeViewPanel key="host-panel" />,
-          panelGroup: 'main',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.PACKAGES:
-        tab = {
-          id: SAVEABLE_TABS.PACKAGES,
-          title: 'Packages',
-          closable: false,
-          content: <PackageExplorerPanel key="pkg-panel" />,
-          panelGroup: 'explorer',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.PROVIDER:
-        tab = {
-          id: SAVEABLE_TABS.PROVIDER,
-          title: 'Providers',
-          closable: false,
-          content: <ProviderPanel key="providers-panel" />,
-          panelGroup: 'providers',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.NODE_DETAILS:
-        tab = {
-          id: SAVEABLE_TABS.NODE_DETAILS,
-          title: (
-            <div>
-              Node Details <OverflowMenuNodeDetails />
-            </div>
-          ),
-          closable: false,
-          content: <NodesDetailsPanel key="details-panel" />,
-          panelGroup: 'details',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.PARAMETER:
-        tab = {
-          id: SAVEABLE_TABS.PARAMETER,
-          title: 'Parameter',
-          closable: true,
-          content: <ParameterPanel nodes={null} providers={null} />,
-          panelGroup: 'main',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.TOPICS:
-        tab = {
-          id: SAVEABLE_TABS.TOPICS,
-          title: 'Topics',
-          closable: true,
-          content: <TopicsPanel />,
-          panelGroup: 'main',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.SERVICES:
-        tab = {
-          id: SAVEABLE_TABS.SERVICES,
-          title: 'Services',
-          closable: true,
-          content: <ServicesPanel />,
-          panelGroup: 'main',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      case SAVEABLE_TABS.LOGGING:
-        tab = {
-          id: SAVEABLE_TABS.LOGGING,
-          title: 'Logging',
-          closable: true,
-          content: <LoggingPanel />,
-          panelGroup: 'main',
-          minWidth: 3,
-          minHeight: 3,
-        };
-        break;
-      default:
-        tab = null;
-        if (!data.panelGroup) {
-          const prefix = data.id.split('-')[0];
-          // allow only few
-          if (Object.keys(nonePanels).includes(prefix)) {
-            if (nonePanels[prefix].length === 0) {
-              nonePanels[prefix].push(data.id);
-              data.panelGroup = prefix;
-              data.title = prefix + 's';
-              data.closable = false;
-              data.id = prefix + '-' + nonePanels[prefix].length;
-              tab = data;
-            }
-          }
-        }
-    }
-    if (tab !== null) {
-      layoutComponents[data.id] = tab;
-    }
-    return tab;
-  };
-
-  // searches for a panel which contains tabs which id starting with given prefix id
-  const getPanelFromLayout = useCallback((idPrefix, subLayout) => {
-    if (subLayout.children && idPrefix) {
-      for (let i = 0; i < subLayout.children.length; i += 1) {
-        const child = subLayout.children[i];
-        if (child.children?.length > 0) {
-          const found = getPanelFromLayout(idPrefix, child);
-          if (found) {
-            return found;
-          }
-        } else if (child.tabs?.length > 0) {
-          for (let c = 0; c < child.tabs.length; c += 1) {
-            const tab = child.tabs[c];
-            if (tab.panelGroup?.localeCompare(idPrefix) === 0) {
-              return child;
-            }
-          }
-        }
-      }
-    }
-    return null;
-  }, []);
-
-  const getSaveableTabs = useCallback((children) => {
-    return children.filter((child) => {
-      const newChild = {};
-      Object.keys(child).forEach((key) => {
-        if (key === 'children') {
-          newChild[key] = getSaveableTabs(child.children);
-        } else if (key === 'tabs') {
-          newChild[key] = child.tabs.filter((tab) => {
-            return Object.values(SAVEABLE_TABS).includes(tab.id);
-          });
-        } else {
-          newChild[key] = child[key];
-        }
-      });
-      return newChild.tabs?.length > 0 || newChild.children?.length > 0;
-    });
-  }, []);
-
-  useEffect(() => {
-    // save layout
-    // copy the origin layout
-    const newLayout = {};
-    // remove all empty panels and not saveable tabs
-    Object.keys(layout).forEach((boxKey) => {
-      const newBox = {};
-      Object.keys(layout[boxKey]).forEach((key) => {
-        newBox[key] =
-          key === 'children'
-            ? getSaveableTabs(layout[boxKey][key])
-            : layout[boxKey][key];
-      });
-      newLayout[boxKey] = newBox;
-    });
-    setLayoutSaved(newLayout);
-  }, [getSaveableTabs, layout, setLayoutSaved]);
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   useEffect(() => {
     if (settingsCtx.get('resetLayout')) {
-      setLayoutSaved(DEFAULT_LAYOUT);
-      setLayout(DEFAULT_LAYOUT);
+      setLayoutJson(DEFAULT_LAYOUT);
+      setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set('resetLayout', false);
     }
-  }, [settingsCtx, setLayoutSaved]);
-
-  // checks if the panel contains only closable tabs
-  const hasOnlyCloseableTabs = (panel) => {
-    for (let c = 0; c < panel.tabs.length; c += 1) {
-      if (!panel.tabs[c].closable) {
-        return false;
-      }
-    }
-    return true;
-  };
-
-  // searches for tab with given id in the given RC-dock layout.
-  const findTab = (id, subLayout) => {
-    if (subLayout.children && id) {
-      for (let i = 0; i < subLayout.children.length; i += 1) {
-        const child = subLayout.children[i];
-        if (child.children?.length > 0) {
-          for (let c = 0; c < child.children.length; c += 1) {
-            const subChild = child.children[c];
-            const tab = findTab(id, subChild);
-            if (tab) {
-              return tab;
-            }
-          }
-        } else if (child.tabs?.length > 0) {
-          const tab = findTab(id, child);
-          if (tab) {
-            return tab;
-          }
-        }
-      }
-    } else if (subLayout.tabs?.length > 0) {
-      for (let c = 0; c < subLayout.tabs.length; c += 1) {
-        const tab = subLayout.tabs[c];
-        if (tab.id.localeCompare(id) === 0) {
-          return tab;
-        }
-      }
-    } else if (subLayout.dockbox) {
-      let tab = null;
-      const layoutKeys = Object.keys(subLayout); // boxKey: [dockbox, floatbox, maxbox, windowbox]
-      for (let k = 0; k < layoutKeys.length; k += 1) {
-        tab = findTab(id, subLayout[layoutKeys[k]]);
-        if (tab) {
-          return tab;
-        }
-      }
-    }
-    return null;
-  };
+  }, [settingsCtx, setLayoutJson, setModel]);
 
   useCustomEventListener(EVENT_OPEN_COMPONENT, (data) => {
-    if (data.id in SAVEABLE_TABS_LIST) {
+    const node = model.getNodeById(data.id);
+    if (node) {
       // activate already existing tab.
-      if (dockLayoutRef.current) {
-        dockLayoutRef.current.updateTab(data.id, loadTab(data));
-      }
-    } else if (data.id in layoutComponents) {
-      // activate already existing tab.
-      if (dockLayoutRef.current) {
-        dockLayoutRef.current.updateTab(data.id, layoutComponents[data.id]);
-      }
+      model.doAction(Actions.selectTab(data.id));
     } else {
       // create a new tab
       const tab = {
         id: data.id,
-        title: data.title,
-        closable: data.closable,
-        content: data.component,
+        type: 'tab',
+        name: data.title,
+        component: data.id,
         panelGroup: data.panelGroup,
-        minWidth: 15,
-        minHeight: 15,
+        enableClose: data.closable,
+        enableFloat: !window.CommandExecutor,
       };
-      layoutComponents[data.id] = tab;
+      layoutComponents[data.id] = data.component;
       // store new tabs using useEffect so dockMove() can create panels if events comes to fast
       setAddToLayout((oldValue) => [tab, ...oldValue]);
     }
   });
 
+  const getPanelId = useCallback(
+    (id, panelGroup) => {
+      const result = {
+        id: panelGroup,
+        isBorder: false,
+        location: DockLocation.CENTER,
+      };
+      if (panelGroup.startsWith('border')) {
+        // search first for a tab with same start prefix
+      }
+      switch (panelGroup) {
+        case LAYOUT_TAB_SETS.BORDER_TOP:
+          result.isBorder = true;
+          result.location = DockLocation.TOP;
+          break;
+        case LAYOUT_TAB_SETS.BORDER_BOTTOM:
+          result.isBorder = true;
+          result.location = DockLocation.BOTTOM;
+          break;
+        case LAYOUT_TAB_SETS.BORDER_RIGHT:
+          result.isBorder = true;
+          result.location = DockLocation.RIGHT;
+          break;
+        default:
+          // it could be a tabset id
+          result.isBorder = false;
+          break;
+      }
+      if (result.isBorder) {
+        result.id = model
+          .getBorderSet()
+          .getBorders()
+          .find((b) => b.getLocation() === result.location)
+          ?.getId();
+      } else {
+        const nodeBId = model.getNodeById(panelGroup);
+        if (LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
+          result.id = nodeBId.getParent().getId();
+        }
+      }
+      return result;
+    },
+    [model],
+  );
+
   // adds tabs to layout after event to create new tab was received and the 'addToLayout' was updated.
   useEffect(() => {
     if (addToLayout.length > 0) {
-      let tab = addToLayout.pop();
-      setAddToLayout([...addToLayout]);
-      let panel = null;
-      if (tab.panelGroup && dockLayoutRef.current) {
-        panel = getPanelFromLayout(
-          tab.panelGroup,
-          dockLayoutRef.current.state.layout.dockbox,
-        );
-        if (!panel) {
-          panel = getPanelFromLayout(
-            tab.panelGroup,
-            dockLayoutRef.current.state.layout.floatbox,
+      const tab = addToLayout.pop();
+      const panelId = getPanelId(tab.id, tab.panelGroup);
+      const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, -1);
+      model.doAction(action);
+      if (panelId.isBorder && panelId.id) {
+        // If a tab in the same border is visible,
+        // selectTab causes the new tab to hide
+        const shouldSelectNewTab = !model
+          .getBorderSet()
+          .getBorders()
+          .find((b) => b.getLocation() === panelId.location)
+          .getChildren()
+          .map((c) => c.isVisible())
+          .includes(true);
+
+        if (shouldSelectNewTab) {
+          model.doAction(
+            Actions.selectTab(
+              model
+                .getBorderSet()
+                .getBorders()
+                .find((b) => b.getLocation() === panelId.location)
+                .getChildren()
+                .slice(-1)[0] // Get last children === new tab
+                .getId(),
+            ),
           );
         }
       }
-      if (!panel && ['screen', 'log'].includes(tab.id.split('-')[0])) {
-        tab = {
-          size: 120,
-          tabs: [tab],
-          activeId: tab.id,
-        };
-        const hostPanel = getPanelFromLayout(
-          'main',
-          dockLayoutRef.current.state.layout.dockbox,
-        );
-        dockLayoutRef.current.dockMove(
-          tab,
-          hostPanel ? hostPanel : dockLayoutRef.current.state.layout.dockbox,
-          'bottom',
-        );
-      } else {
-        dockLayoutRef.current.dockMove(tab, panel, panel ? 'middle' : 'float');
-      }
+      setAddToLayout([...addToLayout]);
     }
-  }, [addToLayout, getPanelFromLayout]);
+  }, [addToLayout, getPanelId, model]);
 
-  // remove stored tabs on layout change
-  const onLayoutChange = (newLayout, currentTabId, direction) => {
-    if (direction === 'remove') {
-      // remove saved tab from saved layout map
-      delete layoutComponents[currentTabId];
-      // if panel with multiple tabs is closed, we have to check and remove other tabs.
-      Object.keys(layoutComponents).forEach((key) => {
-        const tab = findTab(key, newLayout);
-        if (!tab) {
-          delete layoutComponents[key];
+  const factory = (node) => {
+    const component = node.getComponent();
+    switch (component) {
+      case LAYOUT_TABS.HOSTS:
+        return <HostTreeViewPanel key="host-panel" />;
+      case LAYOUT_TABS.PROVIDER:
+        return <ProviderPanel key="providers-panel" />;
+      case LAYOUT_TABS.PACKAGES:
+        return <PackageExplorerPanel key="pkg-panel" />;
+      case LAYOUT_TABS.NODE_DETAILS:
+        return <NodesDetailsPanel key="node-details-panel" />;
+      case LAYOUT_TABS.LOGGING:
+        return <LoggingPanel key="logging-panel" />;
+      case LAYOUT_TABS.TOPICS:
+        return <TopicsPanel key="topics-panel" />;
+      case LAYOUT_TABS.SERVICES:
+        return <ServicesPanel key="services-panel" />;
+      default:
+        return layoutComponents[component];
+    }
+  };
+
+  function onRenderTab(
+    node /* TabNode */,
+    renderValues /* ITabRenderValues */,
+  ) {
+    switch (node.getId()) {
+      case LAYOUT_TABS.LOGGING:
+        renderValues.content = '';
+        renderValues.leading = (
+          <Tooltip
+            title="Logging (mas gui)"
+            placement="top"
+            enterDelay={tooltipDelay}
+          >
+            <Badge
+              color="info"
+              badgeContent={`${logCtx.countErrors}`}
+              invisible={logCtx.countErrors === 0}
+              // variant="standard"
+              // anchorOrigin="top"
+              sx={{
+                '& .MuiBadge-badge': { fontSize: 9, height: 12, minWidth: 12 },
+              }}
+            >
+              <DesktopWindowsOutlinedIcon sx={{ fontSize: 'inherit' }} />
+            </Badge>
+          </Tooltip>
+        );
+        renderValues.name = 'Option';
+        break;
+      case LAYOUT_TABS.NODE_DETAILS:
+        renderValues.buttons.push(
+          <OverflowMenuNodeDetails key="overflow-node-details" />,
+        );
+        break;
+      default:
+        break;
+    }
+    // renderValues.content = (<div>hello</div>);
+    // renderValues.content += " *";
+    // renderValues.leading = <img style={{width:"1em", height:"1em"}}src="images/folder.svg"/>;
+    // renderValues.name = "tab " + node.getId(); // name used in overflow menu
+    // renderValues.buttons.push(<div style={{flexGrow:1}}></div>);
+    // renderValues.buttons.push(<img style={{width:"1em", height:"1em"}} src="images/folder.svg"/>);
+  }
+
+  function pAddTabStickyButton(container, id, title, component, setId, icon) {
+    if (!model.getNodeById(id)) {
+      container.push(
+        <Tooltip
+          key={`tooltip-${id}`}
+          title={title}
+          placement="right"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+        >
+          <span>
+            <IconButton
+              onClick={() =>
+                emitCustomEvent(
+                  EVENT_OPEN_COMPONENT,
+                  eventOpenComponent(id, title, component, false, true, setId),
+                )
+              }
+            >
+              {icon}
+            </IconButton>
+          </span>
+        </Tooltip>,
+      );
+    }
+  }
+
+  function onRenderTabSet(
+    node /* TabSetNode */,
+    renderValues /* ITabSetRenderValues */,
+  ) {
+    const children = node.getChildren();
+    children.forEach((child) => {
+      if (child.getId() === LAYOUT_TABS.HOSTS) {
+        pAddTabStickyButton(
+          renderValues.stickyButtons,
+          LAYOUT_TABS.TOPICS,
+          'Topics',
+          <TopicsPanel />,
+          node.getId(),
+          <TopicIcon sx={{ fontSize: 'inherit' }} />,
+        );
+        pAddTabStickyButton(
+          renderValues.stickyButtons,
+          LAYOUT_TABS.SERVICES,
+          'Services',
+          <ServicesPanel />,
+          node.getId(),
+          <FeaturedPlayListIcon sx={{ fontSize: 'inherit' }} />,
+        );
+        pAddTabStickyButton(
+          renderValues.stickyButtons,
+          LAYOUT_TABS.PARAMETER,
+          'Parameter',
+          <ParameterPanel nodes={null} />,
+          node.getId(),
+          <TuneIcon sx={{ fontSize: 'inherit' }} />,
+        );
+        if (window.CommandExecutor) {
+          renderValues.buttons.push(
+            <ExternalAppsModal key="external-apps-dialog" />,
+          );
         }
-      });
-    }
-    if (direction === 'move') {
-      // TODO save size
-    }
-    // save layout
-    setLayout(newLayout);
-  };
+      }
+      if (child.getId() === LAYOUT_TABS.PROVIDER) {
+        renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
+      }
+    });
+  }
 
-  // TODO: change the size and position of the new float panels
-  const afterPanelLoaded = (savedPanel, panelData) => {
-    const panelGroup = panelData?.tabs[0]?.panelGroup;
-    const panelId = `${panelGroup}-${panelData.id}`;
-    if (!layoutSizesAssigned.includes(panelId)) {
-      if (panelGroup in PANEL_SIZES) {
-        panelData.w = PANEL_SIZES[panelGroup].w;
-        panelData.h = PANEL_SIZES[panelGroup].h;
+  function removeGenericTabs(parent) {
+    if (!parent.children) return parent;
+    parent.children = parent.children.filter((item) => {
+      if (item.type === 'tab' && LAYOUT_TAB_LIST.includes(item.id)) {
+        return true;
       }
-      // TODO: set origin X/Y position of panel
-      layoutSizesAssigned.push(panelId);
-      if (hasOnlyCloseableTabs(panelData)) {
-        // add close button to panel, so we can close multiple tabs at once.
-        // after this the tabs of this panel can not be added to 'main', 'details' or other panels.
-        panelData.group = 'close-all';
-      } else if (panelData?.tabs[0].closable) {
-        panelData.group = 'new-win';
+      if (item.children) {
+        removeGenericTabs(item);
+        return true;
       }
-    }
-    // console.log('panelData:', Object.getOwnPropertyNames(panelData));
-    // console.log('panelData. id:', panelData.id);
-    // console.log('panelData. w:', panelData.w);
-    // console.log('panelData. h:', panelData.h);
-    // console.log('panelData. size:', panelData.size);
-    // console.log('panelData. group:', panelData.group);
-    // console.log('panelData panelGroup:', panelData.tabs[0]?.panelGroup);
-  };
+      return false;
+    });
+    return parent;
+  }
+
+  /** removes all tab from layout not listed in LAYOUT_TAB_LIST */
+  const cleanAndSaveLayout = useDebounceCallback(
+    (/* model */) => {
+      const modelJson = model.toJson();
+      modelJson.borders.forEach((item) => {
+        item.selected = -1;
+        removeGenericTabs(item);
+      });
+      modelJson.layout = removeGenericTabs(modelJson.layout);
+      setLayoutJson(modelJson);
+    },
+    500,
+  );
 
   return (
-    <div>
-      <Stack height="100%" direction="row">
-        <DockLayout
-          key="node-manager-layout"
-          // defaultLayout={layout}
-          layout={layout}
-          loadTab={loadTab}
-          onLayoutChange={onLayoutChange}
-          afterPanelLoaded={afterPanelLoaded}
-          groups={PANEL_GROUPS}
-          style={{
-            position: 'absolute',
-            left: 60,
-            top: 2,
-            right: 2,
-            bottom: 2,
+    <Stack
+      style={{
+        position: 'absolute',
+        left: 2,
+        top: 2,
+        right: 2,
+        bottom: 2,
+      }}
+    >
+      <Layout
+        margin="1em"
+        key="node-manager-layout"
+        ref={layoutRef}
+        model={model}
+        factory={factory}
+        onRenderTab={(node, renderValues) => onRenderTab(node, renderValues)}
+        onRenderTabSet={(node, renderValues) =>
+          onRenderTabSet(node, renderValues)
+        }
+        onModelChange={(_model /* _action */) => cleanAndSaveLayout(_model)}
+        onContextMenu={(node) => {
+          console.log(`Show context for ${node.getId()}`);
+        }}
+        onShowOverflowMenu={(node) => {
+          console.log(`Show onShowOverflowMenu for ${node.getId()}`);
+        }}
+        enableRotateBorderIcons={false}
+      />
+      {electronCtx.terminateSubprocesses && (
+        <ProviderSelectionModal
+          title="Select providers to shut down"
+          providers={rosCtx.providers}
+          onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
+          onConfirmCallback={async (providers) => {
+            if (providers && providers.length > 0) {
+              await Promise.all(
+                providers.map(async (prov) => {
+                  await prov.shutdown();
+                }),
+              );
+            }
+            electronCtx.shutdownInterface.quitGui();
           }}
-          ref={dockLayoutRef}
         />
-        {electronCtx.terminateSubprocesses && (
-          <ProviderSelectionModal
-            title="Select providers to shut down"
-            providers={rosCtx.providers}
-            onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
-            onConfirmCallback={async (providers) => {
-              if (providers && providers.length > 0) {
-                await Promise.all(
-                  providers.map(async (prov) => {
-                    await prov.shutdown();
-                  }),
-                );
-              }
-              electronCtx.shutdownInterface.quitGui();
-            }}
-          />
-        )}
-      </Stack>
-    </div>
+      )}
+    </Stack>
   );
 }
 

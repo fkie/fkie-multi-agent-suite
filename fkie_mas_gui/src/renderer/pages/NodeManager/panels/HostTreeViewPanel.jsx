@@ -40,6 +40,7 @@ import { RosContext } from '../../../context/RosContext';
 import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { RosNode, RosNodeStatus, getFileName } from '../../../models';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS } from '../layout';
 
 import useQueue from '../../../hooks/useQueue';
 import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/events';
@@ -288,7 +289,7 @@ function HostTreeViewPanel() {
       // inform details panel tab about selected nodes by user
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
-        eventOpenComponent('node-details-tab', 'default', {}, false),
+        eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, 'default', {}, false),
       );
     },
     [setSelectedTreeItems],
@@ -326,8 +327,8 @@ function HostTreeViewPanel() {
             }
             break;
           case 'log':
-            const request = [node.name];
-            const logPaths = await provider?.getLogPaths(request);
+            // eslint-disable-next-line no-case-declarations
+            const logPaths = await provider?.getLogPaths([node.name]);
             if (logPaths.length > 0) {
               // `tail -f ${logPaths[0].screen_log} \r`,
               cmd = `/usr/bin/less -fKLnQrSU ${logPaths[0].screen_log} \r`;
@@ -335,6 +336,8 @@ function HostTreeViewPanel() {
             break;
           case 'terminal':
             cmd = ``;
+            break;
+          default:
             break;
         }
         try {
@@ -373,7 +376,7 @@ function HostTreeViewPanel() {
             />,
             false,
             true,
-            `${type}`,
+            LAYOUT_TAB_SETS.BORDER_BOTTOM,
           ),
         );
       }
@@ -385,6 +388,7 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [createFileEditorPanel] for selected nodes
    */
   const createFileEditorPanel = (nodes) => {
+    const openIds = [];
     nodes.forEach((node) => {
       if (!node.launchInfo) {
         logCtx.error(
@@ -408,22 +412,26 @@ function HostTreeViewPanel() {
       });
 
       const packageName = packages?.length > 0 ? `${packages[0]?.name}` : '';
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `editor-${node.providerId}-${rootLaunch}`,
-          `Editor - ${launchName} [${packageName}]@${node.providerName}`,
-          <FileEditorPanel
-            providerId={node.providerId}
-            fileRange={node.launchInfo.file_range}
-            currentFilePath={node.launchInfo.file_name}
-            rootFilePath={rootLaunch}
-          />,
-          false,
-          true,
-          'editor',
-        ),
-      );
+      const id = `editor-${node.providerId}-${rootLaunch}`;
+      if (!openIds.includes(id)) {
+        emitCustomEvent(
+          EVENT_OPEN_COMPONENT,
+          eventOpenComponent(
+            `editor-${node.providerId}-${rootLaunch}`,
+            `Editor - ${launchName} [${packageName}]@${node.providerName}`,
+            <FileEditorPanel
+              providerId={node.providerId}
+              fileRange={node.launchInfo.file_range}
+              currentFilePath={node.launchInfo.file_name}
+              rootFilePath={rootLaunch}
+            />,
+            false,
+            true,
+            LAYOUT_TAB_SETS.BORDER_TOP,
+          ),
+        );
+        openIds.push(id);
+      }
     });
   };
 
@@ -440,7 +448,7 @@ function HostTreeViewPanel() {
           <ParameterPanel nodes={[node]} providers={null} />,
           false,
           true,
-          'parameter',
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
         ),
       );
     });
@@ -453,7 +461,7 @@ function HostTreeViewPanel() {
           <ParameterPanel nodes={null} providers={[provider]} />,
           false,
           true,
-          'parameter',
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
         ),
       );
     });
@@ -463,6 +471,7 @@ function HostTreeViewPanel() {
     // let node = getQueueMain();
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
+      console.log(`start: ${node.name}`);
       if (!provider || !provider.isAvailable()) {
         addStatusQueueMain(
           'START',

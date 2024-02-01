@@ -32,6 +32,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { LAYOUT_TAB_SETS } from '../layout';
 import OverflowMenuService from './OverflowMenuService';
 import OverflowMenuTopic from './OverflowMenuTopic';
 import ServiceCallerPanel from './ServiceCallerPanel';
@@ -118,11 +119,12 @@ function NodesDetailsPanel() {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            'publish-topic',
+            `publish-${topic}-${providerId}`,
             `Publish - ${topic}`,
             <TopicPublishPanel topicName={topic} providerId={providerId} />,
+            false,
             true,
-            true,
+            LAYOUT_TAB_SETS.BORDER_RIGHT,
           ),
         );
         return;
@@ -141,7 +143,7 @@ function NodesDetailsPanel() {
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          'echo-topic',
+          `echo-${topic}-${providerId}`,
           `${tittle} - ${topic}`,
           <TopicEchoPanel
             showOptions
@@ -150,8 +152,9 @@ function NodesDetailsPanel() {
             defaultTopic={topic}
             defaultNoData={defaultNoData}
           />,
+          false,
           true,
-          true,
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
         ),
       );
     },
