@@ -32,7 +32,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
-import { LAYOUT_TAB_SETS } from '../layout';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS } from '../layout';
 import OverflowMenuService from './OverflowMenuService';
 import OverflowMenuTopic from './OverflowMenuTopic';
 import ServiceCallerPanel from './ServiceCallerPanel';
@@ -110,6 +110,7 @@ function NodesDetailsPanel() {
             <TopicsPanel initialSearchTerm={topic} />,
             true,
             true,
+            LAYOUT_TABS.HOSTS,
           ),
         );
         return;
@@ -182,6 +183,7 @@ function NodesDetailsPanel() {
             />,
             true,
             true,
+            LAYOUT_TAB_SETS.BORDER_RIGHT,
           ),
         );
         return;
@@ -408,7 +410,7 @@ function NodesDetailsPanel() {
                                         }}
                                         onClick={() =>
                                           onTopicClick(
-                                            'INFO',
+                                            'ECHO',
                                             topic.name,
                                             node.providerId,
                                           )
@@ -530,7 +532,7 @@ function NodesDetailsPanel() {
                                         }}
                                         onClick={() =>
                                           onTopicClick(
-                                            'INFO',
+                                            'ECHO',
                                             topic.name,
                                             node.providerId,
                                           )
