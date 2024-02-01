@@ -86,7 +86,8 @@ export default function ParameterPanel({ nodes, providers }) {
     const parameterMapLocal = new Map('', '');
 
     Array.from(roots).forEach(async ([rootId, rootObj]) => {
-      if (rootObj?.constructor.name === 'RosNode') {
+      if (Object.hasOwn(rootObj, 'system_node')) {
+        // dirty check to test if object is RosNode
         // TODO: optimize request if all nodes are from the same provider
         const provider = rosCtx.getProviderById(rootObj.providerId);
         if (!provider || !provider.isAvailable()) return;
@@ -336,10 +337,12 @@ export default function ParameterPanel({ nodes, providers }) {
   }, [nodeFilter, rootDataFiltered, roots]);
 
   const getIcon = (obj) => {
-    if (obj?.constructor.name === 'CrossbarIOProvider') {
+    if (Object.hasOwn(obj, 'isLocalHost')) {
+      // it is CrossbarIOProvider
       return PrecisionManufacturingIcon;
     }
-    if (obj?.constructor.name === 'RosNode') {
+    if (Object.hasOwn(obj, 'system_node')) {
+      // it is RosNode
       return Label;
     }
     return HideSourceIcon;
@@ -472,7 +475,7 @@ export default function ParameterPanel({ nodes, providers }) {
                     key={rootId}
                     nodeId={`${rootId}`}
                     labelText={`${
-                      rootObj?.constructor.name === 'RosNode'
+                      Object.hasOwn(rootObj, 'system_node')
                         ? rootId
                         : rosCtx.getProviderName(rootId)
                     }`}
