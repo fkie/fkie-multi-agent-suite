@@ -24,6 +24,11 @@
 import asyncio
 from autobahn import wamp
 import json
+import os
+import psutil
+import signal
+import threading
+
 
 from fkie_mas_daemon.monitor.service import Service
 
@@ -34,7 +39,8 @@ from fkie_mas_pylib.crossbar.runtime_interface import SystemInformation
 from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
-
+from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.defines import SETTINGS_PATH
 
 class MonitorServicer(CrossbarBaseSession):
     def __init__(
@@ -92,4 +98,31 @@ class MonitorServicer(CrossbarBaseSession):
         result = False
         message = 'Not implemented'
         Log.warn("Not implemented: ros.provider.ros_clean_purge")
+        return json.dumps({result: result, message: message}, cls=SelfEncoder)
+
+    @wamp.register("ros.provider.shutdown")
+    def rosShutdown(self) -> {bool, str}:
+        Log.info("ros.provider.shutdown")
+        result = False
+        message = ''
+        procs = []
+        try:
+            for process in psutil.process_iter():
+                cmdStr = ' '.join(process.cmdline())
+                if cmdStr.find(SETTINGS_PATH) > -1:
+                    if (cmdStr.find('mas-daemon') == -1):
+                        procs.append(process)
+                        process.terminate()
+            gone, alive = psutil.wait_procs(procs, timeout=3)
+            for p in alive:
+                p.kill()
+            result = True
+        except Exception as error:
+            import traceback
+            print(traceback.format_exc())
+            message = str(error)
+        screen.wipe()
+        shutdown_timer = threading.Timer(
+            0.5, os.kill, (os.getpid(), signal.SIGTERM))
+        shutdown_timer.start()
         return json.dumps({result: result, message: message}, cls=SelfEncoder)

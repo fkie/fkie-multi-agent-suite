@@ -5,6 +5,8 @@ import subprocess
 import shutil
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
+from fkie_mas_pylib.defines import SETTINGS_PATH
+from fkie_mas_pylib.system.screen import test_screen
 
 
 CROSSBAR_PATH = os.path.join(os.path.join(
@@ -126,8 +128,11 @@ def crossbar_start_server(port: int) -> str:
                 "shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
         return ""
 
-    print(shutil.which('screen'), "-dmS", "_crossbar_server_%d" %
-          port, crossbar_bin, "start", "--cbdir", CROSSBAR_PATH)
-    p = subprocess.Popen([shutil.which('screen'), "-dmS", "_crossbar_server_%d" %
+    test_screen()
+    cfg_file = os.path.join(SETTINGS_PATH, 'screen.cfg')
+    cmd = [shutil.which('screen'), "-c", cfg_file, "-dmS", "_crossbar_server_%d" %
+           port, crossbar_bin, "start", "--cbdir", CROSSBAR_PATH]
+    print(' '.join(cmd))
+    p = subprocess.Popen([shutil.which('screen'), "-c", cfg_file, "-dmS", "_crossbar_server_%d" %
                           port, crossbar_bin, "start", "--cbdir", CROSSBAR_PATH])
     return CROSSBAR_PATH
