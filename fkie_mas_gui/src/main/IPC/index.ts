@@ -8,6 +8,7 @@ import PasswordManager from './PasswordManager';
 import { IROSInfo, ROSInfo } from './ROSInfo';
 import { ISystemInfo, SystemInfo } from './SystemInfo';
 import TerminalManager from './TerminalManager';
+import ShutdownInterface from './ShutdownInterface';
 
 const sPasswordManager = new PasswordManager();
 const sCommandExecutor = new CommandExecutor();
@@ -143,4 +144,5 @@ export {
   PasswordManager,
   ROSInfo,
   TerminalManager,
+  ShutdownInterface
 };

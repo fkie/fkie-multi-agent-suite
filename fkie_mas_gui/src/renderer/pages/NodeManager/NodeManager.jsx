@@ -5,6 +5,8 @@ import DockLayout from 'rc-dock';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useCustomEventListener } from 'react-custom-events';
 
+import { ElectronContext } from '../../context/ElectronContext';
+import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { EVENT_OPEN_COMPONENT } from '../../utils/events';
 import HostTreeViewPanel from './panels/HostTreeViewPanel';
@@ -18,6 +20,8 @@ import ServicesPanel from './panels/ServicesPanel';
 import TopicsPanel from './panels/TopicsPanel';
 
 import useLocalStorage from '../../hooks/useLocalStorage';
+
+import ProviderSelectionModal from '../../components/SelectionModal/ProviderSelectionModal';
 
 import './NodeManager.css';
 
@@ -168,6 +172,8 @@ const PANEL_SIZES = {
 function NodeManager() {
   // const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
+  const electronCtx = useContext(ElectronContext);
+  const rosCtx = useContext(RosContext);
   const dockLayoutRef = useRef(null);
   const [layoutComponents] = useState({});
   const [addToLayout, setAddToLayout] = useState([]);
@@ -541,6 +547,23 @@ function NodeManager() {
           }}
           ref={dockLayoutRef}
         />
+        {electronCtx.terminateSubprocesses && (
+          <ProviderSelectionModal
+            title="Select providers to shut down"
+            providers={rosCtx.providers}
+            onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
+            onConfirmCallback={async (providers) => {
+              if (providers && providers.length > 0) {
+                await Promise.all(
+                  providers.map(async (prov) => {
+                    await prov.shutdown();
+                  }),
+                );
+              }
+              electronCtx.shutdownInterface.quitGui();
+            }}
+          />
+        )}
       </Stack>
     </div>
   );

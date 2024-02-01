@@ -8,10 +8,15 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { BrowserWindow, app, dialog, shell } from 'electron';
+import { BrowserWindow, app, ipcMain, shell } from 'electron';
 import path from 'path';
 import { registerArguments } from './CommandLineInterface';
-import { AutoUpdateManager, DialogManager, registerHandlers } from './IPC';
+import {
+  AutoUpdateManager,
+  DialogManager,
+  ShutdownInterface,
+  registerHandlers,
+} from './IPC';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import windowStateKeeper from './windowStateKeeper';
@@ -22,6 +27,7 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
 let dialogManager: DialogManager | null = null;
+let shutdownInterface: ShutdownInterface | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -98,39 +104,40 @@ const createWindow = async () => {
 
   mainWindow.on('close', (e) => {
     e.preventDefault();
-    dialog
-      .showMessageBox({
-        type: 'question',
-        buttons: ['Just close the GUI', 'Kill all subprocesses'],
-        defaultId: 0,
-        cancelId: 0,
-        title: 'Kill on exit?',
-        message: 'Would you like to kill all subprocesses before exiting?',
-      })
-      .then(({ response }) => {
-        if (response) {
-          const find = require('find-process');
-          find('name', 'SCREEN', true).then((list: any[]) => {
-            list = list.filter(
-              (p) => p.cmd.includes('ros.fkie') || p.cmd.includes('crossbar'),
-            );
-            console.log('Killing %s screens', list.length);
-            list.forEach((p: any) => {
-              console.log(p.cmd);
-              process.kill(p.pid);
-            });
-            if (mainWindow) {
-              mainWindow.destroy();
-            }
-            app.quit();
-          });
-        } else {
-          if (mainWindow) {
-            mainWindow.destroy();
-          }
-          app.quit();
-        }
-      });
+    mainWindow?.webContents.send('ShutdownInterface:terminateSubprocesses');
+    // dialog
+    //   .showMessageBox({
+    //     type: 'question',
+    //     buttons: ['Just close the GUI', 'Kill all subprocesses'],
+    //     defaultId: 0,
+    //     cancelId: 0,
+    //     title: 'Kill on exit?',
+    //     message: 'Would you like to kill all subprocesses before exiting?',
+    //   })
+    //   .then(({ response }) => {
+    //     if (response) {
+    //       const find = require('find-process');
+    //       find('name', 'SCREEN', true).then((list: any[]) => {
+    //         list = list.filter(
+    //           (p) => p.cmd.includes('ros.fkie') || p.cmd.includes('crossbar'),
+    //         );
+    //         console.log('Killing %s screens', list.length);
+    //         list.forEach((p: any) => {
+    //           console.log(p.cmd);
+    //           process.kill(p.pid);
+    //         });
+    //         if (mainWindow) {
+    //           mainWindow.destroy();
+    //         }
+    //         app.quit();
+    //       });
+    //     } else {
+    //       if (mainWindow) {
+    //         mainWindow.destroy();
+    //       }
+    //       app.quit();
+    //     }
+    //   });
   });
 
   mainWindow.on('closed', () => {
@@ -150,6 +157,13 @@ const createWindow = async () => {
 
   // Remove this if your app does not use auto updates
   autoUpdateManager = new AutoUpdateManager(mainWindow);
+
+  // Handle app shutdown.
+  shutdownInterface = new ShutdownInterface(mainWindow);
+  // ShutdownInterface
+  ipcMain.handle('ShutdownInterface:quitGui', () => {
+    return shutdownInterface?.quitGui();
+  });
 };
 
 /**

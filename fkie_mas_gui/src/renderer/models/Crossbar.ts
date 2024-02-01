@@ -16,6 +16,7 @@ const URI = {
   ROS_PROVIDER_GET_DIAGNOSTICS: 'ros.provider.get_diagnostics',
   ROS_PROVIDER_DIAGNOSTICS: 'ros.provider.diagnostics',
   ROS_PROVIDER_ROS_CLEAN_PURGE: 'ros.provider.ros_clean_purge',
+  ROS_PROVIDER_SHUTDOWN: 'ros.provider.shutdown',
   ROS_PACKAGES_GET_LIST: 'ros.packages.get_list',
   // ROS_PATH_GET_LIST: 'ros.path.get_list',
   ROS_PATH_GET_LIST_RECURSIVE: 'ros.path.get_list_recursive',

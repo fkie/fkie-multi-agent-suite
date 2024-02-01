@@ -154,6 +154,12 @@ contextBridge.exposeInMainWorld('autoUpdate', {
   },
 });
 
+contextBridge.exposeInMainWorld('ShutdownInterface', {
+  onTerminateSubprocesses: (callback: Function) =>
+    ipcRenderer.on('ShutdownInterface:terminateSubprocesses', () => callback()),
+  quitGui: () => ipcRenderer.invoke('ShutdownInterface:quitGui'),
+});
+
 contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
 });

@@ -15,6 +15,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 
+import { ElectronProvider } from './context/ElectronContext';
 import { LoggingProvider } from './context/LoggingContext';
 import { MonacoProvider } from './context/MonacoContext';
 import { NavigationProvider } from './context/NavigationContext';
@@ -38,18 +39,20 @@ if (container) {
         preventDuplicate
       >
         <LoggingProvider>
-          <SSHProvider>
-            <RosProviderReact>
-              <NavigationProvider>
-                <BrowserRouter>
-                  {/* TODO: Monaco is not required to be global */}
-                  <MonacoProvider>
-                    <App />
-                  </MonacoProvider>
-                </BrowserRouter>
-              </NavigationProvider>
-            </RosProviderReact>
-          </SSHProvider>
+          <ElectronProvider>
+            <SSHProvider>
+              <RosProviderReact>
+                <NavigationProvider>
+                  <BrowserRouter>
+                    {/* TODO: Monaco is not required to be global */}
+                    <MonacoProvider>
+                      <App />
+                    </MonacoProvider>
+                  </BrowserRouter>
+                </NavigationProvider>
+              </RosProviderReact>
+            </SSHProvider>
+          </ElectronProvider>
         </LoggingProvider>
       </SnackbarProvider>
     </SettingsProvider>,

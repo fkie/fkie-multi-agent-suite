@@ -30,7 +30,6 @@ import {
   SubscriberNode,
   SystemWarningGroup,
   URI,
-  compareRosNodes,
 } from '../../models';
 import CrossbarIO from './crossbar_io';
 
@@ -957,6 +956,42 @@ class CrossbarIOProvider {
         message: `Provider [${this.name()}]: Error at rosCleanPurge(): ${
           result[2]
         }`,
+      });
+    };
+
+  /**
+   * Terminate all running subprocesses (ROS, Crossbar, TTYD) of the provider
+   *
+   * @return {Promise<{result: bool, message: str}>}
+   */
+  public shutdown: () => Promise<{ result: boolean; message: string }> =
+    async () => {
+      const result = await this.makeCall(
+        URI.ROS_PROVIDER_SHUTDOWN,
+        [],
+        true,
+        true,
+      );
+
+      if (result[0]) {
+        const returnResult: {
+          result: boolean;
+          message: string;
+        } = JSON.parse(result[1]);
+
+        return returnResult;
+      }
+
+      if (this.logger) {
+        this.logger.error(
+          `Provider [${this.name()}]: Error at shutdown()`,
+          `${result[2]}`,
+        );
+      }
+
+      return Promise.resolve({
+        result: false,
+        message: `Provider [${this.name()}]: Error at shutdown(): ${result[2]}`,
       });
     };
 
