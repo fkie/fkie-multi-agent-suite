@@ -179,6 +179,7 @@ const configuration: webpack.Configuration = {
     },
     historyApiFallback: {
       verbose: true,
+      disableDotRule: true,
     },
     setupMiddlewares(middlewares) {
       console.log('Starting preload.js builder...');
