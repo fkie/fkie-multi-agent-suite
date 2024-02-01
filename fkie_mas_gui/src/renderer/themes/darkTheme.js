@@ -48,25 +48,25 @@ const darkTheme = createTheme({
             '--color-edge-icon': '#eee',
           },
           '& .flexlayout__tabset_header': {
-            'box-shadow': 'inset 0 0 3px 0 rgba(136, 136, 136, 0.54)',
+            boxShadow: 'inset 0 0 3px 0 rgba(136, 136, 136, 0.54)',
           },
           '& .flexlayout__tabset-selected': {
-            'background-image':
+            backgroundImage:
               'linear-gradient(var(--color-background), var(--color-4))',
           },
           '& .flexlayout__tab_button_top': {
-            'box-shadow': 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
-            'border-top-left-radius': '1px',
-            'border-top-right-radius': '1px',
+            boxShadow: 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
+            borderTopLeftRadius: '1px',
+            borderBottomRightRadius: '1px',
           },
           '& .flexlayout__tab_button_bottom': {
-            'box-shadow': 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
-            'border-bottom-left-radius': '1px',
-            'border-bottom-right-radius': '1px',
+            boxShadow: 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
+            borderTopLeftRadius: '1px',
+            borderBottomRightRadius: '1px',
           },
           '& .flexlayout__border_button': {
-            'box-shadow': 'inset 0 0 5px rgba(0, 0, 0, 0.15)',
-            'border-radius': '1px',
+            boxShadow: 'inset 0 0 5px rgba(0, 0, 0, 0.15)',
+            borderRadius: '1px',
           },
         },
       },

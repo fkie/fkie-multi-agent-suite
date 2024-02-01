@@ -352,10 +352,6 @@ function NodeManager() {
         onContextMenu={(node) => {
           console.log(`Show context for ${node.getId()}`);
         }}
-        onShowOverflowMenu={(node) => {
-          console.log(`Show onShowOverflowMenu for ${node.getId()}`);
-        }}
-        enableRotateBorderIcons={false}
       />
       {electronCtx.terminateSubprocesses && (
         <ProviderSelectionModal
