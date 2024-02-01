@@ -20,96 +20,53 @@ const darkTheme = createTheme({
           scrollbarWidth: 'thin',
         },
         body: {
-          // rc-dock theme changes
-          '& .dragging-layer > *:first-of-type': {
-            boxShadow:
-              '0 0 8px rgba(255, 255, 255, 0.1), inset 0 0 8px rgba(255, 255, 255, 0.1)',
+          // flexlayout-react theme changes
+          '& .flexlayout__layout': {
+            '--color-text': '#eeeeee',
+            '--color-background': 'black',
+            '--color-base': 'black',
+            '--color-1': '#121212',
+            '--color-2': '#1a1a1a',
+            '--color-3': '#262626',
+            '--color-4': '#333333',
+            '--color-5': '#404040',
+            '--color-6': '#4d4d4d',
+            '--color-drag1': 'rgb(207, 232, 255)',
+            '--color-drag2': 'rgb(183, 209, 181)',
+            '--color-drag1-background': 'rgba(128, 128, 128, 0.15)',
+            '--color-drag2-background': 'rgba(128, 128, 128, 0.15)',
+            // '--color-tabset-background': 'var(--color-background)',
+            // '--color-tabset-header-background': 'var(--color-background)',
+            // '--color-border-background': 'var(--color-background)',
+            // '--color-splitter': 'var(--color-1)',
+            // '--color-splitter-drag': 'var(--color-4)',
+            // '--color-drag-rect-border': 'var(--color-6)',
+            // '--color-drag-rect-background': 'var(--color-4)',
+            // '--color-popup-unselected-background': 'white',
+            // '--color-popup-selected-background': 'var(--color-3)',
+            '--color-edge-marker': 'gray',
+            '--color-edge-icon': '#eee',
           },
-          '& .dock-tab': {
-            background,
-            borderBottom: '1px solid #434343;',
+          '& .flexlayout__tabset_header': {
+            'box-shadow': 'inset 0 0 3px 0 rgba(136, 136, 136, 0.54)',
           },
-          '& .dock-tab:hover': {
-            color: '#40a5ed',
+          '& .flexlayout__tabset-selected': {
+            'background-image':
+              'linear-gradient(var(--color-background), var(--color-4))',
           },
-          '& .dock-top .dock-bar': {
-            background,
-            borderBottom: '1px solid #383838',
+          '& .flexlayout__tab_button_top': {
+            'box-shadow': 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
+            'border-top-left-radius': '1px',
+            'border-top-right-radius': '1px',
           },
-          '& .dock-tab-close-btn': {
-            color: '#444',
+          '& .flexlayout__tab_button_bottom': {
+            'box-shadow': 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
+            'border-bottom-left-radius': '1px',
+            'border-bottom-right-radius': '1px',
           },
-          '& .dock-tab-close-btn:before': {
-            content: '"\\2297"',
-          },
-          '& .dock-tab-close-btn:hover, & .dock-tab-close-btn:focus': {
-            color: '#fff',
-            transform: 'scale(1.6)',
-          },
-          '& .dock-nav-more': {
-            color: 'rgba(255, 255, 255, 0.85)',
-          },
-          '& .dock-dropdown': {
-            color: 'rgba(255, 255, 255, 0.85)',
-          },
-          '& .dock-dropdown-menu': {
-            backgroundColor: background,
-          },
-          '& .dock-dropdown-menu-item': {
-            color: 'rgba(255, 255, 255, 0.85)',
-          },
-          '& .dock-dropdown-menu-item:hover': {
-            color: '#2b2b2b',
-          },
-          '& .dock-panel': {
-            color: 'rgba(255, 255, 255, 0.85)',
-            background,
-            border: '1px solid #434343',
-          },
-          '& .dock-panel-drag-size-b-r': {
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 17 17'%3E%3Cpath fill='rgba(255, 255, 255, 0.15)' d='M2 12 L12 2 L12 12z'/%3E%3C/svg%3E")`,
-          },
-          '& .dock-fbox > .dock-panel': {
-            boxShadow: '0 0 4px #444',
-          },
-          '& .dock-mbox > .dock-panel': {
-            boxShadow: '0 0 4px #444',
-          },
-          '& .dock-layout > .dock-drop-indicator': {
-            background: '#125d94',
-            boxShadow: '0 0 4px #434343',
-          },
-          '& .dock-drop-layer .dock-drop-square': {
-            color: '#444',
-            background,
-          },
-          '& .dock-drop-layer .dock-drop-square .dock-drop-square-box': {
-            border: '1px solid #434343',
-          },
-          '& .dock-drop-layer .dock-drop-square-dropping': {
-            background: '#125d94',
-          },
-          '& .dock-panel-max-btn:before, & .dock-panel-min-btn:before': {
-            border: '2px solid #444',
-          },
-          '& .dock-panel.dock-style-main .dock-bar': {
-            borderBottom: '1px solid #282828;',
-          },
-          '& .dock-panel.dock-style-main .dock-tab': {
-            background,
-          },
-          '& .dock-panel.dock-style-card .dock-tab': {
-            border: '1px solid #434343',
-          },
-          '& .dock-panel.dock-style-card .dock-tab.dock-tab-active': {
-            background,
-            borderBottom: '1px solid #141414;',
-          },
-          '& .dock-panel.dock-style-card .dock-bar': {
-            borderBottom: '1px solid #434343;',
-          },
-          '& .dock-panel.dock-style-card .dock-ink-bar': {
-            background,
+          '& .flexlayout__border_button': {
+            'box-shadow': 'inset 0 0 5px rgba(0, 0, 0, 0.15)',
+            'border-radius': '1px',
           },
         },
       },

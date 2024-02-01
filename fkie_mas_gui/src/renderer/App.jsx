@@ -12,7 +12,7 @@ import AboutPage from './pages/About/About';
 import NodeManager from './pages/NodeManager/NodeManager';
 
 // load default style for flexlayout-react. Dark/Light theme changes are in ./themes
-import 'flexlayout-react/style/light.css';
+import 'flexlayout-react/style/gray.css';
 import './App.scss';
 import { darkTheme, lightTheme } from './themes';
 
