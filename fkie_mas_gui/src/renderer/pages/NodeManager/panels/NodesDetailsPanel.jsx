@@ -93,7 +93,7 @@ function NodesDetailsPanel() {
   }, [navCtx.selectedNodes]);
 
   const onTopicClick = useCallback(
-    (rosTopicType, topic, providerId) => {
+    async (rosTopicType, topic, providerId, external = false) => {
       if (rosTopicType === 'clipboard') {
         if (navigator && navigator.clipboard) {
           navigator.clipboard.writeText(topic);
@@ -141,23 +141,53 @@ function NodesDetailsPanel() {
         tittle = 'Echo';
         defaultNoData = false;
       }
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `echo-${topic}-${providerId}`,
-          `${tittle} - ${topic}`,
-          <TopicEchoPanel
-            showOptions
-            defaultRosTopicType={rosTopicType}
-            defaultProvider={providerId}
-            defaultTopic={topic}
-            defaultNoData={defaultNoData}
-          />,
-          false,
-          true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
-        ),
-      );
+      if (external && window.CommandExecutor) {
+        const provider = rosCtx.getProviderById(providerId);
+        let cmd = '';
+        if (provider?.rosState.ros_version === '1') {
+          cmd = `rostopic echo ${topic}`;
+        } else if (provider?.rosState.ros_version === '2') {
+          cmd = `ros2 topic echo ${topic}`;
+        }
+        try {
+          const result = await window.CommandExecutor?.execTerminal(
+            null, // we start the publish always local
+            `"echo ${topic}"`,
+            cmd,
+          );
+          if (!result.result) {
+            logCtx.error(
+              `Can't open subscriber in external terminal for ${topic}`,
+              result.message,
+              true,
+            );
+          }
+        } catch (error) {
+          logCtx.error(
+            `Can't open subscriber in external terminal for ${topic}`,
+            error,
+            true,
+          );
+        }
+      } else {
+        emitCustomEvent(
+          EVENT_OPEN_COMPONENT,
+          eventOpenComponent(
+            `echo-${topic}-${providerId}`,
+            `${tittle} - ${topic}`,
+            <TopicEchoPanel
+              showOptions
+              defaultRosTopicType={rosTopicType}
+              defaultProvider={providerId}
+              defaultTopic={topic}
+              defaultNoData={defaultNoData}
+            />,
+            false,
+            true,
+            LAYOUT_TAB_SETS.BORDER_RIGHT,
+          ),
+        );
+      }
     },
     [logCtx],
   );
@@ -408,13 +438,16 @@ function NodesDetailsPanel() {
                                           textTransform: 'none',
                                           justifyContent: 'left',
                                         }}
-                                        onClick={() =>
+                                        onClick={(event) => {
                                           onTopicClick(
-                                            'ECHO',
+                                            event.nativeEvent.ctrlKey
+                                              ? 'PUBLISH'
+                                              : 'ECHO',
                                             topic.name,
                                             node.providerId,
-                                          )
-                                        }
+                                            event.nativeEvent.shiftKey,
+                                          );
+                                        }}
                                       >
                                         {`${topic.name}`}
                                       </Button>
@@ -530,11 +563,14 @@ function NodesDetailsPanel() {
                                           textTransform: 'none',
                                           justifyContent: 'left',
                                         }}
-                                        onClick={() =>
+                                        onClick={(event) =>
                                           onTopicClick(
-                                            'ECHO',
+                                            event.nativeEvent.ctrlKey
+                                              ? 'PUBLISH'
+                                              : 'ECHO',
                                             topic.name,
                                             node.providerId,
+                                            event.nativeEvent.shiftKey,
                                           )
                                         }
                                       >
@@ -586,7 +622,7 @@ function NodesDetailsPanel() {
                                           onServiceClick(
                                             'SERVICE_CALL',
                                             service.name,
-                                            node.providerNId,
+                                            node.providerId,
                                           )
                                         }
                                       >
