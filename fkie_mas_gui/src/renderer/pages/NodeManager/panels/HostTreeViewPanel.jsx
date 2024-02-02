@@ -475,8 +475,6 @@ function HostTreeViewPanel() {
           addStatusQueueMain('START', node.name, true, 'started');
         }
       }
-      // trigger next item in the queue
-      nextQueueMain();
     }
   };
 
@@ -492,11 +490,11 @@ function HostTreeViewPanel() {
           skippedNodes.set(node.name, 'already running');
         } else if (
           queueItemsQueueMain &&
-          queueItemsQueueMain.find(
-            (elem) => elem.action === 'START' && elem.name === node.name,
-          )
+          queueItemsQueueMain.find((elem) => {
+            return elem.action === 'START' && elem.node.name === node.name;
+          })
         ) {
-          skippedNodes.set(node.name, 'in the start queue');
+          skippedNodes.set(node.name, 'already in the start queue');
         } else if (node.launchPaths.size === 1) {
           node2Start.push(node);
         } else if (node.launchPaths.size > 1) {
@@ -571,8 +569,6 @@ function HostTreeViewPanel() {
           addStatusQueueMain('STOP', node.name, true, 'stopped');
         }
       }
-      // trigger next item in the queue
-      nextQueueMain();
     }
   };
 
@@ -590,6 +586,13 @@ function HostTreeViewPanel() {
           skippedNodes.set(node.name, 'system node');
         } else if (onlyWithLaunch && node.launchPaths.length === 0) {
           skippedNodes.set(node.name, 'stop only with launch files');
+        } else if (
+          queueItemsQueueMain &&
+          queueItemsQueueMain.find((elem) => {
+            return elem.action === 'STOP' && elem.node.name === node.name;
+          })
+        ) {
+          skippedNodes.set(node.name, 'already in queue');
         } else if (node.status === RosNodeStatus.RUNNING) {
           // const isRunning = node.status === RosNodeStatus.RUNNING;
           // const isRunning = true;
@@ -673,14 +676,23 @@ function HostTreeViewPanel() {
     navCtx.selectedNodes.map(async (node) => {
       // we kill system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
-      nodes2kill.push(node);
+      if (
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === 'KILL' && elem.node.name === node.name;
+        })
+      ) {
+        // TODO: skippedNodes.set(node.name, 'already in queue');
+      } else {
+        nodes2kill.push(node);
+      }
     });
     updateQueueMain(
       nodes2kill.map((node) => {
         return { node, action: 'KILL' };
       }),
     );
-  }, [navCtx.selectedNodes, updateQueueMain]);
+  }, [navCtx.selectedNodes, queueItemsQueueMain, updateQueueMain]);
 
   /** Kill node in the queue and trigger the next one. */
   const killNodeQueued = async (node) => {
@@ -702,8 +714,6 @@ function HostTreeViewPanel() {
           addStatusQueueMain('UNREGISTER', node.name, true, 'killed');
         }
       }
-      // trigger next item in the queue
-      nextQueueMain();
     }
   };
 
@@ -715,14 +725,23 @@ function HostTreeViewPanel() {
     navCtx.selectedNodes.map(async (node) => {
       // we unregister system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
-      nodes2unregister.push(node);
+      if (
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === 'UNREGISTER' && elem.node.name === node.name;
+        })
+      ) {
+        // TODO: skippedNodes.set(node.name, 'already in queue');
+      } else {
+        nodes2unregister.push(node);
+      }
     });
     updateQueueMain(
       nodes2unregister.map((node) => {
         return { node, action: 'UNREGISTER' };
       }),
     );
-  }, [navCtx.selectedNodes, updateQueueMain]);
+  }, [navCtx.selectedNodes, queueItemsQueueMain, updateQueueMain]);
 
   /** Unregister node in the queue and trigger the next one. */
   const unregisterNodeQueued = async (node) => {
@@ -749,8 +768,6 @@ function HostTreeViewPanel() {
           addStatusQueueMain('UNREGISTER', node.name, true, 'unregistered');
         }
       }
-      // trigger next item in the queue
-      nextQueueMain();
     }
   };
 
@@ -835,7 +852,16 @@ function HostTreeViewPanel() {
       nodes.map(async (node) => {
         // we unregister system nodes only when they are individually selected
         if (node.system_node && nodes.length > 1) return;
-        nodes2clear.push(node);
+        if (
+          queueItemsQueueMain &&
+          queueItemsQueueMain.find((elem) => {
+            return elem.action === 'CLEAR_LOG' && elem.node.name === node.name;
+          })
+        ) {
+          // TODO: skippedNodes.set(node.name, 'already in queue');
+        } else {
+          nodes2clear.push(node);
+        }
       });
       updateQueueMain(
         nodes2clear.map((node) => {
@@ -843,7 +869,7 @@ function HostTreeViewPanel() {
         }),
       );
     },
-    [updateQueueMain],
+    [queueItemsQueueMain, updateQueueMain],
   );
 
   /** Delete log file for node in the queue and trigger the next one. */
@@ -880,8 +906,6 @@ function HostTreeViewPanel() {
           );
         }
       }
-      // trigger next item in the queue
-      nextQueueMain();
     }
   };
 
@@ -1025,7 +1049,7 @@ function HostTreeViewPanel() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sizeQueueMain, indexQueueMain]);
+  }, [indexQueueMain, failedQueueMain, successQueueMain]);
 
   return (
     <Box

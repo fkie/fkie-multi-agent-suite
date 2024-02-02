@@ -1923,6 +1923,7 @@ class CrossbarIOProvider {
         this.logger.error(
           `Fail to kill the node [${name}]: ${parsed.message}`,
           parsed.message,
+          false,
         );
         return parsed;
       }
