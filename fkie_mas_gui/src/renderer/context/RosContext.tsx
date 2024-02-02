@@ -917,7 +917,11 @@ export function RosProviderReact(
             return true;
           }
           const launchCfg = providerLaunchesMap.get(provider.id);
-          if (launchCfg?.autostart && launchCfg?.daemon.enable) {
+          if (
+            launchCfg?.autostart &&
+            launchCfg?.daemon.enable &&
+            window.CommandExecutor
+          ) {
             // start system nodes, if auto start is enabled
             logCtx.info(
               `Start system nodes for provider [${provider.name()}]`,
