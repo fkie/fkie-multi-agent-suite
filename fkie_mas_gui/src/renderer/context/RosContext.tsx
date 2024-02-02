@@ -68,6 +68,7 @@ export interface IRosProviderContext {
   providersConnected: CrossbarIOProvider[];
   providersConnectedPast: CrossbarIOProvider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
+  nodeMap: Map<string, RosNode>;
   connectToProvider: (provider: CrossbarIOProvider) => Promise<boolean>;
   startProvider: (
     provider: CrossbarIOProvider,
@@ -115,6 +116,7 @@ export const DEFAULT = {
   providersConnected: [],
   providersConnectedPast: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
+  nodeMap: new Map(),
   connectToProvider: () => new Promise<false>(() => {}),
   startProvider: () => new Promise<boolean>(() => {}),
   startConfig: () => new Promise<boolean>(() => {}),
@@ -182,6 +184,8 @@ export function RosProviderReact(
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(
     DEFAULT.mapProviderRosNodes,
   );
+  // nodeMap: Map<string, RosNode>
+  const [nodeMap, setNodeMap] = useState(new Map());
 
   /** Save configuration which are loaded into provider panel. */
   const saveProviderConfig = useCallback(
@@ -1136,17 +1140,41 @@ export function RosProviderReact(
     (data: EventProviderRosNodes) => {
       // add nodes to map
       const newMap = new Map();
+      const newNodeMap = new Map();
       // remove provider not in the providers list anymore
       const availableProviderKeys = providers.map((prov) => {
         return prov.id;
       });
       // remove not listed provider
+      const providersRemoved: string[] = [];
       mapProviderRosNodes.forEach((nodes, provId) => {
         if (availableProviderKeys.includes(provId)) {
           newMap.set(provId, nodes);
+        } else {
+          providersRemoved.push(provId);
+        }
+      });
+      nodeMap.forEach((node, id) => {
+        if (!id.startsWith(data.provider.id)) {
+          let removed = false;
+          if (providersRemoved.length > 0) {
+            // remove not used nodes fom nodeMap
+            providersRemoved.forEach((provId) => {
+              if (id.startsWith(provId)) {
+                removed = true;
+              }
+            });
+          }
+          if (!removed) {
+            newNodeMap.set(id, node);
+          }
         }
       });
       newMap.set(data.provider.id, data.nodes);
+      data.nodes.forEach((node) => {
+        newNodeMap.set(node.idGlobal, node);
+      });
+      setNodeMap(newNodeMap);
       logCtx.debug(
         `ros nodes updated for ${data.provider.id}: ${data.nodes.length} nodes`,
         '',
@@ -1405,6 +1433,7 @@ export function RosProviderReact(
       providersConnected,
       providersConnectedPast,
       mapProviderRosNodes,
+      nodeMap,
       connectToProvider,
       startProvider,
       startConfig,

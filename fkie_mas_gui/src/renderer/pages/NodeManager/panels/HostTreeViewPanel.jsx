@@ -75,10 +75,6 @@ function HostTreeViewPanel() {
   const [providerNodeTree, setProviderNodeTree] = useState([]);
   // launchContentList: list of {providerId: string, launches: LaunchContent[]}
   const [launchContentList, setLaunchContentList] = useState([]);
-  // nodeMap: Map<string, RosNode>
-  const [nodeMap, setNodeMap] = useState(new Map());
-  // items selected by user in the tree
-  const [selectedTreeItems, setSelectedTreeItems] = useState([]);
   const [rosCleanPurge, setRosCleanPurge] = useState(false);
   const [nodeScreens, setNodeScreens] = useState(null);
   const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
@@ -100,47 +96,25 @@ function HostTreeViewPanel() {
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   /**
-   * Get list of nodes from a list of TreeItem IDs
+   * Get list of nodes from a list of node.idGlobal
    */
   const getNodesFromIds = useCallback(
     (itemIds) => {
-      let nodeList = [];
+      const nodeList = [];
       itemIds.forEach((item) => {
-        // Make sure we have a nodeMap object and the item is not the provider (root)
-        if (nodeMap && item.indexOf('#') > -1) {
-          // search individual nodes
-          if (nodeMap.has(item)) {
-            const node = nodeMap.get(item);
-            if (!nodeList.some((n) => n.id === node.id)) {
-              nodeList.push(node);
-            }
-          }
-          // search group of nodes
-          else {
-            const groupList = [];
-            nodeMap.forEach((node, key) => {
-              if (
-                !nodeList.some((n) => n.id === node.id) &&
-                key.startsWith(item)
-              ) {
-                groupList.push(node);
-              }
-            });
-            // sort nodes of the group
-            nodeList = [
-              ...nodeList,
-              ...groupList.sort((a, b) => {
-                return a.name.localeCompare(b.name);
-              }),
-            ];
-          }
+        const node = rosCtx.nodeMap.get(item);
+        if (node) {
+          nodeList.push(node);
         }
       });
-
       return nodeList;
     },
-    [nodeMap],
+    [rosCtx.nodeMap],
   );
+
+  const getSelectedNodes = useCallback(() => {
+    return getNodesFromIds(navCtx.selectedNodes);
+  }, [getNodesFromIds, navCtx.selectedNodes]);
 
   const nameWithoutNamespace = (node) => {
     return node.namespace && node.namespace !== '/'
@@ -262,14 +236,6 @@ function HostTreeViewPanel() {
             node.group += `/${parameterValue}`;
           }
         });
-
-        // update the nodeMap
-        nodeMap.set(
-          `${provider.id}#${node.group}#${nameWithoutNamespace(node)}#${
-            node.id
-          }`,
-          node,
-        );
         newNodes.push(node);
       });
       // update state
@@ -285,7 +251,7 @@ function HostTreeViewPanel() {
       ]);
       // setSelectedTreeItems((prevValues) => [...prevValues]);
     },
-    [nodeMap, setProviderNodes],
+    [setProviderNodes],
   );
 
   // Register Callbacks ----------------------------------------------------------------------------------
@@ -293,16 +259,35 @@ function HostTreeViewPanel() {
   /**
    * Callback when nodes on the tree are selected by the user
    */
-  const handleSelect = useCallback(
+  const handleNodesSelect = useCallback(
     (itemIds) => {
-      setSelectedTreeItems(itemIds);
+      navCtx.setSelectedNodes(itemIds);
       // inform details panel tab about selected nodes by user
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, 'default', {}, false),
       );
     },
-    [setSelectedTreeItems],
+    [navCtx],
+  );
+
+  /**
+   * Callback when provides on the tree are selected by the user
+   */
+  const handleProviderSelect = useCallback(
+    (providerIds) => {
+      // set the selected nodes
+      const selectedProvidersLocal = [];
+      // update setSelectedNodes based on trees selectedItems
+      providerIds.forEach((id) => {
+        // search selected host
+        if (rosCtx.getProviderById(id)) {
+          selectedProvidersLocal.push(id);
+        }
+      });
+      navCtx.setSelectedProviders(selectedProvidersLocal);
+    },
+    [navCtx, rosCtx],
   );
 
   /**
@@ -368,7 +353,7 @@ function HostTreeViewPanel() {
         );
       }
     },
-    [rosCtx, SSHCtx],
+    [rosCtx, SSHCtx, logCtx],
   );
 
   /**
@@ -493,7 +478,6 @@ function HostTreeViewPanel() {
       const withNoLaunch = [];
       const skippedNodes = new Map();
       nodes.forEach((node) => {
-        console.log(`start:: ${node.name}`);
         // ignore running and nodes already in the queue
         if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
           skippedNodes.set(node.name, 'already running');
@@ -543,8 +527,8 @@ function HostTreeViewPanel() {
    * Start nodes in the selected list
    */
   const startSelectedNodes = useCallback(() => {
-    startNodesWithLaunchCheck(navCtx.selectedNodes);
-  }, [navCtx.selectedNodes, startNodesWithLaunchCheck]);
+    startNodesWithLaunchCheck(getSelectedNodes());
+  }, [getSelectedNodes, startNodesWithLaunchCheck]);
 
   /**
    * Start nodes from a list of itemIds
@@ -634,8 +618,8 @@ function HostTreeViewPanel() {
    * Stop nodes in the selected list
    */
   const stopSelectedNodes = useCallback(() => {
-    stopNodes(navCtx.selectedNodes);
-  }, [navCtx.selectedNodes, stopNodes]);
+    stopNodes(getSelectedNodes());
+  }, [getSelectedNodes, stopNodes]);
 
   /**
    * Stop nodes from a list of itemIds
@@ -663,8 +647,8 @@ function HostTreeViewPanel() {
    * Restart nodes in the selected list
    */
   const restartSelectedNodes = useCallback(() => {
-    restartNodes(navCtx.selectedNodes);
-  }, [navCtx.selectedNodes, restartNodes]);
+    restartNodes(getSelectedNodes());
+  }, [getSelectedNodes, restartNodes]);
 
   /**
    * Restart nodes from a list of itemIds
@@ -682,7 +666,7 @@ function HostTreeViewPanel() {
    */
   const killSelectedNodes = useCallback(() => {
     const nodes2kill = [];
-    navCtx.selectedNodes.map(async (node) => {
+    getSelectedNodes().map(async (node) => {
       // we kill system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
       if (
@@ -701,7 +685,12 @@ function HostTreeViewPanel() {
         return { node, action: 'KILL' };
       }),
     );
-  }, [navCtx.selectedNodes, queueItemsQueueMain, updateQueueMain]);
+  }, [
+    getSelectedNodes,
+    navCtx.selectedNodes.length,
+    queueItemsQueueMain,
+    updateQueueMain,
+  ]);
 
   /** Kill node in the queue and trigger the next one. */
   const killNodeQueued = async (node) => {
@@ -731,7 +720,7 @@ function HostTreeViewPanel() {
    */
   const unregisterSelectedNodes = useCallback(() => {
     const nodes2unregister = [];
-    navCtx.selectedNodes.map(async (node) => {
+    getSelectedNodes().map(async (node) => {
       // we unregister system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
       if (
@@ -750,7 +739,12 @@ function HostTreeViewPanel() {
         return { node, action: 'UNREGISTER' };
       }),
     );
-  }, [navCtx.selectedNodes, queueItemsQueueMain, updateQueueMain]);
+  }, [
+    getSelectedNodes,
+    navCtx.selectedNodes.length,
+    queueItemsQueueMain,
+    updateQueueMain,
+  ]);
 
   /** Unregister node in the queue and trigger the next one. */
   const unregisterNodeQueued = async (node) => {
@@ -955,26 +949,24 @@ function HostTreeViewPanel() {
     }
   }, [rosCtx.providers, providerNodes]);
 
-  useEffect(() => {
-    // each time selected items are changed (user select, nodes or launch changes)
-    // get list of nodes
-    const sn = getNodesFromIds(selectedTreeItems);
-    // set the selected nodes
-    navCtx.setSelectedNodes(sn);
+  // useEffect(() => {
+  //   // each time selected items are changed (user select, nodes or launch changes)
+  //   // set the selected nodes
+  //   navCtx.setSelectedNodes(selectedTreeItems);
 
-    // clear selected provider
-    navCtx.setSelectedProviders([]);
-    const selectedProvidersLocal = [];
-    // update setSelectedNodes based on trees selectedItems
-    selectedTreeItems.forEach((item) => {
-      // search selected host
-      if (rosCtx.getProviderById(item)) {
-        selectedProvidersLocal.push(item);
-      }
-    });
-    navCtx.setSelectedProviders(selectedProvidersLocal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTreeItems, getNodesFromIds, rosCtx]);
+  //   // clear selected provider
+  //   navCtx.setSelectedProviders([]);
+  //   const selectedProvidersLocal = [];
+  //   // update setSelectedNodes based on trees selectedItems
+  //   selectedTreeItems.forEach((item) => {
+  //     // search selected host
+  //     if (rosCtx.getProviderById(item)) {
+  //       selectedProvidersLocal.push(item);
+  //     }
+  //   });
+  //   navCtx.setSelectedProviders(selectedProvidersLocal);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [selectedTreeItems, getNodesFromIds, rosCtx]);
 
   useEffect(() => {
     if (nodesToStart) {
@@ -1137,7 +1129,8 @@ function HostTreeViewPanel() {
             <HostTreeView
               providerNodeTree={providerNodeTree}
               launchContentList={launchContentList}
-              onNodeSelect={handleSelect}
+              onNodeSelect={handleNodesSelect}
+              onProviderSelect={handleProviderSelect}
               startNodes={startNodesFromId}
               stopNodes={stopNodesFromId}
               restartNodes={restartNodesFromId}
@@ -1148,192 +1141,11 @@ function HostTreeViewPanel() {
           </Box>
           <Box>
             <Paper elevation={2} sx={{ border: 0 }}>
-              {navCtx.selectedProviders &&
-                navCtx.selectedProviders.length > 0 && (
-                  <ButtonGroup
-                    orientation="vertical"
-                    aria-label="provider control group"
-                  >
-                    <Tooltip
-                      title="Start All"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Start All"
-                        onClick={() => {
-                          navCtx.selectedProviders.map(async (provider) => {
-                            try {
-                              await startProviderNodes(provider);
-                            } catch (error) {
-                              logCtx.error(
-                                `Could not start nodes for provider: ${provider.name()} `,
-                              );
-                            }
-                          });
-                        }}
-                      >
-                        <PlayArrowIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title="Stop All"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Stop All"
-                        onClick={() => {
-                          navCtx.selectedProviders.forEach((provider) => {
-                            stopProviderNodes(provider);
-                          });
-                        }}
-                      >
-                        <StopIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                    <Divider />
-                    <Tooltip
-                      title="Restart All"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Restart All"
-                        onClick={() => {
-                          navCtx.selectedProviders.forEach((provider) => {
-                            restartProviderNodes(provider);
-                          });
-                        }}
-                      >
-                        <RestartAltIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  </ButtonGroup>
-                )}
-              {navCtx.selectedProviders &&
-                navCtx.selectedProviders.length > 0 && <Divider />}
-              {navCtx.selectedProviders &&
-                navCtx.selectedProviders.length > 0 && (
-                  <ButtonGroup
-                    // showLabels
-                    // sx={{
-                    //   backgroundColor: settingsCtx.get('backgroundColor'),
-                    // }}
-                    orientation="vertical"
-                    aria-label="ros node control group"
-                  >
-                    <Tooltip
-                      title="Open Terminal (external terminal with shift+click)"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Open Terminal"
-                        onClick={(event) => {
-                          // open a new terminal for each selected provider
-                          navCtx.selectedProviders.forEach((providerId) => {
-                            const prov = rosCtx.getProviderById(providerId);
-                            const emptyNode = new RosNode();
-                            emptyNode.name = 'terminal';
-                            emptyNode.providerId = providerId;
-                            emptyNode.providerName = prov?.name();
-                            createSingleTerminalPanel(
-                              CmdType.TERMINAL,
-                              emptyNode,
-                              '',
-                              event.nativeEvent.shiftKey,
-                            );
-                          });
-                        }}
-                      >
-                        <TerminalIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title="Select screens (external terminal with shift+click)"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Select screens"
-                        onClick={(event) => {
-                          navCtx.selectedProviders.forEach((providerId) => {
-                            const prov = rosCtx.getProviderById(providerId);
-                            const emptyNode = new RosNode();
-                            emptyNode.name = prov?.name();
-                            emptyNode.providerId = providerId;
-                            emptyNode.providerName = prov?.name();
-                            emptyNode.screens = [];
-                            prov?.screens.forEach((screen) => {
-                              emptyNode.screens = [
-                                ...emptyNode.screens,
-                                ...screen.screens,
-                              ];
-                            });
-                            const sl = {
-                              node: emptyNode,
-                              external: event.nativeEvent.shiftKey,
-                            };
-                            setNodeScreens((prevNodes) =>
-                              prevNodes ? [...prevNodes, sl] : [sl],
-                            );
-                          });
-                        }}
-                      >
-                        <DynamicFeedOutlinedIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title="Parameters"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Parameters"
-                        onClick={() => {
-                          createParameterPanel(null, navCtx.selectedProviders);
-                        }}
-                      >
-                        <TuneIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-
-                    <Tooltip
-                      title="ros clean purge"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="ros clean purge"
-                        onClick={() => {
-                          setRosCleanPurge(true);
-                        }}
-                      >
-                        <DeleteSweepIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  </ButtonGroup>
-                )}
-              {navCtx.selectedNodes && navCtx.selectedNodes.length > 0 && (
-                <ButtonGroup
-                  orientation="vertical"
-                  aria-label="ros node control group"
-                >
+              <ButtonGroup
+                orientation="vertical"
+                aria-label="ros node control group"
+              >
+                {navCtx.selectedNodes?.length > 0 && (
                   <Tooltip
                     title="Start"
                     placement="left"
@@ -1350,6 +1162,8 @@ function HostTreeViewPanel() {
                       <PlayArrowIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
+                )}
+                {navCtx.selectedNodes?.length > 0 && (
                   <Tooltip
                     title="Stop"
                     placement="left"
@@ -1366,7 +1180,9 @@ function HostTreeViewPanel() {
                       <StopIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
-                  <Divider />
+                )}
+                {navCtx.selectedNodes?.length > 0 && <Divider />}
+                {navCtx.selectedNodes?.length > 0 && (
                   <Tooltip
                     title="Restart"
                     placement="left"
@@ -1383,7 +1199,8 @@ function HostTreeViewPanel() {
                       <RestartAltIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
-
+                )}
+                {navCtx.selectedNodes?.length > 0 && (
                   <Tooltip title="Kill" placement="left">
                     <IconButton
                       size="medium"
@@ -1395,6 +1212,8 @@ function HostTreeViewPanel() {
                       <CancelPresentationIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
+                )}
+                {navCtx.selectedNodes?.length > 0 && (
                   <Tooltip title="Unregister" placement="left">
                     <IconButton
                       size="medium"
@@ -1406,21 +1225,115 @@ function HostTreeViewPanel() {
                       <DeleteForeverIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
-                </ButtonGroup>
-              )}
-              {navCtx.selectedNodes && navCtx.selectedNodes.length > 0 && (
-                <Divider />
-              )}
-              {navCtx.selectedNodes && navCtx.selectedNodes.length > 0 && (
-                <ButtonGroup
-                  // showLabels
-                  // sx={{
-                  //   backgroundColor: settingsCtx.get('backgroundColor'),
-                  // }}
-                  orientation="vertical"
-                  aria-label="ros node control group"
-                >
-                  {navCtx.selectedProviders.length === 0 && (
+                )}
+                {navCtx.selectedProviders?.length > 0 && <Divider />}
+                {navCtx.selectedProviders?.length > 0 && (
+                  <Tooltip
+                    title="Open Terminal (external terminal with shift+click)"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
+                    <IconButton
+                      size="medium"
+                      aria-label="Open Terminal"
+                      onClick={(event) => {
+                        // open a new terminal for each selected provider
+                        navCtx.selectedProviders.forEach((providerId) => {
+                          const prov = rosCtx.getProviderById(providerId);
+                          const emptyNode = new RosNode();
+                          emptyNode.name = 'terminal';
+                          emptyNode.providerId = providerId;
+                          emptyNode.providerName = prov?.name();
+                          createSingleTerminalPanel(
+                            CmdType.TERMINAL,
+                            emptyNode,
+                            '',
+                            event.nativeEvent.shiftKey,
+                          );
+                        });
+                      }}
+                    >
+                      <TerminalIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                )}{' '}
+                {navCtx.selectedProviders?.length > 0 && (
+                  <Tooltip
+                    title="Select screens (external terminal with shift+click)"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
+                    <IconButton
+                      size="medium"
+                      aria-label="Select screens"
+                      onClick={(event) => {
+                        navCtx.selectedProviders.forEach((providerId) => {
+                          const prov = rosCtx.getProviderById(providerId);
+                          const emptyNode = new RosNode();
+                          emptyNode.name = prov?.name();
+                          emptyNode.providerId = providerId;
+                          emptyNode.providerName = prov?.name();
+                          emptyNode.screens = [];
+                          prov?.screens.forEach((screen) => {
+                            emptyNode.screens = [
+                              ...emptyNode.screens,
+                              ...screen.screens,
+                            ];
+                          });
+                          const sl = {
+                            node: emptyNode,
+                            external: event.nativeEvent.shiftKey,
+                          };
+                          setNodeScreens((prevNodes) =>
+                            prevNodes ? [...prevNodes, sl] : [sl],
+                          );
+                        });
+                      }}
+                    >
+                      <DynamicFeedOutlinedIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {navCtx.selectedProviders?.length > 0 && (
+                  <Tooltip
+                    title="Parameters"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
+                    <IconButton
+                      size="medium"
+                      aria-label="Parameters"
+                      onClick={() => {
+                        createParameterPanel(null, navCtx.selectedProviders);
+                      }}
+                    >
+                      <TuneIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                )}{' '}
+                {navCtx.selectedProviders?.length > 0 && (
+                  <Tooltip
+                    title="ros clean purge"
+                    placement="left"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                  >
+                    <IconButton
+                      size="medium"
+                      aria-label="ros clean purge"
+                      onClick={() => {
+                        setRosCleanPurge(true);
+                      }}
+                    >
+                      <DeleteSweepIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && (
                     <Tooltip
                       title="Edit"
                       placement="left"
@@ -1431,15 +1344,15 @@ function HostTreeViewPanel() {
                         size="medium"
                         aria-label="Edit"
                         onClick={() => {
-                          createFileEditorPanel(navCtx.selectedNodes);
+                          createFileEditorPanel(getSelectedNodes());
                         }}
                       >
                         <BorderColorIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
                   )}
-
-                  {navCtx.selectedProviders.length === 0 && (
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && (
                     <Tooltip
                       title="Parameters"
                       placement="left"
@@ -1450,15 +1363,17 @@ function HostTreeViewPanel() {
                         size="medium"
                         aria-label="Parameters"
                         onClick={() => {
-                          createParameterPanel(navCtx.selectedNodes, null);
+                          createParameterPanel(getSelectedNodes(), null);
                         }}
                       >
                         <TuneIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
                   )}
-                  <Divider />
-                  {navCtx.selectedProviders.length === 0 && (
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && <Divider />}
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && (
                     <Tooltip
                       title="Screen (external terminal with shift+click)"
                       placement="left"
@@ -1467,7 +1382,7 @@ function HostTreeViewPanel() {
                         size="medium"
                         aria-label="Screen"
                         onClick={(event) => {
-                          navCtx.selectedNodes.forEach((node) => {
+                          getSelectedNodes().forEach((node) => {
                             if (node.screens.length === 1) {
                               // 1 screen available
                               node.screens.forEach((screen) => {
@@ -1512,8 +1427,8 @@ function HostTreeViewPanel() {
                       </IconButton>
                     </Tooltip>
                   )}
-
-                  {navCtx.selectedProviders.length === 0 && (
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && (
                     <Tooltip
                       title="Log (external terminal with shift+click)"
                       placement="left"
@@ -1522,7 +1437,7 @@ function HostTreeViewPanel() {
                         size="medium"
                         aria-label="Log"
                         onClick={(event) => {
-                          navCtx.selectedNodes.forEach((node) => {
+                          getSelectedNodes().forEach((node) => {
                             createSingleTerminalPanel(
                               CmdType.LOG,
                               node,
@@ -1536,22 +1451,21 @@ function HostTreeViewPanel() {
                       </IconButton>
                     </Tooltip>
                   )}
-
-                  {navCtx.selectedProviders.length === 0 && (
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && (
                     <Tooltip title="Clear Logs" placement="left">
                       <IconButton
                         size="medium"
                         aria-label="Clear Logs"
                         onClick={() => {
-                          clearLogs(navCtx.selectedNodes, null);
+                          clearLogs(getSelectedNodes(), null);
                         }}
                       >
                         <DeleteSweepIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
                   )}
-                </ButtonGroup>
-              )}
+              </ButtonGroup>
             </Paper>
           </Box>
         </Stack>

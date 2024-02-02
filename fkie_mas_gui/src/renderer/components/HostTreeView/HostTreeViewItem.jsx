@@ -182,10 +182,7 @@ function HostTreeViewItem({
           )}
 
           {timeSyncActive && (
-            <Tooltip
-              title={timeSyncText}
-              placement="right-end"
-            >
+            <Tooltip title={timeSyncText} placement="right-end">
               <Box>
                 <IconButton
                   edge="start"

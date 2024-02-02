@@ -55,6 +55,7 @@ const compareTreeProvider = (a, b) => {
 function HostTreeView({
   providerNodeTree,
   onNodeSelect,
+  onProviderSelect,
   startNodes,
   stopNodes,
   restartNodes,
@@ -68,6 +69,10 @@ function HostTreeView({
 
   const [expanded, setExpanded] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
+  // keyNodeList: {key: string, idGlobal: string}[]
+  const keyNodeList = useMemo(() => {
+    return [];
+  });
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -128,6 +133,42 @@ function HostTreeView({
     },
     [rosCtx.mapProviderRosNodes],
   );
+
+  /**
+   * Get nodes for selected ids
+   */
+  const getNodeIdsFromTreeIds = useCallback(
+    (itemIds) => {
+      let nodeList = [];
+      itemIds.forEach((item) => {
+        nodeList = [
+          ...nodeList,
+          ...keyNodeList
+            .filter((entry) => {
+              return entry.key.startsWith(item);
+            })
+            .map((entry) => {
+              return entry.idGlobal;
+            }),
+        ];
+      });
+      return nodeList;
+    },
+    [keyNodeList],
+  );
+
+  /**
+   * Get providers for selected ids
+   */
+  const getProvidersFromIds = useCallback((itemIds) => {
+    const provList = [];
+    itemIds.forEach((item) => {
+      if (!item.includes('#')) {
+        provList.push(item);
+      }
+    });
+    return provList;
+  }, []);
 
   /**
    * Callback when items on the tree are selected by the user
@@ -198,9 +239,13 @@ function HostTreeView({
    */
   useEffect(() => {
     if (onNodeSelect) {
-      onNodeSelect(selectedItems);
+      onNodeSelect(getNodeIdsFromTreeIds(selectedItems));
     }
-  }, [onNodeSelect, selectedItems]);
+    if (onProviderSelect) {
+      onProviderSelect(getProvidersFromIds(selectedItems));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItems]);
 
   /**
    * Callback when the start floating button of a HostTreeViewItem is clicked
@@ -208,12 +253,13 @@ function HostTreeView({
   const onStartClick = useCallback(
     (nodeId) => {
       if (selectedItems.includes(nodeId)) {
-        startNodes(selectedItems);
+        startNodes(getNodeIdsFromTreeIds(selectedItems));
       } else {
-        startNodes([nodeId]);
+        startNodes(getNodeIdsFromTreeIds([nodeId]));
       }
     },
-    [selectedItems, startNodes],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedItems, keyNodeList],
   );
 
   /**
@@ -222,12 +268,13 @@ function HostTreeView({
   const onStopClick = useCallback(
     (nodeId) => {
       if (selectedItems.includes(nodeId)) {
-        stopNodes(selectedItems);
+        stopNodes(getNodeIdsFromTreeIds(selectedItems));
       } else {
-        stopNodes([nodeId]);
+        stopNodes(getNodeIdsFromTreeIds([nodeId]));
       }
     },
-    [selectedItems, stopNodes],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedItems, keyNodeList],
   );
 
   /**
@@ -236,12 +283,13 @@ function HostTreeView({
   const onRestartClick = useCallback(
     (nodeId) => {
       if (selectedItems.includes(nodeId)) {
-        restartNodes(selectedItems);
+        restartNodes(getNodeIdsFromTreeIds(selectedItems));
       } else {
-        restartNodes([nodeId]);
+        restartNodes(getNodeIdsFromTreeIds([nodeId]));
       }
     },
-    [selectedItems, restartNodes],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedItems],
   );
 
   /**
@@ -400,13 +448,17 @@ function HostTreeView({
         console.error('Invalid item ', providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
       }
-
       const { children, treePath, node } = treeItem;
       const nodeId = `${providerId}#${treePath}`;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
         let label = node.name.replace(node.namespace, '');
         label = label[0] === '/' ? label.slice(1) : label;
+        // console.log(`ADD:  node.idGlobal`);
+        keyNodeList.push({
+          key: `${nodeId}#${node.id}`,
+          idGlobal: node.idGlobal,
+        });
         return (
           <HostTreeViewItem
             key={`${nodeId}#${node.id}`}
@@ -680,6 +732,7 @@ function HostTreeView({
 HostTreeView.defaultProps = {
   providerNodeTree: [],
   onNodeSelect: () => {},
+  onProviderSelect: () => {},
   startNodes: () => {},
   stopNodes: () => {},
   restartNodes: () => {},
@@ -691,6 +744,7 @@ HostTreeView.defaultProps = {
 HostTreeView.propTypes = {
   providerNodeTree: PropTypes.array,
   onNodeSelect: PropTypes.func,
+  onProviderSelect: PropTypes.func,
   startNodes: PropTypes.func,
   stopNodes: PropTypes.func,
   restartNodes: PropTypes.func,

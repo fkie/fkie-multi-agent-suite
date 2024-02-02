@@ -83,15 +83,21 @@ function NodesDetailsPanel() {
   useEffect(() => {
     // TODO: Make a parameter or config for [maxNodes]
     const maxNodes = 3;
-    setNodesShow(
-      navCtx.selectedNodes.slice(
-        0,
-        navCtx.selectedNodes.length > maxNodes
-          ? maxNodes
-          : navCtx.selectedNodes.length,
-      ),
+    const idsToShow = navCtx.selectedNodes.slice(
+      0,
+      navCtx.selectedNodes.length > maxNodes
+        ? maxNodes
+        : navCtx.selectedNodes.length,
     );
-  }, [navCtx.selectedNodes]);
+    const nodes = [];
+    idsToShow.forEach((id) => {
+      const n = rosCtx.nodeMap.get(id);
+      if (n) {
+        nodes.push(n);
+      }
+    });
+    setNodesShow(nodes);
+  }, [navCtx.selectedNodes, rosCtx.nodeMap]);
 
   const onTopicClick = useCallback(
     async (rosTopicType, topic, providerId, external = false) => {
@@ -652,7 +658,7 @@ function NodesDetailsPanel() {
         );
       })}
 
-      {navCtx.selectedNodes && navCtx.selectedNodes.length === 0 && (
+      {nodesShow?.length === 0 && (
         <Alert severity="info" style={{ minWidth: 0 }}>
           <AlertTitle>Please select a node</AlertTitle>
         </Alert>
