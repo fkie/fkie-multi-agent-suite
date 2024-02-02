@@ -12,7 +12,7 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import TopicIcon from '@mui/icons-material/Topic';
 import TuneIcon from '@mui/icons-material/Tune';
 import WysiwygIcon from '@mui/icons-material/Wysiwyg';
-import { Badge, IconButton, Stack, Tooltip } from '@mui/material';
+import { IconButton, Stack, Tooltip } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
 import { Actions, DockLocation, Layout, Model } from 'flexlayout-react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -209,7 +209,8 @@ function NodeManager() {
             placement="top"
             enterDelay={tooltipDelay}
           >
-            <Badge
+            {/* TODO fix count update
+              <Badge
               color="info"
               badgeContent={`${logCtx.countErrors}`}
               invisible={logCtx.countErrors === 0}
@@ -220,7 +221,8 @@ function NodeManager() {
               }}
             >
               <DesktopWindowsOutlinedIcon sx={{ fontSize: 'inherit' }} />
-            </Badge>
+            </Badge> */}
+            <DesktopWindowsOutlinedIcon sx={{ fontSize: 'inherit' }} />
           </Tooltip>
         );
         renderValues.name = 'Option';
