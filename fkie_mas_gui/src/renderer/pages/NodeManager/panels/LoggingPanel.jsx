@@ -48,7 +48,7 @@ const VirtuosoTableComponents = {
 
 const exportLogs = (logs) => {
   const filename = 'logs.json';
-  const jsonStr = JSON.stringify(logs);
+  const jsonStr = JSON.stringify(logs, null, 2);
 
   const element = document.createElement('a');
   element.setAttribute(
@@ -316,7 +316,15 @@ function LoggingPanel() {
           <IconButton
             edge="start"
             aria-label="Export to JSON"
-            onClick={() => exportLogs(logCtx.logs)}
+            onClick={() =>
+              exportLogs(
+                logCtx.logs.filter(
+                  (log) =>
+                    showLogLevel(log.level) &&
+                    log.description.includes(searchTerm),
+                ),
+              )
+            }
           >
             <FileDownloadOutlinedIcon sx={{ fontSize: 'inherit' }} />
           </IconButton>
