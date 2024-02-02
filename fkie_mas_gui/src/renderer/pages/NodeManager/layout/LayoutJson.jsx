@@ -11,6 +11,7 @@ const DEFAULT_LAYOUT = {
     tabSetEnableClose: false,
     enableRotateBorderIcons: false,
     tabSetEnableDeleteWhenEmpty: true,
+    // tabEnableRenderOnDemand: false,
   },
   borders: [
     {

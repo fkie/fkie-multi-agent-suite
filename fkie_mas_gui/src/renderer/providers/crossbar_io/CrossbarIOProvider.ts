@@ -336,6 +336,7 @@ class CrossbarIOProvider {
         this.getProviderSystemEnv();
         this.updateRosNodes();
         this.updateDiagnostics(null);
+        this.getPackageList();
         // this.launchGetList();
       }
     };

@@ -11,7 +11,6 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-import { useCustomEventListener } from 'react-custom-events';
 import {
   PackageExplorer,
   ProviderSelector,
@@ -19,10 +18,6 @@ import {
 } from '../../../components';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-import {
-  ConnectionState,
-  EVENT_PROVIDER_STATE,
-} from '../../../providers/events';
 
 function PackageExplorerPanel() {
   const rosCtx = useContext(RosContext);
@@ -88,15 +83,15 @@ function PackageExplorerPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider, settingsCtx.changed]);
 
-  useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
-    if (!selectedProvider) return;
-    if (
-      selectedProvider === data.provider.id &&
-      data.newState === ConnectionState.STATES.CONNECTED
-    ) {
-      updatePackageList(selectedProvider);
-    }
-  });
+  // useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
+  //   if (!selectedProvider) return;
+  //   if (
+  //     selectedProvider === data.provider.id &&
+  //     data.newState === ConnectionState.STATES.CONNECTED
+  //   ) {
+  //     updatePackageList(selectedProvider);
+  //   }
+  // });
 
   return (
     <Box
