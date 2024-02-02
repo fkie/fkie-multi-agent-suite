@@ -286,29 +286,31 @@ function ProviderPanel() {
               }`}
               placement="bottom"
             >
-              {window.CommandExecutor && (
-                <Button
-                  style={{
-                    textTransform: 'none',
-                  }}
-                  onClick={() => {
-                    handleStartProvider(provider);
-                  }}
-                  variant="text"
-                  color="info"
-                  size="small"
-                  endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
-                >
+              <div>
+                {window.CommandExecutor && (
+                  <Button
+                    style={{
+                      textTransform: 'none',
+                    }}
+                    onClick={() => {
+                      handleStartProvider(provider);
+                    }}
+                    variant="text"
+                    color="info"
+                    size="small"
+                    endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
+                  >
+                    <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
+                      {state}
+                    </div>
+                  </Button>
+                )}
+                {!window.CommandExecutor && (
                   <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
                     {state}
                   </div>
-                </Button>
-              )}
-              {!window.CommandExecutor && (
-                <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
-                  {state}
-                </div>
-              )}
+                )}
+              </div>
             </Tooltip>
 
             <Tooltip title="Join to running daemon" placement="bottom">
