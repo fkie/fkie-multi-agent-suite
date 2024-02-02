@@ -1146,7 +1146,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             pub_cmd = f'pub {request.topic_name} {request.msg_type} "{topic_params}" {opt_str}'
             Log.debug(f"rostopic parameter: {pub_cmd}")
             startcfg = StartConfig("rostopic", "rostopic")
-            startcfg.fullname = f"/rostopic_pub/{request.topic_name.strip('/')}"
+            startcfg.fullname = f"/mas_publisher/{request.topic_name.strip('/')}"
             startcfg.args = [f"__name:={startcfg.fullname}", pub_cmd]
             launcher.run_node(startcfg)
         except Exception:

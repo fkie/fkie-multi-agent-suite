@@ -859,7 +859,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 opt_str += ' -p 10'
             if request.use_rostime:
                 opt_str += ' --use-rostime'
-            fullname = f"/rostopic_pub/{request.topic_name.strip('/')}".replace(
+            fullname = f"/mas_publisher/{request.topic_name.strip('/')}".replace(
                 '/', '_')
             opt_str += f' -n {fullname}'
             data = json.loads(request.data)
