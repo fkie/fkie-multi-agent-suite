@@ -1238,7 +1238,6 @@ class CrossbarIOProvider {
           ) {
             return;
           }
-
           launchList.push(
             new LaunchContent(
               parsed.path,
@@ -1277,6 +1276,13 @@ class CrossbarIOProvider {
               }
             });
 
+            let associations: string[] = [];
+            launchFile.associations.forEach((item) => {
+              if (item.node === uniqueNodeName) {
+                associations = item.nodes;
+              }
+            });
+
             // if node exist (it is running), only update the associated launch file
             let nodeIsRunning = false;
             const iNode = this.rosNodes.findIndex((n) => {
@@ -1286,6 +1292,7 @@ class CrossbarIOProvider {
               this.rosNodes[iNode].launchPaths.add(launchFile.path);
               this.rosNodes[iNode].parameters = nodeParameters;
               this.rosNodes[iNode].launchInfo = launchNode;
+              this.rosNodes[iNode].associations = associations;
               nodeIsRunning = true;
             }
 
@@ -1305,6 +1312,7 @@ class CrossbarIOProvider {
               n.idGlobal = `${this.id}${n.id.replaceAll('/', '.')}`;
               n.providerName = this.name();
               n.providerId = this.id;
+              n.associations = associations;
               this.rosNodes.push(n);
             }
           }

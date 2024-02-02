@@ -471,13 +471,49 @@ function HostTreeViewPanel() {
     }
   };
 
+  function updateWithAssociations(nodes) {
+    let associatedNodes = [];
+    nodes.forEach((node) => {
+      if (node.associations.length > 0) {
+        const provider = rosCtx.getProviderById(node.providerId);
+        if (provider) {
+          node.associations.forEach((asNode) => {
+            associatedNodes = [
+              ...updateWithAssociations(
+                provider.rosNodes.filter((n) => n.name === asNode),
+              ),
+              ...associatedNodes,
+            ];
+          });
+        }
+      }
+    });
+    // prepend all associated nodes and remove them from current list.
+    let result = [];
+    nodes.forEach((node) => {
+      let found = false;
+      associatedNodes.forEach((n) => {
+        if (n.name === node.name) {
+          found = true;
+        }
+      });
+      if (!found) {
+        result.push(node);
+      }
+    });
+    result = [...associatedNodes, ...result];
+    return result;
+  }
+
   const startNodesWithLaunchCheck = useCallback(
     (nodes, ignoreRunState = false) => {
       const withMultiLaunch = [];
       const node2Start = [];
       const withNoLaunch = [];
       const skippedNodes = new Map();
-      nodes.forEach((node) => {
+      // check nodes for associations and extend start node list
+      const nodeList = updateWithAssociations(nodes);
+      nodeList.forEach((node) => {
         // ignore running and nodes already in the queue
         if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
           skippedNodes.set(node.name, 'already running');
@@ -520,7 +556,7 @@ function HostTreeViewPanel() {
         setNodesToStart(node2Start);
       }
     },
-    [queueItemsQueueMain, logCtx],
+    [queueItemsQueueMain, rosCtx, logCtx],
   );
 
   /**

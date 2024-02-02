@@ -146,6 +146,8 @@ class RosNode {
    */
   launchInfo?: LaunchNodeInfo;
 
+  associations: string[] = [];
+
   /**
    * ID of the composable/nodelet's parent
    */
