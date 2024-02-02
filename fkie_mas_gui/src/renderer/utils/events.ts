@@ -1,3 +1,4 @@
+import { LayoutTabConfig } from '../pages/NodeManager/layout';
 import { generateUniqueId } from './index';
 
 export const EVENT_OPEN_COMPONENT = 'EVENT_OPEN_COMPONENT' as const;
@@ -9,7 +10,8 @@ export function eventOpenComponent(
   component: any,
   multiple: boolean = true,
   closable: boolean = true,
-  panelGroup: string = '',
+  panelGroup: string = '', // panel or tab id where to place the new tab
+  config: LayoutTabConfig = new LayoutTabConfig(false, panelGroup), // a place to hold json config for the hosted component
 ) {
   return {
     id: multiple ? `${id}-${generateUniqueId()}` : id,
@@ -17,6 +19,7 @@ export function eventOpenComponent(
     closable,
     component,
     panelGroup: !panelGroup && multiple ? `${id}` : panelGroup,
+    config,
   };
 }
 

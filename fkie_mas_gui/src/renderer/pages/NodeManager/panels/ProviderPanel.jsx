@@ -44,8 +44,8 @@ import {
   eventOpenComponent,
   eventOpenSettings,
 } from '../../../utils/events';
+import { LAYOUT_TABS, LayoutTabConfig } from '../layout';
 
-import { LAYOUT_TABS } from '../layout';
 import OverflowMenuProvider from './OverflowMenuProvider';
 import SystemInformationPanel from './SystemInformationPanel';
 
@@ -111,11 +111,12 @@ function ProviderPanel() {
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
           `provider-info-${providerName}`,
-          `Info - ${providerName}`,
+          providerName,
           <SystemInformationPanel providerId={providerId} />,
           false,
           true,
           LAYOUT_TABS.PROVIDER,
+          new LayoutTabConfig(false, 'info'),
         ),
       );
       return;

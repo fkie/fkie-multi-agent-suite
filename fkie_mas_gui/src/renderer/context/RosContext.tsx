@@ -25,7 +25,8 @@ import {
   EventProviderWarnings,
 } from '../providers/events';
 
-import { ConnectionState, CrossbarIOProvider } from '../providers';
+import { ConnectionState } from '../providers';
+import CrossbarIOProvider from '../providers/crossbar_io/CrossbarIOProvider';
 
 import MultimasterManager from '../../main/IPC/MultimasterManager';
 import { IROSInfo, ROSInfo } from '../../main/IPC/ROSInfo';
@@ -808,11 +809,10 @@ export function RosProviderReact(
               allStarted = false;
               // wait a little longer to make sure the processes are fully started
               if (config.daemon.enable || config.discovery.enable) {
-                logCtx.info(
-                  `Connect to '${config.host}' in 3 seconds`,
-                  '',
-                );
-                setTimeout(() => {connectToProvider(provider);}, 3000);
+                logCtx.info(`Connect to '${config.host}' in 3 seconds`, '');
+                setTimeout(() => {
+                  connectToProvider(provider);
+                }, 3000);
               }
               return false;
             }
@@ -1104,28 +1104,25 @@ export function RosProviderReact(
     EVENT_PROVIDER_PATH_EVENT,
     (data: EventProviderPathEvent) => {
       data.path.affected.forEach((arg: string) => {
-        enqueueSnackbar(
-          `Do you want to reload file [${getFileName(arg)}]`,
-          {
-            persist: true,
-            anchorOrigin: {
-              vertical: 'top',
-              horizontal: 'right',
-            },
-            preventDuplicate: true,
-            content: (key, message) => {
-              return createReloadFileAlertComponent(
-                key,
-                `${message}`,
-                data.provider,
-                data.path.srcPath,
-                data.path.eventType,
-                arg,
-                reloadLaunchFile,
-              );
-            },
+        enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
+          persist: true,
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
           },
-        );
+          preventDuplicate: true,
+          content: (key, message) => {
+            return createReloadFileAlertComponent(
+              key,
+              `${message}`,
+              data.provider,
+              data.path.srcPath,
+              data.path.eventType,
+              arg,
+              reloadLaunchFile,
+            );
+          },
+        });
       });
     },
   );

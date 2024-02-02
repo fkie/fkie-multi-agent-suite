@@ -31,11 +31,13 @@ import { emitCustomEvent } from 'react-custom-events';
 import { SearchBar, Tag } from '../../../components';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
+import { CmdType } from '../../../providers';
 import { pathJoin } from '../../../utils';
 import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { LayoutTabConfig } from '../layout';
 import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
@@ -195,8 +197,8 @@ function TopicsPanel({ initialSearchTerm }) {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            'echo-topic',
-            `Echo - ${topic.name}`,
+            `echo-${topic.name}-${providerId}`,
+            topic.name,
             <TopicEchoPanel
               showOptions
               defaultRosTopicType={actionType}
@@ -204,8 +206,13 @@ function TopicsPanel({ initialSearchTerm }) {
               defaultTopic={topic.name}
               defaultNoData={false}
             />,
+            false,
             true,
-            true,
+            new LayoutTabConfig(true, CmdType.ECHO, {
+              type: CmdType.ECHO,
+              providerId,
+              topicName: topic.name,
+            }),
           ),
         );
       }
@@ -213,14 +220,15 @@ function TopicsPanel({ initialSearchTerm }) {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            'publish-topic',
-            `Publish - ${topic.name}`,
+            `publish-${topic.name}-${providerId}`,
+            topic.name,
             <TopicPublishPanel
               topicName={topic.name}
               providerId={providerId}
             />,
+            false,
             true,
-            true,
+            new LayoutTabConfig(true, 'publish'),
           ),
         );
       }

@@ -6,6 +6,7 @@ import TerminalClient from '../../../components/TerminalClient/TerminalClient';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { RosNode } from '../../../models';
+import { CmdType } from '../../../providers';
 
 function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
   const rosCtx = useContext(RosContext);
@@ -14,7 +15,7 @@ function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
   const [currentProvider, setCurrentProvider] = useState(null);
   const [lastScreenUsed, setLastScreenUsed] = useState('');
 
-  const initializeTerminal = useDebounceCallback((newScreen = null) => {
+  const initializeTerminal = useDebounceCallback(async (newScreen = null) => {
     // get current provider
     const provider = rosCtx.getProviderById(providerId);
 
@@ -24,62 +25,16 @@ function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
     }
 
     setCurrentProvider(() => provider);
-
-    if (type === 'cmd') {
-      if (cmd) {
-        setInitialCommands([`${cmd} \r`]);
-      }
-    }
-
-    if (type === 'screen') {
-      if (newScreen && newScreen.length > 0) {
-        setInitialCommands([`screen -d -r ${newScreen}  \r`]);
-        setLastScreenUsed(newScreen);
-      } else if (screen && screen.length > 0) {
-        setInitialCommands([`screen -d -r ${screen}  \r`]);
-        setLastScreenUsed(screen);
-      } else {
-        // search screen with node name
-        let screenName = '';
-        if (provider.rosState.ros_version === '1') {
-          screenName = node.name
-            .substring(1)
-            .replaceAll('_', '__')
-            .replaceAll('/', '_');
-        } else if (provider.rosState.ros_version === '2') {
-          screenName = node.name.substring(1).replaceAll('/', '.');
-        }
-
-        const cmdStr = `screen -d -r $(ps aux | grep "/usr/bin/SCREEN" | grep "${screenName}" | awk '{print $2}') \r`;
-        setInitialCommands([cmdStr]);
-        setLastScreenUsed('');
-      }
-    }
-
-    if (type === 'log') {
-      if (provider.getLogPaths) {
-        let logPaths = [];
-
-        const getLogPaths = async () => {
-          const request = [node.name];
-          logPaths = await provider.getLogPaths(request);
-          if (logPaths.length > 0) {
-            // `tail -f ${logPaths[0].screen_log} \r`,
-            setInitialCommands(() => [
-              `/usr/bin/less -fKLnQrSU ${logPaths[0].screen_log} \r`,
-            ]);
-          } else {
-            setInitialCommands(() => [``]);
-          }
-        };
-        getLogPaths();
-      } else {
-        console.error('function [getLogPaths] not available by provider');
-      }
-    }
-
-    if (type === 'terminal') {
-      setInitialCommands([`clear \r`]);
+    const terminalCmd = await provider.cmdForType(
+      type,
+      node?.name,
+      '',
+      newScreen,
+      cmd,
+    );
+    setInitialCommands([`${terminalCmd.cmd}\r`]);
+    if (type === CmdType.SCREEN) {
+      setLastScreenUsed(terminalCmd.screen);
     }
   }, 200);
 
@@ -181,7 +136,7 @@ SingleTerminalPanel.defaultProps = {
 };
 
 SingleTerminalPanel.propTypes = {
-  type: PropTypes.string.isRequired,
+  type: PropTypes.instanceOf(CmdType).isRequired,
   providerId: PropTypes.string,
   node: PropTypes.instanceOf(RosNode),
   screen: PropTypes.string,

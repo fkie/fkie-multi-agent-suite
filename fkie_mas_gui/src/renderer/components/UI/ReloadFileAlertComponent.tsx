@@ -25,9 +25,9 @@ import {
   SnackbarMessage,
   useSnackbar,
 } from 'notistack';
-import SettingsContext from '../../context/SettingsContext';
+import { SettingsContext } from '../../context/SettingsContext';
 import { PATH_EVENT_TYPE } from '../../models';
-import { CrossbarIOProvider } from '../../providers';
+import CrossbarIOProvider from '../../providers/crossbar_io/CrossbarIOProvider';
 
 interface ReloadFileComponentProps {
   id: SnackbarKey | undefined;

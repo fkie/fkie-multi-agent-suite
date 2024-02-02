@@ -69,6 +69,9 @@ import {
   EventProviderWarnings,
 } from '../events';
 
+import CmdTerminal from '../CmdTerminal';
+import CmdType from '../CmdType';
+
 /**
  * CrossbarIOProvider class to connect with a running WAMP Router
  */
@@ -219,6 +222,69 @@ class CrossbarIOProvider {
 
   public setName: (name: string) => void = (name: string) => {
     this.userName = name;
+  };
+
+  /** Creates a command string to open screen or log in a terminal */
+  public cmdForType: (
+    type: CmdType,
+    nodeName: string,
+    topicName: string,
+    screenName: string,
+    cmd: string,
+  ) => Promise<CmdTerminal> = async (
+    type,
+    nodeName = '',
+    topicName = '',
+    screenName = '',
+    cmd = '',
+  ) => {
+    const result = new CmdTerminal();
+    switch (type) {
+      case CmdType.CMD:
+        result.cmd = `${cmd}`;
+        break;
+      case CmdType.SCREEN:
+        if (screenName && screenName.length > 0) {
+          result.cmd = `screen -d -r ${screenName}`;
+          result.screen = screenName;
+        } else {
+          // search screen with node name
+          let createdScreenName = '';
+          if (this.rosState.ros_version === '1') {
+            createdScreenName = nodeName
+              .substring(1)
+              .replaceAll('_', '__')
+              .replaceAll('/', '_');
+          } else if (this.rosState.ros_version === '2') {
+            createdScreenName = nodeName.substring(1).replaceAll('/', '.');
+          }
+          result.cmd = `screen -d -r $(ps aux | grep "/usr/bin/SCREEN" | grep "${createdScreenName}" | awk '{print $2}')`;
+          result.screen = createdScreenName;
+        }
+        break;
+      case CmdType.LOG:
+        // eslint-disable-next-line no-case-declarations
+        const logPaths = await this.getLogPaths([nodeName]);
+        if (logPaths.length > 0) {
+          // `tail -f ${logPaths[0].screen_log} \r`,
+          result.cmd = `/usr/bin/less -fKLnQrSU ${logPaths[0].screen_log}`;
+          result.log = logPaths[0].screen_log;
+        }
+        break;
+      case CmdType.ECHO:
+        if (this.rosState.ros_version === '1') {
+          result.cmd = `rostopic echo ${topicName}`;
+        } else if (this.rosState.ros_version === '2') {
+          result.cmd = `ros2 topic echo ${topicName}`;
+        }
+        break;
+      case CmdType.TERMINAL:
+        result.cmd = cmd ? `${cmd} \r` : ``;
+        break;
+      default:
+        break;
+    }
+    return Promise.resolve(result);
   };
 
   public setConnectionState: (state: ConnectionState, details: string) => void =

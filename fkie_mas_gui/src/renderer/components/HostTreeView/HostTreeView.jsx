@@ -12,6 +12,7 @@ import { emitCustomEvent } from 'react-custom-events';
 import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
+import { CmdType } from '../../providers';
 
 import SingleTerminalPanel from '../../pages/NodeManager/panels/SingleTerminalPanel';
 import { generateUniqueId } from '../../utils';
@@ -316,7 +317,11 @@ function HostTreeView({
         eventOpenComponent(
           'cmd',
           `cmd - ${cmd}@${provider?.name()}`,
-          <SingleTerminalPanel type="cmd" providerId={providerId} cmd={cmd} />,
+          <SingleTerminalPanel
+            type={CmdType.CMD}
+            providerId={providerId}
+            cmd={cmd}
+          />,
           true,
           true,
           '',

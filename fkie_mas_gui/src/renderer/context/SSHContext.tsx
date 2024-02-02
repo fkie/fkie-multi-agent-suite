@@ -275,7 +275,6 @@ export function SSHProvider({
         return [...previousCredentials, credential];
       });
     } catch (error: any) {
-      console.log(`EOROR: ${error.message}`);
       return { result: false, message: error.message };
     }
 

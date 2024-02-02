@@ -28,11 +28,12 @@ import { SettingsContext } from '../../../context/SettingsContext';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { RosNodeStatus, getDiagnosticLevelName } from '../../../models';
 
+import { CmdType } from '../../../providers';
 import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from '../layout';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import OverflowMenuService from './OverflowMenuService';
 import OverflowMenuTopic from './OverflowMenuTopic';
 import ServiceCallerPanel from './ServiceCallerPanel';
@@ -106,11 +107,12 @@ function NodesDetailsPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             'topics',
-            `Topic Info - ${topic}`,
+            `${topic}`,
             <TopicsPanel initialSearchTerm={topic} />,
             true,
             true,
             LAYOUT_TABS.HOSTS,
+            new LayoutTabConfig(false, 'info'),
           ),
         );
         return;
@@ -121,11 +123,12 @@ function NodesDetailsPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             `publish-${topic}-${providerId}`,
-            `Publish - ${topic}`,
+            topic,
             <TopicPublishPanel topicName={topic} providerId={providerId} />,
             false,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
+            new LayoutTabConfig(false, 'publish'),
           ),
         );
         return;
@@ -141,19 +144,18 @@ function NodesDetailsPanel() {
         tittle = 'Echo';
         defaultNoData = false;
       }
+      const provider = rosCtx.getProviderById(providerId);
       if (external && window.CommandExecutor) {
-        const provider = rosCtx.getProviderById(providerId);
-        let cmd = '';
-        if (provider?.rosState.ros_version === '1') {
-          cmd = `rostopic echo ${topic}`;
-        } else if (provider?.rosState.ros_version === '2') {
-          cmd = `ros2 topic echo ${topic}`;
-        }
         try {
+          const terminalCmd = await provider.cmdForType(
+            CmdType.ECHO,
+            '',
+            topic,
+          );
           const result = await window.CommandExecutor?.execTerminal(
             null, // we start the publish always local
             `"echo ${topic}"`,
-            cmd,
+            terminalCmd.cmd,
           );
           if (!result.result) {
             logCtx.error(
@@ -174,7 +176,7 @@ function NodesDetailsPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             `echo-${topic}-${providerId}`,
-            `${tittle} - ${topic}`,
+            topic,
             <TopicEchoPanel
               showOptions
               defaultRosTopicType={rosTopicType}
@@ -185,6 +187,11 @@ function NodesDetailsPanel() {
             false,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
+            new LayoutTabConfig(true, CmdType.ECHO, {
+              type: CmdType.ECHO,
+              providerId,
+              topicName: topic,
+            }),
           ),
         );
       }

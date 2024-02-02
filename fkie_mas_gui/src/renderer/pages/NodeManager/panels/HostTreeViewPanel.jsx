@@ -13,6 +13,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import SubjectIcon from '@mui/icons-material/Subject';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import TuneIcon from '@mui/icons-material/Tune';
+import WysiwygIcon from '@mui/icons-material/Wysiwyg';
 import {
   Alert,
   AlertTitle,
@@ -40,7 +41,8 @@ import { RosContext } from '../../../context/RosContext';
 import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { RosNode, RosNodeStatus, getFileName } from '../../../models';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from '../layout';
+import { CmdType } from '../../../providers';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 
 import useQueue from '../../../hooks/useQueue';
 import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/events';
@@ -301,52 +303,23 @@ function HostTreeViewPanel() {
   const createSingleTerminalPanel = useCallback(
     async (type, node, screen, external = false) => {
       if (external && window.CommandExecutor) {
-        // open screen in a new terminal
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);
-        let cmd = '';
-        switch (type) {
-          case 'cmd':
-            cmd = `${cmd} \r`;
-            break;
-          case 'screen':
-            if (screen && screen.length > 0) {
-              cmd = `screen -d -r ${screen} \r`;
-            } else {
-              // search screen with node name
-              let screenName = '';
-              if (provider?.rosState.ros_version === '1') {
-                screenName = node.name
-                  .substring(1)
-                  .replaceAll('_', '__')
-                  .replaceAll('/', '_');
-              } else if (provider?.rosState.ros_version === '2') {
-                screenName = node.name.substring(1).replaceAll('/', '.');
-              }
-              cmd = `screen -d -r $(ps aux | grep "/usr/bin/SCREEN" | grep "${screenName}" | awk '{print $2}') \r`;
-            }
-            break;
-          case 'log':
-            // eslint-disable-next-line no-case-declarations
-            const logPaths = await provider?.getLogPaths([node.name]);
-            if (logPaths.length > 0) {
-              // `tail -f ${logPaths[0].screen_log} \r`,
-              cmd = `/usr/bin/less -fKLnQrSU ${logPaths[0].screen_log} \r`;
-            }
-            break;
-          case 'terminal':
-            cmd = ``;
-            break;
-          default:
-            break;
-        }
+        const terminalCmd = await provider.cmdForType(
+          type,
+          node?.name,
+          '',
+          screen,
+          '',
+        );
+        // open screen in a new terminal
         try {
           const result = await window.CommandExecutor?.execTerminal(
             provider.isLocalHost
               ? null
               : SSHCtx.getCredentialHost(provider.host()),
             `"${type.toLocaleUpperCase()} ${node.name}@${provider.host()}"`,
-            cmd,
+            terminalCmd.cmd,
           );
           if (!result.result) {
             logCtx.error(
@@ -367,7 +340,7 @@ function HostTreeViewPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             `${type}-${screen}-${node.name}@${node.providerName}`,
-            `${type} - ${node.name}@${node.providerName}`,
+            `${node.name}@${node.providerName}`,
             <SingleTerminalPanel
               type={type}
               providerId={node.providerId}
@@ -377,6 +350,12 @@ function HostTreeViewPanel() {
             false,
             true,
             LAYOUT_TAB_SETS.BORDER_BOTTOM,
+            new LayoutTabConfig(true, type, {
+              type,
+              providerId: node.providerId,
+              nodeName: node.name,
+              screen,
+            }),
           ),
         );
       }
@@ -418,7 +397,7 @@ function HostTreeViewPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             `editor-${node.providerId}-${rootLaunch}`,
-            `Editor - ${launchName} [${packageName}]@${node.providerName}`,
+            `${launchName} [${packageName}]@${node.providerName}`,
             <FileEditorPanel
               providerId={node.providerId}
               fileRange={node.launchInfo.file_range}
@@ -428,6 +407,7 @@ function HostTreeViewPanel() {
             false,
             true,
             LAYOUT_TAB_SETS.BORDER_TOP,
+            new LayoutTabConfig(false, 'editor'),
           ),
         );
         openIds.push(id);
@@ -444,11 +424,12 @@ function HostTreeViewPanel() {
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
           `parameter-node-${node.id}`,
-          `Parameter - ${node.name}`,
+          `${node.name}`,
           <ParameterPanel nodes={[node]} providers={null} />,
           false,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
+          new LayoutTabConfig(false, 'parameter'),
         ),
       );
     });
@@ -457,11 +438,12 @@ function HostTreeViewPanel() {
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
           `parameter-provider-${provider}`,
-          `Parameter - ${provider}`,
+          `${provider}`,
           <ParameterPanel nodes={null} providers={[provider]} />,
           false,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
+          new LayoutTabConfig(false, 'parameter'),
         ),
       );
     });
@@ -471,7 +453,7 @@ function HostTreeViewPanel() {
     // let node = getQueueMain();
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
-      console.log(`start: ${node.name}`);
+      logCtx.debug(`start: ${node.name}`, '');
       if (!provider || !provider.isAvailable()) {
         addStatusQueueMain(
           'START',
@@ -571,6 +553,7 @@ function HostTreeViewPanel() {
   /** Stop node from queue and trigger the next one. */
   const stopNodeQueued = async (node) => {
     if (node !== null) {
+      logCtx.debug(`stop: ${node.name}`, '');
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
         addStatusQueueMain(
@@ -1231,7 +1214,7 @@ function HostTreeViewPanel() {
                             emptyNode.providerId = providerId;
                             emptyNode.providerName = prov?.name();
                             createSingleTerminalPanel(
-                              'terminal',
+                              CmdType.TERMINAL,
                               emptyNode,
                               '',
                               event.nativeEvent.shiftKey,
@@ -1456,7 +1439,7 @@ function HostTreeViewPanel() {
                               // 1 screen available
                               node.screens.forEach((screen) => {
                                 createSingleTerminalPanel(
-                                  'screen',
+                                  CmdType.SCREEN,
                                   node,
                                   screen,
                                   event.nativeEvent.shiftKey,
@@ -1483,7 +1466,7 @@ function HostTreeViewPanel() {
                             } else {
                               // no screens, try to find by node name instead
                               createSingleTerminalPanel(
-                                'screen',
+                                CmdType.SCREEN,
                                 node,
                                 undefined,
                                 event.nativeEvent.shiftKey,
@@ -1492,7 +1475,7 @@ function HostTreeViewPanel() {
                           });
                         }}
                       >
-                        <TerminalIcon fontSize="inherit" />
+                        <WysiwygIcon fontSize="inherit" />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -1508,7 +1491,7 @@ function HostTreeViewPanel() {
                         onClick={(event) => {
                           navCtx.selectedNodes.forEach((node) => {
                             createSingleTerminalPanel(
-                              'log',
+                              CmdType.LOG,
                               node,
                               undefined,
                               event.nativeEvent.shiftKey,
@@ -1572,7 +1555,7 @@ function HostTreeViewPanel() {
                   nodeMultiple.node.screens.includes(screen),
                 );
                 createSingleTerminalPanel(
-                  'screen',
+                  CmdType.SCREEN,
                   nodeWithOpt.node,
                   screen,
                   nodeWithOpt.external,

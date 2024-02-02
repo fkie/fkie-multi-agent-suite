@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { ConnectionState, CrossbarIOProvider } from '.';
+import { ConnectionState } from '.';
 import {
   LaunchContent,
   PathEvent,
@@ -8,6 +8,7 @@ import {
   SubscriberEvent,
   SystemWarningGroup,
 } from '../models';
+import CrossbarIOProvider from './crossbar_io/CrossbarIOProvider';
 
 export { ConnectionState };
 

@@ -23,7 +23,7 @@ import {
   SnackbarMessage,
   useSnackbar,
 } from 'notistack';
-import { CrossbarIOProvider } from '../../providers';
+import CrossbarIOProvider from '../../providers/crossbar_io/CrossbarIOProvider';
 
 interface RestartNodesComponentProps {
   id: SnackbarKey | undefined;
