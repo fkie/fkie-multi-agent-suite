@@ -95,7 +95,7 @@ function LaunchFilePanel({ launchContent }) {
 
   return (
     <Box
-      width="100%"
+      // width="100%"
       height="100%"
       overflow="auto"
       backgroundColor={settingsCtx.get('backgroundColor')}
@@ -131,19 +131,10 @@ function LaunchFilePanel({ launchContent }) {
           )}
         </Stack>
 
-        {launchContent.path && launchContent.path.length > 0 && (
-          <Chip
-            size="small"
-            color="success"
-            label={
-              <>
-                <strong>Path</strong>
-                {`  ${launchContent.path}  `}
-              </>
-            }
-            sx={chipSX}
-          />
-        )}
+        <Typography variant="body">
+          <strong>Path</strong>
+          {`  ${launchContent.path}  `}
+        </Typography>
 
         {/* TODO: Fix and add arguments of the launch file */}
 
