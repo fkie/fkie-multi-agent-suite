@@ -104,7 +104,7 @@ function HostTreeViewPanel() {
    */
   const getNodesFromIds = useCallback(
     (itemIds) => {
-      const nodeList = [];
+      let nodeList = [];
       itemIds.forEach((item) => {
         // Make sure we have a nodeMap object and the item is not the provider (root)
         if (nodeMap && item.indexOf('#') > -1) {
@@ -117,14 +117,22 @@ function HostTreeViewPanel() {
           }
           // search group of nodes
           else {
+            const groupList = [];
             nodeMap.forEach((node, key) => {
               if (
                 !nodeList.some((n) => n.id === node.id) &&
                 key.startsWith(item)
               ) {
-                nodeList.push(node);
+                groupList.push(node);
               }
             });
+            // sort nodes of the group
+            nodeList = [
+              ...nodeList,
+              ...groupList.sort((a, b) => {
+                return a.name.localeCompare(b.name);
+              }),
+            ];
           }
         }
       });
@@ -275,9 +283,9 @@ function HostTreeViewPanel() {
           nodes: newNodes,
         },
       ]);
-      setSelectedTreeItems((prevValues) => [...prevValues]);
+      // setSelectedTreeItems((prevValues) => [...prevValues]);
     },
-    [nodeMap, setProviderNodes, setSelectedTreeItems],
+    [nodeMap, setProviderNodes],
   );
 
   // Register Callbacks ----------------------------------------------------------------------------------
@@ -485,6 +493,7 @@ function HostTreeViewPanel() {
       const withNoLaunch = [];
       const skippedNodes = new Map();
       nodes.forEach((node) => {
+        console.log(`start:: ${node.name}`);
         // ignore running and nodes already in the queue
         if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
           skippedNodes.set(node.name, 'already running');
