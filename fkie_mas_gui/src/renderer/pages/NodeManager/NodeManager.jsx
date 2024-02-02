@@ -129,7 +129,7 @@ function NodeManager() {
           ?.getId();
       } else {
         const nodeBId = model.getNodeById(panelGroup);
-        if (LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
+        if (nodeBId && LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
           result.id = nodeBId.getParent().getId();
         }
       }

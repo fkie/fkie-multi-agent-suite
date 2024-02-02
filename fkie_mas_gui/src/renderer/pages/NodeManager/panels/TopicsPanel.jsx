@@ -37,7 +37,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
-import { LayoutTabConfig } from '../layout';
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
@@ -194,6 +194,7 @@ function TopicsPanel({ initialSearchTerm }) {
   const onActionClick = useCallback(
     (actionType, providerId, providerName, topic) => {
       if (actionType === 'ECHO') {
+        console.log(`ECHO`);
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
@@ -208,6 +209,7 @@ function TopicsPanel({ initialSearchTerm }) {
             />,
             false,
             true,
+            LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(true, CmdType.ECHO, {
               type: CmdType.ECHO,
               providerId,
@@ -228,6 +230,7 @@ function TopicsPanel({ initialSearchTerm }) {
             />,
             false,
             true,
+            LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(true, 'publish'),
           ),
         );
