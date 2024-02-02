@@ -66,7 +66,7 @@ function LaunchFileList({
       EVENT_OPEN_COMPONENT,
       eventOpenComponent(
         `editor-${provId}-${launchContent.path}`,
-        `Editor - ${launchName}`,
+        launchName,
         <FileEditorPanel
           providerId={provId}
           currentFilePath={launchContent.path}

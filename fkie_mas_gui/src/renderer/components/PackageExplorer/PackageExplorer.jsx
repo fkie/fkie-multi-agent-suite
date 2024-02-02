@@ -30,7 +30,11 @@ import {
   SettingsContext,
 } from '../../context/SettingsContext';
 
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
+import {
+  LAYOUT_TABS,
+  LAYOUT_TAB_SETS,
+  LayoutTabConfig,
+} from '../../pages/NodeManager/layout';
 
 import { getFileExtension, getFileName } from '../../models';
 
@@ -334,12 +338,11 @@ function PackageExplorer({ packageList, selectedProvider }) {
 
   const onEditFile = useCallback(
     (fileObj) => {
-      const provider = rosCtx.getProviderById(selectedProvider);
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
           `editor-${selectedProvider}-${fileObj.path}`,
-          `Editor - ${fileObj.name} [${fileObj.package}]@${provider.name()}`,
+          `${fileObj.name} [${fileObj.package}]`,
           <FileEditorPanel
             providerId={selectedProvider}
             referenceFilePath={null}
@@ -349,10 +352,11 @@ function PackageExplorer({ packageList, selectedProvider }) {
           false,
           true,
           LAYOUT_TAB_SETS.BORDER_TOP,
+          new LayoutTabConfig(false, 'editor'),
         ),
       );
     },
-    [rosCtx, selectedProvider],
+    [selectedProvider],
   );
 
   /**

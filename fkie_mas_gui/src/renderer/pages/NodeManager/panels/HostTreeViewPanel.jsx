@@ -396,8 +396,8 @@ function HostTreeViewPanel() {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            `editor-${node.providerId}-${rootLaunch}`,
-            `${launchName} [${packageName}]@${node.providerName}`,
+            id,
+            `${launchName} [${packageName}]`,
             <FileEditorPanel
               providerId={node.providerId}
               fileRange={node.launchInfo.file_range}

@@ -13,6 +13,7 @@ import {
   TextField,
   Toolbar,
   Tooltip,
+  Typography,
 } from '@mui/material';
 
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
@@ -52,6 +53,7 @@ function MonacoEditor({
   const monacoCtx = useContext(MonacoContext);
 
   const editorRef = useRef(null);
+  const [providerName, setProviderName] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [activeModel, setActiveModel] = useState(null);
 
@@ -520,6 +522,7 @@ function MonacoEditor({
     const uriPath = monacoCtx.monaco.Uri.file(`${file.host}:${file.path}`).path;
     setEditorModel(uriPath, fileRange);
     configureMonacoEditor(provider);
+    setProviderName(provider.name());
   };
 
   // update the reference to the updated function [openCodeEditorCallback]
@@ -761,7 +764,17 @@ function MonacoEditor({
               // automaticLayout: true,
             }}
           />
-          <Stack direction="row" spacing={0.5}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            padding="2px"
+          >
+            <Typography
+              style={{ padding: 2, fontWeight: 'normal', fontSize: 12 }}
+            >
+              @{providerName}
+            </Typography>
             {/* <Tag color="default" text={activeModel?.path} wrap copyButton /> */}
             <Tooltip title="Open parent file">
               <IconButton
