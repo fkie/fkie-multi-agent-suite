@@ -149,6 +149,22 @@ const createWindow = async () => {
 
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((data) => {
+    console.log('URRI', data.url);
+    if (data.url === 'about:blank') {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          frame: false,
+          fullscreenable: true,
+          backgroundColor: 'black',
+          webPreferences: {
+            preload: app.isPackaged
+              ? path.join(__dirname, 'preload.js')
+              : path.join(__dirname, '../../.erb/dll/preload.js'),
+          },
+        },
+      };
+    }
     shell.openExternal(data.url);
     return { action: 'deny' };
   });
