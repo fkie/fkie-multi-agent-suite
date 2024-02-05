@@ -154,20 +154,22 @@ function About() {
                   check for updates
                 </Button>
               )}
-              <IconButton
-                edge="start"
-                aria-label="error message"
-                onClick={() => {
-                  setOpenErrorTooltip(!openErrorTooltip);
-                }}
-              >
-                <ErrorOutlineIcon
-                  sx={{
-                    fontSize: 'inherit',
-                    color: 'red',
+              {updateError && (
+                <IconButton
+                  edge="start"
+                  aria-label="error message"
+                  onClick={() => {
+                    setOpenErrorTooltip(!openErrorTooltip);
                   }}
-                />
-              </IconButton>
+                >
+                  <ErrorOutlineIcon
+                    sx={{
+                      fontSize: 'inherit',
+                      color: 'red',
+                    }}
+                  />
+                </IconButton>
+              )}
             </Stack>
             {openErrorTooltip && (
               <Stack mt={1} direction="row" justifyContent="center">
