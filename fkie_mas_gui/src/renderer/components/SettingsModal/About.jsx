@@ -142,7 +142,7 @@ function About() {
                   </Typography>
                   <Button
                     color="primary"
-                    onClick={installUpdate}
+                    onClick={() => installUpdate()}
                     variant="text"
                   >
                     Restart and Install
@@ -150,11 +150,15 @@ function About() {
                 </Stack>
               )}
               {!checkingForUpdate && (
-                <Button color="primary" onClick={checkForUpdate} variant="text">
+                <Button
+                  color="primary"
+                  onClick={() => checkForUpdate()}
+                  variant="text"
+                >
                   check for updates
                 </Button>
               )}
-              {updateError && (
+              {updateError?.length > 0 && (
                 <IconButton
                   edge="start"
                   aria-label="error message"
