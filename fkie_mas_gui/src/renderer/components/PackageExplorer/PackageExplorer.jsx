@@ -179,7 +179,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
   // Reset states upon packageList or history modification.
   useEffect(() => {
     updateStates();
-  }, [selectedPackage, launchFileHistory]);
+  }, [packageList, selectedPackage, launchFileHistory]);
 
   /**
    * Callback function when a package is selected.
