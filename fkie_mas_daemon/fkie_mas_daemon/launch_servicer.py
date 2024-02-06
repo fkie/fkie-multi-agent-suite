@@ -970,7 +970,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.subscriber.start]: {topic}")
         package_name = 'fkie_mas_daemon'
-        executable = 'mas_subscriber'
+        executable = 'mas-subscriber'
         cmd = f"ros2 run {package_name} {executable}"
         # fullname = f"/_mas_subscriber/{topic.replace('.', '/').strip('/')}"
         self.namespace, self.name = ros2_subscriber_nodename_tuple(topic)
