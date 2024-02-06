@@ -412,7 +412,7 @@ function HostTreeView({
     (provider) => {
       const syncNode = getMasterSyncNode(provider.id);
       if (syncNode) {
-        stopNodes([syncNode]);
+        stopNodes([syncNode.idGlobal]);
       } else {
         const lc = new ProviderLaunchConfiguration(
           provider.crossbar.host,
