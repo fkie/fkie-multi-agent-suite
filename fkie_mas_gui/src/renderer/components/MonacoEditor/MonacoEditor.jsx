@@ -586,7 +586,7 @@ function MonacoEditor({
   // <Stack height="100%" ref={panelRef}>
 
   return (
-    <Stack height="100%" ref={panelRef}>
+    <Stack height="100%" ref={panelRef} overflow="none">
       {enableGlobalSearch && (
         <Stack>
           <AppBar position="static" color="transparent" elevation={0}>
@@ -643,6 +643,7 @@ function MonacoEditor({
             flex: 1,
             margin: 0,
           }}
+          overflow="none"
         >
           <Stack
             direction="row"
@@ -718,7 +719,7 @@ function MonacoEditor({
           </Stack>
           <Editor
             key="editor"
-            height={editorHeight - (enableGlobalSearch ? 60 : 0)}
+            height={editorHeight - (enableGlobalSearch ? 62 : 2)}
             theme={settingsCtx.get('useDarkMode') ? 'vs-dark' : 'light'}
             onMount={handleEditorDidMount}
             onChange={handleEditorChange}

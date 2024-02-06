@@ -234,6 +234,7 @@ function FileEditorPanel({
       direction="column"
       height="100%"
       backgroundColor={settingsCtx.get('backgroundColor')}
+      overflow="none"
     >
       {includedFiles && (
         <MonacoEditor
