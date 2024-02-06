@@ -1366,7 +1366,7 @@ class CrossbarIOProvider {
       });
       // do not sort nodes -> start order defined by capability_group
       // this.rosNodes.sort(compareRosNodes);
-      await this.updateScreens(null);
+      // await this.updateScreens(null);
       this.daemon = true;
       emitCustomEvent(
         EVENT_PROVIDER_ROS_NODES,
@@ -2326,10 +2326,10 @@ class CrossbarIOProvider {
     // nl.sort(compareRosNodes);
 
     this.rosNodes = nl;
-    emitCustomEvent(
-      EVENT_PROVIDER_ROS_NODES,
-      new EventProviderRosNodes(this, nl),
-    );
+    // emitCustomEvent(
+    //   EVENT_PROVIDER_ROS_NODES,
+    //   new EventProviderRosNodes(this, nl),
+    // );
     this.updateLaunchContent();
     this.unlockRequest('updateRosNodes');
   };
