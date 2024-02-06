@@ -177,6 +177,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self._watchdog_observer.stop()
 
     def on_any_event(self, event: FileSystemEvent):
+        if event.event_type in ['opened', 'closed']:
+            return
         if event.src_path in self._included_files:
             affected_launch_files = []
             for launch_path, path_list in self._observed_launch_files.items():
