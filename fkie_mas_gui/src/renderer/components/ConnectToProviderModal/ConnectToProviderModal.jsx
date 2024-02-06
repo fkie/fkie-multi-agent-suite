@@ -214,7 +214,7 @@ function ConnectToProviderModal() {
     }
     hosts.forEach((h) => {
       let host = h;
-      if (h.host) host = h.host;
+      if (h.host) host = h.ip;
       const launchCfg = new ProviderLaunchConfiguration(host, rosVersion);
       launchCfg.daemon.enable = enableDaemonNode;
       launchCfg.discovery.enable = enableDiscoveryNode;
@@ -270,15 +270,17 @@ function ConnectToProviderModal() {
     }
     // start each host separately
     hosts.forEach(async (crossbarHost) => {
+      let host = crossbarHost;
+      if (crossbarHost.ip) host = crossbarHost.ip;
       if (saveInProviderList) {
         rosCtx.saveProviderConfig(
-          new ProviderLaunchConfiguration(crossbarHost, rosVersion),
+          new ProviderLaunchConfiguration(host, rosVersion),
         );
       }
-      setStartProviderDescription(`Connecting to ${crossbarHost} ...`);
+      setStartProviderDescription(`Connecting to ${host} ...`);
       const newProvider = new CrossbarIOProvider(
         settingsCtx,
-        crossbarHost,
+        host,
         rosVersion,
         undefined,
         undefined,
