@@ -160,10 +160,12 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         #  composable_container: str = ''
         #  Search the line number of a given node in launch file
         if (self.file_name):
+            node_base_name = os.path.basename(node_name)
             lines_with_node_name = []
             with open(self.file_name, "r") as launch_file:
                 for line_number, line_text in enumerate(launch_file):
-                    if f'name="{node_name}"' in line_text:
+                    if f'name="{node_base_name}"' in line_text:
+                        print(f"XX line_text {line_text}")
                         lines_with_node_name.append([line_number + 1, line_text])
 
             line_number = -1
@@ -187,8 +189,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             #     ]
 
             if len(line_text) > 0:
-                start_column = line_text.index(f'name="{node_name}"') + 7
-                end_column = start_column + len(node_name)
+                start_column = line_text.index(f'name="{node_base_name}"') + 7
+                end_column = start_column + len(node_base_name)
 
             # range in text where the node appears
             self.file_range = {
