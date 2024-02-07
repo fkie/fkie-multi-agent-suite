@@ -158,6 +158,46 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         #  launch_context_arg: str = '',
         #  launch_name: str = ''
         #  composable_container: str = ''
+        #  Search the line number of a given node in launch file
+        if (self.file_name):
+            lines_with_node_name = []
+            with open(self.file_name, "r") as launch_file:
+                for line_number, line_text in enumerate(launch_file):
+                    if f'name="{node_name}"' in line_text:
+                        lines_with_node_name.append([line_number + 1, line_text])
+
+            line_number = -1
+            start_column = 0
+            end_column = 0
+            line_text = ""
+            if len(lines_with_node_name) == 0:
+                # no line found. TODO: Report error?
+                line_number = 0
+            elif len(lines_with_node_name) == 1:
+                line_number = lines_with_node_name[0][0]
+                line_text = lines_with_node_name[0][1]
+            # elif len(lines_with_node_name) > node_occurrence[item.launch_name]:
+            #     # More than one occurrence, but Node are loaded from top to bottom
+            #     # try to find the correct match
+            #     line_number = lines_with_node_name[
+            #         node_occurrence[item.launch_name]
+            #     ][0]
+            #     line_text = lines_with_node_name[node_occurrence[item.launch_name]][
+            #         1
+            #     ]
+
+            if len(line_text) > 0:
+                start_column = line_text.index(f'name="{node_name}"') + 7
+                end_column = start_column + len(node_name)
+
+            # range in text where the node appears
+            self.file_range = {
+                "startLineNumber": line_number,
+                "endLineNumber": line_number,
+                "startColumn": start_column,
+                "endColumn": end_column,
+            }
+
 
     def __del__(self):
         try:
