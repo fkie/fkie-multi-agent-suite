@@ -124,14 +124,14 @@ def interpret_path(path: str, pwd: str = '.') -> str:
             import traceback
             Log.warn(
                 f"search in install/devel space failed: {traceback.format_exc()}")
+
+        pkg_path = ros_pkg.get_path(pkg_name)
+        Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
         # try to find first using ROS find_resource methods
         path_res = ros_pkg.get_ros_resource_from_package(
             pkg_path, path_suffix_stripped)
         if path_res and os.path.exists(path_res):
             return path_res
-
-        pkg_path = ros_pkg.get_path(pkg_name)
-        Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
         if path_suffix.startswith('//'):
             path_suffix = path_suffix[2:]
         full_path = os.path.normpath(os.path.join(pkg_path, path_suffix))
