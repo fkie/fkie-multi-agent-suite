@@ -48,6 +48,7 @@ import useLocalStorage from '../../hooks/useLocalStorage';
 import ProviderLaunchConfiguration from '../../models/ProviderLaunchConfiguration';
 import CrossbarIOProvider from '../../providers/crossbar_io/CrossbarIOProvider';
 import { EVENT_PROVIDER_ROS_NODES } from '../../providers/events';
+import { EVENT_OPEN_CONNECT } from '../../utils/events';
 import CopyButton from '../UI/CopyButton';
 import DraggablePaper from '../UI/DraggablePaper';
 
@@ -183,6 +184,10 @@ function ConnectToProviderModal() {
     setTopicList(Array.from(newAcTopicSet));
   });
 
+  useCustomEventListener(EVENT_OPEN_CONNECT, (data) => {
+    handleOpen();
+  });
+
   const robotHostValueStr = () => {
     const robotHosts = [];
     robotHostValues.forEach((h) => {
@@ -316,6 +321,14 @@ function ConnectToProviderModal() {
         </DialogTitle>
         <DialogContent>
           <Box>
+            {rosCtx.providerLaunches && (
+              <Typography paddingBottom="1em" color="green">
+                No saved provider configurations found. Select hosts that you
+                want to join or on which you want to start the required MAS
+                system nodes. Use <RocketLaunchIcon fontSize="inherit" /> to
+                open this dialog.
+              </Typography>
+            )}
             <Autocomplete
               disablePortal
               multiple

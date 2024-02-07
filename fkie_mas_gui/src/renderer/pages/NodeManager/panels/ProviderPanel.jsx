@@ -39,6 +39,7 @@ import {
 } from '../../../providers/events';
 import {
   EVENT_OPEN_COMPONENT,
+  EVENT_OPEN_CONNECT,
   EVENT_OPEN_SETTINGS,
   SETTING,
   eventOpenComponent,
@@ -95,6 +96,15 @@ function ProviderPanel() {
   useEffect(() => {
     debouncedCallbackFilterText(rosCtx.providers, filterText);
   }, [rosCtx.providers, filterText, debouncedCallbackFilterText]);
+
+  useEffect(() => {
+    if (rosCtx.providerLaunches?.length === 0) {
+      if (rosCtx.rosInfo?.version) {
+        settingsCtx.set('rosVersion', rosCtx.rosInfo.version);
+      }
+      emitCustomEvent(EVENT_OPEN_CONNECT, {});
+    }
+  }, [rosCtx.rosInfo]);
 
   useCustomEventListener(EVENT_PROVIDER_ACTIVITY, (data) => {
     providersActivity.set(data.provider.id, data.active);

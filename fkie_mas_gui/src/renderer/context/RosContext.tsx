@@ -1331,29 +1331,29 @@ export function RosProviderReact(
         newProviders.push(np);
         provLaunchMap.set(np.id, cfg);
       });
-      if (!localHostFound) {
-        // if no stored launch configuration for local provider found, try to connect with default values
-        // TODO add configuration for local provider start
-        const localCfg = new ProviderLaunchConfiguration(
-          'localhost',
-          rosInfo?.version ? rosInfo.version : settingsCtx.get('rosVersion'),
-        );
-        localCfg.daemon.enable = true;
-        localCfg.discovery.enable = true;
-        localCfg.terminal.enable = true;
-        localCfg.autoConnect = true;
-        localCfg.autostart = true;
-        const np = new CrossbarIOProvider(
-          settingsCtx,
-          localCfg.host,
-          localCfg.rosVersion,
-          localCfg.port,
-          localCfg.useSSL,
-          logCtx,
-        );
-        newProviders.push(np);
-        provLaunchMap.set(np.id, localCfg);
-      }
+      // if (!localHostFound) {
+      //   // if no stored launch configuration for local provider found, try to connect with default values
+      //   // TODO add configuration for local provider start
+      //   const localCfg = new ProviderLaunchConfiguration(
+      //     'localhost',
+      //     rosInfo?.version ? rosInfo.version : settingsCtx.get('rosVersion'),
+      //   );
+      //   localCfg.daemon.enable = true;
+      //   localCfg.discovery.enable = true;
+      //   localCfg.terminal.enable = true;
+      //   localCfg.autoConnect = true;
+      //   localCfg.autostart = true;
+      //   const np = new CrossbarIOProvider(
+      //     settingsCtx,
+      //     localCfg.host,
+      //     localCfg.rosVersion,
+      //     localCfg.port,
+      //     localCfg.useSSL,
+      //     logCtx,
+      //   );
+      //   newProviders.push(np);
+      //   provLaunchMap.set(np.id, localCfg);
+      // }
       setProviderLaunchesMap(provLaunchMap);
       setProvidersAddQueue(newProviders);
       setInitializedProviders(true);
@@ -1429,6 +1429,7 @@ export function RosProviderReact(
       rosInfo,
       systemInfo,
       multimasterManager,
+      providerLaunches,
       providers,
       providersConnected,
       providersConnectedPast,

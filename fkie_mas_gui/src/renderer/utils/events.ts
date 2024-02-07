@@ -3,6 +3,7 @@ import { generateUniqueId } from './index';
 
 export const EVENT_OPEN_COMPONENT = 'EVENT_OPEN_COMPONENT' as const;
 export const EVENT_OPEN_SETTINGS = 'EVENT_OPEN_SETTINGS' as const;
+export const EVENT_OPEN_CONNECT = 'EVENT_OPEN_CONNECT' as const;
 
 export function eventOpenComponent(
   id: string,
