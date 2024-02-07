@@ -18,7 +18,7 @@ import {
 } from 'react';
 
 import BorderColorIcon from '@mui/icons-material/BorderColor';
-import LaunchIcon from '@mui/icons-material/Launch';
+import InputIcon from '@mui/icons-material/Input';
 import { emitCustomEvent } from 'react-custom-events';
 
 import useLocalStorage from '../../hooks/useLocalStorage';
@@ -522,7 +522,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                       setSelectedLaunchFile({ ...selectedFile });
                     }}
                   >
-                    <LaunchIcon fontSize="inherit" />
+                    <InputIcon fontSize="inherit" />
                   </IconButton>
                 </span>
               </Tooltip>
