@@ -1,5 +1,6 @@
+import LinearProgress from '@mui/material/LinearProgress';
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   Button,
@@ -14,6 +15,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import { delay } from '../../utils';
 import DraggablePaper from '../UI/DraggablePaper';
 
 function ListSelectionModal({
@@ -23,6 +25,9 @@ function ListSelectionModal({
   onConfirmCallback,
 }) {
   const [selectedProviders, setSelectedProviders] = useState([]);
+  const [progress, setProgress] = useState(100);
+  const [showProgress, setShowProgress] = useState(true);
+  const closeInterval = useRef(null);
 
   const handleToggle = (value) => () => {
     const currentIndex = selectedProviders.findIndex(
@@ -39,10 +44,19 @@ function ListSelectionModal({
     }
 
     setSelectedProviders(newSelectedProviders);
+    setShowProgress(false);
+    if (closeInterval.current) {
+      clearInterval(closeInterval.current);
+      closeInterval.current = null;
+    }
   };
 
   const handleClose = (event, reason) => {
     if (reason && reason === 'backdropClick') return;
+    if (closeInterval.current) {
+      clearInterval(closeInterval.current);
+      closeInterval.current = null;
+    }
     onCloseCallback();
   };
 
@@ -51,9 +65,30 @@ function ListSelectionModal({
     handleClose();
   };
 
+  const performCloseProgress = useCallback(
+    async (oldProgress) => {
+      if (!showProgress) return;
+      if (oldProgress < 0) {
+        onConfirmCallback([]);
+      } else {
+        await delay(1000);
+        setProgress(oldProgress - 20);
+      }
+    },
+    [onConfirmCallback, showProgress],
+  );
+
+  useEffect(() => {
+    if (progress === 100) {
+      setProgress(progress - 20);
+    } else {
+      performCloseProgress(progress);
+    }
+  }, [performCloseProgress, progress]);
+
   return (
     <Dialog
-      open={true}
+      open
       onClose={handleClose}
       fullWidth
       maxWidth="md"
@@ -64,49 +99,49 @@ function ListSelectionModal({
         {title}
       </DialogTitle>
 
-      {providers && (
-        <DialogContent scroll="paper" aria-label="list">
-          <List
-            sx={{
-              width: '100%',
-              maxHeight: 400,
-              overflow: 'auto',
-              bgcolor: 'background.paper',
-            }}
-          >
-            {providers &&
-              providers.map((prov) => {
-                const labelId = `checkbox-list-label-${prov.id}`;
+      <DialogContent scroll="paper" aria-label="list">
+        <List
+          sx={{
+            width: '100%',
+            maxHeight: 400,
+            overflow: 'auto',
+            bgcolor: 'background.paper',
+          }}
+        >
+          {providers &&
+            providers.map((prov) => {
+              const labelId = `checkbox-list-label-${prov.id}`;
 
-                return (
-                  <ListItem key={prov.id} disablePadding>
-                    <ListItemButton
-                      role={undefined}
-                      onClick={handleToggle(prov.id)}
-                      dense
-                    >
-                      <ListItemIcon>
-                        <Checkbox
-                          edge="start"
-                          checked={
-                            selectedProviders.findIndex(
-                              (selProv) => selProv.id === prov.id,
-                            ) !== -1
-                          }
-                          tabIndex={-1}
-                          disableRipple
-                          inputProps={{ 'aria-labelledby': labelId }}
-                        />
-                      </ListItemIcon>
-                      <ListItemText id={labelId} primary={prov.name()} />
-                    </ListItemButton>
-                  </ListItem>
-                );
-              })}
-          </List>
-        </DialogContent>
-      )}
-
+              return (
+                <ListItem key={prov.id} disablePadding>
+                  <ListItemButton
+                    role={undefined}
+                    onClick={handleToggle(prov.id)}
+                    dense
+                  >
+                    <ListItemIcon>
+                      <Checkbox
+                        edge="start"
+                        checked={
+                          selectedProviders.findIndex(
+                            (selProv) => selProv.id === prov.id,
+                          ) !== -1
+                        }
+                        tabIndex={-1}
+                        disableRipple
+                        inputProps={{ 'aria-labelledby': labelId }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText id={labelId} primary={prov.name()} />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+        </List>
+        {showProgress && (
+          <LinearProgress variant="determinate" value={progress} />
+        )}
+      </DialogContent>
       <DialogActions>
         <Button color="primary" onClick={handleClose}>
           Cancel
