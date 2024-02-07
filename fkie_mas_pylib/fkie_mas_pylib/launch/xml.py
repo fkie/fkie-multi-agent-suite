@@ -113,23 +113,7 @@ def interpret_path(path: str, pwd: str = '.') -> str:
     groups = _find_include_tuple(path)
     full_path_not_exists = ''
     for pkg_name, path_suffix in groups.items():
-        pkg_path = ros_pkg.get_path(pkg_name)
-        Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
-        if path_suffix.startswith('//'):
-            path_suffix = path_suffix[2:]
-        full_path = os.path.normpath(os.path.join(pkg_path, path_suffix))
-        if os.path.exists(full_path):
-            return full_path
-        elif full_path:
-            full_path_not_exists = full_path
-
         path_suffix_stripped = path_suffix.strip(os.path.sep)
-        # try to find first using ROS find_resource methods
-        path_res = ros_pkg.get_ros_resource_from_package(
-            pkg_path, path_suffix_stripped)
-        if path_res and os.path.exists(path_res):
-            return path_res
-
         # try to find the specific path in share
         try:
             paths = ros_pkg.get_share_files_path_from_package(
@@ -140,6 +124,22 @@ def interpret_path(path: str, pwd: str = '.') -> str:
             import traceback
             Log.warn(
                 f"search in install/devel space failed: {traceback.format_exc()}")
+        # try to find first using ROS find_resource methods
+        path_res = ros_pkg.get_ros_resource_from_package(
+            pkg_path, path_suffix_stripped)
+        if path_res and os.path.exists(path_res):
+            return path_res
+
+        pkg_path = ros_pkg.get_path(pkg_name)
+        Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
+        if path_suffix.startswith('//'):
+            path_suffix = path_suffix[2:]
+        full_path = os.path.normpath(os.path.join(pkg_path, path_suffix))
+        if os.path.exists(full_path):
+            return full_path
+        elif full_path:
+            full_path_not_exists = full_path
+
     if path.startswith('file://'):
         result = path[7:]
     elif full_path_not_exists:
