@@ -127,14 +127,14 @@ def interpret_path(path: str, pwd: str = '.') -> str:
         # try to find first using ROS find_resource methods
         path_res = ros_pkg.get_ros_resource_from_package(
             pkg_path, path_suffix_stripped)
-        if path_res:
+        if path_res and os.path.exists(path_res):
             return path_res
 
         # try to find the specific path in share
         try:
             paths = ros_pkg.get_share_files_path_from_package(
                 pkg_name, path_suffix_stripped)
-            if paths:
+            if paths and os.path.exists(paths[0]):
                 return paths[0]
         except Exception:
             import traceback
