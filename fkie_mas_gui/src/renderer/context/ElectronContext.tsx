@@ -25,9 +25,11 @@ interface IElectronProviderComponent {
 
 export const ElectronContext = createContext<IElectronContext>(DEFAULT);
 
-export const ElectronProvider: React.FC<IElectronProviderComponent> = ({
+export function ElectronProvider({
   children,
-}) => {
+}: IElectronProviderComponent): ReturnType<
+  React.FC<IElectronProviderComponent>
+> {
   const [shutdownInterface, setShutdownInterface] =
     useState<ShutdownInterface | null>(null);
   const [terminateSubprocesses, setTerminateSubprocesses] =
@@ -64,4 +66,4 @@ export const ElectronProvider: React.FC<IElectronProviderComponent> = ({
       {children}
     </ElectronContext.Provider>
   );
-};
+}
