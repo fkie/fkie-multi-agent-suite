@@ -207,7 +207,6 @@ function TopicsPanel({ initialSearchTerm }) {
               defaultTopic={topic.name}
               defaultNoData={false}
             />,
-            false,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(true, CmdType.ECHO, {
@@ -228,7 +227,6 @@ function TopicsPanel({ initialSearchTerm }) {
               topicName={topic.name}
               providerId={providerId}
             />,
-            false,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(true, 'publish'),

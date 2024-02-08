@@ -16,6 +16,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { blue } from '@mui/material/colors';
 
 import { emitCustomEvent } from 'react-custom-events';
+import { generateUniqueId } from '../../utils';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { getFileName } from '../../models';
@@ -72,7 +73,6 @@ function LaunchFileList({
           currentFilePath={launchContent.path}
           rootFilePath={launchContent.path}
         />,
-        false,
         true,
         LAYOUT_TAB_SETS.BORDER_TOP,
         new LayoutTabConfig(false, 'editor'),
@@ -90,10 +90,9 @@ function LaunchFileList({
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          'LaunchFile',
+          `LaunchFile-${generateUniqueId()}`,
           `${launchName}@${provider.name()}`,
           <LaunchFilePanel launchContent={launchContent} />,
-          true,
           true,
           LAYOUT_TAB_SETS.BORDER_TOP,
           new LayoutTabConfig(false, 'info'),

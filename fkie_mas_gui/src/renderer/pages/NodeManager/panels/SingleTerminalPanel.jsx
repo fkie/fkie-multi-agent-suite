@@ -2,13 +2,26 @@ import { Alert, AlertTitle, Box } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
 import { useContext, useEffect, useState } from 'react';
+import { emitCustomEvent } from 'react-custom-events';
 import TerminalClient from '../../../components/TerminalClient/TerminalClient';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { RosNode } from '../../../models';
 import { CmdType } from '../../../providers';
+import {
+  EVENT_CLOSE_COMPONENT,
+  eventCloseComponent,
+} from '../../../utils/events';
 
-function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
+function SingleTerminalPanel({
+  id,
+  type,
+  providerId,
+  node,
+  screen,
+  width,
+  cmd,
+}) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [initialCommands, setInitialCommands] = useState([]);
@@ -79,7 +92,6 @@ function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
     >
       {currentProvider && (
         <Box
-          key={`${node ? node.name : 'cmd'}_${providerId}`}
           sx={{
             width: '100%',
             height: '100%',
@@ -96,6 +108,9 @@ function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
               width={width}
               name={`${node.name}`}
               invisibleTerminal={false}
+              onCtrlD={() =>
+                emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))
+              }
             />
           )}
           {cmd && providerId && initialCommands.length > 0 && (
@@ -106,6 +121,9 @@ function SingleTerminalPanel({ type, providerId, node, screen, width, cmd }) {
               width={width}
               name={`${cmd.replaceAll('/', ' ')}`}
               invisibleTerminal={false}
+              onCtrlD={() =>
+                emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))
+              }
             />
           )}
         </Box>
@@ -136,6 +154,7 @@ SingleTerminalPanel.defaultProps = {
 };
 
 SingleTerminalPanel.propTypes = {
+  id: PropTypes.string.isRequired,
   type: PropTypes.instanceOf(CmdType).isRequired,
   providerId: PropTypes.string,
   node: PropTypes.instanceOf(RosNode),

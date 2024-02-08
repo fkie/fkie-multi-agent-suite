@@ -28,6 +28,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { generateUniqueId } from '../../../utils';
 import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import ServiceCallerPanel from './ServiceCallerPanel';
 
@@ -125,13 +126,12 @@ function ServicesPanel({ initialSearchTerm }) {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            `call-service`,
+            `call-service-${generateUniqueId()}`,
             `Call Service - ${service.name}`,
             <ServiceCallerPanel
               serviceName={service.name}
               providerId={providerId}
             />,
-            true,
             true,
           ),
         );

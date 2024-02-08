@@ -65,6 +65,7 @@ interface ITerminalClient {
   name: string;
   invisibleTerminal: boolean;
   onIncomingData: (data: string) => void | null;
+  onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
 }
 
 function TerminalClient(props: ITerminalClient) {
@@ -75,6 +76,7 @@ function TerminalClient(props: ITerminalClient) {
     name,
     invisibleTerminal,
     onIncomingData,
+    onCtrlD,
   } = props;
   const settingsCtx = useContext(SettingsContext);
 
@@ -94,6 +96,7 @@ function TerminalClient(props: ITerminalClient) {
       name={name}
       invisibleTerminal={invisibleTerminal}
       onIncomingData={onIncomingData}
+      onCtrlD={onCtrlD}
       fontSize={termOptions.fontSize}
     />
   );

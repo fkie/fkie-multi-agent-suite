@@ -265,7 +265,7 @@ function HostTreeViewPanel() {
       // inform details panel tab about selected nodes by user
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
-        eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, 'default', {}, false),
+        eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, 'default', {}),
       );
     },
     [navCtx],
@@ -329,18 +329,19 @@ function HostTreeViewPanel() {
           );
         }
       } else {
+        const id = `${type}-${screen}-${node.name}@${node.providerName}`;
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            `${type}-${screen}-${node.name}@${node.providerName}`,
+            id,
             `${node.name}@${node.providerName}`,
             <SingleTerminalPanel
+              id={id}
               type={type}
               providerId={node.providerId}
               node={node}
               screen={screen}
             />,
-            false,
             true,
             LAYOUT_TAB_SETS.BORDER_BOTTOM,
             new LayoutTabConfig(true, type, {
@@ -397,7 +398,6 @@ function HostTreeViewPanel() {
               currentFilePath={node.launchInfo.file_name}
               rootFilePath={rootLaunch}
             />,
-            false,
             true,
             LAYOUT_TAB_SETS.BORDER_TOP,
             new LayoutTabConfig(false, 'editor'),
@@ -419,7 +419,6 @@ function HostTreeViewPanel() {
           `parameter-node-${node.id}`,
           `${node.name}`,
           <ParameterPanel nodes={[node]} providers={null} />,
-          false,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
           new LayoutTabConfig(false, 'parameter'),
@@ -433,7 +432,6 @@ function HostTreeViewPanel() {
           `parameter-provider-${provider}`,
           `${provider}`,
           <ParameterPanel nodes={null} providers={[provider]} />,
-          false,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
           new LayoutTabConfig(false, 'parameter'),

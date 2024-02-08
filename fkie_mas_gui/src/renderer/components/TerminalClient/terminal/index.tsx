@@ -63,6 +63,7 @@ interface Props {
   invisibleTerminal: boolean | null;
   name: string;
   onIncomingData: (data: string) => void | null;
+  onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
   fontSize: number;
 }
 
@@ -344,6 +345,7 @@ export class Xterm extends React.Component<Props, XtermState> {
     if (this.zModemAddon) terminal.loadAddon(this.zModemAddon);
     terminal.onData(this.onTerminalData);
     terminal.onResize(this.onTerminalResize);
+    terminal.onBell((event) => console.log(`BELL: ${JSON.stringify(event)}`));
     if (container) terminal.open(container);
     fitAddon.fit();
   }
@@ -603,6 +605,10 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   @bind
   private onTerminalData(data: string) {
+    if (data?.charCodeAt(0) === 4) {
+      const { wsUrl, tokenUrl, onCtrlD } = this.props;
+      if (onCtrlD) onCtrlD(wsUrl, tokenUrl);
+    }
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(textEncoder.encode(Command.INPUT + data));

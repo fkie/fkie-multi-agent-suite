@@ -131,7 +131,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
     // inform host panel tab about loaded launch file
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
-      eventOpenComponent(LAYOUT_TABS.HOSTS, 'default', {}, false),
+      eventOpenComponent(LAYOUT_TABS.HOSTS, 'default', {}),
     );
   }, [
     rosCtx,
@@ -349,7 +349,6 @@ function PackageExplorer({ packageList, selectedProvider }) {
             currentFilePath={fileObj.path}
             rootFilePath={fileObj.path}
           />,
-          false,
           true,
           LAYOUT_TAB_SETS.BORDER_TOP,
           new LayoutTabConfig(false, 'editor'),

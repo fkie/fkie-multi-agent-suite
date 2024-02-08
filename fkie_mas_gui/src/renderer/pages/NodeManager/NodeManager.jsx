@@ -27,7 +27,11 @@ import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { SSHContext } from '../../context/SSHContext';
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
+import {
+  EVENT_CLOSE_COMPONENT,
+  EVENT_OPEN_COMPONENT,
+  eventOpenComponent,
+} from '../../utils/events';
 import HostTreeViewPanel from './panels/HostTreeViewPanel';
 import LoggingPanel from './panels/LoggingPanel';
 import NodesDetailsPanel from './panels/NodesDetailsPanel';
@@ -91,6 +95,10 @@ function NodeManager() {
       // store new tabs using useEffect so dockMove() can create panels if events comes to fast
       setAddToLayout((oldValue) => [tab, ...oldValue]);
     }
+  });
+
+  useCustomEventListener(EVENT_CLOSE_COMPONENT, (data) => {
+    model.doAction(Actions.deleteTab(data.id));
   });
 
   const getPanelId = useCallback(
@@ -344,7 +352,7 @@ function NodeManager() {
               onClick={() =>
                 emitCustomEvent(
                   EVENT_OPEN_COMPONENT,
-                  eventOpenComponent(id, title, component, false, true, setId),
+                  eventOpenComponent(id, title, component, true, setId),
                 )
               }
             >

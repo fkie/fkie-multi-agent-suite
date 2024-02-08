@@ -123,7 +123,6 @@ function ProviderPanel() {
           `provider-info-${providerName}`,
           providerName,
           <SystemInformationPanel providerId={providerId} />,
-          false,
           true,
           LAYOUT_TABS.PROVIDER,
           new LayoutTabConfig(false, 'info'),

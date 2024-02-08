@@ -4,8 +4,13 @@ import Stack from '@mui/material/Stack';
 import { blue, gray } from '@mui/material/colors';
 import PropTypes from 'prop-types';
 import { useContext } from 'react';
+import { emitCustomEvent } from 'react-custom-events';
 import TerminalClient from '../../../components/TerminalClient/TerminalClient';
 import { SettingsContext } from '../../../context/SettingsContext';
+import {
+  EVENT_CLOSE_COMPONENT,
+  eventCloseComponent,
+} from '../../../utils/events';
 
 function TerminalPanel({ selectedNodes }) {
   const settingsCtx = useContext(SettingsContext);
@@ -48,6 +53,12 @@ function TerminalPanel({ selectedNodes }) {
                       '__',
                     )} / {print $2}') \r`,
                   ]}
+                  onCtrlD={() =>
+                    emitCustomEvent(
+                      EVENT_CLOSE_COMPONENT,
+                      eventCloseComponent(`${node.name}_${node.providerName}`),
+                    )
+                  }
                 />
               )}
             </Stack>

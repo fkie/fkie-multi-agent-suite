@@ -33,6 +33,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { generateUniqueId } from '../../../utils';
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import OverflowMenuService from './OverflowMenuService';
 import OverflowMenuTopic from './OverflowMenuTopic';
@@ -112,10 +113,9 @@ function NodesDetailsPanel() {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            'topics',
+            `topics-${generateUniqueId()}`,
             `${topic}`,
             <TopicsPanel initialSearchTerm={topic} />,
-            true,
             true,
             LAYOUT_TABS.HOSTS,
             new LayoutTabConfig(false, 'info'),
@@ -131,7 +131,6 @@ function NodesDetailsPanel() {
             `publish-${topic}-${providerId}`,
             topic,
             <TopicPublishPanel topicName={topic} providerId={providerId} />,
-            false,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(false, 'publish'),
@@ -190,7 +189,6 @@ function NodesDetailsPanel() {
               defaultTopic={topic}
               defaultNoData={defaultNoData}
             />,
-            false,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(true, CmdType.ECHO, {
@@ -218,13 +216,12 @@ function NodesDetailsPanel() {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
-            `call-service`,
+            `call-service-${generateUniqueId()}`,
             `Call Service - ${service}`,
             <ServiceCallerPanel
               serviceName={service}
               providerId={providerId}
             />,
-            true,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
           ),

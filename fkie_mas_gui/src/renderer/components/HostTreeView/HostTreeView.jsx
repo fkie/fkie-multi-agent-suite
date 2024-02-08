@@ -360,17 +360,18 @@ function HostTreeView({
   const createSingleTerminalCmdPanel = useCallback(
     (providerId, cmd) => {
       const provider = rosCtx.getProviderById(providerId);
+      const id = `cmd-${generateUniqueId()}`;
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          'cmd',
+          id,
           `${cmd}@${provider?.name()}`,
           <SingleTerminalPanel
+            id={id}
             type={CmdType.CMD}
             providerId={providerId}
             cmd={cmd}
           />,
-          true,
           true,
           '',
         ),
