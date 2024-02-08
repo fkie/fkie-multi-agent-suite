@@ -456,7 +456,15 @@ function NodeManager() {
         onRenderTabSet={(node, renderValues) =>
           onRenderTabSet(node, renderValues)
         }
-        onModelChange={(_model /* _action */) => cleanAndSaveLayout(_model)}
+        onModelChange={(_model, _action) => {
+          if (
+            ![Actions.SELECT_TAB, Actions.SET_ACTIVE_TABSET].includes(
+              _action.type,
+            )
+          ) {
+            cleanAndSaveLayout(_model);
+          }
+        }}
         onContextMenu={(node) => {
           console.log(`NO context for ${node.getId()}`);
         }}
