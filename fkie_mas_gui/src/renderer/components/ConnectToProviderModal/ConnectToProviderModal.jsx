@@ -321,7 +321,7 @@ function ConnectToProviderModal() {
         </DialogTitle>
         <DialogContent>
           <Box>
-            {rosCtx.providerLaunches && (
+            {rosCtx.providerLaunches?.length === 0 && (
               <Typography paddingBottom="1em" color="green">
                 No saved provider configurations found. Select hosts that you
                 want to join or on which you want to start the required MAS
