@@ -55,6 +55,7 @@ export interface ClientOptions {
 }
 
 interface Props {
+  id: string;
   wsUrl: string;
   tokenUrl: string;
   clientOptions: ClientOptions;
@@ -104,6 +105,13 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   private resizeObserver: ResizeObserver | null = null;
 
+  private id: string = '';
+
+  private lastContainerSize: { width: number; height: number } = {
+    width: 0,
+    height: 0,
+  };
+
   constructor(props: Props) {
     super(props);
 
@@ -111,6 +119,7 @@ export class Xterm extends React.Component<Props, XtermState> {
       opened: false,
     };
 
+    this.id = props.id;
     this.textEncoder = new TextEncoder();
     this.textDecoder = new TextDecoder();
     this.fitAddon = new FitAddon();
@@ -147,6 +156,17 @@ export class Xterm extends React.Component<Props, XtermState> {
     if (this.container) {
       this.resizeObserver = new ResizeObserver(() => {
         this.componentDidUpdate();
+        const rect = this.container?.getBoundingClientRect();
+        if (
+          rect &&
+          rect.width > 0 &&
+          (this.lastContainerSize.width !== rect.width ||
+            this.lastContainerSize.height !== rect.height)
+        ) {
+          this.lastContainerSize = { width: rect.width, height: rect.height };
+          const { fitAddon } = this;
+          fitAddon.fit();
+        }
       });
       this.resizeObserver.observe(this.container);
     }
@@ -164,16 +184,15 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   componentDidUpdate() {
     const { tokenUrl } = this.props;
-
-    if (this.token !== tokenUrl) {
+    if (
+      this.token !== tokenUrl ||
+      this.socket?.readyState === WebSocket.CLOSED
+    ) {
       this.token = tokenUrl;
 
       this.socket?.close();
       this.connect();
     }
-
-    const { fitAddon } = this;
-    fitAddon.fit();
   }
 
   @bind
@@ -345,7 +364,6 @@ export class Xterm extends React.Component<Props, XtermState> {
     if (this.zModemAddon) terminal.loadAddon(this.zModemAddon);
     terminal.onData(this.onTerminalData);
     terminal.onResize(this.onTerminalResize);
-    terminal.onBell((event) => console.log(`BELL: ${JSON.stringify(event)}`));
     if (container) terminal.open(container);
     fitAddon.fit();
   }
@@ -374,6 +392,8 @@ export class Xterm extends React.Component<Props, XtermState> {
           style={{ visibility: 'hidden', height: 0 }}
         >
           <ZmodemAddon
+            key={`zmodem-${this.id}`}
+            id={`zmodem-${this.id}`}
             ref={(c) => {
               this.zModemAddon = c;
               return this.zModemAddon;
@@ -495,6 +515,8 @@ export class Xterm extends React.Component<Props, XtermState> {
           overflow="auto"
         >
           <ZmodemAddon
+            key={`zmodem-${this.id}`}
+            id={`zmodem-${this.id}`}
             ref={(c) => {
               this.zModemAddon = c;
               return this.zModemAddon;

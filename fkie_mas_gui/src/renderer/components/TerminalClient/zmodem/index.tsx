@@ -22,6 +22,7 @@ export interface FlowControl {
 }
 
 interface Props {
+  id: string;
   sender: (data: ArrayLike<number>) => void;
   control: FlowControl;
 }

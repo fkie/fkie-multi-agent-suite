@@ -194,7 +194,6 @@ function TopicsPanel({ initialSearchTerm }) {
   const onActionClick = useCallback(
     (actionType, providerId, providerName, topic) => {
       if (actionType === 'ECHO') {
-        console.log(`ECHO`);
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
