@@ -161,12 +161,18 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         #  Search the line number of a given node in launch file
         if (self.file_name):
             node_base_name = os.path.basename(node_name)
+            name_select_len = len(node_base_name) + 7
             lines_with_node_name = []
             with open(self.file_name, "r") as launch_file:
                 for line_number, line_text in enumerate(launch_file):
-                    if f'name="{node_base_name}"' in line_text:
-                        print(f"XX line_text {line_text}")
-                        lines_with_node_name.append([line_number + 1, line_text])
+                    start_column = line_text.find(f'name="{node_base_name}"')
+                    if start_column < 0:
+                        start_column = line_text.find(
+                            f"name='{node_base_name}'")
+                    if start_column > -1:
+                        start_column += 1
+                        lines_with_node_name.append(
+                            [line_number + 1, line_text, start_column, start_column + name_select_len])
 
             line_number = -1
             start_column = 0
@@ -178,6 +184,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             elif len(lines_with_node_name) == 1:
                 line_number = lines_with_node_name[0][0]
                 line_text = lines_with_node_name[0][1]
+                start_column = lines_with_node_name[0][2]
+                end_column = lines_with_node_name[0][3]
             # elif len(lines_with_node_name) > node_occurrence[item.launch_name]:
             #     # More than one occurrence, but Node are loaded from top to bottom
             #     # try to find the correct match
@@ -187,10 +195,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             #     line_text = lines_with_node_name[node_occurrence[item.launch_name]][
             #         1
             #     ]
-
-            if len(line_text) > 0:
-                start_column = line_text.index(f'name="{node_base_name}"') + 7
-                end_column = start_column + len(node_base_name)
 
             # range in text where the node appears
             self.file_range = {
