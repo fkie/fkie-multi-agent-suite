@@ -13,6 +13,7 @@ import {
 
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 
+import { colorFromHostname } from '../UI/Colors';
 import { LoggingContext } from '../../context/LoggingContext';
 import { SettingsContext } from '../../context/SettingsContext';
 
@@ -70,6 +71,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
     colorForDarkMode,
     bgColorForDarkMode,
     param,
+    providerName,
     updateParameter,
     ...other
   },
@@ -149,8 +151,20 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
     );
   };
 
+  const getHostStyle = () => {
+    if (providerName && settingsCtx.get('colorizeHosts')) {
+      return {
+        borderLeftStyle: 'outset',
+        borderLeftColor: colorFromHostname(providerName),
+        borderLeftWidth: '10px',
+      };
+    }
+    return {};
+  };
+
   return (
     <ParameterTreeItemRoot
+      sx={getHostStyle()}
       label={
         <Box
           sx={{
@@ -228,6 +242,7 @@ ParameterTreeItem.defaultProps = {
   labelText: '',
   requestData: false,
   param: null,
+  providerName: '',
   updateParameter: () => {},
 };
 
@@ -243,6 +258,7 @@ ParameterTreeItem.propTypes = {
   colorForDarkMode: PropTypes.string,
   bgColorForDarkMode: PropTypes.string,
   param: PropTypes.object,
+  providerName: PropTypes.string,
   updateParameter: PropTypes.func,
 };
 

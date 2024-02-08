@@ -482,6 +482,7 @@ export default function ParameterPanel({ nodes, providers }) {
                     labelIcon={getIcon(rootObj)}
                     labelCount={filteredItems ? filteredItems.length : null}
                     requestData={!rootData.has(rootId)}
+                    providerName={rootObj?.name()}
                   >
                     {paramTreeToStyledItems(
                       nodeFilter ? `${rootId}` : '',
@@ -496,10 +497,10 @@ export default function ParameterPanel({ nodes, providers }) {
             <Paper elevation={2}>
               <ButtonGroup
                 orientation="vertical"
-                aria-label="launch file control group"
+                aria-label="parameter buttons"
               >
                 <Tooltip
-                  title="Edit File"
+                  title="Delete selected parameter"
                   placement="left"
                   enterDelay={tooltipDelay}
                   enterNextDelay={tooltipDelay}
@@ -508,7 +509,7 @@ export default function ParameterPanel({ nodes, providers }) {
                     <IconButton
                       disabled={!selectedItems}
                       size="medium"
-                      aria-label="Edit File"
+                      aria-label="Delete selected parameter"
                       onClick={() => {
                         paramsFromIds(selectedItems);
                       }}
