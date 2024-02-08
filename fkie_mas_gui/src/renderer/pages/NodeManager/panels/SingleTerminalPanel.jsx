@@ -53,8 +53,8 @@ function SingleTerminalPanel({
 
   // load commands initially
   useEffect(() => {
-    initializeTerminal();
-  }, [initializeTerminal]);
+    initializeTerminal(screen);
+  }, [screen, initializeTerminal]);
 
   // update the terminal every time the node screen changes
   useEffect(() => {
