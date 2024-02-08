@@ -34,16 +34,19 @@ from importlib import import_module
 from types import SimpleNamespace
 from typing import Any
 from typing import Callable
+from typing import Optional
 from typing import Union
 from typing import Tuple
 
 import rclpy
+from rclpy.duration import Duration
 from rclpy.client import SrvType
 from rclpy.client import SrvTypeRequest
 from rclpy.client import SrvTypeResponse
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from rcl_interfaces.msg import ParameterDescriptor
+
 from fkie_mas_daemon.server import Server
 from fkie_mas_pylib.crossbar import server
 from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
@@ -108,7 +111,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         parsed_args, remaining_args = self.parser.parse_known_args()
         if parsed_args.help:
             return None
-        self.namespace, self.name = ros2_subscriber_nodename_tuple(parsed_args.topic)
+        self.namespace, self.name = ros2_subscriber_nodename_tuple(
+            parsed_args.topic)
         print('\33]0;%s\a' % (self.name), end='', flush=True)
         # self._displayed_name = parsed_args.name
         # self._port = parsed_args.port
@@ -118,7 +122,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
             # TODO: switch domain id
             # os.environ.pop('ROS_DOMAIN_ID')
         rclpy.init(args=remaining_args)
-        #NM_NAMESPACE
+        # NM_NAMESPACE
         self.rosnode = rclpy.create_node(self.name, namespace=self.namespace)
 
         self.executor = MultiThreadedExecutor(num_threads=3)
@@ -163,7 +167,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         while splitted_type:
             sub_class = getattr(sub_class, splitted_type.pop())
         if sub_class is None:
-            raise ImportError(f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
+            raise ImportError(
+                f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
 
         self.__msg_class = sub_class
         self.crossbar_loop = asyncio.get_event_loop()
@@ -172,11 +177,14 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
-        qos_state_profile = QoSProfile(depth=100,
-                                    # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                    # history=QoSHistoryPolicy.KEEP_LAST,
-                                    # reliability=QoSReliabilityPolicy.RELIABLE)
-                                    )
+        # qos_state_profile = QoSProfile(depth=100,
+        #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+        #                                # history=QoSHistoryPolicy.KEEP_LAST,
+        #                                # reliability=QoSReliabilityPolicy.RELIABLE)
+        #                                )
+        qos_state_profile = self.choose_qos(parsed_args, self._topic)
+        self.rosnode.get_logger().info(
+            f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
         self.sub = nmd.ros_node.create_subscription(
             self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
         self.subscribe_to(
@@ -185,10 +193,115 @@ class RosSubscriberLauncher(CrossbarBaseSession):
     def __del__(self):
         self.stop()
 
+    # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
+    def profile_configure_short_keys(self,
+                                     profile: rclpy.qos.QoSProfile = None, reliability: Optional[str] = None,
+                                     durability: Optional[str] = None, depth: Optional[int] = None, history: Optional[str] = None,
+                                     liveliness: Optional[str] = None, liveliness_lease_duration_s: Optional[int] = None,
+                                     ) -> rclpy.qos.QoSProfile:
+        """Configure a QoSProfile given a profile, and optional overrides."""
+        if history:
+            profile.history = rclpy.qos.QoSHistoryPolicy.get_from_short_key(
+                history)
+        if durability:
+            profile.durability = rclpy.qos.QoSDurabilityPolicy.get_from_short_key(
+                durability)
+        if reliability:
+            profile.reliability = rclpy.qos.QoSReliabilityPolicy.get_from_short_key(
+                reliability)
+        if liveliness:
+            profile.liveliness = rclpy.qos.QoSLivelinessPolicy.get_from_short_key(
+                liveliness)
+        if liveliness_lease_duration_s and liveliness_lease_duration_s >= 0:
+            profile.liveliness_lease_duration = Duration(
+                seconds=liveliness_lease_duration_s)
+        if depth and depth >= 0:
+            profile.depth = depth
+        else:
+            if (profile.durability == rclpy.qos.QoSDurabilityPolicy.TRANSIENT_LOCAL
+                    and profile.depth == 0):
+                profile.depth = 1
+
+    # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
+    def qos_profile_from_short_keys(self,
+                                    preset_profile: str, reliability: Optional[str] = None, durability: Optional[str] = None,
+                                    depth: Optional[int] = None, history: Optional[str] = None, liveliness: Optional[str] = None,
+                                    liveliness_lease_duration_s: Optional[float] = None,
+                                    ) -> rclpy.qos.QoSProfile:
+        """Construct a QoSProfile given the name of a preset, and optional overrides."""
+        # Build a QoS profile based on user-supplied arguments
+        profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(
+            preset_profile)
+        self.profile_configure_short_keys(
+            profile, reliability, durability, depth, history, liveliness, liveliness_lease_duration_s)
+        return profile
+
+    # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
+    def choose_qos(self, args, topic):
+        if (args.qos_reliability is not None or
+                args.qos_durability is not None or
+                args.qos_depth is not None or
+                args.qos_history is not None or
+                args.qos_liveliness is not None or
+                args.qos_liveliness_lease_duration_seconds is not None):
+
+            return self.qos_profile_from_short_keys(
+                args.qos_profile,
+                reliability=args.qos_reliability,
+                durability=args.qos_durability,
+                depth=args.qos_depth,
+                history=args.qos_history,
+                liveliness=args.qos_liveliness,
+                liveliness_lease_duration_s=args.qos_liveliness_lease_duration_seconds)
+
+        qos_profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(
+            args.qos_profile)
+        reliability_reliable_endpoints_count = 0
+        durability_transient_local_endpoints_count = 0
+
+        pubs_info = self.rosnode.get_publishers_info_by_topic(topic)
+        publishers_count = len(pubs_info)
+        if publishers_count == 0:
+            return qos_profile
+
+        for info in pubs_info:
+            if (info.qos_profile.reliability == QoSReliabilityPolicy.RELIABLE):
+                reliability_reliable_endpoints_count += 1
+            if (info.qos_profile.durability == QoSDurabilityPolicy.TRANSIENT_LOCAL):
+                durability_transient_local_endpoints_count += 1
+
+        # If all endpoints are reliable, ask for reliable
+        if reliability_reliable_endpoints_count == publishers_count:
+            qos_profile.reliability = QoSReliabilityPolicy.RELIABLE
+        else:
+            if reliability_reliable_endpoints_count > 0:
+                print(
+                    'Some, but not all, publishers are offering '
+                    'QoSReliabilityPolicy.RELIABLE. Falling back to '
+                    'QoSReliabilityPolicy.BEST_EFFORT as it will connect '
+                    'to all publishers'
+                )
+            qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
+
+        # If all endpoints are transient_local, ask for transient_local
+        if durability_transient_local_endpoints_count == publishers_count:
+            qos_profile.durability = QoSDurabilityPolicy.TRANSIENT_LOCAL
+        else:
+            if durability_transient_local_endpoints_count > 0:
+                print(
+                    'Some, but not all, publishers are offering '
+                    'QoSDurabilityPolicy.TRANSIENT_LOCAL. Falling back to '
+                    'QoSDurabilityPolicy.VOLATILE as it will connect '
+                    'to all publishers'
+                )
+            qos_profile.durability = QoSDurabilityPolicy.VOLATILE
+
+        return qos_profile
+
     def spin(self):
         try:
             self.executor.spin()
-                # rclpy.spin(self.rosnode)
+            # rclpy.spin(self.rosnode)
         except KeyboardInterrupt:
             pass
         except Exception:
@@ -205,6 +318,56 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         self.executor.shutdown()
         # rclpy.shutdown()
         print('bye!')
+
+    # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
+    def add_qos_arguments(self, parser: argparse.ArgumentParser, subscribe_or_publish: str, default_profile_str):
+        parser.add_argument(
+            '--qos-profile',
+            choices=rclpy.qos.QoSPresetProfiles.short_keys(),
+            help=(
+                f'Quality of service preset profile to {subscribe_or_publish} with'
+                f' (default: {default_profile_str})'),
+            default=default_profile_str)
+        default_profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(
+            default_profile_str)
+        parser.add_argument(
+            '--qos-depth', metavar='N', type=int,
+            help=(
+                f'Queue size setting to {subscribe_or_publish} with '
+                '(overrides depth value of --qos-profile option)'))
+        parser.add_argument(
+            '--qos-history',
+            choices=rclpy.qos.QoSHistoryPolicy.short_keys(),
+            help=(
+                f'History of samples setting to {subscribe_or_publish} with '
+                '(overrides history value of --qos-profile option, default: '
+                f'{default_profile.history.short_key})'))
+        parser.add_argument(
+            '--qos-reliability',
+            choices=rclpy.qos.QoSReliabilityPolicy.short_keys(),
+            help=(
+                f'Quality of service reliability setting to {subscribe_or_publish} with '
+                '(overrides reliability value of --qos-profile option, default: '
+                'Compatible profile with running endpoints )'))
+        parser.add_argument(
+            '--qos-durability',
+            choices=rclpy.qos.QoSDurabilityPolicy.short_keys(),
+            help=(
+                f'Quality of service durability setting to {subscribe_or_publish} with '
+                '(overrides durability value of --qos-profile option, default: '
+                'Compatible profile with running endpoints )'))
+        parser.add_argument(
+            '--qos-liveliness',
+            choices=rclpy.qos.QoSLivelinessPolicy.short_keys(),
+            help=(
+                f'Quality of service liveliness setting to {subscribe_or_publish} with '
+                '(overrides liveliness value of --qos-profile option'))
+        parser.add_argument(
+            '--qos-liveliness-lease-duration-seconds',
+            type=float,
+            help=(
+                f'Quality of service liveliness lease duration setting to {subscribe_or_publish} '
+                'with (overrides liveliness lease duration value of --qos-profile option'))
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
@@ -228,6 +391,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                             help='window size, in # of messages, for calculating rate.')
         parser.add_argument('--tcp_no_delay', action='store_true',
                             help='use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).')
+        self.add_qos_arguments(parser, 'subscribe', 'sensor_data')
         # parser.add_argument('--use_sim_time', type=str2bool, nargs='?', const=True, default=False, help='Enable ROS simulation time (Only ROS2).')
         parser.set_defaults(no_data=False)
         parser.set_defaults(no_arr=False)
@@ -247,11 +411,11 @@ class RosSubscriberLauncher(CrossbarBaseSession):
     def _msg_handle(self, data):
         self._count_received += 1
         self._latched = False
-        #self._latched = data._connection_header['latching'] != '0'
+        # self._latched = data._connection_header['latching'] != '0'
         # print(data._connection_header)
         # print(dir(data))
         # print("SIZE", data.__sizeof__())
-        #print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
+        # print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
         if not self._no_data:
@@ -259,7 +423,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                 data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
         event.count = self._count_received
         self._calc_stats(data, event)
-        print(f"publish_to: ", f"ros.subscriber.event.{self._topic.replace('/', '_')}")
+        print(f"publish_to: ",
+              f"ros.subscriber.event.{self._topic.replace('/', '_')}")
         timeouted = self._hz == 0
         if self._hz != 0:
             now = time.time()
@@ -278,8 +443,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         from io import BytesIO  # Python 3.x
         buff = BytesIO()
         print(dir(msg))
-        #msg.serialize(buff)
-        #return buff.getbuffer().nbytes
+        # msg.serialize(buff)
+        # return buff.getbuffer().nbytes
         return 0
 
     def _calc_stats(self, msg, event):
