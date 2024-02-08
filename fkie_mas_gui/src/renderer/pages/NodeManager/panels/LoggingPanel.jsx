@@ -344,7 +344,7 @@ function LoggingPanel() {
         )}
         components={VirtuosoTableComponents}
         fixedHeaderContent={() => fixedHeaderContent()}
-        itemContent={() => rowContent()}
+        itemContent={(index, row) => rowContent(index, row)}
       />
     </Stack>
   );
