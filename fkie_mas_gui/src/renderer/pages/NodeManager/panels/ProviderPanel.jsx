@@ -200,7 +200,7 @@ function ProviderPanel() {
         return (
           <Stack direction="row" alignItems="center" spacing="0.5em">
             <Tooltip title="Connecting" placement="bottom">
-              <div style={{ color: 'blue' }}>connecting</div>
+              <span style={{ color: 'blue' }}>connecting</span>
             </Tooltip>
 
             <CircularProgress size="1em" />
@@ -258,7 +258,9 @@ function ProviderPanel() {
                 color="error"
                 size="small"
               >
-                {provider.connectionState}
+                <Typography noWrap variant="body2">
+                  {provider.connectionState}
+                </Typography>
               </Button>
             </Tooltip>
             <Tooltip title="Start daemon" placement="bottom">

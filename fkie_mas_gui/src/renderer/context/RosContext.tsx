@@ -952,12 +952,20 @@ export function RosProviderReact(
           const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
           logCtx.error(error, details);
           provider.errorDetails = `${error} ${details}`;
+          provider.setConnectionState(
+            ConnectionState.STATES.UNREACHABLE,
+            JSON.stringify(error),
+          );
         } catch (error: any) {
           logCtx.debug(
             `Could not initialize provider [${provider.name()}] (${
               provider.type
             } )in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`,
             `Error: ${JSON.stringify(error)}`,
+          );
+          provider.setConnectionState(
+            ConnectionState.STATES.UNREACHABLE,
+            JSON.stringify(error),
           );
         }
         return false;
