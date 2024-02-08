@@ -150,19 +150,21 @@ function LoggingPanel() {
 
   const handleOnMouseMove = (e) => {
     if (isResizing.current >= 0) {
-      const newWidth =
-        e.clientX -
+      const left =
         headers[
           isResizing.current
         ].ref.current?.parentElement?.getBoundingClientRect().left;
+      const newWidth = e.clientX - left;
       adjustWidthColumn(isResizing.current, newWidth);
     }
   };
 
   const handleOnMouseUp = () => {
-    isResizing.current = -1;
-    saveColumnInfoLocalStorage();
-    setCursorDocument(false);
+    if (isResizing.current >= 0) {
+      isResizing.current = -1;
+      saveColumnInfoLocalStorage();
+      setCursorDocument(false);
+    }
   };
 
   const onClickResizeColumn = (index) => {
@@ -341,8 +343,8 @@ function LoggingPanel() {
             showLogLevel(log.level) && log.description.includes(searchTerm),
         )}
         components={VirtuosoTableComponents}
-        fixedHeaderContent={fixedHeaderContent}
-        itemContent={rowContent}
+        fixedHeaderContent={() => fixedHeaderContent()}
+        itemContent={() => rowContent()}
       />
     </Stack>
   );
