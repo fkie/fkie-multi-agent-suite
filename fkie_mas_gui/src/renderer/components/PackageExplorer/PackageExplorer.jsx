@@ -376,7 +376,12 @@ function PackageExplorer({ packageList, selectedProvider }) {
           (item) => item.name === callbackFile.package,
         );
         if (packages.length > 0) {
-          setSelectedPackage(callbackFile.package);
+          // select package containing history file
+          setPackageListFiltered(packageList);
+          setSelectedPackage({
+            name: callbackFile.package,
+            path: packages[0].path,
+          });
           handleOnSelectPackage({
             name: callbackFile.package,
             path: packages[0].path,
@@ -408,6 +413,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
           noOptionsText="Package not found"
           options={packageListFiltered}
           getOptionLabel={(option) => option.name}
+          isOptionEqualToValue={(option, value) => option.name === value.name}
           // sx={{ flexGrow: 1 }}
           // This prevents warnings on invalid autocomplete values
           value={selectedPackage}
