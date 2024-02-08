@@ -70,8 +70,10 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
       // Save state
       setStoredValue(newValue);
 
+      const keyEvent = new CustomEvent('local-storage', { detail: key });
+
       // We dispatch a custom event so every useLocalStorage hook are notified
-      window.dispatchEvent(new Event('local-storage'));
+      window.dispatchEvent(keyEvent);
     } catch (error) {
       console.warn(`Error setting localStorage key “${key}”:`, error);
     }
@@ -89,12 +91,18 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleStorageChange = useCallback(() => {
-    setStoredValue(readValue());
-  }, [readValue]);
+  const handleStorageChange = useCallback(
+    (data: any) => {
+      if (data.detail === key) {
+        setStoredValue(readValue());
+        data.stopPropagation();
+      }
+    },
+    [key, readValue],
+  );
 
   // this only works for other documents, not the current one
-  useEventListener('storage', handleStorageChange);
+  // useEventListener('storage', handleStorageChange);
 
   // this is a custom event, triggered in writeValueToLocalStorage
   // See: useLocalStorage()
