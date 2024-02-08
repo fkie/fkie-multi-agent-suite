@@ -418,11 +418,7 @@ function NodesDetailsPanel() {
                                             title="publishers"
                                             // showZero={true}
                                             color={(() => {
-                                              if (topic.publisher.length === 0)
-                                                return 'warning';
-                                              if (topic.publisher.length === 1)
-                                                return 'default';
-                                              return 'info';
+                                              return 'default';
                                             })()}
                                             label={topic.publisher.length}
                                           />
@@ -545,9 +541,7 @@ function NodesDetailsPanel() {
                                             color={(() => {
                                               if (topic.publisher.length === 0)
                                                 return 'warning';
-                                              if (topic.publisher.length === 1)
-                                                return 'default';
-                                              return 'info';
+                                              return 'default';
                                             })()}
                                             label={topic.publisher.length}
                                           />

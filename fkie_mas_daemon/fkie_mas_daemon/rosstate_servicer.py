@@ -436,7 +436,7 @@ class RosStateServicer(CrossbarBaseSession):
                             endpoint_publisher = False
                             Log.debug(
                                 f"{self.__class__.__name__}:      add publisher {n_guid} {pub_info.node_namespace}/{pub_info.node_name}")
-                            tp.publisher.append(n_guid)
+                            tp.publisher.append(ros_node.id)
                             ros_node.publishers.append(tp)
                             discover_state_publisher = 'fkie_mas_msgs/msg/DiscoveredState' in topic_type
                             endpoint_publisher = 'fkie_mas_msgs/msg/Endpoint' in topic_type
@@ -468,7 +468,7 @@ class RosStateServicer(CrossbarBaseSession):
                             if istopic:
                                 Log.debug(
                                     f"{self.__class__.__name__}:      add subscriber {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
-                                tp.subscriber.append(n_guid)
+                                tp.subscriber.append(ros_node.id)
                                 ros_node.subscribers.append(tp)
                             else:
                                 if n_guid not in tp.provider:

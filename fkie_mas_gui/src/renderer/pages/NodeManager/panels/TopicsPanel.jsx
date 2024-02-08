@@ -107,7 +107,7 @@ function TopicsPanel({ initialSearchTerm }) {
       const nodes = {};
       rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
         nodeList.forEach((node) => {
-          nodes[node.id] = pathJoin([node.namespace, node.name]);
+          nodes[node.id] = node.name;
 
           node.subscribers.forEach((topic) => {
             if (!topicList.find((t) => t.name === topic.name)) {
@@ -313,11 +313,11 @@ function TopicsPanel({ initialSearchTerm }) {
                   {filteredTopics.map((row) => {
                     const colorPubSub =
                       row.publisher.length > 0 && row.subscriber.length > 0
-                        ? 'success'
+                        ? 'default'
                         : 'warning';
                     const colorPubSubM =
                       row.publisher.length > 0 && row.subscriber.length > 0
-                        ? 'primary'
+                        ? 'default'
                         : 'warning';
                     return (
                       <TableRow key={row.id}>
@@ -362,14 +362,15 @@ function TopicsPanel({ initialSearchTerm }) {
                         <TableCell key={`${row.id}-publisher`}>
                           {row.publisher.length === 1 && (
                             <Stack>
-                              {row.publisher.map((el) => (
+                              {row.publisher.map((el) => {
+                                return (
                                 <Tag
                                   color={colorPubSub}
                                   key={`${row.id}-pub-${el}`}
                                   text={nodeKeyName[el]}
                                   wrap={false}
                                 />
-                              ))}
+                              )})}
                             </Stack>
                           )}
                           {row.publisher.length === 0 && (
