@@ -185,10 +185,15 @@ def get_share_files_path_from_package(package_name: str, file_name: str) -> List
     matching_file_paths = []
     if AMENT_SUPPORTED:
         package_share_directory = get_package_share_directory(package_name)
-        for root, _dirs, files in os.walk(package_share_directory):
-            for name in files:
-                if name == file_name:
-                    matching_file_paths.append(os.path.join(root, name))
+        if (os.path.basename(file_name) != file_name):
+            merged_file_name = os.path.join(package_share_directory, file_name)
+            if os.path.exists(merged_file_name):
+                matching_file_paths.append(merged_file_name)
+        else:
+            for root, _dirs, files in os.walk(package_share_directory):
+                for name in files:
+                    if name == file_name:
+                        matching_file_paths.append(os.path.join(root, name))
     elif CATKIN_SUPPORTED:
         # we try to find the specific path in share via catkin
         # which will search in install/devel space and the source folder of the package
