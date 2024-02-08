@@ -32,6 +32,7 @@ import os
 import json
 import asyncio
 from autobahn import wamp
+import signal
 import threading
 import time
 
@@ -89,10 +90,12 @@ class RosStateServicer(CrossbarBaseSession):
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                           # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
-        Log.info(f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
+        Log.info(
+            f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
         self.sub_discovered_state = nmd.ros_node.create_subscription(
             DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
-        Log.info(f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
+        Log.info(
+            f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
         self._thread_check_discovery_node = threading.Thread(
@@ -175,7 +178,8 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_mas_msgs.Endpoint<XXX>
         '''
-        Log.info(f"{self.__class__.__name__}: new message on {self.topic_name_endpoint}")
+        Log.info(
+            f"{self.__class__.__name__}: new message on {self.topic_name_endpoint}")
         is_new = False
         if msg.on_shutdown:
             if msg.uri in self._endpoints:
@@ -195,7 +199,8 @@ class RosStateServicer(CrossbarBaseSession):
 
     @wamp.register('ros.provider.get_list')
     def crossbar_get_provider_list(self) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     @wamp.register('ros.nodes.get_list')
@@ -212,31 +217,35 @@ class RosStateServicer(CrossbarBaseSession):
         if node is None:
             node = self.get_ros_node_by_id(name)
         unloaded = False
-        result = json.dumps({'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
+        result = json.dumps(
+            {'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
         if node is not None:
             if node.parent_id:
-                self.stop_composed_node(node)
-                unloaded = True
-            else:
-                result = nmd.launcher.server.screen_servicer.kill_node(os.path.join(node.namespace, node.name))
+                unloaded = self.stop_composed_node(node)
+            if not unloaded:
+                result = nmd.launcher.server.screen_servicer.kill_node(
+                    os.path.join(node.namespace, node.name), signal.SIGTERM)
         if unloaded:
-            result = json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
+            result = json.dumps(
+                {'result': True, 'message': ''}, cls=SelfEncoder)
         nmd.launcher.server.screen_servicer.system_change()
         return result
 
     @wamp.register('ros.subscriber.stop')
     def stop_subscriber(self, topic_name: str) -> bool:
-        Log.debug(f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
+        Log.debug(
+            f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
         ns, name = ros2_subscriber_nodename_tuple(topic_name)
         return self.stop_node(os.path.join(ns, name))
 
     @wamp.register('ros.provider.get_timestamp')
     def getProviderTimestamp(self, timestamp) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
 
-    def stop_composed_node(self, node: RosNode) -> None:
+    def stop_composed_node(self, node: RosNode) -> bool:
         # try to unload node from container
         node_name = ns_join(node.namespace, node.name)
         Log.info(
@@ -250,7 +259,8 @@ class RosStateServicer(CrossbarBaseSession):
                     container_name, node_name)
             except Exception as err:
                 print(f"{self.__class__.__name__}: unload ERR {err}")
-                return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
+                # return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
+                return False
 
             service_unload_node = f'{container_name}/_container/unload_node'
             Log.info(
@@ -261,13 +271,19 @@ class RosStateServicer(CrossbarBaseSession):
             response = nmd.launcher.call_service(
                 service_unload_node, UnloadNode, request)
             if not response.success:
-                return json.dumps({'result': False, 'message': response.error_message}, cls=SelfEncoder)
+                Log.warn(
+                    f"{self.__class__.__name__}:-> unload '{node_name}' error '{response.error_message}'")
+                return False
+            return True
         else:
-            return json.dumps({'result': False, 'message': '{node.parent_id} not found!'}, cls=SelfEncoder)
+            Log.warn(
+                f"{self.__class__.__name__}:-> {node.parent_id} not found!")
+            return False
 
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
         service_list_nodes = f'{container_name}/_container/list_nodes'
-        Log.debug(f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
+        Log.debug(
+            f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
         request_list = ListNodes.Request()
         response_list = nmd.launcher.call_service(
             service_list_nodes, ListNodes, request_list)
@@ -345,7 +361,7 @@ class RosStateServicer(CrossbarBaseSession):
                 Log.debug(
                     f"{self.__class__.__name__}:   create node: {full_name}")
                 ros_node = RosNode(node_guid, full_name)
-                # search node with same guid, we asume it is the manager
+                # search node with same guid, we assume it is the manager
                 for (_ns, _name, _guid), _node in node_dict.items():
                     if node_guid == _guid and _node.parent_id is None:
                         ros_node.parent_id = _node.id
@@ -446,7 +462,8 @@ class RosStateServicer(CrossbarBaseSession):
                         sub_info.node_namespace, sub_info.node_name, n_guid)
                     for topic_type in topic_types:
                         try:
-                            tp, istopic = _get_topic_from(topic_name, topic_type)
+                            tp, istopic = _get_topic_from(
+                                topic_name, topic_type)
                             # add tp.qos_profil
                             if istopic:
                                 Log.debug(

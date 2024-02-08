@@ -85,48 +85,42 @@ function SingleTerminalPanel({
 
   return (
     <Box
+      key={id}
       width="100%"
       height="100%"
       overflow="auto"
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
-      {currentProvider && (
-        <Box
-          sx={{
-            width: '100%',
-            height: '100%',
-            padding: 0,
-            margin: 0,
-            maxWidth: 2000,
-          }}
-        >
-          {node && node.providerId && initialCommands.length > 0 && (
-            <TerminalClient
-              tokenUrl={`${node.name.replaceAll('/', '')}`}
-              wsUrl={`ws://${currentProvider.host()}:7681/ws`}
-              initialCommands={initialCommands}
-              width={width}
-              name={`${node.name}`}
-              invisibleTerminal={false}
-              onCtrlD={() =>
-                emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))
-              }
-            />
-          )}
-          {cmd && providerId && initialCommands.length > 0 && (
-            <TerminalClient
-              tokenUrl={`${cmd.replaceAll('/', ' ')}`}
-              wsUrl={`ws://${currentProvider.host()}:7681/ws`}
-              initialCommands={initialCommands}
-              width={width}
-              name={`${cmd.replaceAll('/', ' ')}`}
-              invisibleTerminal={false}
-              onCtrlD={() =>
-                emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))
-              }
-            />
-          )}
-        </Box>
+      {currentProvider &&
+        node &&
+        node.providerId &&
+        initialCommands.length > 0 && (
+          <TerminalClient
+            key={`term-${id}`}
+            tokenUrl={`${node.name.replaceAll('/', '')}`}
+            wsUrl={`ws://${currentProvider.host()}:7681/ws`}
+            initialCommands={initialCommands}
+            width={width}
+            name={`${node.name}`}
+            invisibleTerminal={false}
+            onCtrlD={() =>
+              emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))
+            }
+          />
+        )}
+      {currentProvider && cmd && providerId && initialCommands.length > 0 && (
+        <TerminalClient
+          key={`term-cmd-${id}`}
+          tokenUrl={`${cmd.replaceAll('/', ' ')}`}
+          wsUrl={`ws://${currentProvider.host()}:7681/ws`}
+          initialCommands={initialCommands}
+          width={width}
+          name={`${cmd.replaceAll('/', ' ')}`}
+          invisibleTerminal={false}
+          onCtrlD={() =>
+            emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))
+          }
+        />
       )}
 
       {!node && type !== 'cmd' && (

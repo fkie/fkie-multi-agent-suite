@@ -23,27 +23,27 @@ export const levelColors = {
 
 export const levelColorsWbg = {
   debug: {
-    backgroundColor: levelColors['debug'].color, // darkgrey
+    backgroundColor: levelColors.debug.color, // darkgrey
     color: '#fff',
   },
   default: {
-    backgroundColor: levelColors['default'].color, // darkgrey
+    backgroundColor: levelColors.default.color, // darkgrey
     color: '#fff',
   },
   success: {
-    backgroundColor: levelColors['success'].color, // green
+    backgroundColor: levelColors.success.color, // green
     color: '#fff',
   },
   error: {
-    backgroundColor: levelColors['error'].color, // dark red
+    backgroundColor: levelColors.error.color, // dark red
     color: '#fff',
   },
   info: {
-    backgroundColor: levelColors['info'].color, // nice blue
+    backgroundColor: levelColors.info.color, // nice blue
     color: '#fff',
   },
   warning: {
-    backgroundColor: levelColors['warning'].color, // amber
+    backgroundColor: levelColors.warning.color, // amber
     color: '#fff',
   },
 };
@@ -132,7 +132,7 @@ export const colorFromHostname = (hostname) => {
   if (!hostname) return HostColors[0];
   // TODO get color from manually assigned list
   // generate hashCode from hostname
-  var hash = 0;
+  let hash = 0;
   for (let i = 0; i < hostname.length; i++) {
     hash = (hash << 5) - hash + hostname.charCodeAt(i);
     hash |= 0; // Convert to 32bit integer
@@ -144,15 +144,14 @@ export const colorFromHostname = (hostname) => {
 
 export const TagColors = [
   // 'red', // Reserve for errors
-  'magenta',
-  'purple',
-  'blue',
+  'green',
   'cyan',
   'teal',
-  'green',
   'grey',
   'cool-gray',
   'warm-gray',
   'high-contrast',
   'outline',
+  'magenta',
+  'purple',
 ];

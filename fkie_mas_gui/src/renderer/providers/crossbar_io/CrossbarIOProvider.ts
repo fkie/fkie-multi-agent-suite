@@ -1331,7 +1331,6 @@ class CrossbarIOProvider {
               if (!composableManagers.includes(composableParent)) {
                 composableManagers.push(composableParent);
               }
-
               n.tags = [
                 {
                   text: 'Nodelet',
@@ -1357,7 +1356,7 @@ class CrossbarIOProvider {
                 text: 'Manager',
                 color:
                   TagColors[
-                    composableManagers.indexOf(node.name) % TagColors.length
+                    composableManagers.indexOf(node.id) % TagColors.length
                   ],
               },
             ];

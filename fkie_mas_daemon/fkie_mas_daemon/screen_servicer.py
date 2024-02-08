@@ -112,17 +112,16 @@ class ScreenServicer(CrossbarBaseSession):
         self._screen_do_check = True
 
     @wamp.register('ros.screen.kill_node')
-    def kill_node(self, name: str) -> bool:
+    def kill_node(self, name: str, sig: signal = signal.SIGKILL) -> bool:
         Log.info(f"{self.__class__.__name__}: Kill node '{name}'")
         self._screen_do_check = True
         success = False
         screens = screen.get_active_screens(name)
         if len(screens.items()) == 0:
             return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
-
         for session_name, node_name in screens.items():
             pid, session_name = screen.split_session_name(session_name)
-            os.kill(pid, signal.SIGKILL)
+            os.kill(pid, sig)
             success = True
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 

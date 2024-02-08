@@ -88,6 +88,7 @@ function TerminalClient(props: ITerminalClient) {
 
   return (
     <Xterm
+      key={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
       wsUrl={wsUrl}
       tokenUrl={tokenUrl}
       clientOptions={clientOptions}
