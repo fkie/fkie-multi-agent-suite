@@ -59,9 +59,6 @@ function HostTreeView({
   startNodes,
   stopNodes,
   restartNodes,
-  startProviderNodes,
-  stopProviderNodes,
-  restartProviderNodes,
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -670,9 +667,9 @@ function HostTreeView({
               paddingLeft={0.5}
               provider={p || null}
               onDoubleClick={handleDoubleClick}
-              onStartClick={providerIsReady ? startProviderNodes : null}
-              onStopClick={providerIsReady ? stopProviderNodes : null}
-              onRestartClick={providerIsReady ? restartProviderNodes : null}
+              onStartClick={onStartClick}
+              onStopClick={onStopClick}
+              onRestartClick={onRestartClick}
               startTooltipText="Start all nodes"
               stopTooltipText="Stop all nodes"
               restartTooltipText="Restart all nodes"
@@ -715,9 +712,6 @@ function HostTreeView({
     getMasterSyncNode,
     settingsCtx,
     handleDoubleClick,
-    startProviderNodes,
-    stopProviderNodes,
-    restartProviderNodes,
     getProviderTags,
     selectNodesFromLaunch,
     onRemoveLaunch,
@@ -737,9 +731,6 @@ HostTreeView.defaultProps = {
   startNodes: () => {},
   stopNodes: () => {},
   restartNodes: () => {},
-  startProviderNodes: () => {},
-  stopProviderNodes: () => {},
-  restartProviderNodes: () => {},
 };
 
 HostTreeView.propTypes = {
@@ -749,9 +740,6 @@ HostTreeView.propTypes = {
   startNodes: PropTypes.func,
   stopNodes: PropTypes.func,
   restartNodes: PropTypes.func,
-  startProviderNodes: PropTypes.func,
-  stopProviderNodes: PropTypes.func,
-  restartProviderNodes: PropTypes.func,
 };
 
 export default HostTreeView;

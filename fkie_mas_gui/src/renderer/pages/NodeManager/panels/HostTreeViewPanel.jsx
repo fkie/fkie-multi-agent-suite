@@ -469,38 +469,33 @@ function HostTreeViewPanel() {
     }
   };
 
-  function updateWithAssociations(nodes) {
-    let associatedNodes = [];
+
+
+  function updateWithAssociations(nodes, depth=0) {
+    if (depth > 10) return [nodes];
+    const newNodeList = [];
     nodes.forEach((node) => {
       if (node.associations.length > 0) {
         const provider = rosCtx.getProviderById(node.providerId);
         if (provider) {
-          node.associations.forEach((asNode) => {
-            associatedNodes = [
-              ...updateWithAssociations(
-                provider.rosNodes.filter((n) => n.name === asNode),
-              ),
-              ...associatedNodes,
-            ];
+          node.associations.forEach((asNodeName) => {
+            const asNodes = provider.rosNodes.filter(
+              (n) => n.name === asNodeName,
+            );
+            const asNodesRec = updateWithAssociations(asNodes, depth+1);
+            asNodesRec.forEach((asNode) => {
+              if (!newNodeList.find((n) => n.name === asNode.name)) {
+                newNodeList.push(asNode);
+              }
+            });
           });
         }
       }
-    });
-    // prepend all associated nodes and remove them from current list.
-    let result = [];
-    nodes.forEach((node) => {
-      let found = false;
-      associatedNodes.forEach((n) => {
-        if (n.name === node.name) {
-          found = true;
-        }
-      });
-      if (!found) {
-        result.push(node);
+      if (!newNodeList.find((n) => n.name === node.name)) {
+        newNodeList.push(node);
       }
     });
-    result = [...associatedNodes, ...result];
-    return result;
+    return newNodeList;
   }
 
   const startNodesWithLaunchCheck = useCallback(
@@ -807,46 +802,6 @@ function HostTreeViewPanel() {
       }
     }
   };
-
-  /**
-   * Start all ROS nodes belonging to a given provider
-   */
-  const startProviderNodes = useCallback(
-    async (providerId) => {
-      if (!providerId || providerId.length === 0) return;
-      if (!rosCtx.mapProviderRosNodes.has(providerId)) return;
-      // After killing provider, node list still shows  old nodes
-      startNodesWithLaunchCheck(rosCtx.mapProviderRosNodes.get(providerId));
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.mapProviderRosNodes, rosCtx],
-  );
-
-  /**
-   * Stop all ROS nodes belonging to a given provider
-   */
-  const stopProviderNodes = useCallback(
-    (providerId) => {
-      if (!providerId || providerId.length === 0) return;
-      if (!rosCtx.mapProviderRosNodes.has(providerId)) return;
-      stopNodes(rosCtx.mapProviderRosNodes.get(providerId), true);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.mapProviderRosNodes, rosCtx, stopNodes],
-  );
-
-  /**
-   * Restart all ROS nodes belonging to a given provider
-   */
-  const restartProviderNodes = useCallback(
-    (providerId) => {
-      if (!providerId || providerId.length === 0) return;
-      if (!rosCtx.mapProviderRosNodes.has(providerId)) return;
-      restartNodes(rosCtx.mapProviderRosNodes.get(providerId), true);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.mapProviderRosNodes, rosCtx],
-  );
 
   /**
    * Remove log files from ROS nodes using [rosclean purge] for a given provider
@@ -1168,9 +1123,6 @@ function HostTreeViewPanel() {
               startNodes={startNodesFromId}
               stopNodes={stopNodesFromId}
               restartNodes={restartNodesFromId}
-              startProviderNodes={startProviderNodes}
-              stopProviderNodes={stopProviderNodes}
-              restartProviderNodes={restartProviderNodes}
             />
           </Box>
           <Box>
