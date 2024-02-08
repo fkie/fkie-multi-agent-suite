@@ -215,7 +215,7 @@ export class Xterm extends React.Component<Props, XtermState> {
     }
 
     // clear terminal at start
-    this.onTerminalData('cd && clear \r');
+    // this.onTerminalData('cd && clear \r');
 
     // send initial commands to terminal
     const { initialCommands } = this.props;
