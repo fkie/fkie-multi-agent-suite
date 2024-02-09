@@ -1,144 +1,169 @@
 import { styled } from '@mui/material/styles';
+import { TreeView } from '@mui/x-tree-view';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import {
+  createRef,
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   Alert,
   AlertTitle,
   Box,
   IconButton,
+  Paper,
   Stack,
   Table,
   TableBody,
-  TableCell,
   TableContainer,
   TableHead,
   TableRow,
   Tooltip,
 } from '@mui/material';
 
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import MuiAccordion from '@mui/material/Accordion';
 import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import MuiAccordionSummary from '@mui/material/AccordionSummary';
+import { TableVirtuoso } from 'react-virtuoso';
 
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { emitCustomEvent } from 'react-custom-events';
-import { SearchBar, Tag } from '../../../components';
+import { SearchBar, TopicTreeItem } from '../../../components';
+import { LoggingContext } from '../../../context/LoggingContext';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
+import useLocalStorage from '../../../hooks/useLocalStorage';
 import { CmdType } from '../../../providers';
-import { pathJoin } from '../../../utils';
 import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
 
-const Accordion = styled((props) => (
-  <MuiAccordion disableGutters elevation={0} square {...props} />
-))(({ theme }) => ({
-  border: 'none',
-  backgroundColor:
-    theme.palette.mode === 'dark'
-      ? 'rgba(0, 0, 0, .00)'
-      : 'rgba(255, 255, 255, .00)',
-}));
 
-const AccordionSummary = styled((props) => <MuiAccordionSummary {...props} />)(
-  () => ({
-    minHeight: '12px',
-    '& .MuiAccordionSummary-content': {
-      justifyContent: 'center',
-      margin: 0,
-    },
-  }),
-);
+class TopicExtendedInfo {
+  id;
+  name;
+  msgtype = '';
+  providerId = '';
+  providerName = '';
+  publishers = [];
+  subscribers = [];
 
-const AccordionDetails = styled(MuiAccordionDetails)(() => ({
-  padding: 0,
-  // borderTop: '1px solid rgba(0, 0, 0, .125)',
-}));
+  // providers = {}; // {providerId: string, providerName: string}
+  // nodes = {}; //{(providerId: string, nodeId: string): nodeName: string}
 
-const headers = [
-  {
-    key: 'actions',
-    header: 'Actions',
-  },
-  {
-    key: 'name',
-    header: 'Name',
-  },
-  {
-    key: 'msgtype',
-    header: 'Message Type',
-  },
-  {
-    key: 'publisher',
-    header: 'Publishers',
-  },
-  {
-    key: 'subscriber',
-    header: 'Subscribers',
-  },
-];
+  constructor(topic, providerId, providerName) {
+    this.id = `${topic.name}/${providerName}`;
+    this.name = topic.name;
+    this.msgtype = topic.msgtype;
+    this.providerId = providerId;
+    this.providerName = providerName;
+    this.addPublishers(topic.publisher);
+    this.addSubscribers(topic.subscriber);
+  }
+
+  addPublishers(publishers) {
+    publishers.forEach((pub) => {
+      if (!this.publishers.includes(pub)) {
+        this.publishers.push(pub);
+      }
+    });
+  }
+  addSubscribers(subscribers) {
+    subscribers.forEach((sub) => {
+      if (!this.subscribers.includes(sub)) {
+        this.subscribers.push(sub);
+      }
+    });
+  }
+  add(topic) {
+    this.addPublishers(topic.publisher);
+    this.addSubscribers(topic.subscriber);
+  }
+}
+
 
 function TopicsPanel({ initialSearchTerm }) {
+
+  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [topics, setTopics] = useState([]);
+  const [topics, setTopics] = useState([]); // [topicInfo: TopicExtendedInfo]
   const [filteredTopics, setFilteredTopics] = useState([]);
-  const [providers, setProviders] = useState({}); // {<topicName: string>: Map< <providerId: string>: <name: string>>}
-  const [nodeKeyName, setNodeKeyName] = useState({});
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+  const [rootDataList, setRootDataList] = useState([]);
+  const [expanded, setExpanded] = useState([]);
+  const [topicForSelected, setTopicForSelected] = useState(null);
+  const [selectedItems, setSelectedItems] = useState('');
+
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+
+  function genKey(items) {
+    return `${items.join('#')}`;
+    return `${name}#${type}#${providerId}`;
+  }
 
   const getTopicList = useCallback(async () => {
+    if (!rosCtx.initialized) return;
+
+    const newProviderKeyName = {};
+    const newNodeKeyName = {};
+    const newTopicsMap = new Map();
+
     if (rosCtx.mapProviderRosNodes) {
       // Get topics from the ros node list of each provider.
-      const topicList = [];
       const providerList = {};
-      const nodes = {};
       rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
         nodeList.forEach((node) => {
-          nodes[node.id] = node.name;
+          newNodeKeyName[genKey([providerId, node.id])] = node.name;
+          newProviderKeyName[node.providerId] = node.providerName;
+
+          const addTopic = (rosTopic, rosNode) => {
+            const topicInfo = newTopicsMap.get(
+              genKey([rosTopic.name, rosTopic.msgtype, providerId]),
+            );
+            if (topicInfo) {
+              topicInfo.add(rosTopic);
+            } else {
+              newTopicsMap.set(
+                genKey([rosTopic.name, rosTopic.msgtype, rosNode.providerId]),
+                new TopicExtendedInfo(
+                  rosTopic,
+                  rosNode.providerId,
+                  rosNode.providerName,
+                ),
+              );
+            }
+          };
 
           node.subscribers.forEach((topic) => {
-            if (!topicList.find((t) => t.name === topic.name)) {
-              topicList.push(topic);
-              const newMap = new Map();
-              newMap.set(node.providerId, node.providerName);
-              providerList[topic.name] = newMap;
-            } else {
-              providerList[topic.name].set(node.providerId, node.providerName);
-            }
+            addTopic(topic, node);
           });
           node.publishers.forEach((topic) => {
-            if (!topicList.find((t) => t.name === topic.name)) {
-              topicList.push(topic);
-              const newMap = new Map();
-              newMap.set(node.providerId, node.providerName);
-              providerList[topic.name] = newMap;
-            } else {
-              providerList[topic.name].set(node.providerId, node.providerName);
-            }
+            addTopic(topic, node);
           });
         });
       });
       // sort topics by name
-      topicList.sort(function (a, b) {
+      const newTopics = Array.from(newTopicsMap.values());
+      newTopics.sort(function (a, b) {
         return a.name.localeCompare(b.name);
       });
-      setNodeKeyName(nodes);
-      setTopics(topicList);
-      setFilteredTopics(topicList);
-      setProviders(providerList);
+      setTopics(newTopics);
     }
   }, [rosCtx.mapProviderRosNodes]);
 
@@ -161,28 +186,23 @@ function TopicsPanel({ initialSearchTerm }) {
       if (matchType) {
         return true;
       }
-      const matchPub = topic.publisher.some((pub) =>
-        pub.toLowerCase().includes(newSearchTerm.toLowerCase()),
+      const matchPub = topic.publishers.some((item) =>
+        item.toLowerCase().includes(newSearchTerm.toLowerCase()),
       );
       if (matchPub) {
         return true;
       }
-      const matchSub = topic.subscriber.some((sub) =>
-        sub.toLowerCase().includes(newSearchTerm.toLowerCase()),
+      const matchSub = topic.subscribers.some((item) =>
+        item.toLowerCase().includes(newSearchTerm.toLowerCase()),
       );
       if (matchSub) {
         return true;
       }
 
-      let matchProvider = false;
-      providers[topic.name].forEach((providerName) => {
-        if (
-          providerName.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1
-        ) {
-          matchProvider = true;
-        }
-      });
-      if (matchProvider) {
+      const matchProv =
+        topic.providerName.toLowerCase().indexOf(searchTerm.toLowerCase()) !==
+        -1;
+      if (matchProv) {
         return true;
       }
       return false;
@@ -191,50 +211,6 @@ function TopicsPanel({ initialSearchTerm }) {
     setFilteredTopics(newFilteredTopics);
   }, 300);
 
-  const onActionClick = useCallback(
-    (actionType, providerId, providerName, topic) => {
-      if (actionType === 'ECHO') {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `echo-${topic.name}-${providerId}`,
-            topic.name,
-            <TopicEchoPanel
-              showOptions
-              defaultRosTopicType={actionType}
-              defaultProvider={providerId}
-              defaultTopic={topic.name}
-              defaultNoData={false}
-            />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(true, CmdType.ECHO, {
-              type: CmdType.ECHO,
-              providerId,
-              topicName: topic.name,
-            }),
-          ),
-        );
-      }
-      if (actionType === 'PUBLISH') {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `publish-${topic.name}-${providerId}`,
-            topic.name,
-            <TopicPublishPanel
-              topicName={topic.name}
-              providerId={providerId}
-            />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(true, 'publish'),
-          ),
-        );
-      }
-    },
-    [],
-  );
   // Get topic list when mounting the component
   useEffect(() => {
     getTopicList();
@@ -247,230 +223,280 @@ function TopicsPanel({ initialSearchTerm }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topics, searchTerm]);
 
+  // get group name from id of group tree item
+  const fromGroupId = (id) => {
+    if (id.endsWith('#')) {
+      const trimmed = id.slice(0, -1);
+      return {
+        groupName: trimmed.substr(
+          trimmed.lastIndexOf('/') + 1,
+          trimmed.length - 1,
+        ),
+        fullPrefix: trimmed.substr(0, id.lastIndexOf('/')),
+      };
+    }
+    return { groupName: id, fullPrefix: id };
+  };
+
+  // create id for group tree item
+  const toGroupId = (groupName, fullPrefix) => {
+    return `${fullPrefix}/${groupName}#`;
+  };
+
+  // create tree based on topic namespace
+  // topics are grouped only if more then one is in the group
+  const fillTree = (fullPrefix, topics) => {
+    const byPrefixP1 = new Map('', []);
+    // create a map with simulated tree for the namespaces of the topic list
+    for (const [key, topicInfo] of Object.entries(topics)) {
+      const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
+      const [firstName, ...restName] = nameSuffix.split('/');
+      if (restName.length > 0) {
+        const groupName = firstName;
+        const restNameSuffix = restName.join('/');
+        const groupId = toGroupId(groupName, fullPrefix);
+        if (byPrefixP1.has(groupId)) {
+          byPrefixP1.get(groupId).push({ restNameSuffix, topicInfo });
+        } else {
+          byPrefixP1.set(groupId, [{ restNameSuffix, topicInfo }]);
+        }
+      } else {
+        byPrefixP1.set(firstName, [{ topicInfo }]);
+      }
+    }
+
+    let count = 0;
+    // create result
+    const newFilteredTopics = [];
+    byPrefixP1.forEach((value, key) => {
+      // don't create group with one parameter
+      if (value.length > 1) {
+        const { groupName } = fromGroupId(key);
+        const groupTopics = value.map((item) => {
+          return item.topicInfo;
+        });
+        const subResult = fillTree(`${fullPrefix}/${groupName}`, groupTopics);
+        // the result count is 0 -> we added multiple provider for topic with same name.
+        if (subResult.count === 0) {
+          count = count +1;
+        } else {
+          count = count + subResult.count;
+        }
+        newFilteredTopics.push([
+          {
+            groupKey: key,
+            topics: subResult.topics,
+            count: subResult.count,
+          },
+        ]);
+      } else {
+        newFilteredTopics.push(value[0].topicInfo);
+        if (value[0].topicInfo.providerName !== key) {
+          // since the same topic can be on multiple provider
+          // we count only topics
+          count = count + 1;
+        }
+      }
+    });
+    return { topics: newFilteredTopics, count };
+  };
+
+  // create topics tree from filtered topic list
+  useEffect(() => {
+    const tree = fillTree('', filteredTopics);
+    setRootDataList(tree.topics);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredTopics]);
+
+  const onEchoClick = useCallback((topic) => {
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent(
+        `echo-${topic.name}-${topic.providerId}`,
+        topic.name,
+        <TopicEchoPanel
+          showOptions
+          defaultProvider={topic.providerId}
+          defaultTopic={topic.name}
+          defaultNoData={false}
+        />,
+        true,
+        LAYOUT_TAB_SETS.BORDER_RIGHT,
+        new LayoutTabConfig(true, CmdType.ECHO, {
+          type: CmdType.ECHO,
+          providerId: topic.providerId,
+          topicName: topic.name,
+        }),
+      ),
+    );
+  }, []);
+
+  const onPublishClick = useCallback((topic) => {
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent(
+        `publish-${topic.name}-${topic.providerId}`,
+        topic.name,
+        <TopicPublishPanel
+          topicName={topic.name}
+          providerId={topic.providerId}
+        />,
+        true,
+        LAYOUT_TAB_SETS.BORDER_RIGHT,
+        new LayoutTabConfig(true, 'publish'),
+      ),
+    );
+  }, []);
+
+  const topicTreeToStyledItems = (rootPath, treeItem) => {
+    if (Array.isArray(treeItem)) {
+      return treeItem.map((item) => {
+        const { groupName, fullPrefix } = fromGroupId(item.groupKey);
+        const newRootName = `${fullPrefix}/${groupName}`;
+        return (
+          <TopicTreeItem
+            key={item.groupKey}
+            nodeId={item.groupKey}
+            labelRoot={rootPath}
+            labelText={`${groupName}`}
+            labelCount={item.count}
+          >
+            {item.topics.map((subItem) => {
+              return topicTreeToStyledItems(newRootName, subItem);
+            })}
+          </TopicTreeItem>
+        );
+      });
+    }
+    return (
+      <TopicTreeItem
+        key={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
+        nodeId={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
+        labelRoot={rootPath}
+        labelText={`${treeItem.name}`}
+        labelInfo={treeItem.msgtype}
+        color="#1a73e8"
+        bgColor="#e8f0fe"
+        colorForDarkMode="#B8E7FB"
+        bgColorForDarkMode="#071318"
+        topicInfo={treeItem}
+      />
+    );
+  };
+
+  useEffect(() => {
+    const selectedTopics = filteredTopics.filter((item) => {
+      return (
+        genKey([item.name, item.msgtype, item.providerId]) === selectedItems
+      );
+    });
+    if (selectedTopics?.length >= 0) {
+      setTopicForSelected(selectedTopics[0]);
+    } else {
+      setTopicForSelected(null);
+    }
+  }, [selectedItems]);
+
   return (
     <Box
       height="100%"
       overflow="auto"
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
-      {filteredTopics && (
-        <Stack
-          spacing={1}
-          sx={{
-            height: '100%',
-            display: 'flex',
-          }}
-        >
-          <Stack direction="row" spacing={1}>
-            <SearchBar
-              onSearch={onSearch}
-              placeholder="Filter Topics"
-              defaultValue={initialSearchTerm}
-              fullWidth
-            />
-            <Tooltip title="Reload topic list" placement="left">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  getTopicList();
-                }}
-              >
-                <RefreshIcon sx={{ fontSize: 18 }} />
-              </IconButton>
+      <Stack
+        spacing={1}
+        height="100%"
+        // sx={{
+        //   height: '100%',
+        //   display: 'flex',
+        // }}
+      >
+        <Stack direction="row" spacing={1}>
+          <Stack direction="row" paddingTop={'5px'}>
+            <Tooltip
+              title="Echo"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <span>
+                <IconButton
+                  disabled={!topicForSelected}
+                  size="small"
+                  aria-label="Subscribe to topic and show the output"
+                  onClick={() => {
+                    onEchoClick(topicForSelected);
+                  }}
+                >
+                  <ChatBubbleOutlineIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip
+              title="Publish to"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <span>
+                <IconButton
+                  disabled={!topicForSelected}
+                  size="small"
+                  aria-label="Create a publisher"
+                  onClick={() => {
+                    onPublishClick(topicForSelected);
+                  }}
+                >
+                  <PlayCircleOutlineIcon fontSize="inherit" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
 
-          {filteredTopics.length > 0 && (
-            <TableContainer
-              sx={{
-                flex: 1,
-                minHeight: 0,
+          <SearchBar
+            onSearch={onSearch}
+            placeholder="Filter Topics"
+            defaultValue={initialSearchTerm}
+            fullWidth
+          />
+          <Tooltip title="Reload topic list" placement="left">
+            <IconButton
+              size="small"
+              onClick={() => {
+                getTopicList();
               }}
             >
-              <Table stickyHeader size="small" aria-label="topic table">
-                <TableHead>
-                  <TableRow>
-                    {headers.map((header) => {
-                      if (header.key === 'name') {
-                        return (
-                          <TableCell
-                            key={header.key}
-                            sx={{ fontWeight: 'bold' }}
-                          >
-                            {header.header} [{filteredTopics.length}]
-                          </TableCell>
-                        );
-                      }
-                      return (
-                        <TableCell key={header.key} sx={{ fontWeight: 'bold' }}>
-                          {header.header}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredTopics.map((row) => {
-                    const colorPubSub =
-                      row.publisher.length > 0 && row.subscriber.length > 0
-                        ? 'default'
-                        : 'warning';
-                    const colorPubSubM =
-                      row.publisher.length > 0 && row.subscriber.length > 0
-                        ? 'default'
-                        : 'warning';
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell key={`${row.id}-actions`}>
-                          <Stack direction="row">
-                            <Tooltip title="Echo" enterDelay={1000}>
-                              <div>
-                                <OverflowMenuProviderSelector
-                                  onClick={onActionClick}
-                                  providerMap={providers[row.name]}
-                                  icon={ChatBubbleOutlineIcon}
-                                  actionType="ECHO"
-                                  args={row}
-                                />
-                              </div>
-                            </Tooltip>
-                            <Tooltip title="Publish to" enterDelay={1000}>
-                              <div>
-                                <OverflowMenuProviderSelector
-                                  onClick={onActionClick}
-                                  providerMap={providers[row.name]}
-                                  icon={PlayCircleOutlineIcon}
-                                  actionType="PUBLISH"
-                                  args={row}
-                                />
-                              </div>
-                            </Tooltip>
-                          </Stack>
-                        </TableCell>
-                        <TableCell key={`${row.id}-name`}>
-                          <Stack direction="row">
-                            {row.name}
-                            {/* <CopyButton value={row.name} /> */}
-                          </Stack>
-                        </TableCell>
-                        <TableCell key={`${row.id}-type`}>
-                          <Stack direction="row">
-                            {row.msgtype}
-                            {/* <CopyButton value={row.msgtype} /> */}
-                          </Stack>
-                        </TableCell>
-                        <TableCell key={`${row.id}-publisher`}>
-                          {row.publisher.length === 1 && (
-                            <Stack>
-                              {row.publisher.map((el) => {
-                                return (
-                                <Tag
-                                  color={colorPubSub}
-                                  key={`${row.id}-pub-${el}`}
-                                  text={nodeKeyName[el]}
-                                  wrap={false}
-                                />
-                              )})}
-                            </Stack>
-                          )}
-                          {row.publisher.length === 0 && (
-                            <Stack>
-                              <Tag
-                                color="default"
-                                key={`${row.id}-pub-0`}
-                                text="0"
-                              />
-                            </Stack>
-                          )}
-                          {row.publisher.length > 1 && (
-                            <Accordion>
-                              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <Tag
-                                  color={colorPubSubM}
-                                  key={`${row.id}-pub-m`}
-                                  text={row.publisher.length.toString()}
-                                />
-                              </AccordionSummary>
-                              {row.publisher.length > 1 && (
-                                <AccordionDetails>
-                                  <Stack spacing={0.5}>
-                                    {row.publisher.map((el) => (
-                                      <Tag
-                                        color={colorPubSubM}
-                                        key={`${row.id}-pub-${el}`}
-                                        text={nodeKeyName[el]}
-                                        wrap={false}
-                                      />
-                                    ))}
-                                  </Stack>
-                                </AccordionDetails>
-                              )}
-                            </Accordion>
-                          )}
-                        </TableCell>
-                        <TableCell key={`${row.id}-subscriber`}>
-                          {row.subscriber.length === 1 && (
-                            <Stack>
-                              {row.subscriber.map((el) => (
-                                <Tag
-                                  color={colorPubSub}
-                                  key={`${row.id}-pub-${el}`}
-                                  text={nodeKeyName[el]}
-                                  wrap={false}
-                                />
-                              ))}
-                            </Stack>
-                          )}
-                          {row.subscriber.length === 0 && (
-                            <Stack>
-                              <Tag
-                                color="default"
-                                key={`${row.id}-pub-0`}
-                                text="0"
-                              />
-                            </Stack>
-                          )}
-                          {row.subscriber.length > 1 && (
-                            <Accordion>
-                              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <Tag
-                                  color={colorPubSubM}
-                                  key={`${row.id}-pub-m`}
-                                  text={row.subscriber.length.toString()}
-                                />
-                              </AccordionSummary>
-                              {row.subscriber.length > 1 && (
-                                <AccordionDetails>
-                                  <Stack spacing={0.5}>
-                                    {row.subscriber.map((el) => (
-                                      <Tag
-                                        color={colorPubSubM}
-                                        key={`${row.id}-pub-${el}`}
-                                        text={nodeKeyName[el]}
-                                        wrap={false}
-                                      />
-                                    ))}
-                                  </Stack>
-                                </AccordionDetails>
-                              )}
-                            </Accordion>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-
-          {filteredTopics.length === 0 && (
-            <Alert severity="info" style={{ minWidth: 0 }}>
-              <AlertTitle>No Topics found</AlertTitle>
-            </Alert>
-          )}
+              <RefreshIcon sx={{ fontSize: 'inherit' }} />
+            </IconButton>
+          </Tooltip>
         </Stack>
-      )}
+        <Stack direction="row" height="100%" overflow="auto">
+          <Box width="100%" height="100%" overflow="auto">
+            <TreeView
+              aria-label="parameters"
+              expanded={expanded}
+              defaultCollapseIcon={<ArrowDropDownIcon />}
+              defaultExpandIcon={<ArrowRightIcon />}
+              // defaultEndIcon={<div style={{ width: 24 }} />}
+              onNodeSelect={(event, nodeId) => {
+                setSelectedItems(nodeId);
+                const index = expanded.indexOf(nodeId);
+                const copyExpanded = [...expanded];
+                if (index === -1) {
+                  copyExpanded.push(nodeId);
+                } else {
+                  copyExpanded.splice(index, 1);
+                }
+                setExpanded(copyExpanded);
+              }}
+            >
+              {rootDataList.map((item) => {
+                return topicTreeToStyledItems('', item);
+              })}
+            </TreeView>
+          </Box>
+        </Stack>
+      </Stack>
     </Box>
   );
 }

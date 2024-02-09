@@ -12,7 +12,7 @@ function OverflowMenuProviderSelector({
   icon: MyIcon,
 }) {
   const providerOptions = [];
-  providerMap.forEach((providerName, providerId) => {
+  providerMap?.forEach((providerName, providerId) => {
     providerOptions.push({
       // name: `${providerName}#${providerId}`,
       name: providerName,
@@ -23,7 +23,7 @@ function OverflowMenuProviderSelector({
       },
     });
   });
-  if (providerMap.size > 1) {
+  if (providerMap?.size > 1) {
     return (
       <OverflowMenu
         icon={<MyIcon sx={{ fontSize: 'inherit' }} />}
@@ -34,7 +34,7 @@ function OverflowMenuProviderSelector({
       />
     );
   }
-  if (providerMap.size === 1) {
+  if (providerMap?.size === 1) {
     return (
       <IconButton
         size="small"

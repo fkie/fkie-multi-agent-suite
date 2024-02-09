@@ -586,7 +586,7 @@ function HostTreeView({
       return {
         borderLeftStyle: 'outset',
         borderLeftColor: colorFromHostname(provider.name()),
-        borderLeftWidth: '10px',
+        borderLeftWidth: '0.6em',
       };
     }
     return {};

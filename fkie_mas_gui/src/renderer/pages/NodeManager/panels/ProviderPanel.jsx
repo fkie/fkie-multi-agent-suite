@@ -362,7 +362,7 @@ function ProviderPanel() {
       return {
         borderLeftStyle: 'solid',
         borderLeftColor: colorFromHostname(provider.name()),
-        borderLeftWidth: '10px',
+        borderLeftWidth: '0.6em',
       };
     }
     return {};

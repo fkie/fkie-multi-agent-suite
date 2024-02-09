@@ -37,7 +37,7 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
       return {
         borderLeftStyle: 'outset',
         borderLeftColor: colorFromHostname(name),
-        borderLeftWidth: '10px',
+        borderLeftWidth: '0.6em',
         fontSize: settingsCtx.fontSize,
       };
     }

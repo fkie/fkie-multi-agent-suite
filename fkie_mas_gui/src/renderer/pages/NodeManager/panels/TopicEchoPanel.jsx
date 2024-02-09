@@ -40,7 +40,6 @@ import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from '../../../providers/event
 function TopicEchoPanel({
   showOptions,
   showDetails,
-  defaultRosTopicType,
   defaultProvider,
   defaultTopic,
   defaultNoData,
@@ -232,7 +231,7 @@ function TopicEchoPanel({
           {showOptions && (
             <Stack spacing={0.5} margin={0.5} direction="row">
               <Tooltip
-                title={'show message data'}
+                title="show message data"
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
@@ -247,7 +246,7 @@ function TopicEchoPanel({
                 </ToggleButton>
               </Tooltip>
               <Tooltip
-                title={'show arrays'}
+                title="show arrays"
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
@@ -262,7 +261,7 @@ function TopicEchoPanel({
                 </ToggleButton>
               </Tooltip>
               <Tooltip
-                title={'show strings'}
+                title="show strings"
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
@@ -277,7 +276,7 @@ function TopicEchoPanel({
                 </ToggleButton>
               </Tooltip>
               <Tooltip
-                title={'limit message forward to 1 Hz'}
+                title="limit message forward to 1 Hz"
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
@@ -293,7 +292,7 @@ function TopicEchoPanel({
               </Tooltip>
               <Divider orientation="vertical" />
               <Tooltip
-                title={'show statistics'}
+                title="show statistics"
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
@@ -520,7 +519,6 @@ function TopicEchoPanel({
 TopicEchoPanel.defaultProps = {
   showOptions: true,
   showDetails: false,
-  defaultRosTopicType: '',
   defaultProvider: '',
   defaultTopic: '',
   defaultNoData: false,
@@ -529,7 +527,6 @@ TopicEchoPanel.defaultProps = {
 TopicEchoPanel.propTypes = {
   showOptions: PropTypes.bool,
   showDetails: PropTypes.bool,
-  defaultRosTopicType: PropTypes.string,
   defaultProvider: PropTypes.string,
   defaultTopic: PropTypes.string,
   defaultNoData: PropTypes.bool,

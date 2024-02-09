@@ -2,14 +2,7 @@ import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
-import {
-  Box,
-  ButtonGroup,
-  IconButton,
-  Paper,
-  Stack,
-  Tooltip,
-} from '@mui/material';
+import { Box, IconButton, Stack, Tooltip } from '@mui/material';
 
 import { TreeView } from '@mui/x-tree-view';
 
@@ -385,7 +378,7 @@ export default function ParameterPanel({ nodes, providers }) {
     });
   };
 
-  const paramsFromIds = (treeItemId) => {
+  const deleteParamsFromIds = (treeItemId) => {
     // Sort parameter by provider
     const paramsToBeDeleted = new Map('', []);
     rootData.forEach((paramList, rootName) => {
@@ -425,6 +418,23 @@ export default function ParameterPanel({ nodes, providers }) {
         // }}
       >
         <Stack direction="row" spacing={1}>
+          <Tooltip
+            title="Delete selected parameter"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              disabled={!selectedItems}
+              size="small"
+              aria-label="Delete selected parameter"
+              onClick={() => {
+                deleteParamsFromIds(selectedItems);
+              }}
+            >
+              <DeleteIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
           <SearchBar
             onSearch={onSearch}
             placeholder="Filter parameters"
@@ -492,34 +502,6 @@ export default function ParameterPanel({ nodes, providers }) {
                 );
               })}
             </TreeView>
-          </Box>
-          <Box>
-            <Paper elevation={2}>
-              <ButtonGroup
-                orientation="vertical"
-                aria-label="parameter buttons"
-              >
-                <Tooltip
-                  title="Delete selected parameter"
-                  placement="left"
-                  enterDelay={tooltipDelay}
-                  enterNextDelay={tooltipDelay}
-                >
-                  <span>
-                    <IconButton
-                      disabled={!selectedItems}
-                      size="medium"
-                      aria-label="Delete selected parameter"
-                      onClick={() => {
-                        paramsFromIds(selectedItems);
-                      }}
-                    >
-                      <DeleteIcon fontSize="inherit" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </ButtonGroup>
-            </Paper>
           </Box>
         </Stack>
       </Stack>

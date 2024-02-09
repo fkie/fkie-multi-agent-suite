@@ -4,6 +4,7 @@ import MapSelectionModal from './SelectionModal/MapSelectionModal';
 
 import ConnectToProviderModal from './ConnectToProviderModal/ConnectToProviderModal';
 import ParameterTreeItem from './ParameterTreeView/ParameterTreeItem';
+import TopicTreeItem from './TopicTreeView/TopicTreeItem';
 import ConfirmModal from './SelectionModal/ConfirmModal';
 import {
   TagColors,
@@ -39,6 +40,7 @@ export {
   TabPanel,
   Tag,
   TagColors,
+  TopicTreeItem,
   colorFromHostname,
   getDiagnosticStyle,
   levelColors,

@@ -72,10 +72,10 @@ function PackageExplorerPanel() {
       setHostStyle({
         borderLeftStyle: 'outset',
         borderLeftColor: hColor,
-        borderLeftWidth: '10px',
+        borderLeftWidth: '0.6em',
         borderBottomStyle: 'inset',
         borderBottomColor: hColor,
-        borderBottomWidth: '10px',
+        borderBottomWidth: '0.6em',
       });
     } else {
       setHostStyle({});

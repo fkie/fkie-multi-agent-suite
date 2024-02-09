@@ -156,7 +156,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
       return {
         borderLeftStyle: 'outset',
         borderLeftColor: colorFromHostname(providerName),
-        borderLeftWidth: '10px',
+        borderLeftWidth: '0.6em',
       };
     }
     return {};

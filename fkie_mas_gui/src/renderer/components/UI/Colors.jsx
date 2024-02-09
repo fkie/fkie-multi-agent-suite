@@ -93,9 +93,6 @@ export const HostColors = [
   '#59191f',
   '#d8a0a6',
   '#816183',
-  '#c4618c',
-  '#76689a',
-  '#bc4077',
   '#00387b',
   '#0f4c64',
   '#0089b6',
@@ -126,6 +123,9 @@ export const HostColors = [
   '#ecece7',
   '#2b2b2c',
   '#797b7a',
+  '#c4618c',
+  '#76689a',
+  '#bc4077',
 ];
 
 export const colorFromHostname = (hostname) => {
@@ -144,14 +144,13 @@ export const colorFromHostname = (hostname) => {
 
 export const TagColors = [
   // 'red', // Reserve for errors
-  'green',
-  'cyan',
-  'teal',
-  'grey',
   'cool-gray',
-  'warm-gray',
-  'high-contrast',
+  'grey',
+  'green',
+  'teal',
   'outline',
+  'cyan',
+  'high-contrast',
   'magenta',
   'purple',
 ];
