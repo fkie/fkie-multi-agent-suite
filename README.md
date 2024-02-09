@@ -1,4 +1,4 @@
-# FKIE Multi Agent Suite for ROS
+# Multi Agent Suite for ROS
 
 Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this suite provides a collection of packages for ROS 1 and 2 for discovering, synchronizing (ROS 1), monitoring, and managing nodes on different hosts using a graphical user interface.
 
