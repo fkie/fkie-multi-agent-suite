@@ -598,9 +598,10 @@ function HostTreeViewPanel() {
    * Stop nodes given in the arguments
    */
   const stopNodes = useCallback(
-    (nodeList, onlyWithLaunch, restart) => {
+    (nodes, onlyWithLaunch, restart) => {
       const nodes2stop = [];
       const skippedNodes = new Map();
+      const nodeList = updateWithAssociations(nodes);
       nodeList.forEach((node) => {
         // we stop system nodes only when they are individually selected
         if (node.system_node && nodeList.length > 1) {
