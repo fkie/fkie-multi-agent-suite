@@ -600,7 +600,12 @@ export function RosProviderReact(
    * Forces an update on the provider list for all connected provider.
    */
   const refreshProviderList = useDebounceCallback(() => {
-    providersConnected.forEach((provider) => {
+    // remove discoverd provider
+    const newProviders = providers.filter((prov) => {
+      return !prov.discovered;
+    });
+    setProviders(newProviders);
+    newProviders.forEach((provider) => {
       provider.updateProviderList();
     });
   }, debounceTimeout);

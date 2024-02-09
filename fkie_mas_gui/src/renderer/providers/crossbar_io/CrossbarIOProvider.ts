@@ -96,6 +96,8 @@ class CrossbarIOProvider {
 
   isLocalHost: boolean = false;
 
+  discovered: boolean = false;
+
   /** State of the connection to remote provider. */
   connectionState: ConnectionState = ConnectionState.STATES.UNKNOWN;
 
@@ -459,6 +461,7 @@ class CrossbarIOProvider {
           );
           this.remoteProviders.push(np);
           np.rosState = p;
+          np.discovered = true;
           emitCustomEvent(
             EVENT_PROVIDER_DISCOVERED,
             new EventProviderDiscovered(np, this),
