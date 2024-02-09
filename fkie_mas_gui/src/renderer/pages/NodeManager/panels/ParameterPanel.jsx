@@ -492,7 +492,7 @@ export default function ParameterPanel({ nodes, providers }) {
                     labelIcon={getIcon(rootObj)}
                     labelCount={filteredItems ? filteredItems.length : null}
                     requestData={!rootData.has(rootId)}
-                    providerName={rootObj?.name()}
+                    providerName={rosCtx.getProviderName(rootId)}
                   >
                     {paramTreeToStyledItems(
                       nodeFilter ? `${rootId}` : '',
