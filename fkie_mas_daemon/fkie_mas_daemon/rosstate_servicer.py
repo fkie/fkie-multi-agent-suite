@@ -127,12 +127,12 @@ class RosStateServicer(CrossbarBaseSession):
                     self.publish_to('ros.discovery.ready', {'status': False})
                     self.topic_state_publisher_count = 0
                     self._ts_state_updated = time.time()
-                if self._ts_state_updated > self._ts_state_notified:
-                    if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
-                        self.publish_to('ros.nodes.changed', {
-                                        "timestamp": self._ts_state_updated})
-                        nmd.launcher.server.screen_servicer.system_change()
-                        self._ts_state_notified = self._ts_state_updated
+            if self._ts_state_updated > self._ts_state_notified:
+                if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
+                    self.publish_to('ros.nodes.changed', {
+                                    "timestamp": self._ts_state_updated})
+                    nmd.launcher.server.screen_servicer.system_change()
+                    self._ts_state_notified = self._ts_state_updated
             time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
