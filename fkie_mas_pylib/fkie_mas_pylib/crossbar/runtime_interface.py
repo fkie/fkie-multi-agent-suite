@@ -168,8 +168,7 @@ class RosParameter:
 
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
-        self.guid = id
-        self.id = f"{id}-{name}"
+        self.id = id
         self.parent_id = None
         self.name = name
         self.namespace = names.namespace(name, with_sep_suffix=False)
