@@ -293,9 +293,11 @@ class RosStateServicer(CrossbarBaseSession):
         return -1
 
     def _get_ros_node_list(self) -> List[RosNode]:
-        if self._ros_node_list is None:
-            self._ros_node_list = self.to_crossbar()
-        return self._ros_node_list
+        # todo fix cache update
+        # if self._ros_node_list is None:
+        #     self._ros_node_list = self.to_crossbar()
+        # return self._ros_node_list
+        return self.to_crossbar()
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
         node_list: List[RosNode] = self._get_ros_node_list()
