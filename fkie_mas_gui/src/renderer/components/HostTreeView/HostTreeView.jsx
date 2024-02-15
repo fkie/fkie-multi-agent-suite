@@ -114,12 +114,10 @@ function HostTreeView({
         const parsedId = id.split('#');
         // a group (with children) must have 2 substrings separated by #
         if (parsedId.length === 2) {
-          // get the list of node IDs of the provider
-          const nodeList = rosCtx.mapProviderRosNodes.get(parsedId[0]);
           // get the children IDs
-          const childrenIds = nodeList?.filter((node) =>
-            node.id.startsWith(id),
-          );
+          const childrenIds = keyNodeList
+            .filter((node) => node.key.startsWith(id))
+            .map((node) => node.key);
           if (childrenIds) {
             allIds = [...allIds, ...childrenIds];
           }
@@ -128,7 +126,7 @@ function HostTreeView({
       // remove multiple copies of a selected item
       return [...new Set(allIds)];
     },
-    [rosCtx.mapProviderRosNodes],
+    [keyNodeList],
   );
 
   /**
@@ -149,7 +147,8 @@ function HostTreeView({
             }),
         ];
       });
-      return nodeList;
+      // filter duplicate entries
+      return [...new Set(nodeList)];
     },
     [keyNodeList],
   );
@@ -504,6 +503,9 @@ function HostTreeView({
       }
       // valid children means that item is a group
       const groupName = treePath.split('/').pop();
+      keyNodeList.push({
+        key: nodeId,
+      });
       return (
         <HostTreeViewItem
           key={nodeId}
