@@ -1770,7 +1770,7 @@ class CrossbarIOProvider {
 
     // TODO: Add log level and format?
     const request = new LaunchNode(
-      node.id, // name
+      node.name, // name
       '', // opt_binary
       `${node.launchPath}`, // opt_launch
       '', // log level
