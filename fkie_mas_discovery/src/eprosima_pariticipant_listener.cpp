@@ -90,8 +90,8 @@ public:
                                                                                              eprosima::fastrtps::SubscriberListener()
     {
         rclcpp::QoS qos_settings(100);
-        // qos_settings.reliable();
-        // qos_settings.transient_local();
+        qos_settings.reliable();
+        qos_settings.transient_local();
         qos_settings.keep_last(1);
         on_shutdown = false;
         publisher_ = this->create_publisher<fkie_mas_msgs::msg::DiscoveredState>("~/rosstate", qos_settings);

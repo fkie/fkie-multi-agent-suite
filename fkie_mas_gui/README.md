@@ -126,7 +126,7 @@ Then open in browser <http://localhost:1212>
 | ros.launch.get_msg_struct          | RPC  | `(msg_type: str) => LaunchMessageStruct`                                  | Returns for given message type a JSON object.                                            |
 | ros.launch.get_srv_struct          | RPC  | `(srv_type: str) => LaunchMessageStruct`                                  | Returns for given service type a JSON object.                                            |
 | ros.launch.publish_message         | RPC  | `(request: LaunchPublishMessage) => void`                                 | Launch a publisher.                                                                      |
-| ros.nodes.stop_node                | RPC  | `(name: str) => {result: bool, message: str}`                             | Stop a node using ROS                                                                    |
+| ros.nodes.stop_node                | RPC  | `(name/id: str) => {result: bool, message: str}`                          | Stop a node using ROS                                                                    |
 | ros.nodes.unregister               | RPC  | `(name: str) => {result: bool, message: str}`                             | Unregister all topics and services of a node using ROS                                   |
 | ros.screen.kill_node               | RPC  | `(name: str) => {result: bool, message: str}`                             | Kill screen of a given node                                                              |
 | ros.screen.get_list                | RPC  | `() => [ScreensMapping]`                                                  | Returns a list off all screens and their name converted to ROS node name                 |

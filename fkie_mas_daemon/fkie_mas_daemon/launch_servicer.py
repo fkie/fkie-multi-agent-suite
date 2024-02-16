@@ -545,7 +545,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             # Add parameter values
             # for name, p in lc.xxx:
             #    reply_lc.parameters.append(RosParameter(name, p.value))
-            print('nodes', reply_lc.nodes)
+            # print('nodes', reply_lc.nodes)
             # TODO: add assosiations
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)

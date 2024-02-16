@@ -74,10 +74,10 @@ class RosNodeLauncher(object):
 
         nmd.ros_node = self.rosnode
         # set loglevel to DEBUG
-        nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+        nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.INFO)
 
         # get a reference to the global node for logging
-        Log.set_ros2_logging_node(self.rosnode)
+        Log.set_ros2_logging_node(nmd.ros_node)
 
         # test for screen after rosnode log modul is available.
         self._run_tests()

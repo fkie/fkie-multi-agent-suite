@@ -77,14 +77,14 @@ class RosStateServicer(CrossbarBaseSession):
         self.topic_state_publisher_count = 0
         self._ts_state_updated = 0
         self._ts_state_notified = 0
-        self._rate_check_discovery_node = 1.0
+        self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
 
     def start(self):
-        qos_state_profile = QoSProfile(depth=100
-                                       # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                       # history=QoSHistoryPolicy.KEEP_LAST,
-                                       # reliability=QoSReliabilityPolicy.RELIABLE
+        qos_state_profile = QoSProfile(depth=100,
+                                       durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                       history=QoSHistoryPolicy.KEEP_LAST,
+                                       reliability=QoSReliabilityPolicy.RELIABLE
                                        )
         qos_endpoint_profile = QoSProfile(depth=100,
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -123,16 +123,19 @@ class RosStateServicer(CrossbarBaseSession):
     def _check_discovery_node(self):
         while not self._on_shutdown:
             if self.topic_state_publisher_count:
+                # check if we have a discovery node
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
                     self.publish_to('ros.discovery.ready', {'status': False})
                     self.topic_state_publisher_count = 0
                     self._ts_state_updated = time.time()
+            # if a change was detected by discovery node we received _on_msg_state()
+            # therefor the self._ts_state_updated was updated
             if self._ts_state_updated > self._ts_state_notified:
                 if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
+                    self._ts_state_notified = self._ts_state_updated
                     self.publish_to('ros.nodes.changed', {
                                     "timestamp": self._ts_state_updated})
                     nmd.launcher.server.screen_servicer.system_change()
-                    self._ts_state_notified = self._ts_state_updated
             time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
@@ -155,22 +158,20 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_mas_msgs.DiscoveredState<XXX>
         '''
-        self._ros_node_list = None
         if not self.topic_state_publisher_count:
             self.publish_to('ros.discovery.ready', {'status': True})
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
-        self._ros_state = {}
+        # update the participant info (IP addresses)
+        new_ros_state = {}
         for participant in msg.participants:
             guid = self._guid_to_str(participant.guid)
-            self._ros_state[guid] = participant
+            new_ros_state[guid] = participant
+        self._ros_state = new_ros_state
+        self._ros_node_list = None
         # notify crossbar clients, but not to often
+        # notifications are sent from _check_discovery_node()
         self._ts_state_updated = time.time()
-        if self._ts_state_updated - self._ts_state_notified > self._rate_check_discovery_node:
-            self.publish_to('ros.nodes.changed', {
-                            "timestamp": self._ts_state_updated})
-            nmd.launcher.server.screen_servicer.system_change()
-            self._ts_state_notified = self._ts_state_updated
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
@@ -224,7 +225,7 @@ class RosStateServicer(CrossbarBaseSession):
                 unloaded = self.stop_composed_node(node)
             if not unloaded:
                 result = nmd.launcher.server.screen_servicer.kill_node(
-                    os.path.join(node.namespace, node.name), signal.SIGTERM)
+                    os.path.join(node.namespace, node.name), signal.SIGQUIT)
         if unloaded:
             result = json.dumps(
                 {'result': True, 'message': ''}, cls=SelfEncoder)
@@ -293,11 +294,11 @@ class RosStateServicer(CrossbarBaseSession):
         return -1
 
     def _get_ros_node_list(self) -> List[RosNode]:
-        # todo fix cache update
-        # if self._ros_node_list is None:
-        #     self._ros_node_list = self.to_crossbar()
-        # return self._ros_node_list
-        return self.to_crossbar()
+        # self._ros_node_list is cleared on updates in _on_msg_state()
+        # otherwise we use a cached list
+        if self._ros_node_list is None:
+            self._ros_node_list = self.to_crossbar()
+        return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
         node_list: List[RosNode] = self._get_ros_node_list()

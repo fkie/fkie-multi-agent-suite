@@ -3,7 +3,7 @@ import json
 from json import JSONEncoder
 from .generic_logger import GenericLogger, LoggingLevel
 from .ros1_logger import ROS1Logger
-from .ros2_logger import ROS2Logger, ros2_logging_node
+from .ros2_logger import ROS2Logger
 
 
 class LoggingEncoder(JSONEncoder):
@@ -72,8 +72,8 @@ class Log:
 
     @staticmethod
     def set_ros2_logging_node(node) -> None:
-        global ros2_logging_node
-        ros2_logging_node = node
+        if (hasattr(logger, "setNode")):
+            logger.setNode(node)
 
     @staticmethod
     def _clear_text(text: str) -> str:
