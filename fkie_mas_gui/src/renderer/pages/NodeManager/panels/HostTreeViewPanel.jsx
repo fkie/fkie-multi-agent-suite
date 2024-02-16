@@ -753,6 +753,8 @@ function HostTreeViewPanel() {
     getSelectedNodes().map(async (node) => {
       // we unregister system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
+      // not supported for ROS1
+      if (!node.masteruri) return;
       if (
         queueItemsQueueMain &&
         queueItemsQueueMain.find((elem) => {
@@ -1201,7 +1203,7 @@ function HostTreeViewPanel() {
                   </Tooltip>
                 )}
                 {navCtx.selectedNodes?.length > 0 && (
-                  <Tooltip title="Unregister" placement="left">
+                  <Tooltip title="Unregister ROS1 nodes" placement="left">
                     <IconButton
                       size="medium"
                       aria-label="Unregister"
