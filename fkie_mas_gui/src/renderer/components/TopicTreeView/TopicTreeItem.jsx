@@ -7,6 +7,7 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 
 import { LoggingContext } from '../../context/LoggingContext';
+import { NavigationContext } from '../../context/NavigationContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { colorFromHostname } from '../UI/Colors';
 import CopyButton from '../UI/CopyButton';
@@ -71,6 +72,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   ref,
 ) {
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const [label, setLabel] = useState(labelText);
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
@@ -194,10 +196,20 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 Publisher [{topicInfo.publishers.length}]:
               </Typography>
               {topicInfo.publishers.map((item) => {
+                const pubNodeName = item.split('-', 2).slice(-1).join('-');
                 return (
                   <Stack key={item} paddingLeft={3} direction="row">
-                    <Typography fontSize="small">{item}</Typography>
-                    <CopyButton value={item} />
+                    <Typography
+                      fontSize="small"
+                      onClick={() => {
+                        navCtx.setSelectedNodes([
+                          `${topicInfo.providerId}${item.replaceAll('/', '.')}`,
+                        ]);
+                      }}
+                    >
+                      {pubNodeName}
+                    </Typography>
+                    <CopyButton value={pubNodeName} />
                   </Stack>
                 );
               })}
@@ -205,12 +217,20 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 Subscriber [{topicInfo.subscribers.length}]:
               </Typography>
               {topicInfo.subscribers.map((item) => {
+                const subNodeName = item.split('-', 2).slice(-1).join('-');
                 return (
                   <Stack key={item} paddingLeft={3} direction="row">
-                    <Typography fontSize="small">
-                      {item}
+                    <Typography
+                      fontSize="small"
+                      onClick={() => {
+                        navCtx.setSelectedNodes([
+                          `${topicInfo.providerId}${item.replaceAll('/', '.')}`,
+                        ]);
+                      }}
+                    >
+                      {subNodeName}
                     </Typography>
-                    <CopyButton value={item} />
+                    <CopyButton value={subNodeName} />
                   </Stack>
                 );
               })}
