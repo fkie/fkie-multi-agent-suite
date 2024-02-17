@@ -409,6 +409,10 @@ function NodeManager() {
 
   function removeGenericTabs(parent) {
     if (!parent.children) return parent;
+    if (parent.selected) {
+      // if tabs are removed we have to disable the selection of them in the panel
+      parent.selected = undefined;
+    }
     parent.children = parent.children.filter((item) => {
       if (item.type === 'tab' && LAYOUT_TAB_LIST.includes(item.id)) {
         return true;
