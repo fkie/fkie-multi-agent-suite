@@ -7,6 +7,7 @@ import { Box, Stack, Typography } from '@mui/material';
 import { CopyButton, SearchBar } from '../../../components';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
+import { generateUniqueId } from '../../../utils';
 
 function SystemInformationPanel({ providerId }) {
   const rosCtx = useContext(RosContext);
@@ -16,6 +17,7 @@ function SystemInformationPanel({ providerId }) {
   const [provider, setProvider] = useState(null);
   const [providerDetails, setProviderDetails] = useState({});
   const [providerConfiguration, setProviderConfiguration] = useState({});
+  const [providerWarnings, setProviderWarnings] = useState([]);
   const [filter, setFilter] = useState('');
 
   /** filter dictionaries with system information by given filter */
@@ -97,6 +99,12 @@ function SystemInformationPanel({ providerId }) {
       setProviderConfiguration(
         filterNestObject(rosCtx.getProviderLaunchConfig(providerId)),
       );
+      // join warnings to one list
+      let warnings = [];
+      provider.warnings.forEach((w) => {
+        warnings = [...warnings, ...w.warnings];
+      });
+      setProviderWarnings(warnings);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider, rosCtx.getProviderLaunchConfig, filter]);
@@ -124,6 +132,32 @@ function SystemInformationPanel({ providerId }) {
           <Typography variant="h5">{provider?.name()}</Typography>
           <CopyButton value={`${provider?.name()}`} />
         </Stack>
+        {providerWarnings.length > 0 && (
+          <Stack sx={{ width: '100%' }}>
+            <h5>Warnings</h5>
+            {providerWarnings.map((item) => {
+              return (
+                <Stack key={generateUniqueId()} sx={{ width: '100%' }}>
+                  <Typography variant="subtitle1" color="red">
+                    {item.msg}
+                  </Typography>
+                  <Typography paddingLeft={1} variant="body1">
+                    {item.details}
+                  </Typography>
+                  {item.hint && (
+                    <Typography
+                      paddingLeft={1}
+                      variant="body1"
+                      fontStyle="italic"
+                    >
+                      Hint: {item.hint}
+                    </Typography>
+                  )}
+                </Stack>
+              );
+            })}
+          </Stack>
+        )}
         {providerDetails && (
           <Stack sx={{ width: '100%' }}>
             <h5>Provider Details</h5>

@@ -23,6 +23,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 import {
@@ -36,6 +37,7 @@ import { ConnectionState } from '../../../providers';
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_STATE,
+  EVENT_PROVIDER_WARNINGS,
 } from '../../../providers/events';
 import {
   EVENT_OPEN_COMPONENT,
@@ -56,8 +58,6 @@ function ProviderPanel() {
   const [providerRowsFiltered, setProviderRowsFiltered] = useState([]);
   const [filterText, setFilterText] = useState('');
   const [providersActivity] = useState(new Map());
-  // use updateActivity as trigger state to avoid copy of the providersActivity-Map
-  const [updateActivity, setUpdateActivity] = useState(1);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
@@ -108,11 +108,15 @@ function ProviderPanel() {
 
   useCustomEventListener(EVENT_PROVIDER_ACTIVITY, (data) => {
     providersActivity.set(data.provider.id, data.active);
-    setUpdateActivity(updateActivity * -1);
+    forceUpdate();
   });
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
     debouncedCallbackFilterText([...rosCtx.providers], filterText);
+  });
+
+  useCustomEventListener(EVENT_PROVIDER_WARNINGS, (data) => {
+    forceUpdate();
   });
 
   const onProviderMenuClick = async (actionType, providerId, providerName) => {
@@ -355,6 +359,23 @@ function ProviderPanel() {
     }
   };
 
+  const generateWarningsView = (provider) => {
+    if (provider.warnings.length > 0) {
+      return (
+        // <Tooltip title="Warnings" placement="bottom">
+        <IconButton
+          color="default"
+          onClick={() => {
+            onProviderMenuClick('INFO', provider.id, provider.name());
+          }}
+        >
+          <WarningAmberIcon color="warning" fontSize="inherit" />
+        </IconButton>
+        // </Tooltip>
+      );
+    }
+  };
+
   const getHostStyle = (provider) => {
     if (settingsCtx.get('colorizeHosts')) {
       // borderLeft: `3px dashed`,
@@ -459,7 +480,7 @@ function ProviderPanel() {
                           </Typography>
                         </Tooltip>
                       )}
-                    {updateActivity && providersActivity.get(provider.id) && (
+                    {providersActivity.get(provider.id) && (
                       <Stack minWidth="2em">
                         <LinearProgress
                           sx={{ marginTop: '0.5em' }}
@@ -469,6 +490,9 @@ function ProviderPanel() {
                       </Stack>
                     )}
                   </Stack>
+                </TableCell>
+                <TableCell style={{ padding: 0 }}>
+                  {generateWarningsView(provider)}
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
                   {generateStatusView(provider)}
