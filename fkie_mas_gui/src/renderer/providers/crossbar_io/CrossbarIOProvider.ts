@@ -340,6 +340,7 @@ class CrossbarIOProvider {
         this.updateRosNodes();
         this.updateDiagnostics(null);
         this.getPackageList();
+        this.updateScreens(null);
         // this.launchGetList();
       }
     };
