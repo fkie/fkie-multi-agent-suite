@@ -301,7 +301,7 @@ function ProviderPanel() {
               }`}
               placement="bottom"
             >
-              <div>
+              <span>
                 {window.CommandExecutor && (
                   <Button
                     style={{
@@ -325,7 +325,7 @@ function ProviderPanel() {
                     {state}
                   </div>
                 )}
-              </div>
+              </span>
             </Tooltip>
 
             <Tooltip title="Join to running daemon" placement="bottom">
@@ -362,18 +362,24 @@ function ProviderPanel() {
   const generateWarningsView = (provider) => {
     if (provider.warnings.length > 0) {
       return (
-        // <Tooltip title="Warnings" placement="bottom">
-        <IconButton
-          color="default"
-          onClick={() => {
-            onProviderMenuClick('INFO', provider.id, provider.name());
-          }}
+        <Tooltip
+          title={`Provider reports warning for ${provider.warnings
+            .filter((group) => group.warnings.length > 0)
+            .map((item) => item.id)}`}
+          placement="bottom"
         >
-          <WarningAmberIcon color="warning" fontSize="inherit" />
-        </IconButton>
-        // </Tooltip>
+          <IconButton
+            color="default"
+            onClick={() => {
+              onProviderMenuClick('INFO', provider.id, provider.name());
+            }}
+          >
+            <WarningAmberIcon color="warning" fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
       );
     }
+    return <></>
   };
 
   const getHostStyle = (provider) => {

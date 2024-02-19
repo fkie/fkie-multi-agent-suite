@@ -333,6 +333,7 @@ class CrossbarIOProvider {
             return false;
           });
       } else if (state === ConnectionState.STATES.CONNECTED) {
+        this.updateSystemWarnings();
         this.updateTimeDiff(3);
         this.getProviderSystemInfo();
         this.getProviderSystemEnv();
@@ -2004,6 +2005,34 @@ class CrossbarIOProvider {
   };
 
   /**
+   * Get list of warnings
+   *
+   * @return {Promise<SystemWarningGroup[]>}
+   */
+  private updateSystemWarnings: () => Promise<SystemWarningGroup[] | null> =
+    async () => {
+      const result = await this.makeCall(
+        URI.ROS_PROVIDER_GET_WARNINGS,
+        [],
+        true,
+        true,
+      );
+      if (result[0]) {
+        const warnings: SystemWarningGroup[] = JSON.parse(result[1]);
+        this.warnings = warnings;
+        return Promise.resolve(warnings);
+      }
+
+      if (this.logger) {
+        this.logger.error(
+          `Provider [${this.name()}]: Error at updateSystemWarnings()`,
+          `${result[2]}`,
+        );
+      }
+      return Promise.resolve(null);
+    };
+
+  /**
    * Unregister a node given a name
    *
    * @param {string} name - Node to be stopped
@@ -2380,12 +2409,12 @@ class CrossbarIOProvider {
   };
 
   /**
-   * Update the screen state of each node reported in the list of ScreensMapping.
+   * Update the provider warnings reported in the list of SystemWarningGroup.
    */
   private callbackProviderWarnings: (msg: string) => void = async (msg) => {
     if (this.logger)
       this.logger.debugCrossbar(URI.ROS_PROVIDER_WARNINGS, msg, '', this.id);
-    if (!msg || (await this.lockRequest('callbackProviderWarnings'))) {
+    if (!msg) {
       return;
     }
 
@@ -2395,7 +2424,6 @@ class CrossbarIOProvider {
       EVENT_PROVIDER_WARNINGS,
       new EventProviderWarnings(this, msgParsed),
     );
-    this.unlockRequest('callbackProviderWarnings');
   };
 
   private registerCallbacks: () => Promise<any> = async () => {

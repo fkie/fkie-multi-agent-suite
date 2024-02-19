@@ -64,6 +64,13 @@ class MonitorServicer(CrossbarBaseSession):
         Log.info("crossbar: get system env")
         return json.dumps(SystemEnvironment(), cls=SelfEncoder)
 
+    @wamp.register('ros.provider.get_warnings')
+    def getProviderWarnings(self) -> str:
+        Log.info('Request to [ros.provider.get_warnings]')
+        # TODO collect warnings
+        return json.dumps([], cls=SelfEncoder)
+
+
     def _toCrossbarDiagnostics(self, rosmsg):
         cbMsg = DiagnosticArray(
             timestamp=float(rosmsg.header.stamp.sec)

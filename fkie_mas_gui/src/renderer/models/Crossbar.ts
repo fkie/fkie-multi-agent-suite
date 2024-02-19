@@ -12,6 +12,7 @@ const URI = {
   ROS_PROVIDER_GET_TIMESTAMP: 'ros.provider.get_timestamp',
   ROS_PROVIDER_GET_SYSTEM_ENV: 'ros.provider.get_system_env',
   ROS_PROVIDER_GET_SYSTEM_INFO: 'ros.provider.get_system_info',
+  ROS_PROVIDER_GET_WARNINGS: 'ros.provider.get_warnings',
   ROS_PROVIDER_WARNINGS: 'ros.provider.warnings',
   ROS_PROVIDER_GET_DIAGNOSTICS: 'ros.provider.get_diagnostics',
   ROS_PROVIDER_DIAGNOSTICS: 'ros.provider.diagnostics',

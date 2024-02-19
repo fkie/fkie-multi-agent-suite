@@ -987,6 +987,12 @@ class MasterMonitor(CrossbarBaseSession):
             self.publish_to('ros.provider.warnings', list(
                 self._crossbar_warning_groups.values()))
 
+    @wamp.register('ros.provider.get_warnings')
+    def get_provider_warnings(self) -> str:
+        Log.info('Request to [ros.provider.get_warnings]')
+        return json.dumps(list(
+            self._crossbar_warning_groups.values()), cls=SelfEncoder)
+
     @wamp.register('ros.nodes.get_list')
     def get_node_list(self) -> str:
         Log.info('Request to [ros.nodes.get_list]')
