@@ -135,8 +135,8 @@ export const colorFromHostname = (hostname) => {
     hash = (hash << 5) - hash + hostname.charCodeAt(i);
     hash |= 0; // Convert to 32bit integer
   }
-  // determine a color
-  const index = Math.abs(hash) % HostColors.length;
+  // determine a color (map 31 unsigned bits to color list)
+  const index = Math.floor((Math.abs(hash) / 0x80000000) * HostColors.length);
   return HostColors[index];
 };
 
