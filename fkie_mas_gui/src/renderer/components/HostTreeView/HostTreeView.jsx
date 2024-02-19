@@ -17,6 +17,9 @@ import { CmdType } from '../../providers';
 import SingleTerminalPanel from '../../pages/NodeManager/panels/SingleTerminalPanel';
 import { generateUniqueId } from '../../utils';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
+import {
+  LAYOUT_TAB_SETS,
+} from '../../pages/NodeManager/layout';
 import { colorFromHostname } from '../UI/Colors';
 import HostTreeViewItem from './HostTreeViewItem';
 import {
@@ -369,7 +372,7 @@ function HostTreeView({
             cmd={cmd}
           />,
           true,
-          '',
+          LAYOUT_TAB_SETS.BORDER_BOTTOM,
         ),
       );
     },
