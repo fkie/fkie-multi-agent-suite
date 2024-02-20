@@ -74,6 +74,18 @@ function NodeManager() {
     }
   }, [settingsCtx, setLayoutJson, setModel]);
 
+  /** Hide bottom panel on close of last terminal */
+  function deleteTab(tabId) {
+    const nodeBId = model.getNodeById(tabId);
+    if (nodeBId.getParent().getLocation().name === DockLocation.BOTTOM.name) {
+      const shouldSelectNewTab = nodeBId.getParent().getChildren().length === 2;
+      if (shouldSelectNewTab) {
+        model.doAction(Actions.selectTab(tabId));
+      }
+    }
+    model.doAction(Actions.deleteTab(tabId));
+  }
+
   useCustomEventListener(EVENT_OPEN_COMPONENT, (data) => {
     const node = model.getNodeById(data.id);
     if (node) {
@@ -97,8 +109,9 @@ function NodeManager() {
     }
   });
 
+  /** close tabs on signals from tab itself (e.g. ctrl+d) */
   useCustomEventListener(EVENT_CLOSE_COMPONENT, (data) => {
-    model.doAction(Actions.deleteTab(data.id));
+    deleteTab(data.id);
   });
 
   const getPanelId = useCallback(
@@ -306,7 +319,7 @@ function NodeManager() {
                         }@${provider.host()}"`,
                         terminalCmd.cmd,
                       );
-                      model.doAction(Actions.deleteTab(tabNodeId));
+                      deleteTab(tabNodeId);
                     } catch (error) {
                       logCtx.error(
                         `Can't open external terminal for ${config.nodeName}`,
@@ -456,6 +469,14 @@ function NodeManager() {
         ref={layoutRef}
         model={model}
         factory={factory}
+        onAction={(action) => {
+          // hide bottom panel on close of last terminal
+          if (action.type === Actions.DELETE_TAB) {
+            deleteTab(action.data.node);
+          } else {
+            model.doAction(action);
+          }
+        }}
         onRenderTab={(node, renderValues) => onRenderTab(node, renderValues)}
         onRenderTabSet={(node, renderValues) =>
           onRenderTabSet(node, renderValues)
