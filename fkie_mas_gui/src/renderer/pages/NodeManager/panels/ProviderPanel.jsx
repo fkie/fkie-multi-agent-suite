@@ -360,12 +360,15 @@ function ProviderPanel() {
   };
 
   const generateWarningsView = (provider) => {
-    if (provider.warnings.length > 0) {
+    const warnings = provider.warnings.filter(
+      (group) => group.warnings.length > 0,
+    );
+    if (warnings.length > 0) {
       return (
         <Tooltip
-          title={`Provider reports warning for ${provider.warnings
-            .filter((group) => group.warnings.length > 0)
-            .map((item) => item.id)}`}
+          title={`Provider reports warning for ${warnings.map(
+            (item) => item.id,
+          )}`}
           placement="bottom"
         >
           <IconButton
@@ -379,7 +382,6 @@ function ProviderPanel() {
         </Tooltip>
       );
     }
-    return <></>
   };
 
   const getHostStyle = (provider) => {
