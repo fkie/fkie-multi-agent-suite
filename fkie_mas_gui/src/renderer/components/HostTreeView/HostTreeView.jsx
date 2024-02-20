@@ -14,12 +14,10 @@ import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { CmdType } from '../../providers';
 
+import { LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
 import SingleTerminalPanel from '../../pages/NodeManager/panels/SingleTerminalPanel';
 import { generateUniqueId } from '../../utils';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
-import {
-  LAYOUT_TAB_SETS,
-} from '../../pages/NodeManager/layout';
 import { colorFromHostname } from '../UI/Colors';
 import HostTreeViewItem from './HostTreeViewItem';
 import {
@@ -597,6 +595,31 @@ function HostTreeView({
     return {};
   };
 
+  function formatTime(milliseconds) {
+    const sec = (milliseconds / 1000.0).toFixed(3);
+    let hours = Math.floor(sec / 3600);
+    let minutes = Math.floor((sec - hours * 3600) / 60);
+    let seconds = sec - hours * 3600 - minutes * 60;
+
+    if (hours < 10) {
+      hours = '0' + hours;
+    }
+    if (minutes < 10) {
+      minutes = '0' + minutes;
+    }
+    if (seconds < 10) {
+      seconds = '0' + seconds;
+    }
+    let result = "";
+    if (hours > 0) {
+      result += hours + 'h ';
+    }
+    if (minutes > 0) {
+      result += minutes + 'm ';
+    }
+    return result + seconds + 's';
+  }
+
   /**
    * Memoize the generation of the tree to improve render performance
    * The idea is to prevent rerendering when scrolling/focusing the component
@@ -654,9 +677,9 @@ function HostTreeView({
               timeSyncActive={
                 Math.abs(p.timeDiff) > settingsCtx.get('timeDiffThreshold')
               }
-              timeSyncText={`Time not in sync for approx. ${(
-                p.timeDiff / 1000
-              ).toFixed(3)} s`}
+              timeSyncText={`Time not in sync for approx. ${formatTime(
+                p.timeDiff,
+              )}`}
               onTimeSync={(cmd) => {
                 createSingleTerminalCmdPanel(p.id, cmd);
               }}

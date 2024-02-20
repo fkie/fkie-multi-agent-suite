@@ -153,7 +153,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   timeDiffThreshold: {
     label: 'Time Diff Threshold [ms]',
     type: 'numberX',
-    default: 2, // time difference is value more then half calculation time. So we can set it to value near zero.
+    default: 500,
     min: 0,
   },
   namespaceSystemNodes: {

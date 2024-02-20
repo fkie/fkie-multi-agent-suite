@@ -334,7 +334,7 @@ class CrossbarIOProvider {
           });
       } else if (state === ConnectionState.STATES.CONNECTED) {
         this.updateSystemWarnings();
-        this.updateTimeDiff(3);
+        this.updateTimeDiff();
         this.getProviderSystemInfo();
         this.getProviderSystemEnv();
         this.updateRosNodes();
@@ -625,12 +625,24 @@ class CrossbarIOProvider {
     return Promise.resolve({});
   };
 
+  private calcTimeDiff(startTs: number, endTs: number, remoteTs: number) {
+    // try to remove JavaScript andNetwork delay
+    const delay = endTs - startTs;
+    const diffToStart = remoteTs - startTs;
+    const diffToEnd = endTs - remoteTs;
+    let result = Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - delay) / 2.0;
+    if (diffToStart < 0) {
+      result *= -1.0;
+    }
+    return result;
+  }
+
   /**
    * Updates the time difference in milliseconds to the provider using the WAMP uri URI.ROS_PROVIDER_GET_TIMESTAMP
    * Emit event on successful update.
    */
-  public updateTimeDiff: (count: number | undefined) => Promise<boolean> =
-    async (count = undefined) => {
+  public updateTimeDiff: () => Promise<boolean> =
+    async () => {
       const startTs = Date.now();
       const result = await this.makeCall(
         URI.ROS_PROVIDER_GET_TIMESTAMP,
@@ -641,33 +653,22 @@ class CrossbarIOProvider {
       if (result[0]) {
         const providerResponse = JSON.parse(result[1]);
         const endTs = Date.now();
-        const delayTs = (endTs - startTs) / 2.0;
-        let diffTime = providerResponse.timestamp - startTs;
-        // time difference smaller then half delay results in 0
-        if (diffTime > delayTs) {
-          diffTime -= delayTs;
-        } else if (diffTime >= 0) {
-          diffTime = 0;
-        }
+        this.timeDiff = this.calcTimeDiff(
+          startTs,
+          endTs,
+          providerResponse.timestamp,
+        );
         if (this.logger) {
           this.logger.debug(
-            `Time difference to [${this.name()}]: approx. ${diffTime}, returned from daemon: ${
-              providerResponse.diff
-            }`,
+            `Time difference to [${this.name()}]: approx. ${
+              this.timeDiff
+            }, returned from daemon: ${providerResponse.diff}`,
             ``,
           );
         }
-        if (diffTime > 0) {
-          // check multiple times for time difference. E.g. on startup when the delay is to long.
-          const newCount = count === undefined ? 2 : count;
-          if (newCount > 0) {
-            return this.updateTimeDiff(newCount - 1);
-          }
-        }
-        this.timeDiff = diffTime;
         emitCustomEvent(
           EVENT_PROVIDER_TIME_DIFF,
-          new EventProviderTimeDiff(this, diffTime),
+          new EventProviderTimeDiff(this, this.timeDiff),
         );
         return true;
       }
