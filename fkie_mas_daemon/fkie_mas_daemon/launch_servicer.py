@@ -883,9 +883,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             f"{self.__class__.__name__}: Request to [ros.launch.get_srv_struct]: srv [{srv_type}]")
         result = LaunchMessageStruct(srv_type)
         try:
-            splitted_type = srv_type.replace('/', '.').split('.')
+            splitted_type = srv_type.replace('/', '.').rsplit('.', 1)
             splitted_type.reverse()
-            module = __import__(splitted_type.pop())
+            module = import_module(splitted_type.pop())
             sub_class = getattr(module, splitted_type.pop())
             while splitted_type:
                 sub_class = getattr(sub_class, splitted_type.pop())
