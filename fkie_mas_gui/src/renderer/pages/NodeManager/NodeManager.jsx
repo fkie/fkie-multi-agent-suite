@@ -77,7 +77,10 @@ function NodeManager() {
   /** Hide bottom panel on close of last terminal */
   function deleteTab(tabId) {
     const nodeBId = model.getNodeById(tabId);
-    if (nodeBId.getParent().getLocation().name === DockLocation.BOTTOM.name) {
+    if (
+      nodeBId.getParent().getType() === 'border' &&
+      nodeBId.getParent()?.getLocation().name === DockLocation.BOTTOM.name
+    ) {
       const shouldSelectNewTab = nodeBId.getParent().getChildren().length === 2;
       if (shouldSelectNewTab) {
         model.doAction(Actions.selectTab(tabId));
