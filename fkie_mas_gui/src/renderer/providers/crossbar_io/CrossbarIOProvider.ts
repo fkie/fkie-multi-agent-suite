@@ -641,46 +641,45 @@ class CrossbarIOProvider {
    * Updates the time difference in milliseconds to the provider using the WAMP uri URI.ROS_PROVIDER_GET_TIMESTAMP
    * Emit event on successful update.
    */
-  public updateTimeDiff: () => Promise<boolean> =
-    async () => {
-      const startTs = Date.now();
-      const result = await this.makeCall(
-        URI.ROS_PROVIDER_GET_TIMESTAMP,
-        [startTs],
-        true,
-        true,
+  public updateTimeDiff: () => Promise<boolean> = async () => {
+    const startTs = Date.now();
+    const result = await this.makeCall(
+      URI.ROS_PROVIDER_GET_TIMESTAMP,
+      [startTs],
+      true,
+      true,
+    );
+    if (result[0]) {
+      const providerResponse = JSON.parse(result[1]);
+      const endTs = Date.now();
+      this.timeDiff = this.calcTimeDiff(
+        startTs,
+        endTs,
+        providerResponse.timestamp,
       );
-      if (result[0]) {
-        const providerResponse = JSON.parse(result[1]);
-        const endTs = Date.now();
-        this.timeDiff = this.calcTimeDiff(
-          startTs,
-          endTs,
-          providerResponse.timestamp,
-        );
-        if (this.logger) {
-          this.logger.debug(
-            `Time difference to [${this.name()}]: approx. ${
-              this.timeDiff
-            }, returned from daemon: ${providerResponse.diff}`,
-            ``,
-          );
-        }
-        emitCustomEvent(
-          EVENT_PROVIDER_TIME_DIFF,
-          new EventProviderTimeDiff(this, this.timeDiff),
-        );
-        return true;
-      }
-
       if (this.logger) {
-        this.logger.error(
-          `Provider [${this.name()}]: Error at updateTimeDiff()`,
-          `${result[2]}`,
+        this.logger.debug(
+          `Time difference to [${this.name()}]: approx. ${
+            this.timeDiff
+          }, returned from daemon: ${providerResponse.diff}`,
+          ``,
         );
       }
-      return false;
-    };
+      emitCustomEvent(
+        EVENT_PROVIDER_TIME_DIFF,
+        new EventProviderTimeDiff(this, this.timeDiff),
+      );
+      return true;
+    }
+
+    if (this.logger) {
+      this.logger.error(
+        `Provider [${this.name()}]: Error at updateTimeDiff()`,
+        `${result[2]}`,
+      );
+    }
+    return false;
+  };
 
   /**
    * Get list of available nodes using the WAMP uri URI.ROS_NODES_GET_LIST
