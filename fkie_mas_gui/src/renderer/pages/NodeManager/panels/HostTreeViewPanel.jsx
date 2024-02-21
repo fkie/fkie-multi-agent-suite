@@ -1059,7 +1059,7 @@ function HostTreeViewPanel() {
                   refreshAllProvider();
                 }}
               >
-                <RefreshIcon sx={{ fontSize: 18 }} />
+                <RefreshIcon sx={{ fontSize: 'inherit' }} />
               </IconButton>
             </Tooltip>
           </Stack>
@@ -1087,7 +1087,7 @@ function HostTreeViewPanel() {
                 }}
                 size="small"
               >
-                <StopIcon sx={{ fontSize: 24 }} />
+                <StopIcon sx={{ fontSize: 'inherit' }} />
               </IconButton>
             </Stack>
           </Paper>

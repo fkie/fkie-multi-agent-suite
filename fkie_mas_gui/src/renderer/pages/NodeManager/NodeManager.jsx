@@ -240,7 +240,11 @@ function NodeManager() {
               // variant="standard"
               // anchorOrigin="top"
               sx={{
-                '& .MuiBadge-badge': { fontSize: 9, height: 12, minWidth: 12 },
+                '& .MuiBadge-badge': {
+                  fontSize: 'inherit',
+                  height: 12,
+                  minWidth: 12,
+                },
               }}
             >
               <DesktopWindowsOutlinedIcon sx={{ fontSize: 'inherit' }} />

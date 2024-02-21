@@ -2,12 +2,13 @@ import { createTheme } from '@mui/material';
 
 const background = '#F0F0F0';
 
-const lightTheme = createTheme({
+const lightThemeDef = {
   backgroundColor: background,
   palette: {
     mode: 'light',
   },
   typography: {
+    fontSize: 12,
     fontFamily: 'IBM Plex, sans',
   },
   components: {
@@ -20,6 +21,7 @@ const lightTheme = createTheme({
         body: {
           // flexlayout-react theme changes
           '& .flexlayout__layout': {
+            '--font-size': 'medium',
             '--color-text': 'black',
             '--color-background': 'white',
             '--color-base': 'white',
@@ -146,6 +148,6 @@ const lightTheme = createTheme({
       },
     },
   },
-});
+};
 
-export default lightTheme;
+export default lightThemeDef;

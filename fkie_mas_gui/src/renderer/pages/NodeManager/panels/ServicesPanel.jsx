@@ -172,7 +172,7 @@ function ServicesPanel({ initialSearchTerm }) {
                   getServiceList();
                 }}
               >
-                <RefreshIcon sx={{ fontSize: 18 }} />
+                <RefreshIcon sx={{ fontSize: 'inherit' }} />
               </IconButton>
             </Tooltip>
           </Stack>

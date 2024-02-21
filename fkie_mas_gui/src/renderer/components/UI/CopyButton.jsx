@@ -24,7 +24,7 @@ function CopyButton({ value, fontSize }) {
 }
 
 CopyButton.defaultProps = {
-  fontSize: '12px',
+  fontSize: 'inherit',
 };
 
 CopyButton.propTypes = {

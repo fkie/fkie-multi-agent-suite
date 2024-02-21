@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 
 import {
   Autocomplete,
@@ -59,13 +59,7 @@ function GuiPanel() {
                 }}
                 disableCloseOnSelect
                 renderOption={(props, option, { selected }) => (
-                  <li
-                    {...props}
-                    style={{
-                      height: 25,
-                      fontSize: settingsCtx.fontSize,
-                    }}
-                  >
+                  <li {...props} style={{ height: '1.5em' }}>
                     <Checkbox
                       icon={icon}
                       checkedIcon={checkedIcon}

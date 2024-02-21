@@ -1,4 +1,4 @@
-import React, { createContext, useMemo, useState } from 'react';
+import React, { createContext, useMemo, useState, useReducer } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import URI from '../models/Crossbar';
 
@@ -6,8 +6,7 @@ export const getCrossbarPortFromRos = (rosVersion: string) => {
   return rosVersion === '2' ? 11811 : 11911;
 };
 export interface ISettingsContext {
-  fontSize: number;
-  changed: boolean;
+  changed: number;
   get: (attribute: string) => any;
   set: (attribute: string, value: any, settingsCtx?: ISettingsContext) => void;
   getParamList?: () => void;
@@ -18,13 +17,11 @@ export const LOG_LEVEL_LIST = ['DEBUG', 'INFO', 'SUCCESS', 'WARN', 'ERROR'];
 export const LAUNCH_FILE_EXTENSIONS = ['.launch', '.launch.xml', '.launch.py'];
 
 export const DEFAULT_SETTINGS = {
-  changed: false,
   fgColor: '#1a73e8',
   bgColor: '#fafafa',
   fgColorForDarkMode: '#B8E7FB',
   bgColorForDarkMod: '#424242',
 
-  fontSize: 12,
   get: () => {
     return undefined;
   },
@@ -185,6 +182,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: 14,
     min: 2,
   },
+  fontSize: {
+    label: 'Font size',
+    type: 'number',
+    default: 14,
+    min: 2,
+  },
 };
 
 interface ISettingProvider {
@@ -197,7 +200,7 @@ export const SettingsContext =
 export function SettingsProvider({
   children,
 }: ISettingProvider): ReturnType<React.FC<ISettingProvider>> {
-  const [changed, setChanged] = useState(false);
+  const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
   const [config, setConfig] = useLocalStorage<any>(
     'SettingsContext:config',
     {},
@@ -221,7 +224,7 @@ export function SettingsProvider({
       if (SETTINGS_DEF[attribute].cb) {
         SETTINGS_DEF[attribute].cb?.(get, set);
       }
-      setChanged(!changed);
+      forceUpdate();
     } else {
       throw new Error(
         `Configuration attribute ${attribute} while set() not found!`,
@@ -237,21 +240,15 @@ export function SettingsProvider({
     return params;
   };
 
-  const [fontSize] = useLocalStorage(
-    'SettingsContext:fontSize',
-    DEFAULT_SETTINGS.fontSize,
-  );
-
   const attributesMemo = useMemo(
     () => ({
-      fontSize,
+      changed,
       get,
       set,
       getParamList,
-      changed,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fontSize, changed],
+    [changed],
   );
 
   return (

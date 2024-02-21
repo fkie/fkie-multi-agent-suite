@@ -36,11 +36,7 @@ function TerminalPanel({ selectedNodes }) {
                   <h4>{node.name.replaceAll('_', ' ')}</h4>
                 </Box>
                 <Box display="flex" justifyContent="center" alignItems="center">
-                  <h6
-                    style={{ color: gray[70], fontSize: settingsCtx.fontSize }}
-                  >
-                    {node.providerName}
-                  </h6>
+                  <h6 style={{ color: gray[70] }}>{node.providerName}</h6>
                 </Box>
               </Stack>
               {node.providerName && (

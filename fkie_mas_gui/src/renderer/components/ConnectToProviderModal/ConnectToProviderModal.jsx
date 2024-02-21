@@ -358,13 +358,7 @@ function ConnectToProviderModal() {
               }}
               disableCloseOnSelect
               renderOption={(props, option, { selected }) => (
-                <li
-                  {...props}
-                  style={{
-                    height: 30,
-                    fontSize: settingsCtx.fontSize + 2,
-                  }}
-                >
+                <li {...props} style={{ height: '1.5em' }}>
                   <Checkbox
                     icon={icon}
                     checkedIcon={checkedIcon}
@@ -552,13 +546,7 @@ function ConnectToProviderModal() {
                       }}
                       disableCloseOnSelect
                       renderOption={(props, option, { selected }) => (
-                        <li
-                          {...props}
-                          style={{
-                            height: 30,
-                            fontSize: settingsCtx.fontSize + 2,
-                          }}
-                        >
+                        <li {...props} style={{ height: '1.5em' }}>
                           <Checkbox
                             icon={icon}
                             checkedIcon={checkedIcon}
@@ -897,13 +885,6 @@ function ConnectToProviderModal() {
           </Button>
         </DialogActions>
       </Dialog>
-      {/* <Stack padding={0.5} direction="column">
-        <Tooltip title="Connect To ROS" placement="bottom">
-          <IconButton color="primary" onClick={handleOpen}>
-            <SettingsInputComponentIcon sx={{ fontSize: 28 }} />
-          </IconButton>
-        </Tooltip>
-      </Stack> */}
       <Tooltip title="Start Daemon" placement="bottom">
         <IconButton
           color="primary"

@@ -138,7 +138,7 @@ function LaunchFileList({
                         onReloadLaunch(providerId, lc.path, lc.masteruri);
                       }}
                     >
-                      <RefreshIcon sx={{ fontSize: 18 }} />
+                      <RefreshIcon sx={{ fontSize: 'inherit' }} />
                     </IconButton>
                   </Tooltip>
 
@@ -150,7 +150,7 @@ function LaunchFileList({
                         createFileEditorPanel(providerId, lc);
                       }}
                     >
-                      <EditIcon sx={{ fontSize: 16 }} />
+                      <EditIcon sx={{ fontSize: 'inherit' }} />
                     </IconButton>
                   </Tooltip>
 
@@ -162,7 +162,7 @@ function LaunchFileList({
                         onRemoveLaunch(providerId, lc.path, lc.masteruri);
                       }}
                     >
-                      <CloseIcon sx={{ fontSize: 18 }} />
+                      <CloseIcon sx={{ fontSize: 'inherit' }} />
                     </IconButton>
                   </Tooltip>
                 </Stack>

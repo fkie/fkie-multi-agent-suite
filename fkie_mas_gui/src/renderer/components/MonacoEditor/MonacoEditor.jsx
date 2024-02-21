@@ -697,7 +697,7 @@ function MonacoEditor({
                                 }}
                               >
                                 <CloseOutlinedIcon
-                                  style={{ fontSize: '12px' }}
+                                  style={{ fontSize: 'inherit' }}
                                   aria-label="Close"
                                 />
                               </IconButton>
@@ -754,7 +754,7 @@ function MonacoEditor({
               scrollBeyondLastLine: false,
               smoothScrolling: false,
               wordWrap: 'off',
-              fontSize: settingsCtx.fontSize,
+              fontSize: settingsCtx.get('fontSize'),
               minimap: { enabled: true },
               selectOnLineNumbers: true,
               'bracketPairColorization.enabled': true,
@@ -772,7 +772,7 @@ function MonacoEditor({
             padding="2px"
           >
             <Typography
-              style={{ padding: 2, fontWeight: 'normal', fontSize: 12 }}
+              style={{ padding: 2, fontWeight: 'normal', fontSize: 'inherit' }}
             >
               @{providerName}
             </Typography>

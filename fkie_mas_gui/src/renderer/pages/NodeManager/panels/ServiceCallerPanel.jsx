@@ -490,7 +490,6 @@ function ServiceCallerPanel({ serviceName, providerId }) {
           <ReactJson
             name={false}
             collapsed={false}
-            style={{ fontSize: settingsCtx.fontSize }}
             theme={settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'}
             src={resultMessage}
             collapseStringsAfterLength={30}

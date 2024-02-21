@@ -1,5 +1,5 @@
 import 'typeface-cormorant';
-import darkTheme from './darkTheme';
-import lightTheme from './lightTheme';
+import darkThemeDef from './darkTheme';
+import lightThemeDef from './lightTheme';
 
-export { darkTheme, lightTheme };
+export { darkThemeDef, lightThemeDef };

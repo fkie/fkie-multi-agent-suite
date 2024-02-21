@@ -75,7 +75,6 @@ const LoggingDetailsComponent = forwardRef<
             <ReactJson
               name={false}
               collapsed={1}
-              style={{ fontSize: settingsCtx.fontSize }}
               theme={
                 settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
               }

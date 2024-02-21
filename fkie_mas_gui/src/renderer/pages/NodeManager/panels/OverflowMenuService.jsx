@@ -30,7 +30,7 @@ function OverflowMenuService({ onClick, serviceName, providerId }) {
 
   return (
     <OverflowMenu
-      icon={<MoreVertSharpIcon sx={{ fontSize: 16 }} />}
+      icon={<MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />}
       options={serviceOptions}
       id="Service Options"
     />

@@ -118,7 +118,7 @@ const ReloadFileAlertComponent = forwardRef<
                     onChange={(event) => {
                       setRememberChange(event.target.checked);
                     }}
-                    sx={{ '& .MuiSvgIcon-root': { fontSize: 12 } }}
+                    sx={{ '& .MuiSvgIcon-root': { fontSize: 'inherit' } }}
                   />
                 }
                 label="remember the decision"

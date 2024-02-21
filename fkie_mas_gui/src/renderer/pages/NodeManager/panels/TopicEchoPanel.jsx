@@ -424,27 +424,26 @@ function TopicEchoPanel({
               {content.latched && (
                 <Box
                   style={{
-                    fontSize: settingsCtx.fontSize,
                     fontWeight: 'bold',
                   }}
                 >
                   latched
                 </Box>
               )}
-              <Box style={{ fontSize: settingsCtx.fontSize }}>
+              <Box>
                 {content.count} messages
               </Box>
-              <Box style={{ fontSize: settingsCtx.fontSize }}>
+              <Box>
                 average rate: {content.rate.toFixed(2)} Hz
               </Box>
             </Stack>
             <Stack spacing={1} direction="row">
-              <Box style={{ fontSize: settingsCtx.fontSize }}>
+              <Box>
                 bw: {normalizePrint(content.bw, 2, '/s')} [min:{' '}
                 {normalizePrint(content.bw_min, 0, '/s')}, max:{' '}
                 {normalizePrint(content.bw_max, 0, '/s')}]
               </Box>
-              <Box style={{ fontSize: settingsCtx.fontSize }}>
+              <Box>
                 size: {normalizePrint(content.size, 2)} [min:{' '}
                 {normalizePrint(content.size_min, 0)}, max:{' '}
                 {normalizePrint(content.size_max, 0)}]
@@ -466,12 +465,12 @@ function TopicEchoPanel({
                     title={`${event.receivedIndex}`}
                   /> */}
                   {event.seq === undefined && (
-                    <Typography fontSize={12} fontStyle="italic" color="gray">
+                    <Typography fontStyle="italic" color="gray">
                       {event.receivedIndex}:
                     </Typography>
                   )}
                   {event.seq !== undefined && (
-                    <Typography fontSize={12} fontStyle="italic" color="gray">
+                    <Typography fontStyle="italic" color="gray">
                       {event.seq}
                     </Typography>
                     // <Tag
@@ -485,7 +484,6 @@ function TopicEchoPanel({
                     key={`${event.key}`}
                     name={false}
                     // collapsed={2}
-                    style={{ fontSize: settingsCtx.fontSize }}
                     theme={
                       settingsCtx.get('useDarkMode')
                         ? 'grayscale'

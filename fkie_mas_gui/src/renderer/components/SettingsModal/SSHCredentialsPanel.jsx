@@ -148,7 +148,7 @@ function SSHCredentialsPanel() {
                               onDeleteCredential(row.id);
                             }}
                           >
-                            <DeleteIcon sx={{ fontSize: 16 }} />
+                            <DeleteIcon sx={{ fontSize: 'inherit' }} />
                           </IconButton>
                         </TableCell>
                       );

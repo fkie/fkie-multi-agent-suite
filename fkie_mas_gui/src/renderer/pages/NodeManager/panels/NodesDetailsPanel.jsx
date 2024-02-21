@@ -29,11 +29,11 @@ import useLocalStorage from '../../../hooks/useLocalStorage';
 import { RosNodeStatus, getDiagnosticLevelName } from '../../../models';
 
 import { CmdType } from '../../../providers';
+import { generateUniqueId } from '../../../utils';
 import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
-import { generateUniqueId } from '../../../utils';
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import OverflowMenuService from './OverflowMenuService';
 import OverflowMenuTopic from './OverflowMenuTopic';
@@ -255,7 +255,6 @@ function NodesDetailsPanel() {
                 style={{
                   color: '#fff',
                   backgroundColor: '#2196f3',
-                  fontSize: settingsCtx.fontSize,
                 }}
                 align="center"
               >
@@ -266,14 +265,14 @@ function NodesDetailsPanel() {
               </Typography>
               <Typography
                 variant="h6"
-                style={{ color: grey[700], fontSize: settingsCtx.fontSize }}
+                style={{ color: grey[700] }}
                 align="center"
               >
                 Namespace: {node?.namespace}
               </Typography>
               <Typography
                 variant="h6"
-                style={{ color: grey[700], fontSize: settingsCtx.fontSize }}
+                style={{ color: grey[700] }}
                 align="center"
               >
                 <Box sx={{ fontWeight: 'bold', m: 1 }}>{node.providerName}</Box>
@@ -358,7 +357,7 @@ function NodesDetailsPanel() {
                       // useZebraStyles={false}>
                       <TableContainer component={Paper}>
                         <Table size="small" aria-label="a dense table">
-                          <TableHead style={{ fontSize: settingsCtx.fontSize }}>
+                          <TableHead>
                             <TableRow>
                               <TableCell sx={{ fontWeight: 'bold' }}>
                                 <Stack direction="row" spacing={0} padding={0}>
@@ -368,7 +367,6 @@ function NodesDetailsPanel() {
                                       title="pub"
                                       color="default"
                                       label="pub"
-                                      sx={{ fontSize: settingsCtx.fontSize }}
                                     />
                                   )}
                                   {showConnections && (
@@ -377,12 +375,10 @@ function NodesDetailsPanel() {
                                       title="sub"
                                       color="default"
                                       label="sub"
-                                      sx={{ fontSize: settingsCtx.fontSize }}
                                     />
                                   )}
                                   <Typography
                                     sx={{
-                                      fontSize: settingsCtx.fontSize,
                                       marginLeft: 1,
                                       marginTop: 0.5,
                                       fontWeight: 'bold',
@@ -394,7 +390,7 @@ function NodesDetailsPanel() {
                               </TableCell>
                             </TableRow>
                           </TableHead>
-                          <TableBody style={{ fontSize: settingsCtx.fontSize }}>
+                          <TableBody>
                             {Array.from(node.publishers.values())
                               .sort(compareTopics)
                               .map((topic) => (
@@ -479,7 +475,7 @@ function NodesDetailsPanel() {
                     {node.subscribers.size > 0 && (
                       <TableContainer component={Paper}>
                         <Table size="small" aria-label="a dense table">
-                          <TableHead style={{ fontSize: settingsCtx.fontSize }}>
+                          <TableHead>
                             <TableRow>
                               <TableCell sx={{ fontWeight: 'bold' }}>
                                 <Stack direction="row" spacing={0} padding={0}>
@@ -489,7 +485,6 @@ function NodesDetailsPanel() {
                                       title="pub"
                                       color="default"
                                       label="pub"
-                                      sx={{ fontSize: settingsCtx.fontSize }}
                                     />
                                   )}
                                   {showConnections && (
@@ -498,12 +493,10 @@ function NodesDetailsPanel() {
                                       title="sub"
                                       color="default"
                                       label="sub"
-                                      sx={{ fontSize: settingsCtx.fontSize }}
                                     />
                                   )}
                                   <Typography
                                     sx={{
-                                      fontSize: settingsCtx.fontSize,
                                       marginLeft: 1,
                                       marginTop: 0.5,
                                       fontWeight: 'bold',
@@ -515,7 +508,7 @@ function NodesDetailsPanel() {
                               </TableCell>
                             </TableRow>
                           </TableHead>
-                          <TableBody style={{ fontSize: settingsCtx.fontSize }}>
+                          <TableBody>
                             {Array.from(node.subscribers.values())
                               .sort(compareTopics)
                               .map((topic) => (
@@ -603,7 +596,7 @@ function NodesDetailsPanel() {
                     {Array.from(node.services.values()).length > 0 && (
                       <TableContainer component={Paper}>
                         <Table size="small" aria-label="a dense table">
-                          <TableBody style={{ fontSize: settingsCtx.fontSize }}>
+                          <TableBody>
                             {Array.from(node.services.values()).map(
                               (service) => (
                                 <TableRow key={service.name}>

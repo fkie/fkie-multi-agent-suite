@@ -425,7 +425,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
               margin="dense"
               size="small"
               autoFocus
-              sx={{ fontSize: 10 }}
+              sx={{ fontSize: 'inherit' }}
             />
           )}
           onChange={(event, newSelectedPackage) => {

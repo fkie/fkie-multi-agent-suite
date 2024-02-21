@@ -80,7 +80,7 @@ function MonacoDiffEditor({
             scrollBeyondLastLine: false,
             smoothScrolling: false,
             wordWrap: 'off',
-            fontSize: settingsCtx.fontSize,
+            fontSize: settingsCtx.get('fontSize'),
             minimap: { enabled: false },
             renderSideBySide: true,
           }}

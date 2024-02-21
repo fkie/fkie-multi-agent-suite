@@ -81,7 +81,7 @@ function PackageExplorerPanel() {
       setHostStyle({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvider, settingsCtx.changed]);
+  }, [selectedProvider, settingsCtx.config]);
 
   // useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
   //   if (!selectedProvider) return;

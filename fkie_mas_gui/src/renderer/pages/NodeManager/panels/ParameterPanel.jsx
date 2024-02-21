@@ -438,7 +438,7 @@ export default function ParameterPanel({ nodes, providers }) {
           />
           <Tooltip title="Reload parameter list" placement="bottom">
             <IconButton size="small" onClick={getParameterList}>
-              <RefreshIcon sx={{ fontSize: 18 }} />
+              <RefreshIcon sx={{ fontSize: 'inherit' }} />
             </IconButton>
           </Tooltip>
           {searched && (
@@ -448,7 +448,7 @@ export default function ParameterPanel({ nodes, providers }) {
                 onClick={onDeleteParameters}
                 color="warning"
               >
-                <DeleteIcon sx={{ fontSize: 16 }} />
+                <DeleteIcon sx={{ fontSize: 'inherit' }} />
               </IconButton>
             </Tooltip>
           )}

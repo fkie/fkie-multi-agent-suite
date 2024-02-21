@@ -13,7 +13,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
     top: 22,
     // border: `2px solid ${theme.palette.background.paper}`,
     // padding: '2px 4px',
-    fontSize: 10,
+    fontSize: 'inherit',
     height: 12,
     minWidth: 10,
   },
@@ -38,10 +38,9 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
         borderLeftStyle: 'outset',
         borderLeftColor: colorFromHostname(name),
         borderLeftWidth: '0.6em',
-        fontSize: settingsCtx.fontSize,
       };
     }
-    return { fontSize: settingsCtx.fontSize };
+    return { };
   };
 
   return (
@@ -105,7 +104,7 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
 }
 
 OverflowMenu.defaultProps = {
-  icon: <MoreVertSharpIcon sx={{ fontSize: 16 }} />,
+  icon: <MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />,
   options: [],
   id: 'overflow-menu',
   showBadge: false,

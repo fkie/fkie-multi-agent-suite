@@ -31,7 +31,7 @@ function SearchBar({ onSearch, placeholder, defaultValue, fullWidth }) {
         startAdornment: (
           <SearchIcon
             disabled
-            sx={{ marginRight: 1, color: 'gray', fontSize: 20 }}
+            sx={{ marginRight: 1, color: 'gray', fontSize: 'inherit' }}
           />
         ),
         endAdornment: (

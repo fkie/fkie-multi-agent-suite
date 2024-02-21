@@ -3,12 +3,13 @@ import darkScrollbar from '@mui/material/darkScrollbar';
 
 const background = '#282828';
 
-const darkTheme = createTheme({
+const darkThemeDef = {
   backgroundColor: background,
   palette: {
     mode: 'dark',
   },
   typography: {
+    fontSize: 12,
     fontFamily: 'IBM Plex, sans',
   },
   components: {
@@ -149,6 +150,6 @@ const darkTheme = createTheme({
       },
     },
   },
-});
+};
 
-export default darkTheme;
+export default darkThemeDef;

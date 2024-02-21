@@ -23,7 +23,7 @@ function OverflowMenuProvider({ onClick, providerId, providerName }) {
 
   return (
     <OverflowMenu
-      icon={<MoreVertSharpIcon sx={{ fontSize: 16 }} />}
+      icon={<MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />}
       options={providerOptions}
       id="provider-options"
     />
