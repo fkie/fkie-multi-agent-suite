@@ -29,6 +29,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { findIn } from '../../../utils/index';
 import { LAYOUT_TAB_SETS } from '../layout';
 import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import ServiceCallerPanel from './ServiceCallerPanel';
@@ -91,30 +92,19 @@ function ServicesPanel({ initialSearchTerm }) {
     }
 
     const newFilteredServices = services.filter((service) => {
-      const matchName =
-        service.name.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
-      if (matchName) {
-        return matchName;
+      let isMatch = findIn(searchTerm, [service.name, service.srvtype]);
+      if (isMatch) {
+        return isMatch;
       }
-
-      const matchType =
-        service.srvtype.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
-      if (matchType) {
-        return matchType;
-      }
-
       let matchProvider = false;
       providers[service.name].forEach((providerName) => {
-        if (
-          providerName.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1
-        ) {
-          matchProvider = true;
+        if (findIn(searchTerm, [providerName])) {
+          isMatch = true;
         }
       });
-      if (matchProvider) {
+      if (isMatch) {
         return true;
       }
-
       return false;
     });
 
@@ -171,7 +161,7 @@ function ServicesPanel({ initialSearchTerm }) {
           <Stack direction="row" spacing={1}>
             <SearchBar
               onSearch={onSearch}
-              placeholder="Filter Services"
+              placeholder="Filter Services (<space> for OR, + for AND)"
               defaultValue={initialSearchTerm}
               fullWidth
             />

@@ -50,6 +50,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { findIn } from '../../../utils/index';
 import FileEditorPanel from './FileEditorPanel';
 import ParameterPanel from './ParameterPanel';
 import SingleTerminalPanel from './SingleTerminalPanel';
@@ -139,27 +140,12 @@ function HostTreeViewPanel() {
         nodeItemMap.set(node.idGlobal, node);
         // filter nodes by user text
         if (filterText.length > 0) {
-          const nodeNameFilter = `${node.name} ${node.group}`;
-          let nodeExcluded = false;
-
-          if (filterText.indexOf(',') >= 0) {
-            // User wrote multiple filters separated by commas
-            nodeExcluded = false;
-            filterText.split(',').forEach((t) => {
-              const filterPart = t.trim();
-              if (
-                filterPart.length > 0 &&
-                nodeNameFilter.indexOf(filterPart) === -1
-              ) {
-                nodeExcluded = true;
-              }
-            });
-          } else if (nodeNameFilter.indexOf(filterText) === -1) {
-            // User wrote single filter
-            nodeExcluded = true;
-          }
-
-          if (nodeExcluded) return;
+          const isMatch = findIn(filterText, [
+            node.name,
+            node.group,
+            node.providerName,
+          ]);
+          if (!isMatch) return;
         }
 
         const nodePath = `${node.group}/${node.idGlobal}`;
@@ -469,9 +455,7 @@ function HostTreeViewPanel() {
     }
   };
 
-
-
-  function updateWithAssociations(nodes, depth=0) {
+  function updateWithAssociations(nodes, depth = 0) {
     if (depth > 10) return [nodes];
     const newNodeList = [];
     nodes.forEach((node) => {
@@ -482,7 +466,7 @@ function HostTreeViewPanel() {
             const asNodes = provider.rosNodes.filter(
               (n) => n.name === asNodeName,
             );
-            const asNodesRec = updateWithAssociations(asNodes, depth+1);
+            const asNodesRec = updateWithAssociations(asNodes, depth + 1);
             asNodesRec.forEach((asNode) => {
               if (!newNodeList.find((n) => n.name === asNode.name)) {
                 newNodeList.push(asNode);
@@ -1059,7 +1043,7 @@ function HostTreeViewPanel() {
               onSearch={(value) => {
                 setFilterText(value);
               }}
-              placeholder="Search nodes (comma separated)"
+              placeholder="Search nodes (<space> for OR, + for AND)"
               defaultValue={filterText}
               fullWidth
             />

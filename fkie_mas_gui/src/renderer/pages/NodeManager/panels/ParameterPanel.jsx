@@ -20,6 +20,7 @@ import {
   DEFAULT_BUG_TEXT,
   LoggingContext,
 } from '../../../context/LoggingContext';
+import { findIn } from '../../../utils/index';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 
@@ -52,18 +53,12 @@ export default function ParameterPanel({ nodes, providers }) {
         filteredData.set(
           rootName,
           paramList.filter((p) => {
-            const matchName =
-              p.name.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
-
-            const matchValue =
-              JSON.stringify(p.value)
-                .toLowerCase()
-                .indexOf(searchTerm.toLowerCase()) !== -1;
-
-            const matchType =
-              p.type.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
-
-            return matchName || matchValue || matchType;
+            const isMatch = findIn(searchTerm, [
+              p.name,
+              JSON.stringify(p.value),
+              p.type,
+            ]);
+            return isMatch;
           }),
         );
       });
@@ -437,7 +432,7 @@ export default function ParameterPanel({ nodes, providers }) {
           </Tooltip>
           <SearchBar
             onSearch={onSearch}
-            placeholder="Filter parameters"
+            placeholder="Filter parameters (<space> for OR, + for AND)"
             // defaultValue={initialSearchTerm}
             fullWidth
           />

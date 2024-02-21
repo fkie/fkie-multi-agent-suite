@@ -36,4 +36,58 @@ const pathJoin = (pathArr) => {
     .join('/');
 };
 
-export { delay, extractSubstring, generateUniqueId, pathJoin };
+const splitOrSearchTerm = (searchTerm) => {
+  return searchTerm.split(' ').filter((item) => item.length > 0);
+};
+
+const splitAndSearchTerm = (searchTerm) => {
+  return searchTerm.split('+').filter((item) => item.length > 0);
+};
+
+/** Search for a given search term in given word without split the term.
+ * Returns true if one of the words contains the search term.
+ */
+const findTerm = (searchTerm, words) => {
+  for (const w of words) {
+    if (Array.isArray(w)) {
+      for (const sw of w) {
+        if (sw.indexOf(searchTerm) !== -1) {
+          return true;
+        }
+      }
+    } else {
+      if (w.indexOf(searchTerm) !== -1) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+/** Splits the search term first by <space> for OR and then by "+" for AND.
+ */
+const findIn = (searchTerms, words) => {
+  const searchOrTerms = splitOrSearchTerm(searchTerms);
+  for (const sO of searchOrTerms) {
+    const searchAndTerms = splitAndSearchTerm(sO);
+    if (searchAndTerms.length === 1) {
+      if (findTerm(searchAndTerms[0], words)) {
+        return true;
+      }
+    } else {
+      // returns only true if all search terms are found
+      let foundAnd = true;
+      for (const sA of searchAndTerms) {
+        if (!findTerm(sA, words)) {
+          foundAnd = false;
+        }
+      }
+      if (foundAnd) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+export { delay, extractSubstring, findIn, generateUniqueId, pathJoin };

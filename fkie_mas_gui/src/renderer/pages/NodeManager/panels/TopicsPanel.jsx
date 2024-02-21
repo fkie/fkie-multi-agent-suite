@@ -49,6 +49,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
+import { findIn } from '../../../utils/index';
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
@@ -176,36 +177,14 @@ function TopicsPanel({ initialSearchTerm }) {
     }
 
     const newFilteredTopics = topics.filter((topic) => {
-      const matchName =
-        topic.name.toLowerCase().indexOf(newSearchTerm.toLowerCase()) !== -1;
-      if (matchName) {
-        return true;
-      }
-      const matchType =
-        topic.msgtype.toLowerCase().indexOf(newSearchTerm.toLowerCase()) !== -1;
-      if (matchType) {
-        return true;
-      }
-      const matchPub = topic.publishers.some((item) =>
-        item.toLowerCase().includes(newSearchTerm.toLowerCase()),
-      );
-      if (matchPub) {
-        return true;
-      }
-      const matchSub = topic.subscribers.some((item) =>
-        item.toLowerCase().includes(newSearchTerm.toLowerCase()),
-      );
-      if (matchSub) {
-        return true;
-      }
-
-      const matchProv =
-        topic.providerName.toLowerCase().indexOf(searchTerm.toLowerCase()) !==
-        -1;
-      if (matchProv) {
-        return true;
-      }
-      return false;
+      const isMatch = findIn(newSearchTerm, [
+        topic.name,
+        topic.msgtype,
+        topic.providerName,
+        topic.publishers,
+        topic.subscribers,
+      ]);
+      return isMatch;
     });
 
     setFilteredTopics(newFilteredTopics);
@@ -455,7 +434,7 @@ function TopicsPanel({ initialSearchTerm }) {
 
           <SearchBar
             onSearch={onSearch}
-            placeholder="Filter Topics"
+            placeholder="Filter Topics (<space> for OR, + for AND)"
             defaultValue={initialSearchTerm}
             fullWidth
           />
