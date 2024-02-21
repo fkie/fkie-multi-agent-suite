@@ -66,7 +66,6 @@ export interface IRosProviderContext {
   multimasterManager: MultimasterManager | null;
   providers: CrossbarIOProvider[];
   providersConnected: CrossbarIOProvider[];
-  providersConnectedPast: CrossbarIOProvider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
   connectToProvider: (provider: CrossbarIOProvider) => Promise<boolean>;
@@ -114,7 +113,6 @@ export const DEFAULT = {
   multimasterManager: null,
   providers: [],
   providersConnected: [],
-  providersConnectedPast: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
   nodeMap: new Map(),
   connectToProvider: () => new Promise<false>(() => {}),
@@ -171,9 +169,6 @@ export function RosProviderReact(
   const [providersConnected, setProvidersConnected] = useState<
     CrossbarIOProvider[]
   >([]);
-  const [providersConnectedPast, setProvidersConnectedPast] = useState<
-    CrossbarIOProvider[]
-  >([]);
   const [providerLaunches, setProviderLaunches] = useLocalStorage<
     ProviderLaunchConfiguration[]
   >('Providers:providerLaunches', []);
@@ -186,6 +181,46 @@ export function RosProviderReact(
   );
   // nodeMap: Map<string, RosNode>
   const [nodeMap, setNodeMap] = useState(new Map());
+
+  /** Remove all disconnected provider and their discovered provider. */
+  const clearProviders = useCallback(() => {
+    const idsSavedProviders: string[] = [];
+    // get ids of providers which are stored local and are connected
+    providers.forEach((prov) => {
+      if (
+        prov.discovered === undefined &&
+        prov.connectionState === ConnectionState.STATES.CONNECTED
+      ) {
+        idsSavedProviders.push(prov.id);
+      }
+    });
+    // update discovered lists by removing not connected provider ids
+    providers.forEach((prov) => {
+      if (prov.discovered !== undefined) {
+        prov.discovered = prov.discovered.filter(
+          (pid) => idsSavedProviders.indexOf(pid) != -1,
+        );
+      }
+    });
+    // remove all discovered provider with no parent provider
+    setProviders(
+      providers.filter(
+        (prov) => prov.discovered === undefined || prov.discovered?.length,
+      ),
+    );
+    setProvidersConnected(
+      providers.filter((prov) => {
+        if (prov.connectionState === ConnectionState.STATES.CONNECTED) {
+          // provider is connected
+          if (prov.discovered === undefined || prov.discovered?.length) {
+            // and it is configured by user or discoverer is still connected
+            return true;
+          }
+        }
+        return false;
+      }),
+    );
+  }, [providers, setProvidersConnected, setProviders]);
 
   /** Save configuration which are loaded into provider panel. */
   const saveProviderConfig = useCallback(
@@ -227,21 +262,14 @@ export function RosProviderReact(
         }),
       ]);
       // remove connected provider
-      setProvidersConnected((currProv) => [
-        ...currProv.filter((item) => item.id !== providerId),
-      ]);
-      // remove provider from past connected list
-      setProvidersConnectedPast((currProv) => [
-        ...currProv.filter((item) => item.id !== providerId),
-      ]);
+      clearProviders();
     },
     [
       providerLaunches,
       providerLaunchesMap,
       setProviders,
       setProviderLaunches,
-      setProvidersConnected,
-      setProvidersConnectedPast,
+      clearProviders,
     ],
   );
 
@@ -602,7 +630,7 @@ export function RosProviderReact(
   const refreshProviderList = useDebounceCallback(() => {
     // remove discoverd provider
     const newProviders = providers.filter((prov) => {
-      return !prov.discovered;
+      return prov.discovered === undefined;
     });
     setProviders(newProviders);
     newProviders.forEach((provider) => {
@@ -1243,34 +1271,18 @@ export function RosProviderReact(
         break;
       case ConnectionState.STATES.CONNECTED:
         // trigger updates on state change
-        setProvidersConnectedPast([
-          ...providersConnectedPast.filter((p) => p.id !== provider.id),
-          provider,
-        ]);
-        setProvidersConnected(
-          providers.filter((prov) => {
-            return prov.connectionState === ConnectionState.STATES.CONNECTED;
-          }),
-        );
+        clearProviders();
         break;
       case ConnectionState.STATES.CLOSED:
         mapProviderRosNodes.set(provider.id, []);
-        setProvidersConnected(
-          providers.filter((prov) => {
-            return prov.connectionState === ConnectionState.STATES.CONNECTED;
-          }),
-        );
+        clearProviders();
         break;
       case ConnectionState.STATES.NO_SSH_CREDENTIALS:
       case ConnectionState.STATES.LOST:
       case ConnectionState.STATES.UNSUPPORTED:
       case ConnectionState.STATES.UNREACHABLE:
       case ConnectionState.STATES.ERRORED:
-        setProvidersConnected(
-          providers.filter((prov) => {
-            return prov.connectionState === ConnectionState.STATES.CONNECTED;
-          }),
-        );
+        clearProviders();
         break;
       default:
         break;
@@ -1400,19 +1412,31 @@ export function RosProviderReact(
             return newProviders;
           });
           // update providerLaunchesMap; on start new provider, the configuration will be stored first and provider created while startConfig
-          if (!providerLaunchesMap.has(prov.id)) {
-            const lc: ProviderLaunchConfiguration | undefined =
-              getProviderLaunchConfigByHost(
-                prov.crossbar.host,
-                prov.crossbar.port,
-              );
-            if (lc) {
-              providerLaunchesMap.set(prov.id, lc);
+          if (prov.discovered === undefined) {
+            if (!providerLaunchesMap.has(prov.id)) {
+              const lc: ProviderLaunchConfiguration | undefined =
+                getProviderLaunchConfigByHost(
+                  prov.crossbar.host,
+                  prov.crossbar.port,
+                );
+              if (lc) {
+                providerLaunchesMap.set(prov.id, lc);
+              }
             }
           }
         }
       } else {
         // provider already registered, try to connect
+        if (
+          provider.discovered !== undefined &&
+          prov?.discovered !== undefined
+        ) {
+          // update discovered list
+          const discoverer = prov?.discovered?.at(0);
+          if (discoverer && provider.discovered.indexOf(discoverer) === -1) {
+            provider.discovered.push(discoverer);
+          }
+        }
         connectToProvider(provider);
       }
       setProvidersAddQueue([...providersAddQueue]);
@@ -1445,7 +1469,6 @@ export function RosProviderReact(
       providerLaunches,
       providers,
       providersConnected,
-      providersConnectedPast,
       mapProviderRosNodes,
       nodeMap,
       connectToProvider,
@@ -1475,7 +1498,6 @@ export function RosProviderReact(
       multimasterManager,
       providers,
       providersConnected,
-      providersConnectedPast,
       mapProviderRosNodes,
     ],
   );

@@ -96,7 +96,12 @@ class CrossbarIOProvider {
 
   isLocalHost: boolean = false;
 
-  discovered: boolean = false;
+  /** Indicates if provider was created by user or discovered.
+   * undefined: created by user
+   * string[]: list of providers which discovered this provider
+   * empty list: This provider was discovered, but should be removed as the parent provider is disconnected.
+   */
+  discovered: string[] | undefined = undefined;
 
   /** State of the connection to remote provider. */
   connectionState: ConnectionState = ConnectionState.STATES.UNKNOWN;
@@ -463,7 +468,7 @@ class CrossbarIOProvider {
           );
           this.remoteProviders.push(np);
           np.rosState = p;
-          np.discovered = true;
+          np.discovered = [this.id];
           emitCustomEvent(
             EVENT_PROVIDER_DISCOVERED,
             new EventProviderDiscovered(np, this),
@@ -630,7 +635,8 @@ class CrossbarIOProvider {
     const delay = endTs - startTs;
     const diffToStart = remoteTs - startTs;
     const diffToEnd = endTs - remoteTs;
-    let result = Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - delay) / 2.0;
+    let result =
+      Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - delay) / 2.0;
     if (diffToStart < 0) {
       result *= -1.0;
     }
