@@ -66,6 +66,7 @@ interface Props {
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
   fontSize: number;
+  setFontsize: (size: number) => void | null;
 }
 
 type XtermState = {
@@ -485,6 +486,8 @@ export class Xterm extends React.Component<Props, XtermState> {
                   this.fontSize = Number(event.target.value);
                   const { terminal } = this;
                   if (terminal) terminal.options.fontSize = this.fontSize;
+                  const { setFontsize } = this.props;
+                  if (setFontsize) setFontsize(this.fontSize);
                   fitAddon.fit();
                 }}
               />

@@ -84,7 +84,7 @@ function TerminalClient(props: ITerminalClient) {
     return '';
   }
 
-  termOptions.fontSize = settingsCtx.fontSize + 2;
+  termOptions.fontSize = settingsCtx.get('fontSizeTerminal');
 
   return (
     <Xterm
@@ -99,7 +99,8 @@ function TerminalClient(props: ITerminalClient) {
       invisibleTerminal={invisibleTerminal}
       onIncomingData={onIncomingData}
       onCtrlD={onCtrlD}
-      fontSize={termOptions.fontSize}
+      fontSize={termOptions.fontSize ? termOptions.fontSize : 14}
+      setFontsize={(size) => settingsCtx.set("fontSizeTerminal", size)}
     />
   );
 }

@@ -176,12 +176,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     label: 'Action on loaded launch file change detection',
     type: 'string',
     default: 'ASK',
-    options: [
-      'ASK',
-      'DISMISS',
-      'RELOAD',
-    ],
+    options: ['ASK', 'DISMISS', 'RELOAD'],
     description: '',
+  },
+  fontSizeTerminal: {
+    label: 'Font size in terminal',
+    type: 'number',
+    default: 14,
+    min: 2,
   },
 };
 
