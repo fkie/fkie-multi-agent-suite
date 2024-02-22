@@ -414,6 +414,26 @@ function LaunchFileModal({
                             option.path === value.path
                           );
                         }}
+                        onWheel={(event) => {
+                          // scroll through the options using mouse wheel
+                          const options = arg.choices
+                            ? arg.choices
+                            : arg.history;
+                          let newIndex = -1;
+                          options.forEach((value, index) => {
+                            if (value === event.target.value) {
+                              if (event.deltaY < 0) {
+                                newIndex = index + 1;
+                              } else {
+                                newIndex = index - 1;
+                              }
+                            }
+                          });
+                          if (newIndex < 0) newIndex = 0;
+                          else if (newIndex > options.length - 1)
+                            newIndex = options.length - 1;
+                          event.target.value = options[newIndex];
+                        }}
                       />
                     )}
                     {options.length <= 1 && (
