@@ -345,74 +345,101 @@ function LaunchFileModal({
             <Tag color="info" text={selectedLaunch.paths[0]} wrap />
             <Stack>
               {currentArgs.map((arg) => {
+                const options = arg.choices ? arg.choices : arg.history;
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
-                    <Autocomplete
-                      key={`autocomplete-launch-load-${arg.name}`}
-                      size="small"
-                      fullWidth
-                      autoHighlight
-                      clearOnEscape
-                      disableListWrap
-                      // noOptionsText="Package not found"
-                      options={arg.choices ? arg.choices : arg.history}
-                      getOptionLabel={(option) => option}
-                      // This prevents warnings on invalid autocomplete values
-                      value={arg.value}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label={arg.name}
-                          color="info"
-                          variant="outlined"
-                          margin="dense"
-                          size="small"
-                          autoFocus
-                          sx={{ fontSize: 10 }}
-                        />
-                      )}
-                      renderOption={(props, option) => (
-                        <Stack {...props} direction="row">
-                          <Typography width="stretch">{option}</Typography>
-                          <IconButton
-                            component="label"
-                            onClick={(event) => {
-                              deleteHistoryOption(arg.name, option);
-                              event.stopPropagation();
-                            }}
-                          >
-                            <DeleteIcon fontSize="1em" />
-                          </IconButton>
-                        </Stack>
-                      )}
-                      onChange={(event, newArgValue) => {
-                        setCurrentArgs(
-                          currentArgs.map((item) => {
-                            if (item.name === arg.name) {
-                              item.value = newArgValue;
-                            }
-                            return item;
-                          }),
-                        );
-                      }}
-                      onInputChange={(event, newInputValue) => {
-                        setCurrentArgs(
-                          currentArgs.map((item) => {
-                            if (item.name === arg.name) {
-                              item.value = newInputValue;
-                            }
-                            return item;
-                          }),
-                        );
-                      }}
-                      isOptionEqualToValue={(option, value) => {
-                        return (
-                          value === undefined ||
-                          value === '' ||
-                          option.path === value.path
-                        );
-                      }}
-                    />
+                    {options.length > 1 && (
+                      // show autocomplete only if we have multiple option
+                      <Autocomplete
+                        key={`autocomplete-launch-load-${arg.name}`}
+                        size="small"
+                        fullWidth
+                        autoHighlight
+                        clearOnEscape
+                        disableListWrap
+                        // noOptionsText="Package not found"
+                        options={arg.choices ? arg.choices : arg.history}
+                        getOptionLabel={(option) => option}
+                        // This prevents warnings on invalid autocomplete values
+                        value={arg.value}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label={arg.name}
+                            color="info"
+                            variant="outlined"
+                            margin="dense"
+                            size="small"
+                            autoFocus
+                          />
+                        )}
+                        renderOption={(props, option) => (
+                          <Stack {...props} direction="row">
+                            <Typography width="stretch">{option}</Typography>
+                            <IconButton
+                              component="label"
+                              onClick={(event) => {
+                                deleteHistoryOption(arg.name, option);
+                                event.stopPropagation();
+                              }}
+                            >
+                              <DeleteIcon fontSize="1em" />
+                            </IconButton>
+                          </Stack>
+                        )}
+                        onChange={(event, newArgValue) => {
+                          setCurrentArgs(
+                            currentArgs.map((item) => {
+                              if (item.name === arg.name) {
+                                item.value = newArgValue;
+                              }
+                              return item;
+                            }),
+                          );
+                        }}
+                        onInputChange={(event, newInputValue) => {
+                          setCurrentArgs(
+                            currentArgs.map((item) => {
+                              if (item.name === arg.name) {
+                                item.value = newInputValue;
+                              }
+                              return item;
+                            }),
+                          );
+                        }}
+                        isOptionEqualToValue={(option, value) => {
+                          return (
+                            value === undefined ||
+                            value === '' ||
+                            option.path === value.path
+                          );
+                        }}
+                      />
+                    )}
+                    {options.length <= 1 && (
+                      // we have no history, show only the text field
+                      <TextField
+                        id={`textfield-launch-load-${arg.name}`}
+                        fullWidth
+                        label={arg.name}
+                        value={arg.value}
+                        variant="outlined"
+                        size="small"
+                        onChange={(event) => {
+                          console.log(
+                            `onChange ${newArgValue} ${event.target.value}`,
+                          );
+                          setCurrentArgs(
+                            currentArgs.map((item) => {
+                              if (item.name === arg.name) {
+                                item.value = event.target.value;
+                              }
+                              return item;
+                            }),
+                          );
+                        }}
+                      />
+                    )}
                     {isPathParam(arg.name, arg.value) && (
                       <IconButton
                         component="label"
