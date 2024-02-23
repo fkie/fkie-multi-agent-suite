@@ -125,8 +125,13 @@ export const registerHandlers = () => {
     },
   );
 
-  async function handleFileOpen() {
-    const { canceled, filePaths } = await dialog.showOpenDialog({});
+  async function handleFileOpen(
+    event: Electron.IpcMainInvokeEvent,
+    path: string,
+  ) {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      defaultPath: path,
+    });
     if (!canceled) {
       return filePaths[0];
     }

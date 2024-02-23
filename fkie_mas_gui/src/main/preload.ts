@@ -161,5 +161,7 @@ contextBridge.exposeInMainWorld('ShutdownInterface', {
 });
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  openFile: (path: string) => {
+    return ipcRenderer.invoke('dialog:openFile', path);
+  }
 });

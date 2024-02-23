@@ -39,6 +39,7 @@ function LaunchFileModal({
     'history:loadLaunchArgs',
     {},
   );
+  const [lastOpenPath, setLastOpenPath] = useLocalStorage('lastOpenPath', '');
   const [currentArgs, setCurrentArgs] = useState([]);
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
@@ -294,8 +295,13 @@ function LaunchFileModal({
 
   const openFileDialog = useCallback(
     async (argName) => {
-      const filePath = await window.electronAPI.openFile();
+      let defaultPath = lastOpenPath;
+      if (argName.startsWith('/')) {
+        defaultPath = argName;
+      }
+      const filePath = await window.electronAPI.openFile(defaultPath);
       if (filePath) {
+        setLastOpenPath(filePath);
         setCurrentArgs(
           currentArgs.map((arg) => {
             if (arg.name === argName) {
