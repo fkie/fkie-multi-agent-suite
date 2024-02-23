@@ -47,7 +47,9 @@ import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import useQueue from '../../../hooks/useQueue';
 import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/events';
 import {
+  EVENT_EDITOR_SELECT_RANGE,
   EVENT_OPEN_COMPONENT,
+  eventEditorSelectRange,
   eventOpenComponent,
 } from '../../../utils/events';
 import { findIn } from '../../../utils/index';
@@ -360,7 +362,7 @@ function HostTreeViewPanel() {
       if (node.launchPaths.size > 1) {
         // TODO: select
       }
-      const launchName = getFileName(node.launchInfo.file_name);
+      const launchName = getFileName(rootLaunch);
       const provider = rosCtx.getProviderById(node.providerId);
       const packages = provider?.packages?.filter((rosPackage) => {
         return node.launchInfo.file_name.startsWith(
@@ -374,6 +376,14 @@ function HostTreeViewPanel() {
       const id = `editor-${node.providerId}-${rootLaunch}`;
       if (!openIds.includes(id)) {
         emitCustomEvent(
+          EVENT_EDITOR_SELECT_RANGE,
+          eventEditorSelectRange(
+            provider.host(),
+            node.launchInfo.file_name,
+            node.launchInfo.file_range,
+          ),
+        );
+        emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             id,
@@ -385,7 +395,7 @@ function HostTreeViewPanel() {
               rootFilePath={rootLaunch}
             />,
             true,
-            LAYOUT_TAB_SETS.BORDER_TOP,
+            LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
             new LayoutTabConfig(false, 'editor'),
           ),
         );

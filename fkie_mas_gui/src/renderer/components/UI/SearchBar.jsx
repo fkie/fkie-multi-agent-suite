@@ -4,12 +4,18 @@ import { IconButton, TextField } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 
-function SearchBar({ onSearch, placeholder, defaultValue, fullWidth }) {
+function SearchBar({
+  onSearch,
+  placeholder,
+  defaultValue,
+  fullWidth,
+  searchIcon,
+}) {
   const [searched, setSearched] = useState(defaultValue);
 
   useEffect(() => {
     onSearch(searched);
-  }, [searched, onSearch]);
+  }, [searched]);
 
   return (
     <TextField
@@ -28,15 +34,24 @@ function SearchBar({ onSearch, placeholder, defaultValue, fullWidth }) {
       value={searched}
       fullWidth={fullWidth}
       InputProps={{
-        startAdornment: (
+        startAdornment: searchIcon ? (
           <SearchIcon
             disabled
-            sx={{ marginRight: 1, color: 'gray', fontSize: 'inherit' }}
+            sx={{
+              marginRight: 1,
+              color: 'gray',
+              fontSize: 'inherit',
+            }}
           />
+        ) : (
+          <></>
         ),
         endAdornment: (
           <IconButton
-            sx={{ visibility: searched ? 'visible' : 'hidden' }}
+            sx={{
+              visibility: searched ? 'visible' : 'hidden',
+              fontSize: 'inherit',
+            }}
             onClick={() => setSearched('')}
           >
             <CloseIcon />
@@ -56,6 +71,7 @@ SearchBar.defaultProps = {
   placeholder: 'Filter',
   defaultValue: '',
   fullWidth: true,
+  searchIcon: true,
 };
 
 SearchBar.propTypes = {
@@ -63,6 +79,7 @@ SearchBar.propTypes = {
   placeholder: PropTypes.string,
   defaultValue: PropTypes.string,
   fullWidth: PropTypes.bool,
+  searchIcon: PropTypes.bool,
 };
 
 export default SearchBar;

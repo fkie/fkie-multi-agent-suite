@@ -6,6 +6,7 @@ import { FileItem, FileLanguageAssociations } from '../models';
 export interface ISearchResult {
   file: string;
   text: string;
+  lineNumber: number;
   range: Range;
 }
 export interface IMonacoContext {
@@ -64,14 +65,14 @@ export function MonacoProvider({
           false,
         );
         matches.forEach((match) => {
-          const text = `${match.range.startLineNumber} ${model.getLineContent(
-            match.range.startLineNumber,
-          )}`;
+          const lineNumber = match.range.startLineNumber;
+          const text = model.getLineContent(match.range.startLineNumber);
 
           if (!includedText.has(text)) {
             searchResult.push({
               file: model.uri.path,
               text,
+              lineNumber,
               range: match.range,
             });
 

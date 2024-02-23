@@ -6,6 +6,7 @@ import { generateUniqueId } from '../utils';
  * @param {string} path - File path
  */
 const getFileName = (path: string) => {
+  if (!path) return path;
   return path.replace(/^.*[\\/]/, '');
 };
 

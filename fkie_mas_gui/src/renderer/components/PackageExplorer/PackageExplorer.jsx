@@ -350,7 +350,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
             rootFilePath={fileObj.path}
           />,
           true,
-          LAYOUT_TAB_SETS.BORDER_TOP,
+          LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
           new LayoutTabConfig(false, 'editor'),
         ),
       );

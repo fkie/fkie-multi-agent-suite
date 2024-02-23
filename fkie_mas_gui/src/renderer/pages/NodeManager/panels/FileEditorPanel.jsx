@@ -8,12 +8,13 @@ import { MonacoContext } from '../../../context/MonacoContext';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 
+
 import { LaunchIncludedFilesRequest } from '../../../models';
 
 function FileEditorPanel({
   providerId,
-  currentFilePath,
   rootFilePath,
+  currentFilePath,
   fileRange,
 }) {
   const rosCtx = useContext(RosContext);
@@ -129,7 +130,7 @@ function FileEditorPanel({
       // get file content and create corresponding monaco models
 
       // filter unique file names (in case multiple imports)
-      const uniqueIncludedFiles = [];
+      const uniqueIncludedFiles = [rootFilePath];
       includedFilesLocal.forEach((f) => {
         if (!uniqueIncludedFiles.includes(f.inc_path))
           uniqueIncludedFiles.push(f.inc_path);
@@ -230,17 +231,27 @@ function FileEditorPanel({
 
   return (
     <Stack
-      // width="100%"
       direction="column"
       height="100%"
       backgroundColor={settingsCtx.get('backgroundColor')}
       overflow="none"
     >
+      {notificationDescription.length > 0 && (
+        <Alert
+          severity="warning"
+          style={{ minWidth: 0 }}
+          onClose={() => {
+            // setNotificationDescription('');
+          }}
+        >
+          {notificationDescription}
+        </Alert>
+      )}
       {includedFiles && (
         <MonacoEditor
           file={currentFile}
           rootFilePath={rootFilePath}
-          fileRange={fileRange}
+          fileRange={selectionRange}
           providerId={providerId}
           provideDefinitionFunction={provideDefinitionFunction}
           addMonacoDisposable={addMonacoDisposable}
@@ -249,30 +260,19 @@ function FileEditorPanel({
           setTitlePanel={setTitlePanel}
         />
       )}
-      {notificationDescription.length > 0 && (
-        <Alert
-          severity="warning"
-          style={{ minWidth: 0 }}
-          onClose={() => {
-            setNotificationDescription('');
-          }}
-        >
-          {notificationDescription}
-        </Alert>
-      )}
     </Stack>
   );
 }
 
 FileEditorPanel.defaultProps = {
-  fileRange: null,
   rootFilePath: null,
+  fileRange: null,
 };
 
 FileEditorPanel.propTypes = {
   providerId: PropTypes.string.isRequired,
+  rootFilePath: PropTypes.string.isRequired,
   currentFilePath: PropTypes.string.isRequired,
-  rootFilePath: PropTypes.string,
   fileRange: PropTypes.any,
 };
 

@@ -92,8 +92,15 @@ function NodeManager() {
   useCustomEventListener(EVENT_OPEN_COMPONENT, (data) => {
     const node = model.getNodeById(data.id);
     if (node) {
-      // activate already existing tab.
-      model.doAction(Actions.selectTab(data.id));
+      if (
+        node.getParent().getType() === 'border' &&
+        node.getParent().getSelectedNode()?.getId() === node.getId()
+      ) {
+
+      } else {
+        // activate already existing tab.
+        model.doAction(Actions.selectTab(data.id));
+      }
     } else {
       // create a new tab
       const tab = {

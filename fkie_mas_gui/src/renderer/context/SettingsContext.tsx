@@ -188,6 +188,13 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: 14,
     min: 2,
   },
+  editorOpenLocation: {
+    label: 'Location to open new editor',
+    type: 'string',
+    default: 'BORDER_TOP',
+    options: ['BORDER_TOP', 'CENTER', 'BORDER_BOTTOM'],
+    description: '',
+  },
 };
 
 interface ISettingProvider {
