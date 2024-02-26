@@ -203,10 +203,19 @@ export function RosProviderReact(
       }
     });
     // remove all discovered provider with no parent provider
+    // and not stored
     setProviders(
-      providers.filter(
-        (prov) => prov.discovered === undefined || prov.discovered?.length,
-      ),
+      providers.filter((prov) => {
+        // remove provider deleted by user
+        const connectedOrStored =
+          prov.connectionState === ConnectionState.STATES.CONNECTED ||
+          providerLaunchesMap.get(prov.id);
+        return (
+          (prov.discovered === undefined && connectedOrStored) ||
+          prov.discovered?.length ||
+          prov.connectionState === ConnectionState.STATES.CONNECTED
+        );
+      }),
     );
     setProvidersConnected(
       providers.filter((prov) => {
@@ -220,7 +229,7 @@ export function RosProviderReact(
         return false;
       }),
     );
-  }, [providers, setProvidersConnected, setProviders]);
+  }, [providers, providerLaunchesMap, setProvidersConnected, setProviders]);
 
   /** Save configuration which are loaded into provider panel. */
   const saveProviderConfig = useCallback(
