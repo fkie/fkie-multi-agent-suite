@@ -857,33 +857,35 @@ function MonacoEditor({
                 <Typography fontSize="0.8em">Explorer</Typography>
               )}
             </Stack>
-            <Stack
-              overflow="auto"
-              direction="column"
-              height={explorerBarHeight}
-              width={sideBarWidth}
-            >
-              <TreeView
-                aria-label="Explorer"
-                expanded={expandedExplorerResults}
-                defaultCollapseIcon={<ArrowDropDownIcon />}
-                defaultExpandIcon={<ArrowRightIcon />}
-                // defaultEndIcon={<div style={{ width: 24 }} />}
-                onNodeSelect={(event, nodeId) => {
-                  const index = expandedExplorerResults.indexOf(nodeId);
-                  const copyExpanded = [...expandedExplorerResults];
-                  if (index === -1) {
-                    copyExpanded.push(nodeId);
-                  } else {
-                    copyExpanded.splice(index, 1);
-                  }
-                  setExpandedExplorerResults(copyExpanded);
-                }}
-                sx={{ flexGrow: 1, overflow: 'auto' }}
+            {enableExplorer && (
+              <Stack
+                overflow="auto"
+                direction="column"
+                height={explorerBarHeight}
+                width={sideBarWidth}
               >
-                {includeFilesToTree(includeRoot)}
-              </TreeView>
-            </Stack>
+                <TreeView
+                  aria-label="Explorer"
+                  expanded={expandedExplorerResults}
+                  defaultCollapseIcon={<ArrowDropDownIcon />}
+                  defaultExpandIcon={<ArrowRightIcon />}
+                  // defaultEndIcon={<div style={{ width: 24 }} />}
+                  onNodeSelect={(event, nodeId) => {
+                    const index = expandedExplorerResults.indexOf(nodeId);
+                    const copyExpanded = [...expandedExplorerResults];
+                    if (index === -1) {
+                      copyExpanded.push(nodeId);
+                    } else {
+                      copyExpanded.splice(index, 1);
+                    }
+                    setExpandedExplorerResults(copyExpanded);
+                  }}
+                  sx={{ flexGrow: 1, overflow: 'auto' }}
+                >
+                  {includeFilesToTree(includeRoot)}
+                </TreeView>
+              </Stack>
+            )}
           </Stack>
           <Stack paddingTop={'2px'}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -985,16 +987,18 @@ function MonacoEditor({
               ref={infoRef}
             >
               <Tooltip title="Save File">
-                <IconButton
-                  edge="end"
-                  disabled={!activeModel?.modified}
-                  aria-label="Save File"
-                  onClick={() => {
-                    saveCurrentFile(editorRef.current.getModel());
-                  }}
-                >
-                  <SaveAltOutlinedIcon style={{ fontSize: '0.8em' }} />
-                </IconButton>
+                <span>
+                  <IconButton
+                    edge="end"
+                    disabled={!activeModel?.modified}
+                    aria-label="Save File"
+                    onClick={() => {
+                      saveCurrentFile(editorRef.current.getModel());
+                    }}
+                  >
+                    <SaveAltOutlinedIcon style={{ fontSize: '0.8em' }} />
+                  </IconButton>
+                </span>
               </Tooltip>
               <Tooltip title="Open parent file">
                 <IconButton

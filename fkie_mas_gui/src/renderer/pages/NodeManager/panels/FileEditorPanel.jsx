@@ -251,7 +251,7 @@ function FileEditorPanel({
         <MonacoEditor
           file={currentFile}
           rootFilePath={rootFilePath}
-          fileRange={selectionRange}
+          fileRange={fileRange}
           providerId={providerId}
           provideDefinitionFunction={provideDefinitionFunction}
           addMonacoDisposable={addMonacoDisposable}
