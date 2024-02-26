@@ -751,13 +751,13 @@ function MonacoEditor({
     if (panelRef.current) {
       resizeObserver.current = new ResizeObserver(() => {
         setEditorHeight(
-          panelRef.current.getBoundingClientRect().height -
-            infoRef.current.getBoundingClientRect().height,
+          panelRef.current?.getBoundingClientRect().height -
+            infoRef.current?.getBoundingClientRect().height,
         );
         setEditorWidth(
-          panelRef.current.getBoundingClientRect().width - sideBarWidth,
+          panelRef.current?.getBoundingClientRect().width - sideBarWidth,
         );
-        setPanelHeight(panelRef.current.getBoundingClientRect().height);
+        setPanelHeight(panelRef.current?.getBoundingClientRect().height);
       });
       resizeObserver.current.observe(panelRef.current);
     }
