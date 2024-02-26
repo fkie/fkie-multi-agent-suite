@@ -77,6 +77,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
 
             <Typography
               flexGrow={1}
+              noWrap
               variant="body2"
               sx={{ fontWeight: 'inherit' }}
               onClick={(event) => {
