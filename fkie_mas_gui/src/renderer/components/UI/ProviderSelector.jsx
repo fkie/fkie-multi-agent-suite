@@ -14,31 +14,40 @@ function ProviderSelector({ defaultProvider, setSelectedProvider }) {
   );
 
   useEffect(() => {
-    let currProv = null;
     const provNames = [];
     let hasLocal = false;
+    let newSelectedProvider = '';
     if (rosCtx.providersConnected.length === 1) {
       // select the first host if only one is available
-      currProv = rosCtx.providersConnected[0];
+      const currProv = rosCtx.providersConnected[0];
       provNames.push({
         name: currProv.name(),
         id: currProv.id,
       });
+      newSelectedProvider = currProv.id;
     } else {
       // get all connected hosts and select the first local host
       rosCtx.providersConnected.forEach((prov) => {
         if (currentProvider === '') {
           if (prov && prov.isLocalHost && !hasLocal) {
-            currProv = prov;
             hasLocal = true;
+            newSelectedProvider = prov.id;
           }
+        } else if (currentProvider === prov.id) {
+          newSelectedProvider = currentProvider;
         }
         provNames.push({ name: prov.name(), id: prov.id });
       });
     }
     provNames.sort((a, b) => -b.name.localeCompare(a.name));
+    if (
+      newSelectedProvider !== currentProvider
+    ) {
+      // current provider is not in the name list, add to avoid warnings
+      provNames.push({ name: currentProvider, id: currentProvider });
+    }
     setProviderNames(provNames);
-    setCurrentProvider(currProv !== null ? currProv.id : currentProvider);
+    setCurrentProvider(newSelectedProvider);
   }, [currentProvider, rosCtx.providersConnected]);
 
   // inform about new provider
