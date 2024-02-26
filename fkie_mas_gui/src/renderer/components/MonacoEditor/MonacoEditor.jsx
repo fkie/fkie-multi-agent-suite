@@ -33,6 +33,7 @@ import { SSHContext } from '../../context/SSHContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { EVENT_EDITOR_SELECT_RANGE } from '../../utils/events';
+import { colorFromHostname } from '../UI/Colors';
 import CopyButton from '../UI/CopyButton';
 import SearchBar from '../UI/SearchBar';
 import { FileTreeItem } from './FileTreeItem';
@@ -807,6 +808,18 @@ function MonacoEditor({
     }
   };
 
+  const getHostStyle = () => {
+    if (providerName && settingsCtx.get('colorizeHosts')) {
+      return {
+        flexGrow: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: colorFromHostname(providerName),
+        borderBottomWidth: '0.3em',
+      };
+    }
+    return { flexGrow: 1, alignItems: 'center' };
+  };
+
   return (
     <Stack
       direction="row"
@@ -985,6 +998,7 @@ function MonacoEditor({
               spacing={0.5}
               alignItems="center"
               ref={infoRef}
+              style={getHostStyle()}
             >
               <Tooltip title="Save File">
                 <span>
@@ -1058,14 +1072,7 @@ function MonacoEditor({
                   value={activeModel?.path?.split(':')[1]}
                   fontSize={'0.7em'}
                 />
-                <Typography
-                  flexGrow={1}
-                  style={{
-                    padding: 2,
-                    fontWeight: 'normal',
-                    fontSize: '0.8em',
-                  }}
-                ></Typography>
+                <Typography flexGrow={1}></Typography>
                 <Typography
                   noWrap
                   style={{

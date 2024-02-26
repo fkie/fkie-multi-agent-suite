@@ -90,7 +90,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
       return {
         flexGrow: 1,
         alignItems: 'center',
-        borderLeftStyle: 'outset',
+        borderLeftStyle: 'solid',
         borderLeftColor: colorFromHostname(topicInfo?.providerName),
         borderLeftWidth: '0.6em',
       };

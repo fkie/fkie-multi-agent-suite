@@ -154,7 +154,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
   const getHostStyle = () => {
     if (providerName && settingsCtx.get('colorizeHosts')) {
       return {
-        borderLeftStyle: 'outset',
+        borderLeftStyle: 'solid',
         borderLeftColor: colorFromHostname(providerName),
         borderLeftWidth: '0.6em',
       };

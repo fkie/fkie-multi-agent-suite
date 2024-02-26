@@ -35,7 +35,7 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
   const getSxPropByName = (name) => {
     if (colorizeItems && settingsCtx.get('colorizeHosts')) {
       return {
-        borderLeftStyle: 'outset',
+        borderLeftStyle: 'solid',
         borderLeftColor: colorFromHostname(name),
         borderLeftWidth: '0.6em',
       };

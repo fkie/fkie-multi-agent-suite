@@ -70,10 +70,10 @@ function PackageExplorerPanel() {
       const provider = rosCtx.getProviderById(selectedProvider);
       const hColor = colorFromHostname(provider.name());
       setHostStyle({
-        borderLeftStyle: 'outset',
+        borderLeftStyle: 'solid',
         borderLeftColor: hColor,
         borderLeftWidth: '0.6em',
-        borderBottomStyle: 'inset',
+        borderBottomStyle: 'solid',
         borderBottomColor: hColor,
         borderBottomWidth: '0.6em',
       });
