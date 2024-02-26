@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 import { Box, Stack, Typography } from '@mui/material';
+import TurnSlightLeftIcon from '@mui/icons-material/TurnSlightLeft';
 
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 
@@ -105,7 +106,8 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
                   }
                 }}
               >
-                [{labelLine}]
+                {/* [{labelLine}] */}
+                <TurnSlightLeftIcon fontSize='inherit'/>
               </Typography>
             )}
           </Stack>
