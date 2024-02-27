@@ -190,6 +190,7 @@ function LaunchFileModal({
       const args = [];
 
       currentArgs.forEach((arg) => {
+        console.log(`arg.name: ${arg.name}: ${arg.value}`);
         args.push(new LaunchArgument(arg.name, arg.value));
         // update history
         let hList = argHistory[arg.name];
@@ -428,7 +429,7 @@ function LaunchFileModal({
                           let newIndex = -1;
                           options.forEach((value, index) => {
                             if (value === event.target.value) {
-                              if (event.deltaY < 0) {
+                              if (event.deltaY > 0) {
                                 newIndex = index + 1;
                               } else {
                                 newIndex = index - 1;
@@ -438,7 +439,14 @@ function LaunchFileModal({
                           if (newIndex < 0) newIndex = 0;
                           else if (newIndex > options.length - 1)
                             newIndex = options.length - 1;
-                          event.target.value = options[newIndex];
+                          setCurrentArgs(
+                            currentArgs.map((item) => {
+                              if (item.name === arg.name) {
+                                item.value = options[newIndex];
+                              }
+                              return item;
+                            }),
+                          );
                         }}
                       />
                     )}
