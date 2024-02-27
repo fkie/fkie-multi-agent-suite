@@ -515,7 +515,6 @@ function NodeManager() {
         onAction={(action) => {
           // hide bottom panel on close of last terminal
           if (action.type === Actions.DELETE_TAB) {
-            console.log(`CLOSE TAB: ${JSON.stringify(action.data)}`);
             deleteTab(action.data.node);
           } else {
             model.doAction(action);

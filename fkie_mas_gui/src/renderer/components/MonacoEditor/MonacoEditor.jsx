@@ -67,6 +67,7 @@ function MonacoEditor({
   const resizeObserver = useRef(null);
   const [panelHeight, setPanelHeight] = useState(0);
   const [panelWidth, setPanelWidth] = useState(0);
+  const [panelSize, setPanelSize] = useState(null);
 
   const [providerName, setProviderName] = useState('');
   const [packageName, setPackageName] = useState('');
@@ -672,9 +673,13 @@ function MonacoEditor({
     [editorRef],
   );
 
-  const debouncedWidthUpdate = useDebounceCallback((newWidth) => {
-    setEditorWidth(newWidth);
-  }, 50);
+  const debouncedWidthUpdate = useDebounceCallback(
+    (newWidth) => {
+      setEditorWidth(newWidth);
+    },
+    [setEditorWidth],
+    50,
+  );
 
   useEffect(() => {
     if (panelRef.current) {
@@ -753,7 +758,13 @@ function MonacoEditor({
     } else {
       setExplorerBarHeight(explorerBarMinSize);
     }
-  }, [enableExplorer, enableGlobalSearch, panelHeight]);
+  }, [
+    enableExplorer,
+    enableGlobalSearch,
+    panelHeight,
+    setSideBarWidth,
+    setExplorerBarHeight,
+  ]);
 
   useEffect(() => {
     const newFontSize = settingsCtx.get('fontSize');
@@ -809,16 +820,18 @@ function MonacoEditor({
   }, [includedFiles]);
 
   useEffect(() => {
+    if (!panelSize) return;
+    setEditorHeight(
+      panelSize.height - infoRef.current?.getBoundingClientRect().height,
+    );
+    setEditorWidth(panelSize.width - sideBarWidth);
+    setPanelHeight(panelSize.height);
+  }, [sideBarWidth, panelSize, infoRef.current]);
+
+  useEffect(() => {
     if (panelRef.current) {
       resizeObserver.current = new ResizeObserver(() => {
-        setEditorHeight(
-          panelRef.current?.getBoundingClientRect().height -
-            infoRef.current?.getBoundingClientRect().height,
-        );
-        setEditorWidth(
-          panelRef.current?.getBoundingClientRect().width - sideBarWidth,
-        );
-        setPanelHeight(panelRef.current?.getBoundingClientRect().height);
+        setPanelSize(panelRef.current?.getBoundingClientRect());
       });
       resizeObserver.current.observe(panelRef.current);
     }
