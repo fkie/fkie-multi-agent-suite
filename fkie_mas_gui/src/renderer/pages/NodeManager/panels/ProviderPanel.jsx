@@ -483,7 +483,7 @@ function ProviderPanel() {
                           }
                           placement="right"
                         >
-                          <Typography color="grey">
+                          <Typography color="grey" variant="body2">
                             [{provider.rosState.ros_domain_id}]
                           </Typography>
                         </Tooltip>
