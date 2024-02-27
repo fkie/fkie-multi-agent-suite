@@ -40,7 +40,7 @@ import { NavigationContext } from '../../../context/NavigationContext';
 import { RosContext } from '../../../context/RosContext';
 import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-import { RosNode, RosNodeStatus, getFileName } from '../../../models';
+import { RosNode, RosNodeStatus, getBaseName } from '../../../models';
 import { CmdType } from '../../../providers';
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 
@@ -362,23 +362,14 @@ function HostTreeViewPanel() {
       if (node.launchPaths.size > 1) {
         // TODO: select
       }
-      const launchName = getFileName(rootLaunch);
+      const launchName = getBaseName(rootLaunch);
       const provider = rosCtx.getProviderById(node.providerId);
-      const packages = provider?.packages?.filter((rosPackage) => {
-        return node.launchInfo.file_name.startsWith(
-          rosPackage.path.endsWith('/')
-            ? rosPackage.path
-            : `${rosPackage.path}/`,
-        );
-      });
-
-      const packageName = packages?.length > 0 ? `${packages[0]?.name}` : '';
       const id = `editor-${node.providerId}-${rootLaunch}`;
       if (!openIds.includes(id)) {
         emitCustomEvent(
           EVENT_EDITOR_SELECT_RANGE,
           eventEditorSelectRange(
-            provider.host(),
+            provider?.host(),
             node.launchInfo.file_name,
             node.launchInfo.file_range,
           ),
@@ -387,8 +378,9 @@ function HostTreeViewPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             id,
-            `${launchName} [${packageName}]`,
+            launchName,
             <FileEditorPanel
+              tabId={id}
               providerId={node.providerId}
               fileRange={node.launchInfo.file_range}
               currentFilePath={node.launchInfo.file_name}

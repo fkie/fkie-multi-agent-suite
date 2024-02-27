@@ -16,10 +16,9 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { blue } from '@mui/material/colors';
 
 import { emitCustomEvent } from 'react-custom-events';
-import { generateUniqueId } from '../../utils';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
-import { getFileName } from '../../models';
+import { getBaseName, getFileName } from '../../models';
 import {
   LAYOUT_TAB_SETS,
   LayoutTabConfig,
@@ -53,7 +52,7 @@ function LaunchFileList({
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host
    */
   const createFileEditorPanel = useCallback((provId, launchContent) => {
-    const launchName = getFileName(launchContent.path);
+    const launchName = getBaseName(launchContent.path);
     // const provider = rosCtx.getProviderById(provId);
     // const packages = provider?.packages?.filter((rosPackage) => {
     //   return launchContent.path.startsWith(
@@ -63,12 +62,14 @@ function LaunchFileList({
     //   );
     // });
     //  [${packages.length > 0 ? packages[0].name : ''}]@${providerName}
+    const id = `editor-${provId}-${launchContent.path}`;
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
       eventOpenComponent(
-        `editor-${provId}-${launchContent.path}`,
+        id,
         launchName,
         <FileEditorPanel
+          tabId={id}
           providerId={provId}
           currentFilePath={launchContent.path}
           rootFilePath={launchContent.path}
@@ -90,7 +91,7 @@ function LaunchFileList({
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          `LaunchFile-${generateUniqueId()}`,
+          `launchFileInfo-${launchName}@${provider.name()}`,
           `${launchName}@${provider.name()}`,
           <LaunchFilePanel launchContent={launchContent} />,
           true,

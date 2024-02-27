@@ -36,7 +36,7 @@ import {
   LayoutTabConfig,
 } from '../../pages/NodeManager/layout';
 
-import { getFileExtension, getFileName } from '../../models';
+import { getBaseName, getFileExtension, getFileName } from '../../models';
 
 import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
@@ -338,12 +338,14 @@ function PackageExplorer({ packageList, selectedProvider }) {
 
   const onEditFile = useCallback(
     (fileObj) => {
+      const id = `editor-${selectedProvider}-${fileObj.path}`;
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          `editor-${selectedProvider}-${fileObj.path}`,
-          `${fileObj.name} [${fileObj.package}]`,
+          id,
+          getBaseName(fileObj.name),
           <FileEditorPanel
+            tabId={id}
             providerId={selectedProvider}
             referenceFilePath={null}
             currentFilePath={fileObj.path}

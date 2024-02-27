@@ -11,6 +11,41 @@ const getFileName = (path: string) => {
 };
 
 /**
+ * Return the filename without extension from a given path
+ *
+ * @param {string} path - File path
+ */
+const getBaseName = (path: string) => {
+  let fileName = getFileName(path);
+  if (fileName) {
+    const base = fileName
+      .replace(/^.*[\\/]/, '')
+      .split('.')
+      .shift();
+    if (base) {
+      return base;
+    }
+  }
+  return fileName;
+};
+
+/**
+ * Return the first and last letter of the file base name
+ *
+ * @param {string} path - File path
+ */
+const getFileAbb = (path: string) => {
+  if (!path) return path;
+  const baseSplits = path.replace(/^.*[\\/]/, '').split('.');
+  let base = baseSplits.shift();
+  if (!base) base = baseSplits.shift();
+  if (base) {
+    return `${base[0]}${base[base.length - 1]}`;
+  }
+  return path;
+};
+
+/**
  * Return the file extension from a given path
  *
  * @param {string} path - File path
@@ -161,4 +196,11 @@ const FileLanguageAssociations: Record<string, string> = {
   sql: 'sql',
 };
 
-export { FileItem, FileLanguageAssociations, getFileExtension, getFileName };
+export {
+  FileItem,
+  FileLanguageAssociations,
+  getBaseName,
+  getFileAbb,
+  getFileExtension,
+  getFileName,
+};

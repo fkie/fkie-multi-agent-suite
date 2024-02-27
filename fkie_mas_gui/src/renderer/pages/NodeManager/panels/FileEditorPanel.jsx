@@ -12,6 +12,7 @@ import { SettingsContext } from '../../../context/SettingsContext';
 import { LaunchIncludedFilesRequest } from '../../../models';
 
 function FileEditorPanel({
+  tabId,
   providerId,
   rootFilePath,
   currentFilePath,
@@ -249,6 +250,7 @@ function FileEditorPanel({
       )}
       {includedFiles && (
         <MonacoEditor
+          tabId={tabId}
           file={currentFile}
           rootFilePath={rootFilePath}
           fileRange={fileRange}
@@ -270,6 +272,7 @@ FileEditorPanel.defaultProps = {
 };
 
 FileEditorPanel.propTypes = {
+  tabId: PropTypes.string.isRequired,
   providerId: PropTypes.string.isRequired,
   rootFilePath: PropTypes.string.isRequired,
   currentFilePath: PropTypes.string.isRequired,

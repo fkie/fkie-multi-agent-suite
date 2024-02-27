@@ -25,6 +25,8 @@ import {
 import {
   FileItem,
   FileLanguageAssociations,
+  getBaseName,
+  getFileAbb,
   getFileExtension,
   getFileName,
 } from './FileItem';
@@ -117,6 +119,8 @@ export {
   URI,
   compareRosNodes,
   getDiagnosticLevelName,
+  getBaseName,
+  getFileAbb,
   getFileExtension,
   getFileName,
   getMaxDiagnosticLevel,

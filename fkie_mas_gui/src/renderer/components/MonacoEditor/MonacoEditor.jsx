@@ -14,13 +14,14 @@ import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import UpgradeIcon from '@mui/icons-material/Upgrade';
 import {
   IconButton,
+  Link,
   Stack,
   ToggleButton,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { useCustomEventListener } from 'react-custom-events';
-import { FileItem, getFileName } from '../../models';
+import { FileItem, getFileAbb, getFileName } from '../../models';
 import {
   createDocumentSymbols,
   createXMLDependencyProposals,
@@ -28,18 +29,19 @@ import {
 
 import { DEFAULT_BUG_TEXT, LoggingContext } from '../../context/LoggingContext';
 import { MonacoContext } from '../../context/MonacoContext';
+import { NavigationContext } from '../../context/NavigationContext';
 import { RosContext } from '../../context/RosContext';
 import { SSHContext } from '../../context/SSHContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { EVENT_EDITOR_SELECT_RANGE } from '../../utils/events';
 import { colorFromHostname } from '../UI/Colors';
-import CopyButton from '../UI/CopyButton';
 import SearchBar from '../UI/SearchBar';
 import { FileTreeItem } from './FileTreeItem';
 import { SearchFileTreeItem, SearchResultTreeItem } from './SearchTreeItem';
 
 function MonacoEditor({
+  tabId,
   rootFilePath,
   file,
   fileRange,
@@ -57,6 +59,7 @@ function MonacoEditor({
   const SSHCtx = useContext(SSHContext);
   const logCtx = useContext(LoggingContext);
   const monacoCtx = useContext(MonacoContext);
+  const navCtx = useContext(NavigationContext);
 
   const editorRef = useRef(null);
   const panelRef = useRef(null);
@@ -66,8 +69,11 @@ function MonacoEditor({
   const [panelWidth, setPanelWidth] = useState(0);
 
   const [providerName, setProviderName] = useState('');
+  const [packageName, setPackageName] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [activeModel, setActiveModel] = useState(null);
+  const [ownUriPaths, setOwnUriPaths] = useState([]);
+  const [ownUriToPackageDict] = useState({});
   const [expandedExplorerResults, setExpandedExplorerResults] = useState([]);
   const [expandedSearchResults, setExpandedSearchResults] = useState([]);
   const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage(
@@ -107,6 +113,8 @@ function MonacoEditor({
   const [globalSearchTree, setGlobalSearchTree] = useState({});
 
   const [selectionRange, setSelectionRange] = useState(fileRange);
+  const [modifiedFiles, setModifiedFiles] = useState([]);
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   /** close tabs on signals from tab itself (e.g. ctrl+d) */
   useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, (data) => {
@@ -259,6 +267,25 @@ function MonacoEditor({
     [setListTabs, monacoCtx.monaco, selectedTabIndex],
   );
 
+  // return only modified files of current tab
+  const getModifiedFiles = useCallback(
+    (excludeUri) => {
+      return monaco.editor
+        .getModels()
+        .filter((model) => {
+          const result =
+            model.modified &&
+            ownUriPaths.indexOf(model.uri.path) > -1 &&
+            model.uri.path !== excludeUri;
+          return result;
+        })
+        .map((model) => {
+          return { path: model.uri.path, modified: model.modified };
+        });
+    },
+    [monaco.editor, ownUriPaths],
+  );
+
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
     async (uriPath, range = null, tabIndex = null, forceReload = false) => {
@@ -343,6 +370,10 @@ function MonacoEditor({
 
       setActiveModel({ path: m.uri.path, modified: m.modified });
 
+      // update modified files for the user info
+      const mFiles = getModifiedFiles(m.uri.path);
+      setModifiedFiles(mFiles);
+
       // search tab index and set it up
       const foundIndex = listTabs.findIndex(
         (t) => t.name === getFileName(modelUri),
@@ -360,6 +391,9 @@ function MonacoEditor({
       }
       // }
 
+      // set package name
+      const packageName = ownUriToPackageDict[m.uri.path];
+      setPackageName(packageName ? packageName : '');
       // set range is available
       if (range) {
         setSelectionRange(range);
@@ -371,12 +405,12 @@ function MonacoEditor({
       monacoCtx,
       monacoViewStates,
       includedFiles,
-      setTitlePanel,
       rosCtx,
       providerId,
       SSHCtx,
       listTabs,
       setListTabs,
+      getModifiedFiles,
     ],
   );
 
@@ -447,7 +481,7 @@ function MonacoEditor({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [listTabs, monacoCtx.monaco],
+    [listTabs, monacoCtx.monaco, setActiveModel],
   );
 
   const configureMonacoEditor = (provider) => {
@@ -588,7 +622,7 @@ function MonacoEditor({
     if (!provider.host()) return;
     // Set model and editor properties
     const uriPath = monacoCtx.monaco.Uri.file(`${file.host}:${file.path}`).path;
-    console.log(`OPEN PATH: ${uriPath} ${JSON.stringify(fileRange)}`);
+    // console.log(`OPEN PATH: ${uriPath} ${JSON.stringify(fileRange)}`);
     setEditorModel(uriPath, fileRange);
     configureMonacoEditor(provider);
     setProviderName(provider.name());
@@ -603,21 +637,6 @@ function MonacoEditor({
   //   // const editorServiceLocal = editorRef.current._codeEditorService;
   //   // editorServiceLocal.openCodeEditor = openCodeEditorCallback;
   // }, [openCodeEditorCallback]);
-
-  const handleEditorChange = (value) => {
-    file.value = value;
-
-    // update activeModel modified flag
-    setActiveModel((prevModel) => {
-      const model = monacoCtx.getModelFromPath(prevModel.path);
-      model.modified = true;
-      return { path: model.uri.path, modified: model.modified };
-    });
-
-    if (onChangeFile) {
-      onChangeFile();
-    }
-  };
 
   const debouncedFindAllMatches = useDebounceCallback((searchText) => {
     const searchResult = monacoCtx.findAllTextMatches(searchText);
@@ -669,17 +688,52 @@ function MonacoEditor({
     debouncedFindAllMatches(globalSearchTerm);
   }, [globalSearchTerm]);
 
-  // update FileEditorPanel's title when the active model changes
-  // useEffect(() => {
-  //   if (!activeModel) {
-  //     return;
-  //   }
-  //   setTitlePanel(
-  //     `${activeModel.modified ? '*' : ''}(${activeModel.path
-  //       .split(':')[0]
-  //       .slice(1)}) ${getFileName(activeModel.path)}`,
-  //   );
-  // }, [activeModel, setTitlePanel]);
+  const updateModifiedFiles = useCallback(() => {
+    const mFiles = getModifiedFiles(undefined);
+    const otherModFiles = navCtx.modifiedFiles.filter(
+      (item) => item.tabId !== tabId,
+    );
+    if (mFiles.length > 0) {
+      navCtx.setModifiedFiles([
+        { tabId: tabId, modifiedFiles: mFiles },
+        ...otherModFiles,
+      ]);
+    } else {
+      navCtx.setModifiedFiles([...otherModFiles]);
+    }
+  }, [navCtx.setModifiedFiles, getModifiedFiles]);
+
+  const handleEditorChange = useCallback(
+    (value) => {
+      file.value = value;
+
+      // update activeModel modified flag only once
+      if (activeModel) {
+        if (!activeModel.modified) {
+          const model = monacoCtx.getModelFromPath(activeModel.path);
+          model.modified = true;
+          setActiveModel({ path: model.uri.path, modified: model.modified });
+        }
+      }
+      // onchange will be called on every change
+      if (onChangeFile) {
+        onChangeFile();
+      }
+    },
+    [activeModel, setActiveModel],
+  );
+
+  // changed files in navigation context when the active model changes
+  useEffect(() => {
+    // update modified files in navigation context
+    updateModifiedFiles();
+    // if (activeModel)
+    //   setTitlePanel(
+    //     `${activeModel.modified ? '*' : ''}(${activeModel.path
+    //       .split(':')[0]
+    //       .slice(1)}) ${getFileName(activeModel.path)}`,
+    //   );
+  }, [activeModel, setTitlePanel]);
 
   useEffect(() => {
     // update height and width of the split panel on the left side
@@ -722,6 +776,8 @@ function MonacoEditor({
       line_number: -1,
       children: [],
     };
+    const newOwnUris = [uriPath];
+    ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
     let currentFile = rootItem;
     includedFiles.forEach((file) => {
       file.children = [];
@@ -737,6 +793,10 @@ function MonacoEditor({
         }
         currentFile.children.push(file);
       }
+      // add own uri paths
+      const uriPath = `/${provider.host()}:${file.inc_path}`;
+      newOwnUris.push(uriPath);
+      ownUriToPackageDict[uriPath] = provider.getPackageName(file.inc_path);
     });
     setExpandedExplorerResults([
       `${rootItem.inc_path}-${rootItem.line_number}`,
@@ -745,6 +805,7 @@ function MonacoEditor({
       }),
     ]);
     setIncludeRoot(rootItem);
+    setOwnUriPaths(newOwnUris);
   }, [includedFiles]);
 
   useEffect(() => {
@@ -1060,7 +1121,7 @@ function MonacoEditor({
                 <Typography
                   noWrap
                   style={{
-                    padding: 2,
+                    padding: '0.1em',
                     fontWeight: 'normal',
                     fontSize: '0.8em',
                   }}
@@ -1068,20 +1129,46 @@ function MonacoEditor({
                   {getFileName(activeModel?.path)}
                   {activeModel?.modified ? '*' : ''}
                 </Typography>
-                <CopyButton
-                  value={activeModel?.path?.split(':')[1]}
-                  fontSize={'0.7em'}
-                />
+                <Stack direction="row" marginLeft={0.4} spacing={0.2}>
+                  {modifiedFiles.map((m) => {
+                    return (
+                      <Tooltip
+                        title={`changed ${getFileName(m.path)}`}
+                        enterDelay={tooltipDelay}
+                        enterNextDelay={tooltipDelay}
+                      >
+                        <Link
+                          noWrap
+                          aria-label={`modified ${m.path}`}
+                          href="#"
+                          // underline="none"
+                          color="inherit"
+                          onClick={() => {
+                            setEditorModel(m.path);
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            padding="0.4em"
+                            fontSize="0.6em"
+                          >
+                            [{getFileAbb(m.path)}*]
+                          </Typography>
+                        </Link>
+                      </Tooltip>
+                    );
+                  })}
+                </Stack>
                 <Typography flexGrow={1}></Typography>
                 <Typography
                   noWrap
                   style={{
-                    padding: 2,
-                    fontWeight: 'normal',
-                    fontSize: '0.8em',
+                    padding: '0.4em',
+                    fontWeight: 100,
+                    fontSize: '0.6em',
                   }}
                 >
-                  {providerName}
+                  {packageName} &#8226; {providerName}
                 </Typography>
               </Stack>
             </Stack>
@@ -1154,6 +1241,7 @@ MonacoEditor.defaultProps = {
 };
 
 MonacoEditor.propTypes = {
+  tabId: PropTypes.string.isRequired,
   rootFilePath: PropTypes.string,
   file: PropTypes.object,
   fileRange: PropTypes.any,

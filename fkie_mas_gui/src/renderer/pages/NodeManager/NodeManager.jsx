@@ -19,11 +19,13 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 
 import { CmdType } from 'renderer/providers';
+import { ConfirmModal } from '../../components';
 import ExternalAppsModal from '../../components/ExternalAppsModal/ExternalAppsModal';
 import ProviderSelectionModal from '../../components/SelectionModal/ProviderSelectionModal';
 import SettingsModal from '../../components/SettingsModal/SettingsModal';
 import { ElectronContext } from '../../context/ElectronContext';
 import { LoggingContext } from '../../context/LoggingContext';
+import { NavigationContext } from '../../context/NavigationContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { SSHContext } from '../../context/SSHContext';
@@ -56,6 +58,7 @@ function NodeManager() {
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const SSHCtx = useContext(SSHContext);
   const [layoutJson, setLayoutJson] = useLocalStorage('layout', DEFAULT_LAYOUT);
@@ -63,6 +66,7 @@ function NodeManager() {
   const layoutRef = useRef(null);
   const [layoutComponents] = useState({});
   const [addToLayout, setAddToLayout] = useState([]);
+  const [modifiedLaunchFiles, setModifiedLaunchFiles] = useState(null);
 
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
@@ -72,57 +76,82 @@ function NodeManager() {
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set('resetLayout', false);
     }
-  }, [settingsCtx, setLayoutJson, setModel]);
+  }, [settingsCtx.changed, setLayoutJson, setModel]);
 
   /** Hide bottom panel on close of last terminal */
-  function deleteTab(tabId) {
-    const nodeBId = model.getNodeById(tabId);
-    if (
-      nodeBId.getParent().getType() === 'border' &&
-      nodeBId.getParent()?.getLocation().name === DockLocation.BOTTOM.name
-    ) {
-      const shouldSelectNewTab = nodeBId.getParent().getChildren().length === 2;
-      if (shouldSelectNewTab) {
-        model.doAction(Actions.selectTab(tabId));
+  const deleteTab = useCallback(
+    (tabId) => {
+      // check if it is an editor with modified files
+      if (tabId.startsWith('editor')) {
+        const mFiles = navCtx.modifiedFiles.filter(
+          (item) => item.tabId === tabId,
+        );
+        if (mFiles.length > 0) {
+          const editorTab = model.getNodeById(tabId);
+          model.doAction(Actions.selectTab(editorTab));
+          setModifiedLaunchFiles(mFiles[0]);
+          return;
+        }
       }
-    }
-    model.doAction(Actions.deleteTab(tabId));
-  }
-
-  useCustomEventListener(EVENT_OPEN_COMPONENT, (data) => {
-    const node = model.getNodeById(data.id);
-    if (node) {
+      // handle tabs in bottom border
+      const nodeBId = model.getNodeById(tabId);
       if (
-        node.getParent().getType() === 'border' &&
-        node.getParent().getSelectedNode()?.getId() === node.getId()
+        nodeBId.getParent().getType() === 'border' &&
+        nodeBId.getParent()?.getLocation().name === DockLocation.BOTTOM.name
       ) {
-
-      } else {
-        // activate already existing tab.
-        model.doAction(Actions.selectTab(data.id));
+        const shouldSelectNewTab =
+          nodeBId.getParent().getChildren().length === 2;
+        if (shouldSelectNewTab) {
+          model.doAction(Actions.selectTab(tabId));
+        }
       }
-    } else {
-      // create a new tab
-      const tab = {
-        id: data.id,
-        type: 'tab',
-        name: data.title,
-        component: data.id,
-        panelGroup: data.panelGroup,
-        enableClose: data.closable,
-        enableFloat: !window.CommandExecutor,
-        config: data.config,
-      };
-      layoutComponents[data.id] = data.component;
-      // store new tabs using useEffect so dockMove() can create panels if events comes to fast
-      setAddToLayout((oldValue) => [tab, ...oldValue]);
-    }
-  });
+      model.doAction(Actions.deleteTab(tabId));
+    },
+    [model, navCtx.modifiedFiles],
+  );
+
+  useCustomEventListener(
+    EVENT_OPEN_COMPONENT,
+    (data) => {
+      const node = model.getNodeById(data.id);
+      if (node) {
+        if (
+          node.getParent().getType() === 'border' &&
+          node.getParent().getSelectedNode()?.getId() === node.getId()
+        ) {
+          // it is border and current tab is selected => nothing to do
+        } else {
+          // activate already existing tab.
+          model.doAction(Actions.selectTab(data.id));
+        }
+      } else {
+        // create a new tab
+        const tab = {
+          id: data.id,
+          type: 'tab',
+          name: data.title,
+          component: data.id,
+          panelGroup: data.panelGroup,
+          enableClose: data.closable,
+          enableFloat: !window.CommandExecutor,
+          config: data.config,
+        };
+        layoutComponents[data.id] = data.component;
+        // store new tabs using useEffect so dockMove() can create panels if events comes to fast
+        setAddToLayout((oldValue) => [tab, ...oldValue]);
+      }
+    },
+    [layoutComponents, setAddToLayout],
+  );
 
   /** close tabs on signals from tab itself (e.g. ctrl+d) */
-  useCustomEventListener(EVENT_CLOSE_COMPONENT, (data) => {
-    deleteTab(data.id);
-  });
+  useCustomEventListener(
+    EVENT_CLOSE_COMPONENT,
+    (data) => {
+      deleteTab(data.id);
+    },
+    [deleteTab],
+  );
 
   const getPanelId = useCallback(
     (id, panelGroup) => {
@@ -486,6 +515,7 @@ function NodeManager() {
         onAction={(action) => {
           // hide bottom panel on close of last terminal
           if (action.type === Actions.DELETE_TAB) {
+            console.log(`CLOSE TAB: ${JSON.stringify(action.data)}`);
             deleteTab(action.data.node);
           } else {
             model.doAction(action);
@@ -522,6 +552,19 @@ function NodeManager() {
               );
             }
             electronCtx.shutdownInterface.quitGui();
+          }}
+        />
+      )}
+      {modifiedLaunchFiles && (
+        <ConfirmModal
+          title="Question"
+          message="There are unsaved changes. Drop?"
+          onConfirmCallback={() => {
+            model.doAction(Actions.deleteTab(modifiedLaunchFiles.tabId));
+            setModifiedLaunchFiles(null);
+          }}
+          onCancelCallback={() => {
+            setModifiedLaunchFiles(null);
           }}
         />
       )}
