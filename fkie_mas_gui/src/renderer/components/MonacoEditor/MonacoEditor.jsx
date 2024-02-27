@@ -639,20 +639,27 @@ function MonacoEditor({
   //   // editorServiceLocal.openCodeEditor = openCodeEditorCallback;
   // }, [openCodeEditorCallback]);
 
-  const debouncedFindAllMatches = useDebounceCallback((searchText) => {
-    const searchResult = monacoCtx.findAllTextMatches(searchText);
-    const newSearchTree = {};
-    searchResult.forEach((item) => {
-      const entry = newSearchTree[item.file];
-      if (!entry) {
-        newSearchTree[item.file] = [item];
-      } else {
-        newSearchTree[item.file].push(item);
-      }
-    });
-    setGlobalSearchTree(newSearchTree);
-    setExpandedSearchResults(Object.keys(newSearchTree));
-  }, 50);
+  const debouncedFindAllMatches = useDebounceCallback(
+    (searchText) => {
+      const searchResult = monacoCtx.findAllTextMatches(
+        searchText,
+        false,
+        ownUriPaths,
+      );
+      const newSearchTree = {};
+      searchResult.forEach((item) => {
+        const entry = newSearchTree[item.file];
+        if (!entry) {
+          newSearchTree[item.file] = [item];
+        } else {
+          newSearchTree[item.file].push(item);
+        }
+      });
+      setGlobalSearchTree(newSearchTree);
+      setExpandedSearchResults(Object.keys(newSearchTree));
+    },
+    50,
+  );
 
   const selectSearchResult = useCallback(
     (entry) => {

@@ -15,7 +15,11 @@ export interface IMonacoContext {
   getModelFromPath: (filePath: string) => any | null;
   createModel: (file: FileItem) => boolean;
   updateModel: (file: FileItem) => boolean;
-  findAllTextMatches: (searchText: string, isRegex: false) => ISearchResult[];
+  findAllTextMatches: (
+    searchText: string,
+    isRegex: boolean,
+    onlyInFiles: string[],
+  ) => ISearchResult[];
 }
 
 export interface ILoggingProvider {
@@ -47,7 +51,11 @@ export function MonacoProvider({
    *
    * @param {string} searchText - Text to search
    */
-  const findAllTextMatches = (searchText: string, isRegex: false) => {
+  const findAllTextMatches = (
+    searchText: string,
+    isRegex: boolean = false,
+    onlyInFiles: string[] = [],
+  ) => {
     if (!searchText) return [];
     if (searchText.length < 3) return [];
 
@@ -56,29 +64,34 @@ export function MonacoProvider({
 
     if (searchText) {
       monaco?.editor.getModels().forEach((model) => {
-        const matches = model.findMatches(
-          searchText,
-          true,
-          isRegex,
-          false,
-          null,
-          false,
-        );
-        matches.forEach((match) => {
-          const lineNumber = match.range.startLineNumber;
-          const text = model.getLineContent(match.range.startLineNumber);
+        if (
+          onlyInFiles.length === 0 ||
+          onlyInFiles.indexOf(model.uri.path) > -1
+        ) {
+          const matches = model.findMatches(
+            searchText,
+            true,
+            isRegex,
+            false,
+            null,
+            false,
+          );
+          matches.forEach((match) => {
+            const lineNumber = match.range.startLineNumber;
+            const text = model.getLineContent(match.range.startLineNumber);
 
-          if (!includedText.has(text)) {
-            searchResult.push({
-              file: model.uri.path,
-              text,
-              lineNumber,
-              range: match.range,
-            });
+            if (!includedText.has(text)) {
+              searchResult.push({
+                file: model.uri.path,
+                text,
+                lineNumber,
+                range: match.range,
+              });
 
-            includedText.add(text);
-          }
-        });
+              includedText.add(text);
+            }
+          });
+        }
       });
     }
     return searchResult;
