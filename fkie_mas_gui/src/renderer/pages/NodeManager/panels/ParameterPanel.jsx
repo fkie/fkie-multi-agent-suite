@@ -20,9 +20,9 @@ import {
   DEFAULT_BUG_TEXT,
   LoggingContext,
 } from '../../../context/LoggingContext';
-import { findIn } from '../../../utils/index';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
+import { findIn } from '../../../utils/index';
 
 export default function ParameterPanel({ nodes, providers }) {
   const rosCtx = useContext(RosContext);
@@ -412,23 +412,25 @@ export default function ParameterPanel({ nodes, providers }) {
         //   display: 'flex',
         // }}
       >
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip
             title="Delete selected parameter"
             placement="bottom"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
           >
-            <IconButton
-              disabled={!selectedItems}
-              size="small"
-              aria-label="Delete selected parameter"
-              onClick={() => {
-                deleteParamsFromIds(selectedItems);
-              }}
-            >
-              <DeleteIcon fontSize="inherit" />
-            </IconButton>
+            <span>
+              <IconButton
+                disabled={!selectedItems}
+                size="small"
+                aria-label="Delete selected parameter"
+                onClick={() => {
+                  deleteParamsFromIds(selectedItems);
+                }}
+              >
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            </span>
           </Tooltip>
           <SearchBar
             onSearch={onSearch}
