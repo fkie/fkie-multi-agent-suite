@@ -496,6 +496,22 @@ function NodeManager() {
     500,
   );
 
+  const isInstallUpdateRequested = useCallback(() => {
+    return navCtx.requestedInstallUpdate;
+  }, [navCtx.requestedInstallUpdate]);
+
+  useEffect(() => {
+    // do not ask for shutdown on some reasons
+    if (electronCtx.terminateSubprocesses) {
+      if (isInstallUpdateRequested()) {
+        electronCtx.shutdownInterface.quitGui();
+      }
+      if (rosCtx.providers.length <= 0) {
+        electronCtx.shutdownInterface.quitGui();
+      }
+    }
+  }, [electronCtx.terminateSubprocesses]);
+
   return (
     <Stack
       style={{

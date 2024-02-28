@@ -13,6 +13,7 @@ import { useContext, useEffect, useState } from 'react';
 
 import packageJson from '../../../../package.json';
 import { LoggingContext } from '../../context/LoggingContext';
+import { NavigationContext } from '../../context/NavigationContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import CopyButton from '../UI/CopyButton';
 
@@ -34,6 +35,7 @@ function LinearProgressWithLabel(props) {
 function About() {
   const settingsCtx = useContext(SettingsContext);
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
   const [updateError, setUpdateError] = useState('');
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(null);
@@ -57,6 +59,7 @@ function About() {
 
   function installUpdate() {
     setUpdateError('');
+    navCtx.setRequestedInstallUpdate(true);
     window.autoUpdate.send('quit-and-install');
   }
 
