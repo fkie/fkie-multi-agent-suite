@@ -414,6 +414,11 @@ class CrossbarIOProvider {
     return this.currentRequestList.size > 0;
   };
 
+  /** return cleaned version string or empty string if no version is available.*/
+  public getDaemonReleaseVersion: () => string = () => {
+    return this.daemonVersion.version.split('-')[0].replace('v', '');
+  };
+
   /**
    * Request a list of available providers using the WAMP uri URI.ROS_PROVIDER_GET_LIST
    *

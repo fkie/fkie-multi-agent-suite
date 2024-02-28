@@ -1,5 +1,6 @@
 import { useDebounceCallback } from '@react-hook/debounce';
 import { useContext, useEffect, useReducer, useState } from 'react';
+import semver from 'semver';
 
 import {
   Button,
@@ -23,7 +24,9 @@ import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import packageJson from '../../../../../package.json';
 
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 import {
@@ -33,7 +36,8 @@ import {
 } from '../../../components';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-import { ConnectionState } from '../../../providers';
+import { RosNode } from '../../../models';
+import { CmdType, ConnectionState } from '../../../providers';
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_STATE,
@@ -47,7 +51,8 @@ import {
   eventOpenComponent,
   eventOpenSettings,
 } from '../../../utils/events';
-import { LAYOUT_TABS, LayoutTabConfig } from '../layout';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
+import SingleTerminalPanel from './SingleTerminalPanel';
 
 import OverflowMenuProvider from './OverflowMenuProvider';
 import SystemInformationPanel from './SystemInformationPanel';
@@ -397,6 +402,10 @@ function ProviderPanel() {
     return {};
   };
 
+  const isOlderVersion = (provider) => {
+    return semver.gt(packageJson.version, provider.getDaemonReleaseVersion());
+  };
+
   return (
     <Stack
       spacing={1}
@@ -498,6 +507,55 @@ function ProviderPanel() {
                       </Stack>
                     )}
                   </Stack>
+                </TableCell>
+                <TableCell style={{ padding: 0 }}>
+                  {isOlderVersion(provider) && (
+                    <Tooltip
+                      title={`daemon has older version ${provider.getDaemonReleaseVersion()}, open terminal for update`}
+                      placement="bottom-start"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
+                      <IconButton
+                        edge="start"
+                        onClick={() => {
+                          // open terminal for update
+                          const emptyNode = new RosNode();
+                          emptyNode.name = 'terminal';
+                          emptyNode.providerId = provider.id;
+                          emptyNode.providerName = provider.name();
+                          const type = CmdType.TERMINAL;
+                          const id = `${type}${emptyNode.name}@${emptyNode.providerName}`;
+                          emitCustomEvent(
+                            EVENT_OPEN_COMPONENT,
+                            eventOpenComponent(
+                              id,
+                              `${emptyNode.name}@${emptyNode.providerName}`,
+                              <SingleTerminalPanel
+                                id={id}
+                                type={type}
+                                providerId={emptyNode.providerId}
+                                node={emptyNode}
+                                cmd={''}
+                              />,
+                              true,
+                              LAYOUT_TAB_SETS.BORDER_BOTTOM,
+                              new LayoutTabConfig(true, type, {
+                                type,
+                                providerId: emptyNode.providerId,
+                                nodeName: emptyNode.name,
+                                cmd: '',
+                              }),
+                            ),
+                          );
+                        }}
+                      >
+                        <UpgradeIcon
+                          sx={{ fontSize: 'inherit', color: 'orange' }}
+                        />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
                   {generateWarningsView(provider)}
