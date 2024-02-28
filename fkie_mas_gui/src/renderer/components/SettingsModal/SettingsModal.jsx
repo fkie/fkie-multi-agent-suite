@@ -69,7 +69,7 @@ function SettingsModal() {
         PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
         fullWidth
-        maxWidth="lg"
+        maxWidth="md"
         open={open}
         onClose={handleClose}
         // disableEscapeKeyDown
