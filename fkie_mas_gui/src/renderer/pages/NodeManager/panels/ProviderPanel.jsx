@@ -404,7 +404,7 @@ function ProviderPanel() {
 
   const isOlderVersion = (provider) => {
     try {
-      return semver.gte(packageJson.version, provider.getDaemonReleaseVersion());
+      return semver.gt(packageJson.version, provider.getDaemonReleaseVersion());
     } catch {}
     return false;
   };
