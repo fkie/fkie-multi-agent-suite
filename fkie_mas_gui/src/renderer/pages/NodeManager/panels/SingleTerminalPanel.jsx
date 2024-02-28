@@ -27,6 +27,7 @@ function SingleTerminalPanel({
   const [initialCommands, setInitialCommands] = useState([]);
   const [currentProvider, setCurrentProvider] = useState(null);
   const [lastScreenUsed, setLastScreenUsed] = useState('');
+  const [tokenUrl, setTokenUrl] = useState(providerId);
 
   const initializeTerminal = useDebounceCallback(async (newScreen = null) => {
     // get current provider
@@ -37,6 +38,11 @@ function SingleTerminalPanel({
       return;
     }
 
+    let tkUrl = `${node.name.replaceAll('/', '')}`;
+    if (!tkUrl) {
+      tkUrl = providerId;
+    }
+    setTokenUrl(tkUrl);
     setCurrentProvider(() => provider);
     const terminalCmd = await provider.cmdForType(
       type,
@@ -97,7 +103,7 @@ function SingleTerminalPanel({
         initialCommands.length > 0 && (
           <TerminalClient
             key={`term-${id}`}
-            tokenUrl={`${node.name.replaceAll('/', '')}`}
+            tokenUrl={tokenUrl}
             wsUrl={`ws://${currentProvider.host()}:7681/ws`}
             initialCommands={initialCommands}
             width={width}

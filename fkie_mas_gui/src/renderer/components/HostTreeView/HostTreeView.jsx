@@ -362,7 +362,7 @@ function HostTreeView({
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
           id,
-          `${cmd}@${provider?.name()}`,
+          `${provider?.name()}`,
           <SingleTerminalPanel
             id={id}
             type={CmdType.CMD}

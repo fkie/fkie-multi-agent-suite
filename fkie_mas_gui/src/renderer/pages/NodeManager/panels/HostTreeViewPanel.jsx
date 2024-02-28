@@ -283,7 +283,7 @@ function HostTreeViewPanel() {
         const provider = rosCtx.getProviderById(node.providerId);
         const terminalCmd = await provider.cmdForType(
           type,
-          node?.name,
+          '',
           '',
           screen,
           '',
@@ -299,25 +299,26 @@ function HostTreeViewPanel() {
           );
           if (!result.result) {
             logCtx.error(
-              `Can't open external terminal for ${node.name}`,
+              `Can't open external terminal on ${provider.host()}`,
               result.message,
               true,
             );
           }
         } catch (error) {
           logCtx.error(
-            `Can't open external terminal for ${node.name}`,
+            `Can't open external terminal on ${provider.host()}`,
             error,
             true,
           );
         }
       } else {
         const id = `${type}-${screen}-${node.name}@${node.providerName}`;
+        const title = node.name ? `${node.name}@${node.providerName}` : node.providerName;
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             id,
-            `${node.name}@${node.providerName}`,
+            title,
             <SingleTerminalPanel
               id={id}
               type={type}
@@ -1212,7 +1213,7 @@ function HostTreeViewPanel() {
                         navCtx.selectedProviders.forEach((providerId) => {
                           const prov = rosCtx.getProviderById(providerId);
                           const emptyNode = new RosNode();
-                          emptyNode.name = 'terminal';
+                          emptyNode.name = '';
                           emptyNode.providerId = providerId;
                           emptyNode.providerName = prov?.name();
                           createSingleTerminalPanel(

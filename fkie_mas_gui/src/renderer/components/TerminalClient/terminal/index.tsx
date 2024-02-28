@@ -153,7 +153,7 @@ export class Xterm extends React.Component<Props, XtermState> {
     // show the name of the node during 300 ms at launch time
     const { overlayAddon } = this;
     const { name } = this.props;
-    overlayAddon?.showOverlay(name, 300);
+    overlayAddon?.showOverlay(name ? name: 'empty name', 300);
     if (this.container) {
       this.resizeObserver = new ResizeObserver(() => {
         this.componentDidUpdate();

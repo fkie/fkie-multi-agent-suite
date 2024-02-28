@@ -437,8 +437,8 @@ function NodesDetailsPanel() {
                                       )}
                                       <Button
                                         size="small"
-                                        marginLeft={1}
                                         style={{
+                                          marginLeft: 1,
                                           textTransform: 'none',
                                           justifyContent: 'left',
                                         }}
@@ -556,8 +556,8 @@ function NodesDetailsPanel() {
                                       )}
                                       <Button
                                         size="small"
-                                        marginLeft={1}
                                         style={{
+                                          marginLeft: 1,
                                           textTransform: 'none',
                                           justifyContent: 'left',
                                         }}

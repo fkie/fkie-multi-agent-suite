@@ -403,7 +403,10 @@ function ProviderPanel() {
   };
 
   const isOlderVersion = (provider) => {
-    return semver.gt(packageJson.version, provider.getDaemonReleaseVersion());
+    try {
+      return semver.gte(packageJson.version, provider.getDaemonReleaseVersion());
+    } catch {}
+    return false;
   };
 
   return (
@@ -521,7 +524,7 @@ function ProviderPanel() {
                         onClick={() => {
                           // open terminal for update
                           const emptyNode = new RosNode();
-                          emptyNode.name = 'terminal';
+                          emptyNode.name = '';
                           emptyNode.providerId = provider.id;
                           emptyNode.providerName = provider.name();
                           const type = CmdType.TERMINAL;
@@ -530,7 +533,7 @@ function ProviderPanel() {
                             EVENT_OPEN_COMPONENT,
                             eventOpenComponent(
                               id,
-                              `${emptyNode.name}@${emptyNode.providerName}`,
+                              `${emptyNode.providerName}`,
                               <SingleTerminalPanel
                                 id={id}
                                 type={type}
