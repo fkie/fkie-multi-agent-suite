@@ -7,15 +7,12 @@ export interface INavigationContext {
   setSelectedProviders?: (providers: any[]) => void;
   modifiedFiles: any[];
   setModifiedFiles?: (files: any[]) => void;
-  requestedInstallUpdate: boolean;
-  setRequestedInstallUpdate?: (state: boolean) => void;
 }
 
 export const DEFAULT = {
   selectedNodes: [],
   selectedProviders: [],
   modifiedFiles: [],
-  requestedInstallUpdate: false,
 };
 
 interface INavigationProvider {
@@ -34,8 +31,6 @@ export function NavigationProvider({
     DEFAULT.selectedProviders,
   );
   const [modifiedFiles, setModifiedFiles] = useState<any[]>([]);
-  const [requestedInstallUpdate, setRequestedInstallUpdate] =
-    useState<boolean>(false);
 
   const attributesMemo = useMemo(
     () => ({
@@ -45,10 +40,8 @@ export function NavigationProvider({
       setSelectedProviders,
       modifiedFiles,
       setModifiedFiles,
-      requestedInstallUpdate,
-      setRequestedInstallUpdate,
     }),
-    [modifiedFiles, requestedInstallUpdate, selectedNodes, selectedProviders],
+    [modifiedFiles, selectedNodes, selectedProviders],
   );
 
   return (

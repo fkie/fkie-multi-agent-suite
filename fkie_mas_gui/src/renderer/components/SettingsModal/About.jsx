@@ -12,8 +12,8 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { useContext, useEffect, useState } from 'react';
 
 import packageJson from '../../../../package.json';
+import { ElectronContext } from '../../context/ElectronContext';
 import { LoggingContext } from '../../context/LoggingContext';
-import { NavigationContext } from '../../context/NavigationContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import CopyButton from '../UI/CopyButton';
 
@@ -35,7 +35,7 @@ function LinearProgressWithLabel(props) {
 function About() {
   const settingsCtx = useContext(SettingsContext);
   const logCtx = useContext(LoggingContext);
-  const navCtx = useContext(NavigationContext);
+  const electronCtx = useContext(ElectronContext);
   const [updateError, setUpdateError] = useState('');
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(null);
@@ -48,6 +48,7 @@ function About() {
     logCtx.debug(
       `Check for new release on https://github.com/fkie/fkie-multi-agent-suite`,
     );
+    electronCtx.setUpdateAvailable('');
     setUpdateError('');
     setCheckingForUpdate(false);
     setUpdateAvailable(null);
@@ -59,7 +60,7 @@ function About() {
 
   function installUpdate() {
     setUpdateError('');
-    navCtx.setRequestedInstallUpdate(true);
+    electronCtx.setRequestedInstallUpdate(true);
     window.autoUpdate.send('quit-and-install');
   }
 
@@ -74,6 +75,7 @@ function About() {
     window.autoUpdate.receive('update-available', (data) => {
       setCheckingForUpdate(false);
       setUpdateAvailable(data);
+      electronCtx.setUpdateAvailable(data.version);
       logCtx.info(
         `New version ${data.version} available! Please update in 'About'-tab in settings dialog.`,
       );

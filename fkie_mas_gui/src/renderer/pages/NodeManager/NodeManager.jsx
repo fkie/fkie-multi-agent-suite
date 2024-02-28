@@ -12,13 +12,19 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import TopicIcon from '@mui/icons-material/Topic';
 import TuneIcon from '@mui/icons-material/Tune';
 import WysiwygIcon from '@mui/icons-material/Wysiwyg';
-import { Badge, IconButton, Stack, Tooltip } from '@mui/material';
+import {
+  Badge,
+  Button,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
 import { Actions, DockLocation, Layout, Model } from 'flexlayout-react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 
-import { CmdType } from 'renderer/providers';
 import { ConfirmModal } from '../../components';
 import ExternalAppsModal from '../../components/ExternalAppsModal/ExternalAppsModal';
 import ProviderSelectionModal from '../../components/SelectionModal/ProviderSelectionModal';
@@ -29,10 +35,14 @@ import { NavigationContext } from '../../context/NavigationContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { SSHContext } from '../../context/SSHContext';
+import { CmdType } from '../../providers';
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_OPEN_COMPONENT,
+  EVENT_OPEN_SETTINGS,
   eventOpenComponent,
+  eventOpenSettings,
+  SETTING,
 } from '../../utils/events';
 import HostTreeViewPanel from './panels/HostTreeViewPanel';
 import LoggingPanel from './panels/LoggingPanel';
@@ -461,6 +471,34 @@ function NodeManager() {
         renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
       }
     });
+    if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
+      // add update button in the bottom border
+      if (electronCtx.updateAvailable) {
+        renderValues.buttons.push(
+          <Tooltip
+            title={`new version ${electronCtx.updateAvailable} available`}
+            placement="top"
+          >
+            <Button
+              style={{ textTransform: 'none' }}
+              onClick={() => {
+                emitCustomEvent(
+                  EVENT_OPEN_SETTINGS,
+                  eventOpenSettings(SETTING.IDS.ABOUT),
+                );
+              }}
+              variant="text"
+              color="info"
+              size="small"
+            >
+              <Typography noWrap variant="body2">
+                update
+              </Typography>
+            </Button>
+          </Tooltip>,
+        );
+      }
+    }
   }
 
   function removeGenericTabs(parent) {
@@ -513,8 +551,8 @@ function NodeManager() {
   }, [navCtx.selectedNodes]);
 
   const isInstallUpdateRequested = useCallback(() => {
-    return navCtx.requestedInstallUpdate;
-  }, [navCtx.requestedInstallUpdate]);
+    return electronCtx.requestedInstallUpdate;
+  }, [electronCtx.requestedInstallUpdate]);
 
   useEffect(() => {
     // do not ask for shutdown on some reasons

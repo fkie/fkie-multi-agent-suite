@@ -54,6 +54,10 @@ function SettingsModal() {
       setSelectedTabIndex(0);
       setOpen(true);
     }
+    if (data.id === SETTING.IDS.ABOUT) {
+      setSelectedTabIndex(2);
+      setOpen(true);
+    }
   });
 
   return (
