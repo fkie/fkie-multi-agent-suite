@@ -430,12 +430,8 @@ function TopicEchoPanel({
                   latched
                 </Box>
               )}
-              <Box>
-                {content.count} messages
-              </Box>
-              <Box>
-                average rate: {content.rate.toFixed(2)} Hz
-              </Box>
+              <Box>{content.count} messages</Box>
+              <Box>average rate: {content.rate.toFixed(2)} Hz</Box>
             </Stack>
             <Stack spacing={1} direction="row">
               <Box>
@@ -465,12 +461,12 @@ function TopicEchoPanel({
                     title={`${event.receivedIndex}`}
                   /> */}
                   {event.seq === undefined && (
-                    <Typography fontStyle="italic" color="gray">
+                    <Typography fontStyle="italic" fontSize="0.8em" color="gray">
                       {event.receivedIndex}:
                     </Typography>
                   )}
                   {event.seq !== undefined && (
-                    <Typography fontStyle="italic" color="gray">
+                    <Typography fontStyle="italic" fontSize="0.8em" color="gray">
                       {event.seq}
                     </Typography>
                     // <Tag
@@ -489,6 +485,7 @@ function TopicEchoPanel({
                         ? 'grayscale'
                         : 'rjv-default'
                     }
+                    style={{ fontSize: "0.8em" }}
                     src={event?.data}
                     collapseStringsAfterLength={30}
                     displayObjectSize={false}

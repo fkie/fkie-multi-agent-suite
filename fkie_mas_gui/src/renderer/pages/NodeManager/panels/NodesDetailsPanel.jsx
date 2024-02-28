@@ -251,7 +251,7 @@ function NodesDetailsPanel() {
           >
             <Stack paddingTop={1}>
               <Typography
-                variant="h6"
+                variant="subtitle1"
                 style={{
                   color: '#fff',
                   backgroundColor: '#2196f3',
@@ -264,14 +264,14 @@ function NodesDetailsPanel() {
                 </Box>
               </Typography>
               <Typography
-                variant="h6"
+                variant="subtitle2"
                 style={{ color: grey[700] }}
                 align="center"
               >
                 Namespace: {node?.namespace}
               </Typography>
               <Typography
-                variant="h6"
+                variant="subtitle2"
                 style={{ color: grey[700] }}
                 align="center"
               >
@@ -360,7 +360,12 @@ function NodesDetailsPanel() {
                           <TableHead>
                             <TableRow>
                               <TableCell sx={{ fontWeight: 'bold' }}>
-                                <Stack direction="row" spacing={0} padding={0}>
+                                <Stack
+                                  direction="row"
+                                  alignItems="center"
+                                  spacing={0}
+                                  padding={0}
+                                >
                                   {showConnections && (
                                     <Chip
                                       size="small"
@@ -378,11 +383,9 @@ function NodesDetailsPanel() {
                                     />
                                   )}
                                   <Typography
-                                    sx={{
-                                      marginLeft: 1,
-                                      marginTop: 0.5,
-                                      fontWeight: 'bold',
-                                    }}
+                                    marginLeft="0.5em"
+                                    fontWeight="bold"
+                                    variant="body2"
                                   >
                                     Topic Name
                                   </Typography>
@@ -396,7 +399,11 @@ function NodesDetailsPanel() {
                               .map((topic) => (
                                 <TableRow key={topic.name}>
                                   <TableCell style={{ padding: 0 }}>
-                                    <Stack direction="row" spacing={0}>
+                                    <Stack
+                                      direction="row"
+                                      alignItems="center"
+                                      spacing={0}
+                                    >
                                       <OverflowMenuTopic
                                         onClick={onTopicClick}
                                         topicName={topic.name}
@@ -404,11 +411,7 @@ function NodesDetailsPanel() {
                                       />
 
                                       {showConnections && (
-                                        <Stack
-                                          direction="row"
-                                          spacing={0}
-                                          padding={0}
-                                        >
+                                        <Stack direction="row">
                                           <Chip
                                             size="small"
                                             title="publishers"
@@ -434,9 +437,8 @@ function NodesDetailsPanel() {
                                       )}
                                       <Button
                                         size="small"
-                                        sx={{ marginLeft: 1 }}
+                                        marginLeft={1}
                                         style={{
-                                          padding: 0,
                                           textTransform: 'none',
                                           justifyContent: 'left',
                                         }}
@@ -478,7 +480,11 @@ function NodesDetailsPanel() {
                           <TableHead>
                             <TableRow>
                               <TableCell sx={{ fontWeight: 'bold' }}>
-                                <Stack direction="row" spacing={0} padding={0}>
+                                <Stack
+                                  direction="row"
+                                  alignItems="center"
+                                  spacing={0}
+                                >
                                   {showConnections && (
                                     <Chip
                                       size="small"
@@ -496,11 +502,9 @@ function NodesDetailsPanel() {
                                     />
                                   )}
                                   <Typography
-                                    sx={{
-                                      marginLeft: 1,
-                                      marginTop: 0.5,
-                                      fontWeight: 'bold',
-                                    }}
+                                    marginLeft="0.5em"
+                                    fontWeight="bold"
+                                    variant="body2"
                                   >
                                     Topic Name
                                   </Typography>
@@ -514,19 +518,18 @@ function NodesDetailsPanel() {
                               .map((topic) => (
                                 <TableRow key={topic.name}>
                                   <TableCell style={{ padding: 0 }}>
-                                    <Stack direction="row" spacing={1}>
+                                    <Stack
+                                      direction="row"
+                                      alignItems="center"
+                                      spacing={0}
+                                    >
                                       <OverflowMenuTopic
                                         onClick={onTopicClick}
                                         topicName={topic.name}
                                         providerId={node.providerId}
                                       />
-
                                       {showConnections && (
-                                        <Stack
-                                          direction="row"
-                                          spacing={0}
-                                          padding={0}
-                                        >
+                                        <Stack direction="row">
                                           <Chip
                                             size="small"
                                             title="publishers"
@@ -538,7 +541,6 @@ function NodesDetailsPanel() {
                                             })()}
                                             label={topic.publisher.length}
                                           />
-
                                           <Chip
                                             size="small"
                                             title="subscribers"
@@ -552,11 +554,10 @@ function NodesDetailsPanel() {
                                           />
                                         </Stack>
                                       )}
-
                                       <Button
                                         size="small"
+                                        marginLeft={1}
                                         style={{
-                                          padding: 0,
                                           textTransform: 'none',
                                           justifyContent: 'left',
                                         }}
