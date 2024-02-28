@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.1 - 28.02.2024
+
+Added tree view to editor
+Added host color to editor
+Improved visualization for recursive search results in editor
+Show update info if new version of the gui is available.
+Improved launch parameter dialog.
+
+Fixed: delete provider
+Fixed: do not show shutdown dialog on install update
+
 ## 1.1.0 - 21.02.2024
 
 Added extend search for multiple keywords / OR / AND in nodes, topics, params and services
