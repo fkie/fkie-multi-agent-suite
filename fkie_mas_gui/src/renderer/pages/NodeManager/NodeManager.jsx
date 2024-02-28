@@ -496,6 +496,22 @@ function NodeManager() {
     500,
   );
 
+  useEffect(() => {
+    if (navCtx.selectedNodes.length > 0) {
+      // inform details panel tab about selected nodes by user
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, 'default', {}),
+      );
+    } else {
+      // select package explorer if no nodes are selected
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(LAYOUT_TABS.PACKAGES, 'default', {}),
+      );
+    }
+  }, [navCtx.selectedNodes]);
+
   const isInstallUpdateRequested = useCallback(() => {
     return navCtx.requestedInstallUpdate;
   }, [navCtx.requestedInstallUpdate]);

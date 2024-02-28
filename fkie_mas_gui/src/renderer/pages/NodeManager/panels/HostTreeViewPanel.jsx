@@ -250,11 +250,6 @@ function HostTreeViewPanel() {
   const handleNodesSelect = useCallback(
     (itemIds) => {
       navCtx.setSelectedNodes(itemIds);
-      // inform details panel tab about selected nodes by user
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, 'default', {}),
-      );
     },
     [navCtx],
   );
