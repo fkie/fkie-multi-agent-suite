@@ -42,7 +42,7 @@ import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { RosNode, RosNodeStatus, getBaseName } from '../../../models';
 import { CmdType } from '../../../providers';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 
 import useQueue from '../../../hooks/useQueue';
 import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/events';
@@ -281,13 +281,7 @@ function HostTreeViewPanel() {
       if (external && window.CommandExecutor) {
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);
-        const terminalCmd = await provider.cmdForType(
-          type,
-          '',
-          '',
-          screen,
-          '',
-        );
+        const terminalCmd = await provider.cmdForType(type, '', '', screen, '');
         // open screen in a new terminal
         try {
           const result = await window.CommandExecutor?.execTerminal(
@@ -313,7 +307,9 @@ function HostTreeViewPanel() {
         }
       } else {
         const id = `${type}-${screen}-${node.name}@${node.providerName}`;
-        const title = node.name ? `${node.name}@${node.providerName}` : node.providerName;
+        const title = node.name
+          ? `${node.name}@${node.providerName}`
+          : node.providerName;
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
@@ -623,7 +619,7 @@ function HostTreeViewPanel() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx],
+    [queueItemsQueueMain, startNodesWithLaunchCheck],
   );
 
   /**
