@@ -25,6 +25,7 @@ class CrossbarIO {
     this.session = null;
     this.details = null;
     this.connection = null;
+    this.connectionClosed = false;
     this.connectionIsOpen = false;
     this.wsUnreachable = false;
     this.onCloseCallback = onClose;
@@ -92,7 +93,10 @@ class CrossbarIO {
     this.connection.onopen = this.onOpen;
 
     // fired when connection was lost (or could not be established)
-    this.connection.onclose = this.onClose;
+    this.connection.onclose = () => {
+      this.onClose;
+      this.connectionClosed = true;
+    };
 
     this.connection.open();
 
@@ -104,7 +108,10 @@ class CrossbarIO {
       }
 
       // Max Timeout passed
-      else if (timeout && Date.now() - start >= timeout) {
+      else if (
+        this.connectionClosed ||
+        (timeout && Date.now() - start >= timeout)
+      ) {
         resolve(false);
       }
 
