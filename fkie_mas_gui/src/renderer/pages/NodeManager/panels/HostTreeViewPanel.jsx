@@ -648,7 +648,7 @@ function HostTreeViewPanel() {
       stopNodes(nodeList, onlyWithLaunch, true); // => true, for restart
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx],
+    [stopNodes],
   );
 
   /**
