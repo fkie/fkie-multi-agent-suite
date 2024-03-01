@@ -20,6 +20,7 @@ import {
 
 import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
 import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
+import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import { blue, grey, orange } from '@mui/material/colors';
 
@@ -93,9 +94,11 @@ function HostTreeViewItem({
   onClick,
   onDoubleClick,
   menuItems,
+  showLoggers,
   showMultipleScreen,
   showNoScreen,
   showGhostScreen,
+  onShowLoggersClick,
   onStartClick,
   onStopClick,
   onRestartClick,
@@ -366,6 +369,22 @@ function HostTreeViewItem({
               [{countChildren}]
             </Typography>
           )}
+          {showLoggers && (
+            <Tooltip title="User changed logging level" placement="left">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  if (onShowLoggersClick) {
+                    onShowLoggersClick(nodeId);
+                  }
+                }}
+              >
+                <SettingsInputCompositeOutlinedIcon
+                  style={{ fontSize: 'inherit', rotate: '90deg' }}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
           {showMultipleScreen && (
             <Tooltip title="Multiple Screens" placement="left">
               <DynamicFeedOutlinedIcon
@@ -417,6 +436,7 @@ HostTreeViewItem.defaultProps = {
   showMultipleScreen: false,
   showNoScreen: false,
   showGhostScreen: false,
+  onShowLoggersClick: null,
   onStartClick: null,
   onStopClick: null,
   onRestartClick: null,
@@ -447,9 +467,11 @@ HostTreeViewItem.propTypes = {
   onClick: PropTypes.func,
   onDoubleClick: PropTypes.func,
   menuItems: PropTypes.arrayOf(PropTypes.any),
+  showLoggers: PropTypes.bool,
   showMultipleScreen: PropTypes.bool,
   showNoScreen: PropTypes.bool,
   showGhostScreen: PropTypes.bool,
+  onShowLoggersClick: PropTypes.func,
   onStartClick: PropTypes.func,
   onStopClick: PropTypes.func,
   onRestartClick: PropTypes.func,

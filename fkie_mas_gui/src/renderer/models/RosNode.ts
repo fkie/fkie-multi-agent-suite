@@ -148,6 +148,11 @@ class RosNode {
 
   associations: string[] = [];
 
+  /** Used to store by user changed logger configuration.
+   * type: { name: string; level: string }
+   */
+  rosLoggers: {} = {};
+
   /**
    * ID of the composable/nodelet's parent
    */
@@ -206,6 +211,10 @@ class RosNode {
     this.launchPaths = launchPaths;
     this.launchPath = launchPath;
   }
+
+  getRosLoggersCount: () => number = () => {
+    return Object.keys(this.rosLoggers).length
+  };
 
   /**
    * Generates a string representation of the node

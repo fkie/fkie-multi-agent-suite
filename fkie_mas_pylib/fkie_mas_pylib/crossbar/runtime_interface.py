@@ -303,7 +303,8 @@ class SystemInformation:
         except:
             import traceback
 
-            Log.error(f"Error when create system information: {traceback.format_exc()}")
+            Log.error(
+                f"Error when create system information: {traceback.format_exc()}")
             self.system_info = {}
 
     def __str__(self):
@@ -513,6 +514,7 @@ class DiagnosticArray:
 :param status: an array of components being reported on.
 
     """
+
     def __init__(self, timestamp: float, status: []) -> None:
         self.timestamp = timestamp
         self.status = status
@@ -527,7 +529,7 @@ class DiagnosticStatus:
   :param hardware_id: a hardware unique string
   :param values: an array of values associated with the status
      """
-    
+
     # Possible levels of operations
     class LevelType:
         OK = 0
@@ -547,3 +549,22 @@ class DiagnosticStatus:
         self.hardware_id = hardware_id
         self.values = values
 
+
+class LoggerConfig:
+    """
+    Logger configuration for one of the ros node logger.
+    :param level: level of logging
+    :param name: name of the logger
+     """
+
+    # Possible levels of logging
+    class LogLevelType:
+        DEBUG = "DEBUG"
+        INFO = "INFO"
+        WARN = "WARN"
+        ERROR = "ERROR"
+        FATAL = "FATAL"
+
+    def __init__(self, level: LogLevelType, name: str) -> None:
+        self.level = level
+        self.name = name

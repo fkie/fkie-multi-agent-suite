@@ -58,6 +58,7 @@ import ScreensMapping from './ScreensMapping';
 // Other structs
 import LogEvent, { LoggingLevel } from './LogEvent';
 import LogPathItem from './LogPathItem';
+import LoggerConfig, { LogLevelType } from './LoggerConfig';
 import Result from './Result';
 
 import SubscriberEvent from './SubscriberEvent';
@@ -94,7 +95,9 @@ export {
   LaunchPublishMessage,
   LaunchReturnStatus,
   LogEvent,
+  LogLevelType,
   LogPathItem,
+  LoggerConfig,
   LoggingLevel,
   PATH_EVENT_TYPE,
   PathEvent,
@@ -118,8 +121,8 @@ export {
   SystemWarningGroup,
   URI,
   compareRosNodes,
-  getDiagnosticLevelName,
   getBaseName,
+  getDiagnosticLevelName,
   getFileAbb,
   getFileExtension,
   getFileName,

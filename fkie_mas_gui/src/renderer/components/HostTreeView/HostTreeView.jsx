@@ -57,6 +57,7 @@ function HostTreeView({
   providerNodeTree,
   onNodeSelect,
   onProviderSelect,
+  showLoggers,
   startNodes,
   stopNodes,
   restartNodes,
@@ -243,6 +244,17 @@ function HostTreeView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedItems]);
+
+  /**
+   * Callback when the show loggers floating button of a HostTreeViewItem is clicked
+   */
+  const onShowLoggersClick = useCallback(
+    (nodeId) => {
+      showLoggers(getNodeIdsFromTreeIds([nodeId]));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedItems, keyNodeList],
+  );
 
   /**
    * Callback when the start floating button of a HostTreeViewItem is clicked
@@ -470,12 +482,14 @@ function HostTreeView({
             showMultipleScreen={
               node.status === RosNodeStatus.RUNNING && node.screens?.length > 1
             }
+            showLoggers={node?.getRosLoggersCount() > 0}
             showNoScreen={
               node.status === RosNodeStatus.RUNNING && node.screens?.length < 1
             }
             showGhostScreen={
               node.status !== RosNodeStatus.RUNNING && node.screens?.length > 0
             }
+            onShowLoggersClick={onShowLoggersClick}
             onStartClick={
               node.status !== RosNodeStatus.RUNNING ? onStartClick : null
             }
@@ -524,8 +538,10 @@ function HostTreeView({
           showMultipleScreen={
             node ? node.screens && node.screens.length > 1 : false
           }
+          showLoggers={node?.getRosLoggersCount() > 0}
           showNoScreen={node ? node.screens && node.screens.length < 1 : false}
           onDoubleClick={handleDoubleClick}
+          onShowLoggersClick={onShowLoggersClick}
           onStartClick={
             onStartClick
             // (node && node.status !== RosNodeStatus.RUNNING) ||
@@ -574,6 +590,7 @@ function HostTreeView({
     [
       settingsCtx,
       handleDoubleClick,
+      onShowLoggersClick,
       onStartClick,
       onStopClick,
       onRestartClick,
@@ -675,6 +692,7 @@ function HostTreeView({
               paddingLeft={0.5}
               provider={p || null}
               onDoubleClick={handleDoubleClick}
+              onShowLoggersClick={onShowLoggersClick}
               onStartClick={onStartClick}
               onStopClick={onStopClick}
               onRestartClick={onRestartClick}
@@ -736,6 +754,7 @@ HostTreeView.defaultProps = {
   providerNodeTree: [],
   onNodeSelect: () => {},
   onProviderSelect: () => {},
+  showLoggers: () => {},
   startNodes: () => {},
   stopNodes: () => {},
   restartNodes: () => {},
@@ -745,6 +764,7 @@ HostTreeView.propTypes = {
   providerNodeTree: PropTypes.array,
   onNodeSelect: PropTypes.func,
   onProviderSelect: PropTypes.func,
+  showLoggers: PropTypes.func,
   startNodes: PropTypes.func,
   stopNodes: PropTypes.func,
   restartNodes: PropTypes.func,

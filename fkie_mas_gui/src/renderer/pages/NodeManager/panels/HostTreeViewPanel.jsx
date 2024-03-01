@@ -9,6 +9,7 @@ import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
 import StopIcon from '@mui/icons-material/Stop';
 import SubjectIcon from '@mui/icons-material/Subject';
 import TerminalIcon from '@mui/icons-material/Terminal';
@@ -54,8 +55,10 @@ import {
 } from '../../../utils/events';
 import { findIn } from '../../../utils/index';
 import FileEditorPanel from './FileEditorPanel';
+import NodeLoggerPanel from './NodeLoggerPanel';
 import ParameterPanel from './ParameterPanel';
 import SingleTerminalPanel from './SingleTerminalPanel';
+import { node } from 'prop-types';
 
 // TODO: Add settings for this
 // const IGNORED_NODES = ['rostopic_'];
@@ -271,6 +274,41 @@ function HostTreeViewPanel() {
       navCtx.setSelectedProviders(selectedProvidersLocal);
     },
     [navCtx, rosCtx],
+  );
+
+  /**
+   * Create and open a new panel with a [NodeLoggerPanel] for a given node
+   */
+  const createLoggerPanel = useCallback(
+    async (node) => {
+      const id = `node-logger-${node.name}@${node.providerName}`;
+      const title = node.name;
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          id,
+          title,
+          <NodeLoggerPanel node={node} />,
+          true,
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
+          new LayoutTabConfig(false, 'node-logger', {}),
+        ),
+      );
+    },
+    [rosCtx, SSHCtx, logCtx],
+  );
+
+    /**
+   * Start nodes from a list of itemIds
+   */
+  const createLoggerPanelFromId = useCallback(
+    (itemIds) => {
+      const nodeList = getNodesFromIds(itemIds);
+      if (nodeList.length > 0) {
+        createLoggerPanel(nodeList[0]);
+      }
+    },
+    [getNodesFromIds, createLoggerPanel],
   );
 
   /**
@@ -1101,6 +1139,7 @@ function HostTreeViewPanel() {
               launchContentList={launchContentList}
               onNodeSelect={handleNodesSelect}
               onProviderSelect={handleProviderSelect}
+              showLoggers={createLoggerPanelFromId}
               startNodes={startNodesFromId}
               stopNodes={stopNodesFromId}
               restartNodes={restartNodesFromId}
@@ -1391,6 +1430,25 @@ function HostTreeViewPanel() {
                         }}
                       >
                         <WysiwygIcon fontSize="inherit" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                {navCtx.selectedNodes?.length > 0 &&
+                  navCtx.selectedProviders?.length === 0 && (
+                    <Tooltip title="Change log level" placement="left">
+                      <IconButton
+                        size="medium"
+                        aria-label="Log Level"
+                        onClick={(event) => {
+                          getSelectedNodes().forEach((node) => {
+                            createLoggerPanel(node);
+                          });
+                        }}
+                      >
+                        <SettingsInputCompositeOutlinedIcon
+                          fontSize="inherit"
+                          sx={{ rotate: '90deg' }}
+                        />
                       </IconButton>
                     </Tooltip>
                   )}

@@ -45,6 +45,7 @@ from fkie_mas_pylib.crossbar.runtime_interface import RosProvider
 from fkie_mas_pylib.crossbar.runtime_interface import RosNode
 from fkie_mas_pylib.crossbar.runtime_interface import RosTopic
 from fkie_mas_pylib.crossbar.runtime_interface import RosService
+from fkie_mas_pylib.crossbar.runtime_interface import LoggerConfig
 from fkie_mas_pylib.crossbar.launch_interface import LaunchContent
 from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
 from fkie_mas_pylib.defines import NM_NAMESPACE
@@ -210,6 +211,19 @@ class RosStateServicer(CrossbarBaseSession):
         node_list: List[RosNode] = self._get_ros_node_list()
 
         return json.dumps(node_list, cls=SelfEncoder)
+
+    @wamp.register('ros.nodes.get_loggers')
+    def crossbar_get_loggers(self, name: str) -> str:
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', not implemented")
+        loggerConfigs: List[LoggerConfig] = []
+        return json.dumps({'result': False, 'logger': loggerConfigs, 'message': 'not implemented'}, cls=SelfEncoder)
+
+    @wamp.register('ros.nodes.set_logger_level')
+    def crossbar_set_logger_level(self, name: str, logger: List[LoggerConfig]) -> str:
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}', not implemented")
+        return json.dumps({'result': False, 'message': 'not implemented'}, cls=SelfEncoder)
 
     @wamp.register('ros.nodes.stop_node')
     def stop_node(self, name: str) -> bool:

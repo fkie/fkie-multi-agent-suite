@@ -56,7 +56,6 @@ class MASDaemon:
         self.crossbar_port = server.port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
-        self.server = None
         self._test_env = test_env
         self._version, self._date = detect_version("fkie_mas_daemon")
         self._settings = Settings(version=self._version)
@@ -81,7 +80,6 @@ class MASDaemon:
         self.file_servicer = None
         self.screen_servicer = None
         self.crossbar_loop.stop()
-        self.server.stop(3)
 
     def _update_parameter(self, settings):
         # self._verbosity = settings.param("global/verbosity", "INFO")
@@ -172,7 +170,6 @@ class MASDaemon:
         self.parameter_servicer.shutdown()
         self.file_servicer.shutdown()
         self.screen_servicer.stop()
-        self.server.stop(WAIT_TIMEOUT)
         sleep_time = 0.5
         while not shutdown_task.done() or self.screen_servicer.crossbar_connected:
             time.sleep(sleep_time)

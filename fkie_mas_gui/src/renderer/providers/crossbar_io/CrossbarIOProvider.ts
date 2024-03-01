@@ -16,6 +16,7 @@ import {
   LaunchNodeReply,
   LaunchPublishMessage,
   LogPathItem,
+  LoggerConfig,
   PathItem,
   Result,
   RosNode,
@@ -2060,6 +2061,65 @@ class CrossbarIOProvider {
     };
 
   /**
+   * Return a list with loggers for given node
+   *
+   * @param {string} node - Node name
+   * @return {Promise<LoggerConfig[]>} Returns a result
+   */
+  public getNodeLoggers: (node: string) => Promise<LoggerConfig[]> = async (
+    node,
+  ) => {
+    const result = await this.makeCall(
+      URI.ROS_NODES_GET_LOGGERS,
+      [node],
+      true,
+      true,
+    );
+    if (result[0]) {
+      return JSON.parse(result[1]);
+    }
+
+    this.logger?.debug(
+      `Provider [${this.name()}]: Error at getNodeLoggers()`,
+      `${result[2]}`,
+    );
+
+    return Promise.resolve([]);
+  };
+
+  /**
+   * Set new logger levels for a ros node
+   *
+   * @param {string} node - Node name
+   * @param {LoggerConfig[]} loggers - Node name
+   * @return {Promise<Result>} Returns a result
+   */
+  public setNodeLoggers: (
+    node: string,
+    loggers: LoggerConfig[],
+  ) => Promise<Result> = async (node, loggers) => {
+    const result = await this.makeCall(
+      URI.ROS_NODES_SET_LOGGER_LEVEL,
+      [node, loggers],
+      true,
+      true,
+    );
+    if (result[0]) {
+      return JSON.parse(result[1]);
+    }
+
+    this.logger?.debug(
+      `Provider [${this.name()}]: Error at getNodeLoggers()`,
+      `${result[2]}`,
+    );
+
+    return new Result(
+      false,
+      `Provider [${this.name()}]: Error at getNodeLoggers(): ${result[2]}`,
+    );;
+  };
+
+  /**
    * Unregister a node given a name
    *
    * @param {string} name - Node to be stopped
@@ -2378,6 +2438,7 @@ class CrossbarIOProvider {
         n.launchPath = oldNode.launchPath;
         n.group = oldNode.group;
         n.launchInfo = oldNode.launchInfo;
+        n.rosLoggers = oldNode.rosLoggers;
       }
     });
     // do not sort nodes -> start order defined by capability_group

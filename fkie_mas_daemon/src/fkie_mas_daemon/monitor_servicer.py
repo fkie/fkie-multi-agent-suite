@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import List
 import json
 import asyncio
 from autobahn import wamp
@@ -27,10 +28,20 @@ import os
 import psutil
 import signal
 import threading
+from types import SimpleNamespace
+import sys
+import rospy
+
+try:
+    from roscpp.srv import GetLoggers, SetLoggerLevel, SetLoggerLevelRequest
+except ImportError as err:
+    sys.stderr.write("Cannot import GetLoggers service definition: %s" % err)
+
 
 from fkie_mas_daemon.monitor.service import Service
 from fkie_mas_pylib.crossbar.runtime_interface import DiagnosticArray
 from fkie_mas_pylib.crossbar.runtime_interface import DiagnosticStatus
+from fkie_mas_pylib.crossbar.runtime_interface import LoggerConfig
 from fkie_mas_pylib.crossbar.runtime_interface import SystemEnvironment
 from fkie_mas_pylib.crossbar.runtime_interface import SystemInformation
 from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
@@ -133,3 +144,40 @@ class MonitorServicer(CrossbarBaseSession):
             0.5, os.kill, (os.getpid(), signal.SIGTERM))
         shutdown_timer.start()
         return json.dumps({result: result, message: message}, cls=SelfEncoder)
+
+    @wamp.register('ros.nodes.get_loggers')
+    def getLoggers(self, name: str) -> str:
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}'")
+        loggerConfigs: List[LoggerConfig] = []
+        service_name = '%s/get_loggers' % name
+        get_logger = rospy.ServiceProxy(service_name, GetLoggers)
+        resp = get_logger()
+        for logger in resp.loggers:
+            loggerConfigs.append(LoggerConfig(level=logger.level, name=logger.name))
+        return json.dumps(loggerConfigs, cls=SelfEncoder)
+
+    @wamp.register('ros.nodes.set_logger_level')
+    def setLoggerLevel(self, name: str, logger_json: List[LoggerConfig]) -> str:
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
+        # Covert input dictionary into a proper python object
+        loggers = json.loads(json.dumps(logger_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+        # request the current logger
+        service_name_get = '%s/get_loggers' % name
+        get_logger = rospy.ServiceProxy(service_name_get, GetLoggers)
+        resp = get_logger()
+        service_name_set = '%s/set_logger_level' % name
+        for lRemote in loggers:
+            # call set service only if new level
+            doSet = True
+            for lCurrent in resp.loggers:
+                if lCurrent.name == lRemote.name and lCurrent.level == lRemote.level:
+                    doSet = False
+            if doSet:
+                set_logger = rospy.ServiceProxy(
+                    service_name_set, SetLoggerLevel)
+                resultSet = set_logger(SetLoggerLevelRequest(
+                    logger=lRemote.name, level=lRemote.level))
+        return json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)

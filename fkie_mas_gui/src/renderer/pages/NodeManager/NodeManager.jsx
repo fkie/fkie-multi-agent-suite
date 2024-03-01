@@ -7,6 +7,7 @@ import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlin
 import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
 import SubjectIcon from '@mui/icons-material/Subject';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import TopicIcon from '@mui/icons-material/Topic';
@@ -339,9 +340,15 @@ function NodeManager() {
             break;
           case 'editor':
             renderValues.leading = (
-              <BorderColorIcon sx={{ fontSize: 'inherit' }} />
+              <BorderColorIcon sx={{ fontSize: 'inherit'}} />
             );
             break;
+          case 'node-logger':
+            renderValues.leading = (
+              <SettingsInputCompositeOutlinedIcon
+                sx={{ fontSize: 'inherit', rotate: '90deg' }}
+              />
+            );
           default:
             break;
         }
