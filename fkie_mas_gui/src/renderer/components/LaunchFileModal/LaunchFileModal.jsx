@@ -436,9 +436,8 @@ function LaunchFileModal({
                               }
                             }
                           });
-                          if (newIndex < 0) newIndex = 0;
-                          else if (newIndex > options.length - 1)
-                            newIndex = options.length - 1;
+                          if (newIndex < 0) newIndex = options.length - 1;
+                          else if (newIndex > options.length - 1) newIndex = 0;
                           setCurrentArgs(
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
