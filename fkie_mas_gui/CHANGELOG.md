@@ -1,5 +1,13 @@
 # Changelog
 
+
+## 1.2.0 - 01.03.2024
+
+Added panel to change log level 
+Show info if daemon version is lower then gui's version
+Prevent waiting for the timeout if daemon is not available
+Fix transport of uint8[] datatypes in echo node
+
 ## 1.1.1 - 28.02.2024
 
 Added tree view to editor
