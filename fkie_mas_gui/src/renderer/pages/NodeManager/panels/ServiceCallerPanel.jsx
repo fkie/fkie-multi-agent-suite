@@ -197,7 +197,7 @@ function ServiceCallerPanel({ serviceName, providerId }) {
   const onCopyToClipboard = useDebounceCallback(() => {
     if (!serviceStruct) return;
     const json = messageStructToString(serviceStruct, false, true);
-    navigator.clipboard.writeText(json);
+    navigator.clipboard.writeText(`${serviceType} ${json}`);
   }, 300);
 
   const getServiceStructData = useCallback(async () => {
