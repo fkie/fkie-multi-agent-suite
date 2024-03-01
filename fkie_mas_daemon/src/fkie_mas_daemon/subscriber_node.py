@@ -63,14 +63,20 @@ class MsgEncoder(json.JSONEncoder):
 
     def default(self, obj):
         result = {}
-        for key in obj.__slots__:
-            skip = False
-            if self.no_arr and isinstance(getattr(obj, key), (list, dict)):
-                skip = True
-            if self.no_str and isinstance(getattr(obj, key), str):
-                skip = True
-            if not skip:
-                result[key] = getattr(obj, key)
+        if isinstance(obj, bytes):
+            obj_bytes = [byte for byte in obj]
+            result = ', '.join(map(str,obj_bytes))
+        else:
+            for key in obj.__slots__:
+                skip = False
+                if self.no_arr and isinstance(getattr(obj, key), (list, dict, bytes)):
+                    skip = True
+                if self.no_str and isinstance(getattr(obj, key), str):
+                    skip = True
+                if skip:
+                    result[key] = ""
+                else:
+                    result[key] = getattr(obj, key)
         return result
 
 
