@@ -7,7 +7,7 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 
 import React from 'react';
 
-import { bind } from 'decko';
+import { bind, debounce } from 'decko';
 import { saveAs } from 'file-saver';
 import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
 import * as Zmodem from 'zmodem.js/src/zmodem_browser';
@@ -61,6 +61,7 @@ export class ZmodemAddon
     this.terminal = terminal;
   }
 
+  @debounce(100)
   consume(data: ArrayBuffer) {
     const { sentry, handleError } = this;
     try {
