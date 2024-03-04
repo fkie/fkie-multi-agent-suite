@@ -64,8 +64,14 @@ class MsgEncoder(json.JSONEncoder):
     def default(self, obj):
         result = {}
         if isinstance(obj, bytes):
-            obj_bytes = [byte for byte in obj]
+            #obj_bytes = [byte for byte in obj]
+            obj_bytes = []
+            for byte in obj:
+                if len(obj_bytes) >= 10:
+                    break
+                obj_bytes.append(byte)
             result = ', '.join(map(str,obj_bytes))
+            result = result + f'...(of {len(obj)} values)' 
         else:
             for key in obj.__slots__:
                 skip = False
@@ -82,7 +88,7 @@ class MsgEncoder(json.JSONEncoder):
 
 class SubscriberNode(CrossbarBaseSession):
 
-    DEFAULT_WINDOWS_SIZE = 5000
+    DEFAULT_WINDOWS_SIZE = 100
 
     def __init__(self, node_name: str, log_level: int = rospy.INFO, test_env: bool = False):
         self.parser = self._init_arg_parser()
