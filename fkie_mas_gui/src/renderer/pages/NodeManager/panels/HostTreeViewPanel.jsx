@@ -393,13 +393,12 @@ function HostTreeViewPanel() {
         // TODO: select
       }
       const launchName = getBaseName(rootLaunch);
-      const provider = rosCtx.getProviderById(node.providerId);
       const id = `editor-${node.providerId}-${rootLaunch}`;
       if (!openIds.includes(id)) {
         emitCustomEvent(
           EVENT_EDITOR_SELECT_RANGE,
           eventEditorSelectRange(
-            provider?.host(),
+            id,
             node.launchInfo.file_name,
             node.launchInfo.file_range,
           ),

@@ -16,6 +16,11 @@ import WysiwygIcon from '@mui/icons-material/Wysiwyg';
 import {
   Badge,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Stack,
   Tooltip,
@@ -26,16 +31,19 @@ import { Actions, DockLocation, Layout, Model } from 'flexlayout-react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 
-import { ConfirmModal } from '../../components';
+import { getBaseName } from 'renderer/models';
 import ExternalAppsModal from '../../components/ExternalAppsModal/ExternalAppsModal';
 import ProviderSelectionModal from '../../components/SelectionModal/ProviderSelectionModal';
 import SettingsModal from '../../components/SettingsModal/SettingsModal';
+import DraggablePaper from '../../components/UI/DraggablePaper';
 import { ElectronContext } from '../../context/ElectronContext';
 import { LoggingContext } from '../../context/LoggingContext';
+import { MonacoContext } from '../../context/MonacoContext';
 import { NavigationContext } from '../../context/NavigationContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { SSHContext } from '../../context/SSHContext';
+import useLocalStorage from '../../hooks/useLocalStorage';
 import { CmdType } from '../../providers';
 import {
   EVENT_CLOSE_COMPONENT,
@@ -45,6 +53,13 @@ import {
   eventOpenSettings,
   SETTING,
 } from '../../utils/events';
+import {
+  DEFAULT_LAYOUT,
+  LAYOUT_TAB_LIST,
+  LAYOUT_TAB_SETS,
+  LAYOUT_TABS,
+} from './layout';
+import './NodeManager.css';
 import HostTreeViewPanel from './panels/HostTreeViewPanel';
 import LoggingPanel from './panels/LoggingPanel';
 import NodesDetailsPanel from './panels/NodesDetailsPanel';
@@ -55,20 +70,11 @@ import ProviderPanel from './panels/ProviderPanel';
 import ServicesPanel from './panels/ServicesPanel';
 import TopicsPanel from './panels/TopicsPanel';
 
-import useLocalStorage from '../../hooks/useLocalStorage';
-
-import {
-  DEFAULT_LAYOUT,
-  LAYOUT_TAB_LIST,
-  LAYOUT_TAB_SETS,
-  LAYOUT_TABS,
-} from './layout';
-import './NodeManager.css';
-
 function NodeManager() {
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
+  const monacoCtx = useContext(MonacoContext);
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const SSHCtx = useContext(SSHContext);
@@ -77,7 +83,7 @@ function NodeManager() {
   const layoutRef = useRef(null);
   const [layoutComponents] = useState({});
   const [addToLayout, setAddToLayout] = useState([]);
-  const [modifiedLaunchFiles, setModifiedLaunchFiles] = useState(null);
+  const [modifiedEditorTabs, setModifiedEditorTabs] = useState([]);
 
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
@@ -94,13 +100,11 @@ function NodeManager() {
     (tabId) => {
       // check if it is an editor with modified files
       if (tabId.startsWith('editor')) {
-        const mFiles = navCtx.modifiedFiles.filter(
-          (item) => item.tabId === tabId,
-        );
-        if (mFiles.length > 0) {
+        const mTab = monacoCtx.getModifiedFilesByTab(tabId);
+        if (mTab) {
           const editorTab = model.getNodeById(tabId);
           model.doAction(Actions.selectTab(editorTab));
-          setModifiedLaunchFiles(mFiles[0]);
+          setModifiedEditorTabs([mTab]);
           return;
         }
       }
@@ -118,7 +122,7 @@ function NodeManager() {
       }
       model.doAction(Actions.deleteTab(tabId));
     },
-    [model, navCtx.modifiedFiles],
+    [model, monacoCtx.getModifiedFilesByTab],
   );
 
   useCustomEventListener(
@@ -340,7 +344,7 @@ function NodeManager() {
             break;
           case 'editor':
             renderValues.leading = (
-              <BorderColorIcon sx={{ fontSize: 'inherit'}} />
+              <BorderColorIcon sx={{ fontSize: 'inherit' }} />
             );
             break;
           case 'node-logger':
@@ -615,6 +619,7 @@ function NodeManager() {
         }}
       />
       {electronCtx.terminateSubprocesses && (
+        // TODO check for unsaved files before quit gui
         <ProviderSelectionModal
           title="Select providers to shut down"
           providers={rosCtx.providers}
@@ -631,18 +636,71 @@ function NodeManager() {
           }}
         />
       )}
-      {modifiedLaunchFiles && (
-        <ConfirmModal
-          title="Question"
-          message="There are unsaved changes. Drop?"
-          onConfirmCallback={() => {
-            model.doAction(Actions.deleteTab(modifiedLaunchFiles.tabId));
-            setModifiedLaunchFiles(null);
-          }}
-          onCancelCallback={() => {
-            setModifiedLaunchFiles(null);
-          }}
-        />
+      {modifiedEditorTabs.length > 0 && (
+        <Dialog
+          open={modifiedEditorTabs.length > 0}
+          onClose={() => setModifiedEditorTabs([])}
+          fullWidth
+          maxWidth="sm"
+          PaperComponent={DraggablePaper}
+          aria-labelledby="draggable-dialog-title"
+        >
+          <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+            Changed Files
+          </DialogTitle>
+
+          <DialogContent scroll="paper" aria-label="list">
+            <DialogContentText id="alert-dialog-description">
+              {`There are ${modifiedEditorTabs[0].uriPaths.length} unsaved files in "${getBaseName(modifiedEditorTabs[0].tabId)}" tab.`}
+            </DialogContentText>
+          </DialogContent>
+
+          <DialogActions>
+            <Button
+              color="warning"
+              onClick={() => {
+                model.doAction(Actions.deleteTab(modifiedEditorTabs[0].tabId));
+                setModifiedEditorTabs([]);
+              }}
+            >
+              Don't save
+            </Button>
+            <Button
+              color="primary"
+              onClick={() => {
+                setModifiedEditorTabs([]);
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              autoFocus
+              color="primary"
+              onClick={async() => {
+                // save all files
+                const result = await monacoCtx.saveModifiedFilesOfTabId(
+                  modifiedEditorTabs[0].tabId,
+                );
+                // TODO handle failed save
+                const failed = false;
+                result.forEach((item) => {
+                  if (!item.result) {
+                    failed = false;
+                  }
+                });
+                if (!failed) {
+                  model.doAction(
+                    Actions.deleteTab(modifiedEditorTabs[0].tabId),
+                  );
+                  setModifiedEditorTabs([]);
+                }
+              }}
+            >
+              Save all
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
     </Stack>
   );

@@ -40,6 +40,6 @@ export function eventCloseComponent(id: string) {
   return { id };
 }
 
-export function eventEditorSelectRange(fileHost: string, filePath: string, fileRange: any) {
-  return { fileHost, filePath, fileRange };
+export function eventEditorSelectRange(tabId: string, filePath: string, fileRange: any) {
+  return { tabId, filePath, fileRange };
 }

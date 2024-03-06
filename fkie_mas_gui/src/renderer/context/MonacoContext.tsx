@@ -1,173 +1,208 @@
 import { Monaco, useMonaco } from '@monaco-editor/react';
-import { Range } from 'monaco-editor/esm/vs/editor/editor.api';
-import React, { createContext, useEffect, useMemo } from 'react';
-import { FileItem, FileLanguageAssociations } from '../models';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { FileItem } from '../models';
+import LoggingContext from './LoggingContext';
+import RosContext from './RosContext';
 
-export interface ISearchResult {
-  file: string;
-  text: string;
-  lineNumber: number;
-  range: Range;
+export class ModifiedTabsInfo {
+  tabId: string = '';
+  providerId: string = '';
+  uriPaths: string[] = [];
+
+  constructor(tabId: string, providerId: string, uriPaths: string[]) {
+    this.tabId = tabId;
+    this.providerId = providerId;
+    this.uriPaths = uriPaths;
+  }
 }
+
+export class SaveResult {
+  file: string = '';
+  result: boolean = false;
+  providerId: string = '';
+  message: string = '';
+  constructor(
+    file: string,
+    result: boolean,
+    providerId: string,
+    message: string,
+  ) {
+    this.file = file;
+    this.result = result;
+    this.providerId = providerId;
+    this.message = message;
+  }
+}
+
 export interface IMonacoContext {
   monaco: Monaco | null;
-  existModelFromPath: (filePath: string) => boolean;
-  getModelFromPath: (filePath: string) => any | null;
-  createModel: (file: FileItem) => boolean;
-  updateModel: (file: FileItem) => boolean;
-  findAllTextMatches: (
-    searchText: string,
-    isRegex: boolean,
-    onlyInFiles: string[],
-  ) => ISearchResult[];
+  updateModifiedFiles: (
+    tabId: string,
+    providerId: string,
+    uriPaths: string[],
+  ) => void;
+  getModifiedTabs: () => ModifiedTabsInfo[];
+  getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined;
+  saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
 }
 
-export interface ILoggingProvider {
+export interface IMonacoProvider {
   children: React.ReactNode;
 }
 export const DEFAULT_MONACO = {
   monaco: null,
-  existModelFromPath: () => false,
-  getModelFromPath: () => false,
-  createModel: () => false,
-  updateModel: () => false,
-  findAllTextMatches: () => [],
+  updateModifiedFiles: () => null,
+  getModifiedTabs: () => [],
+  getModifiedFilesByTab: () => undefined,
+  saveModifiedFilesOfTabId: () => {
+    return Promise.resolve([]);
+  },
 };
 
 export const MonacoContext = createContext<IMonacoContext>(DEFAULT_MONACO);
 
 export function MonacoProvider({
   children,
-}: ILoggingProvider): ReturnType<React.FC<ILoggingProvider>> {
+}: IMonacoProvider): ReturnType<React.FC<IMonacoProvider>> {
   const monaco = useMonaco();
+  const rosCtx = useContext(RosContext);
+  const logCtx = useContext(LoggingContext);
+
+  const [modifiedFiles, setModifiedFiles] = useState<ModifiedTabsInfo[]>([]);
 
   useEffect(() => {
     monaco?.languages.typescript.javascriptDefaults.setEagerModelSync(true);
     monaco?.languages.typescript.typescriptDefaults.setEagerModelSync(true);
   }, [monaco]);
 
-  /**
-   * Search through all available models a given text, and return all coincidences
-   *
-   * @param {string} searchText - Text to search
-   */
-  const findAllTextMatches = (
-    searchText: string,
-    isRegex: boolean = false,
-    onlyInFiles: string[] = [],
-  ) => {
-    if (!searchText) return [];
-    if (searchText.length < 3) return [];
+  const updateModifiedFiles = useCallback(
+    (tabId: string, providerId: string, uriPaths: string[]) => {
+      if (uriPaths.length > 0) {
+        // add to the list
+        const newFilesInfo: ModifiedTabsInfo = new ModifiedTabsInfo(
+          tabId,
+          providerId,
+          uriPaths,
+        );
+        setModifiedFiles((prev) => {
+          return [...prev.filter((item) => item.tabId !== tabId), newFilesInfo];
+        });
+      } else {
+        // remove from the list
+        setModifiedFiles((prev) => {
+          return prev.filter((item) => item.tabId !== tabId);
+        });
+      }
+    },
+    [modifiedFiles, setModifiedFiles],
+  );
 
-    const searchResult: ISearchResult[] = [];
-    const includedText = new Set('');
+  const getModifiedTabs: () => ModifiedTabsInfo[] = useCallback(() => {
+    return modifiedFiles;
+  }, [modifiedFiles]);
 
-    if (searchText) {
-      monaco?.editor.getModels().forEach((model) => {
-        if (
-          onlyInFiles.length === 0 ||
-          onlyInFiles.indexOf(model.uri.path) > -1
-        ) {
-          const matches = model.findMatches(
-            searchText,
-            true,
-            isRegex,
-            false,
-            null,
-            false,
-          );
-          matches.forEach((match) => {
-            const lineNumber = match.range.startLineNumber;
-            const text = model.getLineContent(match.range.startLineNumber);
+  const getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined =
+    useCallback(
+      (tabId) => {
+        return modifiedFiles.filter((item) => item.tabId === tabId)[0];
+      },
+      [modifiedFiles],
+    );
 
-            if (!includedText.has(text)) {
-              searchResult.push({
-                file: model.uri.path,
-                text,
-                lineNumber,
-                range: match.range,
-              });
-
-              includedText.add(text);
+  const saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]> =
+    useCallback(
+      async (tabId) => {
+        if (!monaco) return Promise.resolve([]);
+        const result: SaveResult[] = [];
+        const tabInfos: ModifiedTabsInfo[] = modifiedFiles.filter(
+          (item) => item.tabId === tabId,
+        );
+        if (tabInfos.length === 0) return Promise.resolve([]);
+        const tabInfo: ModifiedTabsInfo = tabInfos[0];
+        await Promise.all(
+          tabInfo.uriPaths.map(async (uriPath) => {
+            const path = uriPath.split(':')[1];
+            const saveItem: SaveResult = new SaveResult(
+              path,
+              false,
+              tabInfo.providerId,
+              '',
+            );
+            const editorModel = monaco.editor.getModel(
+              monaco.Uri.file(uriPath),
+            );
+            if (editorModel) {
+              const path = editorModel.uri.path.split(':')[1];
+              // TODO change encoding if the file is encoded as HEX
+              const fileToSave = new FileItem(
+                '',
+                path,
+                '',
+                '',
+                editorModel.getValue(),
+              );
+              const providerObj = rosCtx.getProviderById(
+                tabInfo.providerId,
+                false,
+              );
+              if (providerObj) {
+                const saveResult =
+                  await providerObj.saveFileContent(fileToSave);
+                if (saveResult.bytesWritten > 0) {
+                  logCtx.success(`Successfully saved file`, `path: ${path}`);
+                  saveItem.result = true;
+                } else {
+                  saveItem.message = `Error while save file ${path}: ${saveResult.error}`;
+                  logCtx.error(
+                    `Error while save file ${path}`,
+                    `${saveResult.error}`,
+                  );
+                }
+              } else {
+                saveItem.message = `Provider ${tabInfo.providerId} not found`;
+                logCtx.error(
+                  `Provider ${tabInfo.providerId} not found`,
+                  `can not save file: ${path}`,
+                );
+              }
+            } else {
+              saveItem.message = 'Model not found';
             }
-          });
-        }
-      });
-    }
-    return searchResult;
-  };
-
-  /**
-   * Checks if a monaco model was already created for a given file path
-   *
-   * @param {string} filePath - file path (in the format <host>:<abs_path>)
-   */
-  const existModelFromPath = (filePath: string) => {
-    if (!monaco) return false;
-
-    if (monaco.editor.getModel(monaco.Uri.file(filePath))) return true;
-
-    return false;
-  };
-
-  /**
-   * Return a monaco model from a given path
-   *
-   * @param {string} filePath - file path (in the format <host>:<abs_path>)
-   */
-  const getModelFromPath = (filePath: string) => {
-    if (!monaco) return null;
-    if (!filePath || filePath.length === 0) return null;
-
-    return monaco.editor.getModel(monaco.Uri.file(filePath));
-  };
-
-  /**
-   * Create a new monaco model from a given file
-   *
-   * @param {FileItem} file - Original file
-   */
-  const createModel = (file: FileItem) => {
-    if (!monaco) return false;
-    const fullPath = `${file.host}:${file.path}`;
-    // create monaco model, if it does not exists yet
-    if (!existModelFromPath(fullPath)) {
-      monaco.editor.createModel(
-        file.value,
-        FileLanguageAssociations[file.extension],
-        monaco.Uri.file(fullPath),
-      );
-    }
-    return true;
-  };
-
-  /**
-   * Updates the content of an existing monaco model with a given file
-   *
-   * @param {FileItem} file - New file content
-   */
-  const updateModel = (file: FileItem) => {
-    const fullPath = `${file.host}:${file.path}`;
-    const model = getModelFromPath(fullPath);
-    if (model) {
-      console.log('updateModel', fullPath);
-      model.setValue(file.value);
-      return true;
-    }
-    return false;
-  };
+            result.push(saveItem);
+          }),
+        );
+        return Promise.resolve(result);
+      },
+      [modifiedFiles],
+    );
 
   const attributesMemo = useMemo(
     () => ({
       monaco,
-      existModelFromPath,
-      getModelFromPath,
-      createModel,
-      updateModel,
-      findAllTextMatches,
+      modifiedFiles,
+      setModifiedFiles,
+      getModifiedTabs,
+      updateModifiedFiles,
+      getModifiedFilesByTab,
+      saveModifiedFilesOfTabId,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [monaco],
+    [
+      monaco,
+      modifiedFiles,
+      setModifiedFiles,
+      getModifiedTabs,
+      updateModifiedFiles,
+      getModifiedFilesByTab,
+      saveModifiedFilesOfTabId,
+    ],
   );
 
   return (

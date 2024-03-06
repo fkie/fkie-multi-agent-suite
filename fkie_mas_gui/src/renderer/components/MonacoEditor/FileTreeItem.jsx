@@ -1,9 +1,9 @@
-import { alpha, styled } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import { Box, Stack, Typography } from '@mui/material';
 import TurnSlightLeftIcon from '@mui/icons-material/TurnSlightLeft';
+import { Box, Stack, Typography } from '@mui/material';
+import { alpha, styled } from '@mui/material/styles';
 
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 
@@ -55,6 +55,8 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
     textColor,
     labelInfo,
     labelLine,
+    modified,
+    selected,
     onClick,
     onLabelClick,
     onLinenumberClick,
@@ -62,6 +64,24 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
   },
   ref,
 ) {
+  const getLabelSx = () => {
+    if (selected && modified) {
+      return {
+        textDecoration: 'underline',
+        fontWeight: 600,
+        fontSize: '0.9em',
+      };
+    } else if (modified) {
+      return { fontWeight: 600, fontStyle: 'italic' };
+    } else if (selected) {
+      return {
+        textDecoration: 'underline',
+        fontWeight: 600,
+        fontSize: '0.9em',
+      };
+    }
+  };
+
   return (
     <FileTreeItemRoot
       label={
@@ -80,7 +100,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
               flexGrow={1}
               noWrap
               variant="body2"
-              sx={{ fontWeight: 'inherit' }}
+              sx={getLabelSx()}
               onClick={(event) => {
                 if (onLabelClick) {
                   onLabelClick(event);
@@ -88,6 +108,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
               }}
               color={textColor}
             >
+              {modified && '* '}
               {labelText}
             </Typography>
 
@@ -107,7 +128,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
                 }}
               >
                 {/* [{labelLine}] */}
-                <TurnSlightLeftIcon fontSize='inherit'/>
+                <TurnSlightLeftIcon fontSize="inherit" />
               </Typography>
             )}
           </Stack>
@@ -130,6 +151,8 @@ FileTreeItem.defaultProps = {
   labelText: '',
   labelInfo: '',
   labelLine: -1,
+  modified: false,
+  selected: false,
   onClick: null,
   onLabelClick: null,
   onLinenumberClick: null,
@@ -141,6 +164,8 @@ FileTreeItem.propTypes = {
   textColor: PropTypes.string,
   labelInfo: PropTypes.string,
   labelLine: PropTypes.number,
+  modified: PropTypes.bool,
+  selected: PropTypes.bool,
   onClick: PropTypes.func,
   onLabelClick: PropTypes.func,
   onLinenumberClick: PropTypes.func,

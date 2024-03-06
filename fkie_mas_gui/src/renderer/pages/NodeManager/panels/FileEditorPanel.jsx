@@ -1,15 +1,46 @@
+import Editor, { useMonaco } from '@monaco-editor/react';
+import CloudSyncOutlinedIcon from '@mui/icons-material/CloudSyncOutlined';
+import FolderCopyOutlinedIcon from '@mui/icons-material/FolderCopyOutlined';
+import SaveAltOutlinedIcon from '@mui/icons-material/SaveAltOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
+import {
+  Alert,
+  IconButton,
+  Link,
+  Stack,
+  ToggleButton,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
-
-import { Alert, Stack } from '@mui/material';
-import MonacoEditor from '../../../components/MonacoEditor/MonacoEditor';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCustomEventListener } from 'react-custom-events';
+import SplitPane from 'react-split-pane';
+import ExplorerTree from '../../../components/MonacoEditor/ExplorerTree';
+import {
+  createDocumentSymbols,
+  createXMLDependencyProposals,
+} from '../../../components/MonacoEditor/MonacoTools';
+import SearchTree from '../../../components/MonacoEditor/SearchTree';
+import { colorFromHostname } from '../../../components/UI/Colors';
+import SearchBar from '../../../components/UI/SearchBar';
 import { LoggingContext } from '../../../context/LoggingContext';
 import { MonacoContext } from '../../../context/MonacoContext';
+import { NavigationContext } from '../../../context/NavigationContext';
 import { RosContext } from '../../../context/RosContext';
+import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-
-
-import { LaunchIncludedFilesRequest } from '../../../models';
+import useLocalStorage from '../../../hooks/useLocalStorage';
+import {
+  FileItem,
+  FileLanguageAssociations,
+  LaunchIncludedFilesRequest,
+  getFileAbb,
+  getFileName,
+} from '../../../models';
+import { EVENT_EDITOR_SELECT_RANGE } from '../../../utils/events';
 
 function FileEditorPanel({
   tabId,
@@ -18,73 +49,555 @@ function FileEditorPanel({
   currentFilePath,
   fileRange,
 }) {
+  const monaco = useMonaco();
+  const settingsCtx = useContext(SettingsContext);
   const rosCtx = useContext(RosContext);
+  const SSHCtx = useContext(SSHContext);
   const logCtx = useContext(LoggingContext);
   const monacoCtx = useContext(MonacoContext);
-  const settingsCtx = useContext(SettingsContext);
+  const navCtx = useContext(NavigationContext);
 
-  const [currentFile, setCurrentFile] = useState(null);
-  const [includedFiles, setIncludedFiles] = useState(null);
-  const [titlePanel, setTitlePanel] = useState('Loading File...');
-  const [notificationDescription, setNotificationDescription] = useState('');
+  // ----- size handling
+  const editorRef = useRef(null);
+  const panelRef = useRef(null);
+  const infoRef = useRef(null);
+  const resizeObserver = useRef(null);
+  const componentWillUnmount = useRef(false);
+  const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage(
+    'Editor:sideBarWidth',
+    settingsCtx.get('fontSize') * 20,
+  );
+  const [savedExplorerBarHight, setSavedExplorerBarHight] = useLocalStorage(
+    'Editor:explorerBarHight',
+    settingsCtx.get('fontSize') * 20,
+  );
+  const [fontSize, setFontSize] = useState(16);
+  const [sideBarMinSize, setSideBarMinSize] = useState(
+    settingsCtx.get('fontSize') * 2,
+  );
+  const [sideBarWidth, setSideBarWidth] = useState(
+    settingsCtx.get('fontSize') * 2,
+  );
+  const [explorerBarMinSize, setExplorerBarMinSize] = useState(
+    settingsCtx.get('fontSize') * 2,
+  );
+  const [explorerBarHeight, setExplorerBarHeight] = useState(
+    settingsCtx.get('fontSize') * 2,
+  );
+  const [editorHeight, setEditorHeight] = useState(20);
+  const [editorWidth, setEditorWidth] = useState(20);
+  const [panelHeight, setPanelHeight] = useState(0);
+  const [panelWidth, setPanelWidth] = useState(0);
+  const [panelSize, setPanelSize] = useState(null);
+  // ----- size handling end
 
+  const [providerName, setProviderName] = useState('');
+  const [providerHost, setProviderHost] = useState('');
+  const [packageName, setPackageName] = useState('');
+  const [initialized, setInitialized] = useState(false);
+  const [activeModel, setActiveModel] = useState(null);
+  const [ownUriPaths, setOwnUriPaths] = useState([]);
+  const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState([]);
+  const [monacoViewStates] = useState(new Map('', ''));
+  const [clickRequest, setClickRequest] = useState(null);
 
-  // clear all component states, used when no provider/host info is available
-  const clearStates = () => {
-    setCurrentFile(null);
-    setNotificationDescription('');
+  const [enableGlobalSearch, setEnableGlobalSearch] = useState(false);
+  const [enableExplorer, setEnableExplorer] = useState(false);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+
+  const [selectionRange, setSelectionRange] = useState(null);
+  const [modifiedFiles, setModifiedFiles] = useState([]);
+  const [includedFiles, setIncludedFiles] = useState([]);
+  const [includeDecorations, setIncludeDecorations] = useState([]);
+  const [notificationDescription, setNotificationDescription] = useState('');
+  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+
+  const createUriPath = (path) => {
+    return `/${tabId}:${path}`;
+  };
+
+  /**
+   * Return a monaco model from a given path
+   * * @param {string} uriPath - file path (in the format <host>:<abs_path>)
+   */
+  const getModelFromPath = (path) => {
+    if (!monaco) return null;
+    if (!path || path.length === 0) return null;
+    let modelUri = path;
+    if (modelUri.indexOf(':') === -1) {
+      // create uriPath
+      modelUri = createUriPath(path);
+    }
+    return monaco.editor.getModel(monaco.Uri.file(modelUri));
+  };
+
+  /**
+   * Create a new monaco model from a given file
+   *
+   * @param {FileItem} file - Original file
+   */
+  const createModel = (file) => {
+    if (!monaco) return null;
+    const pathUri = monaco.Uri.file(createUriPath(file.path));
+    // create monaco model, if it does not exists yet
+    const model = monaco.editor.getModel(pathUri);
+    if (model) {
+      if (model.modified) {
+        return model;
+      }
+      model.dispose();
+    }
+    return monaco.editor.createModel(
+      file.value,
+      FileLanguageAssociations[file.extension],
+      pathUri,
+    );
+  };
+
+  /** select node definition on event. */
+  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, (data) => {
+    if (data.tabId === tabId) {
+      const model = getModelFromPath(data.filePath);
+      if (model) {
+        setEditorModel(data.filePath, data.fileRange);
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (selectionRange) {
+      if (editorRef.current) {
+        editorRef.current.revealRangeInCenter({
+          startLineNumber: selectionRange.startLineNumber,
+          endLineNumber: selectionRange.endLineNumber,
+          startColumn: selectionRange.startColumn,
+          endColumn: selectionRange.endColumn,
+        });
+
+        editorRef.current.setPosition({
+          lineNumber: selectionRange.startLineNumber,
+          column: selectionRange.startColumn,
+        });
+
+        editorRef.current.setSelection({
+          startLineNumber: selectionRange.startLineNumber,
+          endLineNumber: selectionRange.endLineNumber,
+          startColumn: selectionRange.startColumn,
+          endColumn: selectionRange.endColumn,
+        });
+
+        editorRef.current.focus();
+      }
+    }
+  }, [selectionRange, editorRef.current]);
+
+  const handleChangeExplorer = useCallback(
+    (isExpanded) => {
+      setEnableExplorer(isExpanded);
+    },
+    [setEnableExplorer],
+  );
+
+  const handleChangeSearch = useCallback(
+    (isExpanded) => {
+      setEnableGlobalSearch(isExpanded);
+    },
+    [setEnableGlobalSearch],
+  );
+
+  /**
+   * Returns include path if position is on the include declaration, overwise undefined.
+   * @param {any} position - Mouse cursor position
+   */
+  const getIncludeResource = useCallback(
+    (position) => {
+      const declarations = includeDecorations.filter((item) => {
+        return (
+          item.range.startLineNumber <= position.lineNumber &&
+          position.lineNumber <= item.range.endLineNumber &&
+          item.range.startColumn <= position.column &&
+          position.column <= item.range.endColumn
+        );
+      });
+      if (declarations.length > 0) {
+        return declarations[0].resource;
+      }
+      return undefined;
+    },
+    [includeDecorations],
+  );
+
+  const addMonacoDisposable = useCallback((disposable) => {
+    setMonacoDisposables((prev) => [...prev, disposable]);
+  }, [setMonacoDisposables]);
+
+  // update modified files in this panel and context
+  const updateModifiedFiles = useCallback(() => {
+    const newModifiedFiles = monaco.editor
+      .getModels()
+      .filter((model) => {
+        const result = model.modified && ownUriPaths.includes(model.uri.path);
+        return result;
+      })
+      .map((model) => {
+        return model.uri.path;
+      });
+    setModifiedFiles(newModifiedFiles);
+    monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
+  }, [monaco.editor, ownUriPaths, setModifiedFiles]);
+
+  // update decorations for included files
+  const updateIncludeDecorations = (model, includedFiles) => {
+    if (!model) return;
+    // prepare file decorations
+    const newIncludeDecorations = [];
+    const newDecorators = [];
+    if (includedFiles) {
+      includedFiles.forEach((f) => {
+        const matches = model.findMatches(f.raw_inc_path);
+        if (matches.length > 0) {
+          matches.forEach((match) => {
+            // Add a different style to "clickable" definitions
+            newDecorators.push({
+              range: match.range,
+              options: { inlineClassName: 'filePathDecoration' },
+            });
+            newIncludeDecorations.push({
+              resource: f.inc_path,
+              range: match.range,
+            });
+          });
+        }
+      });
+    }
+    model.deltaDecorations([], newDecorators);
+    setIncludeDecorations(newIncludeDecorations);
+  };
+
+  // set the current model to the editor based on [uriPath], and update its decorations
+  const setEditorModel = useCallback(
+    async (uriPath, range = null, forceReload = false) => {
+      if (!uriPath) return false;
+      // If model does not exist, try to fetch it
+      let model = getModelFromPath(uriPath);
+      if (!model || forceReload) {
+        const filePath =
+          uriPath.indexOf(':') === -1 ? uriPath : uriPath.split(':')[1];
+        const provider = rosCtx.getProviderById(providerId);
+        if (provider) {
+          const result = await provider.getFileContent(filePath);
+          if (result && result.file) {
+            model = createModel(result.file);
+          } else {
+            logCtx.error(
+              `Could not get file: ${filePath}`,
+              `Provider: ${provider.name()}`,
+            );
+            return false;
+          }
+        }
+      }
+
+      // get model from path if exists
+      if (!model) {
+        logCtx.error(`Could not get model for file: ${uriPath}`, '');
+        return false;
+      }
+
+      // save current view state, in case user wants to open the file again
+      // view state contains the cursor position, folding, selections etc...
+      const currentModel = editorRef.current.getModel();
+      if (currentModel) {
+        monacoViewStates.set(
+          currentModel.uri.path,
+          editorRef.current.saveViewState(),
+        );
+      }
+
+      editorRef.current.setModel(model);
+      // restore view state for current file
+      const viewState = monacoViewStates.get(model.uri.path);
+      if (viewState) {
+        editorRef.current.restoreViewState();
+      }
+      updateIncludeDecorations(model, includedFiles);
+      setActiveModel({ path: model.uri.path, modified: model.modified });
+
+      // update modified files for the user info in the info bar
+      updateModifiedFiles();
+
+      // set package name
+      const packageName = ownUriToPackageDict[model.uri.path];
+      setPackageName(packageName ? packageName : '');
+      // set range is available
+      if (range) {
+        setSelectionRange(range);
+      }
+      return true;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      monaco,
+      monacoViewStates,
+      includedFiles,
+      rosCtx,
+      providerId,
+      providerHost,
+      SSHCtx,
+      setActiveModel,
+      getModelFromPath,
+      updateModifiedFiles,
+    ],
+  );
+
+  useEffect(() => {
+    // test on each click
+    if (clickRequest) {
+      const resource = getIncludeResource(clickRequest);
+      if (resource) {
+        setEditorModel(resource);
+      }
+      setClickRequest(null);
+    }
+  }, [clickRequest, getIncludeResource, setEditorModel]);
+
+  const saveCurrentFile = useCallback(
+    async (editorModel) => {
+      const path = editorModel.uri.path.split(':')[1];
+      // TODO change encoding if the file is encoded as HEX
+      const fileToSave = new FileItem('', path, '', '', editorModel.getValue());
+      const providerObj = rosCtx.getProviderById(providerId);
+      if (providerObj) {
+        const result = await providerObj.saveFileContent(fileToSave);
+        if (result.bytesWritten > 0) {
+          logCtx.success(`Successfully saved file`, `path: ${path}`);
+          // unset modified flag of the current model
+          setActiveModel((prevModel) => {
+            const model = getModelFromPath(prevModel.path);
+            model.modified = false;
+            return { path: model.uri.path, modified: model.modified };
+          });
+          updateModifiedFiles();
+        } else {
+          logCtx.error(`Error while save file ${path}`, `${result.error}`);
+        }
+      } else {
+        logCtx.error(
+          `Provider ${providerId} not found`,
+          `can not save file: ${path}`,
+        );
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rosCtx.getProviderById, monaco, setActiveModel, getModelFromPath],
+  );
+
+  const debouncedWidthUpdate = useDebounceCallback(
+    (newWidth) => {
+      setEditorWidth(newWidth);
+    },
+    [setEditorWidth],
+    50,
+  );
+
+  useEffect(() => {
+    if (panelRef.current) {
+      debouncedWidthUpdate(
+        panelRef.current.getBoundingClientRect().width - sideBarWidth,
+      );
+    }
+  }, [sideBarWidth]);
+
+  const handleEditorChange = useCallback(
+    (value) => {
+      file.value = value;
+      // update activeModel modified flag only once
+      if (activeModel) {
+        if (!activeModel.modified) {
+          const model = getModelFromPath(activeModel.path);
+          model.modified = true;
+          setActiveModel({ path: model.uri.path, modified: model.modified });
+          updateModifiedFiles();
+        }
+      }
+    },
+    [activeModel, setActiveModel, getModelFromPath, updateModifiedFiles],
+  );
+
+  useEffect(() => {
+    // update height and width of the split panel on the left side
+    if (!(enableExplorer || enableGlobalSearch)) {
+      setSideBarWidth(sideBarMinSize);
+    } else {
+      if (sideBarWidth <= sideBarMinSize) {
+        setSideBarWidth(savedSideBarUserWidth);
+      }
+    }
+    if (enableExplorer) {
+      if (enableGlobalSearch) {
+        setExplorerBarHeight(savedExplorerBarHight);
+      } else {
+        setExplorerBarHeight(panelHeight - explorerBarMinSize);
+      }
+    } else {
+      setExplorerBarHeight(explorerBarMinSize);
+    }
+  }, [
+    enableExplorer,
+    enableGlobalSearch,
+    panelHeight,
+    setSideBarWidth,
+    setExplorerBarHeight,
+  ]);
+
+  useEffect(() => {
+    const newFontSize = settingsCtx.get('fontSize');
+    setFontSize(newFontSize);
+    setSideBarMinSize(newFontSize * 2 + 2);
+    setSideBarWidth(newFontSize * 2 + 2);
+    setExplorerBarMinSize(newFontSize * 2 + 2);
+  }, [settingsCtx.changed]);
+
+  useEffect(() => {
+    // update ownUriPaths and package names (ownUriToPackageDict)
+    const provider = rosCtx.getProviderById(providerId);
+    if (!provider.host()) return;
+    if (editorRef.current) {
+      updateIncludeDecorations(editorRef.current.getModel(), includedFiles);
+    }
+    const uriPath = createUriPath(rootFilePath);
+    const newOwnUris = [uriPath];
+    ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
+    includedFiles.forEach((file) => {
+      const uriPath = createUriPath(file.inc_path);
+      newOwnUris.push(uriPath);
+      ownUriToPackageDict[uriPath] = provider.getPackageName(file.inc_path);
+    });
+    setOwnUriPaths(newOwnUris);
+  }, [includedFiles, rootFilePath, editorRef.current]);
+
+  useEffect(() => {
+    if (!panelSize) return;
+    setEditorHeight(
+      panelSize.height - infoRef.current?.getBoundingClientRect().height,
+    );
+    setEditorWidth(panelSize.width - sideBarWidth);
+    setPanelHeight(panelSize.height);
+  }, [sideBarWidth, panelSize, infoRef.current]);
+
+  useEffect(() => {
+    // add resize observer to update size of monaco editor ad side bars
+    if (panelRef.current) {
+      resizeObserver.current = new ResizeObserver(() => {
+        setPanelSize(panelRef.current?.getBoundingClientRect());
+      });
+      resizeObserver.current.observe(panelRef.current);
+    }
+    return () => {
+      // update state to unmount and disconnect from resize observer
+      componentWillUnmount.current = true;
+      if (resizeObserver.current) {
+        resizeObserver.current.disconnect();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // This line only evaluates to true after the componentWillUnmount happens
+      if (componentWillUnmount.current) {
+        // clear monaco disposables:
+        //    disposable objects includes autocomplete, code definition and editor actions
+        monacoDisposables.forEach((d) => {
+          d?.dispose();
+        });
+        // dispose all own models
+        ownUriPaths.forEach((uriPath) => {
+          const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
+          if (model) {
+            model.dispose();
+          }
+        });
+        // remove undefined models
+        monaco.editor.getModels().forEach((model) => {
+          if (model.value === undefined) {
+            model.dispose();
+          }
+        });
+        // remove modified files from context
+        monacoCtx.updateModifiedFiles(tabId, '', []);
+      }
+    };
+  }, [monacoDisposables, monaco, ownUriPaths]);
+
+  const onKeyDown = (event) => {
+    if (event.ctrlKey && event.shiftKey && event.key === 'E') {
+      setEnableExplorer(!enableExplorer);
+    }
+    if (event.ctrlKey && event.shiftKey && event.key === 'F') {
+      setEnableGlobalSearch(!enableGlobalSearch);
+    }
+  };
+
+  const getHostStyle = () => {
+    if (providerName && settingsCtx.get('colorizeHosts')) {
+      return {
+        flexGrow: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: colorFromHostname(providerName),
+        borderBottomWidth: '0.3em',
+      };
+    }
+    return { flexGrow: 1, alignItems: 'center' };
   };
 
   // Most important function:
   //  when the component is mounted, this callback will execute following steps:
-  //  - set title of the panel
   //  - get the content of [currentFilePath]
   //  - create a monaco model (file in editor) based on [currentFilePath]
   //  - check if include files are available (for xml and launch files for example)
   //  -   if available, download all include files and create their corresponding models
   // TODO: Shall we download the models per request? the problem is then the recursive text search
-  useEffect(() => {
-    if (!monacoCtx.monaco) {
-      // monaco is not yet available
+  const loadFiles = useCallback(() => {
+    if (!editorRef.current) {
       return;
     }
-
+    if (!monaco) {
+      // monaco is not yet available
+      setNotificationDescription('monaco is not yet available');
+      return;
+    }
     if (!currentFilePath || currentFilePath.length === 0) {
       setNotificationDescription('[currentFilePath] Invalid file path');
       return;
     }
-
     if (!rootFilePath || rootFilePath.length === 0) {
       setNotificationDescription('[rootFilePath] Invalid file path');
       return;
     }
-
     // search host based on selected provider
     const provider = rosCtx.getProviderById(providerId);
-
     if (!provider) {
-      clearStates();
-      setNotificationDescription('No providers available');
+      setNotificationDescription(
+        `Provider with id ${providerId} not available`,
+      );
       return;
     }
-
     if (provider && !provider.host()) {
       logCtx.error(
         'The provider does not have configured any host.',
         'Please check your provider configuration',
       );
-
-      clearStates();
-
       setNotificationDescription(
         'The provider does not have configured any host.',
       );
       return;
     }
-
+    setProviderHost(provider.host());
+    setProviderName(provider.name());
     setNotificationDescription('Getting file from provider...');
-
+    // get file content from provider and create monaco model
     const getFileAndIncludesAsync = async () => {
       const result = await provider.getFileContent(currentFilePath);
       if (result.error) {
@@ -96,16 +609,16 @@ function FileEditorPanel({
         );
         return;
       }
-      // save files
-      setCurrentFile(result.file);
-
-      if (!monacoCtx.createModel(result.file)) {
+      const model = createModel(result.file);
+      if (!model) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
         setNotificationDescription(
           `Could not create model for: [${result.file.fileName}]`,
         );
         return;
       }
+      // setActiveModel({ path: model.uri.path, modified: model.modified });
+      setEditorModel(model.uri.path, fileRange);
 
       // Ignore "non-launch" files
       // TODO: Add parameter Here
@@ -115,20 +628,12 @@ function FileEditorPanel({
         return;
       }
 
-      if (!provider.launchGetIncludedFiles) {
-        setNotificationDescription('');
-        return;
-      }
-
       // if file is a launch or XML, try to fetch included files
       const request = new LaunchIncludedFilesRequest();
       request.path = rootFilePath;
       request.unique = true;
       request.recursive = true;
-
       const includedFilesLocal = await provider.launchGetIncludedFiles(request);
-
-      // get file content and create corresponding monaco models
 
       // filter unique file names (in case multiple imports)
       const uniqueIncludedFiles = [rootFilePath];
@@ -139,15 +644,15 @@ function FileEditorPanel({
 
       // get file content and create corresponding monaco models
       uniqueIncludedFiles.forEach(async (f) => {
-        const includedFullPath = `${provider.host()}:${f}`;
-        if (monacoCtx.existModelFromPath(includedFullPath)) {
+        // const includedFullPath = createUriPath(f)`${provider.host()}:${f}`;
+        if (getModelFromPath(f)) {
           //  model already exist, ignore
           return;
         }
-
         const { file, error } = await provider.getFileContent(f);
         if (!error) {
-          if (!monacoCtx.createModel(file)) {
+          const m = createModel(file);
+          if (!m) {
             logCtx.error(
               `Could not create model for included file: [${file.fileName}]`,
               `Host: ${provider.host()}, root file: ${file.path}`,
@@ -159,109 +664,415 @@ function FileEditorPanel({
           );
         }
       });
-
       setIncludedFiles(includedFilesLocal);
       setNotificationDescription('');
     };
     getFileAndIncludesAsync();
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monacoCtx.monaco, currentFilePath, providerId, rosCtx.providers]);
+  }, [
+    monaco,
+    editorRef.current,
+    currentFilePath,
+    providerId,
+    rosCtx.providers,
+    setEditorModel,
+    createModel,
+    getModelFromPath,
+    setProviderHost,
+    setProviderName,
+    setNotificationDescription,
+    setIncludedFiles,
+  ]);
 
-  /**
-   * Return editor definitions, based on included files.
-   *  Definitions enable the editor "Go To Definition" capability
-   *  The definitions are computed based on current mouse position and model, returns [] if not found
-   *
-   * @param {any} model - Current editor model
-   * @param {any} position - Mouse cursor position
-   */
-  const provideDefinitionFunction = useCallback(
-    (model, position) => {
-      if (!includedFiles || !monacoCtx.monaco) return [];
-
-      // check if model file exists on included files
-      const modelFiles = includedFiles.filter((f) => {
-        // check file path and line
-        const fUri = monacoCtx.monaco.Uri.file(`${f.host}:${f.path}`);
-        return fUri.path === model.uri.path;
+  // get text from clipboard for suggestions
+  let clipTextSuggest = '';
+  let clipTextReadyForSuggest = false;
+  const getClipboardTextForSuggest = async () => {
+    await navigator.clipboard.readText().then((cbText) => {
+      clipTextSuggest = cbText;
+      clipTextReadyForSuggest = true;
+      editorRef.current.trigger('anything', 'editor.action.triggerSuggest', {
+        suggestions: [],
       });
+      return true;
+    });
+  };
 
-      // no file found, means no definition found
-      if (!modelFiles || modelFiles.length === 0) {
-        return [];
+  const configureMonacoEditor = () => {
+    // !=> the goto functionality is provided by clickRequest
+
+    // personalize launch file objects
+    ['xml', 'launch'].forEach((e) => {
+      // Add Completion provider for XML and launch files
+      addMonacoDisposable(
+        monaco.languages.registerCompletionItemProvider(e, {
+          provideCompletionItems: (model, position) => {
+            const word = model.getWordUntilPosition(position);
+            const range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            };
+
+            if (clipTextReadyForSuggest) {
+              clipTextReadyForSuggest = false;
+              return {
+                suggestions: createXMLDependencyProposals(
+                  monaco,
+                  range,
+                  clipTextSuggest,
+                ),
+              };
+            }
+            getClipboardTextForSuggest();
+            return {
+              suggestions: [],
+            };
+          },
+        }),
+      );
+
+      // register definition providers
+      // this will add "Go To Definition" capability to the monacoCtx.monaco editor
+      // for file extensions "xml" and "launch"
+      // addMonacoDisposable(
+      //   monaco.languages.registerDefinitionProvider(e, {
+      //     provideDefinition: provideDefinitionFunction,
+      //   }),
+      // );
+      // !=> the goto functionality is provided by clickRequest
+
+      // Add symbols XML and launch files
+      addMonacoDisposable(
+        monaco.languages.registerDocumentSymbolProvider(e, {
+          displayName: 'ROS Symbols',
+          provideDocumentSymbols: (model, token) => {
+            return createDocumentSymbols(model, token);
+          },
+        }),
+      );
+    });
+
+    addMonacoDisposable(
+      editorRef.current.addAction({
+        id: 'save_action',
+        label: 'Save',
+        keybindings: [
+          // eslint-disable-next-line no-bitwise
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+        ],
+        precondition: null,
+        keybindingContext: null,
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.0,
+        run: async (editorInstance) => {
+          saveCurrentFile(editorInstance.getModel());
+        },
+      }),
+    );
+  };
+
+  // initialization of provider definitions
+  useEffect(() => {
+    if (initialized || !editorRef.current || !monaco) return;
+    editorRef.current.onMouseDown((event) => {
+      // handle CTRL+click to open included files
+      if (event.event.ctrlKey) {
+        setClickRequest(event.target.position);
       }
+    });
+    configureMonacoEditor();
+    setInitialized(true);
+    loadFiles();
+  }, [initialized, monaco, editorRef.current]);
 
-      const definitions = [];
-
-      modelFiles.forEach((mf) => {
-        // find the exact position of the include, and compare with [position.column]
-        const matches = model.findMatches(mf.raw_inc_path);
-        matches.forEach((match) => {
-          const { range } = match;
-          // only consider the range of the text for the definition
-          if (
-            position.lineNumber === range.startLineNumber &&
-            position.column > range.startColumn &&
-            position.column <= range.endColumn
-          ) {
-            definitions.push({
-              uri: monacoCtx.monaco.Uri.file(`${mf.host}:${mf.inc_path}`),
-              resource: monacoCtx.monaco.Uri.file(`${mf.host}:${mf.inc_path}`),
-              range: match.range,
-              options: { selection: match },
-            });
-          }
-        });
-      });
-
-      return definitions;
-    },
-    [includedFiles, monacoCtx.monaco],
-  );
-
-  const addMonacoDisposable = useCallback((disposable) => {
-    setMonacoDisposables((prev) => [...prev, disposable]);
-  }, []);
-
-  const onCloseComponent = useCallback(() => {
-    // clear monaco disposables:
-    //    disposable objects includes autocomplete, code definition and editor actions
-    monacoDisposables.forEach((d) => d?.dispose());
-  }, [monacoDisposables]);
+  const handleEditorDidMount = (editor) => {
+    editorRef.current = editor;
+  };
 
   return (
     <Stack
-      direction="column"
+      direction="row"
       height="100%"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-      overflow="none"
+      onKeyDown={onKeyDown}
+      ref={panelRef}
+      overflow="auto"
     >
-      {notificationDescription.length > 0 && (
-        <Alert
-          severity="warning"
-          style={{ minWidth: 0 }}
-          onClose={() => {
-            // setNotificationDescription('');
+      <SplitPane
+        minSize={sideBarMinSize}
+        // defaultSize={sideBarWidth}
+        size={sideBarWidth}
+        onChange={(size) => {
+          if (size != sideBarMinSize) {
+            setSavedSideBarUserWidth(size);
+          }
+          setSideBarWidth(size);
+        }}
+        split="vertical"
+      >
+        <SplitPane
+          minSize={explorerBarMinSize}
+          // defaultSize={sideBarWidth}
+          size={explorerBarHeight}
+          onChange={(size) => {
+            if (size != explorerBarHeight) {
+              setSavedExplorerBarHight(size);
+            }
+            setExplorerBarHeight(size);
           }}
+          split="horizontal"
         >
-          {notificationDescription}
-        </Alert>
-      )}
-      {includedFiles && (
-        <MonacoEditor
-          tabId={tabId}
-          file={currentFile}
-          rootFilePath={rootFilePath}
-          fileRange={fileRange}
-          providerId={providerId}
-          provideDefinitionFunction={provideDefinitionFunction}
-          addMonacoDisposable={addMonacoDisposable}
-          includedFiles={includedFiles}
-          onCloseComponent={onCloseComponent}
-          setTitlePanel={setTitlePanel}
-        />
-      )}
+          <Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Tooltip title="Explorer (Ctrl+Shift+E)" placement="right">
+                <ToggleButton
+                  size="small"
+                  value="showExplorer"
+                  selected={enableExplorer}
+                  onChange={() => {
+                    handleChangeExplorer(!enableExplorer);
+                  }}
+                >
+                  <FolderCopyOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                </ToggleButton>
+              </Tooltip>
+              {enableExplorer && sideBarWidth > fontSize * 7 && (
+                <Typography fontSize="0.8em">Explorer</Typography>
+              )}
+            </Stack>
+            {enableExplorer && (
+              <Stack
+                overflow="auto"
+                direction="column"
+                height={explorerBarHeight}
+                width={sideBarWidth}
+              >
+                <ExplorerTree
+                  tabId={tabId}
+                  providerId={providerId}
+                  rootFilePath={rootFilePath}
+                  includedFiles={includedFiles}
+                  selectedUriPath={activeModel?.path}
+                  modifiedUriPaths={modifiedFiles}
+                />
+              </Stack>
+            )}
+          </Stack>
+          <Stack paddingTop={'2px'}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Tooltip title="Search (Ctrl+Shift+F)" placement="right">
+                <ToggleButton
+                  size="small"
+                  value="showSearch"
+                  selected={enableGlobalSearch}
+                  onChange={() => handleChangeSearch(!enableGlobalSearch)}
+                >
+                  <SearchOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                </ToggleButton>
+              </Tooltip>
+              {enableGlobalSearch && (
+                <SearchBar
+                  onSearch={(value) => {
+                    setGlobalSearchTerm(value);
+                  }}
+                  placeholder="Search in all included files..."
+                  defaultValue={globalSearchTerm}
+                  searchIcon={false}
+                />
+              )}
+            </Stack>
+            {enableGlobalSearch && (
+              <Stack
+                direction="column"
+                height={
+                  panelRef.current.getBoundingClientRect().height -
+                  explorerBarHeight -
+                  fontSize * 2 -
+                  8
+                }
+                overflow="auto"
+              >
+                <SearchTree
+                  tabId={tabId}
+                  ownUriPaths={ownUriPaths}
+                  searchTerm={globalSearchTerm}
+                ></SearchTree>
+              </Stack>
+            )}
+          </Stack>
+        </SplitPane>
+        {file && (
+          <Stack
+            sx={{
+              flex: 1,
+              margin: 0,
+            }}
+            overflow="none"
+          >
+            {/* <AppBar position="static" color="transparent" elevation={0}> */}
+            <Stack
+              direction="row"
+              spacing={0.5}
+              alignItems="center"
+              ref={infoRef}
+              style={getHostStyle()}
+            >
+              <Tooltip title="Save File">
+                <span>
+                  <IconButton
+                    edge="end"
+                    disabled={!activeModel?.modified}
+                    aria-label="Save File"
+                    onClick={() => {
+                      saveCurrentFile(editorRef.current.getModel());
+                    }}
+                  >
+                    <SaveAltOutlinedIcon style={{ fontSize: '0.8em' }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Open parent file">
+                <IconButton
+                  edge="end"
+                  aria-label="Open parent file"
+                  onClick={async () => {
+                    const path = activeModel?.path.split(':')[1];
+                    const parentPaths = includedFiles.filter(
+                      (item) => path === item.inc_path,
+                    );
+                    parentPaths.forEach(async (item) => {
+                      const result = await setEditorModel(
+                        `${activeModel?.path.split(':')[0]}:${item.path}`,
+                        null,
+                        null,
+                        false,
+                      );
+                      if (result) {
+                        logCtx.success(
+                          `Parent file opened [${getFileName(path)}]`,
+                        );
+                      }
+                    });
+                  }}
+                >
+                  <UpgradeIcon style={{ fontSize: '0.8em' }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Reload current file from host">
+                <IconButton
+                  edge="end"
+                  aria-label="Reload file"
+                  onClick={async () => {
+                    const path = activeModel?.path;
+                    const result = await setEditorModel(path, null, null, true);
+                    if (result) {
+                      logCtx.success(`File reloaded [${getFileName(path)}]`);
+                    }
+                  }}
+                >
+                  <CloudSyncOutlinedIcon style={{ fontSize: '0.8em' }} />
+                </IconButton>
+              </Tooltip>
+              <Stack direction="row" width="100%">
+                <Typography
+                  noWrap
+                  style={{
+                    padding: '0.1em',
+                    fontWeight: 'normal',
+                    fontSize: '0.8em',
+                  }}
+                >
+                  {activeModel?.modified ? '*s' : ''}
+                  {getFileName(activeModel?.path)}
+                </Typography>
+                <Stack direction="row" marginLeft={0.4} spacing={0.2}>
+                  {modifiedFiles
+                    .filter((path) => path !== activeModel?.path)
+                    .map((path) => {
+                      return (
+                        <Tooltip
+                          key={path}
+                          title={`changed ${getFileName(path)}`}
+                          enterDelay={tooltipDelay}
+                          enterNextDelay={tooltipDelay}
+                        >
+                          <Link
+                            noWrap
+                            aria-label={`modified ${path}`}
+                            href="#"
+                            // underline="none"
+                            color="inherit"
+                            onClick={() => {
+                              setEditorModel(path);
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              padding="0.4em"
+                              fontSize="0.6em"
+                            >
+                              {`[*${getFileAbb(path)}]`}
+                            </Typography>
+                          </Link>
+                        </Tooltip>
+                      );
+                    })}
+                </Stack>
+                <Typography flexGrow={1}></Typography>
+                <Typography
+                  noWrap
+                  style={{
+                    padding: '0.4em',
+                    fontWeight: 100,
+                    fontSize: '0.6em',
+                  }}
+                >
+                  {packageName} &#8226; {providerName}
+                </Typography>
+              </Stack>
+            </Stack>
+            {notificationDescription.length > 0 && (
+              <Alert
+                severity="warning"
+                style={{ minWidth: 0 }}
+                onClose={() => {
+                  // setNotificationDescription('');
+                }}
+              >
+                {notificationDescription}
+              </Alert>
+            )}
+            <Editor
+              key="editor"
+              height={editorHeight}
+              width={editorWidth}
+              theme={settingsCtx.get('useDarkMode') ? 'vs-dark' : 'light'}
+              onMount={handleEditorDidMount}
+              onChange={handleEditorChange}
+              options={{
+                // to check the all possible options check this - https://github.com/microsoft/monacoRef.current-editor/blob/a5298e1/website/typedoc/monacoRef.current.d.ts#L3017
+                // TODO: make global config for this parameters
+                readOnly: false,
+                colorDecorators: true,
+                mouseWheelZoom: true,
+                scrollBeyondLastLine: false,
+                smoothScrolling: false,
+                wordWrap: 'off',
+                fontSize: settingsCtx.get('fontSize'),
+                minimap: { enabled: true },
+                selectOnLineNumbers: true,
+                'bracketPairColorization.enabled': true,
+                guides: {
+                  bracketPairs: true,
+                },
+                definitionLinkOpensInPeek: false,
+                // automaticLayout: true,
+              }}
+            />
+          </Stack>
+        )}
+      </SplitPane>
     </Stack>
   );
 }
