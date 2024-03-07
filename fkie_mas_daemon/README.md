@@ -1,4 +1,4 @@
-MAS Daemon is an instance which allows the MAS Gui a remote access to configuration files . Through the daemon the launch file can be edited, loaded and the containing nodes executed by Node Manager GUI.
+MAS Daemon is an instance which allows the MAS Gui a remote access to configuration files . Through the daemon the launch file can be edited, loaded and the containing nodes executed by MAS GUI.
 
 The daemon instance is usually launched be MAS Gui through SSH connection. After that the MAS Gui communicates with daemon using [WAMP](https://wamp-proto.org/). It needs a running [WAMP Router](https://wamp-proto.org/implementations.html#routers). We use crossbar.
 

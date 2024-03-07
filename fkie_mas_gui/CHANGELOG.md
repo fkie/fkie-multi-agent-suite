@@ -40,4 +40,4 @@ Fixed: find service definition in ros2
 
 ## 1.0.0 - 13.02.2024
 
-Add first version of Node Manager
+Add first version of MAS GUI

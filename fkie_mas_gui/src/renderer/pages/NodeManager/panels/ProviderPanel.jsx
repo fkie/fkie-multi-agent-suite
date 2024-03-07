@@ -422,20 +422,20 @@ function ProviderPanel() {
           onSearch={(value) => {
             setFilterText(value);
           }}
-          placeholder="Filter provider"
+          placeholder="Filter hosts"
           defaultValue={filterText}
           // fullWidth={true}
         />
         <ConnectToProviderModal />
         <Tooltip
-          title="Refresh provider list"
+          title="Refresh hosts list"
           placement="bottom"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
         >
           <IconButton
             edge="start"
-            aria-label="refresh provider list"
+            aria-label="refresh hosts list"
             onClick={() => rosCtx.refreshProviderList()}
           >
             <RefreshIcon sx={{ fontSize: 'inherit' }} />
@@ -443,7 +443,7 @@ function ProviderPanel() {
         </Tooltip>
       </Stack>
       <TableContainer>
-        <Table aria-label="providers table">
+        <Table aria-label="hosts table">
           <TableBody>
             {providerRowsFiltered.map((provider) => (
               <TableRow
