@@ -574,6 +574,7 @@ function NodeManager() {
       if (rosCtx.providers.length <= 0) {
         electronCtx.shutdownInterface.quitGui();
       }
+      setModifiedEditorTabs(monacoCtx.getModifiedTabs());
     }
   }, [electronCtx.terminateSubprocesses]);
 
@@ -618,24 +619,25 @@ function NodeManager() {
           console.log(`NO context for ${node.getId()}`);
         }}
       />
-      {electronCtx.terminateSubprocesses && (
-        // TODO check for unsaved files before quit gui
-        <ProviderSelectionModal
-          title="Select providers to shut down"
-          providers={rosCtx.providers}
-          onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
-          onConfirmCallback={async (providers) => {
-            if (providers && providers.length > 0) {
-              await Promise.all(
-                providers.map(async (prov) => {
-                  await prov.shutdown();
-                }),
-              );
-            }
-            electronCtx.shutdownInterface.quitGui();
-          }}
-        />
-      )}
+      {electronCtx.terminateSubprocesses &&
+        monacoCtx.getModifiedTabs().length === 0 && (
+          // TODO check for unsaved files before quit gui
+          <ProviderSelectionModal
+            title="Select providers to shut down"
+            providers={rosCtx.providers}
+            onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
+            onConfirmCallback={async (providers) => {
+              if (providers && providers.length > 0) {
+                await Promise.all(
+                  providers.map(async (prov) => {
+                    await prov.shutdown();
+                  }),
+                );
+              }
+              electronCtx.shutdownInterface.quitGui();
+            }}
+          />
+        )}
       {modifiedEditorTabs.length > 0 && (
         <Dialog
           open={modifiedEditorTabs.length > 0}
@@ -650,16 +652,25 @@ function NodeManager() {
           </DialogTitle>
 
           <DialogContent scroll="paper" aria-label="list">
-            <DialogContentText id="alert-dialog-description">
-              {`There are ${modifiedEditorTabs[0].uriPaths.length} unsaved files in "${getBaseName(modifiedEditorTabs[0].tabId)}" tab.`}
-            </DialogContentText>
+            {modifiedEditorTabs.map((tab) => {
+              return (
+                <DialogContentText
+                  key={tab.tabId}
+                  id="alert-dialog-description"
+                >
+                  {`There are ${tab.uriPaths.length} unsaved files in "${getBaseName(tab.tabId)}" tab.`}
+                </DialogContentText>
+              );
+            })}
           </DialogContent>
 
           <DialogActions>
             <Button
               color="warning"
               onClick={() => {
-                model.doAction(Actions.deleteTab(modifiedEditorTabs[0].tabId));
+                modifiedEditorTabs.forEach((tab) => {
+                  model.doAction(Actions.deleteTab(tab.tabId));
+                });
                 setModifiedEditorTabs([]);
               }}
             >
@@ -669,6 +680,7 @@ function NodeManager() {
               color="primary"
               onClick={() => {
                 setModifiedEditorTabs([]);
+                electronCtx.setTerminateSubprocesses(false);
               }}
             >
               Cancel
@@ -677,24 +689,26 @@ function NodeManager() {
             <Button
               autoFocus
               color="primary"
-              onClick={async() => {
+              onClick={async () => {
                 // save all files
-                const result = await monacoCtx.saveModifiedFilesOfTabId(
-                  modifiedEditorTabs[0].tabId,
+                const result = await Promise.all(
+                  modifiedEditorTabs.map(async (tab) => {
+                    return await monacoCtx.saveModifiedFilesOfTabId(tab.tabId);
+                  }),
                 );
-                // TODO handle failed save
-                const failed = false;
+                // TODO inform about error on failed save
+                let failed = false;
                 result.forEach((item) => {
-                  if (!item.result) {
-                    failed = false;
+                  if (item[0].result) {
+                    model.doAction(Actions.deleteTab(item[0].tabId));
+                  } else {
+                    failed = true;
                   }
                 });
-                if (!failed) {
-                  model.doAction(
-                    Actions.deleteTab(modifiedEditorTabs[0].tabId),
-                  );
-                  setModifiedEditorTabs([]);
+                if (failed) {
+                  electronCtx.setTerminateSubprocesses(false);
                 }
+                setModifiedEditorTabs([]);
               }}
             >
               Save all

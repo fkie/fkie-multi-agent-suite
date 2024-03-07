@@ -24,16 +24,19 @@ export class ModifiedTabsInfo {
 }
 
 export class SaveResult {
+  tabId: string = '';
   file: string = '';
   result: boolean = false;
   providerId: string = '';
   message: string = '';
   constructor(
+    tabId: string,
     file: string,
     result: boolean,
     providerId: string,
     message: string,
   ) {
+    this.tabId = tabId;
     this.file = file;
     this.result = result;
     this.providerId = providerId;
@@ -130,6 +133,7 @@ export function MonacoProvider({
           tabInfo.uriPaths.map(async (uriPath) => {
             const path = uriPath.split(':')[1];
             const saveItem: SaveResult = new SaveResult(
+              tabId,
               path,
               false,
               tabInfo.providerId,
