@@ -101,8 +101,45 @@ function NodeManager() {
     return tabs.length > 0;
   }
 
+  // disable float button if the gui is not running in the browser
+  function updateFloatButton(layout) {
+    if (!layout.children) return false;
+    let result = false;
+    const tabs = layout.children.forEach((item) => {
+      if (item.type === 'tab') {
+        if (item.enableFloat !== !window.CommandExecutor) {
+          item.enableFloat = !window.CommandExecutor;
+          result = true;
+        }
+      }
+      if (item.children) {
+        if (updateFloatButton(item)) {
+          result = true;
+        }
+      }
+    });
+    return result;
+  }
+
   useEffect(() => {
-    if (settingsCtx.get('resetLayout') || !hasTab(layoutJson.layout, LAYOUT_TABS.HOSTS)) {
+    // check on load if float button should be enabled or not
+    let changed = updateFloatButton(layoutJson.layout);
+    layoutJson.border?.forEach((border) => {
+      if (updateFloatButton(border.layout)) {
+        changed = true;
+      }
+    });
+    if (changed) {
+      setLayoutJson(layoutJson);
+      setModel(Model.fromJson(layoutJson));
+    }
+  }, [layoutJson, setLayoutJson, setModel]);
+
+  useEffect(() => {
+    if (
+      settingsCtx.get('resetLayout') ||
+      !hasTab(layoutJson.layout, LAYOUT_TABS.HOSTS)
+    ) {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set('resetLayout', false);
