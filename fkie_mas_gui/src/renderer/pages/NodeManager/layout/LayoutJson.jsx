@@ -62,16 +62,16 @@ const DEFAULT_LAYOUT = {
         weight: 30,
         children: [
           {
-            id: LAYOUT_TAB_SETS.PROVIDER,
+            id: LAYOUT_TAB_SETS.HOSTS,
             type: 'tabset',
             weight: 30,
             tabSetEnableClose: false,
             children: [
               {
-                id: LAYOUT_TABS.PROVIDER,
+                id: LAYOUT_TABS.HOSTS,
                 type: 'tab',
-                name: 'Providers',
-                component: LAYOUT_TABS.PROVIDER,
+                name: 'Hosts',
+                component: LAYOUT_TABS.HOSTS,
                 enableClose: false,
                 enableFloat: !window.CommandExecutor,
               },
@@ -110,10 +110,10 @@ const DEFAULT_LAYOUT = {
         tabSetEnableClose: false,
         children: [
           {
-            id: LAYOUT_TABS.HOSTS,
+            id: LAYOUT_TABS.NODES,
             type: 'tab',
-            name: 'Hosts',
-            component: LAYOUT_TABS.HOSTS,
+            name: 'Nodes',
+            component: LAYOUT_TABS.NODES,
             enableClose: false,
             enableFloat: !window.CommandExecutor,
           },

@@ -131,7 +131,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
     // inform host panel tab about loaded launch file
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
-      eventOpenComponent(LAYOUT_TABS.HOSTS, 'default', {}),
+      eventOpenComponent(LAYOUT_TABS.NODES, 'default', {}),
     );
   }, [
     rosCtx,

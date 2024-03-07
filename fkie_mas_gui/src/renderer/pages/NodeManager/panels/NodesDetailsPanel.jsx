@@ -117,7 +117,7 @@ function NodesDetailsPanel() {
             `${topic}`,
             <TopicsPanel initialSearchTerm={topic} />,
             true,
-            LAYOUT_TABS.HOSTS,
+            LAYOUT_TABS.NODES,
             new LayoutTabConfig(false, 'info'),
           ),
         );

@@ -1,6 +1,6 @@
 const LAYOUT_TAB_SETS = {
   CENTER: 'main',
-  PROVIDER: 'provider',
+  HOSTS: 'hosts',
   LEFT_TOP: 'left_top',
   LEFT_BOTTOM: 'left_bottom',
   BORDER_TOP: 'border_top',
@@ -9,9 +9,9 @@ const LAYOUT_TAB_SETS = {
 };
 
 const LAYOUT_TABS = {
-  HOSTS: 'hosts_tab',
+  NODES: 'nodes_tab',
   PACKAGES: 'packages_tab',
-  PROVIDER: 'provider_tab',
+  HOSTS: 'hosts_tab',
   PARAMETER: 'parameter_tab',
   NODE_DETAILS: 'node_details_tab',
   TOPICS: 'topics_tab',

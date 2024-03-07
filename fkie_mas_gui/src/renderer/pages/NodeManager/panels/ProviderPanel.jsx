@@ -133,7 +133,7 @@ function ProviderPanel() {
           providerName,
           <SystemInformationPanel providerId={providerId} />,
           true,
-          LAYOUT_TABS.PROVIDER,
+          LAYOUT_TABS.HOSTS,
           new LayoutTabConfig(false, 'info'),
         ),
       );

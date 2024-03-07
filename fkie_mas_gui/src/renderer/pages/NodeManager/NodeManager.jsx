@@ -87,13 +87,28 @@ function NodeManager() {
 
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
+  function hasTab(layout, tabId) {
+    if (!layout.children) return false;
+    const tabs = layout.children.filter((item) => {
+      if (item.type === 'tab' && item.id == tabId) {
+        return true;
+      }
+      if (item.children) {
+        return hasTab(item, tabId);
+      }
+      return false;
+    });
+    return tabs.length > 0;
+  }
+
   useEffect(() => {
-    if (settingsCtx.get('resetLayout')) {
+    if (settingsCtx.get('resetLayout') || !hasTab(layoutJson.layout, LAYOUT_TABS.HOSTS)) {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set('resetLayout', false);
+      logCtx.success(`Layout reset!`);
     }
-  }, [settingsCtx.changed, setLayoutJson, setModel]);
+  }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel]);
 
   /** Hide bottom panel on close of last terminal */
   const deleteTab = useCallback(
@@ -252,10 +267,10 @@ function NodeManager() {
   const factory = (node) => {
     const component = node.getComponent();
     switch (component) {
+      case LAYOUT_TABS.NODES:
+        return <HostTreeViewPanel key="nodes-panel" />;
       case LAYOUT_TABS.HOSTS:
-        return <HostTreeViewPanel key="host-panel" />;
-      case LAYOUT_TABS.PROVIDER:
-        return <ProviderPanel key="providers-panel" />;
+        return <ProviderPanel key="hosts-panel" />;
       case LAYOUT_TABS.PACKAGES:
         return <PackageExplorerPanel key="pkg-panel" />;
       case LAYOUT_TABS.NODE_DETAILS:
@@ -447,7 +462,7 @@ function NodeManager() {
   ) {
     const children = node.getChildren();
     children.forEach((child) => {
-      if (child.getId() === LAYOUT_TABS.HOSTS) {
+      if (child.getId() === LAYOUT_TABS.NODES) {
         pAddTabStickyButton(
           renderValues.stickyButtons,
           LAYOUT_TABS.TOPICS,
@@ -478,7 +493,7 @@ function NodeManager() {
           );
         }
       }
-      if (child.getId() === LAYOUT_TABS.PROVIDER) {
+      if (child.getId() === LAYOUT_TABS.HOSTS) {
         renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
       }
     });
