@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 - 07.03.2024
+
+Added save all files on close editor tabs or quit gui
+Limit built-in terminal text update to 10hz
+Modified processing of uint8[] message datatypes to send only the first 10 bytes. Changed default window size for topic statistics.
 
 ## 1.2.0 - 01.03.2024
 
