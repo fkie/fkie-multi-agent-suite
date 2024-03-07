@@ -228,9 +228,12 @@ function FileEditorPanel({
     [includeDecorations],
   );
 
-  const addMonacoDisposable = useCallback((disposable) => {
-    setMonacoDisposables((prev) => [...prev, disposable]);
-  }, [setMonacoDisposables]);
+  const addMonacoDisposable = useCallback(
+    (disposable) => {
+      setMonacoDisposables((prev) => [...prev, disposable]);
+    },
+    [setMonacoDisposables],
+  );
 
   // update modified files in this panel and context
   const updateModifiedFiles = useCallback(() => {
@@ -521,7 +524,7 @@ function FileEditorPanel({
         });
         // remove undefined models
         monaco.editor.getModels().forEach((model) => {
-          if (model.value === undefined) {
+          if (model.getValue().length === 0 && model.uri.path.indexOf(':') === -1) {
             model.dispose();
           }
         });
@@ -529,7 +532,7 @@ function FileEditorPanel({
         monacoCtx.updateModifiedFiles(tabId, '', []);
       }
     };
-  }, [monacoDisposables, monaco, ownUriPaths]);
+  }, [monacoDisposables, monaco, ownUriPaths, componentWillUnmount.current]);
 
   const onKeyDown = (event) => {
     if (event.ctrlKey && event.shiftKey && event.key === 'E') {
@@ -902,147 +905,147 @@ function FileEditorPanel({
             )}
           </Stack>
         </SplitPane>
-        {file && (
+        <Stack
+          sx={{
+            flex: 1,
+            margin: 0,
+          }}
+          overflow="none"
+        >
+          {/* <AppBar position="static" color="transparent" elevation={0}> */}
           <Stack
-            sx={{
-              flex: 1,
-              margin: 0,
-            }}
-            overflow="none"
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            ref={infoRef}
+            style={getHostStyle()}
           >
-            {/* <AppBar position="static" color="transparent" elevation={0}> */}
-            <Stack
-              direction="row"
-              spacing={0.5}
-              alignItems="center"
-              ref={infoRef}
-              style={getHostStyle()}
-            >
-              <Tooltip title="Save File">
-                <span>
-                  <IconButton
-                    edge="end"
-                    disabled={!activeModel?.modified}
-                    aria-label="Save File"
-                    onClick={() => {
-                      saveCurrentFile(editorRef.current.getModel());
-                    }}
-                  >
-                    <SaveAltOutlinedIcon style={{ fontSize: '0.8em' }} />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Open parent file">
+            <Tooltip title="Save File">
+              <span>
                 <IconButton
                   edge="end"
-                  aria-label="Open parent file"
-                  onClick={async () => {
-                    const path = activeModel?.path.split(':')[1];
-                    const parentPaths = includedFiles.filter(
-                      (item) => path === item.inc_path,
+                  disabled={!activeModel?.modified}
+                  aria-label="Save File"
+                  onClick={() => {
+                    saveCurrentFile(editorRef.current.getModel());
+                  }}
+                >
+                  <SaveAltOutlinedIcon style={{ fontSize: '0.8em' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Open parent file">
+              <IconButton
+                edge="end"
+                aria-label="Open parent file"
+                onClick={async () => {
+                  const path = activeModel?.path.split(':')[1];
+                  const parentPaths = includedFiles.filter(
+                    (item) => path === item.inc_path,
+                  );
+                  parentPaths.forEach(async (item) => {
+                    const result = await setEditorModel(
+                      `${activeModel?.path.split(':')[0]}:${item.path}`,
+                      null,
+                      null,
+                      false,
                     );
-                    parentPaths.forEach(async (item) => {
-                      const result = await setEditorModel(
-                        `${activeModel?.path.split(':')[0]}:${item.path}`,
-                        null,
-                        null,
-                        false,
-                      );
-                      if (result) {
-                        logCtx.success(
-                          `Parent file opened [${getFileName(path)}]`,
-                        );
-                      }
-                    });
-                  }}
-                >
-                  <UpgradeIcon style={{ fontSize: '0.8em' }} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Reload current file from host">
-                <IconButton
-                  edge="end"
-                  aria-label="Reload file"
-                  onClick={async () => {
-                    const path = activeModel?.path;
-                    const result = await setEditorModel(path, null, null, true);
                     if (result) {
-                      logCtx.success(`File reloaded [${getFileName(path)}]`);
-                    }
-                  }}
-                >
-                  <CloudSyncOutlinedIcon style={{ fontSize: '0.8em' }} />
-                </IconButton>
-              </Tooltip>
-              <Stack direction="row" width="100%">
-                <Typography
-                  noWrap
-                  style={{
-                    padding: '0.1em',
-                    fontWeight: 'normal',
-                    fontSize: '0.8em',
-                  }}
-                >
-                  {activeModel?.modified ? '*s' : ''}
-                  {getFileName(activeModel?.path)}
-                </Typography>
-                <Stack direction="row" marginLeft={0.4} spacing={0.2}>
-                  {modifiedFiles
-                    .filter((path) => path !== activeModel?.path)
-                    .map((path) => {
-                      return (
-                        <Tooltip
-                          key={path}
-                          title={`changed ${getFileName(path)}`}
-                          enterDelay={tooltipDelay}
-                          enterNextDelay={tooltipDelay}
-                        >
-                          <Link
-                            noWrap
-                            aria-label={`modified ${path}`}
-                            href="#"
-                            // underline="none"
-                            color="inherit"
-                            onClick={() => {
-                              setEditorModel(path);
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              padding="0.4em"
-                              fontSize="0.6em"
-                            >
-                              {`[*${getFileAbb(path)}]`}
-                            </Typography>
-                          </Link>
-                        </Tooltip>
+                      logCtx.success(
+                        `Parent file opened [${getFileName(path)}]`,
                       );
-                    })}
-                </Stack>
-                <Typography flexGrow={1}></Typography>
-                <Typography
-                  noWrap
-                  style={{
-                    padding: '0.4em',
-                    fontWeight: 100,
-                    fontSize: '0.6em',
-                  }}
-                >
-                  {packageName} &#8226; {providerName}
-                </Typography>
-              </Stack>
-            </Stack>
-            {notificationDescription.length > 0 && (
-              <Alert
-                severity="warning"
-                style={{ minWidth: 0 }}
-                onClose={() => {
-                  // setNotificationDescription('');
+                    }
+                  });
                 }}
               >
-                {notificationDescription}
-              </Alert>
-            )}
+                <UpgradeIcon style={{ fontSize: '0.8em' }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Reload current file from host">
+              <IconButton
+                edge="end"
+                aria-label="Reload file"
+                onClick={async () => {
+                  const path = activeModel?.path;
+                  const result = await setEditorModel(path, null, null, true);
+                  if (result) {
+                    logCtx.success(`File reloaded [${getFileName(path)}]`);
+                  }
+                }}
+              >
+                <CloudSyncOutlinedIcon style={{ fontSize: '0.8em' }} />
+              </IconButton>
+            </Tooltip>
+            <Stack direction="row" width="100%">
+              <Typography
+                noWrap
+                style={{
+                  padding: '0.1em',
+                  fontWeight: 'normal',
+                  fontSize: '0.8em',
+                }}
+              >
+                {activeModel?.modified ? '*s' : ''}
+                {getFileName(activeModel?.path)}
+              </Typography>
+              <Stack direction="row" marginLeft={0.4} spacing={0.2}>
+                {modifiedFiles
+                  .filter((path) => path !== activeModel?.path)
+                  .map((path) => {
+                    return (
+                      <Tooltip
+                        key={path}
+                        title={`changed ${getFileName(path)}`}
+                        enterDelay={tooltipDelay}
+                        enterNextDelay={tooltipDelay}
+                      >
+                        <Link
+                          noWrap
+                          aria-label={`modified ${path}`}
+                          href="#"
+                          // underline="none"
+                          color="inherit"
+                          onClick={() => {
+                            setEditorModel(path);
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            padding="0.4em"
+                            fontSize="0.6em"
+                          >
+                            {`[*${getFileAbb(path)}]`}
+                          </Typography>
+                        </Link>
+                      </Tooltip>
+                    );
+                  })}
+              </Stack>
+              <Typography flexGrow={1}></Typography>
+              <Typography
+                noWrap
+                style={{
+                  padding: '0.4em',
+                  fontWeight: 100,
+                  fontSize: '0.6em',
+                }}
+              >
+                {packageName} &#8226; {providerName}
+              </Typography>
+            </Stack>
+          </Stack>
+          {notificationDescription.length > 0 && (
+            <Alert
+              severity="warning"
+              style={{ minWidth: 0 }}
+              onClose={() => {
+                setNotificationDescription('');
+              }}
+            >
+              {notificationDescription}
+            </Alert>
+          )}
+          {/* {activeModel && ( */}
             <Editor
               key="editor"
               height={editorHeight}
@@ -1070,8 +1073,8 @@ function FileEditorPanel({
                 // automaticLayout: true,
               }}
             />
-          </Stack>
-        )}
+          {/* // )} */}
+        </Stack>
       </SplitPane>
     </Stack>
   );
