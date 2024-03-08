@@ -16,7 +16,6 @@ function SystemInformationPanel({ providerId }) {
   const [systemInfoContent, setSystemInfoContent] = useState(null);
   const [provider, setProvider] = useState(null);
   const [providerDetails, setProviderDetails] = useState({});
-  const [providerConfiguration, setProviderConfiguration] = useState({});
   const [providerWarnings, setProviderWarnings] = useState([]);
   const [filter, setFilter] = useState('');
 
@@ -96,9 +95,6 @@ function SystemInformationPanel({ providerId }) {
       infoContent['Daemon version'] =
         `${provider.daemonVersion.version} (${provider.daemonVersion.date})`;
       setProviderDetails(filterNestObject(infoContent));
-      setProviderConfiguration(
-        filterNestObject(rosCtx.getProviderLaunchConfig(providerId)),
-      );
       // join warnings to one list
       let warnings = [];
       provider.warnings.forEach((w) => {
@@ -107,7 +103,7 @@ function SystemInformationPanel({ providerId }) {
       setProviderWarnings(warnings);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, rosCtx.getProviderLaunchConfig, filter]);
+  }, [provider, filter]);
 
   useEffect(() => {
     setProvider(rosCtx.getProviderById(providerId));
@@ -168,27 +164,6 @@ function SystemInformationPanel({ providerId }) {
                 settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
               }
               src={providerDetails}
-              collapseStringsAfterLength={100}
-              displayObjectSize={false}
-              enableClipboard
-              indentWidth={2}
-              displayDataTypes={false}
-              iconStyle="triangle"
-              quotesOnKeys={false}
-              sortKeys
-            />
-          </Stack>
-        )}
-        {providerConfiguration && (
-          <Stack sx={{ width: '100%' }}>
-            <h5>Provider Launch Configuration</h5>
-            <ReactJson
-              name={false}
-              collapsed={1}
-              theme={
-                settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
-              }
-              src={providerConfiguration}
               collapseStringsAfterLength={100}
               displayObjectSize={false}
               enableClipboard

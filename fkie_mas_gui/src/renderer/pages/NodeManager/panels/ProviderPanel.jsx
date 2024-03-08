@@ -2,6 +2,13 @@ import { useDebounceCallback } from '@react-hook/debounce';
 import { useContext, useEffect, useReducer, useState } from 'react';
 import semver from 'semver';
 
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import JoinFullIcon from '@mui/icons-material/JoinFull';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
   Button,
   CircularProgress,
@@ -17,15 +24,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import JoinFullIcon from '@mui/icons-material/JoinFull';
-import LinkIcon from '@mui/icons-material/Link';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import UpgradeIcon from '@mui/icons-material/Upgrade';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import packageJson from '../../../../../package.json';
 
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
@@ -54,7 +52,6 @@ import {
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import SingleTerminalPanel from './SingleTerminalPanel';
 
-import OverflowMenuProvider from './OverflowMenuProvider';
 import SystemInformationPanel from './SystemInformationPanel';
 
 function ProviderPanel() {
@@ -103,13 +100,10 @@ function ProviderPanel() {
   }, [rosCtx.providers, filterText, debouncedCallbackFilterText]);
 
   useEffect(() => {
-    if (rosCtx.providerLaunches?.length === 0) {
-      if (rosCtx.rosInfo?.version) {
-        settingsCtx.set('rosVersion', rosCtx.rosInfo.version);
-      }
+    if (rosCtx.providers.length === 0) {
       emitCustomEvent(EVENT_OPEN_CONNECT, {});
     }
-  }, [rosCtx.rosInfo]);
+  }, [rosCtx.rosInfo, rosCtx.providers]);
 
   useCustomEventListener(EVENT_PROVIDER_ACTIVITY, (data) => {
     providersActivity.set(data.provider.id, data.active);
@@ -140,65 +134,8 @@ function ProviderPanel() {
       return;
     }
     if (actionType === 'DELETE') {
-      rosCtx.deleteProviderConfig(providerId);
+      // rosCtx.removeProvider(providerId);
     }
-  };
-
-  const changeAutoConnect = (provider, enabled) => {
-    const config = rosCtx.getProviderLaunchConfig(provider.id);
-    if (config) {
-      config.autoConnect = enabled;
-      rosCtx.saveProviderConfig(config);
-      forceUpdate();
-    }
-  };
-
-  const getAutoConnectButton = (provider) => {
-    const config = rosCtx.getProviderLaunchConfig(provider.id);
-    let autoConnect = false;
-    if (config) {
-      autoConnect = config.autoConnect;
-      if (autoConnect) {
-        return (
-          <Tooltip title="Connect on start enabled" placement="bottom">
-            <IconButton
-              color="primary"
-              onClick={() => {
-                changeAutoConnect(provider, false);
-              }}
-              size="small"
-            >
-              <LinkIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        );
-      }
-      return (
-        <Tooltip title="Connect on start disabled" placement="bottom">
-          <IconButton
-            color="default"
-            onClick={() => {
-              changeAutoConnect(provider, true);
-            }}
-            size="small"
-          >
-            <LinkOffIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
-      );
-    }
-    return (
-      <Tooltip title="Discovered provider can't be changed" placement="bottom">
-        <IconButton
-          // style={{ color: 'SandyBrown' }}
-          color="default"
-          disabled={false}
-          size="small"
-        >
-          <LinkIcon fontSize="inherit" />
-        </IconButton>
-      </Tooltip>
-    );
   };
 
   const generateStatusView = (provider) => {
@@ -207,7 +144,12 @@ function ProviderPanel() {
       case ConnectionState.STATES.CROSSBAR_REGISTERED:
       case ConnectionState.STATES.CONNECTING:
         return (
-          <Stack direction="row" alignItems="center" spacing="0.5em">
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing="0.5em"
+            paddingRight="0.5em"
+          >
             <Tooltip title="Connecting" placement="bottom">
               <span style={{ color: 'blue' }}>connecting</span>
             </Tooltip>
@@ -227,7 +169,12 @@ function ProviderPanel() {
         );
       case ConnectionState.STATES.STARTING:
         return (
-          <Stack direction="row" alignItems="center" spacing="0.5em">
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing="0.5em"
+            paddingRight="0.5em"
+          >
             <div style={{ color: 'blue' }}>{provider.connectionState}</div>
             <CircularProgress size="1em" />
           </Stack>
@@ -453,9 +400,9 @@ function ProviderPanel() {
                   padding: 0,
                 }}
               >
-                <TableCell style={{ padding: 0 }}>
+                {/* <TableCell style={{ padding: 0 }}>
                   {getAutoConnectButton(provider)}
-                </TableCell>
+                </TableCell> */}
                 <TableCell
                   style={{
                     padding: 2,
@@ -567,12 +514,31 @@ function ProviderPanel() {
                   {generateStatusView(provider)}
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
+                  {![
+                    ConnectionState.STATES.STARTING,
+                    ConnectionState.STATES.CONNECTING,
+                    ConnectionState.STATES.CONNECTED,
+                  ].includes(provider.connectionState) && (
+                    <Tooltip title="Remove host" placement="bottom">
+                      <IconButton
+                        color="error"
+                        onClick={() => {
+                          rosCtx.removeProvider(provider.id);
+                        }}
+                        size="small"
+                      >
+                        <DeleteOutlineOutlinedIcon fontSize="inherit" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </TableCell>{' '}
+                {/* <TableCell style={{ padding: 0 }}>
                   <OverflowMenuProvider
                     onClick={onProviderMenuClick}
                     providerId={provider.id}
                     providerName={provider.name()}
                   />
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             ))}
           </TableBody>

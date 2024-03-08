@@ -138,7 +138,7 @@ function NodeManager() {
   useEffect(() => {
     if (
       settingsCtx.get('resetLayout') ||
-      !hasTab(layoutJson.layout, LAYOUT_TABS.HOSTS)
+      !hasTab(layoutJson.layout, LAYOUT_TABS.NODES)
     ) {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));

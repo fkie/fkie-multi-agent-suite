@@ -10,8 +10,9 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HideSourceIcon from '@mui/icons-material/HideSource';
+import ComputerIcon from '@mui/icons-material/Computer';
 import Label from '@mui/icons-material/Label';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+// import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { ParameterTreeItem } from '../../../components';
@@ -327,6 +328,7 @@ export default function ParameterPanel({ nodes, providers }) {
   const getIcon = (obj) => {
     if (Object.hasOwn(obj, 'isLocalHost')) {
       // it is CrossbarIOProvider
+      return ComputerIcon;
       return PrecisionManufacturingIcon;
     }
     if (Object.hasOwn(obj, 'system_node')) {

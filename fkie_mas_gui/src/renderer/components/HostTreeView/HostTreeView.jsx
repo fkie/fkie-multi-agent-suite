@@ -5,17 +5,17 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import ChangeCircleOutlinedIcon from '@mui/icons-material/ChangeCircleOutlined';
 import HideSourceIcon from '@mui/icons-material/HideSource';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import ComputerIcon from '@mui/icons-material/Computer';
+// import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { blue, green, grey, red } from '@mui/material/colors';
 import { TreeView } from '@mui/x-tree-view';
 import { emitCustomEvent } from 'react-custom-events';
 import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
 import { SettingsContext } from '../../context/SettingsContext';
-import { CmdType } from '../../providers';
-
 import { LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
 import SingleTerminalPanel from '../../pages/NodeManager/panels/SingleTerminalPanel';
+import { CmdType } from '../../providers';
 import { generateUniqueId } from '../../utils';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
 import { colorFromHostname } from '../UI/Colors';
@@ -681,14 +681,10 @@ function HostTreeView({
                 createSingleTerminalCmdPanel(p.id, cmd);
               }}
               labelText={p.name()}
-              labelIcon={
-                providerIsAvailable
-                  ? PrecisionManufacturingIcon
-                  : HideSourceIcon
-              }
-              iconColor={providerIsAvailable ? blue[700] : red[700]}
-              color={providerIsAvailable ? blue[700] : red[700]}
-              bgColor={providerIsAvailable ? blue[200] : red[200]}
+              labelIcon={providerIsAvailable ? ComputerIcon : HideSourceIcon}
+              iconColor={providerIsAvailable ? grey[700] : red[700]}
+              color={providerIsAvailable ? grey[700] : red[700]}
+              bgColor={providerIsAvailable ? grey[200] : red[200]}
               paddingLeft={0.5}
               provider={p || null}
               onDoubleClick={handleDoubleClick}

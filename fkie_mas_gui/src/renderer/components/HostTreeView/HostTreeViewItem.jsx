@@ -3,6 +3,13 @@ import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 import PropTypes from 'prop-types';
 import { useContext, useRef, useState } from 'react';
 
+import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
+import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
+import StopIcon from '@mui/icons-material/Stop';
+import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import {
   Box,
   ClickAwayListener,
@@ -17,17 +24,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-
-import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
-import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
-import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
-import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import { blue, grey, orange } from '@mui/material/colors';
-
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import StopIcon from '@mui/icons-material/Stop';
-
 import { SettingsContext } from '../../context/SettingsContext';
 import ContentComponentItemTree from '../ContentComponentItemTree/ContentComponentItemTree';
 import OverflowMenu from '../UI/OverflowMenu';

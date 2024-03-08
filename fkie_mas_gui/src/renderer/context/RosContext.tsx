@@ -13,12 +13,14 @@ import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 import {
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_PATH_EVENT,
+  EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_ROS_NODES,
   EVENT_PROVIDER_SCREENS,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
   EventProviderDiscovered,
   EventProviderPathEvent,
+  EventProviderRemoved,
   EventProviderRosNodes,
   EventProviderScreens,
   EventProviderState,
@@ -35,7 +37,6 @@ import {
   ReloadFileAlertComponent,
   RestartNodesAlertComponent,
 } from '../components/UI';
-import useLocalStorage from '../hooks/useLocalStorage';
 import {
   LaunchArgument,
   LaunchLoadRequest,
@@ -74,11 +75,8 @@ export interface IRosProviderContext {
     forceStartWithDefault: boolean,
   ) => Promise<boolean>;
   startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean>;
-
+  removeProvider: (providerId: string) => void;
   getProviderName: (providerId: string) => string;
-  getProviderLaunchConfig: (
-    providerId: string,
-  ) => ProviderLaunchConfiguration | undefined;
   refreshProviderList: () => void;
   closeProviders: () => void;
   updateNodeList: (providerId: string) => void;
@@ -102,8 +100,6 @@ export interface IRosProviderContext {
     msg: SubscriberFilter,
   ) => void;
   isLocalHost: (host: string) => void;
-  saveProviderConfig: (cfg: ProviderLaunchConfiguration) => void;
-  deleteProviderConfig: (providerId: string) => void;
 }
 
 export const DEFAULT = {
@@ -118,9 +114,8 @@ export const DEFAULT = {
   connectToProvider: () => new Promise<false>(() => {}),
   startProvider: () => new Promise<boolean>(() => {}),
   startConfig: () => new Promise<boolean>(() => {}),
-
+  removeProvider: () => null,
   getProviderName: () => '',
-  getProviderLaunchConfig: () => undefined,
   refreshProviderList: () => {},
   closeProviders: () => {},
   updateNodeList: () => {},
@@ -132,8 +127,6 @@ export const DEFAULT = {
   unregisterSubscriber: () => null,
   updateFilterRosTopic: () => null,
   isLocalHost: () => null,
-  saveProviderConfig: () => null,
-  deleteProviderConfig: () => null,
 };
 
 interface IRosProviderComponent {
@@ -156,8 +149,6 @@ export function RosProviderReact(
   const { enqueueSnackbar } = useSnackbar();
 
   const [initialized, setInitialized] = useState(DEFAULT.initialized);
-  const [initializedSystem, setInitializedSystem] = useState(false);
-  const [initializedProviders, setInitializedProviders] = useState(false);
   const [rosInfo, setRosInfo] = useState<IROSInfo | null>(null);
   const [systemInfo, setSystemInfo] = useState<ISystemInfo | null>(null);
   const [multimasterManager, setMultimasterManager] =
@@ -169,12 +160,6 @@ export function RosProviderReact(
   const [providersConnected, setProvidersConnected] = useState<
     CrossbarIOProvider[]
   >([]);
-  const [providerLaunches, setProviderLaunches] = useLocalStorage<
-    ProviderLaunchConfiguration[]
-  >('Providers:providerLaunches', []);
-  const [providerLaunchesMap, setProviderLaunchesMap] = useState<
-    Map<string, ProviderLaunchConfiguration>
-  >(new Map());
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(
     DEFAULT.mapProviderRosNodes,
@@ -207,11 +192,8 @@ export function RosProviderReact(
     setProviders(
       providers.filter((prov) => {
         // remove provider deleted by user
-        const connectedOrStored =
-          prov.connectionState === ConnectionState.STATES.CONNECTED ||
-          providerLaunchesMap.get(prov.id);
         return (
-          (prov.discovered === undefined && connectedOrStored) ||
+          prov.discovered === undefined ||
           prov.discovered?.length ||
           prov.connectionState === ConnectionState.STATES.CONNECTED
         );
@@ -229,57 +211,30 @@ export function RosProviderReact(
         return false;
       }),
     );
-  }, [providers, providerLaunchesMap, setProvidersConnected, setProviders]);
+  }, [providers, setProvidersConnected, setProviders]);
 
-  /** Save configuration which are loaded into provider panel. */
-  const saveProviderConfig = useCallback(
-    (cfg: ProviderLaunchConfiguration) => {
-      setProviderLaunches([
-        ...providerLaunches.filter((prov) => {
-          return prov.host !== cfg.host || prov.port !== cfg.port;
-        }),
-        cfg,
-      ]);
-    },
-    [providerLaunches, setProviderLaunches],
-  );
-
-  /** Delete start configuration and remove provider for given provider ID */
-  const deleteProviderConfig = useCallback(
-    (providerId: string) => {
-      // get associated configuration with given provider ID
-      const provLaunch = providerLaunchesMap.get(providerId);
-      if (provLaunch) {
-        // remove configuration
-        setProviderLaunches(
-          providerLaunches.filter((item) => {
-            return !(
-              item.host === provLaunch.host && item.port === provLaunch.port
-            );
-          }),
-        );
-        providerLaunchesMap.delete(providerId);
-      }
-      // delete provider
-      setProviders((currProv) => [
-        ...currProv.filter((item) => {
-          if (item.id === providerId) {
-            item.close();
+  /**
+   * Trigger updateLaunchContent() of the provider.
+   */
+  const removeProvider = useCallback(
+    async (providerId: string) => {
+      logCtx.debug(
+        `Triggering update of ROS launch files from ${providerId}`,
+        '',
+      );
+      setProviders((prev) =>
+        prev.filter((prov) => {
+          if (prov.id === providerId) {
+            prov.close();
             return false;
           }
           return true;
         }),
-      ]);
-      // remove connected provider
-      clearProviders();
+      );
+      const provider = getProviderById(providerId);
+      await provider?.updateLaunchContent();
     },
-    [
-      providerLaunches,
-      providerLaunchesMap,
-      setProviders,
-      setProviderLaunches,
-      clearProviders,
-    ],
+    [logCtx, setProviders],
   );
 
   /** Returns true if given host is one of local IPv4 addresses and local host names.  */
@@ -308,10 +263,6 @@ export function RosProviderReact(
     },
     [providers],
   );
-
-  const getProviderLaunchConfig = (providerId: string) => {
-    return providerLaunchesMap.get(providerId);
-  };
 
   /**
    * Search and return a provider using its host name
@@ -369,24 +320,6 @@ export function RosProviderReact(
     [providers],
   );
 
-  const getProviderLaunchConfigByHost = useCallback(
-    (host: string, port: number) => {
-      const result: ProviderLaunchConfiguration[] = providerLaunches.filter(
-        (cfg: ProviderLaunchConfiguration) => {
-          return (
-            cfg.host === host &&
-            ((port === cfg.port || port) === 0 || cfg.port === 0)
-          );
-        },
-      );
-      if (result.length === 1) {
-        return result[0];
-      }
-      return undefined;
-    },
-    [providerLaunches],
-  );
-
   /**
    * Trigger updateRosNodes() of the provider.
    */
@@ -425,7 +358,6 @@ export function RosProviderReact(
    */
   const closeProviders = useCallback(() => {
     providers.forEach((prov) => {
-      console.log(`closeProviders: Closing provider [${prov.name()}]`);
       prov.close();
     });
   }, [providers]);
@@ -675,9 +607,10 @@ export function RosProviderReact(
               logCtx,
             );
             provider.isLocalHost = isLocal;
+            provider.startConfiguration = config;
             // add provider using add queue
             setProvidersAddQueue((oldValues) => [...oldValues, provider]);
-            return false;
+            // return false;
           }
 
           if (!isLocal && !credential) {
@@ -708,27 +641,66 @@ export function RosProviderReact(
             config.terminal.enable = true;
           }
 
+          provider.setConnectionState(ConnectionState.STATES.STARTING, '');
           // Find running system nodes
           const systemNodes = provider.rosNodes.filter((n) => n.system_node);
 
-          // Restart Daemon
-          if (config.daemon.enable) {
-            if (config.forceRestart) {
-              const daemonNode = systemNodes.find(
+          if (config.forceRestart && systemNodes?.length > 0) {
+            // stop all requested system nodes, daemon as last node
+            let nodesToStop = [];
+            let syncNode = undefined;
+            let daemonNode = undefined;
+            let discoveryNode = undefined;
+            if (config.sync.enable) {
+              syncNode = systemNodes.find(
+                (n) =>
+                  n.id.includes('mas_sync') || n.id.includes('master_sync'),
+              );
+            }
+            if (config.daemon.enable) {
+              daemonNode = systemNodes.find(
                 (n) =>
                   n.id.includes('mas_daemon') ||
                   n.id.includes('node_manager_daemon'),
               );
-              if (daemonNode && provider) {
-                logCtx.debug(
-                  `Stopping running NodeManager-Daemon on host ${config.host}`,
-                  '',
-                );
-                await provider.stopNode(daemonNode.id);
-                // wait a little bit until the ros node is unregistered
-                await delay(2000);
+            }
+            if (config.discovery.enable) {
+              discoveryNode = systemNodes.find(
+                (n) =>
+                  n.id.includes('mas_discovery') ||
+                  n.id.includes('master_discovery'),
+              );
+              if (discoveryNode) {
+                if (config.rosVersion === '1') {
+                  nodesToStop.push(discoveryNode);
+                } else {
+                  nodesToStop.push(discoveryNode);
+                }
               }
             }
+            // we have to stop in right order to be able to use stop_node() method of the provider
+            if (config.rosVersion === '1') {
+              nodesToStop = [syncNode, daemonNode, discoveryNode];
+            } else {
+              nodesToStop = [syncNode, discoveryNode, daemonNode];
+            }
+            await Promise.all(
+              nodesToStop.map(async (node) => {
+                if (node) {
+                  logCtx.debug(
+                    `Stopping running ${node.name} on host '${config.host}'`,
+                    '',
+                  );
+                  await provider.stopNode(node.id);
+                }
+              }),
+            );
+            // wait a little bit until the ros node is unregistered
+            await delay(2000);
+          }
+
+          // Start Daemon
+          if (config.daemon.enable) {
             logCtx.debug(
               `Starting NodeManager-Daemon on host '${config.host}'`,
               '',
@@ -753,22 +725,6 @@ export function RosProviderReact(
           }
           // Restart Discovery
           if (config.discovery.enable) {
-            if (config.forceRestart) {
-              const discoveryNode = systemNodes.find(
-                (n) =>
-                  n.id.includes('mas_discovery') ||
-                  n.id.includes('master_discovery'),
-              );
-              if (discoveryNode && provider) {
-                logCtx.debug(
-                  `Stopping running Multimaster-Discovery on host '${config.host}'`,
-                  '',
-                );
-                await provider.stopNode(discoveryNode.id);
-                // wait a little bit until the ros node is unregistered
-                await delay(2000);
-              }
-            }
             logCtx.debug(
               `Starting Multimaster-Discovery on host '${config.host}'`,
               '',
@@ -799,21 +755,6 @@ export function RosProviderReact(
 
           // Restart Sync
           if (config.sync.enable) {
-            if (config.forceRestart) {
-              const syncNode = systemNodes.find(
-                (n) =>
-                  n.id.includes('mas_sync') || n.id.includes('master_sync'),
-              );
-              if (syncNode && provider) {
-                logCtx.debug(
-                  `Stopping running Multimaster-Sync on host '${config.host}'`,
-                  '',
-                );
-                await provider.stopNode(syncNode.id);
-                // wait a little bit until the ros node is unregistered
-                await delay(2000);
-              }
-            }
             logCtx.debug(
               `Starting Multimaster-Sync on host '${config.host}'`,
               '',
@@ -917,7 +858,7 @@ export function RosProviderReact(
       forceStartWithDefault: boolean = true,
     ) => {
       provider.setConnectionState(ConnectionState.STATES.STARTING, '');
-      const cfg = providerLaunchesMap.get(provider.id);
+      const cfg = provider.startConfiguration;
       if (cfg) {
         const result = await startConfig(cfg);
         return result;
@@ -938,7 +879,7 @@ export function RosProviderReact(
       }
       return false;
     },
-    [providerLaunchesMap, startConfig],
+    [startConfig],
   );
 
   /** Connects to the given provider and add it to the list. */
@@ -953,47 +894,23 @@ export function RosProviderReact(
         ) as CrossbarIOProvider;
 
         if (provider.isAvailable()) {
+          provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
           // already connected
           return true;
         }
 
+        provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
         provider.isLocalHost = isLocalHost(provider.crossbar.host);
         try {
           if (await provider.init()) {
             return true;
           }
-          const launchCfg = providerLaunchesMap.get(provider.id);
-          if (
-            launchCfg?.autostart &&
-            launchCfg?.daemon.enable &&
-            window.CommandExecutor
-          ) {
-            // start system nodes, if auto start is enabled
-            logCtx.info(
-              `Start system nodes for provider [${provider.name()}]`,
-              `URI: ${provider.url()}`,
-            );
-            const startResult = await startProvider(provider, false);
-            // if (startResult) {
-            //   logCtx.success(
-            //     `Provider on host '${provider.host()}' started successfully`,
-            //     '',
-            //   );
-            //   // wait a little longer to make sure the processes are fully started
-            //   setTimeout(() => {
-            //     connectToProvider(provider);
-            //   }, 3000);
-            //   // const connectResult = await connectToProvider(provider);
-            //   // return connectResult;
-            // }
-            return startResult;
-          }
           const error = `Could not initialize provider [${provider.name()}] (${
             provider.type
           } ) in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`;
-          const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
-          logCtx.error(error, details);
-          provider.errorDetails = `${error} ${details}`;
+          // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
+          logCtx.error(error, '');
+          provider.errorDetails = `${error}`;
           provider.setConnectionState(
             ConnectionState.STATES.UNREACHABLE,
             JSON.stringify(error),
@@ -1014,9 +931,8 @@ export function RosProviderReact(
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [
-        providerLaunchesMap,
         logCtx,
-        startProvider,
+        // startProvider,
         getProviderByHosts,
         setProvidersAddQueue,
       ],
@@ -1126,8 +1042,6 @@ export function RosProviderReact(
   // initialize ROS and system Info
   const init = async () => {
     setInitialized(() => false);
-    setInitializedSystem(false);
-    setInitializedProviders(false);
 
     if (window.MultimasterManager) {
       setMultimasterManager(window.MultimasterManager);
@@ -1141,7 +1055,7 @@ export function RosProviderReact(
     if (window.SystemInfo) {
       setSystemInfo(await window.SystemInfo.getInfo());
     }
-    setInitializedSystem(true);
+    setInitialized(true);
   };
 
   useCustomEventListener(
@@ -1155,6 +1069,28 @@ export function RosProviderReact(
       setProvidersAddQueue((oldValue) => [...oldValue, data.provider]);
     },
     [setProvidersAddQueue],
+  );
+
+  useCustomEventListener(
+    EVENT_PROVIDER_REMOVED,
+    (data: EventProviderRemoved) => {
+      // trigger remove provider
+      logCtx.debug(
+        `trigger add new provider: ${data.provider.rosState.name}`,
+        `RosState details: ${JSON.stringify(data.provider.rosState)}`,
+      );
+
+      setProviders((prev) =>
+        prev.filter((prov) => {
+          return (
+            prov.discovered === undefined || // by user connected provider cannot be removed by event
+            (data.provider.crossbar.port !== prov.crossbar.port &&
+              data.provider.crossbar.host !== prov.crossbar.host)
+          );
+        }),
+      );
+    },
+    [setProviders],
   );
 
   /** Handle events caused by changed files. */
@@ -1188,6 +1124,7 @@ export function RosProviderReact(
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data: EventProviderRosNodes) => {
+      console.log(`nodes chages: ${data.nodes.length}`);
       // add nodes to map
       const newMap = new Map();
       const newNodeMap = new Map();
@@ -1220,6 +1157,7 @@ export function RosProviderReact(
           }
         }
       });
+      console.log(`add: ${data.provider.id} ${data.nodes}`);
       newMap.set(data.provider.id, data.nodes);
       data.nodes.forEach((node) => {
         newNodeMap.set(node.idGlobal, node);
@@ -1310,98 +1248,15 @@ export function RosProviderReact(
     },
   );
 
-  // useEffect(() => {
-  //   // remove provider not in the providers list
-  //   const availableProviderKeys = providers.map((prov) => {
-  //     return prov.id;
-  //   });
-  //   console.log(`KEY CHANGED: ${JSON.stringify(availableProviderKeys)}`);
-  //   const newMap = new Map();
-  //   mapProviderRosNodes.forEach((provider));
-  // }, [providers]);
-
   useEffect(() => {
     providers.forEach((provider) => {
       if (provider.connectionState === ConnectionState.STATES.UNKNOWN) {
-        let doConnect: boolean = true;
-        if (providerLaunchesMap.has(provider.id)) {
-          doConnect = providerLaunchesMap.get(provider.id)
-            ?.autoConnect as boolean;
-          if (doConnect) {
-            // trigger connect to the new provider if not deactivated by configuration
-            connectToProvider(provider);
-          }
-        } else {
-          // we have no configuration => it is a discovered provider => trigger connect to the new provider
-          connectToProvider(provider);
-        }
+        // we have no configuration => it is a discovered provider => trigger connect to the new provider
+        connectToProvider(provider);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [providers, providerLaunchesMap]);
-
-  /** Load stored provider configurations upon initialization */
-  useEffect(() => {
-    if (initializedSystem && !initializedProviders) {
-      const newProviders: CrossbarIOProvider[] = [];
-      const provLaunchMap: Map<string, ProviderLaunchConfiguration> = new Map();
-      let localHostFound = false;
-      providerLaunches.forEach((cfg) => {
-        if (
-          ['localhost', '127.0.0.1'].includes(cfg.host) ||
-          isLocalHost(cfg.host)
-        ) {
-          localHostFound = true;
-        }
-        const np = new CrossbarIOProvider(
-          settingsCtx,
-          cfg.host,
-          cfg.rosVersion,
-          cfg.port,
-          cfg.useSSL,
-          logCtx,
-        );
-        np.isLocalHost = localHostFound;
-        newProviders.push(np);
-        provLaunchMap.set(np.id, cfg);
-      });
-      // if (!localHostFound) {
-      //   // if no stored launch configuration for local provider found, try to connect with default values
-      //   // TODO add configuration for local provider start
-      //   const localCfg = new ProviderLaunchConfiguration(
-      //     'localhost',
-      //     rosInfo?.version ? rosInfo.version : settingsCtx.get('rosVersion'),
-      //   );
-      //   localCfg.daemon.enable = true;
-      //   localCfg.discovery.enable = true;
-      //   localCfg.terminal.enable = true;
-      //   localCfg.autoConnect = true;
-      //   localCfg.autostart = true;
-      //   const np = new CrossbarIOProvider(
-      //     settingsCtx,
-      //     localCfg.host,
-      //     localCfg.rosVersion,
-      //     localCfg.port,
-      //     localCfg.useSSL,
-      //     logCtx,
-      //   );
-      //   newProviders.push(np);
-      //   provLaunchMap.set(np.id, localCfg);
-      // }
-      setProviderLaunchesMap(provLaunchMap);
-      setProvidersAddQueue(newProviders);
-      setInitializedProviders(true);
-    }
-    // }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    initializedSystem,
-    initializedProviders,
-    providerLaunches,
-    setProviderLaunchesMap,
-    setProvidersAddQueue,
-    setInitializedProviders,
-  ]);
+  }, [providers]);
 
   /** A provider was enqueued. If it is a new one, add it to providers lists. */
   useEffect(() => {
@@ -1420,19 +1275,6 @@ export function RosProviderReact(
             newProviders.sort((a, b) => -b.name().localeCompare(a.name()));
             return newProviders;
           });
-          // update providerLaunchesMap; on start new provider, the configuration will be stored first and provider created while startConfig
-          if (prov.discovered === undefined) {
-            if (!providerLaunchesMap.has(prov.id)) {
-              const lc: ProviderLaunchConfiguration | undefined =
-                getProviderLaunchConfigByHost(
-                  prov.crossbar.host,
-                  prov.crossbar.port,
-                );
-              if (lc) {
-                providerLaunchesMap.set(prov.id, lc);
-              }
-            }
-          }
         }
       } else {
         // provider already registered, try to connect
@@ -1455,14 +1297,8 @@ export function RosProviderReact(
     getProviderByHosts,
     setProvidersAddQueue,
     setProviders,
-    providerLaunchesMap,
-    getProviderLaunchConfigByHost,
     connectToProvider,
   ]);
-
-  useEffect(() => {
-    setInitialized(initializedProviders && initializedSystem);
-  }, [initializedProviders, initializedSystem, setInitialized]);
 
   // Effect to initialize RosContext
   useEffect(() => {
@@ -1475,7 +1311,6 @@ export function RosProviderReact(
       rosInfo,
       systemInfo,
       multimasterManager,
-      providerLaunches,
       providers,
       providersConnected,
       mapProviderRosNodes,
@@ -1483,6 +1318,7 @@ export function RosProviderReact(
       connectToProvider,
       startProvider,
       startConfig,
+      removeProvider,
       refreshProviderList,
       closeProviders,
       updateNodeList,
@@ -1494,10 +1330,7 @@ export function RosProviderReact(
       unregisterSubscriber,
       updateFilterRosTopic,
       getProviderName,
-      getProviderLaunchConfig,
       isLocalHost,
-      saveProviderConfig,
-      deleteProviderConfig,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -1508,6 +1341,7 @@ export function RosProviderReact(
       providers,
       providersConnected,
       mapProviderRosNodes,
+      setMapProviderRosNodes,
     ],
   );
 

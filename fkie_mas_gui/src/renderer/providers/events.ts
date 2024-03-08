@@ -14,6 +14,7 @@ export { ConnectionState };
 
 export const EVENT_PROVIDER_ACTIVITY = 'EVENT_PROVIDER_ACTIVITY' as const;
 export const EVENT_PROVIDER_DISCOVERED = 'EVENT_PROVIDER_DISCOVERED' as const;
+export const EVENT_PROVIDER_REMOVED = 'EVENT_PROVIDER_REMOVED' as const;
 export const EVENT_PROVIDER_LAUNCH_LIST = 'EVENT_PROVIDER_LAUNCH_LIST' as const;
 export const EVENT_PROVIDER_PATH_EVENT = 'EVENT_PROVIDER_PATH_EVENT' as const;
 export const EVENT_PROVIDER_ROS_NODES = 'EVENT_PROVIDER_ROS_NODES' as const;
@@ -42,6 +43,17 @@ export class EventProviderActivity {
   }
 }
 export class EventProviderDiscovered {
+  provider: CrossbarIOProvider;
+
+  reporter: CrossbarIOProvider;
+
+  constructor(provider: CrossbarIOProvider, reporter: CrossbarIOProvider) {
+    this.provider = provider;
+    this.reporter = reporter;
+  }
+}
+
+export class EventProviderRemoved {
   provider: CrossbarIOProvider;
 
   reporter: CrossbarIOProvider;

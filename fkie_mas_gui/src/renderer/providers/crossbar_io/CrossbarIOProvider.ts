@@ -18,6 +18,7 @@ import {
   LogPathItem,
   LoggerConfig,
   PathItem,
+  ProviderLaunchConfiguration,
   Result,
   RosNode,
   RosNodeStatus,
@@ -52,6 +53,7 @@ import {
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_LAUNCH_LIST,
   EVENT_PROVIDER_PATH_EVENT,
+  EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_ROS_NODES,
   EVENT_PROVIDER_SCREENS,
   EVENT_PROVIDER_STATE,
@@ -62,6 +64,7 @@ import {
   EventProviderDiscovered,
   EventProviderLaunchList,
   EventProviderPathEvent,
+  EventProviderRemoved,
   EventProviderRosNodes,
   EventProviderScreens,
   EventProviderState,
@@ -165,6 +168,8 @@ class CrossbarIOProvider {
   delayCallAttempts: number = 1000;
 
   errorDetails: string = '';
+
+  startConfiguration: ProviderLaunchConfiguration | null = null;
 
   // started echo topics to the received echo events
   private echoTopics: string[] = [];
@@ -440,6 +445,7 @@ class CrossbarIOProvider {
 
       // Update list of providers
       const rosProviders: RosProviderState[] = JSON.parse(result[1]);
+      let oldRemoteProviders = this.remoteProviders;
       this.remoteProviders = [];
       rosProviders.forEach((p: RosProviderState) => {
         // the remote provider list should contain at least the details to itself (origin === true)
@@ -472,6 +478,9 @@ class CrossbarIOProvider {
             false, // TODO get useSSL from settings
             this.logger,
           );
+          oldRemoteProviders = oldRemoteProviders.filter(
+            (p) => p.url() !== np.url(),
+          );
           this.remoteProviders.push(np);
           np.rosState = p;
           np.discovered = [this.id];
@@ -480,6 +489,12 @@ class CrossbarIOProvider {
             new EventProviderDiscovered(np, this),
           );
         }
+      });
+      oldRemoteProviders.forEach((p) => {
+        emitCustomEvent(
+          EVENT_PROVIDER_REMOVED,
+          new EventProviderRemoved(p, this),
+        );
       });
       this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
       return Promise.resolve(true);
@@ -1916,7 +1931,7 @@ class CrossbarIOProvider {
     const result = await this.makeCall(
       URI.ROS_NODES_STOP_NODE,
       [id],
-      true,
+      false,
       true,
     );
     if (result[0]) {
@@ -2116,7 +2131,7 @@ class CrossbarIOProvider {
     return new Result(
       false,
       `Provider [${this.name()}]: Error at getNodeLoggers(): ${result[2]}`,
-    );;
+    );
   };
 
   /**
