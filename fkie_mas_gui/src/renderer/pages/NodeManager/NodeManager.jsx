@@ -630,8 +630,18 @@ function NodeManager() {
     }
   }, [electronCtx.terminateSubprocesses]);
 
+  const onKeyDown = (event) => {
+    if (event.ctrlKey && event.key === '+') {
+      settingsCtx.set('fontSize', settingsCtx.get('fontSize') + 1);
+    }
+    if (event.ctrlKey && event.key === '-') {
+      settingsCtx.set('fontSize', settingsCtx.get('fontSize') - 1);
+    }
+  };
+
   return (
     <Stack
+      onKeyDown={(event) => onKeyDown(event)}
       style={{
         position: 'absolute',
         left: 2,
