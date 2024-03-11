@@ -531,7 +531,7 @@ function ProviderPanel() {
                       </IconButton>
                     </Tooltip>
                   )}
-                </TableCell>{' '}
+                </TableCell>
                 {/* <TableCell style={{ padding: 0 }}>
                   <OverflowMenuProvider
                     onClick={onProviderMenuClick}
