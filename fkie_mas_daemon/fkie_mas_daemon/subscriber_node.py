@@ -38,6 +38,8 @@ from typing import Optional
 from typing import Union
 from typing import Tuple
 
+import array
+import numpy
 import rclpy
 from rclpy.duration import Duration
 from rclpy.client import SrvType
@@ -83,17 +85,34 @@ class MsgEncoder(json.JSONEncoder):
 
     def default(self, obj):
         result = {}
-        fields = obj.__slots__
+        fields = []
+        if hasattr(obj, '__slots__'):
+            fields = obj.__slots__
         if hasattr(obj, 'get_fields_and_field_types'):
             fields = obj.get_fields_and_field_types()
         for key in fields:
-            skip = False
-            if self.no_arr and isinstance(getattr(obj, key), (list, dict)):
-                skip = True
-            if self.no_str and isinstance(getattr(obj, key), str):
-                skip = True
-            if not skip:
-                result[key] = getattr(obj, key)
+            item = getattr(obj, key)
+            if isinstance(item, (bytes, array.array)):
+                # obj_bytes = [byte for byte in obj]
+                if (not self.no_arr):
+                    obj_bytes = []
+                    for byte in item:
+                        if len(obj_bytes) >= 5:
+                            break
+                        obj_bytes.append(byte)
+                    result[key] = ', '.join(
+                        map(str, obj_bytes)) + f'...(of {len(item)} values)'
+            elif isinstance(item, numpy.ndarray):
+                if (not self.no_arr):
+                    result[key] = item.tolist()
+            elif isinstance(item, (list, dict, )):
+                if (not self.no_arr):
+                    result[key] = item
+            elif isinstance(item, str):
+                if (not self.no_str):
+                    result[key] = item
+            else:
+                result[key] = item
         return result
 
 
