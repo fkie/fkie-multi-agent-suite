@@ -8,6 +8,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import {
   AccordionSummary,
   // AccordionDetails,
@@ -638,11 +639,12 @@ function ConnectToProviderModal() {
                   id="advanced-options"
                   sx={{ pl: 0 }}
                 >
-                  <Stack direction="row" alignItems="center">
+                  <Stack direction="row" alignItems="center" spacing="0.3em">
+                    <SettingsOutlinedIcon fontSize="inherit" />
                     <Typography variant="subtitle1">
                       Advanced parameters:
                     </Typography>
-                    <Tooltip
+                    {/* <Tooltip
                       title="Reset advanced parameters to default"
                       placement="right"
                     >
@@ -659,7 +661,7 @@ function ConnectToProviderModal() {
                       >
                         <RestartAltIcon fontSize="inherit" />
                       </IconButton>
-                    </Tooltip>
+                    </Tooltip> */}
                   </Stack>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -1124,6 +1126,29 @@ function ConnectToProviderModal() {
                         labelPlacement="end"
                       />
                     </FormGroup>
+                    <Box>
+                      <Button
+                        size="small"
+                        type="submit"
+                        variant="outlined"
+                        // display="flex"
+                        color="info"
+                        onClick={(event) => {
+                          setStartParameter(DEFAULT_PARAMETER);
+                          setForceRestart(true);
+                          setSaveDefaultParameter(false);
+                          setSelectedHistory('');
+                          event.stopPropagation();
+                        }}
+                        style={{
+                          height: '1.5em',
+                          textTransform: 'none',
+                        }}
+                        endIcon={<RestartAltIcon />}
+                      >
+                        {'Reset advanced parameters to default'}
+                      </Button>
+                    </Box>
                   </Stack>
                 </AccordionDetails>
               </Accordion>
