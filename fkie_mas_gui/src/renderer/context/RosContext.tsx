@@ -1124,7 +1124,6 @@ export function RosProviderReact(
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data: EventProviderRosNodes) => {
-      console.log(`nodes chages: ${data.nodes.length}`);
       // add nodes to map
       const newMap = new Map();
       const newNodeMap = new Map();
@@ -1157,7 +1156,6 @@ export function RosProviderReact(
           }
         }
       });
-      console.log(`add: ${data.provider.id} ${data.nodes}`);
       newMap.set(data.provider.id, data.nodes);
       data.nodes.forEach((node) => {
         newNodeMap.set(node.idGlobal, node);
