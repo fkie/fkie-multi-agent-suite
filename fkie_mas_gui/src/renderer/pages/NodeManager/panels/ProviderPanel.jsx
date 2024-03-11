@@ -515,6 +515,8 @@ function ProviderPanel() {
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
                   {![
+                    ConnectionState.STATES.CROSSBAR_CONNECTED,
+                    ConnectionState.STATES.CROSSBAR_REGISTERED,
                     ConnectionState.STATES.STARTING,
                     ConnectionState.STATES.CONNECTING,
                     ConnectionState.STATES.CONNECTED,
