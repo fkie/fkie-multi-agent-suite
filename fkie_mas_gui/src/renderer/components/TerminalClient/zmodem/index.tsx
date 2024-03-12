@@ -61,7 +61,6 @@ export class ZmodemAddon
     this.terminal = terminal;
   }
 
-  @debounce(100)
   consume(data: ArrayBuffer) {
     const { sentry, handleError } = this;
     try {
