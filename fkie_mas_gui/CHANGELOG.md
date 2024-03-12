@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 - 12.03.2024
+
+Renamed tabs: Hosts -> Nodes, Providers -> Hosts
+Revised start procedure and the start dialog
+Added shortcuts Ctrl+{+,-} to change global font size
+
+Fixed echo for topics with arrays in ros2
+
 ## 1.2.1 - 07.03.2024
 
 Added save all files on close editor tabs or quit gui
