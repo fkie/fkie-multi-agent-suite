@@ -473,7 +473,7 @@ function ConnectToProviderModal() {
         PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
         fullWidth
-        maxWidth="lg"
+        maxWidth="md"
         open={open}
         onClose={handleClose}
         // disableEscapeKeyDown
@@ -511,7 +511,7 @@ function ConnectToProviderModal() {
                       {...params}
                       variant="standard"
                       label="Add Hosts"
-                      placeholder="..."
+                      placeholder=" add "
                     />
                   )}
                   value={hostValues}
