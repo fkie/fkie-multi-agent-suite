@@ -1,6 +1,6 @@
 import { alpha, styled } from '@mui/material/styles';
 import PropTypes from 'prop-types';
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 
 import {
   Box,
@@ -13,9 +13,10 @@ import {
 
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 
-import { colorFromHostname } from '../UI/Colors';
+import OverflowMenu from '../../components/UI/OverflowMenu';
 import { LoggingContext } from '../../context/LoggingContext';
 import { SettingsContext } from '../../context/SettingsContext';
+import { colorFromHostname } from '../UI/Colors';
 
 const ParameterTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -79,6 +80,42 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
 ) {
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
+  const [parameterType, setParameterType] = useState(param ? param.type : labelInfo);
+
+  const typeOptions = [
+    {
+      name: 'int',
+      key: 'int',
+      onClick: () => {
+        setParameterType('int');
+        updateParameter(param, param.value, 'int');
+      },
+    },
+    {
+      name: 'float',
+      key: 'float',
+      onClick: () => {
+        setParameterType('float');
+        updateParameter(param, param.value, 'float');
+      },
+    },
+    {
+      name: 'str',
+      key: 'str',
+      onClick: () => {
+        setParameterType('str');
+        updateParameter(param, param.value, 'str');
+      },
+    },
+    {
+      name: 'bool',
+      key: 'bool',
+      onClick: () => {
+        setParameterType('bool');
+        updateParameter(param, param.value, 'bool');
+      },
+    },
+  ];
 
   const styleProps = {
     '--tree-view-color': settingsCtx.get('useDarkMode')
@@ -90,7 +127,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
   };
 
   const renderInput = () => {
-    if (['int', 'float'].includes(param.type)) {
+    if (['int', 'float'].includes(parameterType)) {
       return (
         <TextField
           type="number"
@@ -107,7 +144,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
         />
       );
     }
-    if (['list'].includes(param.type)) {
+    if (['list'].includes(parameterType)) {
       // TODO: show proper list/arrays
       return (
         <TextField
@@ -123,7 +160,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
         />
       );
     }
-    if (['bool'].includes(param.type)) {
+    if (['bool'].includes(parameterType)) {
       return (
         <Switch
           id={param.id}
@@ -208,10 +245,16 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
               alignItems: 'end',
             }}
           >
-            {labelInfo && labelInfo !== 'bool' && (
-              <Typography variant="caption" color="inherit" padding={0.5}>
-                [{labelInfo}]
-              </Typography>
+            {parameterType && (
+              <OverflowMenu
+                icon={
+                  <Typography variant="caption" color="inherit" padding={0.5}>
+                    [{parameterType}]
+                  </Typography>
+                }
+                options={typeOptions}
+                id="provider-options"
+              />
             )}
             {labelCount && (
               // <Tag text={labelCount} color="default" copyButton={false}></Tag>

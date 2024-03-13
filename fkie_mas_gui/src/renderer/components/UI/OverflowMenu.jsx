@@ -48,6 +48,7 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
       color="default"
       badgeContent={`${options.length}`}
       invisible={!showBadge || options.length === 0}
+      fontSize="inherit"
       // variant="dot"
       // anchorOrigin={{
       //   vertical: 'bottom',

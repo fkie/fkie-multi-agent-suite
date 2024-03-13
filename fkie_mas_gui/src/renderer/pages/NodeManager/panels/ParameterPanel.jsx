@@ -127,7 +127,7 @@ export default function ParameterPanel({ nodes, providers }) {
   }, [rosCtx.initialized, rosCtx.providers, nodes, roots]);
 
   // debounced callback when updating a parameter
-  const updateParameter = useDebounceCallback(async (parameter, newValue) => {
+  const updateParameter = useDebounceCallback(async (parameter, newValue, newType) => {
     const provider = rosCtx.getProviderById(parameter.providerId);
     if (!provider || !provider.isAvailable()) return;
 
@@ -142,6 +142,9 @@ export default function ParameterPanel({ nodes, providers }) {
     }
 
     parameter.value = newValue;
+    if (newType) {
+      parameter.type = newType;
+    }
     const result = await provider.setParameter(parameter);
 
     if (result) {
