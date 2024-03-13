@@ -459,9 +459,6 @@ function LaunchFileModal({
                         variant="outlined"
                         size="small"
                         onChange={(event) => {
-                          console.log(
-                            `onChange ${newArgValue} ${event.target.value}`,
-                          );
                           setCurrentArgs(
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
