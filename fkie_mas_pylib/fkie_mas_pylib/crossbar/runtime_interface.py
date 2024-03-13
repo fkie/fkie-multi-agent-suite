@@ -140,7 +140,7 @@ class RosParameter:
     """
 
     def __init__(
-        self, name: str, value: Union[float, bool, str, List, Dict], type: str = None
+        self, name: str, value: Union[int, float, bool, str, List, Dict], type: str = None
     ) -> None:
         self.name = name
         self.value = value
@@ -158,6 +158,22 @@ class RosParameter:
 
         # Try to infer type based on value
         return re.findall("'(.*)'", str(type(self.value)))[0]
+
+    def typed_value(self):
+        if self.type == 'str':
+            return self.value
+        elif self.type == 'int':
+            return int(self.value)
+        elif self.type == 'float':
+            return float(self.value)
+        elif self.type == 'bool':
+            if isinstance(self.value, str):
+                return self.value.toLowerCase() in ['true', '1']
+            else:
+                return self.value
+        if self.type is not None:
+            print(f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")
+        return self.value
 
     def __str__(self) -> str:
         return f"{self.name}: {self.value} ({self.type})"

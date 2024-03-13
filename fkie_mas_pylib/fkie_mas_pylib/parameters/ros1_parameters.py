@@ -61,7 +61,7 @@ class ROS1Parameters:
         Set the value of a parameter
         '''
         try:
-            rospy.set_param(parameter.name, parameter.value)
+            rospy.set_param(parameter.name, RosParameter(parameter.name, parameter.value, parameter.type).typed_value())
             return True
         except Exception as e:
             Log.error(

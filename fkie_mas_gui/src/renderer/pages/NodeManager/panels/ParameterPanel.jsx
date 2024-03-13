@@ -147,7 +147,7 @@ export default function ParameterPanel({ nodes, providers }) {
     if (result) {
       logCtx.success(
         'Parameter updated successfully',
-        `Parameter: [${parameter.name}] Value: [${parameter.value}]`,
+        `Parameter: ${parameter.name}, value: ${parameter.value}`,
       );
     } else {
       logCtx.error(
