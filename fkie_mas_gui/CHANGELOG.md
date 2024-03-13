@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1 - 13.03.2024
+
+Reduced rate of diagnostic messages
+Revert debounce on built-in terminal display
+Fixed open log in external terminal
+Fixed rate of latched messages
+
 ## 1.3.0 - 12.03.2024
 
 Renamed tabs: Hosts -> Nodes, Providers -> Hosts
