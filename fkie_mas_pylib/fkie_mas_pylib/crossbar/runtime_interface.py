@@ -168,7 +168,7 @@ class RosParameter:
             return float(self.value)
         elif self.type == 'bool':
             if isinstance(self.value, str):
-                return self.value.toLowerCase() in ['true', '1']
+                return self.value.lower() in ['true', '1']
             else:
                 return self.value
         if self.type is not None:
