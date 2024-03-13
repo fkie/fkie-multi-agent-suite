@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 - 13.03.2024
+
+Fixed: values in the parameter dialog of the launch file cannot be changed
+Fixed: waning about invalid URL
+
 ## 1.3.1 - 13.03.2024
 
 Reduced rate of diagnostic messages
