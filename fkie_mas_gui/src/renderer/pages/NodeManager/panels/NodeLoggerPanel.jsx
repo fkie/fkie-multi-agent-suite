@@ -48,6 +48,10 @@ function NodeLoggerPanel(node) {
         if (provider) {
           setIsRequesting(true);
           loggers = await provider.getNodeLoggers(node.id);
+          // fix case: c++ nodes in ROS1 returns log level in lower case
+          loggers = loggers.map((item) => {
+            return { name: item.name, level: item.level.toLocaleUpperCase() };
+          });
           setIsRequesting(false);
         }
       }
