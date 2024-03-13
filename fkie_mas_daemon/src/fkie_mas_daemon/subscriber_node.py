@@ -109,6 +109,7 @@ class SubscriberNode(CrossbarBaseSession):
         self._tcp_no_delay = parsed_args.tcp_no_delay
         self._crossbar_port = parsed_args.crossbar_port
         self._crossbar_realm = parsed_args.crossbar_realm
+        self._first_msg_ts = 0
 
         self._send_ts = 0
         self._latched_messages = []
@@ -198,7 +199,7 @@ class SubscriberNode(CrossbarBaseSession):
             if now - self._send_ts > 1.0 / self._hz:
                 self._send_ts = now
                 timeouted = True
-        if event.latched or timeouted:
+        if (event.latched and time.time() - self._first_msg_ts < 2.0) or timeouted:
             self.publish_to(
                 f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
 
