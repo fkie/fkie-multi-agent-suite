@@ -63,11 +63,15 @@ class DiagnosticObj(DiagnosticStatus):
 
 class Service:
 
+    DEBOUNCE_DIAGNOSTICS = 1.0
+
     def __init__(self, settings: Settings, callbackDiagnostics=None):
         self._clock = Clock()
         self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
+        self._update_last_ts = 0
+        self._update_timer = None
         self._callbackDiagnostics = callbackDiagnostics
         self.use_diagnostics_agg = settings.param(
             'global/use_diagnostics_agg', True)
@@ -119,13 +123,27 @@ class Service:
                     diag_obj.timestamp = stamp
                     self._diagnostics.append(diag_obj)
             if self._callbackDiagnostics:
-                self._callbackDiagnostics(msg)
+                if stamp - self._update_last_ts > self.DEBOUNCE_DIAGNOSTICS * 2.0:
+                    # at the first message, send immediately
+                    self._update_last_ts = stamp
+                    self._callbackDiagnostics(msg)
+                elif self._update_timer is None:
+                    # start the timer
+                    self._update_timer = threading.Timer(self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
+
+    def _publish_diagnostics(self):
+        diags = self.get_diagnostics(0, self._update_last_ts)
+        if self._callbackDiagnostics and len(diags.status) > 0:
+            self._callbackDiagnostics(diags)
+        self._update_last_ts = time.time()
+        self._update_timer.cancel()
+        self._update_timer = None
 
     def get_system_diagnostics(self, filter_level: list = [], filter_ts: float = 0):
         result = DiagnosticArray()
         with self._mutex:
             now = self._clock.now()
-            result.header.stamp = self._clock.now().to_msg()  # rospy.Time.from_sec(nowsec)
+            result.header.stamp = self._clock.now().to_msg()
             for sensor in self.sensors:
                 diag_msg = sensor.last_state(
                     rostime2float(now), filter_level, filter_ts)

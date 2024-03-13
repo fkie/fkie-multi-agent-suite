@@ -55,6 +55,8 @@ class DiagnosticObj(DiagnosticStatus):
 
 
 class Service:
+    DEBOUNCE_DIAGNOSTICS = 1.0
+
     def __init__(self, settings, callbackDiagnostics=None):
         self._settings = settings
         self._mutex = threading.RLock()
@@ -63,6 +65,8 @@ class Service:
         self.use_diagnostics_agg = settings.param("global/use_diagnostics_agg", True)
         self._sub_diag_agg = None
         self._sub_diag = None
+        self._update_last_ts = 0
+        self._update_timer = None
         if self.use_diagnostics_agg:
             self._sub_diag_agg = rospy.Subscriber(
                 "/diagnostics_agg", DiagnosticArray, self._callback_diagnostics
@@ -105,6 +109,7 @@ class Service:
     def _callback_diagnostics(self, msg):
         # TODO: update diagnostics
         with self._mutex:
+            now = time.time()
             stamp = msg.header.stamp.to_sec()
             for status in msg.status:
                 try:
@@ -116,7 +121,21 @@ class Service:
                     diag_obj = DiagnosticObj(status, stamp)
                     self._diagnostics.append(diag_obj)
             if self._callbackDiagnostics:
-                self._callbackDiagnostics(msg)
+                if now - self._update_last_ts > self.DEBOUNCE_DIAGNOSTICS * 2.0:
+                    # at the first message, send immediately
+                    self._update_last_ts = now
+                    self._callbackDiagnostics(msg)
+                elif self._update_timer is None:
+                    # start the timer
+                    self._update_timer = threading.Timer(self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
+
+    def _publish_diagnostics(self):
+        diags = self.get_diagnostics(0, self._update_last_ts)
+        if self._callbackDiagnostics and len(diags.status) > 0:
+            self._callbackDiagnostics(diags)
+        self._update_last_ts = time.time()
+        self._update_timer.cancel()
+        self._update_timer = None
 
     def get_system_diagnostics(self, filter_level=0, filter_ts=0):
         result = DiagnosticArray()
