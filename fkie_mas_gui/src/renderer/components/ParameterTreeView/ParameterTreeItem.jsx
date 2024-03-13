@@ -164,7 +164,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
       return (
         <Switch
           id={param.id}
-          checked={param.value}
+          checked={param.value ? param.value : false}
           onChange={(event) => {
             updateParameter(param, event.target.checked);
           }}
