@@ -44,11 +44,13 @@ function About() {
   const [downloadedProgress, setDownloadedProgress] = useState(null);
   const [openErrorTooltip, setOpenErrorTooltip] = useState(false);
 
-  function checkForUpdate() {
+  function checkForUpdate(force) {
+    if (electronCtx.checkedForUpdates && !force) return;
     logCtx.debug(
       `Check for new release on https://github.com/fkie/fkie-multi-agent-suite`,
     );
     electronCtx.setUpdateAvailable('');
+    electronCtx.setCheckedForUpdates(true);
     setUpdateError('');
     setCheckingForUpdate(false);
     setUpdateAvailable(null);
@@ -99,7 +101,6 @@ function About() {
       setUpdateError(data);
       logCtx.debug('update failed', data);
     });
-
     if (settingsCtx.get('checkForUpdates')) {
       checkForUpdate();
     }
@@ -157,7 +158,7 @@ function About() {
               {!checkingForUpdate && (
                 <Button
                   color="primary"
-                  onClick={() => checkForUpdate()}
+                  onClick={() => checkForUpdate(true)}
                   variant="text"
                 >
                   check for updates

@@ -5,8 +5,6 @@ export interface INavigationContext {
   setSelectedNodes?: (nodes: any[]) => void;
   selectedProviders: any[];
   setSelectedProviders?: (providers: any[]) => void;
-  modifiedFiles: any[];
-  setModifiedFiles?: (files: any[]) => void;
 }
 
 export const DEFAULT = {
@@ -30,7 +28,6 @@ export function NavigationProvider({
   const [selectedProviders, setSelectedProviders] = useState<any[]>(
     DEFAULT.selectedProviders,
   );
-  const [modifiedFiles, setModifiedFiles] = useState<any[]>([]);
 
   const attributesMemo = useMemo(
     () => ({
@@ -38,10 +35,8 @@ export function NavigationProvider({
       setSelectedNodes,
       selectedProviders,
       setSelectedProviders,
-      modifiedFiles,
-      setModifiedFiles,
     }),
-    [modifiedFiles, selectedNodes, selectedProviders],
+    [selectedNodes, selectedProviders],
   );
 
   return (

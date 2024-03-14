@@ -15,6 +15,8 @@ export interface IElectronContext {
   setRequestedInstallUpdate?: (state: boolean) => void;
   updateAvailable: string;
   setUpdateAvailable?: (version: string) => void;
+  checkedForUpdates: boolean;
+  setCheckedForUpdates?: (state: boolean) => void;
 }
 
 export const DEFAULT = {
@@ -23,6 +25,7 @@ export const DEFAULT = {
   setTerminateSubprocesses: () => {},
   requestedInstallUpdate: false,
   updateAvailable: '',
+  checkedForUpdates: false,
 };
 
 interface IElectronProviderComponent {
@@ -43,6 +46,7 @@ export function ElectronProvider({
   const [requestedInstallUpdate, setRequestedInstallUpdate] =
     useState<boolean>(false);
   const [updateAvailable, setUpdateAvailable] = useState<string>('');
+  const [checkedForUpdates, setCheckedForUpdates] = useState<boolean>(false);
 
   // Effect to initialize the shutdownInterface
   useEffect(() => {
@@ -69,6 +73,8 @@ export function ElectronProvider({
       setRequestedInstallUpdate,
       updateAvailable,
       setUpdateAvailable,
+      checkedForUpdates,
+      setCheckedForUpdates,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -76,6 +82,7 @@ export function ElectronProvider({
       shutdownInterface,
       terminateSubprocesses,
       updateAvailable,
+      checkedForUpdates,
     ],
   );
 
