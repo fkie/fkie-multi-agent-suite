@@ -44,8 +44,12 @@ from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent
 
+import genpy
+import std_msgs
+
 from . import launcher
 from fkie_mas_daemon.strings import utf8
+from .subscriber_node import MsgEncoder
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 from fkie_mas_pylib import ros_pkg
@@ -1165,29 +1169,40 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         )
         result = LaunchMessageStruct(request.srv_type)
         try:
-            # remove empty lists
+            service_class = roslib.message.get_service_class(request.srv_type)
+            if service_class is None:
+                result.error_msg = f"invalid service type: '{request.srv_type}'. If this is a valid service type, perhaps you need to run 'catkin build'"
+                return json.dumps(result, cls=SelfEncoder)
+
+            request_class = service_class._request_class()
+            now = rospy.get_rostime()
+            keys = {'now': now, 'auto': std_msgs.msg.Header(stamp=now)}
             data = json.loads(request.data)
-            service_params = self._pubstr_from_dict(data)
-            call_cmd = f'rosservice call {request.service_name} "{service_params}"'
-            fullname = f"/rosservice_call{request.service_name.rstrip('/')}"
-            Log.debug(f"call service with: {call_cmd}")
-            ps = SupervisedPopen(
-                shlex.split(f"{call_cmd}"),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                object_id=f"call_service_{fullname}",
-                description=f"Call service with {call_cmd}",
-            )
-            output_err = ps.stderr.read()
-            if output_err:
-                result.error_msg = repr(output_err).replace("\\n", "\n")
-            output = ps.stdout.read()
-            if output:
-                result.data = ruamel.yaml.load(output, Loader=ruamel.yaml.Loader)
-                result.valid = True
+            srv_params = self._pubstr_from_dict(data)
+            genpy.message.fill_message_args(
+                request_class, srv_params, keys=keys)
+            call_result = rospy.ServiceProxy(
+                request.service_name, service_class)()
+            result.data = json.loads(json.dumps(
+                call_result, cls=MsgEncoder, **{"no_arr": False, "no_str": False}))
+            result.valid = True
+        except genpy.MessageException as e:
+            def argsummary(args):
+                if type(args) in [tuple, list]:
+                    return '\n'.join([' * %s (type %s)' % (a, type(a).__name__) for a in args])
+                else:
+                    return ' * %s (type %s)' % (args, type(args).__name__)
+
+            result.error_msg = f"Incompatible arguments to call service:\n{e}\nProvided arguments are:\n{argsummary(request.data)}\n\nService arguments are: [{genpy.message.get_printable_message_args(request)}]"
+            return json.dumps(result, cls=SelfEncoder)
+        except rospy.ServiceException as e:
+            result.error_msg = str(e)
+            return json.dumps(result, cls=SelfEncoder)
+        except (rospy.ROSSerializationException, genpy.SerializationError) as e:
+            result.error_msg = f"Unable to send request. One of the fields has an incorrect type: {e}"
+            return json.dumps(result, cls=SelfEncoder)
         except Exception as err:
             import traceback
-
             print(traceback.format_exc())
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
