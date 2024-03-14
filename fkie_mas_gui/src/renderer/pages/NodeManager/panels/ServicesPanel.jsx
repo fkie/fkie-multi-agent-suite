@@ -96,15 +96,14 @@ function ServicesPanel({ initialSearchTerm }) {
       if (isMatch) {
         return isMatch;
       }
-      let matchProvider = false;
-      providers[service.name].forEach((providerName) => {
-        if (findIn(searchTerm, [providerName])) {
-          isMatch = true;
-        }
-      });
-      if (isMatch) {
-        return true;
-      }
+      // providers[service.name].forEach((providerName) => {
+      //   if (findIn(searchTerm, [providerName])) {
+      //     isMatch = true;
+      //   }
+      // });
+      // if (isMatch) {
+      //   return true;
+      // }
       return false;
     });
 

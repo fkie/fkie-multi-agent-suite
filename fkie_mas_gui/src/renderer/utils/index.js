@@ -55,7 +55,7 @@ const findTerm = (searchTerm, words) => {
           return true;
         }
       }
-    } else {
+    } else if (w) {
       if (w.indexOf(searchTerm) !== -1) {
         return true;
       }
@@ -67,18 +67,32 @@ const findTerm = (searchTerm, words) => {
 /** Splits the search term first by <space> for OR and then by "+" for AND.
  */
 const findIn = (searchTerms, words) => {
+  let invert = false;
   const searchOrTerms = splitOrSearchTerm(searchTerms);
   for (const sO of searchOrTerms) {
     const searchAndTerms = splitAndSearchTerm(sO);
     if (searchAndTerms.length === 1) {
-      if (findTerm(searchAndTerms[0], words)) {
+      invert = searchAndTerms[0].startsWith('!');
+      const searchFor = invert ? searchAndTerms[0].slice(1) : searchAndTerms[0];
+      const found = findTerm(searchFor, words);
+      if (invert && found) {
+        return false;
+      }
+      if (!invert && found) {
         return true;
       }
     } else {
       // returns only true if all search terms are found
       let foundAnd = true;
       for (const sA of searchAndTerms) {
-        if (!findTerm(sA, words)) {
+        const sInvert = sA.startsWith('!');
+        const searchFor = sInvert ? sA.slice(1) : sA;
+        const found = findTerm(searchFor, words);
+        if (sInvert && found) {
+          // if inverted and found whole entry will not be shown
+          return false;
+        }
+        if (!sInvert && !found){
           foundAnd = false;
         }
       }
@@ -87,7 +101,7 @@ const findIn = (searchTerms, words) => {
       }
     }
   }
-  return false;
+  return invert;
 };
 
 export { delay, extractSubstring, findIn, generateUniqueId, pathJoin };
