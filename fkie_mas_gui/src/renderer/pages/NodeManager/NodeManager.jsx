@@ -682,8 +682,9 @@ function NodeManager() {
         }}
       />
       {electronCtx.terminateSubprocesses &&
-        monacoCtx.getModifiedTabs().length === 0 && (
-          // TODO check for unsaved files before quit gui
+        monacoCtx.getModifiedTabs().length === 0 &&
+        rosCtx.providers.length > 0 && (
+          // check for unsaved files before quit gui
           <ProviderSelectionModal
             title="Select providers to shut down"
             providers={rosCtx.providers}
