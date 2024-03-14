@@ -238,13 +238,13 @@ export default class MenuBuilder {
         label: 'Help',
         submenu: [
           {
-            label: 'Documentation',
+            label: 'Documentation \u{1F855}',
             click() {
               shell.openExternal('https://fkie.github.io/multimaster_fkie/');
             },
           },
           {
-            label: 'Search Issues',
+            label: 'Search Issues \u{1F855}',
             click() {
               shell.openExternal(
                 'https://github.com/fkie/fkie-multi-agent-suite/issues',
@@ -252,7 +252,7 @@ export default class MenuBuilder {
             },
           },
           {
-            label: 'About',
+            label: 'About \u{1F855}',
             click: () => {
               shell.openExternal(
                 'https://github.com/fkie/fkie-multi-agent-suite',
