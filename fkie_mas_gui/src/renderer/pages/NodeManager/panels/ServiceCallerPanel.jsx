@@ -471,6 +471,7 @@ function ServiceCallerPanel({ serviceName, providerId }) {
           </Stack>
         )}
         {inputElements}
+        <>---</>
         {!serviceStruct && (
           <Alert severity="error" style={{ minWidth: 0 }}>
             <AlertTitle>

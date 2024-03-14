@@ -310,13 +310,8 @@ function InputElements({
     );
   }
   if (!messageStruct.name) {
-    return (
-      <Alert severity="info" style={{ minWidth: 0 }}>
-        <AlertTitle>
-          {`No input for "${messageStruct.type}" defined.`}
-        </AlertTitle>
-      </Alert>
-    );
+    // {`No input for "${messageStruct.type}" defined.`}
+    return <></>;
   }
   // component doesn't exist yet
   return (
