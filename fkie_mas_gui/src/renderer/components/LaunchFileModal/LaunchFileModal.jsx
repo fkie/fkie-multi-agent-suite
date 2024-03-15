@@ -190,7 +190,6 @@ function LaunchFileModal({
       const args = [];
 
       currentArgs.forEach((arg) => {
-        console.log(`arg.name: ${arg.name}: ${arg.value}`);
         args.push(new LaunchArgument(arg.name, arg.value));
         // update history
         let hList = argHistory[arg.name];
@@ -203,7 +202,7 @@ function LaunchFileModal({
         hList = hList.slice(0, 10);
         argHistory[arg.name] = hList;
       });
-      setArgHistory(argHistory);
+      setArgHistory({ ...argHistory });
 
       const request = new LaunchLoadRequest(
         rosPackage,
@@ -257,7 +256,14 @@ function LaunchFileModal({
     // rosCtx.updateNodeList(provider.name());
     // rosCtx.updateLaunchList(provider.name());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentArgs, selectedLaunch, selectedProvider, setSelectedLaunchFile]);
+  }, [
+    currentArgs,
+    argHistory,
+    selectedLaunch,
+    selectedProvider,
+    setSelectedLaunchFile,
+    setArgHistory,
+  ]);
 
   // Request file and load arguments
   useEffect(() => {
@@ -382,7 +388,12 @@ function LaunchFileModal({
                         )}
                         renderOption={(props, option) => (
                           <Stack {...props} direction="row">
-                            <Typography width="stretch">{option}</Typography>
+                            <Typography
+                              style={{ overflowWrap: 'anywhere' }}
+                              width="stretch"
+                            >
+                              {option}
+                            </Typography>
                             <IconButton
                               component="label"
                               onClick={(event) => {
