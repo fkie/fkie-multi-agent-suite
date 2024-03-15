@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.3 - 15.03.2024
+
+Added "!" as "not" to search bar
+Added menu to change parameter type in parameter panel
+Added link symbol to help menu
+Improved service call for ros1
+Check only once after start for new version
+Do not ask for quit app if no providers available
+Show no long info if service input is empty
+
+Fixed: set type while set/change parameter in ros1
+Fixed: log level view for c++ nodes
+Fixed: history update in launch dialog
+
 ## 1.3.2 - 13.03.2024
 
 Fixed: values in the parameter dialog of the launch file cannot be changed
