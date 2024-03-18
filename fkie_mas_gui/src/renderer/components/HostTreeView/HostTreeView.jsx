@@ -4,8 +4,8 @@ import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import ChangeCircleOutlinedIcon from '@mui/icons-material/ChangeCircleOutlined';
-import HideSourceIcon from '@mui/icons-material/HideSource';
 import ComputerIcon from '@mui/icons-material/Computer';
+import HideSourceIcon from '@mui/icons-material/HideSource';
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { blue, green, grey, red } from '@mui/material/colors';
 import { TreeView } from '@mui/x-tree-view';
@@ -172,11 +172,14 @@ function HostTreeView({
    * Callback when items on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (event, itemId) => {
+    (event, itemIds) => {
       // update selected state
       setSelectedItems((prevSelected) => {
-        // start with the clicked items
-        let selectedIds = itemId;
+        // start with the clicked items, preserving the previous order
+        let selectedIds = prevSelected.filter((prevId) =>
+          itemIds.includes(prevId),
+        );
+        selectedIds = [...new Set([...selectedIds, ...itemIds])];
         // in the case of multiple selection (CTRL or SHIFT modifiers):
         if (selectedIds.length > 1) {
           // if a group was previously selected but not anymore, deselect all its children
