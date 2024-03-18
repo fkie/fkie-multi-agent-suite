@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4 - 18.03.2024
+
+Fix selection order in HostTreeView when using ctrl
+
 ## 1.3.3 - 15.03.2024
 
 Added "!" as "not" to search bar
