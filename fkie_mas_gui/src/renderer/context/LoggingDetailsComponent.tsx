@@ -8,7 +8,6 @@ import {
   Collapse,
   IconButton,
   Stack,
-  TextareaAutosize,
   Typography,
 } from '@mui/material';
 import {
@@ -48,8 +47,8 @@ const LoggingDetailsComponent = forwardRef<
   }, [id, closeSnackbar]);
 
   return (
-    <SnackbarContent ref={ref}>
-      <Card style={{ width: '100%' }}>
+    <SnackbarContent ref={ref} style={{ maxHeight: '50%' }}>
+      <Card>
         <CardActions sx={levelColorsWbg[variant]}>
           <Stack
             direction="row"
@@ -90,20 +89,12 @@ const LoggingDetailsComponent = forwardRef<
             />
           )}
           {(typeof details === 'string' || details instanceof String) && (
-            <TextareaAutosize
-              aria-label="snackbar-details"
-              readOnly
-              minRows="2"
-              maxRows="15"
-              value={JSON.stringify(details)}
-              style={{
-                width: '100%',
-                overflow: 'auto',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-              }}
-            />
+            <Typography
+              overflow={'auto'}
+              noWrap={false}
+              maxHeight={"10em"}
+              fontSize={"0.9em"}
+            >{JSON.stringify(details)}</Typography>
           )}
         </Collapse>
       </Card>
