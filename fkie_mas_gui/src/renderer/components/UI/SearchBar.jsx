@@ -54,9 +54,10 @@ function SearchBar({
             }}
             onClick={() => setSearched('')}
           >
-            <CloseIcon />
+            <CloseIcon sx={{ fontSize: 'inherit' }} />
           </IconButton>
         ),
+        style: { fontSize: '0.9em' },
       }}
       sx={{
         m: 0,
