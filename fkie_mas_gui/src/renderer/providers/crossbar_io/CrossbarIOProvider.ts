@@ -481,14 +481,16 @@ class CrossbarIOProvider {
           oldRemoteProviders = oldRemoteProviders.filter(
             (p) => p.url() !== np.url(),
           );
-          this.remoteProviders.push(np);
           np.rosState = p;
           np.discovered = [this.id];
-          emitCustomEvent(
-            EVENT_PROVIDER_DISCOVERED,
-            new EventProviderDiscovered(np, this),
-          );
+          this.remoteProviders.push(np);
         }
+      });
+      this.remoteProviders.forEach((np) => {
+        emitCustomEvent(
+          EVENT_PROVIDER_DISCOVERED,
+          new EventProviderDiscovered(np, this),
+        );
       });
       oldRemoteProviders.forEach((p) => {
         emitCustomEvent(
