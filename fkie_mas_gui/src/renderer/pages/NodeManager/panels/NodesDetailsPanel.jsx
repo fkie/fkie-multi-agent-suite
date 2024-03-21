@@ -330,6 +330,16 @@ function NodesDetailsPanel() {
                   )}
                 </Stack>
 
+                <Stack direction="row" spacing={0.5}>
+                  {node.location && (
+                    <Tag
+                      color="primary"
+                      title="Location:"
+                      text={JSON.stringify(node.location)}
+                      wrap
+                    />
+                  )}
+                </Stack>
                 {node.launchPaths &&
                   [...node.launchPaths].map((launchPath) => (
                     <Tag
