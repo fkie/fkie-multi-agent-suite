@@ -576,6 +576,7 @@ export function RosProviderReact(
     setProviders(newProviders);
     newProviders.forEach((provider) => {
       provider.updateProviderList();
+      provider.getDaemonVersion();
     });
   }, debounceTimeout);
 

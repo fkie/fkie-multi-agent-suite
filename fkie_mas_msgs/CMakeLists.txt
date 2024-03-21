@@ -68,7 +68,6 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
     generate_messages(DEPENDENCIES std_msgs)
 
     catkin_package(
-        CFG_EXTRAS version.cmake.in
         CATKIN_DEPENDS message_runtime std_msgs
     )
 

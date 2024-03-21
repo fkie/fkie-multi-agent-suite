@@ -24,7 +24,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import packageJson from '../../../../../package.json';
 
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
 import {
@@ -351,7 +350,7 @@ function ProviderPanel() {
 
   const isOlderVersion = (provider) => {
     try {
-      return semver.gt(packageJson.version, provider.getDaemonReleaseVersion());
+      return semver.gt(settingsCtx.MIN_VERSION_DAEMON, provider.getDaemonReleaseVersion());
     } catch {}
     return false;
   };

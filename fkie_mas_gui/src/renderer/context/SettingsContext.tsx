@@ -6,6 +6,7 @@ export const getCrossbarPortFromRos = (rosVersion: string) => {
   return rosVersion === '2' ? 11811 : 11911;
 };
 export interface ISettingsContext {
+  MIN_VERSION_DAEMON: string;
   changed: number;
   get: (attribute: string) => any;
   set: (attribute: string, value: any, settingsCtx?: ISettingsContext) => void;
@@ -17,6 +18,7 @@ export const LOG_LEVEL_LIST = ['DEBUG', 'INFO', 'SUCCESS', 'WARN', 'ERROR'];
 export const LAUNCH_FILE_EXTENSIONS = ['.launch', '.launch.xml', '.launch.py'];
 
 export const DEFAULT_SETTINGS = {
+  MIN_VERSION_DAEMON: '2.0.1',
   fgColor: '#1a73e8',
   bgColor: '#fafafa',
   fgColorForDarkMode: '#B8E7FB',
@@ -214,6 +216,7 @@ export const SettingsContext =
 export function SettingsProvider({
   children,
 }: ISettingProvider): ReturnType<React.FC<ISettingProvider>> {
+  const MIN_VERSION_DAEMON = DEFAULT_SETTINGS.MIN_VERSION_DAEMON;
   const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
   const [config, setConfig] = useLocalStorage<any>(
     'SettingsContext:config',
@@ -256,6 +259,7 @@ export function SettingsProvider({
 
   const attributesMemo = useMemo(
     () => ({
+      MIN_VERSION_DAEMON,
       changed,
       get,
       set,

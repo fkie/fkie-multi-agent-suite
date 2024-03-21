@@ -45,18 +45,7 @@ def detect_version(package):
     date = "unknown"
     try:
         pkg_path = roslib.packages.get_pkg_dir(package)
-        if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
-            try:
-                with open("%s/VERSION" % pkg_path) as f:
-                    version = f.read()
-                    version = version.strip().decode("utf-8")
-                with open("%s/DATE" % pkg_path) as f:
-                    datetag = f.read().split()
-                    if datetag:
-                        date = datetag[0]  # .decode('utf-8')
-            except Exception as err:
-                sys.stderr.write("version detection error: %s\n" % utf8(err))
-        elif os.path.isdir("%s/../.git" % pkg_path) and os.path.isfile("/usr/bin/git"):
+        if os.path.isdir("%s/../.git" % pkg_path) and os.path.isfile("/usr/bin/git"):
             try:
                 os.chdir(pkg_path)
                 ps = SupervisedPopen(

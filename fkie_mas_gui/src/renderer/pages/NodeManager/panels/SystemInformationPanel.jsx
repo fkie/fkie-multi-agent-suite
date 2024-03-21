@@ -92,8 +92,9 @@ function SystemInformationPanel({ providerId }) {
       if (provider.errorDetails) {
         infoContent['Last error'] = provider.errorDetails;
       }
+      const versionDate = provider.daemonVersion.date ? ` (${provider.daemonVersion.date})` : '';
       infoContent['Daemon version'] =
-        `${provider.daemonVersion.version} (${provider.daemonVersion.date})`;
+        `${provider.daemonVersion.version}${versionDate}`;
       setProviderDetails(filterNestObject(infoContent));
       // join warnings to one list
       let warnings = [];

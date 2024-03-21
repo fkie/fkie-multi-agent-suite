@@ -27,18 +27,6 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
       rospy
     )
 
-    # generate version files; cmake from fkie_mas_msgs
-    generate_version(TARGETS version_TARGETS)
-
-    # install generated version files; cmake from fkie_mas_msgs
-    if(DEFINED version_TARGETS)
-        install(
-            FILES
-            ${version_TARGETS}
-            DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-        )
-    endif()
-
     # # Add folders to be run by python nosetests
     if(CATKIN_ENABLE_TESTING)
         add_subdirectory(${PROJECT_NAME}/tests)
