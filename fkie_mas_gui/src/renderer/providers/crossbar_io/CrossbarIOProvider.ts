@@ -171,6 +171,8 @@ class CrossbarIOProvider {
 
   startConfiguration: ProviderLaunchConfiguration | null = null;
 
+  showRemoteNodes: boolean = false;
+
   // started echo topics to the received echo events
   private echoTopics: string[] = [];
 
@@ -2400,16 +2402,19 @@ class CrossbarIOProvider {
       let ignored = false;
 
       // exclude nodes belonging to a different provider
-      if (
-        (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
-        (n.location instanceof String && n.location === 'remote') ||
-        (n.location instanceof Array &&
-          !n.location.some(
-            (loc) =>
-              loc.startsWith('SHM') || loc.startsWith('UDPv4:[127.0.0.1]'),
-          ))
-      ) {
-        ignored = true;
+      if (!this.showRemoteNodes) {
+        if (
+          (this.rosState.masteruri &&
+            n.masteruri !== this.rosState.masteruri) ||
+          (n.location instanceof String && n.location === 'remote') ||
+          (n.location instanceof Array &&
+            !n.location.some(
+              (loc) =>
+                loc.startsWith('SHM') || loc.startsWith('UDPv4:[127.0.0.1]'),
+            ))
+        ) {
+          ignored = true;
+        }
       }
 
       // exclude ignored nodes

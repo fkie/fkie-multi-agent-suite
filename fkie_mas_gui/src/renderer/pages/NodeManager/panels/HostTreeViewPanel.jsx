@@ -6,6 +6,7 @@ import CancelPresentationIcon from '@mui/icons-material/CancelPresentation';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
+import LocalPlayOutlinedIcon from '@mui/icons-material/LocalPlayOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -26,6 +27,7 @@ import {
   LinearProgress,
   Paper,
   Stack,
+  ToggleButton,
   Tooltip,
 } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
@@ -58,7 +60,6 @@ import FileEditorPanel from './FileEditorPanel';
 import NodeLoggerPanel from './NodeLoggerPanel';
 import ParameterPanel from './ParameterPanel';
 import SingleTerminalPanel from './SingleTerminalPanel';
-import { node } from 'prop-types';
 
 // TODO: Add settings for this
 // const IGNORED_NODES = ['rostopic_'];
@@ -73,6 +74,9 @@ function HostTreeViewPanel() {
   const navCtx = useContext(NavigationContext);
 
   // state variables
+  const [showRemoteNodes, setShowRemoteNodes] = useState(
+    settingsCtx.get('showRemoteNodes'),
+  );
   const [filterText, setFilterText] = useState('');
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
@@ -298,7 +302,7 @@ function HostTreeViewPanel() {
     [rosCtx, SSHCtx, logCtx],
   );
 
-    /**
+  /**
    * Start nodes from a list of itemIds
    */
   const createLoggerPanelFromId = useCallback(
@@ -319,7 +323,13 @@ function HostTreeViewPanel() {
       if (external && window.CommandExecutor) {
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);
-        const terminalCmd = await provider.cmdForType(type, node.name, '', screen, '');
+        const terminalCmd = await provider.cmdForType(
+          type,
+          node.name,
+          '',
+          screen,
+          '',
+        );
         // open screen in a new terminal
         try {
           const result = await window.CommandExecutor?.execTerminal(
@@ -1059,6 +1069,20 @@ function HostTreeViewPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indexQueueMain, failedQueueMain, successQueueMain]);
 
+  const showRemoteOnAllProvider = useCallback(
+    (state) => {
+      rosCtx.providersConnected.forEach((p) => {
+        p.showRemoteNodes = state;
+      });
+    },
+    [rosCtx.providersConnected],
+  );
+
+  useEffect(() => {
+    showRemoteOnAllProvider(showRemoteNodes);
+    refreshAllProvider();
+  }, [showRemoteNodes]);
+
   return (
     <Box
       // ref={panelRef}
@@ -1069,7 +1093,22 @@ function HostTreeViewPanel() {
     >
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
         {sizeQueueMain === 0 && (
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Tooltip
+              title="Each host shows all nodes visible to it"
+              placement="left"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <ToggleButton
+                size="small"
+                value="showRemoteNodes"
+                selected={showRemoteNodes}
+                onChange={() => setShowRemoteNodes(!showRemoteNodes)}
+              >
+                <LocalPlayOutlinedIcon sx={{ fontSize: 'inherit' }} />
+              </ToggleButton>
+            </Tooltip>
             <SearchBar
               onSearch={(value) => {
                 setFilterText(value);

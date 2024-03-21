@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS = {
   fgColorForDarkMode: '#B8E7FB',
   bgColorForDarkMod: '#424242',
 
+  changed: 0,
   get: () => {
     return undefined;
   },
@@ -194,6 +195,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: 'BORDER_TOP',
     options: ['BORDER_TOP', 'CENTER', 'BORDER_BOTTOM'],
     description: '',
+  },
+  showRemoteNodes: {
+    label: 'Show remote nodes',
+    default: false,
+    type: 'none',
+    description: 'Each host shows all nodes visible to it',
   },
 };
 
