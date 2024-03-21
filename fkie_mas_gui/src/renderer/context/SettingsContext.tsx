@@ -15,7 +15,7 @@ export interface ISettingsContext {
 
 export const LOG_LEVEL_LIST = ['DEBUG', 'INFO', 'SUCCESS', 'WARN', 'ERROR'];
 
-export const LAUNCH_FILE_EXTENSIONS = ['.launch', '.launch.xml', '.launch.py'];
+export const LAUNCH_FILE_EXTENSIONS = ['.launch', 'launch.xml', 'launch.py', 'launch.yaml', 'launch.yml'];
 
 export const DEFAULT_SETTINGS = {
   MIN_VERSION_DAEMON: '2.0.1',
