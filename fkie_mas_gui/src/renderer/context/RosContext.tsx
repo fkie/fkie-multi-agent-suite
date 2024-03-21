@@ -897,6 +897,7 @@ export function RosProviderReact(
         if (provider.isAvailable()) {
           provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
           // already connected
+          provider.getDaemonVersion();
           return true;
         }
 
