@@ -350,7 +350,13 @@ function ProviderPanel() {
 
   const isOlderVersion = (provider) => {
     try {
-      return semver.gt(settingsCtx.MIN_VERSION_DAEMON, provider.getDaemonReleaseVersion());
+      if (provider.getDaemonReleaseVersion().indexOf('unknown') > -1) {
+        return true;
+      }
+      return semver.gt(
+        settingsCtx.MIN_VERSION_DAEMON,
+        provider.getDaemonReleaseVersion(),
+      );
     } catch {}
     return false;
   };
