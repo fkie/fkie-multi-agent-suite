@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.5 - 18.03.2024
+
+Added button to show all nodes visible to each host
+Added location to node info
+Improved version detection of the daemon
+
+Fixed: size of the clear button in the search bar
+Fixed: local providers are displayed twice after the start
+Fixed: visualization of the error message in snack bar
+
 ## 1.3.4 - 18.03.2024
 
 Fix selection order in HostTreeView when using ctrl
