@@ -157,7 +157,7 @@ function ServicesPanel({ initialSearchTerm }) {
             display: 'flex',
           }}
         >
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} alignItems="center">
             <SearchBar
               onSearch={onSearch}
               placeholder="Filter Services (<space> for OR, + for AND)"

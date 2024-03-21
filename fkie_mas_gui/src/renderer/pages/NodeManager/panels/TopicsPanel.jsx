@@ -390,7 +390,7 @@ function TopicsPanel({ initialSearchTerm }) {
         //   display: 'flex',
         // }}
       >
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="center">
           <Stack direction="row" paddingTop={'5px'}>
             <Tooltip
               title="Echo"
