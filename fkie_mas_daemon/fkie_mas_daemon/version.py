@@ -20,9 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
-import subprocess
-
 VERSION = 'unknown'
 DATE = ''
 
@@ -36,39 +33,8 @@ def detect_version(rosNode, package):
         return VERSION, DATE
 
     try:
-        # todo get 
-        if os.path.isdir("../.git"):
-            try:
-                ps = subprocess.Popen(
-                    ['git', 'describe', '--tags', '--dirty', '--always', '--abbrev=8'], stdout=subprocess.PIPE)
-                output = ps.stdout.read()
-                vers = output.decode('utf-8').strip()
-                parts = vers.split('.', 3)
-                if len(parts) < 3:
-                    raise Exception('no version tag found in git')
-                ps.wait()
-                ps = subprocess.Popen(
-                    ['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE)
-                output = ps.stdout.read().split()
-                if output:
-                    date_str = output[0].decode('utf-8')
-                else:
-                    date_str = date.today().isoformat()
-                ps.wait()
-                VERSION = vers
-                DATE = date_str
-                rosNode.get_logger().info(f"detected version: {VERSION} {DATE}")
-                return VERSION, DATE
-            except Exception as _err:
-                pass
-                # print("git version detection error: %s" % err)
-    except Exception:
-        pass
-
-    try:
         from fkie_mas_pylib import ros_pkg
         import xml.etree.ElementTree as ET
-        from datetime import date
         paths = ros_pkg.get_share_files_path_from_package('fkie_mas_daemon', 'package.xml')
         if paths:
             tree = ET.parse(paths[0])
