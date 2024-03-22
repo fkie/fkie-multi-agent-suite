@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.3.5 - 18.03.2024
+## 1.3.6 - 22.03.2024
+
+Update daemon version on join if already connected
+Changed extensions for launch file detection
+
+Fixed: freeze on close while connecting
+
+## 1.3.5 - 21.03.2024
 
 Added button to show all nodes visible to each host
 Added location to node info
