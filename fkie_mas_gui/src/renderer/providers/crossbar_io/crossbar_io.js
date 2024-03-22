@@ -93,13 +93,12 @@ class CrossbarIO {
     this.connection.onopen = this.onOpen;
 
     // fired when connection was lost (or could not be established)
-    this.connection.onclose = () => {
-      this.onClose;
+    this.connection.onclose = (reason, details) => {
+      this.onClose(reason, details);
       this.connectionClosed = true;
     };
 
     this.connection.open();
-
     const start = Date.now();
     const waitForConnection = (resolve, reject) => {
       // connection available :)
@@ -229,6 +228,7 @@ class CrossbarIO {
       );
     }
     this.connection = null;
+    this.session = null;
   };
 
   /**

@@ -693,10 +693,12 @@ function NodeManager() {
               if (providers && providers.length > 0) {
                 await Promise.all(
                   providers.map(async (prov) => {
-                    await prov.shutdown();
+                    const result = await prov.shutdown();
+                    console.log(`finished shutdown ${prov.id} ${JSON.stringify(result)}`);
                   }),
                 );
               }
+              console.log(`Quit app`);
               electronCtx.shutdownInterface.quitGui();
             }}
           />

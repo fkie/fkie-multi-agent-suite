@@ -325,11 +325,14 @@ class CrossbarIOProvider {
       } else if (state === ConnectionState.STATES.CROSSBAR_CONNECTED) {
         this.registerCallbacks()
           .then(() => {
-            this.setConnectionState(
-              ConnectionState.STATES.CROSSBAR_REGISTERED,
-              '',
-            );
-            return true;
+            if (this.isAvailable()) {
+              this.setConnectionState(
+                ConnectionState.STATES.CROSSBAR_REGISTERED,
+                '',
+              );
+              return true;
+            }
+            return false;
           })
           .catch((error) => {
             this.setConnectionState(ConnectionState.STATES.ERRORED, error);
@@ -337,9 +340,12 @@ class CrossbarIOProvider {
       } else if (state === ConnectionState.STATES.CROSSBAR_REGISTERED) {
         this.getDaemonVersion()
           .then((dv) => {
-            this.daemonVersion = dv;
-            this.updateProviderList();
-            return true;
+            if (this.isAvailable()) {
+              this.daemonVersion = dv;
+              this.updateProviderList();
+              return true;
+            }
+            return false;
           })
           .catch((error) => {
             this.setConnectionState(ConnectionState.STATES.ERRORED, error);
@@ -2705,12 +2711,16 @@ class CrossbarIOProvider {
     ) => {
       try {
         const r = await this.crossbar.call(_uri, _args);
-        if (r[2]) {
-          const errorObj = JSON.parse(r[2]);
-          if (errorObj.error.includes('wamp.error.runtime_error')) {
-            // do not re-try on runtime errors
-            this.unlockRequest(uri);
-            return [r[0], r[1], errorObj.args];
+        if (!r[0] && r[2]) {
+          if (r[2].includes('{')) {
+            const errorObj = JSON.parse(r[2]);
+            if (errorObj.error?.includes('wamp.error.runtime_error')) {
+              // do not re-try on runtime errors
+              this.unlockRequest(uri);
+              return [r[0], r[1], errorObj.args];
+            }
+          } else if (r[2] === 'Connection is closed') {
+              return [r[0], r[1], r[2]];
           }
         }
         if (r[0]) {
@@ -2718,7 +2728,6 @@ class CrossbarIOProvider {
           this.unlockRequest(uri);
           return r;
         }
-
         if (currentAttempt >= this.callAttempts) {
           this.unlockRequest(uri);
           return [
@@ -2746,11 +2755,11 @@ class CrossbarIOProvider {
             false,
           );
         }
-
         await delay(this.delayCallAttempts);
         return callRequest(_uri, _args, _reportError, currentAttempt + 1);
       } catch (err) {
-        return callRequest(_uri, _args, _reportError, currentAttempt + 1);
+        this.unlockRequest(uri);
+        return [false, '', `${err}`];
       }
     };
 
@@ -2760,14 +2769,21 @@ class CrossbarIOProvider {
     if (this.logger) {
       this.logger.debugCrossbar(uri, result[1], result[2], this.name());
     }
-
     return result;
   };
 
   private onCloseCrossbar = (reason: string, details: string) => {
     if (this.crossbar.wsUnreachable)
       this.setConnectionState(ConnectionState.STATES.UNREACHABLE, details);
-    else this.setConnectionState(reason, details);
+    else if (Object.values(ConnectionState.STATES).includes(reason)) {
+      this.setConnectionState(reason, details);
+    } else this.setConnectionState(ConnectionState.STATES.UNREACHABLE, details);
+    // clear all activities
+    this.currentRequestList.clear();
+    emitCustomEvent(
+      EVENT_PROVIDER_ACTIVITY,
+      new EventProviderActivity(this, false, ''),
+    );
   };
 
   private onOpenCrossbar = () => {
