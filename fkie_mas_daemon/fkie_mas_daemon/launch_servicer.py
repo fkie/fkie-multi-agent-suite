@@ -777,9 +777,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # type is not a simple type
                 # try to import message definition
                 splitted_type = base_type.split('/')
-                module = __import__(splitted_type[0])
-                msg_class = getattr(module, 'msg')
-                msg_class = getattr(msg_class, splitted_type[1])
+                module = import_module('.msg', splitted_type[0])
+                msg_class = getattr(module, splitted_type[1])
                 if msg_class is not None:
                     sub_def = self._expand_fields(
                         msg_class.get_fields_and_field_types())
@@ -922,7 +921,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         try:
             splitted_type = request.srv_type.replace('/', '.').split('.')
             splitted_type.reverse()
-            module = __import__(splitted_type.pop())
+            module = import_module(splitted_type.pop())
             sub_class = getattr(module, splitted_type.pop())
             while splitted_type:
                 sub_class = getattr(sub_class, splitted_type.pop())
