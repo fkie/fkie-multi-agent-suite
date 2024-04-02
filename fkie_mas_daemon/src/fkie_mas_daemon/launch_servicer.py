@@ -1182,7 +1182,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             keys = {'now': now, 'auto': std_msgs.msg.Header(stamp=now)}
             data = json.loads(request.data)
             srv_params = self._pubstr_from_dict(data)
-            print(srv_params)
+            # Workaround for a bug in genpy.message.fill_message_args when a dictionary of length 1 is passed
+            if len(srv_params) == 1:
+                srv_params = [srv_params]
             genpy.message.fill_message_args(
                 request_class, srv_params, keys=keys)
             call_result = rospy.ServiceProxy(
