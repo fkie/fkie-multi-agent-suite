@@ -801,7 +801,10 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         elif 'float' in value_type or 'double' in value_type:
             result = float(value)
         elif value_type.startswith('bool'):
-            result = value.lower() in ('yes', 'true', 't', 'y', '1')
+            try:
+                result = value.lower() in ("yes", "true", "t", "y", "1")
+            except:
+                pass
         return result
 
     def _str_from_dict(self, param_dict):

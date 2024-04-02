@@ -1086,7 +1086,10 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         elif "float" in value_type or "double" in value_type:
             result = float(value)
         elif value_type.startswith("bool"):
-            result = value.lower() in ("yes", "true", "t", "y", "1")
+            try:
+                result = value.lower() in ("yes", "true", "t", "y", "1")
+            except:
+                pass
         return result
 
     def _pubstr_from_dict(self, param_dict):
@@ -1179,6 +1182,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             keys = {'now': now, 'auto': std_msgs.msg.Header(stamp=now)}
             data = json.loads(request.data)
             srv_params = self._pubstr_from_dict(data)
+            print(srv_params)
             genpy.message.fill_message_args(
                 request_class, srv_params, keys=keys)
             call_result = rospy.ServiceProxy(

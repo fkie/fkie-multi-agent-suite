@@ -78,7 +78,12 @@ function ServiceCallerPanel({ serviceName, providerId }) {
     ) {
       result = Number(value);
     } else if (valueType.startsWith('bool')) {
-      result = ('yes', 'true', 't', 'y', '1').includes(value.toLoverCase());
+      try {
+        result = ('yes', 'true', 't', 'y', '1').includes(value.toLowerCase());
+      } catch {
+        // Do nothing
+      }
+
     }
     return result;
   }
