@@ -147,8 +147,18 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
               }}
             >
               {labelInfo && (
-                <Typography variant="caption" color="inherit" padding={0.5}>
-                  [{labelInfo}]
+                <Typography
+                  variant="caption"
+                  color="inherit"
+                  padding={0.5}
+                  onClick={(e) => {
+                    if (e.detail === 2) {
+                      navigator.clipboard.writeText(labelInfo);
+                      logCtx.success(`${labelInfo} copied!`);
+                    }
+                  }}
+                >
+                  {labelInfo}
                 </Typography>
               )}
               {labelCount > 0 && (
