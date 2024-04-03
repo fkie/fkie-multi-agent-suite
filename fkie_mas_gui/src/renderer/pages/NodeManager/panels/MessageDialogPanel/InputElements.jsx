@@ -45,6 +45,7 @@ const AccordionSummary = styled((props) => <MuiAccordionSummary {...props} />)(
       transform: 'rotate(90deg)',
     },
     '& .MuiAccordionSummary-content': {
+      width: '1em',
       margin: 0,
       marginLeft: theme.spacing(1),
       padding: 0,
@@ -210,12 +211,20 @@ function InputElements({
             />
           }
         >
-          <Stack direction="row" spacing={1}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ width: '100%' }}
+            alignItems="center"
+          >
             <FormLabel
               sx={{
                 typography: 'body1',
                 color: '#000080',
-                // fontSize: 'small',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                minWidth: '5em',
               }}
             >
               {messageStruct.name && `${messageStruct.name}`}
@@ -223,9 +232,23 @@ function InputElements({
             </FormLabel>
             <FormLabel
               sx={{
+                fontSize: '0.8em',
+                fontWeight: 'bold',
+                color: '#3cb371',
+              }}
+            >
+              {messageStruct.is_array &&
+                `[${arrayCount > 0 ? arrayCount : ''}]`}
+            </FormLabel>
+            <FormLabel
+              sx={{
                 typography: 'body1',
                 fontSize: 'small',
-                paddingTop: '4px',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                fontSize: '0.8em',
+                minWidth: '2em',
               }}
             >
               {messageStruct.name &&
@@ -270,20 +293,6 @@ function InputElements({
                 </Button>
               </ButtonGroup>
             )}
-            <FormLabel
-              sx={{
-                typography: 'body1',
-                fontSize: 'small',
-                fontWeight: 'bold',
-                color: '#3cb371',
-                paddingTop: '4px',
-                paddingLeft: '1rem',
-              }}
-            >
-              {messageStruct.is_array &&
-                arrayCount > 0 &&
-                `count [${arrayCount}]`}
-            </FormLabel>
           </Stack>
         </AccordionSummary>
         <AccordionDetails id={`accordion-details-${idSuffix}`}>
