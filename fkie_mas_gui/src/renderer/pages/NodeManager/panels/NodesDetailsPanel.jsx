@@ -60,23 +60,23 @@ function NodesDetailsPanel() {
 
   const [nodesShow, setNodesShow] = useState([]);
 
-  const [showNodeInfo, setShowNodeInfo] = useLocalStorage(
+  const [showNodeInfo] = useLocalStorage(
     'NodesDetailsPanel:showNodeInfo',
     false,
   );
-  const [showPublishers, setShowPublishers] = useLocalStorage(
+  const [showPublishers] = useLocalStorage(
     'NodesDetailsPanel:showPublishers',
     true,
   );
-  const [showSubscribers, setShowSubscribers] = useLocalStorage(
+  const [showSubscribers] = useLocalStorage(
     'NodesDetailsPanel:showSubscribers',
     true,
   );
-  const [showServices, setShowServices] = useLocalStorage(
+  const [showServices] = useLocalStorage(
     'NodesDetailsPanel:showServices',
     false,
   );
-  const [showConnections, setShowConnections] = useLocalStorage(
+  const [showConnections] = useLocalStorage(
     'NodesDetailsPanel:showConnections',
     true,
   );
@@ -139,14 +139,8 @@ function NodesDetailsPanel() {
         return;
       }
 
-      let tittle = null;
       let defaultNoData = true;
-      if (rosTopicType === 'HZ') tittle = 'Rate (Hz)';
-      if (rosTopicType === 'BW') tittle = 'Bandwidth';
-      if (rosTopicType === 'DELAY') tittle = 'Delay';
-
       if (rosTopicType === 'ECHO') {
-        tittle = 'Echo';
         defaultNoData = false;
       }
       const provider = rosCtx.getProviderById(providerId);
@@ -200,7 +194,7 @@ function NodesDetailsPanel() {
         );
       }
     },
-    [logCtx],
+    [logCtx, rosCtx],
   );
 
   const onServiceClick = useCallback(
@@ -348,6 +342,7 @@ function NodesDetailsPanel() {
                       title="Launch:"
                       text={launchPath}
                       wrap
+                      copyButton={launchPath}
                     />
                   ))}
               </Stack>

@@ -24,6 +24,7 @@ function Tag({ title, text, color, copyButton, wrap }) {
     chipSX['& .MuiChip-label'] = {
       display: 'block',
       whiteSpace: 'normal',
+      wordWrap: 'break-word',
     };
   }
 
