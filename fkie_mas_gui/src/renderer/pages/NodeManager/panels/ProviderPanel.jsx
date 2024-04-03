@@ -333,6 +333,8 @@ function ProviderPanel() {
         </Tooltip>
       );
     }
+    // eslint-disable-next-line react/jsx-no-useless-fragment
+    return <></>;
   };
 
   const getHostStyle = (provider) => {
@@ -491,7 +493,7 @@ function ProviderPanel() {
                                 type={type}
                                 providerId={emptyNode.providerId}
                                 node={emptyNode}
-                                cmd={''}
+                                cmd=""
                               />,
                               true,
                               LAYOUT_TAB_SETS.BORDER_BOTTOM,

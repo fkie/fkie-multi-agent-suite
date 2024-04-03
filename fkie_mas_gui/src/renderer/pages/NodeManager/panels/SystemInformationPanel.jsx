@@ -92,7 +92,9 @@ function SystemInformationPanel({ providerId }) {
       if (provider.errorDetails) {
         infoContent['Last error'] = provider.errorDetails;
       }
-      const versionDate = provider.daemonVersion.date ? ` (${provider.daemonVersion.date})` : '';
+      const versionDate = provider.daemonVersion.date
+        ? ` (${provider.daemonVersion.date})`
+        : '';
       infoContent['Daemon version'] =
         `${provider.daemonVersion.version}${versionDate}`;
       setProviderDetails(filterNestObject(infoContent));

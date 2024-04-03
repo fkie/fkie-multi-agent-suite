@@ -107,7 +107,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
     } else {
       setLabel(labelText.slice(labelRoot.length + 1));
     }
-  }, [labelRoot, topicInfo]);
+  }, [labelRoot, labelText, topicInfo]);
 
   return (
     <TopicTreeItemRoot

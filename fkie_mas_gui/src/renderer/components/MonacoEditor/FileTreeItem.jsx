@@ -71,27 +71,25 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
         fontWeight: 600,
         fontSize: '0.9em',
       };
-    } else if (modified) {
+    }
+    if (modified) {
       return { fontWeight: 600, fontStyle: 'italic' };
-    } else if (selected) {
+    }
+    if (selected) {
       return {
         textDecoration: 'underline',
         fontWeight: 600,
         fontSize: '0.9em',
       };
     }
+    return {};
   };
 
   return (
     <FileTreeItemRoot
       label={
         <Stack direction="column">
-          <Stack
-            spacing={1}
-            direction="row"
-            alignItems={'center'}
-            marginLeft={1}
-          >
+          <Stack spacing={1} direction="row" alignItems="center" marginLeft={1}>
             {labelIcon && (
               <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />
             )}

@@ -1,4 +1,4 @@
-import React, { createContext, useMemo, useState, useReducer } from 'react';
+import React, { createContext, useMemo, useReducer } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import URI from '../models/Crossbar';
 
@@ -15,7 +15,13 @@ export interface ISettingsContext {
 
 export const LOG_LEVEL_LIST = ['DEBUG', 'INFO', 'SUCCESS', 'WARN', 'ERROR'];
 
-export const LAUNCH_FILE_EXTENSIONS = ['.launch', 'launch.xml', 'launch.py', 'launch.yaml', 'launch.yml'];
+export const LAUNCH_FILE_EXTENSIONS = [
+  '.launch',
+  'launch.xml',
+  'launch.py',
+  'launch.yaml',
+  'launch.yml',
+];
 
 export const DEFAULT_SETTINGS = {
   MIN_VERSION_DAEMON: '2.0.1',
@@ -216,7 +222,7 @@ export const SettingsContext =
 export function SettingsProvider({
   children,
 }: ISettingProvider): ReturnType<React.FC<ISettingProvider>> {
-  const MIN_VERSION_DAEMON = DEFAULT_SETTINGS.MIN_VERSION_DAEMON;
+  const { MIN_VERSION_DAEMON } = DEFAULT_SETTINGS;
   const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
   const [config, setConfig] = useLocalStorage<any>(
     'SettingsContext:config',

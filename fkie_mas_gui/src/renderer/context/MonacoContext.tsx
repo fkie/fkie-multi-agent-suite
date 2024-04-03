@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import { Monaco, useMonaco } from '@monaco-editor/react';
 import React, {
   createContext,
@@ -8,12 +9,14 @@ import React, {
   useState,
 } from 'react';
 import { FileItem } from '../models';
-import LoggingContext from './LoggingContext';
-import RosContext from './RosContext';
+import { LoggingContext } from './LoggingContext';
+import { RosContext } from './RosContext';
 
 export class ModifiedTabsInfo {
   tabId: string = '';
+
   providerId: string = '';
+
   uriPaths: string[] = [];
 
   constructor(tabId: string, providerId: string, uriPaths: string[]) {
@@ -25,10 +28,15 @@ export class ModifiedTabsInfo {
 
 export class SaveResult {
   tabId: string = '';
+
   file: string = '';
+
   result: boolean = false;
+
   providerId: string = '';
+
   message: string = '';
+
   constructor(
     tabId: string,
     file: string,
@@ -104,7 +112,7 @@ export function MonacoProvider({
         });
       }
     },
-    [modifiedFiles, setModifiedFiles],
+    [setModifiedFiles],
   );
 
   const getModifiedTabs: () => ModifiedTabsInfo[] = useCallback(() => {
@@ -184,7 +192,7 @@ export function MonacoProvider({
         );
         return Promise.resolve(result);
       },
-      [modifiedFiles],
+      [logCtx, modifiedFiles, monaco, rosCtx],
     );
 
   const attributesMemo = useMemo(

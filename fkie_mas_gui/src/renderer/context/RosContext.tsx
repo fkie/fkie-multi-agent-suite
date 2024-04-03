@@ -183,7 +183,7 @@ export function RosProviderReact(
     providers.forEach((prov) => {
       if (prov.discovered !== undefined) {
         prov.discovered = prov.discovered.filter(
-          (pid) => idsSavedProviders.indexOf(pid) != -1,
+          (pid) => idsSavedProviders.indexOf(pid) !== -1,
         );
       }
     });
@@ -212,30 +212,6 @@ export function RosProviderReact(
       }),
     );
   }, [providers, setProvidersConnected, setProviders]);
-
-  /**
-   * Trigger updateLaunchContent() of the provider.
-   */
-  const removeProvider = useCallback(
-    async (providerId: string) => {
-      logCtx.debug(
-        `Triggering update of ROS launch files from ${providerId}`,
-        '',
-      );
-      setProviders((prev) =>
-        prev.filter((prov) => {
-          if (prov.id === providerId) {
-            prov.close();
-            return false;
-          }
-          return true;
-        }),
-      );
-      const provider = getProviderById(providerId);
-      await provider?.updateLaunchContent();
-    },
-    [logCtx, setProviders],
-  );
 
   /** Returns true if given host is one of local IPv4 addresses and local host names.  */
   function isLocalHost(host: string) {
@@ -318,6 +294,30 @@ export function RosProviderReact(
       return defaultValue;
     },
     [providers],
+  );
+
+  /**
+   * Trigger updateLaunchContent() of the provider.
+   */
+  const removeProvider = useCallback(
+    async (providerId: string) => {
+      logCtx.debug(
+        `Triggering update of ROS launch files from ${providerId}`,
+        '',
+      );
+      setProviders((prev) =>
+        prev.filter((prov) => {
+          if (prov.id === providerId) {
+            prov.close();
+            return false;
+          }
+          return true;
+        }),
+      );
+      const provider = getProviderById(providerId);
+      await provider?.updateLaunchContent();
+    },
+    [getProviderById, logCtx],
   );
 
   /**
@@ -579,6 +579,63 @@ export function RosProviderReact(
       provider.getDaemonVersion();
     });
   }, debounceTimeout);
+
+  /** Connects to the given provider and add it to the list. */
+  const connectToProvider: (prov: CrossbarIOProvider) => Promise<boolean> =
+    useCallback(
+      async (prov) => {
+        // check / add the provider
+        const provider = getProviderByHosts(
+          prov.hostnames,
+          prov.crossbar.port,
+          prov,
+        ) as CrossbarIOProvider;
+
+        if (provider.isAvailable()) {
+          provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
+          // already connected
+          provider.getDaemonVersion();
+          return true;
+        }
+
+        provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
+        provider.isLocalHost = isLocalHost(provider.crossbar.host);
+        try {
+          if (await provider.init()) {
+            return true;
+          }
+          const error = `Could not initialize provider [${provider.name()}] (${
+            provider.type
+          } ) in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`;
+          // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
+          logCtx.error(error, '');
+          provider.errorDetails = `${error}`;
+          provider.setConnectionState(
+            ConnectionState.STATES.UNREACHABLE,
+            JSON.stringify(error),
+          );
+        } catch (error: any) {
+          logCtx.debug(
+            `Could not initialize provider [${provider.name()}] (${
+              provider.type
+            } )in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`,
+            `Error: ${JSON.stringify(error)}`,
+          );
+          provider.setConnectionState(
+            ConnectionState.STATES.UNREACHABLE,
+            JSON.stringify(error),
+          );
+        }
+        return false;
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [
+        logCtx,
+        // startProvider,
+        getProviderByHosts,
+        setProvidersAddQueue,
+      ],
+    );
 
   const startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean> =
     useCallback(
@@ -882,63 +939,6 @@ export function RosProviderReact(
     },
     [startConfig],
   );
-
-  /** Connects to the given provider and add it to the list. */
-  const connectToProvider: (prov: CrossbarIOProvider) => Promise<boolean> =
-    useCallback(
-      async (prov) => {
-        // check / add the provider
-        const provider = getProviderByHosts(
-          prov.hostnames,
-          prov.crossbar.port,
-          prov,
-        ) as CrossbarIOProvider;
-
-        if (provider.isAvailable()) {
-          provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
-          // already connected
-          provider.getDaemonVersion();
-          return true;
-        }
-
-        provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
-        provider.isLocalHost = isLocalHost(provider.crossbar.host);
-        try {
-          if (await provider.init()) {
-            return true;
-          }
-          const error = `Could not initialize provider [${provider.name()}] (${
-            provider.type
-          } ) in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`;
-          // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
-          logCtx.error(error, '');
-          provider.errorDetails = `${error}`;
-          provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
-            JSON.stringify(error),
-          );
-        } catch (error: any) {
-          logCtx.debug(
-            `Could not initialize provider [${provider.name()}] (${
-              provider.type
-            } )in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`,
-            `Error: ${JSON.stringify(error)}`,
-          );
-          provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
-            JSON.stringify(error),
-          );
-        }
-        return false;
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [
-        logCtx,
-        // startProvider,
-        getProviderByHosts,
-        setProvidersAddQueue,
-      ],
-    );
 
   const getProviderName = (providerId: string) => {
     const name = providers.filter((item) => item.id === providerId)[0]?.name();

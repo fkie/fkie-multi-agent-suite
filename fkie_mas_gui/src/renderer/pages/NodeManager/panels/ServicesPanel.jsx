@@ -24,12 +24,11 @@ import { emitCustomEvent } from 'react-custom-events';
 import SearchBar from '../../../components/UI/SearchBar';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-import { generateUniqueId } from '../../../utils';
+import { findIn, generateUniqueId } from '../../../utils';
 import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
-import { findIn } from '../../../utils/index';
 import { LAYOUT_TAB_SETS } from '../layout';
 import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import ServiceCallerPanel from './ServiceCallerPanel';

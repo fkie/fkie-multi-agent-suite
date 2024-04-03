@@ -319,7 +319,7 @@ function LaunchFileModal({
         );
       }
     },
-    [currentArgs],
+    [currentArgs, lastOpenPath, setLastOpenPath],
   );
 
   const isPathParam = (name, value) => {

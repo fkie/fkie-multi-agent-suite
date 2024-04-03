@@ -1,49 +1,21 @@
-import { styled } from '@mui/material/styles';
 import { TreeView } from '@mui/x-tree-view';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
-import {
-  createRef,
-  forwardRef,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  IconButton,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
-} from '@mui/material';
+import { Box, IconButton, Stack, Tooltip } from '@mui/material';
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import MuiAccordion from '@mui/material/Accordion';
-import MuiAccordionDetails from '@mui/material/AccordionDetails';
-import MuiAccordionSummary from '@mui/material/AccordionSummary';
-import { TableVirtuoso } from 'react-virtuoso';
 
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { emitCustomEvent } from 'react-custom-events';
 import { SearchBar, TopicTreeItem } from '../../../components';
-import { LoggingContext } from '../../../context/LoggingContext';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-import useLocalStorage from '../../../hooks/useLocalStorage';
 import { CmdType } from '../../../providers';
 import {
   EVENT_OPEN_COMPONENT,
@@ -54,14 +26,19 @@ import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
 
-
 class TopicExtendedInfo {
   id;
+
   name;
+
   msgtype = '';
+
   providerId = '';
+
   providerName = '';
+
   publishers = [];
+
   subscribers = [];
 
   // providers = {}; // {providerId: string, providerName: string}
@@ -84,6 +61,7 @@ class TopicExtendedInfo {
       }
     });
   }
+
   addSubscribers(subscribers) {
     subscribers.forEach((sub) => {
       if (!this.subscribers.includes(sub)) {
@@ -91,16 +69,14 @@ class TopicExtendedInfo {
       }
     });
   }
+
   add(topic) {
     this.addPublishers(topic.publisher);
     this.addSubscribers(topic.subscriber);
   }
 }
 
-
 function TopicsPanel({ initialSearchTerm }) {
-
-  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [topics, setTopics] = useState([]); // [topicInfo: TopicExtendedInfo]
@@ -115,7 +91,7 @@ function TopicsPanel({ initialSearchTerm }) {
 
   function genKey(items) {
     return `${items.join('#')}`;
-    return `${name}#${type}#${providerId}`;
+    //  return `${name}#${type}#${providerId}`;
   }
 
   const getTopicList = useCallback(async () => {
@@ -127,7 +103,6 @@ function TopicsPanel({ initialSearchTerm }) {
 
     if (rosCtx.mapProviderRosNodes) {
       // Get topics from the ros node list of each provider.
-      const providerList = {};
       rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
         nodeList.forEach((node) => {
           newNodeKeyName[genKey([providerId, node.id])] = node.name;
@@ -166,7 +141,7 @@ function TopicsPanel({ initialSearchTerm }) {
       });
       setTopics(newTopics);
     }
-  }, [rosCtx.mapProviderRosNodes]);
+  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
 
   // debounced search callback
   const onSearch = useDebounceCallback((newSearchTerm) => {
@@ -224,10 +199,11 @@ function TopicsPanel({ initialSearchTerm }) {
 
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
-  const fillTree = (fullPrefix, topics) => {
+  const fillTree = (fullPrefix, topicsGroup) => {
     const byPrefixP1 = new Map('', []);
     // create a map with simulated tree for the namespaces of the topic list
-    for (const [key, topicInfo] of Object.entries(topics)) {
+    // for (const [key, topicInfo] of Object.entries(topics)) {
+    Object.entries(topicsGroup).forEach(([key, topicInfo]) => {
       const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
       const [firstName, ...restName] = nameSuffix.split('/');
       if (restName.length > 0) {
@@ -242,7 +218,7 @@ function TopicsPanel({ initialSearchTerm }) {
       } else {
         byPrefixP1.set(firstName, [{ topicInfo }]);
       }
-    }
+    });
 
     let count = 0;
     // create result
@@ -257,9 +233,9 @@ function TopicsPanel({ initialSearchTerm }) {
         const subResult = fillTree(`${fullPrefix}/${groupName}`, groupTopics);
         // the result count is 0 -> we added multiple provider for topic with same name.
         if (subResult.count === 0) {
-          count = count +1;
+          count += 1;
         } else {
-          count = count + subResult.count;
+          count += subResult.count;
         }
         newFilteredTopics.push([
           {
@@ -273,7 +249,7 @@ function TopicsPanel({ initialSearchTerm }) {
         if (value[0].topicInfo.providerName !== key) {
           // since the same topic can be on multiple provider
           // we count only topics
-          count = count + 1;
+          count += 1;
         }
       }
     });
@@ -374,7 +350,7 @@ function TopicsPanel({ initialSearchTerm }) {
     } else {
       setTopicForSelected(null);
     }
-  }, [selectedItems]);
+  }, [filteredTopics, selectedItems]);
 
   return (
     <Box
@@ -391,7 +367,7 @@ function TopicsPanel({ initialSearchTerm }) {
         // }}
       >
         <Stack direction="row" spacing={1} alignItems="center">
-          <Stack direction="row" paddingTop={'5px'}>
+          <Stack direction="row" paddingTop="5px">
             <Tooltip
               title="Echo"
               placement="bottom"

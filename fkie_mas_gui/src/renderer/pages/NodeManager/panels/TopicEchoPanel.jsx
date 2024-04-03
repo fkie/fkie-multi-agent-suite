@@ -461,12 +461,20 @@ function TopicEchoPanel({
                     title={`${event.receivedIndex}`}
                   /> */}
                   {event.seq === undefined && (
-                    <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+                    <Typography
+                      fontStyle="italic"
+                      fontSize="0.8em"
+                      color="gray"
+                    >
                       {event.receivedIndex}:
                     </Typography>
                   )}
                   {event.seq !== undefined && (
-                    <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+                    <Typography
+                      fontStyle="italic"
+                      fontSize="0.8em"
+                      color="gray"
+                    >
                       {event.seq}
                     </Typography>
                     // <Tag
@@ -485,7 +493,7 @@ function TopicEchoPanel({
                         ? 'grayscale'
                         : 'rjv-default'
                     }
-                    style={{ fontSize: "0.8em" }}
+                    style={{ fontSize: '0.8em' }}
                     src={event?.data}
                     collapseStringsAfterLength={30}
                     displayObjectSize={false}

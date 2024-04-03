@@ -13,10 +13,10 @@ import {
 
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 
-import OverflowMenu from '../../components/UI/OverflowMenu';
 import { LoggingContext } from '../../context/LoggingContext';
 import { SettingsContext } from '../../context/SettingsContext';
 import { colorFromHostname } from '../UI/Colors';
+import OverflowMenu from '../UI/OverflowMenu';
 
 const ParameterTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -80,7 +80,9 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
 ) {
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
-  const [parameterType, setParameterType] = useState(param ? param.type : labelInfo);
+  const [parameterType, setParameterType] = useState(
+    param ? param.type : labelInfo,
+  );
 
   const typeOptions = [
     {

@@ -8,9 +8,9 @@ import { TreeView } from '@mui/x-tree-view';
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import ComputerIcon from '@mui/icons-material/Computer';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HideSourceIcon from '@mui/icons-material/HideSource';
-import ComputerIcon from '@mui/icons-material/Computer';
 import Label from '@mui/icons-material/Label';
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -127,38 +127,41 @@ export default function ParameterPanel({ nodes, providers }) {
   }, [rosCtx.initialized, rosCtx.providers, nodes, roots]);
 
   // debounced callback when updating a parameter
-  const updateParameter = useDebounceCallback(async (parameter, newValue, newType) => {
-    const provider = rosCtx.getProviderById(parameter.providerId);
-    if (!provider || !provider.isAvailable()) return;
+  const updateParameter = useDebounceCallback(
+    async (parameter, newValue, newType) => {
+      const provider = rosCtx.getProviderById(parameter.providerId);
+      if (!provider || !provider.isAvailable()) return;
 
-    if (!provider.setParameter) {
-      logCtx.error(
-        `Provider ${rosCtx.getProviderName(
-          parameter.providerId,
-        )} does not support [setParameter] method`,
-        DEFAULT_BUG_TEXT,
-      );
-      return;
-    }
+      if (!provider.setParameter) {
+        logCtx.error(
+          `Provider ${rosCtx.getProviderName(
+            parameter.providerId,
+          )} does not support [setParameter] method`,
+          DEFAULT_BUG_TEXT,
+        );
+        return;
+      }
 
-    parameter.value = newValue;
-    if (newType) {
-      parameter.type = newType;
-    }
-    const result = await provider.setParameter(parameter);
+      parameter.value = newValue;
+      if (newType) {
+        parameter.type = newType;
+      }
+      const result = await provider.setParameter(parameter);
 
-    if (result) {
-      logCtx.success(
-        'Parameter updated successfully',
-        `Parameter: ${parameter.name}, value: ${parameter.value}`,
-      );
-    } else {
-      logCtx.error(
-        `Could not update parameter [${parameter.name}]`,
-        DEFAULT_BUG_TEXT,
-      );
-    }
-  }, 300);
+      if (result) {
+        logCtx.success(
+          'Parameter updated successfully',
+          `Parameter: ${parameter.name}, value: ${parameter.value}`,
+        );
+      } else {
+        logCtx.error(
+          `Could not update parameter [${parameter.name}]`,
+          DEFAULT_BUG_TEXT,
+        );
+      }
+    },
+    300,
+  );
 
   const deleteParameters = useCallback(
     (paramsMap) => {
@@ -332,7 +335,7 @@ export default function ParameterPanel({ nodes, providers }) {
     if (Object.hasOwn(obj, 'isLocalHost')) {
       // it is CrossbarIOProvider
       return ComputerIcon;
-      return PrecisionManufacturingIcon;
+      // return PrecisionManufacturingIcon;
     }
     if (Object.hasOwn(obj, 'system_node')) {
       // it is RosNode

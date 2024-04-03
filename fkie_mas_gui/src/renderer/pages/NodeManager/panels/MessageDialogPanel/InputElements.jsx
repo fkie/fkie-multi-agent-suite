@@ -243,7 +243,6 @@ function InputElements({
             <FormLabel
               sx={{
                 typography: 'body1',
-                fontSize: 'small',
                 textOverflow: 'ellipsis',
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',

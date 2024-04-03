@@ -213,7 +213,7 @@ class RosNode {
   }
 
   getRosLoggersCount: () => number = () => {
-    return Object.keys(this.rosLoggers).length
+    return Object.keys(this.rosLoggers).length;
   };
 
   /**

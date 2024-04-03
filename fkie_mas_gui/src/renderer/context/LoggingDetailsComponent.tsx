@@ -90,11 +90,13 @@ const LoggingDetailsComponent = forwardRef<
           )}
           {(typeof details === 'string' || details instanceof String) && (
             <Typography
-              overflow={'auto'}
+              overflow="auto"
               noWrap={false}
-              maxHeight={"10em"}
-              fontSize={"0.9em"}
-            >{JSON.stringify(details)}</Typography>
+              maxHeight="10em"
+              fontSize="0.9em"
+            >
+              {JSON.stringify(details)}
+            </Typography>
           )}
         </Collapse>
       </Card>

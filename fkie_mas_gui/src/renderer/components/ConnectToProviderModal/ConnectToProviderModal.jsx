@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
@@ -114,7 +114,6 @@ function ConnectToProviderModal() {
     'ConnectToProviderModal:startConfigurations',
     [],
   );
-  const [filterHostsText, setFilterHostsText] = useState('');
   const [selectedHistory, setSelectedHistory] = useState('');
   const [forceRestart, setForceRestart] = useState(true);
   const [saveDefaultParameter, setSaveDefaultParameter] = useState(false);
@@ -140,13 +139,6 @@ function ConnectToProviderModal() {
     setOpenTerminalTooltip(false);
     setStartProviderIsSubmitting(false);
   };
-
-  useEffect(() => {
-    // use system ros version
-    if (rosCtx.rosInfo?.version) {
-      setRosVersion(rosCtx.rosInfo?.version);
-    }
-  }, [rosCtx.rosInfo]);
 
   useEffect(() => {
     if (!rosCtx.systemInfo) return;
@@ -221,10 +213,13 @@ function ConnectToProviderModal() {
     return robotHosts;
   };
 
-  const setRosVersion = (rosVersion) => {
-    startParameter.rosVersion = rosVersion;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
-  };
+  const setRosVersion = useCallback(
+    (rosVersion) => {
+      startParameter.rosVersion = rosVersion;
+      setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    },
+    [startParameter],
+  );
 
   const setNetworkId = (networkId) => {
     startParameter.networkId = networkId;
@@ -377,92 +372,92 @@ function ConnectToProviderModal() {
     }, 500);
   };
 
-  const generateHistoryView = useMemo(
-    (provider) => {
-      if (startConfigurations.length === 0) {
-        return <></>;
-      }
-      return (
-        <Stack
-          maxHeight={'13em'}
-          // backgroundColor={settingsCtx.get('backgroundColor')}
-          paddingBottom="1.2em"
+  useEffect(() => {
+    // use system ros version
+    if (rosCtx.rosInfo?.version) {
+      setRosVersion(rosCtx.rosInfo?.version);
+    }
+  }, [rosCtx.rosInfo, setRosVersion]);
+
+  const generateHistoryView = useMemo(() => {
+    if (startConfigurations.length === 0) {
+      // eslint-disable-next-line react/jsx-no-useless-fragment
+      return <></>;
+    }
+    return (
+      <Stack
+        maxHeight="13em"
+        // backgroundColor={settingsCtx.get('backgroundColor')}
+        paddingBottom="1.2em"
+      >
+        <Typography paddingBottom="0.3em" variant="body2">
+          Recent:
+        </Typography>
+        <Paper
+          sx={{
+            maxHeight: '13em',
+            width: '100%',
+            overflow: 'auto',
+            backgroundColor: settingsCtx.get('backgroundColor'),
+          }}
         >
-          <Typography paddingBottom="0.3em" variant="body2">
-            Recent:
-          </Typography>
-          <Paper
-            sx={{
-              maxHeight: '13em',
-              width: '100%',
-              overflow: 'auto',
-              backgroundColor: settingsCtx.get('backgroundColor'),
-            }}
-          >
-            <TableContainer>
-              <Table aria-label="favorite table">
-                <TableBody>
-                  {startConfigurations.map((cfg) => (
-                    <TableRow
-                      hover
-                      key={cfg.id}
-                      onClick={() => {
-                        setStartParameter(cfg.params);
-                        setHostValues(cfg.hosts);
-                        setHostInputValue('');
-                        setSelectedHistory(cfg.id);
-                      }}
-                    >
-                      <TableCell>
-                        <Typography
-                          noWrap
-                          variant="body2"
-                          fontWeight={
-                            selectedHistory === cfg.id ? 'bold' : 'normal'
-                          }
-                          style={{
-                            cursor: 'pointer',
+          <TableContainer>
+            <Table aria-label="favorite table">
+              <TableBody>
+                {startConfigurations.map((cfg) => (
+                  <TableRow
+                    hover
+                    key={cfg.id}
+                    onClick={() => {
+                      setStartParameter(cfg.params);
+                      setHostValues(cfg.hosts);
+                      setHostInputValue('');
+                      setSelectedHistory(cfg.id);
+                    }}
+                  >
+                    <TableCell>
+                      <Typography
+                        noWrap
+                        variant="body2"
+                        fontWeight={
+                          selectedHistory === cfg.id ? 'bold' : 'normal'
+                        }
+                        style={{
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {stringifyStartConfig(cfg)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell style={{ padding: 0, width: '2em' }}>
+                      <Tooltip title="Delete entry" placement="bottom">
+                        <IconButton
+                          color="error"
+                          onClick={() => {
+                            setStartConfigurations((prev) =>
+                              prev.filter((pCfg) => pCfg.id !== cfg.id),
+                            );
                           }}
+                          size="small"
                         >
-                          {stringifyStartConfig(cfg)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell style={{ padding: 0, width: '2em' }}>
-                        <Tooltip title="Delete entry" placement="bottom">
-                          <IconButton
-                            color="error"
-                            onClick={() => {
-                              setStartConfigurations((prev) =>
-                                prev.filter((pCfg) => pCfg.id !== cfg.id),
-                              );
-                            }}
-                            size="small"
-                          >
-                            <DeleteOutlineOutlinedIcon fontSize="inherit" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Stack>
-      );
-    },
-    [
-      settingsCtx.changed,
-      startConfigurations,
-      selectedHistory,
-      setSelectedHistory,
-      setStartParameter,
-      setStartConfigurations,
-      setHostValues,
-      setHostInputValue,
-      stringifyStartConfig,
-    ],
-  );
+                          <DeleteOutlineOutlinedIcon fontSize="inherit" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      </Stack>
+    );
+  }, [
+    startConfigurations,
+    settingsCtx,
+    selectedHistory,
+    setStartConfigurations,
+  ]);
 
   return (
     <>
@@ -583,7 +578,7 @@ function ConnectToProviderModal() {
                     <div>{startProviderDescription}</div>
                   </Stack>
                 ) : (
-                  <Stack direction="row" spacing={'1em'} marginLeft="1rem">
+                  <Stack direction="row" spacing="1em" marginLeft="1rem">
                     <Button
                       type="submit"
                       variant="contained"
@@ -600,7 +595,7 @@ function ConnectToProviderModal() {
                       style={{ height: '3em', textAlign: 'center' }}
                       endIcon={<RocketLaunchIcon />}
                     >
-                      {'Start'}
+                      Start
                     </Button>
                     <Button
                       type="submit"
@@ -617,7 +612,7 @@ function ConnectToProviderModal() {
                       style={{ height: '3em', textAlign: 'center' }}
                       endIcon={<JoinFullIcon />}
                     >
-                      {'Join'}
+                      Join
                     </Button>
                   </Stack>
                 )}
@@ -1146,7 +1141,7 @@ function ConnectToProviderModal() {
                         }}
                         endIcon={<RestartAltIcon />}
                       >
-                        {'Reset advanced parameters to default'}
+                        Reset advanced parameters to default
                       </Button>
                     </Box>
                   </Stack>

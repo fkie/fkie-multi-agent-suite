@@ -40,7 +40,7 @@ function SearchTree({ tabId, ownUriPaths, searchTerm }) {
 
   useEffect(() => {
     debouncedFindAllMatches(searchTerm);
-  }, [searchTerm]);
+  }, [debouncedFindAllMatches, searchTerm]);
 
   function selectSearchResult(entry) {
     emitCustomEvent(
@@ -89,7 +89,7 @@ function SearchTree({ tabId, ownUriPaths, searchTerm }) {
                   onClick={() => {
                     selectSearchResult(entry);
                   }}
-                ></SearchResultTreeItem>
+                />
               );
             })}
           </SearchFileTreeItem>

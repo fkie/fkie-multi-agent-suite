@@ -28,7 +28,6 @@ import { colorFromHostname } from '../../../components/UI/Colors';
 import SearchBar from '../../../components/UI/SearchBar';
 import { LoggingContext } from '../../../context/LoggingContext';
 import { MonacoContext } from '../../../context/MonacoContext';
-import { NavigationContext } from '../../../context/NavigationContext';
 import { RosContext } from '../../../context/RosContext';
 import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
@@ -55,7 +54,6 @@ function FileEditorPanel({
   const SSHCtx = useContext(SSHContext);
   const logCtx = useContext(LoggingContext);
   const monacoCtx = useContext(MonacoContext);
-  const navCtx = useContext(NavigationContext);
 
   // ----- size handling
   const editorRef = useRef(null);
@@ -87,7 +85,6 @@ function FileEditorPanel({
   const [editorHeight, setEditorHeight] = useState(20);
   const [editorWidth, setEditorWidth] = useState(20);
   const [panelHeight, setPanelHeight] = useState(0);
-  const [panelWidth, setPanelWidth] = useState(0);
   const [panelSize, setPanelSize] = useState(null);
   // ----- size handling end
 
@@ -113,24 +110,30 @@ function FileEditorPanel({
   const [notificationDescription, setNotificationDescription] = useState('');
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
-  const createUriPath = (path) => {
-    return `/${tabId}:${path}`;
-  };
+  const createUriPath = useCallback(
+    (path) => {
+      return `/${tabId}:${path}`;
+    },
+    [tabId],
+  );
 
   /**
    * Return a monaco model from a given path
    * * @param {string} uriPath - file path (in the format <host>:<abs_path>)
    */
-  const getModelFromPath = (path) => {
-    if (!monaco) return null;
-    if (!path || path.length === 0) return null;
-    let modelUri = path;
-    if (modelUri.indexOf(':') === -1) {
-      // create uriPath
-      modelUri = createUriPath(path);
-    }
-    return monaco.editor.getModel(monaco.Uri.file(modelUri));
-  };
+  const getModelFromPath = useCallback(
+    (path) => {
+      if (!monaco) return null;
+      if (!path || path.length === 0) return null;
+      let modelUri = path;
+      if (modelUri.indexOf(':') === -1) {
+        // create uriPath
+        modelUri = createUriPath(path);
+      }
+      return monaco.editor.getModel(monaco.Uri.file(modelUri));
+    },
+    [createUriPath, monaco],
+  );
 
   /**
    * Create a new monaco model from a given file
@@ -154,16 +157,6 @@ function FileEditorPanel({
       pathUri,
     );
   };
-
-  /** select node definition on event. */
-  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, (data) => {
-    if (data.tabId === tabId) {
-      const model = getModelFromPath(data.filePath);
-      if (model) {
-        setEditorModel(data.filePath, data.fileRange);
-      }
-    }
-  });
 
   useEffect(() => {
     if (selectionRange) {
@@ -190,7 +183,7 @@ function FileEditorPanel({
         editorRef.current.focus();
       }
     }
-  }, [selectionRange, editorRef.current]);
+  }, [selectionRange]);
 
   const handleChangeExplorer = useCallback(
     (isExpanded) => {
@@ -248,16 +241,16 @@ function FileEditorPanel({
       });
     setModifiedFiles(newModifiedFiles);
     monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }, [monaco.editor, ownUriPaths, setModifiedFiles]);
+  }, [monaco.editor, monacoCtx, ownUriPaths, providerId, tabId]);
 
   // update decorations for included files
-  const updateIncludeDecorations = (model, includedFiles) => {
+  const updateIncludeDecorations = (model, includedFilesList) => {
     if (!model) return;
     // prepare file decorations
     const newIncludeDecorations = [];
     const newDecorators = [];
-    if (includedFiles) {
-      includedFiles.forEach((f) => {
+    if (includedFilesList) {
+      includedFilesList.forEach((f) => {
         const matches = model.findMatches(f.raw_inc_path);
         if (matches.length > 0) {
           matches.forEach((match) => {
@@ -331,8 +324,8 @@ function FileEditorPanel({
       updateModifiedFiles();
 
       // set package name
-      const packageName = ownUriToPackageDict[model.uri.path];
-      setPackageName(packageName ? packageName : '');
+      const modelPackageName = ownUriToPackageDict[model.uri.path];
+      setPackageName(modelPackageName ? modelPackageName : '');
       // set range is available
       if (range) {
         setSelectionRange(range);
@@ -353,6 +346,16 @@ function FileEditorPanel({
       updateModifiedFiles,
     ],
   );
+
+  /** select node definition on event. */
+  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, (data) => {
+    if (data.tabId === tabId) {
+      const model = getModelFromPath(data.filePath);
+      if (model) {
+        setEditorModel(data.filePath, data.fileRange);
+      }
+    }
+  });
 
   useEffect(() => {
     // test on each click
@@ -410,7 +413,7 @@ function FileEditorPanel({
         panelRef.current.getBoundingClientRect().width - sideBarWidth,
       );
     }
-  }, [sideBarWidth]);
+  }, [debouncedWidthUpdate, sideBarWidth]);
 
   const handleEditorChange = useCallback(
     (value) => {
@@ -460,7 +463,7 @@ function FileEditorPanel({
     setSideBarMinSize(newFontSize * 2 + 2);
     setSideBarWidth(newFontSize * 2 + 2);
     setExplorerBarMinSize(newFontSize * 2 + 2);
-  }, [settingsCtx.changed]);
+  }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
     // update ownUriPaths and package names (ownUriToPackageDict)
@@ -473,9 +476,9 @@ function FileEditorPanel({
     const newOwnUris = [uriPath];
     ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
     includedFiles.forEach((file) => {
-      const uriPath = createUriPath(file.inc_path);
-      newOwnUris.push(uriPath);
-      ownUriToPackageDict[uriPath] = provider.getPackageName(file.inc_path);
+      const incUriPath = createUriPath(file.inc_path);
+      newOwnUris.push(incUriPath);
+      ownUriToPackageDict[incUriPath] = provider.getPackageName(file.inc_path);
     });
     setOwnUriPaths(newOwnUris);
   }, [includedFiles, rootFilePath, editorRef.current]);
@@ -487,7 +490,7 @@ function FileEditorPanel({
     );
     setEditorWidth(panelSize.width - sideBarWidth);
     setPanelHeight(panelSize.height);
-  }, [sideBarWidth, panelSize, infoRef.current]);
+  }, [sideBarWidth, panelSize]);
 
   useEffect(() => {
     // add resize observer to update size of monaco editor ad side bars
@@ -524,7 +527,10 @@ function FileEditorPanel({
         });
         // remove undefined models
         monaco.editor.getModels().forEach((model) => {
-          if (model.getValue().length === 0 && model.uri.path.indexOf(':') === -1) {
+          if (
+            model.getValue().length === 0 &&
+            model.uri.path.indexOf(':') === -1
+          ) {
             model.dispose();
           }
         });
@@ -532,7 +538,7 @@ function FileEditorPanel({
         monacoCtx.updateModifiedFiles(tabId, '', []);
       }
     };
-  }, [monacoDisposables, monaco, ownUriPaths, componentWillUnmount.current]);
+  }, [monacoDisposables, monaco, ownUriPaths, monacoCtx, tabId]);
 
   const onKeyDown = (event) => {
     if (event.ctrlKey && event.shiftKey && event.key === 'E') {
@@ -788,7 +794,7 @@ function FileEditorPanel({
     configureMonacoEditor();
     setInitialized(true);
     loadFiles();
-  }, [initialized, monaco, editorRef.current]);
+  }, [initialized, monaco, loadFiles]);
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
@@ -807,7 +813,7 @@ function FileEditorPanel({
         // defaultSize={sideBarWidth}
         size={sideBarWidth}
         onChange={(size) => {
-          if (size != sideBarMinSize) {
+          if (size !== sideBarMinSize) {
             setSavedSideBarUserWidth(size);
           }
           setSideBarWidth(size);
@@ -819,7 +825,7 @@ function FileEditorPanel({
           // defaultSize={sideBarWidth}
           size={explorerBarHeight}
           onChange={(size) => {
-            if (size != explorerBarHeight) {
+            if (size !== explorerBarHeight) {
               setSavedExplorerBarHight(size);
             }
             setExplorerBarHeight(size);
@@ -862,7 +868,7 @@ function FileEditorPanel({
               </Stack>
             )}
           </Stack>
-          <Stack paddingTop={'2px'}>
+          <Stack paddingTop="2px">
             <Stack direction="row" alignItems="center" spacing={1}>
               <Tooltip title="Search (Ctrl+Shift+F)" placement="right">
                 <ToggleButton
@@ -900,7 +906,7 @@ function FileEditorPanel({
                   tabId={tabId}
                   ownUriPaths={ownUriPaths}
                   searchTerm={globalSearchTerm}
-                ></SearchTree>
+                />
               </Stack>
             )}
           </Stack>
@@ -1021,7 +1027,7 @@ function FileEditorPanel({
                     );
                   })}
               </Stack>
-              <Typography flexGrow={1}></Typography>
+              <Typography flexGrow={1} />
               <Typography
                 noWrap
                 style={{
@@ -1046,33 +1052,33 @@ function FileEditorPanel({
             </Alert>
           )}
           {/* {activeModel && ( */}
-            <Editor
-              key="editor"
-              height={editorHeight}
-              width={editorWidth}
-              theme={settingsCtx.get('useDarkMode') ? 'vs-dark' : 'light'}
-              onMount={handleEditorDidMount}
-              onChange={handleEditorChange}
-              options={{
-                // to check the all possible options check this - https://github.com/microsoft/monacoRef.current-editor/blob/a5298e1/website/typedoc/monacoRef.current.d.ts#L3017
-                // TODO: make global config for this parameters
-                readOnly: false,
-                colorDecorators: true,
-                mouseWheelZoom: true,
-                scrollBeyondLastLine: false,
-                smoothScrolling: false,
-                wordWrap: 'off',
-                fontSize: settingsCtx.get('fontSize'),
-                minimap: { enabled: true },
-                selectOnLineNumbers: true,
-                'bracketPairColorization.enabled': true,
-                guides: {
-                  bracketPairs: true,
-                },
-                definitionLinkOpensInPeek: false,
-                // automaticLayout: true,
-              }}
-            />
+          <Editor
+            key="editor"
+            height={editorHeight}
+            width={editorWidth}
+            theme={settingsCtx.get('useDarkMode') ? 'vs-dark' : 'light'}
+            onMount={handleEditorDidMount}
+            onChange={handleEditorChange}
+            options={{
+              // to check the all possible options check this - https://github.com/microsoft/monacoRef.current-editor/blob/a5298e1/website/typedoc/monacoRef.current.d.ts#L3017
+              // TODO: make global config for this parameters
+              readOnly: false,
+              colorDecorators: true,
+              mouseWheelZoom: true,
+              scrollBeyondLastLine: false,
+              smoothScrolling: false,
+              wordWrap: 'off',
+              fontSize: settingsCtx.get('fontSize'),
+              minimap: { enabled: true },
+              selectOnLineNumbers: true,
+              'bracketPairColorization.enabled': true,
+              guides: {
+                bracketPairs: true,
+              },
+              definitionLinkOpensInPeek: false,
+              // automaticLayout: true,
+            }}
+          />
           {/* // )} */}
         </Stack>
       </SplitPane>
@@ -1081,7 +1087,6 @@ function FileEditorPanel({
 }
 
 FileEditorPanel.defaultProps = {
-  rootFilePath: null,
   fileRange: null,
 };
 

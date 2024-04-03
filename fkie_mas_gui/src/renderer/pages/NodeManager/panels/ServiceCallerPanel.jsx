@@ -83,7 +83,6 @@ function ServiceCallerPanel({ serviceName, providerId }) {
       } catch {
         // Do nothing
       }
-
     }
     return result;
   }

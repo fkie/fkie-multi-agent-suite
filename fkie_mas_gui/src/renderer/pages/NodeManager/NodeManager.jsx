@@ -90,7 +90,7 @@ function NodeManager() {
   function hasTab(layout, tabId) {
     if (!layout.children) return false;
     const tabs = layout.children.filter((item) => {
-      if (item.type === 'tab' && item.id == tabId) {
+      if (item.type === 'tab' && item.id === tabId) {
         return true;
       }
       if (item.children) {
@@ -405,6 +405,7 @@ function NodeManager() {
                 sx={{ fontSize: 'inherit', rotate: '90deg' }}
               />
             );
+            break;
           default:
             break;
         }
@@ -628,7 +629,13 @@ function NodeManager() {
       }
       setModifiedEditorTabs(monacoCtx.getModifiedTabs());
     }
-  }, [electronCtx.terminateSubprocesses]);
+  }, [
+    electronCtx.shutdownInterface,
+    electronCtx.terminateSubprocesses,
+    isInstallUpdateRequested,
+    monacoCtx,
+    rosCtx.providers.length,
+  ]);
 
   const onKeyDown = (event) => {
     if (event.ctrlKey && event.key === '+') {
@@ -694,7 +701,9 @@ function NodeManager() {
                 await Promise.all(
                   providers.map(async (prov) => {
                     const result = await prov.shutdown();
-                    console.log(`finished shutdown ${prov.id} ${JSON.stringify(result)}`);
+                    console.log(
+                      `finished shutdown ${prov.id} ${JSON.stringify(result)}`,
+                    );
                   }),
                 );
               }
@@ -739,7 +748,7 @@ function NodeManager() {
                 setModifiedEditorTabs([]);
               }}
             >
-              Don't save
+              Don&apos;t save
             </Button>
             <Button
               color="primary"

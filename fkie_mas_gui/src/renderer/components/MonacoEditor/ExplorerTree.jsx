@@ -1,11 +1,11 @@
 import PropTypes from 'prop-types';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import { TreeView } from '@mui/x-tree-view';
 import { emitCustomEvent } from 'react-custom-events';
-import RosContext from '../../context/RosContext';
+import { RosContext } from '../../context/RosContext';
 import { getFileName } from '../../models';
 import {
   EVENT_EDITOR_SELECT_RANGE,
@@ -25,9 +25,12 @@ function ExplorerTree({
   const [includeRoot, setIncludeRoot] = useState(null);
   const [expandedExplorerResults, setExpandedExplorerResults] = useState([]);
 
-  const createUriPath = (path) => {
-    return `/${tabId}:${path}`;
-  };
+  const createUriPath = useCallback(
+    (path) => {
+      return `/${tabId}:${path}`;
+    },
+    [tabId],
+  );
 
   useEffect(() => {
     const provider = rosCtx.getProviderById(providerId);
@@ -65,46 +68,50 @@ function ExplorerTree({
       }),
     ]);
     setIncludeRoot(rootItem);
-  }, [includedFiles]);
+  }, [createUriPath, includedFiles, providerId, rootFilePath, rosCtx]);
 
   /** Create from TreeView from given root item */
-  const includeFilesToTree = (file) => {
-    if (!file) return;
-    return (
-      <FileTreeItem
-        key={`${file.inc_path}-${file.line_number}`}
-        nodeId={`${file.inc_path}-${file.line_number}`}
-        labelText={`${getFileName(file.inc_path)}`}
-        labelLine={file.line_number}
-        textColor={!file.exists ? 'red' : ''}
-        modified={modifiedUriPaths.includes(file.uriPath)}
-        selected={selectedUriPath === file.uriPath}
-        onLabelClick={(event) => {
-          emitCustomEvent(
-            EVENT_EDITOR_SELECT_RANGE,
-            eventEditorSelectRange(tabId, file.inc_path, null),
-          );
-          event.stopPropagation();
-        }}
-        onLinenumberClick={(event) => {
-          emitCustomEvent(
-            EVENT_EDITOR_SELECT_RANGE,
-            eventEditorSelectRange(tabId, file.path, {
-              startLineNumber: file.line_number,
-              endLineNumber: file.line_number,
-              startColumn: 0,
-              endColumn: 0,
-            }),
-          );
-          event.stopPropagation();
-        }}
-      >
-        {file.children.map((child) => {
-          return includeFilesToTree(child);
-        })}
-      </FileTreeItem>
-    );
-  };
+  const includeFilesToTree = useCallback(
+    (file) => {
+      // eslint-disable-next-line react/jsx-no-useless-fragment
+      if (!file) return <></>;
+      return (
+        <FileTreeItem
+          key={`${file.inc_path}-${file.line_number}`}
+          nodeId={`${file.inc_path}-${file.line_number}`}
+          labelText={`${getFileName(file.inc_path)}`}
+          labelLine={file.line_number}
+          textColor={!file.exists ? 'red' : ''}
+          modified={modifiedUriPaths.includes(file.uriPath)}
+          selected={selectedUriPath === file.uriPath}
+          onLabelClick={(event) => {
+            emitCustomEvent(
+              EVENT_EDITOR_SELECT_RANGE,
+              eventEditorSelectRange(tabId, file.inc_path, null),
+            );
+            event.stopPropagation();
+          }}
+          onLinenumberClick={(event) => {
+            emitCustomEvent(
+              EVENT_EDITOR_SELECT_RANGE,
+              eventEditorSelectRange(tabId, file.path, {
+                startLineNumber: file.line_number,
+                endLineNumber: file.line_number,
+                startColumn: 0,
+                endColumn: 0,
+              }),
+            );
+            event.stopPropagation();
+          }}
+        >
+          {file.children.map((child) => {
+            return includeFilesToTree(child);
+          })}
+        </FileTreeItem>
+      );
+    },
+    [modifiedUriPaths, selectedUriPath, tabId],
+  );
 
   return (
     <TreeView
@@ -126,14 +133,14 @@ function ExplorerTree({
     >
       {useMemo(() => {
         return includeFilesToTree(includeRoot);
-      }, [includeRoot, selectedUriPath, modifiedUriPaths])}
+      }, [includeFilesToTree, includeRoot])}
     </TreeView>
   );
 }
 
 ExplorerTree.defaultProps = {
   selectedUriPath: '',
-  modifiedUriPath: [],
+  modifiedUriPaths: [],
 };
 
 ExplorerTree.propTypes = {

@@ -54,12 +54,7 @@ const SearchFileTreeItem = React.forwardRef(function SearchFileTreeItem(
     <SearchTreeItemRoot
       label={
         <Stack direction="column">
-          <Stack
-            spacing={1}
-            direction="row"
-            alignItems={'center'}
-            marginLeft={1}
-          >
+          <Stack spacing={1} direction="row" alignItems="center" marginLeft={1}>
             {labelIcon && (
               <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />
             )}
@@ -80,7 +75,7 @@ const SearchFileTreeItem = React.forwardRef(function SearchFileTreeItem(
             {labelCount > 0 && (
               <Chip
                 size="small"
-                color={'default'}
+                color="default"
                 label={labelCount}
                 sx={{ fontSize: '0.6em', height: 'auto', width: 'auto' }}
               />
@@ -117,7 +112,7 @@ const SearchResultTreeItem = React.forwardRef(function SearchResultTreeItem(
     <SearchTreeItemRoot
       label={
         <Stack direction="column">
-          <Stack spacing={1} direction="row" alignItems={'center'}>
+          <Stack spacing={1} direction="row" alignItems="center">
             {labelIcon && (
               <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />
             )}

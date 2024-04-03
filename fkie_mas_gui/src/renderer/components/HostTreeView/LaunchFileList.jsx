@@ -51,35 +51,38 @@ function LaunchFileList({
   /**
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host
    */
-  const createFileEditorPanel = useCallback((provId, launchContent) => {
-    const launchName = getBaseName(launchContent.path);
-    // const provider = rosCtx.getProviderById(provId);
-    // const packages = provider?.packages?.filter((rosPackage) => {
-    //   return launchContent.path.startsWith(
-    //     rosPackage.path.endsWith('/')
-    //       ? rosPackage.path
-    //       : `${rosPackage.path}/`,
-    //   );
-    // });
-    //  [${packages.length > 0 ? packages[0].name : ''}]@${providerName}
-    const id = `editor-${provId}-${launchContent.path}`;
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        id,
-        launchName,
-        <FileEditorPanel
-          tabId={id}
-          providerId={provId}
-          currentFilePath={launchContent.path}
-          rootFilePath={launchContent.path}
-        />,
-        true,
-        LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
-        new LayoutTabConfig(false, 'editor'),
-      ),
-    );
-  }, []);
+  const createFileEditorPanel = useCallback(
+    (provId, launchContent) => {
+      const launchName = getBaseName(launchContent.path);
+      // const provider = rosCtx.getProviderById(provId);
+      // const packages = provider?.packages?.filter((rosPackage) => {
+      //   return launchContent.path.startsWith(
+      //     rosPackage.path.endsWith('/')
+      //       ? rosPackage.path
+      //       : `${rosPackage.path}/`,
+      //   );
+      // });
+      //  [${packages.length > 0 ? packages[0].name : ''}]@${providerName}
+      const id = `editor-${provId}-${launchContent.path}`;
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          id,
+          launchName,
+          <FileEditorPanel
+            tabId={id}
+            providerId={provId}
+            currentFilePath={launchContent.path}
+            rootFilePath={launchContent.path}
+          />,
+          true,
+          LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
+          new LayoutTabConfig(false, 'editor'),
+        ),
+      );
+    },
+    [settingsCtx],
+  );
 
   /**
    * Create and open a new panel with a [LaunchFilePanel]
