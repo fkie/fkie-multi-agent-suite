@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.7 - 04.04.2024
+
+Improved style of the message/service input dialog
+Show complete launch path in the node details panel
+Added: copy topic type on double click in topic panel
+
+Fixed: parse/visualization of ros2 messages
+Fixed: service call when exactly 1 non-default parameter value is given
+Fixed: service call with boolean param
+Fixed: a lot of eslint warnings
+
 ## 1.3.6 - 22.03.2024
 
 Update daemon version on join if already connected
