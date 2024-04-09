@@ -102,6 +102,11 @@ public:
         RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
         RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
         participant_attr.rtps.setName(full_name.erase(0, 1).c_str());
+        char* ros_domain_id = getenv("ROS_DOMAIN_ID");
+        if (ros_domain_id != NULL) {
+            RCLCPP_INFO(get_logger(), "listen to domain id: %s", ros_domain_id);
+            participant_attr.domainId = atoi(ros_domain_id);
+        }
         participant_ = eprosima::fastrtps::Domain::createParticipant(participant_attr, this);
     }
 
