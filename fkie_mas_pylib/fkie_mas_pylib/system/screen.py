@@ -163,23 +163,30 @@ def test_screen() -> None:
     if not os.path.isfile(SCREEN):
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
 
-def create_screen_cfg(filename) -> None:
+def create_screen_cfg() -> None:
     '''
     Create screen configuration file
 
     :raise ScreenHandlerException: if the screen binary not found.
     '''
-    # try to fix empty LD_LIBRARY_PATH path issues in screen
-    if os.environ['LD_LIBRARY_PATH']:
-        os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
+    dId = ''
+    if ('ROS_DOMAIN_ID' in os.environ):
+        dId = f'_{os.environ["ROS_DOMAIN_ID"]}'
+    filename = os.path.join(SETTINGS_PATH, 'screens', f'screen{dId}.cfg')
     dir_path = os.path.dirname(filename)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     with open(filename, 'w') as sf:
         sf.write('logfile flush 0\n')
+        # try to fix empty LD_LIBRARY_PATH path issues in screen
+        if os.environ['LD_LIBRARY_PATH']:
+            os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
         sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
+        # if os.environ['LD_LIBRARY_PATH']:
+        #     sf.write(f"setenv LD_LIBRARY_PATH {os.environ['LD_LIBRARY_PATH']}\n")
         if ('ROS_DOMAIN_ID' in os.environ):
-            sf.write(f'setenv ROS_DOMAIN_ID {os.environ["ROS_DOMAIN_ID"]}\n')
+            sf.write(f"setenv ROS_DOMAIN_ID {os.environ['ROS_DOMAIN_ID']}\n")
+
     return filename
 
 def get_logfile(session: str = None, node: str = None, for_new_screen: bool = False, namespace: str = '/') -> str:
@@ -271,8 +278,7 @@ def get_cmd(node: str, env=[], keys=[], namespace: str = '/') -> str:
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
     log_file = get_logfile(node=node, for_new_screen=True, namespace=namespace)
-    head, _sep, _tail = log_file.rpartition('.')
-    cfg_file = create_screen_cfg(head + '.screen.cfg')
+    cfg_file = create_screen_cfg()
     cfg_opt = ''
     if os.path.exists(cfg_file):
         cfg_opt = '-c %s' % cfg_file

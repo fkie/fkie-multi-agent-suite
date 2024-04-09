@@ -7,6 +7,7 @@ from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
 from fkie_mas_pylib.defines import SETTINGS_PATH
 from fkie_mas_pylib.system.screen import test_screen
+from fkie_mas_pylib.system.screen import create_screen_cfg
 
 
 CROSSBAR_PATH = os.path.join(os.path.join(
@@ -129,7 +130,7 @@ def crossbar_start_server(port: int) -> str:
         return ""
 
     test_screen()
-    cfg_file = os.path.join(SETTINGS_PATH, 'screen.cfg')
+    cfg_file = create_screen_cfg()
     cmd = [shutil.which('screen'), "-c", cfg_file, "-dmS", "_crossbar_server_%d" %
            port, crossbar_bin, "start", "--cbdir", CROSSBAR_PATH]
     print(' '.join(cmd))
