@@ -197,7 +197,7 @@ def get_logfile(session: str = None, node: str = None, for_new_screen: bool = Fa
         if os.path.exists(path) or for_new_screen:
             return path
     if node is not None:
-        path = "%s.log" % os.path.join(LOG_PATH, create_session_name(node, namespace))
+        path = "%s.log" % os.path.join(LOG_PATH, create_session_name(node, namespace).strip('.'))
         if os.path.exists(path) or for_new_screen:
             return path
     return get_ros_logfile(node, namespace)
