@@ -25,6 +25,7 @@ import asyncio
 from autobahn import wamp
 import json
 import os
+import psutil
 import signal
 import threading
 import time
@@ -50,7 +51,7 @@ class ScreenServicer(CrossbarBaseSession):
         self._screen_thread = None
         self._screens_set = set()
         self._screen_nodes_set = set()
-        self._sceen_crossbar_msg: List(ScreensMapping) = []
+        self._sceen_crossbar_msg: List[ScreensMapping] = []
 
     def start(self):
         self._screen_thread = threading.Thread(
@@ -85,7 +86,7 @@ class ScreenServicer(CrossbarBaseSession):
                     new_screens_set.add(session_name)
                     new_screen_nodes_set.add(node_name)
                 # create crossbar message
-                crossbar_msg: List(ScreensMapping) = []
+                crossbar_msg: List[ScreensMapping] = []
                 for node_name, msg in screen_dict.items():
                     crossbar_msg.append(msg)
                 # add nodes without screens send by the last message
@@ -120,12 +121,29 @@ class ScreenServicer(CrossbarBaseSession):
         if len(screens.items()) == 0:
             return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
         for session_name, node_name in screens.items():
+            successCur = False
             pid, session_name = screen.split_session_name(session_name)
-            os.kill(pid, sig)
-            success = True
+            # try to determine the process id of the node inside the screen
+            nPid = pid + 1
+            for process in psutil.process_iter():
+                if (process.pid == nPid):
+                    cmdStr = ' '.join(process.cmdline())
+                    nodeName = os.path.basename(name)
+                    if cmdStr.find(f"__node:={nodeName}") > -1:
+                        successCur = True
+                        Log.info(f"{self.__class__.__name__}: Kill process '{nPid}', cmd: {cmdStr}")
+                        os.kill(nPid, sig)
+                        break
+            if not successCur:
+                Log.info(f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid}'")
+                os.kill(pid, signal.SIGKILL)
+                successCur = True
+            if successCur:
+                success = True
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
     @wamp.register('ros.screen.get_list')
     def get_screen_list(self) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
         return json.dumps(self._screen_crossbar_msg, cls=SelfEncoder)

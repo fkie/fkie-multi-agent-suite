@@ -206,9 +206,9 @@ class RosStateServicer(CrossbarBaseSession):
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     @wamp.register('ros.nodes.get_list')
-    def crossbar_get_node_list(self) -> str:
+    def crossbar_get_node_list(self, forceRefresh: bool = True) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
-        node_list: List[RosNode] = self._get_ros_node_list()
+        node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
 
         return json.dumps(node_list, cls=SelfEncoder)
 
@@ -239,7 +239,7 @@ class RosStateServicer(CrossbarBaseSession):
                 unloaded = self.stop_composed_node(node)
             if not unloaded:
                 result = nmd.launcher.server.screen_servicer.kill_node(
-                    os.path.join(node.namespace, node.name), signal.SIGQUIT)
+                    os.path.join(node.namespace, node.name), signal.SIGINT)
         if unloaded:
             result = json.dumps(
                 {'result': True, 'message': ''}, cls=SelfEncoder)
@@ -307,10 +307,10 @@ class RosStateServicer(CrossbarBaseSession):
                 return unique_id
         return -1
 
-    def _get_ros_node_list(self) -> List[RosNode]:
+    def _get_ros_node_list(self, forceRefresh: bool = False) -> List[RosNode]:
         # self._ros_node_list is cleared on updates in _on_msg_state()
         # otherwise we use a cached list
-        if self._ros_node_list is None:
+        if self._ros_node_list is None or forceRefresh:
             self._ros_node_list = self.to_crossbar()
         return self._ros_node_list
 
