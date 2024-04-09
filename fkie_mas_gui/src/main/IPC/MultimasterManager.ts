@@ -105,7 +105,11 @@ class MultimasterManager {
         this.respawn ? '--respawn' : ''
       } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
     } else if (versStr === '2') {
-      cmdMasterDiscovery = `ros2 run fkie_mas_daemon mas-remote-node.py ${
+      let domainPrefix = "";
+      if (port !== undefined && port !== 0) {
+        domainPrefix = `ROS_DOMAIN_ID=${port} `;
+      }
+      cmdMasterDiscovery = `${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? '--respawn' : ''
       } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
@@ -190,10 +194,12 @@ class MultimasterManager {
     rosVersion?: string | null,
     credential?: ICredential | null,
     name?: string,
+    networkId?: number,
   ) => Promise<{ result: boolean; message: string }> = (
     rosVersion = null,
     credential = null,
     name = undefined,
+    networkId = 0,
   ) => {
     let versStr = rosVersion;
     if (!versStr) {
@@ -222,7 +228,11 @@ class MultimasterManager {
     if (versStr === '1') {
       cmdDaemon = `rosrun ${cmdDaemon}; `;
     } else if (versStr === '2') {
-      cmdDaemon = `ros2 run ${cmdDaemon}; `;
+      if (networkId !== 0 && networkId !== undefined) {
+        cmdDaemon = `ROS_DOMAIN_ID=${networkId} ros2 run ${cmdDaemon}; `;
+      } else {
+        cmdDaemon = `ros2 run ${cmdDaemon}; `;
+      }
     } else {
       return Promise.resolve({
         result: false,

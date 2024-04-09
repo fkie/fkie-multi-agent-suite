@@ -21,13 +21,14 @@ class ProviderLaunchConfiguration {
   /** ROS version as string of {'1', '2'} */
   rosVersion: string;
 
+  networkId: number = 0;
+
   daemon: {
     enable: boolean;
   } = { enable: false };
 
   discovery: {
     enable: boolean;
-    networkId?: number;
     group?: string;
     heartbeatHz?: number;
     robotHosts?: string[];

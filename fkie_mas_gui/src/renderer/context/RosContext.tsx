@@ -50,7 +50,11 @@ import {
 import { delay } from '../utils';
 import { LoggingContext } from './LoggingContext';
 import { SSHContext } from './SSHContext';
-import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from './SettingsContext';
+import {
+  LAUNCH_FILE_EXTENSIONS,
+  SettingsContext,
+  getCrossbarPortFromRos,
+} from './SettingsContext';
 
 declare global {
   interface Window {
@@ -660,7 +664,9 @@ export function RosProviderReact(
               settingsCtx,
               config.host,
               config.rosVersion,
-              config.port,
+              config.port
+                ? config.port
+                : getCrossbarPortFromRos(config.rosVersion) + config.networkId,
               config.useSSL,
               logCtx,
             );
@@ -767,6 +773,8 @@ export function RosProviderReact(
               await multimasterManager.startMultimasterDaemon(
                 config.rosVersion,
                 credential,
+                undefined,
+                config.networkId,
               );
             if (!resultStartDaemon.result) {
               logCtx.error(
@@ -792,7 +800,7 @@ export function RosProviderReact(
                 config.rosVersion,
                 credential,
                 undefined,
-                config.discovery.networkId,
+                config.networkId,
                 undefined,
                 undefined,
                 config.discovery.robotHosts,

@@ -162,15 +162,25 @@ def test_screen() -> None:
     '''
     if not os.path.isfile(SCREEN):
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
+
+def create_screen_cfg(filename) -> None:
+    '''
+    Create screen configuration file
+
+    :raise ScreenHandlerException: if the screen binary not found.
+    '''
     # try to fix empty LD_LIBRARY_PATH path issues in screen
     if os.environ['LD_LIBRARY_PATH']:
-        os.environ['LD_LIBRARY_PATH_SCRREN'] = os.environ['LD_LIBRARY_PATH']
-    if not os.path.exists(SETTINGS_PATH):
-        os.makedirs(SETTINGS_PATH)
-    with open(os.path.join(SETTINGS_PATH, 'screen.cfg'), 'w') as sf:
+        os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
+    dir_path = os.path.dirname(filename)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    with open(filename, 'w') as sf:
         sf.write('logfile flush 0\n')
-        sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCRREN\n')
-
+        sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
+        if ('ROS_DOMAIN_ID' in os.environ):
+            sf.write(f'setenv ROS_DOMAIN_ID {os.environ["ROS_DOMAIN_ID"]}\n')
+    return filename
 
 def get_logfile(session: str = None, node: str = None, for_new_screen: bool = False, namespace: str = '/') -> str:
     '''
@@ -260,14 +270,12 @@ def get_cmd(node: str, env=[], keys=[], namespace: str = '/') -> str:
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    # try to fix empty LD_LIBRARY_PATH path issues in screen
-    if os.environ['LD_LIBRARY_PATH']:
-        os.environ['LD_LIBRARY_PATH_SCRREN'] = os.environ['LD_LIBRARY_PATH']
-    cfg_file = os.path.join(SETTINGS_PATH, 'screen.cfg')
+    log_file = get_logfile(node=node, for_new_screen=True, namespace=namespace)
+    head, _sep, _tail = log_file.rpartition('.')
+    cfg_file = create_screen_cfg(head + '.screen.cfg')
     cfg_opt = ''
     if os.path.exists(cfg_file):
         cfg_opt = '-c %s' % cfg_file
-    log_file = get_logfile(node=node, for_new_screen=True, namespace=namespace)
     session_name = create_session_name(node=node, namespace=namespace)
     return f'{SCREEN} {cfg_opt} -O -L -Logfile {log_file} -s {shell} -dmS {session_name}'
 

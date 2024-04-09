@@ -81,12 +81,14 @@ contextBridge.exposeInMainWorld('MultimasterManager', {
     rosVersion: string,
     credential: ICredential,
     name?: string,
+    networkId?: number,
   ) =>
     ipcRenderer.invoke(
       'MultimasterManager:startMultimasterDaemon',
       rosVersion,
       credential,
       name,
+      networkId,
     ),
 
   startMasterDiscovery: (

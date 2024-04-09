@@ -72,11 +72,12 @@ export const registerHandlers = () => {
 
   ipcMain.handle(
     'MultimasterManager:startMultimasterDaemon',
-    (event, rosVersion: string, credential: ICredential, name?: string) => {
+    (event, rosVersion: string, credential: ICredential, name?: string, networkId?: number) => {
       return sMultimasterManager.startMultimasterDaemon(
         rosVersion,
         credential,
         name,
+        networkId,
       );
     },
   );
