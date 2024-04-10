@@ -267,6 +267,28 @@ function ConnectToProviderModal() {
     return result;
   };
 
+  const createLaunchConfigFor = (host) => {
+    const launchCfg = new ProviderLaunchConfiguration(
+      host,
+      startParameter.rosVersion,
+    );
+    launchCfg.daemon.enable = enableDaemonNode;
+    launchCfg.discovery.enable = enableDiscoveryNode;
+    if (startParameter.networkId)
+      launchCfg.networkId = startParameter.networkId;
+    if (startParameter.discovery.robotHosts.length > 0)
+      launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
+    launchCfg.sync.enable = startParameter.sync.enable;
+    launchCfg.sync.doNotSync = startParameter.sync.doNotSync;
+    launchCfg.sync.syncTopics = startParameter.sync.syncTopics;
+    launchCfg.terminal.enable = enableTerminalManager;
+    launchCfg.terminal.port = startParameter.ttyd.port;
+    launchCfg.autoConnect = true;
+    launchCfg.autostart = rosCtx.isLocalHost(host);
+    launchCfg.forceRestart = forceRestart;
+    return launchCfg;
+  };
+
   const handleStartProvider = async () => {
     if (!rosCtx.multimasterManager) return;
 
@@ -295,24 +317,7 @@ function ConnectToProviderModal() {
 
     // create launch configuration
     hosts.forEach((host) => {
-      const launchCfg = new ProviderLaunchConfiguration(
-        host,
-        startParameter.rosVersion,
-      );
-      launchCfg.daemon.enable = enableDaemonNode;
-      launchCfg.discovery.enable = enableDiscoveryNode;
-      if (startParameter.networkId)
-        launchCfg.networkId = startParameter.networkId;
-      if (startParameter.discovery.robotHosts.length > 0)
-        launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
-      launchCfg.sync.enable = startParameter.sync.enable;
-      launchCfg.sync.doNotSync = startParameter.sync.doNotSync;
-      launchCfg.sync.syncTopics = startParameter.sync.syncTopics;
-      launchCfg.terminal.enable = enableTerminalManager;
-      launchCfg.terminal.port = startParameter.ttyd.port;
-      launchCfg.autoConnect = true;
-      launchCfg.autostart = rosCtx.isLocalHost(host);
-      launchCfg.forceRestart = forceRestart;
+      const launchCfg = createLaunchConfigFor(host);
       launchCfgs.push(launchCfg);
     });
 
@@ -368,6 +373,8 @@ function ConnectToProviderModal() {
           undefined,
           logCtx,
         );
+        const launchCfg = createLaunchConfigFor(host);
+        newProvider.startConfiguration = launchCfg;
         await rosCtx.connectToProvider(newProvider);
       }),
     );
