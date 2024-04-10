@@ -250,6 +250,8 @@ function ConnectToProviderModal() {
     let result = `${cfg.hosts.join()}; ros${cfg.params.rosVersion}`;
     if (cfg.params.rosVersion === '1') {
       result = `${result}; network id: ${cfg.params.networkId}`;
+    } else {
+      result = `${result}; domain id: ${cfg.params.networkId}`;
     }
     const robotHosts = cfg.params.discovery.robotHosts.join(',');
     if (robotHosts.length > 0) {
