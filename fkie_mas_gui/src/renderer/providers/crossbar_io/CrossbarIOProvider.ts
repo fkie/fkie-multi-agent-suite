@@ -2101,7 +2101,16 @@ class CrossbarIOProvider {
       true,
     );
     if (result[0]) {
-      return JSON.parse(result[1]);
+      const parsed = JSON.parse(result[1]);
+      // handle the result of type: {result: bool, message: str}
+      if (!Array.isArray(parsed) && !parsed.result) {
+        this.logger?.error(
+          `Provider [${this.name()}]: Error at getNodeLoggers(): ${parsed.message}`,
+          ``,
+        );
+        return [];
+      }
+      return parsed;
     }
 
     this.logger?.debug(

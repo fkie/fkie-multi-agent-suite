@@ -37,33 +37,49 @@ function NodeLoggerPanel(node) {
   const [loggersFiltered, setLoggersFiltered] = useState([]);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
+  const setLoggersOnProvider = useCallback(
+    async (rosNode, newLoggers) => {
+      // set loggers on ros node
+      const provider = rosCtx.getProviderById(rosNode.providerId);
+      if (provider) {
+        setIsRequesting(true);
+        const result = await provider.setNodeLoggers(rosNode.id, newLoggers);
+        setIsRequesting(false);
+      }
+    },
+    [rosCtx],
+  );
+
   /**
    * Get nodes for selected ids
    */
   const getLoggers = useCallback(
-    async (node) => {
-      let loggers = [];
-      if (node) {
-        const provider = rosCtx.getProviderById(node.providerId);
+    async (rosNode) => {
+      let ownLoggers = [];
+      if (rosNode) {
+        const provider = rosCtx.getProviderById(rosNode.providerId);
         if (provider) {
           setIsRequesting(true);
-          loggers = await provider.getNodeLoggers(node.id);
-          // fix case: c++ nodes in ROS1 returns log level in lower case
-          loggers = loggers.map((item) => {
-            return { name: item.name, level: item.level.toLocaleUpperCase() };
-          });
+          ownLoggers = await provider.getNodeLoggers(rosNode.id);
+          if (ownLoggers?.length > 0) {
+            // fix case: c++ nodes in ROS1 returns log level in lower case
+            ownLoggers = ownLoggers?.map((item) => {
+              return { name: item.name, level: item.level.toLocaleUpperCase() };
+            });
+          }
           setIsRequesting(false);
         }
       }
-      if (loggers?.length > 0 && loggers[0].name !== 'all') {
-        loggers = [{ name: 'all', level: '' }, ...loggers];
+      if (ownLoggers?.length > 0 && ownLoggers[0].name !== 'all') {
+        ownLoggers = [{ name: 'all', level: '' }, ...ownLoggers];
       }
-      setLoggers(loggers);
+      setLoggers(ownLoggers);
       // compare new loggers and update to set by user
       const forceUpdateLevels = [];
-      for (const [key, value] of Object.entries(node.rosLoggers)) {
+      // eslint-disable-next-line no-restricted-syntax
+      for (const [key, value] of Object.entries(rosNode.rosLoggers)) {
         let changed = true;
-        loggers.forEach((l) => {
+        ownLoggers.forEach((l) => {
           if (l.name === key && l.level === value) {
             changed = false;
           }
@@ -73,15 +89,15 @@ function NodeLoggerPanel(node) {
         }
       }
       if (forceUpdateLevels.length > 0) {
-        setLoggersOnProvider(node, forceUpdateLevels);
+        setLoggersOnProvider(rosNode, forceUpdateLevels);
       }
     },
-    [rosCtx],
+    [rosCtx, setLoggersOnProvider],
   );
 
   useEffect(() => {
     getLoggers(currentNode);
-  }, [currentNode]);
+  }, [currentNode, getLoggers]);
 
   const debouncedCallbackFilterText = useDebounceCallback(
     (searchTerm) => {
@@ -106,23 +122,10 @@ function NodeLoggerPanel(node) {
     debouncedCallbackFilterText(filterText);
   }, [loggers, filterText, debouncedCallbackFilterText]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data) => {
     getLoggers(currentNode);
   });
-
-  const setLoggersOnProvider = useCallback(
-    async (node, loggers) => {
-      // set loggers on ros node
-      const provider = rosCtx.getProviderById(node.providerId);
-      if (provider) {
-        setIsRequesting(true);
-        const result = await provider.setNodeLoggers(node.id, loggers);
-        setIsRequesting(false);
-        getLoggers(currentNode);
-      }
-    },
-    [setIsRequesting],
-  );
 
   const updateLoggerLevel = useCallback(
     async (loggerName, level) => {
@@ -136,7 +139,7 @@ function NodeLoggerPanel(node) {
         setLoggers(changedLoggers);
       } else {
         // change logger level for single logger
-        changedLoggers = [{ level: level, name: loggerName }];
+        changedLoggers = [{ level, name: loggerName }];
         setLoggers(
           loggers.map((logger) => {
             if (logger.name === loggerName) {
@@ -246,96 +249,97 @@ function NodeLoggerPanel(node) {
       <TableContainer>
         <Table aria-label="logger table">
           <TableBody>
-            {loggersFiltered.map((logger) => {
-              return (
-                <TableRow
-                  key={logger.name}
-                  style={{
-                    display: 'block',
-                    padding: 0,
-                  }}
-                >
-                  <TableCell style={{ padding: 0 }}>
-                    <RadioGroup
-                      name={`logger-group-${logger.name}`}
-                      value={logger.level}
-                      onChange={(event, value) => {
-                        updateLoggerLevel(logger.name, value);
-                      }}
-                      style={{
-                        // width: 'auto',
-                        // height: 'auto',
-                        // display: 'flex',
-                        flexWrap: 'nowrap',
-                        flexDirection: 'row',
-                      }}
-                    >
-                      <Radio
-                        value="FATAL"
-                        size="small"
-                        sx={{
-                          color: '#C0392B',
-                          '&.Mui-checked': {
-                            color: '#C0392B',
-                          },
-                          ...radioSize,
-                        }}
-                      />
-                      <Radio
-                        value="ERROR"
-                        size="small"
-                        sx={{
-                          color: '#D35400',
-                          '&.Mui-checked': {
-                            color: '#D35400',
-                          },
-                          ...radioSize,
-                        }}
-                      />
-                      <Radio
-                        value="WARN"
-                        size="small"
-                        sx={{
-                          color: '#F39C12',
-                          '&.Mui-checked': {
-                            color: '#F39C12cd',
-                          },
-                          ...radioSize,
-                        }}
-                      />
-                      <Radio
-                        value="INFO"
-                        size="small"
-                        sx={{
-                          color: '#2980B9',
-                          '&.Mui-checked': {
-                            color: '#2980B9',
-                          },
-                          ...radioSize,
-                        }}
-                      />
-                      <Radio
-                        value="DEBUG"
-                        color="default"
-                        size="small"
-                        sx={{
-                          ...radioSize,
-                        }}
-                      />
-                    </RadioGroup>
-                  </TableCell>
-                  <TableCell
+            {loggersFiltered?.length > 0 &&
+              loggersFiltered.map((logger) => {
+                return (
+                  <TableRow
+                    key={logger.name}
                     style={{
-                      padding: 2,
-                      flexGrow: 1,
-                      width: '100%',
+                      display: 'block',
+                      padding: 0,
                     }}
                   >
-                    {logger.name}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    <TableCell style={{ padding: 0 }}>
+                      <RadioGroup
+                        name={`logger-group-${logger.name}`}
+                        value={logger.level}
+                        onChange={(event, value) => {
+                          updateLoggerLevel(logger.name, value);
+                        }}
+                        style={{
+                          // width: 'auto',
+                          // height: 'auto',
+                          // display: 'flex',
+                          flexWrap: 'nowrap',
+                          flexDirection: 'row',
+                        }}
+                      >
+                        <Radio
+                          value="FATAL"
+                          size="small"
+                          sx={{
+                            color: '#C0392B',
+                            '&.Mui-checked': {
+                              color: '#C0392B',
+                            },
+                            ...radioSize,
+                          }}
+                        />
+                        <Radio
+                          value="ERROR"
+                          size="small"
+                          sx={{
+                            color: '#D35400',
+                            '&.Mui-checked': {
+                              color: '#D35400',
+                            },
+                            ...radioSize,
+                          }}
+                        />
+                        <Radio
+                          value="WARN"
+                          size="small"
+                          sx={{
+                            color: '#F39C12',
+                            '&.Mui-checked': {
+                              color: '#F39C12cd',
+                            },
+                            ...radioSize,
+                          }}
+                        />
+                        <Radio
+                          value="INFO"
+                          size="small"
+                          sx={{
+                            color: '#2980B9',
+                            '&.Mui-checked': {
+                              color: '#2980B9',
+                            },
+                            ...radioSize,
+                          }}
+                        />
+                        <Radio
+                          value="DEBUG"
+                          color="default"
+                          size="small"
+                          sx={{
+                            ...radioSize,
+                          }}
+                        />
+                      </RadioGroup>
+                    </TableCell>
+                    <TableCell
+                      style={{
+                        padding: 2,
+                        flexGrow: 1,
+                        width: '100%',
+                      }}
+                    >
+                      {logger.name}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
           </TableBody>
         </Table>
       </TableContainer>
