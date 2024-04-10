@@ -47,7 +47,10 @@ import { styled } from '@mui/material/styles';
 import { useCustomEventListener } from 'react-custom-events';
 import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
-import { SettingsContext } from '../../context/SettingsContext';
+import {
+  SettingsContext,
+  getCrossbarPortFromRos,
+} from '../../context/SettingsContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import ProviderLaunchConfiguration from '../../models/ProviderLaunchConfiguration';
 import CrossbarIOProvider from '../../providers/crossbar_io/CrossbarIOProvider';
@@ -348,6 +351,9 @@ function ConnectToProviderModal() {
     if (hostInputValue !== '' && !hosts.includes(hostInputValue)) {
       hosts.push(hostInputValue);
     }
+    const port = startParameter.port
+      ? startParameter.port
+      : getCrossbarPortFromRos(startParameter.rosVersion) + startParameter.networkId;
     // join each host separately
     await Promise.all(
       hosts.map(async (crossbarHost) => {
@@ -358,7 +364,7 @@ function ConnectToProviderModal() {
           settingsCtx,
           host,
           startParameter.rosVersion,
-          undefined,
+          port,
           undefined,
           logCtx,
         );
