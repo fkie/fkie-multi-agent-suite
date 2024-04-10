@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -14,6 +15,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Typography,
 } from '@mui/material';
 import { delay } from '../../utils';
 import DraggablePaper from '../UI/DraggablePaper';
@@ -23,11 +25,13 @@ function ListSelectionModal({
   providers,
   onCloseCallback,
   onConfirmCallback,
+  onForceCloseCallback,
 }) {
   const [selectedProviders, setSelectedProviders] = useState([]);
   const [progress, setProgress] = useState(100);
   const [showProgress, setShowProgress] = useState(true);
   const closeInterval = useRef(null);
+  const [onShutdown, setOnShutdown] = useState(false);
 
   const handleToggle = (value) => () => {
     const currentIndex = selectedProviders.findIndex(
@@ -61,8 +65,9 @@ function ListSelectionModal({
   };
 
   const onConfirm = () => {
+    setOnShutdown(true);
     onConfirmCallback(selectedProviders);
-    handleClose();
+    // handleClose();
   };
 
   const performCloseProgress = useCallback(
@@ -142,20 +147,37 @@ function ListSelectionModal({
           <LinearProgress variant="determinate" value={progress} />
         )}
       </DialogContent>
-      <DialogActions>
-        <Button color="primary" onClick={handleClose}>
-          Cancel
-        </Button>
+      {!onShutdown && (
+        <DialogActions>
+          <Button color="primary" onClick={handleClose}>
+            Cancel
+          </Button>
 
-        <Button
-          autoFocus
-          color="success"
-          variant="contained"
-          onClick={onConfirm}
-        >
-          Confirm
-        </Button>
-      </DialogActions>
+          <Button
+            autoFocus
+            color="success"
+            variant="contained"
+            onClick={onConfirm}
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      )}
+      {onShutdown && (
+        <DialogActions>
+          <Typography>Shutting down</Typography>
+          <CircularProgress size="1em" />
+
+          <Button
+            autoFocus
+            color="warning"
+            variant="contained"
+            onClick={onForceCloseCallback}
+          >
+            close app
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }
@@ -169,6 +191,7 @@ ListSelectionModal.propTypes = {
   providers: PropTypes.array.isRequired,
   onCloseCallback: PropTypes.func.isRequired,
   onConfirmCallback: PropTypes.func.isRequired,
+  onForceCloseCallback: PropTypes.func.isRequired,
 };
 
 export default ListSelectionModal;

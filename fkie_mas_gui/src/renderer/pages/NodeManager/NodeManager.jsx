@@ -637,6 +637,25 @@ function NodeManager() {
     rosCtx.providers.length,
   ]);
 
+  const shutdownProviders = useCallback(
+    async (providers) => {
+      if (providers && providers.length > 0) {
+        await Promise.all(
+          providers.map(async (prov) => {
+            console.log(`shutdown ${prov.id}`);
+            const result = await prov.shutdown();
+            console.log(
+              `finished shutdown ${prov.id} ${JSON.stringify(result)}`,
+            );
+          }),
+        );
+      }
+      console.log(`Quit app`);
+      electronCtx.shutdownInterface.quitGui();
+    },
+    [electronCtx],
+  );
+
   const onKeyDown = (event) => {
     if (event.ctrlKey && event.key === '+') {
       settingsCtx.set('fontSize', settingsCtx.get('fontSize') + 1);
@@ -696,20 +715,8 @@ function NodeManager() {
             title="Select providers to shut down"
             providers={rosCtx.providers}
             onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
-            onConfirmCallback={async (providers) => {
-              if (providers && providers.length > 0) {
-                await Promise.all(
-                  providers.map(async (prov) => {
-                    const result = await prov.shutdown();
-                    console.log(
-                      `finished shutdown ${prov.id} ${JSON.stringify(result)}`,
-                    );
-                  }),
-                );
-              }
-              console.log(`Quit app`);
-              electronCtx.shutdownInterface.quitGui();
-            }}
+            onConfirmCallback={(providers) => shutdownProviders(providers)}
+            onForceCloseCallback={() => electronCtx.shutdownInterface.quitGui()}
           />
         )}
       {modifiedEditorTabs.length > 0 && (
