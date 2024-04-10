@@ -7,7 +7,7 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 
 import { useContext } from 'react';
 
-import { ITerminalOptions, ITheme } from 'xterm';
+import { ITerminalOptions, ITheme } from '@xterm/xterm';
 import { SettingsContext } from '../../context/SettingsContext';
 import { ClientOptions, Xterm } from './terminal';
 

@@ -8,11 +8,11 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 import React from 'react';
 
 import { bind } from 'decko';
-import { ITerminalOptions, Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { ISearchOptions, SearchAddon } from 'xterm-addon-search';
-import { WebLinksAddon } from 'xterm-addon-web-links';
-import { WebglAddon } from 'xterm-addon-webgl';
+import { ITerminalOptions, Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { ISearchOptions, SearchAddon } from '@xterm/addon-search';
+import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
 
 import {
   Alert,
@@ -32,7 +32,7 @@ import SearchBar from '../../UI/SearchBar';
 import { FlowControl, ZmodemAddon } from '../zmodem';
 import OverlayAddon from './overlay';
 
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 const enum Command {
   // server side

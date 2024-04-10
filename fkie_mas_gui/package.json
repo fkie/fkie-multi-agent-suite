@@ -120,6 +120,11 @@
     "@react-hook/debounce": "^4.0.0",
     "@react-hook/window-size": "^3.0.7",
     "@types/ssh2-sftp-client": "^9.0.0",
+    "@xterm/xterm": "^5.5.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/addon-webgl": "^0.18.0",
     "autobahn-browser": "^22.11.1",
     "child_process": "^1.0.2",
     "clsx": "^2.1.0",
@@ -155,11 +160,6 @@
     "systeminformation": "^5.22.0",
     "typeface-cormorant": "^1.1.13",
     "uuid": "^9.0.1",
-    "xterm": "^5.2.1",
-    "xterm-addon-fit": "^0.7.0",
-    "xterm-addon-search": "^0.12.0",
-    "xterm-addon-web-links": "^0.8.0",
-    "xterm-addon-webgl": "^0.15.0",
     "zmodem.js": "^0.1.10"
   },
   "devDependencies": {
@@ -170,7 +170,7 @@
     "@babel/preset-env": "^7.23.7",
     "@babel/preset-typescript": "^7.23.3",
     "@electron/notarize": "^2.1.0",
-    "@electron/rebuild": "^3.3.0",
+    "@electron/rebuild": "^3.6.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@svgr/webpack": "^8.1.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
@@ -239,7 +239,7 @@
     "webpack": "^5.90.3",
     "webpack-bundle-analyzer":"^4.10.1",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.2",
+    "webpack-dev-server": "^5.0.4",
     "webpack-merge": "^5.10.0"
   },
   "build": {
