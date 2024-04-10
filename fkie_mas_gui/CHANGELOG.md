@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.8 - 10.04.2024
+
+Improved stop/kill nodes for ROS2
+Updated dependencies, replaced deprecated xterm... by @xterm/...
+
+Fixed not close the app after host shutdown
+Fixed ros2 start/join with ROS DOMAIN ID different then zero
+
 ## 1.3.7 - 04.04.2024
 
 Improved style of the message/service input dialog
