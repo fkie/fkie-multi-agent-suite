@@ -59,6 +59,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
     selected,
     onClick,
     onLabelClick,
+    onLabelDoubleClick,
     onLinenumberClick,
     ...other
   },
@@ -102,6 +103,11 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
               onClick={(event) => {
                 if (onLabelClick) {
                   onLabelClick(event);
+                }
+              }}
+              onDoubleClick={(event) => {
+                if (onLabelDoubleClick) {
+                  onLabelDoubleClick(event);
                 }
               }}
               color={textColor}
@@ -153,6 +159,7 @@ FileTreeItem.defaultProps = {
   selected: false,
   onClick: null,
   onLabelClick: null,
+  onLabelDoubleClick: null,
   onLinenumberClick: null,
 };
 
@@ -166,6 +173,7 @@ FileTreeItem.propTypes = {
   selected: PropTypes.bool,
   onClick: PropTypes.func,
   onLabelClick: PropTypes.func,
+  onLabelDoubleClick: PropTypes.func,
   onLinenumberClick: PropTypes.func,
 };
 

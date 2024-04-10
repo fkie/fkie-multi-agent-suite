@@ -5,6 +5,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import { TreeView } from '@mui/x-tree-view';
 import { emitCustomEvent } from 'react-custom-events';
+import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
 import { getFileName } from '../../models';
 import {
@@ -21,6 +22,7 @@ function ExplorerTree({
   selectedUriPath,
   modifiedUriPaths,
 }) {
+  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const [includeRoot, setIncludeRoot] = useState(null);
   const [expandedExplorerResults, setExpandedExplorerResults] = useState([]);
@@ -91,6 +93,11 @@ function ExplorerTree({
             );
             event.stopPropagation();
           }}
+          onLabelDoubleClick={(event) => {
+            navigator.clipboard.writeText(file.inc_path);
+            logCtx.success(`${file.inc_path} copied!`);
+            event.stopPropagation();
+          }}
           onLinenumberClick={(event) => {
             emitCustomEvent(
               EVENT_EDITOR_SELECT_RANGE,
@@ -110,7 +117,7 @@ function ExplorerTree({
         </FileTreeItem>
       );
     },
-    [modifiedUriPaths, selectedUriPath, tabId],
+    [logCtx, modifiedUriPaths, selectedUriPath, tabId],
   );
 
   return (
