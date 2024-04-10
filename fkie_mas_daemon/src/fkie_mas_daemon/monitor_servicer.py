@@ -124,11 +124,15 @@ class MonitorServicer(CrossbarBaseSession):
         result = False
         message = ''
         procs = []
+        crossbarPid = -1
         try:
             for process in psutil.process_iter():
                 cmdStr = ' '.join(process.cmdline())
                 if cmdStr.find(SETTINGS_PATH) > -1:
-                    if (cmdStr.find('mas-daemon') == -1):
+                    if (cmdStr.find('crossbar') > -1):
+                        # store crossbar pid to kill it last
+                        crossbarPid = process.pid
+                    elif (cmdStr.find('mas-daemon') == -1):
                         procs.append(process)
                         process.terminate()
             gone, alive = psutil.wait_procs(procs, timeout=3)
@@ -141,9 +145,14 @@ class MonitorServicer(CrossbarBaseSession):
             message = str(error)
         screen.wipe()
         shutdown_timer = threading.Timer(
-            0.5, os.kill, (os.getpid(), signal.SIGTERM))
+            0.5, self._killSelf, ([crossbarPid]if crossbarPid != -1 else [], signal.SIGTERM))
         shutdown_timer.start()
         return json.dumps({result: result, message: message}, cls=SelfEncoder)
+
+    def _killSelf(self, pidList=[], sig=signal.SIGTERM):
+        for pid in pidList:
+            os.kill(pid, sig)
+        os.kill(os.getpid(), signal.SIGINT)
 
     @wamp.register('ros.nodes.get_loggers')
     def getLoggers(self, name: str) -> str:
