@@ -653,10 +653,13 @@ export function RosProviderReact(
             ? null
             : SSHCtx.getCredentialHost(config.host);
 
+          const port = config.port
+            ? config.port
+            : getCrossbarPortFromRos(config.rosVersion) + config.networkId;
           // check and add provider if new
           let provider = getProviderByHosts(
             [config.host],
-            config.port,
+            port,
             null,
           ) as CrossbarIOProvider;
           if (!provider) {
@@ -664,9 +667,7 @@ export function RosProviderReact(
               settingsCtx,
               config.host,
               config.rosVersion,
-              config.port
-                ? config.port
-                : getCrossbarPortFromRos(config.rosVersion) + config.networkId,
+              port,
               config.useSSL,
               logCtx,
             );
