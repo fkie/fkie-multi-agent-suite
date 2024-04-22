@@ -1375,51 +1375,51 @@ class CrossbarIOProvider {
             }
           }
         });
-        // set tags for nodelets/composable and other tags)
-        const composableManagers: string[] = [];
+      });
 
-        this.rosNodes.forEach((n) => {
-          // Check if this is a nodelet/composable and assign tags accordingly.
-          let composableParent =
-            n?.parent_id || n.launchInfo?.composable_container;
+      // set tags for nodelets/composable and other tags)
+      const composableManagers: string[] = [];
+      this.rosNodes.forEach((n) => {
+        // Check if this is a nodelet/composable and assign tags accordingly.
+        let composableParent =
+          n?.parent_id || n.launchInfo?.composable_container;
+        if (composableParent) {
+          composableParent = composableParent.split('|').slice(-1).at(0);
           if (composableParent) {
-            composableParent = composableParent.split('|').slice(-1).at(0);
-            if (composableParent) {
-              if (!composableManagers.includes(composableParent)) {
-                composableManagers.push(composableParent);
-              }
-              n.tags = [
-                {
-                  text: 'Nodelet',
-                  color:
-                    TagColors[
-                      composableManagers.indexOf(composableParent) %
-                        TagColors.length
-                    ],
-                },
-              ];
+            if (!composableManagers.includes(composableParent)) {
+              composableManagers.push(composableParent);
             }
-          }
-        });
-
-        // Assign tags to the found nodelet/composable managers.
-        composableManagers.forEach((managerId) => {
-          const node = this.rosNodes.find(
-            (n) => n.id === managerId || n.name === managerId,
-          );
-          if (node) {
-            node.tags = [
+            n.tags = [
               {
-                text: 'Manager',
+                text: 'Nodelet',
                 color:
                   TagColors[
-                    composableManagers.indexOf(node.id) % TagColors.length
+                    composableManagers.indexOf(composableParent) %
+                      TagColors.length
                   ],
               },
             ];
           }
-        });
+        }
       });
+      // Assign tags to the found nodelet/composable managers.
+      composableManagers.forEach((managerId) => {
+        const node = this.rosNodes.find(
+          (n) => n.id === managerId || n.name === managerId,
+        );
+        if (node) {
+          node.tags = [
+            {
+              text: 'Manager',
+              color:
+                TagColors[
+                  composableManagers.indexOf(node.id) % TagColors.length
+                ],
+            },
+          ];
+        }
+      });
+
       // do not sort nodes -> start order defined by capability_group
       // this.rosNodes.sort(compareRosNodes);
       // await this.updateScreens(null);
@@ -2729,7 +2729,7 @@ class CrossbarIOProvider {
               return [r[0], r[1], errorObj.args];
             }
           } else if (r[2] === 'Connection is closed') {
-              return [r[0], r[1], r[2]];
+            return [r[0], r[1], r[2]];
           }
         }
         if (r[0]) {
