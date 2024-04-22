@@ -1,13 +1,9 @@
-import { useWindowHeight } from '@react-hook/window-size/throttled';
+// import { useWindowHeight } from '@react-hook/window-size/throttled';
 import { useContext, useEffect, useState } from 'react';
 import { Outlet, Route, Routes } from 'react-router-dom';
-
 // https://github.com/azouaoui-med/react-pro-sidebar/blob/master/storybook/Playground.tsx
-import { CssBaseline, Stack } from '@mui/material';
-
+import { createTheme, CssBaseline, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { createTheme } from '@mui/material';
-
 import { SettingsContext } from './context/SettingsContext';
 import AboutPage from './pages/About/About';
 import NodeManager from './pages/NodeManager/NodeManager';
@@ -18,7 +14,7 @@ import './App.scss';
 import { darkThemeDef, lightThemeDef } from './themes';
 
 function NavBar() {
-  const windowHeight = useWindowHeight();
+  // const windowHeight = useWindowHeight();
 
   return (
     <Stack
@@ -70,7 +66,7 @@ export default function App() {
     ]['--font-size'] = settingsCtx.get('fontSize');
     setDarkTheme(createTheme(darkThemeDef));
     setLightTheme(createTheme(lightThemeDef));
-  }, [settingsCtx.changed])
+  }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
     // Anything in here is fired on component mount.

@@ -84,13 +84,25 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     },
   },
   colorizeHosts: {
-    label: 'Colorize Hosts',
+    label: 'Colorize hosts',
+    default: true,
+    type: 'boolean',
+    description: '',
+  },
+  showFloatingButtons: {
+    label: 'Show floating buttons',
+    default: false,
+    type: 'boolean',
+    description: '',
+  },
+  checkForUpdates: {
+    label: 'Check for updates on start',
     default: true,
     type: 'boolean',
     description: '',
   },
   resetLayout: {
-    label: 'Reset Layout',
+    label: 'Reset layout',
     type: 'button',
     default: false,
     description: '',
@@ -172,12 +184,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: 'none',
     default: 1500,
   },
-  checkForUpdates: {
-    label: 'Check for updates on start',
-    default: true,
-    type: 'boolean',
-    description: '',
-  },
   actionOnChangeLaunch: {
     label: 'Action on loaded launch file change detection',
     type: 'string',
@@ -200,7 +206,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   editorOpenLocation: {
     label: 'Location to open new editor',
     type: 'string',
-    default: 'BORDER_TOP',
+    default: 'CENTER',
     options: ['BORDER_TOP', 'CENTER', 'BORDER_BOTTOM'],
     description: '',
   },

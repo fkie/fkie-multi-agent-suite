@@ -1,7 +1,7 @@
 import { alpha, styled } from '@mui/material/styles';
 import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 import PropTypes from 'prop-types';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
 import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
@@ -113,6 +113,9 @@ function HostTreeViewItem({
   const [openTimeButton, setOpenTimeButton] = useState(false);
   const anchorRef = useRef(null);
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState(false);
+  const [showFloatingButtons, setShowFloatingButtons] = useState(
+    settingsCtx.get('showFloatingButtons'),
+  );
 
   const onHover = (event) => {
     setFocus(true);
@@ -142,6 +145,10 @@ function HostTreeViewItem({
     }
     setOpenTimeButton(false);
   };
+
+  useEffect(() => {
+    setShowFloatingButtons(settingsCtx.get('showFloatingButtons'));
+  }, [settingsCtx, settingsCtx.changed]);
 
   return (
     <StyledTreeItemRoot
@@ -260,6 +267,7 @@ function HostTreeViewItem({
             component="div"
             secondaryAction={
               focus &&
+              showFloatingButtons &&
               (onStartClick || onStopClick || onRestartClick) && (
                 <Stack
                   sx={{
@@ -289,7 +297,10 @@ function HostTreeViewItem({
                         disabled={!onStartClick}
                       >
                         <PlayArrowIcon
-                          style={{ fontSize: 'inherit', pointerEvents: 'none' }}
+                          style={{
+                            fontSize: 'inherit',
+                            pointerEvents: 'none',
+                          }}
                         />
                       </IconButton>
                     </Box>
@@ -310,7 +321,10 @@ function HostTreeViewItem({
                         disabled={!onStopClick}
                       >
                         <StopIcon
-                          style={{ fontSize: 'inherit', pointerEvents: 'none' }}
+                          style={{
+                            fontSize: 'inherit',
+                            pointerEvents: 'none',
+                          }}
                         />
                       </IconButton>
                     </Box>
@@ -331,7 +345,10 @@ function HostTreeViewItem({
                         disabled={!onRestartClick}
                       >
                         <RestartAltIcon
-                          style={{ fontSize: 'inherit', pointerEvents: 'none' }}
+                          style={{
+                            fontSize: 'inherit',
+                            pointerEvents: 'none',
+                          }}
                         />
                       </IconButton>
                     </Box>
@@ -433,6 +450,7 @@ HostTreeViewItem.defaultProps = {
   showMultipleScreen: false,
   showNoScreen: false,
   showGhostScreen: false,
+  showLoggers: false,
   onShowLoggersClick: null,
   onStartClick: null,
   onStopClick: null,
