@@ -139,7 +139,7 @@ class Service:
         self._update_timer.cancel()
         self._update_timer = None
 
-    def get_system_diagnostics(self, filter_level: list = [], filter_ts: float = 0):
+    def get_system_diagnostics(self, filter_level: int, filter_ts: float = 0):
         result = DiagnosticArray()
         with self._mutex:
             now = self._clock.now()
@@ -151,7 +151,7 @@ class Service:
                     result.status.append(diag_msg)
         return result
 
-    def get_diagnostics(self, filter_level: list = [], filter_ts: float = 0):
+    def get_diagnostics(self, filter_level: int, filter_ts: float = 0):
         result = DiagnosticArray()
         # rospy.Time.from_sec(time.time())
         result.header.stamp = self._clock.now().to_msg()
@@ -159,7 +159,7 @@ class Service:
             for diag_obj in self._diagnostics:
                 if diag_obj.timestamp >= filter_ts:
                     #                    if int.from_bytes(diag_obj.msg.level, byteorder='big') >= filter_level:
-                    if diag_obj.msg.level in filter_level:
+                    if diag_obj.msg.level >= filter_level:
                         result.status.append(diag_obj.msg)
         return result
 
