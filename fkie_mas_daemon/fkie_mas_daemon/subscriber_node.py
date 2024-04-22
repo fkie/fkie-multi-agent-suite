@@ -25,42 +25,27 @@ import argparse
 import asyncio
 import json
 import os
-import signal
 import sys
 import threading
 import time
 import traceback
 from importlib import import_module
 from types import SimpleNamespace
-from typing import Any
-from typing import Callable
 from typing import Optional
-from typing import Union
-from typing import Tuple
 
-import array
-import numpy
 import rclpy
 from rclpy.duration import Duration
-from rclpy.client import SrvType
-from rclpy.client import SrvTypeRequest
-from rclpy.client import SrvTypeResponse
-from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
-from rcl_interfaces.msg import ParameterDescriptor
 
-from fkie_mas_daemon.server import Server
-from fkie_mas_pylib.crossbar import server
 from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_mas_pylib.crossbar.runtime_interface import SubscriberEvent
 from fkie_mas_pylib.crossbar.runtime_interface import SubscriberFilter
-from fkie_mas_pylib.defines import NM_NAMESPACE
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
-from fkie_mas_pylib.system.host import ros_host_suffix
-from fkie_mas_pylib.system.screen import test_screen
 
 import fkie_mas_daemon as nmd
 from fkie_mas_pylib.logging.logging import Log
+from .msg_encoder import MsgEncoder
 
 
 def str2bool(v):
@@ -72,48 +57,6 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
-
-
-class MsgEncoder(json.JSONEncoder):
-    def __init__(self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True, allow_nan: bool = True, sort_keys: bool = False, indent: Union[int, str, None] = None, separators: Union[Tuple[str, str], None] = None, default: Union[Callable[..., Any], None] = None,
-                 no_arr: bool = True,
-                 no_str: bool = True) -> None:
-        super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular,
-                         allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators, default=default)
-        self.no_arr = no_arr
-        self.no_str = no_str
-
-    def default(self, obj):
-        result = {}
-        fields = []
-        if hasattr(obj, '__slots__'):
-            fields = obj.__slots__
-        if hasattr(obj, 'get_fields_and_field_types'):
-            fields = obj.get_fields_and_field_types()
-        for key in fields:
-            item = getattr(obj, key)
-            if isinstance(item, (bytes, array.array)):
-                # obj_bytes = [byte for byte in obj]
-                if (not self.no_arr):
-                    obj_bytes = []
-                    for byte in item:
-                        if len(obj_bytes) >= 5:
-                            break
-                        obj_bytes.append(byte)
-                    result[key] = ', '.join(
-                        map(str, obj_bytes)) + f'...(of {len(item)} values)'
-            elif isinstance(item, numpy.ndarray):
-                if (not self.no_arr):
-                    result[key] = item.tolist()
-            elif isinstance(item, (list, dict, )):
-                if (not self.no_arr):
-                    result[key] = item
-            elif isinstance(item, str):
-                if (not self.no_str):
-                    result[key] = item
-            else:
-                result[key] = item
-        return result
 
 
 class RosSubscriberLauncher(CrossbarBaseSession):

@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 
-import rclpy
 import threading
 import time
 
@@ -111,7 +110,8 @@ class Service:
     def _callback_diagnostics(self, msg: DiagnosticArray):
         # TODO: update diagnostics
         with self._mutex:
-            stamp = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec) / 1000000000.0
+            stamp = float(msg.header.stamp.sec) + \
+                float(msg.header.stamp.nanosec) / 1000000000.0
             for status in msg.status:
                 try:
                     idx = self._diagnostics.index(status)
@@ -129,7 +129,8 @@ class Service:
                     self._callbackDiagnostics(msg)
                 elif self._update_timer is None:
                     # start the timer
-                    self._update_timer = threading.Timer(self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
+                    self._update_timer = threading.Timer(
+                        self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
 
     def _publish_diagnostics(self):
         diags = self.get_diagnostics(0, self._update_last_ts)
@@ -158,8 +159,8 @@ class Service:
         with self._mutex:
             for diag_obj in self._diagnostics:
                 if diag_obj.timestamp >= filter_ts:
-                    #                    if int.from_bytes(diag_obj.msg.level, byteorder='big') >= filter_level:
-                    if diag_obj.msg.level >= filter_level:
+                    if int.from_bytes(diag_obj.msg.level, byteorder='big') >= filter_level:
+                        # if diag_obj.msg.level >= filter_level:
                         result.status.append(diag_obj.msg)
         return result
 

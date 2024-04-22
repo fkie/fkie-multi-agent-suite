@@ -80,8 +80,9 @@ class MonitorServicer(CrossbarBaseSession):
             values = []
             for v in sensor.values:
                 values.append(DiagnosticStatus.KeyValue(v.key, v.value))
+            level = int.from_bytes(sensor.level, byteorder='big')
             status = DiagnosticStatus(
-                sensor.level, sensor.name, sensor.message, sensor.hardware_id, values
+                level, sensor.name, sensor.message, sensor.hardware_id, values
             )
             cbMsg.status.append(status)
         return cbMsg
