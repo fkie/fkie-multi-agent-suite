@@ -283,24 +283,21 @@ function HostTreeViewPanel() {
   /**
    * Create and open a new panel with a [NodeLoggerPanel] for a given node
    */
-  const createLoggerPanel = useCallback(
-    async (node) => {
-      const id = `node-logger-${node.name}@${node.providerName}`;
-      const title = node.name;
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          id,
-          title,
-          <NodeLoggerPanel node={node} />,
-          true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, 'node-logger', {}),
-        ),
-      );
-    },
-    [rosCtx, SSHCtx, logCtx],
-  );
+  const createLoggerPanel = useCallback(async (node) => {
+    const id = `node-logger-${node.name}@${node.providerName}`;
+    const title = node.name;
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent(
+        id,
+        title,
+        <NodeLoggerPanel node={node} />,
+        true,
+        LAYOUT_TAB_SETS.BORDER_RIGHT,
+        new LayoutTabConfig(false, 'node-logger', {}),
+      ),
+    );
+  }, []);
 
   /**
    * Start nodes from a list of itemIds
@@ -496,32 +493,35 @@ function HostTreeViewPanel() {
     }
   };
 
-  function updateWithAssociations(nodes, depth = 0) {
-    if (depth > 10) return [nodes];
-    const newNodeList = [];
-    nodes.forEach((node) => {
-      if (node.associations.length > 0) {
-        const provider = rosCtx.getProviderById(node.providerId);
-        if (provider) {
-          node.associations.forEach((asNodeName) => {
-            const asNodes = provider.rosNodes.filter(
-              (n) => n.name === asNodeName,
-            );
-            const asNodesRec = updateWithAssociations(asNodes, depth + 1);
-            asNodesRec.forEach((asNode) => {
-              if (!newNodeList.find((n) => n.name === asNode.name)) {
-                newNodeList.push(asNode);
-              }
+  const updateWithAssociations = useCallback(
+    (nodes, depth = 0) => {
+      if (depth > 10) return [nodes];
+      const newNodeList = [];
+      nodes.forEach((node) => {
+        if (node.associations.length > 0) {
+          const provider = rosCtx.getProviderById(node.providerId);
+          if (provider) {
+            node.associations.forEach((asNodeName) => {
+              const asNodes = provider.rosNodes.filter(
+                (n) => n.name === asNodeName,
+              );
+              const asNodesRec = updateWithAssociations(asNodes, depth + 1);
+              asNodesRec.forEach((asNode) => {
+                if (!newNodeList.find((n) => n.name === asNode.name)) {
+                  newNodeList.push(asNode);
+                }
+              });
             });
-          });
+          }
         }
-      }
-      if (!newNodeList.find((n) => n.name === node.name)) {
-        newNodeList.push(node);
-      }
-    });
-    return newNodeList;
-  }
+        if (!newNodeList.find((n) => n.name === node.name)) {
+          newNodeList.push(node);
+        }
+      });
+      return newNodeList;
+    },
+    [rosCtx],
+  );
 
   const startNodesWithLaunchCheck = useCallback(
     (nodes, ignoreRunState = false) => {
@@ -1081,7 +1081,7 @@ function HostTreeViewPanel() {
   useEffect(() => {
     showRemoteOnAllProvider(showRemoteNodes);
     refreshAllProvider();
-  }, [showRemoteNodes]);
+  }, [refreshAllProvider, showRemoteNodes, showRemoteOnAllProvider]);
 
   return (
     <Box

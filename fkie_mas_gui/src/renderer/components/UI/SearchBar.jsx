@@ -15,7 +15,7 @@ function SearchBar({
 
   useEffect(() => {
     onSearch(searched);
-  }, [searched]);
+  }, [onSearch, searched]);
 
   return (
     <TextField

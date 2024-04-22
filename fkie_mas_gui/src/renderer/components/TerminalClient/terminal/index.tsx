@@ -7,12 +7,12 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 
 import React from 'react';
 
-import { bind } from 'decko';
-import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { ISearchOptions, SearchAddon } from '@xterm/addon-search';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
+import { ITerminalOptions, Terminal } from '@xterm/xterm';
+import { bind } from 'decko';
 
 import {
   Alert,
@@ -153,7 +153,7 @@ export class Xterm extends React.Component<Props, XtermState> {
     // show the name of the node during 300 ms at launch time
     const { overlayAddon } = this;
     const { name } = this.props;
-    overlayAddon?.showOverlay(name ? name: 'empty name', 300);
+    overlayAddon?.showOverlay(name ? name : 'empty name', 300);
     if (this.container) {
       this.resizeObserver = new ResizeObserver(() => {
         this.componentDidUpdate();

@@ -68,14 +68,22 @@ const ReloadFileAlertComponent = forwardRef<
     }
     if (onReload) onReload(provider.id, launchFile);
     closeSnackbar(id);
-  }, [id, closeSnackbar, rememberChange]);
+  }, [
+    rememberChange,
+    onReload,
+    provider.id,
+    launchFile,
+    closeSnackbar,
+    id,
+    settingsCtx,
+  ]);
 
   const handleDismiss = useCallback(() => {
     if (rememberChange) {
       settingsCtx.set('actionOnChangeLaunch', 'DISMISS');
     }
     closeSnackbar(id);
-  }, [id, closeSnackbar, rememberChange]);
+  }, [rememberChange, closeSnackbar, id, settingsCtx]);
 
   useEffect(() => {
     switch (settingsCtx.get('actionOnChangeLaunch')) {
@@ -88,7 +96,7 @@ const ReloadFileAlertComponent = forwardRef<
       default:
         break;
     }
-  }, [settingsCtx]);
+  }, [handleDismiss, handleReload, settingsCtx]);
 
   return (
     <SnackbarContent ref={ref}>

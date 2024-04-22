@@ -40,9 +40,7 @@ function ProviderSelector({ defaultProvider, setSelectedProvider }) {
       });
     }
     provNames.sort((a, b) => -b.name.localeCompare(a.name));
-    if (
-      newSelectedProvider !== currentProvider
-    ) {
+    if (newSelectedProvider !== currentProvider) {
       // current provider is not in the name list, add to avoid warnings
       provNames.push({ name: currentProvider, id: currentProvider });
     }

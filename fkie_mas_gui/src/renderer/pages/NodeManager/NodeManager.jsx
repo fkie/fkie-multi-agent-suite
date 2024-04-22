@@ -87,7 +87,7 @@ function NodeManager() {
 
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
-  function hasTab(layout, tabId) {
+  const hasTab = useCallback((layout, tabId) => {
     if (!layout.children) return false;
     const tabs = layout.children.filter((item) => {
       if (item.type === 'tab' && item.id === tabId) {
@@ -99,10 +99,10 @@ function NodeManager() {
       return false;
     });
     return tabs.length > 0;
-  }
+  }, []);
 
   // disable float button if the gui is not running in the browser
-  function updateFloatButton(layout) {
+  const updateFloatButton = useCallback((layout) => {
     if (!layout.children) return false;
     let result = false;
     const tabs = layout.children.forEach((item) => {
@@ -119,7 +119,7 @@ function NodeManager() {
       }
     });
     return result;
-  }
+  }, []);
 
   useEffect(() => {
     // check on load if float button should be enabled or not
@@ -133,7 +133,7 @@ function NodeManager() {
       setLayoutJson(layoutJson);
       setModel(Model.fromJson(layoutJson));
     }
-  }, [layoutJson, setLayoutJson, setModel]);
+  }, [layoutJson, setLayoutJson, setModel, updateFloatButton]);
 
   useEffect(() => {
     if (
@@ -145,7 +145,15 @@ function NodeManager() {
       settingsCtx.set('resetLayout', false);
       logCtx.success(`Layout reset!`);
     }
-  }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel]);
+  }, [
+    settingsCtx.changed,
+    layoutJson,
+    setLayoutJson,
+    setModel,
+    settingsCtx,
+    hasTab,
+    logCtx,
+  ]);
 
   /** Hide bottom panel on close of last terminal */
   const deleteTab = useCallback(

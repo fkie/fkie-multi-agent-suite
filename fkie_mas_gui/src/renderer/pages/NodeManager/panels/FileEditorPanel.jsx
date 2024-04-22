@@ -366,7 +366,8 @@ function FileEditorPanel({
       }
       setClickRequest(null);
     }
-  }, [clickRequest, getIncludeResource, setEditorModel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clickRequest, getIncludeResource]);
 
   const saveCurrentFile = useCallback(
     async (editorModel) => {
@@ -794,6 +795,7 @@ function FileEditorPanel({
     configureMonacoEditor();
     setInitialized(true);
     loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialized, monaco, loadFiles]);
 
   const handleEditorDidMount = (editor) => {

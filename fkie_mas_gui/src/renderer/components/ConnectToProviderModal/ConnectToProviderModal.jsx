@@ -358,7 +358,8 @@ function ConnectToProviderModal() {
     }
     const port = startParameter.port
       ? startParameter.port
-      : getCrossbarPortFromRos(startParameter.rosVersion) + startParameter.networkId;
+      : getCrossbarPortFromRos(startParameter.rosVersion) +
+        startParameter.networkId;
     // join each host separately
     await Promise.all(
       hosts.map(async (crossbarHost) => {
@@ -392,7 +393,9 @@ function ConnectToProviderModal() {
     if (rosCtx.rosInfo?.version) {
       setRosVersion(rosCtx.rosInfo?.version);
     }
-  }, [rosCtx.rosInfo, setRosVersion]);
+    // do not include to dependency (loop!): setRosVersion
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rosCtx.rosInfo]);
 
   const generateHistoryView = useMemo(() => {
     if (startConfigurations.length === 0) {
