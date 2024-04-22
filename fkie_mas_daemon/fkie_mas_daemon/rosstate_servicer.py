@@ -377,7 +377,7 @@ class RosStateServicer(CrossbarBaseSession):
                 full_name = os.path.join(node_ns, node_name)
                 Log.debug(
                     f"{self.__class__.__name__}:   create node: {full_name}")
-                ros_node = RosNode(f"{node_guid}-{full_name}", full_name)
+                ros_node = RosNode(f"{full_name}-{node_guid}", full_name)
                 # search node with same guid, we assume it is the manager
                 for (_ns, _name, _guid), _node in node_dict.items():
                     if node_guid == _guid and _node.parent_id is None:
