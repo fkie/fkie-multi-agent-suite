@@ -367,7 +367,9 @@ function HostTreeViewItem({
             >
               {labelText}
             </Typography>
-            {(!focus || (!onStartClick && !onStopClick && !onRestartClick)) &&
+            {(!focus ||
+              !showFloatingButtons ||
+              (!onStartClick && !onStopClick && !onRestartClick)) &&
               tags.map((tag) => (
                 <Tag
                   key={tag.text}
