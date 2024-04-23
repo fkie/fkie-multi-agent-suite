@@ -25,7 +25,7 @@ import {
   Typography,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useCustomEventListener } from 'react-custom-events';
 import ReactJson from 'react-json-view';
 
@@ -85,7 +85,7 @@ function TopicEchoPanel({
   useEffect(
     () => {
       if (content) {
-        setHistory([content, ...history.slice(0, msgCount - 1)]);
+        setHistory((prev) => [content, ...prev.slice(0, msgCount - 1)]);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -210,6 +210,55 @@ function TopicEchoPanel({
     }
     return `${size.toFixed(fixed)}B${per}`;
   }
+
+  const generateJsonTopics = useMemo(() => {
+    return history.map((event) => {
+      return (
+        <Box key={`box-${event.key}`}>
+          <Stack marginTop={1} spacing={1} direction="row">
+            {/* <Tag
+            key={event.receivedIndex}
+            color="info"
+            title={`${event.receivedIndex}`}
+          /> */}
+            {event.seq === undefined && (
+              <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+                {event.receivedIndex}:
+              </Typography>
+            )}
+            {event.seq !== undefined && (
+              <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+                {event.seq}
+              </Typography>
+              // <Tag
+              //   key={event.seq}
+              //   color="info"
+              //   title="seq: "
+              //   text={`${event.seq}`}
+              // />
+            )}
+            <ReactJson
+              key={`${event.key}`}
+              name={false}
+              // collapsed={2}
+              theme={
+                settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
+              }
+              style={{ fontSize: '0.8em' }}
+              src={event?.data}
+              collapseStringsAfterLength={30}
+              displayObjectSize={false}
+              enableClipboard={false}
+              indentWidth={2}
+              displayDataTypes={false}
+              // iconStyle="triangle"
+              quotesOnKeys={false}
+            />
+          </Stack>
+        </Box>
+      );
+    });
+  }, [history, settingsCtx]);
 
   return (
     <Box
@@ -449,65 +498,7 @@ function TopicEchoPanel({
         )}
       </Paper>
       <Stack sx={{ width: '100%' }}>
-        {history &&
-          !noData &&
-          history.map((event, index) => {
-            return (
-              <Box key={`box-${index}`}>
-                <Stack marginTop={1} spacing={1} direction="row">
-                  {/* <Tag
-                    key={event.receivedIndex}
-                    color="info"
-                    title={`${event.receivedIndex}`}
-                  /> */}
-                  {event.seq === undefined && (
-                    <Typography
-                      fontStyle="italic"
-                      fontSize="0.8em"
-                      color="gray"
-                    >
-                      {event.receivedIndex}:
-                    </Typography>
-                  )}
-                  {event.seq !== undefined && (
-                    <Typography
-                      fontStyle="italic"
-                      fontSize="0.8em"
-                      color="gray"
-                    >
-                      {event.seq}
-                    </Typography>
-                    // <Tag
-                    //   key={event.seq}
-                    //   color="info"
-                    //   title="seq: "
-                    //   text={`${event.seq}`}
-                    // />
-                  )}
-                  <ReactJson
-                    key={`${event.key}`}
-                    name={false}
-                    // collapsed={2}
-                    theme={
-                      settingsCtx.get('useDarkMode')
-                        ? 'grayscale'
-                        : 'rjv-default'
-                    }
-                    style={{ fontSize: '0.8em' }}
-                    src={event?.data}
-                    collapseStringsAfterLength={30}
-                    displayObjectSize={false}
-                    enableClipboard={false}
-                    indentWidth={2}
-                    displayDataTypes={false}
-                    // iconStyle="triangle"
-                    quotesOnKeys={false}
-                  />
-                </Stack>
-              </Box>
-            );
-          })}
-
+        {history && !noData && generateJsonTopics}
         {!currentProvider && (
           <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
             <AlertTitle>{`Invalid provider: [${selectedProvider}]`}</AlertTitle>
