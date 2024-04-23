@@ -19,6 +19,7 @@ import { CmdType } from '../../providers';
 import { generateUniqueId } from '../../utils';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
 import { colorFromHostname } from '../UI/Colors';
+import { removeDDSuid } from '../../utils/index';
 import HostTreeViewItem from './HostTreeViewItem';
 import {
   getGroupIcon,
@@ -218,9 +219,7 @@ function HostTreeView({
           const itemIds = item.split('#');
           const itemProvider = itemIds[0];
           const itemId = itemIds.slice(-1)[0];
-          const lastIndex = itemId.lastIndexOf('-');
-          const itemName =
-            lastIndex === -1 ? itemId : itemId.substring(0, lastIndex);
+          const itemName = removeDDSuid(itemId);
           // find the node and determine the new node id
           let present = itemId;
           const providerNodes = rosCtx.mapProviderRosNodes.get(itemProvider);

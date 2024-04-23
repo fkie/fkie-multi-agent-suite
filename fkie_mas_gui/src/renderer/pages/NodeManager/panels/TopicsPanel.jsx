@@ -1,7 +1,7 @@
 import { TreeView } from '@mui/x-tree-view';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { Box, IconButton, Stack, Tooltip } from '@mui/material';
 
@@ -303,7 +303,7 @@ function TopicsPanel({ initialSearchTerm }) {
     );
   }, []);
 
-  const topicTreeToStyledItems = (rootPath, treeItem) => {
+  const topicTreeToStyledItems = useCallback((rootPath, treeItem) => {
     if (Array.isArray(treeItem)) {
       return treeItem.map((item) => {
         const { groupName, fullPrefix } = fromGroupId(item.groupKey);
@@ -337,7 +337,7 @@ function TopicsPanel({ initialSearchTerm }) {
         topicInfo={treeItem}
       />
     );
-  };
+  }, []);
 
   useEffect(() => {
     const selectedTopics = filteredTopics.filter((item) => {
@@ -351,6 +351,33 @@ function TopicsPanel({ initialSearchTerm }) {
       setTopicForSelected(null);
     }
   }, [filteredTopics, selectedItems]);
+
+  const createTreeView = useMemo(() => {
+    return (
+      <TreeView
+        aria-label="parameters"
+        expanded={expanded}
+        defaultCollapseIcon={<ArrowDropDownIcon />}
+        defaultExpandIcon={<ArrowRightIcon />}
+        // defaultEndIcon={<div style={{ width: 24 }} />}
+        onNodeSelect={(event, nodeId) => {
+          setSelectedItems(nodeId);
+          const index = expanded.indexOf(nodeId);
+          const copyExpanded = [...expanded];
+          if (index === -1) {
+            copyExpanded.push(nodeId);
+          } else {
+            copyExpanded.splice(index, 1);
+          }
+          setExpanded(copyExpanded);
+        }}
+      >
+        {rootDataList.map((item) => {
+          return topicTreeToStyledItems('', item);
+        })}
+      </TreeView>
+    );
+  }, [expanded, rootDataList, topicTreeToStyledItems]);
 
   return (
     <Box
@@ -427,28 +454,7 @@ function TopicsPanel({ initialSearchTerm }) {
         </Stack>
         <Stack direction="row" height="100%" overflow="auto">
           <Box width="100%" height="100%" overflow="auto">
-            <TreeView
-              aria-label="parameters"
-              expanded={expanded}
-              defaultCollapseIcon={<ArrowDropDownIcon />}
-              defaultExpandIcon={<ArrowRightIcon />}
-              // defaultEndIcon={<div style={{ width: 24 }} />}
-              onNodeSelect={(event, nodeId) => {
-                setSelectedItems(nodeId);
-                const index = expanded.indexOf(nodeId);
-                const copyExpanded = [...expanded];
-                if (index === -1) {
-                  copyExpanded.push(nodeId);
-                } else {
-                  copyExpanded.splice(index, 1);
-                }
-                setExpanded(copyExpanded);
-              }}
-            >
-              {rootDataList.map((item) => {
-                return topicTreeToStyledItems('', item);
-              })}
-            </TreeView>
+            {createTreeView}
           </Box>
         </Stack>
       </Stack>

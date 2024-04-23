@@ -9,6 +9,7 @@ import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
 import { LoggingContext } from '../../context/LoggingContext';
 import { NavigationContext } from '../../context/NavigationContext';
 import { SettingsContext } from '../../context/SettingsContext';
+import { removeDDSuid } from '../../utils/index';
 import { colorFromHostname } from '../UI/Colors';
 import CopyButton from '../UI/CopyButton';
 
@@ -206,7 +207,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 Publisher [{topicInfo.publishers.length}]:
               </Typography>
               {topicInfo.publishers.map((item) => {
-                const pubNodeName = item.split('-', 2).slice(-1).join('-');
+                const pubNodeName = removeDDSuid(item);
                 return (
                   <Stack key={item} paddingLeft={3} direction="row">
                     <Typography
@@ -227,7 +228,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 Subscriber [{topicInfo.subscribers.length}]:
               </Typography>
               {topicInfo.subscribers.map((item) => {
-                const subNodeName = item.split('-', 2).slice(-1).join('-');
+                const subNodeName = removeDDSuid(item);
                 return (
                   <Stack key={item} paddingLeft={3} direction="row">
                     <Typography

@@ -24,14 +24,15 @@ const delay = (ms) => {
 
 const pathJoin = (pathArr) => {
   return pathArr
-    .map(function (path) {
-      if (path[0] === '/') {
-        path = path.slice(1);
+    .map((path) => {
+      let result = path;
+      if (result[0] === '/') {
+        result = result.slice(1);
       }
-      if (path[path.length - 1] === '/') {
-        path = path.slice(0, path.length - 1);
+      if (result[result.length - 1] === '/') {
+        result = result.slice(0, result.length - 1);
       }
-      return path;
+      return result;
     })
     .join('/');
 };
@@ -48,8 +49,10 @@ const splitAndSearchTerm = (searchTerm) => {
  * Returns true if one of the words contains the search term.
  */
 const findTerm = (searchTerm, words) => {
+  // eslint-disable-next-line no-restricted-syntax
   for (const w of words) {
     if (Array.isArray(w)) {
+      // eslint-disable-next-line no-restricted-syntax
       for (const sw of w) {
         if (sw.indexOf(searchTerm) !== -1) {
           return true;
@@ -69,6 +72,7 @@ const findTerm = (searchTerm, words) => {
 const findIn = (searchTerms, words) => {
   let invert = false;
   const searchOrTerms = splitOrSearchTerm(searchTerms);
+  // eslint-disable-next-line no-restricted-syntax
   for (const sO of searchOrTerms) {
     const searchAndTerms = splitAndSearchTerm(sO);
     if (searchAndTerms.length === 1) {
@@ -84,6 +88,7 @@ const findIn = (searchTerms, words) => {
     } else {
       // returns only true if all search terms are found
       let foundAnd = true;
+      // eslint-disable-next-line no-restricted-syntax
       for (const sA of searchAndTerms) {
         const sInvert = sA.startsWith('!');
         const searchFor = sInvert ? sA.slice(1) : sA;
@@ -92,7 +97,7 @@ const findIn = (searchTerms, words) => {
           // if inverted and found whole entry will not be shown
           return false;
         }
-        if (!sInvert && !found){
+        if (!sInvert && !found) {
           foundAnd = false;
         }
       }
@@ -104,4 +109,16 @@ const findIn = (searchTerms, words) => {
   return invert;
 };
 
-export { delay, extractSubstring, findIn, generateUniqueId, pathJoin };
+const removeDDSuid = (item) => {
+  const lastIndex = item.lastIndexOf('-');
+  return lastIndex === -1 ? item : item.substring(0, lastIndex);
+};
+
+export {
+  delay,
+  extractSubstring,
+  findIn,
+  generateUniqueId,
+  pathJoin,
+  removeDDSuid,
+};
