@@ -71,7 +71,7 @@ function HostTreeView({
   // keyNodeList: {key: string, idGlobal: string}[]
   const keyNodeList = useMemo(() => {
     return [];
-  });
+  }, []);
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -211,7 +211,7 @@ function HostTreeView({
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
-  useEffect(() => {
+  const updateSelectedNodeIds = useCallback(() => {
     setSelectedItems((prevItems) => [
       ...getParentAndChildrenIds(
         prevItems.map((item) => {
@@ -234,43 +234,19 @@ function HostTreeView({
         }),
       ),
     ]);
+  }, [getParentAndChildrenIds, rosCtx.mapProviderRosNodes]);
+
+  /**
+   * synchronize selected items and available nodes (important in ROS2)
+   * since the running node has an DDS id at the end of the node name separated by '-'
+   */
+  useEffect(() => {
+    updateSelectedNodeIds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    setSelectedItems,
     // update only if providerNodeTree was changed
     providerNodeTree,
-    // rosCtx.mapProviderRosNodes, <= updates the selected too often.
-    // getParentAndChildrenIds,
-    // keyNodeList,
   ]);
-
-  // /**
-  //  * effect to remove selected items that are no longer in the providerNodeList
-  //  * TODO: CHECK THIS FUNCTION
-  //  */
-  // useEffect(() => {
-  //   setSelectedItems((prevItems) => [
-  //     ...getParentAndChildrenIds(
-  //       prevItems.filter((item) => {
-  //         const itemProvider = item.split('#')[0];
-  //         let present = false;
-  //         console.log(`GET itemProvider for ${JSON.stringify(item)}`);
-  //         if (rosCtx.mapProviderRosNodes.get(itemProvider)) {
-  //           rosCtx.mapProviderRosNodes.get(itemProvider).forEach((nodeList) => {
-  //             console.log(`GET nodeList for ${JSON.stringify(nodeList)}`);
-  //             if (nodeList.id.includes(item)) {
-  //               present = true;
-  //               console.log(
-  //                 `GET PRESENT ${JSON.stringify(nodeList.id)} === item: ${item}`
-  //               );
-  //             }
-  //           });
-  //         }
-  //         return present;
-  //       })
-  //     ),
-  //   ]);
-  // }, [setSelectedItems, getParentAndChildrenIds, rosCtx.mapProviderRosNodes]);
 
   /**
    * effect to update parent selected nodes when the tree selection changes
