@@ -207,6 +207,43 @@ function HostTreeView({
     [getParentAndChildrenIds],
   );
 
+  /**
+   * synchronize selected items and available nodes (important in ROS2)
+   * since the running node has an DDS id at the end of the node name separated by '-'
+   */
+  useEffect(() => {
+    setSelectedItems((prevItems) => [
+      ...getParentAndChildrenIds(
+        prevItems.map((item) => {
+          const itemIds = item.split('#');
+          const itemProvider = itemIds[0];
+          const itemId = itemIds.slice(-1)[0];
+          const lastIndex = itemId.lastIndexOf('-');
+          const itemName =
+            lastIndex === -1 ? itemId : itemId.substring(0, lastIndex);
+          // find the node and determine the new node id
+          let present = itemId;
+          const providerNodes = rosCtx.mapProviderRosNodes.get(itemProvider);
+          providerNodes?.forEach((node) => {
+            if (node.name === itemName) {
+              present = node.id;
+            }
+          });
+          // create the item id with new/old node id
+          return `${itemIds.slice(0, -1).join('#')}#${present}`;
+        }),
+      ),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    setSelectedItems,
+    // update only if providerNodeTree was changed
+    providerNodeTree,
+    // rosCtx.mapProviderRosNodes, <= updates the selected too often.
+    // getParentAndChildrenIds,
+    // keyNodeList,
+  ]);
+
   // /**
   //  * effect to remove selected items that are no longer in the providerNodeList
   //  * TODO: CHECK THIS FUNCTION
@@ -617,7 +654,7 @@ function HostTreeView({
 
   function formatTime(milliseconds) {
     const sec = (milliseconds / 1000.0).toFixed(3);
-    return sec + 's';
+    return `${sec}s`;
   }
 
   /**
