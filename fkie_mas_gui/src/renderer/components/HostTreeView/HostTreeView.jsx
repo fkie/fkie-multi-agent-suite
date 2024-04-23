@@ -375,9 +375,32 @@ function HostTreeView({
   /**
    * Select all nodes on the tree, that belongs to a given launch file and provider
    */
-  const selectNodesFromLaunch = useCallback((providerId, launch) => {
-    // console.log('selectNodesFromLaunch', providerId, launch);
-  }, []);
+  const selectNodesFromLaunch = useCallback(
+    (providerId, launch) => {
+      let treeNodes = [];
+      // launch file contains the names of the nodes
+      // find ros nodes with this name
+      const providerNodes = rosCtx.mapProviderRosNodes.get(providerId);
+      providerNodes?.forEach((treeNode) => {
+        if (
+          launch.nodes.filter((lNode) => {
+            return lNode.node_name === treeNode.name;
+          }).length > 0
+        ) {
+          treeNodes = [...treeNodes, treeNode.idGlobal];
+        }
+      });
+      // get the tree ids for the nodes ids
+      setSelectedItems(
+        keyNodeList
+          .filter((kNode) => {
+            return treeNodes.includes(kNode.idGlobal);
+          })
+          .map((kNode) => kNode.key),
+      );
+    },
+    [keyNodeList, rosCtx.mapProviderRosNodes],
+  );
 
   /**
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
@@ -603,7 +626,9 @@ function HostTreeView({
         </HostTreeViewItem>
       );
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      // do not include keyNodeList
       settingsCtx,
       handleDoubleClick,
       onShowLoggersClick,
