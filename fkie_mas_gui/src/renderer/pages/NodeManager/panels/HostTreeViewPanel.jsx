@@ -940,7 +940,8 @@ function HostTreeViewPanel() {
 
   useEffect(() => {
     refreshAllProvider();
-  }, [refreshAllProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rosCtx.providersConnected]);
 
   useEffect(() => {
     // filter nodes by user text
@@ -1081,7 +1082,8 @@ function HostTreeViewPanel() {
   useEffect(() => {
     showRemoteOnAllProvider(showRemoteNodes);
     refreshAllProvider();
-  }, [refreshAllProvider, showRemoteNodes, showRemoteOnAllProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showRemoteNodes]);
 
   return (
     <Box
