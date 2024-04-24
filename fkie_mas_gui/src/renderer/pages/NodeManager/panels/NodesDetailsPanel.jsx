@@ -1,5 +1,3 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
-
 import {
   Alert,
   AlertTitle,
@@ -16,9 +14,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-
 import { grey } from '@mui/material/colors';
-
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { emitCustomEvent } from 'react-custom-events';
 import { CopyButton, Tag, getDiagnosticStyle } from '../../../components';
 import { LoggingContext } from '../../../context/LoggingContext';
@@ -27,7 +24,6 @@ import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { RosNodeStatus, getDiagnosticLevelName } from '../../../models';
-
 import { CmdType } from '../../../providers';
 import { generateUniqueId } from '../../../utils';
 import {
@@ -229,6 +225,427 @@ function NodesDetailsPanel() {
     [logCtx],
   );
 
+  const createNodeDetailsView = useMemo(() => {
+    return nodesShow.map((node) => {
+      return (
+        <Stack
+          key={`${node.name}_${node.providerId}`}
+          // spacing={1}
+          alignItems="left"
+        >
+          <Stack paddingTop={1}>
+            <Typography
+              variant="subtitle1"
+              style={{
+                color: '#fff',
+                backgroundColor: '#2196f3',
+              }}
+              align="center"
+            >
+              <Box sx={{ fontWeight: 'bold', m: 0.5 }}>
+                {node.name.replace(node.namespace, '').replace('/', '')}
+                <CopyButton value={node.name} />
+              </Box>
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              style={{ color: grey[700] }}
+              align="center"
+            >
+              Namespace: {node?.namespace}
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              style={{ color: grey[700] }}
+              align="center"
+            >
+              <Box sx={{ fontWeight: 'bold', m: 1 }}>{node.providerName}</Box>
+            </Typography>
+          </Stack>
+
+          {node && node.diagnosticLevel > 0 && (
+            <Typography
+              variant="body1"
+              style={getDiagnosticStyle(node.diagnosticLevel)}
+              marginBottom={1}
+            >
+              {getDiagnosticLevelName(node.diagnosticLevel)}:{' '}
+              {node.diagnosticMessage}
+            </Typography>
+          )}
+
+          {showNodeInfo && (
+            <Stack spacing={0.5}>
+              <Stack direction="row" spacing={0.5}>
+                <Tag
+                  color={
+                    node.status === RosNodeStatus.RUNNING
+                      ? 'success'
+                      : 'default'
+                  }
+                  title="Status:"
+                  // title={`${RosNodeStatusInfo[node.status]}`}
+                  text={node.status}
+                  wrap
+                />
+
+                {node.pid && Math.round(node.pid) > 0 && (
+                  <Tag color="info" title="PID:" text={`${node.pid}`} wrap />
+                )}
+
+                {node.node_API_URI && node.node_API_URI.length > 0 && (
+                  <Tag
+                    color="default"
+                    title="URI:"
+                    text={node.node_API_URI}
+                    wrap
+                  />
+                )}
+              </Stack>
+
+              <Stack direction="row" spacing={0.5}>
+                {node.masteruri && node.masteruri.length > 0 && (
+                  <Tag
+                    color="primary"
+                    title="MASTERURI:"
+                    text={node.masteruri}
+                    wrap
+                  />
+                )}
+              </Stack>
+
+              <Stack direction="row" spacing={0.5}>
+                {node.location && (
+                  <Tag
+                    color="primary"
+                    title="Location:"
+                    text={JSON.stringify(node.location)}
+                    wrap
+                  />
+                )}
+              </Stack>
+              {node.launchPaths &&
+                [...node.launchPaths].map((launchPath) => (
+                  <Tag
+                    key={launchPath}
+                    color="info"
+                    title="Launch:"
+                    text={launchPath}
+                    wrap
+                    copyButton={launchPath}
+                  />
+                ))}
+            </Stack>
+          )}
+
+          {node && (
+            <Stack spacing={1}>
+              {showPublishers && (
+                <>
+                  <Typography variant="caption">
+                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                      Published topics:
+                      {` [${node.publishers.size}]`}
+                    </Box>
+                  </Typography>
+                  {node.publishers.size > 0 && (
+                    // useZebraStyles={false}>
+                    <TableContainer component={Paper}>
+                      <Table size="small" aria-label="a dense table">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={0}
+                                padding={0}
+                              >
+                                {showConnections && (
+                                  <Chip
+                                    size="small"
+                                    title="pub"
+                                    color="default"
+                                    label="pub"
+                                  />
+                                )}
+                                {showConnections && (
+                                  <Chip
+                                    size="small"
+                                    title="sub"
+                                    color="default"
+                                    label="sub"
+                                  />
+                                )}
+                                <Typography
+                                  marginLeft="0.5em"
+                                  fontWeight="bold"
+                                  variant="body2"
+                                >
+                                  Topic Name
+                                </Typography>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Array.from(node.publishers.values())
+                            .sort(compareTopics)
+                            .map((topic) => (
+                              <TableRow key={topic.name}>
+                                <TableCell style={{ padding: 0 }}>
+                                  <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={0}
+                                  >
+                                    <OverflowMenuTopic
+                                      onClick={onTopicClick}
+                                      topicName={topic.name}
+                                      providerId={node.providerId}
+                                    />
+
+                                    {showConnections && (
+                                      <Stack direction="row">
+                                        <Chip
+                                          size="small"
+                                          title="publishers"
+                                          // showZero={true}
+                                          color={(() => {
+                                            return 'default';
+                                          })()}
+                                          label={topic.publisher.length}
+                                        />
+
+                                        <Chip
+                                          size="small"
+                                          title="subscribers"
+                                          // showZero={true}
+                                          color={
+                                            topic.subscriber.length > 0
+                                              ? 'default'
+                                              : 'warning'
+                                          }
+                                          label={topic.subscriber.length}
+                                        />
+                                      </Stack>
+                                    )}
+                                    <Button
+                                      size="small"
+                                      style={{
+                                        marginLeft: 1,
+                                        textTransform: 'none',
+                                        justifyContent: 'left',
+                                      }}
+                                      onClick={(event) => {
+                                        onTopicClick(
+                                          event.nativeEvent.ctrlKey
+                                            ? 'PUBLISH'
+                                            : 'ECHO',
+                                          topic.name,
+                                          node.providerId,
+                                          event.nativeEvent.shiftKey,
+                                        );
+                                      }}
+                                    >
+                                      {`${topic.name}`}
+                                    </Button>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </>
+              )}
+
+              {showSubscribers && (
+                <>
+                  <Typography variant="caption">
+                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                      Subscribed Topics:
+                      {` [${node.subscribers.size}]`}
+                    </Box>
+                  </Typography>
+                  {node.subscribers.size > 0 && (
+                    <TableContainer component={Paper}>
+                      <Table size="small" aria-label="a dense table">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={0}
+                              >
+                                {showConnections && (
+                                  <Chip
+                                    size="small"
+                                    title="pub"
+                                    color="default"
+                                    label="pub"
+                                  />
+                                )}
+                                {showConnections && (
+                                  <Chip
+                                    size="small"
+                                    title="sub"
+                                    color="default"
+                                    label="sub"
+                                  />
+                                )}
+                                <Typography
+                                  marginLeft="0.5em"
+                                  fontWeight="bold"
+                                  variant="body2"
+                                >
+                                  Topic Name
+                                </Typography>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Array.from(node.subscribers.values())
+                            .sort(compareTopics)
+                            .map((topic) => (
+                              <TableRow key={topic.name}>
+                                <TableCell style={{ padding: 0 }}>
+                                  <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={0}
+                                  >
+                                    <OverflowMenuTopic
+                                      onClick={onTopicClick}
+                                      topicName={topic.name}
+                                      providerId={node.providerId}
+                                    />
+                                    {showConnections && (
+                                      <Stack direction="row">
+                                        <Chip
+                                          size="small"
+                                          title="publishers"
+                                          // showZero={true}
+                                          color={(() => {
+                                            if (topic.publisher.length === 0)
+                                              return 'warning';
+                                            return 'default';
+                                          })()}
+                                          label={topic.publisher.length}
+                                        />
+                                        <Chip
+                                          size="small"
+                                          title="subscribers"
+                                          // showZero={true}
+                                          color={
+                                            topic.subscriber.length > 0
+                                              ? 'default'
+                                              : 'warning'
+                                          }
+                                          label={topic.subscriber.length}
+                                        />
+                                      </Stack>
+                                    )}
+                                    <Button
+                                      size="small"
+                                      style={{
+                                        marginLeft: 1,
+                                        textTransform: 'none',
+                                        justifyContent: 'left',
+                                      }}
+                                      onClick={(event) =>
+                                        onTopicClick(
+                                          event.nativeEvent.ctrlKey
+                                            ? 'PUBLISH'
+                                            : 'ECHO',
+                                          topic.name,
+                                          node.providerId,
+                                          event.nativeEvent.shiftKey,
+                                        )
+                                      }
+                                    >
+                                      {`${topic.name}`}
+                                    </Button>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </>
+              )}
+
+              {showServices && (
+                <>
+                  <Typography variant="caption">
+                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                      Available Services:
+                      {` [${Array.from(node.services.values()).length}]`}
+                    </Box>
+                  </Typography>
+
+                  {Array.from(node.services.values()).length > 0 && (
+                    <TableContainer component={Paper}>
+                      <Table size="small" aria-label="a dense table">
+                        <TableBody>
+                          {Array.from(node.services.values()).map((service) => (
+                            <TableRow key={service.name}>
+                              <TableCell style={{ padding: 0 }}>
+                                <Stack direction="row" spacing={1}>
+                                  <OverflowMenuService
+                                    onClick={onServiceClick}
+                                    serviceName={service.name}
+                                    providerId={node.providerId}
+                                  />
+
+                                  <Button
+                                    size="small"
+                                    style={{
+                                      padding: 0,
+                                      textTransform: 'none',
+                                      justifyContent: 'left',
+                                    }}
+                                    onClick={() =>
+                                      onServiceClick(
+                                        'SERVICE_CALL',
+                                        service.name,
+                                        node.providerId,
+                                      )
+                                    }
+                                  >
+                                    {`${service.name}`}
+                                  </Button>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </>
+              )}
+            </Stack>
+          )}
+        </Stack>
+      );
+    });
+  }, [
+    nodesShow,
+    onServiceClick,
+    onTopicClick,
+    showConnections,
+    showNodeInfo,
+    showPublishers,
+    showServices,
+    showSubscribers,
+  ]);
+
   return (
     <Box
       width="100%"
@@ -236,417 +653,7 @@ function NodesDetailsPanel() {
       overflow="auto"
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
-      {nodesShow.map((node) => {
-        return (
-          <Stack
-            key={`${node.name}_${node.providerId}`}
-            // spacing={1}
-            alignItems="left"
-          >
-            <Stack paddingTop={1}>
-              <Typography
-                variant="subtitle1"
-                style={{
-                  color: '#fff',
-                  backgroundColor: '#2196f3',
-                }}
-                align="center"
-              >
-                <Box sx={{ fontWeight: 'bold', m: 0.5 }}>
-                  {node.name.replace(node.namespace, '').replace('/', '')}
-                  <CopyButton value={node.name} />
-                </Box>
-              </Typography>
-              <Typography
-                variant="subtitle2"
-                style={{ color: grey[700] }}
-                align="center"
-              >
-                Namespace: {node?.namespace}
-              </Typography>
-              <Typography
-                variant="subtitle2"
-                style={{ color: grey[700] }}
-                align="center"
-              >
-                <Box sx={{ fontWeight: 'bold', m: 1 }}>{node.providerName}</Box>
-              </Typography>
-            </Stack>
-
-            {node && node.diagnosticLevel > 0 && (
-              <Typography
-                variant="body1"
-                style={getDiagnosticStyle(node.diagnosticLevel)}
-                marginBottom={1}
-              >
-                {getDiagnosticLevelName(node.diagnosticLevel)}:{' '}
-                {node.diagnosticMessage}
-              </Typography>
-            )}
-
-            {showNodeInfo && (
-              <Stack spacing={0.5}>
-                <Stack direction="row" spacing={0.5}>
-                  <Tag
-                    color={
-                      node.status === RosNodeStatus.RUNNING
-                        ? 'success'
-                        : 'default'
-                    }
-                    title="Status:"
-                    // title={`${RosNodeStatusInfo[node.status]}`}
-                    text={node.status}
-                    wrap
-                  />
-
-                  {node.pid && Math.round(node.pid) > 0 && (
-                    <Tag color="info" title="PID:" text={`${node.pid}`} wrap />
-                  )}
-
-                  {node.node_API_URI && node.node_API_URI.length > 0 && (
-                    <Tag
-                      color="default"
-                      title="URI:"
-                      text={node.node_API_URI}
-                      wrap
-                    />
-                  )}
-                </Stack>
-
-                <Stack direction="row" spacing={0.5}>
-                  {node.masteruri && node.masteruri.length > 0 && (
-                    <Tag
-                      color="primary"
-                      title="MASTERURI:"
-                      text={node.masteruri}
-                      wrap
-                    />
-                  )}
-                </Stack>
-
-                <Stack direction="row" spacing={0.5}>
-                  {node.location && (
-                    <Tag
-                      color="primary"
-                      title="Location:"
-                      text={JSON.stringify(node.location)}
-                      wrap
-                    />
-                  )}
-                </Stack>
-                {node.launchPaths &&
-                  [...node.launchPaths].map((launchPath) => (
-                    <Tag
-                      key={launchPath}
-                      color="info"
-                      title="Launch:"
-                      text={launchPath}
-                      wrap
-                      copyButton={launchPath}
-                    />
-                  ))}
-              </Stack>
-            )}
-
-            {node && (
-              <Stack spacing={1}>
-                {showPublishers && (
-                  <>
-                    <Typography variant="caption">
-                      <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
-                        Published topics:
-                        {` [${node.publishers.size}]`}
-                      </Box>
-                    </Typography>
-                    {node.publishers.size > 0 && (
-                      // useZebraStyles={false}>
-                      <TableContainer component={Paper}>
-                        <Table size="small" aria-label="a dense table">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 'bold' }}>
-                                <Stack
-                                  direction="row"
-                                  alignItems="center"
-                                  spacing={0}
-                                  padding={0}
-                                >
-                                  {showConnections && (
-                                    <Chip
-                                      size="small"
-                                      title="pub"
-                                      color="default"
-                                      label="pub"
-                                    />
-                                  )}
-                                  {showConnections && (
-                                    <Chip
-                                      size="small"
-                                      title="sub"
-                                      color="default"
-                                      label="sub"
-                                    />
-                                  )}
-                                  <Typography
-                                    marginLeft="0.5em"
-                                    fontWeight="bold"
-                                    variant="body2"
-                                  >
-                                    Topic Name
-                                  </Typography>
-                                </Stack>
-                              </TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {Array.from(node.publishers.values())
-                              .sort(compareTopics)
-                              .map((topic) => (
-                                <TableRow key={topic.name}>
-                                  <TableCell style={{ padding: 0 }}>
-                                    <Stack
-                                      direction="row"
-                                      alignItems="center"
-                                      spacing={0}
-                                    >
-                                      <OverflowMenuTopic
-                                        onClick={onTopicClick}
-                                        topicName={topic.name}
-                                        providerId={node.providerId}
-                                      />
-
-                                      {showConnections && (
-                                        <Stack direction="row">
-                                          <Chip
-                                            size="small"
-                                            title="publishers"
-                                            // showZero={true}
-                                            color={(() => {
-                                              return 'default';
-                                            })()}
-                                            label={topic.publisher.length}
-                                          />
-
-                                          <Chip
-                                            size="small"
-                                            title="subscribers"
-                                            // showZero={true}
-                                            color={
-                                              topic.subscriber.length > 0
-                                                ? 'default'
-                                                : 'warning'
-                                            }
-                                            label={topic.subscriber.length}
-                                          />
-                                        </Stack>
-                                      )}
-                                      <Button
-                                        size="small"
-                                        style={{
-                                          marginLeft: 1,
-                                          textTransform: 'none',
-                                          justifyContent: 'left',
-                                        }}
-                                        onClick={(event) => {
-                                          onTopicClick(
-                                            event.nativeEvent.ctrlKey
-                                              ? 'PUBLISH'
-                                              : 'ECHO',
-                                            topic.name,
-                                            node.providerId,
-                                            event.nativeEvent.shiftKey,
-                                          );
-                                        }}
-                                      >
-                                        {`${topic.name}`}
-                                      </Button>
-                                    </Stack>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    )}
-                  </>
-                )}
-
-                {showSubscribers && (
-                  <>
-                    <Typography variant="caption">
-                      <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
-                        Subscribed Topics:
-                        {` [${node.subscribers.size}]`}
-                      </Box>
-                    </Typography>
-                    {node.subscribers.size > 0 && (
-                      <TableContainer component={Paper}>
-                        <Table size="small" aria-label="a dense table">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 'bold' }}>
-                                <Stack
-                                  direction="row"
-                                  alignItems="center"
-                                  spacing={0}
-                                >
-                                  {showConnections && (
-                                    <Chip
-                                      size="small"
-                                      title="pub"
-                                      color="default"
-                                      label="pub"
-                                    />
-                                  )}
-                                  {showConnections && (
-                                    <Chip
-                                      size="small"
-                                      title="sub"
-                                      color="default"
-                                      label="sub"
-                                    />
-                                  )}
-                                  <Typography
-                                    marginLeft="0.5em"
-                                    fontWeight="bold"
-                                    variant="body2"
-                                  >
-                                    Topic Name
-                                  </Typography>
-                                </Stack>
-                              </TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {Array.from(node.subscribers.values())
-                              .sort(compareTopics)
-                              .map((topic) => (
-                                <TableRow key={topic.name}>
-                                  <TableCell style={{ padding: 0 }}>
-                                    <Stack
-                                      direction="row"
-                                      alignItems="center"
-                                      spacing={0}
-                                    >
-                                      <OverflowMenuTopic
-                                        onClick={onTopicClick}
-                                        topicName={topic.name}
-                                        providerId={node.providerId}
-                                      />
-                                      {showConnections && (
-                                        <Stack direction="row">
-                                          <Chip
-                                            size="small"
-                                            title="publishers"
-                                            // showZero={true}
-                                            color={(() => {
-                                              if (topic.publisher.length === 0)
-                                                return 'warning';
-                                              return 'default';
-                                            })()}
-                                            label={topic.publisher.length}
-                                          />
-                                          <Chip
-                                            size="small"
-                                            title="subscribers"
-                                            // showZero={true}
-                                            color={
-                                              topic.subscriber.length > 0
-                                                ? 'default'
-                                                : 'warning'
-                                            }
-                                            label={topic.subscriber.length}
-                                          />
-                                        </Stack>
-                                      )}
-                                      <Button
-                                        size="small"
-                                        style={{
-                                          marginLeft: 1,
-                                          textTransform: 'none',
-                                          justifyContent: 'left',
-                                        }}
-                                        onClick={(event) =>
-                                          onTopicClick(
-                                            event.nativeEvent.ctrlKey
-                                              ? 'PUBLISH'
-                                              : 'ECHO',
-                                            topic.name,
-                                            node.providerId,
-                                            event.nativeEvent.shiftKey,
-                                          )
-                                        }
-                                      >
-                                        {`${topic.name}`}
-                                      </Button>
-                                    </Stack>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    )}
-                  </>
-                )}
-
-                {showServices && (
-                  <>
-                    <Typography variant="caption">
-                      <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
-                        Available Services:
-                        {` [${Array.from(node.services.values()).length}]`}
-                      </Box>
-                    </Typography>
-
-                    {Array.from(node.services.values()).length > 0 && (
-                      <TableContainer component={Paper}>
-                        <Table size="small" aria-label="a dense table">
-                          <TableBody>
-                            {Array.from(node.services.values()).map(
-                              (service) => (
-                                <TableRow key={service.name}>
-                                  <TableCell style={{ padding: 0 }}>
-                                    <Stack direction="row" spacing={1}>
-                                      <OverflowMenuService
-                                        onClick={onServiceClick}
-                                        serviceName={service.name}
-                                        providerId={node.providerId}
-                                      />
-
-                                      <Button
-                                        size="small"
-                                        style={{
-                                          padding: 0,
-                                          textTransform: 'none',
-                                          justifyContent: 'left',
-                                        }}
-                                        onClick={() =>
-                                          onServiceClick(
-                                            'SERVICE_CALL',
-                                            service.name,
-                                            node.providerId,
-                                          )
-                                        }
-                                      >
-                                        {`${service.name}`}
-                                      </Button>
-                                    </Stack>
-                                  </TableCell>
-                                </TableRow>
-                              ),
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    )}
-                  </>
-                )}
-              </Stack>
-            )}
-          </Stack>
-        );
-      })}
+      {createNodeDetailsView}
 
       {nodesShow?.length === 0 && (
         <Alert severity="info" style={{ minWidth: 0 }}>
