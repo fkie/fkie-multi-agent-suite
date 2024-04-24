@@ -578,10 +578,15 @@ export function RosProviderReact(
       return prov.discovered === undefined;
     });
     setProviders(newProviders);
-    newProviders.forEach((provider) => {
-      provider.updateProviderList();
-      provider.getDaemonVersion();
-    });
+    try {
+      newProviders.forEach((provider) => {
+        provider.updateProviderList();
+        provider.getDaemonVersion();
+      });
+    } catch (error: any) {
+      // ignore errors while refresh
+      logCtx.debug(`refreshProviderList failed`, JSON.stringify(error), false);
+    }
   }, debounceTimeout);
 
   /** Connects to the given provider and add it to the list. */
@@ -595,13 +600,27 @@ export function RosProviderReact(
           prov,
         ) as CrossbarIOProvider;
 
-        if (provider.isAvailable()) {
-          provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
-          // already connected
-          provider.getDaemonVersion();
-          return true;
+        try {
+          if (provider.isAvailable()) {
+            provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
+            // already connected
+            await provider.getDaemonVersion();
+            provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
+            return true;
+          }
+        } catch (error: any) {
+          logCtx.debug(
+            `Could not initialize provider [${provider.name()}] (${
+              provider.type
+            } )in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`,
+            `Error: ${JSON.stringify(error)}`,
+          );
+          provider.setConnectionState(
+            ConnectionState.STATES.ERRORED,
+            JSON.stringify(error),
+          );
+          return false;
         }
-
         provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
         provider.isLocalHost = isLocalHost(provider.crossbar.host);
         try {
@@ -615,7 +634,7 @@ export function RosProviderReact(
           logCtx.error(error, '');
           provider.errorDetails = `${error}`;
           provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
+            ConnectionState.STATES.ERRORED,
             JSON.stringify(error),
           );
         } catch (error: any) {
@@ -626,7 +645,7 @@ export function RosProviderReact(
             `Error: ${JSON.stringify(error)}`,
           );
           provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
+            ConnectionState.STATES.ERRORED,
             JSON.stringify(error),
           );
         }

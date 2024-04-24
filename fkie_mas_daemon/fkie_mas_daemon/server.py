@@ -47,6 +47,7 @@ from fkie_mas_pylib.names import ns_join
 from fkie_mas_pylib.crossbar import server
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.host import get_host_name
+from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 import fkie_mas_daemon as nmd
@@ -59,6 +60,7 @@ from fkie_mas_daemon.rosstate_servicer import RosStateServicer
 from fkie_mas_daemon.screen_servicer import ScreenServicer
 from fkie_mas_daemon.version_servicer import VersionServicer
 from fkie_mas_daemon.version import detect_version
+
 
 
 class Server:
@@ -74,10 +76,12 @@ class Server:
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
             rosnode.get_logger().warn(
-                "default ROS_DOMAIN_ID=%d overwritten to %d" % (0, self.ros_domain_id)
+                "default ROS_DOMAIN_ID=%d overwritten to %d" % (
+                    0, self.ros_domain_id)
             )
         self.name = get_host_name()
         self.uri = ""
+        self._timer_crossbar_ready = None
         self.monitor_servicer = MonitorServicer(
             self._settings, self.crossbar_loop, self.crossbar_realm, self.crossbar_port
         )
@@ -119,7 +123,8 @@ class Server:
         self.pub_endpoint = rosnode.create_publisher(
             Endpoint, "daemons", qos_profile=qos_profile
         )
-        self.rosname = ns_join(nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
+        self.rosname = ns_join(
+            nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
         self._endpoint_msg = Endpoint(
             name=self.name,
             uri=self.rosstate_servicer.uri,
@@ -146,10 +151,12 @@ class Server:
         self.insecure_port = port
         if server.port() != port:
             self.name = f"{self.name}_{port}"
-        nmd.ros_node.get_logger().info(f"Connect to crossbar server on port {port}")
+        nmd.ros_node.get_logger().info(
+            f"Connect to crossbar server on port {port}")
         self._endpoint_msg.name = self.name
         self._crossbarThread = threading.Thread(
-            target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True
+            target=self.run_crossbar_forever, args=(
+                self.crossbar_loop,), daemon=True
         )
         self._crossbarThread.start()
         self._crossbarNotificationThread = threading.Thread(
@@ -180,7 +187,18 @@ class Server:
 
     def _crossbar_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
-        self.rosstate_servicer.publish_to("ros.daemon.ready", {"status": status})
+        self.rosstate_servicer.publish_to(
+            "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
+        if status:
+            if self._timer_crossbar_ready is None:
+                self._timer_crossbar_ready = RepeatTimer(3.0,
+                                                         self._crossbar_send_status, args=(
+                                                             True,))
+                self._timer_crossbar_ready.start()
+        else:
+            if self._timer_crossbar_ready is not None:
+                self._timer_crossbar_ready.cancel()
+                self._timer_crossbar_ready = None
 
     def publish_daemon_state(self, is_running: bool = True):
         self._endpoint_msg.on_shutdown = not is_running

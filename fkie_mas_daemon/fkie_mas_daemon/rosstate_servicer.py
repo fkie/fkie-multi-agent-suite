@@ -126,7 +126,7 @@ class RosStateServicer(CrossbarBaseSession):
             if self.topic_state_publisher_count:
                 # check if we have a discovery node
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
-                    self.publish_to('ros.discovery.ready', {'status': False})
+                    self.publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
                     self.topic_state_publisher_count = 0
                     self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
@@ -150,8 +150,7 @@ class RosStateServicer(CrossbarBaseSession):
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
-        self.publish_to('ros.discovery.ready', {'status': False})
-        self.publish_to('ros.daemon.ready', {'status': False})
+        self.publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''

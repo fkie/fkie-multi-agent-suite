@@ -37,6 +37,7 @@ from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.crossbar import server
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.settings import Settings
+from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_daemon.version import detect_version
 
 
@@ -56,6 +57,7 @@ class MASDaemon:
         self.crossbar_port = server.port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
+        self._timer_crossbar_ready = None
         self._test_env = test_env
         self._version, self._date = detect_version("fkie_mas_daemon")
         self._settings = Settings(version=self._version)
@@ -156,7 +158,17 @@ class MASDaemon:
 
     def _crossbar_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
-        self.launch_servicer.publish_to("ros.daemon.ready", {"status": status})
+        self.launch_servicer.publish_to("ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
+        if status:
+            if self._timer_crossbar_ready is None:
+                self._timer_crossbar_ready = RepeatTimer(3.0,
+                                                         self._crossbar_send_status, args=(
+                                                             True,))
+                self._timer_crossbar_ready.start()
+        else:
+            if self._timer_crossbar_ready is not None:
+                self._timer_crossbar_ready.cancel()
+                self._timer_crossbar_ready = None
 
     def shutdown(self):
         WAIT_TIMEOUT = 3

@@ -153,6 +153,9 @@ class CrossbarIOProvider {
   /** Time difference in milliseconds to local host. */
   timeDiff: number = 0;
 
+  /** Time difference in seconds calculated if daemon.ready received. */
+  currentDelay: number = 0;
+
   /** Warnings reported by the provider. */
   warnings: SystemWarningGroup[] = [];
 
@@ -302,6 +305,34 @@ class CrossbarIOProvider {
     return Promise.resolve(result);
   };
 
+  public updateDaemonInit: () => void = async () => {
+    this.getDaemonVersion()
+      .then((dv) => {
+        if (this.isAvailable()) {
+          this.daemonVersion = dv;
+          this.updateProviderList();
+          this.updateSystemWarnings();
+          this.updateTimeDiff();
+          this.getProviderSystemInfo();
+          this.getProviderSystemEnv();
+          this.updateRosNodes();
+          this.updateDiagnostics(null);
+          this.getPackageList();
+          this.updateScreens(null);
+          // this.launchGetList();
+          return true;
+        }
+        return false;
+      })
+      .catch((error) => {
+        this.setConnectionState(
+          ConnectionState.STATES.ERRORED,
+          `Daemon no reachable: ${error}`,
+        );
+        return false;
+      });
+  };
+
   public setConnectionState: (state: ConnectionState, details: string) => void =
     async (state: ConnectionState, details: string = '') => {
       // ignore call with no state changes
@@ -338,29 +369,11 @@ class CrossbarIOProvider {
             this.setConnectionState(ConnectionState.STATES.ERRORED, error);
           });
       } else if (state === ConnectionState.STATES.CROSSBAR_REGISTERED) {
-        this.getDaemonVersion()
-          .then((dv) => {
-            if (this.isAvailable()) {
-              this.daemonVersion = dv;
-              this.updateProviderList();
-              return true;
-            }
-            return false;
-          })
-          .catch((error) => {
-            this.setConnectionState(ConnectionState.STATES.ERRORED, error);
-            return false;
-          });
+        // wait until daemon.ready received
+        // backup for backward compatibility => call updateDaemonInit
+        this.updateDaemonInit();
       } else if (state === ConnectionState.STATES.CONNECTED) {
-        this.updateSystemWarnings();
-        this.updateTimeDiff();
-        this.getProviderSystemInfo();
-        this.getProviderSystemEnv();
-        this.updateRosNodes();
-        this.updateDiagnostics(null);
-        this.getPackageList();
-        this.updateScreens(null);
-        // this.launchGetList();
+        // if connected callbackDaemonReady calls updateDaemonInit()
       }
     };
 
@@ -428,7 +441,7 @@ class CrossbarIOProvider {
     return this.currentRequestList.size > 0;
   };
 
-  /** return cleaned version string or empty string if no version is available.*/
+  /** return cleaned version string or empty string if no version is available. */
   public getDaemonReleaseVersion: () => string = () => {
     return this.daemonVersion.version.split('-')[0].replace('v', '');
   };
@@ -487,7 +500,7 @@ class CrossbarIOProvider {
             this.logger,
           );
           oldRemoteProviders = oldRemoteProviders.filter(
-            (p) => p.url() !== np.url(),
+            (orp) => orp.url() !== np.url(),
           );
           np.rosState = p;
           np.discovered = [this.id];
@@ -601,6 +614,7 @@ class CrossbarIOProvider {
       this.logger.error(
         `Provider [${this.name()}]: Error at getDaemonVersion()`,
         `${result[2]}`,
+        false,
       );
     }
     this.daemon = false;
@@ -663,11 +677,12 @@ class CrossbarIOProvider {
 
   private calcTimeDiff(startTs: number, endTs: number, remoteTs: number) {
     // try to remove JavaScript andNetwork delay
-    const delay = endTs - startTs;
+    const diffStartEnd = endTs - startTs;
     const diffToStart = remoteTs - startTs;
     const diffToEnd = endTs - remoteTs;
     let result =
-      Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - delay) / 2.0;
+      Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - diffStartEnd) /
+      2.0;
     if (diffToStart < 0) {
       result *= -1.0;
     }
@@ -2369,7 +2384,15 @@ class CrossbarIOProvider {
 
     if (typeof msg === 'string') {
       try {
-        this.daemon = JSON.parse(msg).status;
+        const msgObj = JSON.parse(msg);
+        if (msgObj.status && !this.daemon) {
+          this.updateDaemonInit();
+        } else if (msgObj.timestamp) {
+          // update diff state
+          const now = Date.now();
+          this.currentDelay = (now - msgObj.timestamp + this.timeDiff) / 1000.0;
+        }
+        this.daemon = msgObj.status;
       } catch (error) {
         if (this.logger)
           this.logger.error(

@@ -93,7 +93,7 @@ Then open in browser <http://localhost:1212>
 
 | Crossbar URI                       | Type | Function                                                                 | Description                                                                              |
 | ---------------------------------- | ---- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| ros.daemon.ready                   | PUB  | `=> {'status': bool}`                                                    |                                                                                          |
+| ros.daemon.ready                   | PUB  | `=> {'status': bool, "timestamp": float}`                                | Sent by the daemon at an interval                                                        |
 | ros.discovery.ready                | PUB  | `=> {'status': bool}`                                                    |                                                                                          |
 | ros.daemon.get_version             | RPC  | `() => DaemonVersion`                                                    | see fkie_mas_pylib/crossbar/runtime_interface/DaemonVersion                              |
 | ros.file.get                       | RPC  | `(path: str) => FileItem`                                                | see fkie_mas_pylib/crossbar/file_interface/FileItem                                      |
@@ -102,7 +102,7 @@ Then open in browser <http://localhost:1212>
 | ros.nodes.changed                  | PUB  | `=> "timestamp": float`                                                  | Triggers when node changed (start, stop etc...)                                          |
 | ros.provider.list                  | PUB  | `=> RosProvider[]`                                                       | see fkie_mas_pylib/crossbar/runtime_interface/RosProvider                                |
 | ros.provider.get_list              | RPC  | `() => RosProvider[]`                                                    | Request the list of current providers                                                    |
-| ros.provider.get_timestamp         | RPC  | `(float) => "timestamp": float, "diff": float`                           | Request current time of the provider and calculate difference to given timestamp         |
+| ros.provider.get_timestamp         | RPC  | `(float) => "timestamp": float, "diff": float`                           | Request current time [ms] of the provider and calculate difference to given timestamp         |
 | ros.provider.get_diagnostics       | RPC  | `() => DiagnosticArray[]`                                                | Request all available diagnostics                                                        |
 | ros.provider.diagnostics           | PUB  | `=> DiagnosticArray[]`                                                   | updates to diagnostics                                                                   |
 | ros.provider.ros_clean_purge       | RPC  | `() => {result: bool, message: str}`                                     | clean ros log path                                                                       |
