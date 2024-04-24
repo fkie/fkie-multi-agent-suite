@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.4.0 - 24.04.2024
+
+Added configuration parameter to show floating buttons, default false
+Copy full file path on double click on the included file in editor explorer
+Changed node id generation
+Improved performance in topic view, node details panel and log/screen terminals
+Improves the starting behavior, send ros.daemon.ready at an interval
+Updated dependencies
+
+Fixed: visualization error on not implemented get loggers in ros2
+Fixed: shows nodelets/manager not only after a launch file was loaded
+Fixed: get diagnostics in ros2
+Fixed: nodes are not deselected after start or stop them in ros2
+Fixed: remember view state (JSON tree) of received topic in topic echo
+
 ## 1.3.8 - 10.04.2024
 
 Improved stop/kill nodes for ROS2
