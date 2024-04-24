@@ -24,6 +24,7 @@ export const EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX =
   'EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX' as const;
 export const EVENT_PROVIDER_TIME_DIFF = 'EVENT_PROVIDER_TIME_DIFF' as const;
 export const EVENT_PROVIDER_WARNINGS = 'EVENT_PROVIDER_WARNINGS' as const;
+export const EVENT_PROVIDER_DELAY = 'EVENT_PROVIDER_DELAY' as const;
 
 export class EventProviderActivity {
   provider: CrossbarIOProvider;
@@ -160,5 +161,16 @@ export class EventProviderWarnings {
   constructor(provider: CrossbarIOProvider, warnings: SystemWarningGroup[]) {
     this.provider = provider;
     this.warnings = warnings;
+  }
+}
+
+export class EventProviderDelay {
+  provider: CrossbarIOProvider;
+
+  delay: number;
+
+  constructor(provider: CrossbarIOProvider, delay: number) {
+    this.provider = provider;
+    this.delay = delay;
   }
 }

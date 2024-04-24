@@ -50,6 +50,7 @@ import { ConnectionState } from '../ConnectionState';
 import { RosProviderState } from '../RosProviderState';
 import {
   EVENT_PROVIDER_ACTIVITY,
+  EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_LAUNCH_LIST,
   EVENT_PROVIDER_PATH_EVENT,
@@ -61,6 +62,7 @@ import {
   EVENT_PROVIDER_TIME_DIFF,
   EVENT_PROVIDER_WARNINGS,
   EventProviderActivity,
+  EventProviderDelay,
   EventProviderDiscovered,
   EventProviderLaunchList,
   EventProviderPathEvent,
@@ -2389,8 +2391,12 @@ class CrossbarIOProvider {
           this.updateDaemonInit();
         } else if (msgObj.timestamp) {
           // update diff state
-          const now = Date.now();
-          this.currentDelay = (now - msgObj.timestamp + this.timeDiff) / 1000.0;
+          this.currentDelay =
+            (Date.now() - msgObj.timestamp + this.timeDiff) / 1000.0;
+          emitCustomEvent(
+            EVENT_PROVIDER_DELAY,
+            new EventProviderDelay(this, this.currentDelay),
+          );
         }
         this.daemon = msgObj.status;
       } catch (error) {

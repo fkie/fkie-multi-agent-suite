@@ -1,5 +1,12 @@
 import { useDebounceCallback } from '@react-hook/debounce';
-import { useContext, useEffect, useReducer, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from 'react';
 import semver from 'semver';
 
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
@@ -37,6 +44,7 @@ import { RosNode } from '../../../models';
 import { CmdType, ConnectionState } from '../../../providers';
 import {
   EVENT_PROVIDER_ACTIVITY,
+  EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
 } from '../../../providers/events';
@@ -59,23 +67,32 @@ function ProviderPanel() {
   const [providerRowsFiltered, setProviderRowsFiltered] = useState([]);
   const [filterText, setFilterText] = useState('');
   const [providersActivity] = useState(new Map());
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const [updated, forceUpdate] = useReducer((x) => x + 1, 0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
-  const closeProviderHandler = async (providerId) => {
-    const provider = rosCtx.getProviderById(providerId);
-    if (provider) {
-      provider.close();
-    }
-  };
+  const closeProviderHandler = useCallback(
+    async (providerId) => {
+      const provider = rosCtx.getProviderById(providerId);
+      if (provider) {
+        provider.close();
+      }
+    },
+    [rosCtx],
+  );
 
-  const handleJoinProvider = async (provider) => {
-    await rosCtx.connectToProvider(provider);
-  };
+  const handleJoinProvider = useCallback(
+    async (provider) => {
+      await rosCtx.connectToProvider(provider);
+    },
+    [rosCtx],
+  );
 
-  const handleStartProvider = async (provider) => {
-    await rosCtx.startProvider(provider, true);
-  };
+  const handleStartProvider = useCallback(
+    async (provider) => {
+      await rosCtx.startProvider(provider, true);
+    },
+    [rosCtx],
+  );
 
   const debouncedCallbackFilterText = useDebounceCallback(
     (providers, searchTerm) => {
@@ -94,6 +111,10 @@ function ProviderPanel() {
     300,
   );
 
+  const debouncedCallbackUpdateDelay = useDebounceCallback(() => {
+    forceUpdate();
+  }, 3000);
+
   useEffect(() => {
     debouncedCallbackFilterText(rosCtx.providers, filterText);
   }, [rosCtx.providers, filterText, debouncedCallbackFilterText]);
@@ -109,10 +130,17 @@ function ProviderPanel() {
     forceUpdate();
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  useCustomEventListener(EVENT_PROVIDER_DELAY, (data) => {
+    debouncedCallbackUpdateDelay();
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
     debouncedCallbackFilterText([...rosCtx.providers], filterText);
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_WARNINGS, (data) => {
     forceUpdate();
   });
@@ -137,180 +165,184 @@ function ProviderPanel() {
     }
   };
 
-  const generateStatusView = (provider) => {
-    switch (provider.connectionState) {
-      case ConnectionState.STATES.CROSSBAR_CONNECTED:
-      case ConnectionState.STATES.CROSSBAR_REGISTERED:
-      case ConnectionState.STATES.CONNECTING:
-        return (
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing="0.5em"
-            paddingRight="0.5em"
-          >
-            <Tooltip title="Connecting" placement="bottom">
-              <span style={{ color: 'blue' }}>connecting</span>
-            </Tooltip>
+  const generateStatusView = useCallback(
+    (provider) => {
+      switch (provider.connectionState) {
+        case ConnectionState.STATES.CROSSBAR_CONNECTED:
+        case ConnectionState.STATES.CROSSBAR_REGISTERED:
+        case ConnectionState.STATES.CONNECTING:
+          return (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing="0.5em"
+              paddingRight="0.5em"
+            >
+              <Tooltip title="Connecting" placement="bottom">
+                <span style={{ color: 'blue' }}>connecting</span>
+              </Tooltip>
 
-            <CircularProgress size="1em" />
-            <Tooltip title="cancel" placement="bottom">
-              <IconButton
-                onClick={() => {
-                  closeProviderHandler(provider.id);
-                }}
-                size="small"
-              >
-                <HighlightOffIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        );
-      case ConnectionState.STATES.STARTING:
-        return (
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing="0.5em"
-            paddingRight="0.5em"
-          >
-            <div style={{ color: 'blue' }}>{provider.connectionState}</div>
-            <CircularProgress size="1em" />
-          </Stack>
-        );
-      case ConnectionState.STATES.CONNECTED:
-        return (
-          <Stack direction="row" alignItems="center">
-            <div style={{ color: 'green' }}>{provider.connectionState}</div>
-            <Tooltip title="Disconnect" placement="bottom">
-              <IconButton
-                onClick={() => {
-                  closeProviderHandler(provider.id);
-                }}
-                size="small"
-              >
-                <HighlightOffIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        );
-      case ConnectionState.STATES.NO_SSH_CREDENTIALS:
-        return (
-          <Stack direction="row" alignItems="center">
-            <Tooltip
-              title={`Can't access remote host! Please add SSH credentials.`}
-              placement="bottom"
+              <CircularProgress size="1em" />
+              <Tooltip title="cancel" placement="bottom">
+                <IconButton
+                  onClick={() => {
+                    closeProviderHandler(provider.id);
+                  }}
+                  size="small"
+                >
+                  <HighlightOffIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        case ConnectionState.STATES.STARTING:
+          return (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing="0.5em"
+              paddingRight="0.5em"
             >
-              <Button
-                style={{ textTransform: 'none' }}
-                onClick={() => {
-                  emitCustomEvent(
-                    EVENT_OPEN_SETTINGS,
-                    eventOpenSettings(SETTING.IDS.SSH),
-                  );
-                }}
-                variant="text"
-                color="error"
-                size="small"
+              <div style={{ color: 'blue' }}>{provider.connectionState}</div>
+              <CircularProgress size="1em" />
+            </Stack>
+          );
+        case ConnectionState.STATES.CONNECTED:
+          return (
+            <Stack direction="row" alignItems="center">
+              <div style={{ color: 'green' }}>{provider.connectionState}</div>
+              <Tooltip title="Disconnect" placement="bottom">
+                <IconButton
+                  onClick={() => {
+                    closeProviderHandler(provider.id);
+                  }}
+                  size="small"
+                >
+                  <HighlightOffIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        case ConnectionState.STATES.NO_SSH_CREDENTIALS:
+          return (
+            <Stack direction="row" alignItems="center">
+              <Tooltip
+                title={`Can't access remote host! Please add SSH credentials.`}
+                placement="bottom"
               >
-                <Typography noWrap variant="body2">
-                  {provider.connectionState}
-                </Typography>
-              </Button>
-            </Tooltip>
-            <Tooltip title="Start daemon" placement="bottom">
-              <IconButton
-                color="default"
-                onClick={() => {
-                  handleStartProvider(provider);
-                }}
-              >
-                <PlayCircleOutlineIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        );
-      case ConnectionState.STATES.LOST:
-      case ConnectionState.STATES.UNSUPPORTED:
-      case ConnectionState.STATES.UNREACHABLE:
-      case ConnectionState.STATES.ERRORED:
-        let state = provider.connectionState;
-        if (provider.connectionState === ConnectionState.STATES.ERRORED) {
-          if (!provider.daemon) {
-            state = 'no daemon';
-          } else if (!provider.discovery) {
-            state = 'no discovery';
+                <Button
+                  style={{ textTransform: 'none' }}
+                  onClick={() => {
+                    emitCustomEvent(
+                      EVENT_OPEN_SETTINGS,
+                      eventOpenSettings(SETTING.IDS.SSH),
+                    );
+                  }}
+                  variant="text"
+                  color="error"
+                  size="small"
+                >
+                  <Typography noWrap variant="body2">
+                    {provider.connectionState}
+                  </Typography>
+                </Button>
+              </Tooltip>
+              <Tooltip title="Start daemon" placement="bottom">
+                <IconButton
+                  color="default"
+                  onClick={() => {
+                    handleStartProvider(provider);
+                  }}
+                >
+                  <PlayCircleOutlineIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        case ConnectionState.STATES.LOST:
+        case ConnectionState.STATES.UNSUPPORTED:
+        case ConnectionState.STATES.UNREACHABLE:
+        case ConnectionState.STATES.ERRORED:
+          // eslint-disable-next-line no-case-declarations
+          let state = provider.connectionState;
+          if (provider.connectionState === ConnectionState.STATES.ERRORED) {
+            if (!provider.daemon) {
+              state = 'no daemon';
+            } else if (!provider.discovery) {
+              state = 'no discovery';
+            }
           }
-        }
-        return (
-          <Stack direction="row" alignItems="center" justifyContent="center">
-            <Tooltip
-              title={`Click to start provider! ${
-                provider.errorDetails
-                  ? `${state}: ${JSON.stringify(provider.errorDetails)}`
-                  : ''
-              }`}
-              placement="bottom"
-            >
-              <span>
-                {window.CommandExecutor && (
-                  <Button
-                    style={{
-                      textTransform: 'none',
-                    }}
-                    onClick={() => {
-                      handleStartProvider(provider);
-                    }}
-                    variant="text"
-                    color="info"
-                    size="small"
-                    endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
-                  >
+          return (
+            <Stack direction="row" alignItems="center" justifyContent="center">
+              <Tooltip
+                title={`Click to start provider! ${
+                  provider.errorDetails
+                    ? `${state}: ${JSON.stringify(provider.errorDetails)}`
+                    : ''
+                }`}
+                placement="bottom"
+              >
+                <span>
+                  {window.CommandExecutor && (
+                    <Button
+                      style={{
+                        textTransform: 'none',
+                      }}
+                      onClick={() => {
+                        handleStartProvider(provider);
+                      }}
+                      variant="text"
+                      color="info"
+                      size="small"
+                      endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
+                    >
+                      <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
+                        {state}
+                      </div>
+                    </Button>
+                  )}
+                  {!window.CommandExecutor && (
                     <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
                       {state}
                     </div>
-                  </Button>
-                )}
-                {!window.CommandExecutor && (
-                  <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
-                    {state}
-                  </div>
-                )}
-              </span>
-            </Tooltip>
+                  )}
+                </span>
+              </Tooltip>
 
-            <Tooltip title="Join to running daemon" placement="bottom">
-              <IconButton
-                color="default"
-                onClick={() => {
-                  handleJoinProvider(provider);
-                }}
-              >
-                <JoinFullIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        );
-      default:
-        return (
-          <Stack direction="row" alignItems="center">
-            <div style={{ color: 'grey' }}>{provider.connectionState}</div>
-            <Tooltip title="Join to running daemon" placement="bottom">
-              <IconButton
-                color="default"
-                onClick={() => {
-                  handleJoinProvider(provider);
-                }}
-              >
-                <JoinFullIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        );
-    }
-  };
+              <Tooltip title="Join to running daemon" placement="bottom">
+                <IconButton
+                  color="default"
+                  onClick={() => {
+                    handleJoinProvider(provider);
+                  }}
+                >
+                  <JoinFullIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        default:
+          return (
+            <Stack direction="row" alignItems="center">
+              <div style={{ color: 'grey' }}>{provider.connectionState}</div>
+              <Tooltip title="Join to running daemon" placement="bottom">
+                <IconButton
+                  color="default"
+                  onClick={() => {
+                    handleJoinProvider(provider);
+                  }}
+                >
+                  <JoinFullIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+      }
+    },
+    [closeProviderHandler, handleJoinProvider, handleStartProvider],
+  );
 
-  const generateWarningsView = (provider) => {
+  const generateWarningsView = useCallback((provider) => {
     const warnings = provider.warnings.filter(
       (group) => group.warnings.length > 0,
     );
@@ -335,67 +367,54 @@ function ProviderPanel() {
     }
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <></>;
-  };
+  }, []);
 
-  const getHostStyle = (provider) => {
-    if (settingsCtx.get('colorizeHosts')) {
-      // borderLeft: `3px dashed`,
-      // borderColor: colorFromHostname(provider.name()),
-      return {
-        borderLeftStyle: 'solid',
-        borderLeftColor: colorFromHostname(provider.name()),
-        borderLeftWidth: '0.6em',
-      };
-    }
-    return {};
-  };
-
-  const isOlderVersion = (provider) => {
-    try {
-      if (provider.getDaemonReleaseVersion().indexOf('unknown') > -1) {
-        return true;
+  const getHostStyle = useCallback(
+    (provider) => {
+      if (settingsCtx.get('colorizeHosts')) {
+        // borderLeft: `3px dashed`,
+        // borderColor: colorFromHostname(provider.name()),
+        return {
+          borderLeftStyle: 'solid',
+          borderLeftColor: colorFromHostname(provider.name()),
+          borderLeftWidth: '0.6em',
+        };
       }
-      return semver.gt(
-        settingsCtx.MIN_VERSION_DAEMON,
-        provider.getDaemonReleaseVersion(),
-      );
-    } catch {}
-    return false;
-  };
+      return {};
+    },
+    [settingsCtx],
+  );
 
-  return (
-    <Stack
-      spacing={1}
-      height="100%"
-      // width="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-    >
-      <Stack direction="row" spacing={0.5}>
-        <SearchBar
-          onSearch={(value) => {
-            setFilterText(value);
-          }}
-          placeholder="Filter hosts"
-          defaultValue={filterText}
-          // fullWidth={true}
-        />
-        <ConnectToProviderModal />
-        <Tooltip
-          title="Refresh hosts list"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-        >
-          <IconButton
-            edge="start"
-            aria-label="refresh hosts list"
-            onClick={() => rosCtx.refreshProviderList()}
-          >
-            <RefreshIcon sx={{ fontSize: 'inherit' }} />
-          </IconButton>
-        </Tooltip>
-      </Stack>
+  const isOlderVersion = useCallback(
+    (provider) => {
+      try {
+        if (provider.getDaemonReleaseVersion().indexOf('unknown') > -1) {
+          return true;
+        }
+        return semver.gt(
+          settingsCtx.MIN_VERSION_DAEMON,
+          provider.getDaemonReleaseVersion(),
+        );
+      } catch {
+        // no output on version errors
+      }
+      return false;
+    },
+    [settingsCtx.MIN_VERSION_DAEMON],
+  );
+
+  const getDelayColor = useCallback((delay) => {
+    if (delay < 0.02) {
+      return 'green';
+    }
+    if (delay < 0.1) {
+      return 'orange';
+    }
+    return 'red';
+  }, []);
+
+  const createProviderTable = useMemo(() => {
+    return (
       <TableContainer>
         <Table aria-label="hosts table">
           <TableBody>
@@ -408,8 +427,8 @@ function ProviderPanel() {
                 }}
               >
                 {/* <TableCell style={{ padding: 0 }}>
-                  {getAutoConnectButton(provider)}
-                </TableCell> */}
+                {getAutoConnectButton(provider)}
+              </TableCell> */}
                 <TableCell
                   style={{
                     padding: 2,
@@ -464,6 +483,26 @@ function ProviderPanel() {
                       </Stack>
                     )}
                   </Stack>
+                </TableCell>
+                <TableCell style={{ padding: 0 }}>
+                  {provider.isAvailable() && provider.currentDelay > 0.0005 && (
+                    <Tooltip
+                      title="delay from the host (in seconds)"
+                      placement="bottom-start"
+                      enterDelay={tooltipDelay}
+                      enterNextDelay={tooltipDelay}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ paddingLeft: '0.5em', paddingRight: '0.5em' }}
+                        color={getDelayColor(provider.currentDelay)}
+                      >
+                        {provider.currentDelay < 0.1
+                          ? provider.currentDelay.toFixed(3)
+                          : provider.currentDelay.toFixed(2)}
+                      </Typography>
+                    </Tooltip>
+                  )}
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
                   {isOlderVersion(provider) && (
@@ -542,17 +581,65 @@ function ProviderPanel() {
                   )}
                 </TableCell>
                 {/* <TableCell style={{ padding: 0 }}>
-                  <OverflowMenuProvider
-                    onClick={onProviderMenuClick}
-                    providerId={provider.id}
-                    providerName={provider.name()}
-                  />
-                </TableCell> */}
+                <OverflowMenuProvider
+                  onClick={onProviderMenuClick}
+                  providerId={provider.id}
+                  providerName={provider.name()}
+                />
+              </TableCell> */}
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    generateStatusView,
+    generateWarningsView,
+    getHostStyle,
+    isOlderVersion,
+    providerRowsFiltered,
+    providersActivity,
+    rosCtx,
+    tooltipDelay,
+    updated,
+  ]);
+
+  return (
+    <Stack
+      spacing={1}
+      height="100%"
+      // width="100%"
+      overflow="auto"
+      backgroundColor={settingsCtx.get('backgroundColor')}
+    >
+      <Stack direction="row" spacing={0.5}>
+        <SearchBar
+          onSearch={(value) => {
+            setFilterText(value);
+          }}
+          placeholder="Filter hosts"
+          defaultValue={filterText}
+          // fullWidth={true}
+        />
+        <ConnectToProviderModal />
+        <Tooltip
+          title="Refresh hosts list"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+        >
+          <IconButton
+            edge="start"
+            aria-label="refresh hosts list"
+            onClick={() => rosCtx.refreshProviderList()}
+          >
+            <RefreshIcon sx={{ fontSize: 'inherit' }} />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      {createProviderTable}
     </Stack>
   );
 }

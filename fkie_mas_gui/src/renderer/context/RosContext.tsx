@@ -634,7 +634,7 @@ export function RosProviderReact(
           logCtx.error(error, '');
           provider.errorDetails = `${error}`;
           provider.setConnectionState(
-            ConnectionState.STATES.ERRORED,
+            ConnectionState.STATES.UNREACHABLE,
             JSON.stringify(error),
           );
         } catch (error: any) {
@@ -645,7 +645,7 @@ export function RosProviderReact(
             `Error: ${JSON.stringify(error)}`,
           );
           provider.setConnectionState(
-            ConnectionState.STATES.ERRORED,
+            ConnectionState.STATES.UNREACHABLE,
             JSON.stringify(error),
           );
         }
