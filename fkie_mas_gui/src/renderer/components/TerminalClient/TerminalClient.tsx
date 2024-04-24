@@ -100,7 +100,7 @@ function TerminalClient(props: ITerminalClient) {
       onIncomingData={onIncomingData}
       onCtrlD={onCtrlD}
       fontSize={termOptions.fontSize ? termOptions.fontSize : 14}
-      setFontsize={(size) => settingsCtx.set("fontSizeTerminal", size)}
+      setFontsize={(size) => settingsCtx.set('fontSizeTerminal', size)}
     />
   );
 }

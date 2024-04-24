@@ -182,7 +182,7 @@ function NodeManager() {
       }
       model.doAction(Actions.deleteTab(tabId));
     },
-    [model, monacoCtx.getModifiedFilesByTab],
+    [model, monacoCtx],
   );
 
   useCustomEventListener(
