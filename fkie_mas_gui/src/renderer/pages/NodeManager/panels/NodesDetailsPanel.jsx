@@ -660,7 +660,11 @@ function NodesDetailsPanel() {
               {showPaths && (
                 <Stack direction="column" spacing={0.5}>
                   {[...node.launchPaths].map((launchPath) => (
-                    <Stack direction="row" spacing={0.5}>
+                    <Stack
+                      key={`launch-${launchPath}`}
+                      direction="row"
+                      spacing={0.5}
+                    >
                       <Tag
                         key={launchPath}
                         color="white"
@@ -673,7 +677,7 @@ function NodesDetailsPanel() {
                   ))}
                   {logPaths[node.idGlobal]?.map((logItem) => {
                     return (
-                      <>
+                      <Stack key={`log-${logItem.id}`}>
                         <Stack direction="row" spacing={0.5}>
                           <Tag
                             key={logItem.screen_log}
@@ -694,7 +698,7 @@ function NodesDetailsPanel() {
                             copyButton={logItem.ros_log}
                           />
                         </Stack>
-                      </>
+                      </Stack>
                     );
                   })}
                   {!logPaths[node.idGlobal] && (
