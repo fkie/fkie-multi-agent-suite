@@ -284,7 +284,7 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [NodeLoggerPanel] for a given node
    */
   const createLoggerPanel = useCallback(async (node) => {
-    const id = `node-logger-${node.name}@${node.providerName}`;
+    const id = `node-logger-${node.idGlobal}`;
     const title = node.name;
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
