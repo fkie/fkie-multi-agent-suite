@@ -23,7 +23,11 @@ import { NavigationContext } from '../../../context/NavigationContext';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import useLocalStorage from '../../../hooks/useLocalStorage';
-import { RosNodeStatus, getDiagnosticLevelName } from '../../../models';
+import {
+  RosNodeStatus,
+  getDiagnosticLevelName,
+  getFileName,
+} from '../../../models';
 import { CmdType } from '../../../providers';
 import { generateUniqueId } from '../../../utils';
 import {
@@ -76,6 +80,7 @@ function NodesDetailsPanel() {
     'NodesDetailsPanel:showConnections',
     true,
   );
+  const [showPaths] = useLocalStorage('NodesDetailsPanel:showPaths', true);
 
   useEffect(() => {
     // TODO: Make a parameter or config for [maxNodes]
@@ -229,7 +234,7 @@ function NodesDetailsPanel() {
     return nodesShow.map((node) => {
       return (
         <Stack
-          key={`${node.name}_${node.providerId}`}
+          key={node.idGlobal}
           // spacing={1}
           alignItems="left"
         >
@@ -303,38 +308,58 @@ function NodesDetailsPanel() {
                 )}
               </Stack>
 
-              <Stack direction="row" spacing={0.5}>
-                {node.masteruri && node.masteruri.length > 0 && (
+              {node.masteruri && node.masteruri.length > 0 && (
+                <Stack direction="row" spacing={0.5}>
                   <Tag
                     color="primary"
                     title="MASTERURI:"
                     text={node.masteruri}
                     wrap
                   />
-                )}
-              </Stack>
+                </Stack>
+              )}
 
-              <Stack direction="row" spacing={0.5}>
-                {node.location && (
+              {node.location && (
+                <Stack direction="row" spacing={0.5}>
                   <Tag
                     color="primary"
                     title="Location:"
                     text={JSON.stringify(node.location)}
                     wrap
                   />
-                )}
-              </Stack>
-              {node.launchPaths &&
-                [...node.launchPaths].map((launchPath) => (
-                  <Tag
-                    key={launchPath}
-                    color="info"
-                    title="Launch:"
-                    text={launchPath}
-                    wrap
-                    copyButton={launchPath}
-                  />
-                ))}
+                </Stack>
+              )}
+
+              {node.screens.length > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  {node.screens.map((screen) => (
+                    <Tag
+                      key={`screen-${node.name}`}
+                      color="lightGrey"
+                      title="Screen:"
+                      text={screen}
+                      wrap
+                      copyButton={screen}
+                    />
+                  ))}
+                </Stack>
+              )}
+
+              {node.launchPaths.size > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  {node.launchPaths &&
+                    [...node.launchPaths].map((launchPath) => (
+                      <Tag
+                        key={launchPath}
+                        color="info"
+                        title={`${launchPath === node.launchPath ? '*' : ''}Launch:`}
+                        text={getFileName(launchPath)}
+                        wrap
+                        copyButton={launchPath}
+                      />
+                    ))}
+                </Stack>
+              )}
             </Stack>
           )}
 
@@ -630,6 +655,21 @@ function NodesDetailsPanel() {
                   )}
                 </>
               )}
+
+              {showPaths && (
+                <Stack direction="row" spacing={0.5}>
+                  {[...node.launchPaths].map((launchPath) => (
+                    <Tag
+                      key={launchPath}
+                      color="white"
+                      title="Launch path:"
+                      text={launchPath}
+                      wrap
+                      copyButton={launchPath}
+                    />
+                  ))}
+                </Stack>
+              )}
             </Stack>
           )}
         </Stack>
@@ -644,6 +684,7 @@ function NodesDetailsPanel() {
     showPublishers,
     showServices,
     showSubscribers,
+    showPaths,
   ]);
 
   return (

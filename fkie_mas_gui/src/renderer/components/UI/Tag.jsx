@@ -42,7 +42,7 @@ function Tag({ title, text, color, copyButton, wrap }) {
         <>
           <strong>{title}</strong>
           {newText}
-          {copyButton && <CopyButton value={copyButton} />}
+          {copyButton && <CopyButton value={copyButton} fontSize="0.6em" />}
         </>
       }
       sx={chipSX}
