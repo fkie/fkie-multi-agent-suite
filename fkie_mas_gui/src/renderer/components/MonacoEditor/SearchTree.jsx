@@ -124,7 +124,7 @@ function SearchTree({ tabId, ownUriPaths, searchTerm }) {
                   fontSize="0.8em"
                   key={`${fileName}-${entry.lineNumber}`}
                   nodeId={`${fileName}-${entry.lineNumber}`}
-                  labelText={entry.lineNumber}
+                  labelText={`${entry.lineNumber}`}
                   labelInfo={entry.text}
                   onClick={() => {
                     selectSearchResult(entry);

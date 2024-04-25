@@ -68,10 +68,7 @@ function HostTreeView({
 
   const [expanded, setExpanded] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
-  // keyNodeList: {key: string, idGlobal: string}[]
-  const keyNodeList = useMemo(() => {
-    return [];
-  }, []);
+  const [keyNodeList, setKeyNodeList] = useState([]); // <= keyNodeList: {key: string, idGlobal: string}[]
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -389,13 +386,12 @@ function HostTreeView({
         }
       });
       // get the tree ids for the nodes ids
-      setSelectedItems(
-        keyNodeList
-          .filter((kNode) => {
-            return treeNodes.includes(kNode.idGlobal);
-          })
-          .map((kNode) => kNode.key),
-      );
+      const newSelItems = keyNodeList
+        .filter((kNode) => {
+          return treeNodes.includes(kNode.idGlobal);
+        })
+        .map((kNode) => kNode.key);
+      setSelectedItems(newSelItems);
     },
     [keyNodeList, rosCtx.mapProviderRosNodes],
   );
@@ -490,7 +486,7 @@ function HostTreeView({
    * Create elements of the tree view component
    */
   const buildHostTreeViewItem = useCallback(
-    (providerId, treeItem) => {
+    (providerId, treeItem, newKeyNodeList) => {
       if (!treeItem) {
         console.error('Invalid item ', providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
@@ -501,8 +497,7 @@ function HostTreeView({
         // no children means that item is a RosNode
         let label = node.name.replace(node.namespace, '');
         label = label[0] === '/' ? label.slice(1) : label;
-        // console.log(`ADD:  node.idGlobal`);
-        keyNodeList.push({
+        newKeyNodeList.push({
           key: `${nodeId}#${node.id}`,
           idGlobal: node.idGlobal,
         });
@@ -555,9 +550,7 @@ function HostTreeView({
       }
       // valid children means that item is a group
       const groupName = treePath.split('/').pop();
-      keyNodeList.push({
-        key: nodeId,
-      });
+      newKeyNodeList.push({ key: nodeId });
       return (
         <HostTreeViewItem
           key={nodeId}
@@ -619,12 +612,11 @@ function HostTreeView({
           countChildren={node ? 0 : getNodesCount(children)}
         >
           {children.sort(compareTreeItems).map((tItem) => {
-            return buildHostTreeViewItem(providerId, tItem);
+            return buildHostTreeViewItem(providerId, tItem, newKeyNodeList);
           })}
         </HostTreeViewItem>
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       // do not include keyNodeList
       settingsCtx,
@@ -661,7 +653,8 @@ function HostTreeView({
    * The idea is to prevent rerendering when scrolling/focusing the component
    */
   const generateTree = useMemo(() => {
-    return (
+    const newKeyNodeList = [];
+    const tree = (
       <TreeView
         aria-label="node list"
         defaultCollapseIcon={<ArrowDropDownIcon />}
@@ -752,7 +745,11 @@ function HostTreeView({
 
               {nodeTree &&
                 nodeTree.children.sort(compareTreeItems).map((sortItem) => {
-                  return buildHostTreeViewItem(providerId, sortItem);
+                  return buildHostTreeViewItem(
+                    providerId,
+                    sortItem,
+                    newKeyNodeList,
+                  );
                 })}
             </HostTreeViewItem>
           );
@@ -762,24 +759,27 @@ function HostTreeView({
         {/* <Box sx={{ height: 130, width: '100%' }} /> */}
       </TreeView>
     );
+    setKeyNodeList(newKeyNodeList);
+    return tree;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     expanded,
     providerNodeTree,
     selectedItems,
     handleToggle,
-    handleSelect,
+    // handleSelect, <= causes too many re-renders
     rosCtx,
     getMasterSyncNode,
     settingsCtx,
     handleDoubleClick,
     getProviderTags,
-    selectNodesFromLaunch,
+    // selectNodesFromLaunch, <= causes too many re-renders
     onRemoveLaunch,
     onReloadLaunch,
     toggleMasterSync,
     createSingleTerminalCmdPanel,
-    buildHostTreeViewItem,
+    // buildHostTreeViewItem, <= causes too many re-renders
+    setKeyNodeList,
   ]);
 
   return generateTree;

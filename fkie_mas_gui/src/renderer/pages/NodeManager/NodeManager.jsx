@@ -782,7 +782,10 @@ function NodeManager() {
                 // save all files
                 const result = await Promise.all(
                   modifiedEditorTabs.map(async (tab) => {
-                    return await monacoCtx.saveModifiedFilesOfTabId(tab.tabId);
+                    const tabResult = await monacoCtx.saveModifiedFilesOfTabId(
+                      tab.tabId,
+                    );
+                    return tabResult;
                   }),
                 );
                 // TODO inform about error on failed save

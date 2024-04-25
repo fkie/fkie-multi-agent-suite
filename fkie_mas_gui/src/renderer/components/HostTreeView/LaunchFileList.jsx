@@ -11,7 +11,6 @@ import Tooltip from '@mui/material/Tooltip';
 
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { blue } from '@mui/material/colors';
 
@@ -112,7 +111,6 @@ function LaunchFileList({
         launchContentList.sort(compareLaunchFiles).map((lc) => {
           if (!lc.path) return <div>Invalid launch file</div>;
           const launchName = getFileName(lc.path);
-
           return (
             <ListItem
               key={`${providerId}_${lc.path}`}
@@ -122,24 +120,26 @@ function LaunchFileList({
               }}
               secondaryAction={
                 <Stack direction="row" spacing={0.1}>
-                  <Tooltip title="Information about launch file">
+                  {/* <Tooltip title="Information about launch file">
                     <IconButton
                       edge="end"
                       aria-label="Information about launch file"
-                      onClick={() => {
+                      onClick={(event) => {
                         createLaunchFilePanel(providerId, lc);
+                        event.stopPropagation();
                       }}
                     >
                       <InfoOutlinedIcon style={{ fontSize: 'inherit' }} />
                     </IconButton>
-                  </Tooltip>
+                  </Tooltip> */}
 
-                  <Tooltip title="Reload launch file from provider">
+                  <Tooltip title="Reload launch">
                     <IconButton
                       edge="end"
-                      aria-label="Reload launch file from provider"
-                      onClick={() => {
+                      aria-label="Reload launch"
+                      onClick={(event) => {
                         onReloadLaunch(providerId, lc.path, lc.masteruri);
+                        event.stopPropagation();
                       }}
                     >
                       <RefreshIcon sx={{ fontSize: 'inherit' }} />
@@ -150,20 +150,22 @@ function LaunchFileList({
                     <IconButton
                       edge="end"
                       aria-label="Edit launch file"
-                      onClick={() => {
+                      onClick={(event) => {
                         createFileEditorPanel(providerId, lc);
+                        event.stopPropagation();
                       }}
                     >
                       <EditIcon sx={{ fontSize: 'inherit' }} />
                     </IconButton>
                   </Tooltip>
 
-                  <Tooltip title="Remove launch file">
+                  <Tooltip title="Unload launch file">
                     <IconButton
                       edge="end"
-                      aria-label="Remove launch file"
-                      onClick={() => {
+                      aria-label="Unload launch file"
+                      onClick={(event) => {
                         onRemoveLaunch(providerId, lc.path, lc.masteruri);
+                        event.stopPropagation();
                       }}
                     >
                       <CloseIcon sx={{ fontSize: 'inherit' }} />
@@ -174,7 +176,7 @@ function LaunchFileList({
             >
               <ListItemButton dense>
                 <ListItemText
-                  primary={launchName}
+                  primary={`${launchName} [${lc.nodes.length}]`}
                   sx={{
                     color: settingsCtx.get('useDarkMode')
                       ? blue[300]
