@@ -256,9 +256,16 @@ function HostTreeViewPanel() {
    */
   const handleNodesSelect = useCallback(
     (itemIds) => {
-      navCtx.setSelectedNodes(itemIds);
+      const selectedNoes = [];
+      itemIds.forEach((id) => {
+        const n = rosCtx.nodeMap.get(id);
+        if (n) {
+          selectedNoes.push(id);
+        }
+      });
+      navCtx.setSelectedNodes(selectedNoes);
     },
-    [navCtx],
+    [navCtx, rosCtx.nodeMap],
   );
 
   /**

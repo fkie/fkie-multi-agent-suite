@@ -749,6 +749,14 @@ function NodesDetailsPanel() {
       overflow="auto"
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
+      {navCtx.selectedNodes.length > 1 && (
+        <Stack direction="row" justifyContent="center">
+          <Typography color="grey" variant="body2">
+            selected: {navCtx.selectedNodes.length}, displayed:{' '}
+            {nodesShow?.length}
+          </Typography>
+        </Stack>
+      )}
       {createNodeDetailsView}
 
       {nodesShow?.length === 0 && (
