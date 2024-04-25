@@ -59,6 +59,7 @@ function NodesDetailsPanel() {
   const navCtx = useContext(NavigationContext);
 
   const [nodesShow, setNodesShow] = useState([]);
+  const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
 
   const [showNodeInfo] = useLocalStorage(
     'NodesDetailsPanel:showNodeInfo',
@@ -657,17 +658,65 @@ function NodesDetailsPanel() {
               )}
 
               {showPaths && (
-                <Stack direction="row" spacing={0.5}>
+                <Stack direction="column" spacing={0.5}>
                   {[...node.launchPaths].map((launchPath) => (
-                    <Tag
-                      key={launchPath}
-                      color="white"
-                      title="Launch path:"
-                      text={launchPath}
-                      wrap
-                      copyButton={launchPath}
-                    />
+                    <Stack direction="row" spacing={0.5}>
+                      <Tag
+                        key={launchPath}
+                        color="white"
+                        title="Launch path:"
+                        text={launchPath}
+                        wrap
+                        copyButton={launchPath}
+                      />
+                    </Stack>
                   ))}
+                  {logPaths[node.idGlobal]?.map((logItem) => {
+                    return (
+                      <>
+                        <Stack direction="row" spacing={0.5}>
+                          <Tag
+                            key={logItem.screen_log}
+                            color="white"
+                            title="Screen log:"
+                            text={logItem.screen_log}
+                            wrap
+                            copyButton={logItem.screen_log}
+                          />
+                        </Stack>
+                        <Stack direction="row" spacing={0.5}>
+                          <Tag
+                            key={logItem.ros_log}
+                            color="white"
+                            title="Ros log:"
+                            text={logItem.ros_log}
+                            wrap
+                            copyButton={logItem.ros_log}
+                          />
+                        </Stack>
+                      </>
+                    );
+                  })}
+                  {!logPaths[node.idGlobal] && (
+                    <Stack direction="row" spacing={0.5}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        size="small"
+                        color="warning"
+                        onClick={async () => {
+                          const logs = await rosCtx
+                            .getProviderById(node.providerId)
+                            ?.getLogPaths([node.name]);
+                          logPaths[node.idGlobal] = logs;
+                          setLogPaths({ ...logPaths });
+                        }}
+                        style={{ textAlign: 'center' }}
+                      >
+                        get log paths
+                      </Button>
+                    </Stack>
+                  )}
                 </Stack>
               )}
             </Stack>
@@ -677,14 +726,16 @@ function NodesDetailsPanel() {
     });
   }, [
     nodesShow,
-    onServiceClick,
-    onTopicClick,
-    showConnections,
     showNodeInfo,
     showPublishers,
-    showServices,
+    showConnections,
     showSubscribers,
+    showServices,
     showPaths,
+    onTopicClick,
+    onServiceClick,
+    rosCtx,
+    logPaths,
   ]);
 
   return (
