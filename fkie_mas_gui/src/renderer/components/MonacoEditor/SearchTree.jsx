@@ -1,12 +1,11 @@
-import PropTypes from 'prop-types';
-import { useContext, useEffect, useState } from 'react';
-
+import { useMonaco } from '@monaco-editor/react';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import { TreeView } from '@mui/x-tree-view';
 import { useDebounceCallback } from '@react-hook/debounce';
+import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
 import { emitCustomEvent } from 'react-custom-events';
-import { MonacoContext } from '../../context/MonacoContext';
 import { getFileName } from '../../models';
 import {
   EVENT_EDITOR_SELECT_RANGE,
@@ -15,16 +14,57 @@ import {
 import { SearchFileTreeItem, SearchResultTreeItem } from './SearchTreeItem';
 
 function SearchTree({ tabId, ownUriPaths, searchTerm }) {
-  const monacoCtx = useContext(MonacoContext);
+  const monaco = useMonaco();
   const [expandedSearchResults, setExpandedSearchResults] = useState([]);
   const [globalSearchTree, setGlobalSearchTree] = useState({});
 
+  /**
+   * Search through all available models a given text, and return all coincidences
+   *
+   * @param {string} searchText - Text to search
+   */
+  const findAllTextMatches = (searchText, isRegex) => {
+    if (!searchText) return [];
+    if (searchText.length < 3) return [];
+
+    const searchResult = [];
+    const includedText = new Set('');
+
+    if (searchText) {
+      // search only in own models
+      ownUriPaths.forEach((uriPath) => {
+        const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
+        const matches = model.findMatches(
+          searchText,
+          true,
+          isRegex,
+          false,
+          null,
+          false,
+        );
+        matches.forEach((match) => {
+          const lineNumber = match.range.startLineNumber;
+          const text = model.getLineContent(match.range.startLineNumber);
+
+          if (!includedText.has(text)) {
+            searchResult.push({
+              file: model.uri.path,
+              text,
+              lineNumber,
+              range: match.range,
+            });
+
+            includedText.add(text);
+          }
+        });
+      });
+    }
+    return searchResult;
+  };
+
   const debouncedFindAllMatches = useDebounceCallback((searchText) => {
-    const searchResult = monacoCtx.findAllTextMatches(
-      searchText,
-      false,
-      ownUriPaths,
-    );
+    const searchResult = findAllTextMatches(searchText, false);
+
     const newSearchTree = {};
     searchResult.forEach((item) => {
       const entry = newSearchTree[item.file];
