@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.1 - 25.04.2024
+
+Show delay to connected hosts
+Added screen name to node details info
+Added log paths to node details info
+Added selected nodes count to node details info
+
+Fixed: unique keys warnings
+Fixed: recursive search in text editor
+Fixed: crash after select node by click on launch file
+
 ## 1.4.0 - 24.04.2024
 
 Added configuration parameter to show floating buttons, default false

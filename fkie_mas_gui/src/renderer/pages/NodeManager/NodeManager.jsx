@@ -569,6 +569,12 @@ function NodeManager() {
             </Button>
           </Tooltip>,
         );
+        // } else {
+        //   renderValues.buttons.push(
+        //     <Typography noWrap variant="body2">
+        //       v{packageJson.version}
+        //     </Typography>,
+        //   );
       }
     }
   }
