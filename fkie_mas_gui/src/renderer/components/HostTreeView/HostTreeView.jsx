@@ -16,10 +16,9 @@ import { SettingsContext } from '../../context/SettingsContext';
 import { LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
 import SingleTerminalPanel from '../../pages/NodeManager/panels/SingleTerminalPanel';
 import { CmdType } from '../../providers';
-import { generateUniqueId } from '../../utils';
+import { generateUniqueId, removeDDSuid } from '../../utils';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
 import { colorFromHostname } from '../UI/Colors';
-import { removeDDSuid } from '../../utils/index';
 import HostTreeViewItem from './HostTreeViewItem';
 import {
   getGroupIcon,

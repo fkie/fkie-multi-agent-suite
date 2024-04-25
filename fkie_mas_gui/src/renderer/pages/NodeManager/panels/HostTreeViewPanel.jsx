@@ -440,7 +440,7 @@ function HostTreeViewPanel() {
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          `parameter-node-${node.id}`,
+          `parameter-node-${node.idGlobal}`,
           `${node.name}`,
           <ParameterPanel nodes={[node]} providers={null} />,
           true,
