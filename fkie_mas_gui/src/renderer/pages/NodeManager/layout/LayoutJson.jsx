@@ -33,6 +33,16 @@ const DEFAULT_LAYOUT = {
       ],
     },
     {
+      id: LAYOUT_TAB_SETS.BORDER_LEFT,
+      type: 'border',
+      // selected: 0,
+      size: 420,
+      location: 'left',
+      enableClose: false,
+      enableAutoHide: true,
+      children: [],
+    },
+    {
       id: LAYOUT_TAB_SETS.BORDER_RIGHT,
       type: 'border',
       // selected: 0,

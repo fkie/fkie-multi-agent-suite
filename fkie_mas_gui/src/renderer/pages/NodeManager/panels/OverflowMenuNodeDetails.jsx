@@ -2,7 +2,7 @@ import MoreVertSharpIcon from '@mui/icons-material/MoreVert';
 import OverflowMenu from '../../../components/UI/OverflowMenu';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 
-function OverflowMenuNodeDetails({}) {
+function OverflowMenuNodeDetails() {
   const [showNodeInfo, setShowNodeInfo] = useLocalStorage(
     'NodesDetailsPanel:showNodeInfo',
     false,
@@ -26,35 +26,35 @@ function OverflowMenuNodeDetails({}) {
 
   const nodeDetailsOptions = [
     {
-      name: 'Toggle Node Info',
+      name: `${showNodeInfo ? 'Hide' : 'Show'} Node Info`,
       key: 'toggle-node-info',
       onClick: () => {
         setShowNodeInfo((prev) => !prev);
       },
     },
     {
-      name: 'Toggle Publishers',
+      name: `${showPublishers ? 'Hide' : 'Show'} Publishers`,
       key: 'toggle-publishers',
       onClick: () => {
         setShowPublishers((prev) => !prev);
       },
     },
     {
-      name: 'Toggle Subscribers',
+      name: `${showSubscribers ? 'Hide' : 'Show'} Subscribers`,
       key: 'toggle-subscribers',
       onClick: () => {
         setShowSubscribers((prev) => !prev);
       },
     },
     {
-      name: 'Toggle Services',
+      name: `${showServices ? 'Hide' : 'Show'} Services`,
       key: 'toggle-services',
       onClick: () => {
         setShowServices((prev) => !prev);
       },
     },
     {
-      name: 'Toggle Connections',
+      name: `${showConnections ? 'Hide' : 'Show'} Connections`,
       key: 'toggle-connections',
       onClick: () => {
         setShowConnections((prev) => !prev);

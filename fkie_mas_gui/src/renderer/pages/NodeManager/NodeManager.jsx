@@ -190,11 +190,17 @@ function NodeManager() {
     (data) => {
       const node = model.getNodeById(data.id);
       if (node) {
-        if (
-          node.getParent().getType() === 'border' &&
-          node.getParent().getSelectedNode()?.getId() === node.getId()
-        ) {
-          // it is border and current tab is selected => nothing to do
+        if (node.getParent().getType() === 'border') {
+          if (node.getParent().getSelectedNode()?.getId() === node.getId()) {
+            // it is border and current tab is selected => nothing to do
+          } else if (
+            node.getParent().getSelectedNode()?.getId() === LAYOUT_TABS.HOSTS
+          ) {
+            // it is border and current tab is HOSTS => nothing to do
+          } else if (node.getParent().getSelectedNode()?.isVisible()) {
+            // activate already existing tab if the border is enabled.
+            model.doAction(Actions.selectTab(data.id));
+          }
         } else {
           // activate already existing tab.
           model.doAction(Actions.selectTab(data.id));

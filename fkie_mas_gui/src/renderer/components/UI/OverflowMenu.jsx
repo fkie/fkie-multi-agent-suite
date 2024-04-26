@@ -26,9 +26,11 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
+    event.stopPropagation();
   };
-  const handleClose = () => {
+  const handleClose = (event) => {
     setAnchorEl(null);
+    event.stopPropagation();
   };
 
   /** create style to colorize the menu item depends on the provider name */
@@ -40,7 +42,7 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
         borderLeftWidth: '0.6em',
       };
     }
-    return { };
+    return {};
   };
 
   return (
@@ -54,6 +56,7 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
       //   vertical: 'bottom',
       //   horizontal: 'right',
       // }}
+      onClick={(event) => event.stopPropagation()}
     >
       <IconButton
         aria-label={`${id}-icon`}
@@ -89,9 +92,9 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
             <MenuItem
               size="small"
               key={option.key}
-              onClick={() => {
+              onClick={(event) => {
                 option.onClick();
-                handleClose();
+                handleClose(event);
               }}
               sx={getSxPropByName(option.name)}
             >
