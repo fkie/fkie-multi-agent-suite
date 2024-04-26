@@ -80,9 +80,9 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self._entity = entity
         self._launch_description = launch_description
         self._launch_context = launch_context
-        print("launch_context:", launch_context.locals,
+        print("  ***debug LaunchNodeWrapper: launch_context:", launch_context.locals,
               dir(launch_context.locals))
-        print("launch_context, current_launch_file_path,:",
+        print("  ***debug LaunchNodeWrapper: launch_context, current_launch_file_path,:",
               getattr(launch_context.locals, "current_launch_file_path", 'NONE'))
         if isinstance(self._entity, launch_ros.actions.Node):
             # Prepare the ros_specific_arguments list and add it to the context so that the
@@ -110,7 +110,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         node_name, unique_name, name_configured = self._get_name()
         LaunchNodeInfo.__init__(
             self, unique_name=unique_name, node_name=node_name, name_configured=name_configured)
-        print("name_configured", name_configured)
+        print("  ***debug LaunchNodeWrapper: name_configured", name_configured)
         self.node_namespace = self._get_namespace()
         self.package = self._get_node_package()
         self.executable = self._get_node_executable()
@@ -203,7 +203,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                 "startColumn": start_column,
                 "endColumn": end_column,
             }
-
 
     def __del__(self):
         try:
@@ -401,10 +400,10 @@ class LaunchConfig(object):
         self.__launch_description = get_launch_description_from_any_launch_file(
             self.filename)
         # self.__launch_description.visit(self.__launch_context)
-        #self.ldsource = launch.LaunchDescriptionSource(launch_description=self.__launch_description, location=launch_file)
-        #self.__launch_description = self.ldsource.get_launch_description(self.__launch_context)
-        #ild = IncludeLaunchDescription(launch_description_source=self.ldsource, launch_arguments=launch_arguments)
-        #rr = ild.execute(self.__launch_context)
+        # self.ldsource = launch.LaunchDescriptionSource(launch_description=self.__launch_description, location=launch_file)
+        # self.__launch_description = self.ldsource.get_launch_description(self.__launch_context)
+        # ild = IncludeLaunchDescription(launch_description_source=self.ldsource, launch_arguments=launch_arguments)
+        # rr = ild.execute(self.__launch_context)
         # for key in rr:
         #    print("r", key, type(key))
         #    if isinstance(key, launch.launch_description.LaunchDescription):
@@ -413,7 +412,7 @@ class LaunchConfig(object):
 #        for key, val in self.__launch_context.launch_configurations.items():
 #            print("KK", key, val)
 
-        #print("LD", dir(self.__launch_description))
+        # print("LD", dir(self.__launch_description))
         # print("frontend_parsers", launch.frontend.parser.Parser.frontend_parsers)
         # launch.frontend.parser.Parser.load_launch_extensions()
         # launch.frontend.parser.Parser.load_parser_implementations()
@@ -422,7 +421,7 @@ class LaunchConfig(object):
         # print("DIFFLOAD", entity, parser)
         self._included_files: List[IncludeLaunchDescription] = []
         self.__launch_description.launch_name = self.filename
-        self._load(current_file=self.filename)
+        self.load()
         self.argv = None
         if self.argv is None:
             self.argv = []
@@ -468,11 +467,15 @@ class LaunchConfig(object):
                     "not all argv are setted properly!")
             return self.__launch_description
 
-    def _unload(self):
-        print("UNLOAD")
+    def unload(self):
+        Log.info(f"unload launch file: {self.filename}")
         self.launch_arguments.clear()
         self._included_files.clear()
         self._nodes.clear()
+
+    def load(self) -> None:
+        Log.info(f"load launch file: {self.filename}, arguments: {[f'{v.name}:={v.value}' for v in self.launch_arguments]}")
+        self._load(current_file=self.filename)
 
     def _load(self, sub_obj=None, launch_description=None, current_file: str = '', ident: str = '') -> None:
         current_launch_description = launch_description
@@ -495,16 +498,16 @@ class LaunchConfig(object):
 
         entities = None
         if hasattr(sub_obj, 'get_sub_entities'):
-            print(ident, "GET SUB ENTITY")
+            print("  ***debug launch loading: ", ident, "GET SUB ENTITY")
             entities = getattr(sub_obj, 'get_sub_entities')()
         elif hasattr(sub_obj, 'entities'):
-            print(ident, "GET ENTITY")
+            print("  ***debug launch loading: ", ident, "GET ENTITY")
             entities = getattr(sub_obj, 'entities')
         if entities is not None:
             for entity in entities:
                 # if isinstance(entity, launch.launch_description.LaunchDescription):
                 #     current_launch_description = entity
-                print(ident, f"typeID: {type(entity)} {entity}")
+                print("  ***debug launch loading: ", ident, f"typeID: {type(entity)} {entity}")
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:
                     #     for cmd in cmds:
@@ -524,8 +527,8 @@ class LaunchConfig(object):
                     #         else:
                     #             print('      + CMD OTHER:', cmd, dir(cmd))
                     entity._perform_substitutions(self.context)
-                    print("IIII", entity._Node__node_executable)
-                    #actions = entity.execute(self.context)
+                    print("  ***debug launch loading: ", ident, "III", entity._Node__node_executable)
+                    # actions = entity.execute(self.context)
                     node = LaunchNodeWrapper(
                         entity, current_launch_description, self.context)
                     self._nodes.append(node)
@@ -552,7 +555,7 @@ class LaunchConfig(object):
                     cfg_actions = entity.execute(self.__launch_context)
                     if cfg_actions is not None:
                         for cac in cfg_actions:
-                            print(ident, '->', type(cac), cac)
+                            print("  ***debug launch loading: ", ident, '->', type(cac), cac)
 #                    print('  perform ARG after execute:', entity.name, launch.utilities.perform_substitutions(
 #                        self.context, entity.default_value))
                     self._load(entity, current_launch_description,
@@ -567,13 +570,13 @@ class LaunchConfig(object):
                         cfg_actions = entity.execute(self.__launch_context)
                         if cfg_actions is not None:
                             for cac in cfg_actions:
-                                print(ident, '>>', type(cac), cac)
+                                print("  ***debug launch loading: ", ident, '>>', type(cac), cac)
                             ild = entity.launch_description_source.get_launch_description(
                                 self.context)
                             for cac in cfg_actions[:-1]:
-                                print(ident, '++', type(cac), cac)
+                                print("  ***debug launch loading: ", ident, '++', type(cac), cac)
                                 ild.add_action(cac)
-                        #current_launch_description = entity
+                        # current_launch_description = entity
                         self._included_files.append(entity)
 
 #                        print("IncludeLaunchDescription", dir(), entity)
@@ -611,7 +614,7 @@ class LaunchConfig(object):
                     # if not a.startswith('_')
         #                print(f"  {a}: {getattr(entity, a)}")
                 else:
-                    print("unknown entity:", entity)
+                    print("  ***debug launch loading: unknown entity:", entity)
                     self._load(entity, current_launch_description,
                                current_file=current_file, ident=ident+'  ')
                     if current_file:
@@ -783,7 +786,8 @@ class LaunchConfig(object):
         '''
         node: LaunchNodeWrapper = self.get_node(name)
         if node is None:
-            raise exceptions.StartException(f"Node '{name}' in '{self.filename}' not found!")
+            raise exceptions.StartException(
+                f"Node '{name}' in '{self.filename}' not found!")
         if node.composable_container:
             # load plugin in container
             Log.debug(
@@ -795,10 +799,10 @@ class LaunchConfig(object):
                 Log.debug(
                     f"Run container node='{node.composable_container}'")
                 self.run_node(node.composable_container)
-            print("lok")
-            print("put into quee")
+            print("  ***debug launch run: lok")
+            print("  ***debug launch run: put into quee")
             self.run_composed_node(node)
-            print("put into quee done")
+            print("  ***debug launch run: put into quee done")
             return
 
         # run on local host
@@ -851,7 +855,6 @@ class LaunchConfig(object):
         SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, node.cmd])), cwd=node.cwd, env=new_env,
                         object_id=f"run_node_{node.unique_name}", description=f"Run [{node.package_name}]{node.executable}")
 
-
     def run_composed_node(self, node: LaunchNodeWrapper):
         # Create a client to load nodes in the target container.
         client_load_node = nmd.ros_node.create_client(
@@ -899,7 +902,7 @@ class LaunchConfig(object):
         Log.debug(f"-> load composed node to '{service_load_node_name}'")
         response = nmd.launcher.call_service(
             service_load_node_name, composition_interfaces.srv.LoadNode, request)
-        print("response received")
+        print("  ***debug launch run: response received")
         node_name = response.full_node_name if response.full_node_name else request.node_name
         nmd.ros_node.destroy_client(client_load_node)
         if response.success:
@@ -921,4 +924,4 @@ class LaunchConfig(object):
             )
             Log.error(error_msg)
             raise exceptions.StartException(error_msg)
-        print("LOADED")
+        print("  ***debug launch run: LOADED")

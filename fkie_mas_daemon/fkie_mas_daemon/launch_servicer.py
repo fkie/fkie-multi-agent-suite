@@ -432,7 +432,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             old_launch = self._loaded_files[cfgid]
             try:
                 self._remove_launch_from_observer(old_launch)
-                old_launch._unload()
+                old_launch.unload()
                 # use argv from already open file
                 launch_config = LaunchConfig(
                     old_launch.filename, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
@@ -446,7 +446,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 self.publish_to('ros.launch.changed', {})
                 self._add_launch_to_observer(launch_config)
             except Exception as e:
-                old_launch._load()
+                old_launch.load()
                 self._add_launch_to_observer(old_launch)
                 print(traceback.format_exc())
                 err_text = f"{request.path} loading failed!"
