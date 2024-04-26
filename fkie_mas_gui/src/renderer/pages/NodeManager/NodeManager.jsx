@@ -174,8 +174,10 @@ function NodeManager() {
         nodeBId.getParent().getType() === 'border' &&
         nodeBId.getParent()?.getLocation().name === DockLocation.BOTTOM.name
       ) {
+        // on close of last bottom tab hide the border if it currently visible
         const shouldSelectNewTab =
-          nodeBId.getParent().getChildren().length === 2;
+          nodeBId.getParent().getChildren().length === 2 &&
+          nodeBId.getParent().getSelectedNode()?.isVisible();
         if (shouldSelectNewTab) {
           model.doAction(Actions.selectTab(tabId));
         }
