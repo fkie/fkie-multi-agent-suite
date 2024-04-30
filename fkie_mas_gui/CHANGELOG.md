@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.3 - 30.04.2024
+
+Added left border to layout
+Added: change detection for ros2
+
+Fixed: visibility handling of bottom border on closing of last tab
+Fixed: binary change detection if binary is a link
+
 ## 1.4.1 - 25.04.2024
 
 Show delay to connected hosts
