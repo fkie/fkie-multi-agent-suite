@@ -539,7 +539,7 @@ export function RosProviderReact(
             result.reply.changed_nodes.length > 0
           ) {
             // ask use if nodes should be restarted
-            enqueueSnackbar(`Do you want to restart nodes on: `, {
+            enqueueSnackbar(`Do you want to restart ${result.reply.changed_nodes.length} nodes on: `, {
               persist: true,
               anchorOrigin: {
                 vertical: 'top',
@@ -1127,6 +1127,40 @@ export function RosProviderReact(
   useCustomEventListener(
     EVENT_PROVIDER_PATH_EVENT,
     (data: EventProviderPathEvent) => {
+      if (data.path.affected.length === 0) {
+        // no affected launch files => it is a binary
+        const nodes: string[] = [];
+        data.provider.launchFiles.forEach((launch) => {
+          launch.nodes.forEach((node) => {
+            if (node.executable) {
+              if (data.path.srcPath.endsWith(node.executable)) {
+                if (node.node_name) {
+                  nodes.push(node.node_name);
+                }
+              }
+            }
+          });
+        });
+        if (nodes.length > 0) {
+          // ask use if nodes should be restarted
+          enqueueSnackbar(`Binary changed, do you want to restart ${nodes.length} nodes on: `, {
+            persist: true,
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right',
+            },
+            preventDuplicate: true,
+            content: (key, message) =>
+              createRestartNodesAlertComponent(
+                key,
+                `${message}`,
+                data.provider,
+                nodes,
+                data.path.srcPath,
+              ),
+          });
+        }
+      }
       data.path.affected.forEach((arg: string) => {
         enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
           persist: true,
