@@ -383,8 +383,6 @@ class LaunchConfig(object):
         self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
         self._nodes: List[LaunchNodeWrapper] = []
-        self._started_binaries: Dict[str, float] = dict()
-        ''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
         self.__nmduri = daemonuri
         self.provided_launch_arguments = launch_arguments
         self.launch_arguments: List[LaunchArgument] = []
@@ -775,7 +773,7 @@ class LaunchConfig(object):
         Log.warn("Node '%s' NOT found" % name)
         return None
 
-    def run_node(self, name: str) -> None:
+    def run_node(self, name: str) -> str:
         '''
         Start a node local or on specified host using a :class:`.startcfg.StartConfig`
 
@@ -803,7 +801,7 @@ class LaunchConfig(object):
             print("  ***debug launch run: put into quee")
             self.run_composed_node(node)
             print("  ***debug launch run: put into quee done")
-            return
+            return ''
 
         # run on local host
         # set environment
@@ -838,22 +836,20 @@ class LaunchConfig(object):
             #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
             respawn_prefix = f"{RESPAWN_SCRIPT}"
 
-        try:
-            self._started_binaries[node.unique_name] = (
-                node.executable, os.path.getmtime(node.executable))
-        except Exception:
-            pass
-
         # TODO: check for HOSTNAME
         # start
         screen_prefix = ' '.join([screen.get_cmd(
             node.unique_name, new_env, new_env.keys())])
+        executable_path = ''
+        if node.cmd:
+            executable_path = node.cmd.split()[0]
         Log.info(
             f"{screen_prefix} {respawn_prefix} {node.launch_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
         Log.debug(
             f"environment while run node '{node.unique_name}': '{new_env}'")
         SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, node.cmd])), cwd=node.cwd, env=new_env,
                         object_id=f"run_node_{node.unique_name}", description=f"Run [{node.package_name}]{node.executable}")
+        return executable_path
 
     def run_composed_node(self, node: LaunchNodeWrapper):
         # Create a client to load nodes in the target container.

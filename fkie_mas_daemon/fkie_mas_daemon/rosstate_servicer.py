@@ -243,6 +243,8 @@ class RosStateServicer(CrossbarBaseSession):
             result = json.dumps(
                 {'result': True, 'message': ''}, cls=SelfEncoder)
         nmd.launcher.server.screen_servicer.system_change()
+        if node is not None:
+            nmd.launcher.server.launch_servicer.node_stopped(os.path.join(node.namespace, node.name))
         return result
 
     @wamp.register('ros.subscriber.stop')

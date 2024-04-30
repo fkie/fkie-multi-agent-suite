@@ -79,7 +79,6 @@ from fkie_mas_pylib.system.host import is_local
 from fkie_mas_pylib.system.url import equal_uri
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
 
-from . import launcher
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
 
@@ -151,6 +150,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self.xml_validator = LaunchValidator()
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
         self._real_paths = {} # link <-> real path; real path <-> real path
+        self._node_exec = {} # node name <-> executable path
         self._included_files = []
         self._included_dirs = []
         self._is_running = True
@@ -186,7 +186,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         if path in self._included_files:
             affected_launch_files = []
             for launch_path, path_list in self._observed_launch_files.items():
-                if event.src_path in path_list:
+                if path in path_list:
                     affected_launch_files.append(launch_path)
             change_event = {"eventType": event.event_type,
                             "srcPath": path,
@@ -247,7 +247,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             del self._observed_launch_files[launch_config.filename]
         except Exception as e:
             Log.error(
-                f"{self.__class__.__name__}: _add_launch_to_observer {launch_config.filename}:\n{e}")
+                f"{self.__class__.__name__}: _remove_launch_from_observer {launch_config.filename}:\n{e}")
 
     # def start_node(self, node_name):
     #     global IS_RUNNING
@@ -596,7 +596,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             try:
                 result.launch_files.append(launch_configs[0].filename)
-                launch_configs[0].run_node(request.name)
+                executable_path = launch_configs[0].run_node(request.name)
+                if executable_path:
+                    if request.name not in self._node_exec:
+                        self._node_exec[request.name] = executable_path
+                        self._add_file_to_observe(executable_path)
                 Log.debug(f'Node={request.name}; start finished')
                 result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:
@@ -616,6 +620,12 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         finally:
             nmd.launcher.server.screen_servicer.system_change()
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+
+    def node_stopped(self, name: str) -> None:
+        # remove executable path from observer
+        if name in self._node_exec:
+            self._remove_file_from_observe(self._node_exec[name])
+            del self._node_exec[name]
 
     @wamp.register('ros.launch.start_nodes')
     def start_nodes(self, request_json: List[LaunchNode], continue_on_error: bool = True) -> List[LaunchNodeReply]:

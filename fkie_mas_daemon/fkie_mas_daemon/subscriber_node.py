@@ -116,7 +116,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
 
         nmd.ros_node = self.rosnode
         # set loglevel to DEBUG
-        nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+        # nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
         # get a reference to the global node for logging
         Log.set_ros2_logging_node(self.rosnode)
