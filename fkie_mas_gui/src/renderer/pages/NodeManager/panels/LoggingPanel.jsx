@@ -1,4 +1,5 @@
 import {
+  Box,
   IconButton,
   MenuItem,
   Paper,
@@ -12,6 +13,7 @@ import {
   TableRow,
   ToggleButton,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import React, {
   createRef,
@@ -23,7 +25,7 @@ import React, {
 import { TableVirtuoso } from 'react-virtuoso';
 import './TableResizable.css';
 
-import ClearAllOutlinedIcon from '@mui/icons-material/ClearAllOutlined';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import SubtitlesOutlinedIcon from '@mui/icons-material/SubtitlesOutlined';
 
@@ -64,7 +66,7 @@ const exportLogs = (logs) => {
 };
 
 const DEFAULT_MIN_WIDTH_CELL = 70;
-const DEFAULT_MAX_WIDTH_CELL = 800;
+const DEFAULT_MAX_WIDTH_CELL = 2048;
 
 function LoggingPanel() {
   const [headers] = useState([
@@ -137,9 +139,12 @@ function LoggingPanel() {
   const adjustWidthColumn = (index, width) => {
     const minWidth = headers[index].minWidth ?? DEFAULT_MIN_WIDTH_CELL;
     const maxWidth = headers[index].maxWidth ?? DEFAULT_MAX_WIDTH_CELL;
-    const newWidth =
-      width > maxWidth ? maxWidth : width < minWidth ? minWidth : width;
-
+    let newWidth = width;
+    if (width > maxWidth) {
+      newWidth = maxWidth;
+    } else if (width < minWidth) {
+      newWidth = minWidth;
+    }
     if (headers[index].ref.current)
       headers[index].ref.current.parentElement.style.width = `${newWidth}px`;
   };
@@ -187,13 +192,40 @@ function LoggingPanel() {
               }}
               style={{ width: column.width }}
             >
-              {column.header}
-              <div
-                id={`${column.key}`}
-                onMouseDown={() => onClickResizeColumn(index)}
-                ref={column.ref}
-                className="resizeLine"
-              />
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  backgroundColor: 'background.paper',
+                }}
+              >
+                <Typography>{column.header}</Typography>
+                {column.key === 'description' && (
+                  <Tooltip
+                    title={showDetails ? 'Hide Details' : 'Show Details'}
+                    placement="bottom"
+                    sx={{ paddingRight: 1 }}
+                  >
+                    <ToggleButton
+                      size="small"
+                      value="showDetails"
+                      sx={{ height: '1.8em', padding: 0, width: '1.8em' }}
+                      selected={showDetails}
+                      onChange={() => {
+                        setShowDetails(!showDetails);
+                      }}
+                    >
+                      <SubtitlesOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                    </ToggleButton>
+                  </Tooltip>
+                )}
+                <Box
+                  id={`${column.key}`}
+                  onMouseDown={() => onClickResizeColumn(index)}
+                  ref={column.ref}
+                  className="resizeLine"
+                />
+              </Stack>
             </TableCell>
           );
         })}
@@ -289,31 +321,6 @@ function LoggingPanel() {
             );
           })}
         </Select>
-        <Tooltip
-          title={showDetails ? 'Hide Details' : 'Show Details'}
-          placement="bottom"
-        >
-          <ToggleButton
-            size="small"
-            value="showDetails"
-            selected={showDetails}
-            onChange={() => {
-              setShowDetails(!showDetails);
-            }}
-          >
-            <SubtitlesOutlinedIcon sx={{ fontSize: 'inherit' }} />
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip title="Clear All" placement="bottom">
-          <IconButton
-            edge="start"
-            aria-label="Clear All"
-            onClick={() => logCtx.clearLogs()}
-          >
-            <ClearAllOutlinedIcon sx={{ fontSize: 'inherit' }} />
-          </IconButton>
-        </Tooltip>
-
         <Tooltip title="Export to JSON" placement="bottom">
           <IconButton
             edge="start"
@@ -329,6 +336,15 @@ function LoggingPanel() {
             }
           >
             <FileDownloadOutlinedIcon sx={{ fontSize: 'inherit' }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Delete All" placement="bottom">
+          <IconButton
+            edge="start"
+            aria-label="Delete All"
+            onClick={() => logCtx.clearLogs()}
+          >
+            <DeleteForeverIcon sx={{ fontSize: 'inherit' }} />
           </IconButton>
         </Tooltip>
       </Stack>

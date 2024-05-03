@@ -14,7 +14,7 @@
 .resizeLine {
   position: absolute;
   height: 100%;
-  width: 6px;
+  width: 4px;
   top: 0;
   right: 0px;
   cursor: col-resize;
@@ -25,6 +25,9 @@
 
   &:active {
     background-color: #0AA1DD;
+  }
 
+  & {
+    background-color: #E5E4E2;
   }
 }
