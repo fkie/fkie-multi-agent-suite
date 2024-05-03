@@ -209,7 +209,7 @@ def _prepareROSMaster(masteruri):
             if ros_hostname:
                 new_env['ROS_HOSTNAME'] = ros_hostname
             cmd_args = '%s roscore --port %d' % (
-                screen.get_cmd('/roscore--%d' % master_port))
+                screen.get_cmd('/roscore--%d' % master_port), master_port)
             for n in [1, 2, 3, 4]:
                 try:
                     if n == 1:
@@ -276,8 +276,6 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args)
 
-    screen_prefix = screen.get_cmd(
-        node=arg_name if arg_name else executable, namespace=arg_ns)
     # set the masteruri to launch with other one master
     new_env = dict(os.environ)
     new_env['ROS_MASTER_URI'] = masteruri
@@ -292,6 +290,9 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     arg_ns = names.namespace(
         namer, with_sep_suffix=False, raise_err_on_none=False)
     arg_name = names.basename(namer)
+
+    screen_prefix = screen.get_cmd(
+        node=arg_name if arg_name else executable, namespace=arg_ns)
 
     arg_name_list = []
     if set_name:
