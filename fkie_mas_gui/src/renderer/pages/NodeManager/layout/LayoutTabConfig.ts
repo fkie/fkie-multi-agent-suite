@@ -1,4 +1,4 @@
-import { CmdType } from '../../../providers';
+import CmdType from '../../../providers/CmdType';
 
 export default class LayoutTabConfig {
   openExternal: boolean;

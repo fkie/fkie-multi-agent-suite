@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useContext, useState } from 'react';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
+  Box,
   Button,
   Card,
   CardActions,
@@ -26,6 +27,7 @@ interface LoggingDetailsComponentProps {
   message: SnackbarMessage;
   details: string | Object;
   variant: VariantType;
+  onDetailsClick: Function;
 }
 
 const LoggingDetailsComponent = forwardRef<
@@ -33,7 +35,7 @@ const LoggingDetailsComponent = forwardRef<
   LoggingDetailsComponentProps
 >((props, ref) => {
   const settingsCtx = useContext(SettingsContext);
-  const { id, message, details, variant } = props;
+  const { id, message, details, variant, onDetailsClick } = props;
 
   const { closeSnackbar } = useSnackbar();
   const [expanded, setExpanded] = useState(false);
@@ -63,7 +65,22 @@ const LoggingDetailsComponent = forwardRef<
             >
               <ExpandMoreIcon />
             </IconButton>
-            <Typography variant="body2">{message}</Typography>
+            <Box
+              sx={{
+                '&:hover': {
+                  cursor: 'zoom-in',
+                },
+              }}
+            >
+              <Typography
+                onClick={(event) => {
+                  if (onDetailsClick) onDetailsClick(id, event);
+                }}
+                variant="body2"
+              >
+                {message}
+              </Typography>
+            </Box>
             <Button size="small" onClick={handleDismiss}>
               Close
             </Button>

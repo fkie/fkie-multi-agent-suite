@@ -1,4 +1,4 @@
-import { LayoutTabConfig } from '../pages/NodeManager/layout';
+import LayoutTabConfig from '../pages/NodeManager/layout/LayoutTabConfig';
 
 export const EVENT_CLOSE_COMPONENT = 'EVENT_CLOSE_COMPONENT' as const;
 export const EVENT_OPEN_COMPONENT = 'EVENT_OPEN_COMPONENT' as const;
@@ -15,7 +15,7 @@ export function eventOpenComponent(
   config: LayoutTabConfig = new LayoutTabConfig(false, panelGroup), // a place to hold json config for the hosted component
 ) {
   return {
-    id: id,
+    id,
     title,
     closable,
     component,
@@ -40,6 +40,10 @@ export function eventCloseComponent(id: string) {
   return { id };
 }
 
-export function eventEditorSelectRange(tabId: string, filePath: string, fileRange: any) {
+export function eventEditorSelectRange(
+  tabId: string,
+  filePath: string,
+  fileRange: any,
+) {
   return { tabId, filePath, fileRange };
 }

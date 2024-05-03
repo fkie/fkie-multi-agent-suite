@@ -199,6 +199,11 @@ function NodeManager() {
             node.getParent().getSelectedNode()?.getId() === LAYOUT_TABS.HOSTS
           ) {
             // it is border and current tab is HOSTS => nothing to do
+          } else if (node.getId() === LAYOUT_TABS.LOGGING) {
+            if (!node.getParent().getSelectedNode()?.isVisible()) {
+              // activate logging tab if not visible.
+              model.doAction(Actions.selectTab(data.id));
+            }
           } else if (node.getParent().getSelectedNode()?.isVisible()) {
             // activate already existing tab if the border is enabled.
             model.doAction(Actions.selectTab(data.id));

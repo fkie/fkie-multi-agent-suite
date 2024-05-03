@@ -95,7 +95,7 @@ function LoggingPanel() {
     'LoggingPanel:level',
     LoggingLevel.INFO,
   );
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [loggerColumnWidths, setLoggerColumnWidths] = useLocalStorage(
     'LoggingPanel:columnWidths',

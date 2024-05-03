@@ -2,6 +2,13 @@ import Fade from '@mui/material/Fade';
 import { VariantType, useSnackbar } from 'notistack';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 
+import { emitCustomEvent } from 'react-custom-events';
+import {
+  LAYOUT_TABS,
+  LAYOUT_TAB_SETS,
+} from '../pages/NodeManager/layout/LayoutDefines';
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../utils/events';
+
 import { LogEvent, LoggingLevel } from '../models';
 import LoggingDetailsComponent from './LoggingDetailsComponent';
 import { SettingsContext } from './SettingsContext';
@@ -89,6 +96,18 @@ export function LoggingProvider({
               message={message}
               details={details}
               variant={snackbarVariant}
+              onDetailsClick={() => {
+                emitCustomEvent(
+                  EVENT_OPEN_COMPONENT,
+                  eventOpenComponent(
+                    LAYOUT_TABS.LOGGING,
+                    'Logging Panel',
+                    <></>,
+                    false,
+                    LAYOUT_TAB_SETS.BORDER_BOTTOM,
+                  ),
+                );
+              }}
             />
           ),
           variant: snackbarVariant,
