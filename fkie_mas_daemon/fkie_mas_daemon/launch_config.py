@@ -472,7 +472,8 @@ class LaunchConfig(object):
         self._nodes.clear()
 
     def load(self) -> None:
-        Log.info(f"load launch file: {self.filename}, arguments: {[f'{v.name}:={v.value}' for v in self.launch_arguments]}")
+        Log.info(
+            f"load launch file: {self.filename}, arguments: {[f'{v.name}:={v.value}' for v in self.launch_arguments]}")
         self._load(current_file=self.filename)
 
     def _load(self, sub_obj=None, launch_description=None, current_file: str = '', ident: str = '') -> None:
@@ -505,7 +506,8 @@ class LaunchConfig(object):
             for entity in entities:
                 # if isinstance(entity, launch.launch_description.LaunchDescription):
                 #     current_launch_description = entity
-                print("  ***debug launch loading: ", ident, f"typeID: {type(entity)} {entity}")
+                print("  ***debug launch loading: ", ident,
+                      f"typeID: {type(entity)} {entity}")
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:
                     #     for cmd in cmds:
@@ -525,7 +527,8 @@ class LaunchConfig(object):
                     #         else:
                     #             print('      + CMD OTHER:', cmd, dir(cmd))
                     entity._perform_substitutions(self.context)
-                    print("  ***debug launch loading: ", ident, "III", entity._Node__node_executable)
+                    print("  ***debug launch loading: ", ident,
+                          "III", entity._Node__node_executable)
                     # actions = entity.execute(self.context)
                     node = LaunchNodeWrapper(
                         entity, current_launch_description, self.context)
@@ -553,7 +556,8 @@ class LaunchConfig(object):
                     cfg_actions = entity.execute(self.__launch_context)
                     if cfg_actions is not None:
                         for cac in cfg_actions:
-                            print("  ***debug launch loading: ", ident, '->', type(cac), cac)
+                            print("  ***debug launch loading: ",
+                                  ident, '->', type(cac), cac)
 #                    print('  perform ARG after execute:', entity.name, launch.utilities.perform_substitutions(
 #                        self.context, entity.default_value))
                     self._load(entity, current_launch_description,
@@ -568,11 +572,13 @@ class LaunchConfig(object):
                         cfg_actions = entity.execute(self.__launch_context)
                         if cfg_actions is not None:
                             for cac in cfg_actions:
-                                print("  ***debug launch loading: ", ident, '>>', type(cac), cac)
+                                print("  ***debug launch loading: ",
+                                      ident, '>>', type(cac), cac)
                             ild = entity.launch_description_source.get_launch_description(
                                 self.context)
                             for cac in cfg_actions[:-1]:
-                                print("  ***debug launch loading: ", ident, '++', type(cac), cac)
+                                print("  ***debug launch loading: ",
+                                      ident, '++', type(cac), cac)
                                 ild.add_action(cac)
                         # current_launch_description = entity
                         self._included_files.append(entity)
@@ -804,6 +810,8 @@ class LaunchConfig(object):
             return ''
 
         # run on local host
+        # run get_cmd() before create new_env since get_cmd() extends os.environ
+        screen_prefix = ' '.join([screen.get_cmd(node.unique_name)])
         # set environment
         new_env = dict(os.environ) if node.env is None else dict(node.env)
         # set display variable to local display
@@ -826,7 +834,7 @@ class LaunchConfig(object):
         # handle respawn
         respawn_prefix = ''
         if node.respawn:
-            if node.respawn_delay > 0:
+            if node.respawn_delay and node.respawn_delay > 0:
                 new_env['RESPAWN_DELAY'] = '%d' % node.respawn_delay
             # TODO
             # respawn_params = _get_respawn_params(node.fullname, node.params)
@@ -838,8 +846,6 @@ class LaunchConfig(object):
 
         # TODO: check for HOSTNAME
         # start
-        screen_prefix = ' '.join([screen.get_cmd(
-            node.unique_name, new_env, new_env.keys())])
         executable_path = ''
         if node.cmd:
             executable_path = node.cmd.split()[0]
