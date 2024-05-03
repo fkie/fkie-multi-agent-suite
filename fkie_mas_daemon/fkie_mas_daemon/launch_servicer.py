@@ -1015,6 +1015,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             args.append('--tcp_no_delay')
 
         # run on local host
+        screen_prefix = ' '.join([screen.get_cmd(fullname)])
         # set environment
         new_env = dict(os.environ)
 
@@ -1026,8 +1027,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             new_env['DISPLAY'] = ':0'
 
         # start
-        screen_prefix = ' '.join(
-            [screen.get_cmd(fullname, new_env, new_env.keys())])
         Log.info(
             f"{self.__class__.__name__}: {screen_prefix} {cmd} {' '.join(args)}")
         # Log.debug(

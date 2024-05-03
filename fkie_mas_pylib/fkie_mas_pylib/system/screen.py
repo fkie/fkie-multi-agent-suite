@@ -261,7 +261,7 @@ def get_pid_file(session: str = None, node: str = None, namespace: str = '/') ->
     return "%s%s.pid" % (LOG_PATH, 'unknown')
 
 
-def get_cmd(node: str, env=[], keys=[], namespace: str = '/') -> str:
+def get_cmd(node: str, namespace: str = '/') -> str:
     '''
     Return the command prefix to start the given node
     in a screen terminal.

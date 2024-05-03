@@ -228,6 +228,7 @@ def run_node(startcfg):
         except Exception:
             pass
         cwd = ros_pkg.get_cwd(startcfg.cwd, cmd_type)
+        screen_prefix = screen.get_cmd(startcfg.fullname)
         # set environment
         new_env = dict(os.environ)
         # set display variable to local display
@@ -276,8 +277,7 @@ def run_node(startcfg):
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
-        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, list(
-            startcfg.env.keys())), cmd_type, ' '.join(args)))
+        cmd_str = utf8('%s %s %s' % (screen_prefix, cmd_type, ' '.join(args)))
         Log.info("%s (launch_file: '%s', masteruri: %s)" %
                  (cmd_str, startcfg.config_path, masteruri))
         Log.debug(
