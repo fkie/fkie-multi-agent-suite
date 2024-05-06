@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.4 - 06.05.2024
+
+Show logging panel on click on snackbar message
+Moved 'show details' button to description header in Log panel
+
+Fixed: problems with load shared libraries while start in some environments
+Fixed: start nodes with respawn argument in ros2
+
 ## 1.4.3 - 30.04.2024
 
 Added left border to layout

@@ -1,6 +1,6 @@
 {
   "name": "fkie-mas-gui",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "GUI to manage running ROS components",
   "license": "MIT",
   "contributors": [
