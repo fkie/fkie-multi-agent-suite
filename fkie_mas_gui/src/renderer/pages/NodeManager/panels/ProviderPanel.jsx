@@ -113,7 +113,7 @@ function ProviderPanel() {
 
   const debouncedCallbackUpdateDelay = useDebounceCallback(() => {
     forceUpdate();
-  }, 3000);
+  }, 1000);
 
   useEffect(() => {
     debouncedCallbackFilterText(rosCtx.providers, filterText);
@@ -404,10 +404,10 @@ function ProviderPanel() {
   );
 
   const getDelayColor = useCallback((delay) => {
-    if (delay < 0.02) {
+    if (delay < 0.1) {
       return 'green';
     }
-    if (delay < 0.1) {
+    if (delay < 0.5) {
       return 'orange';
     }
     return 'red';
@@ -485,7 +485,7 @@ function ProviderPanel() {
                   </Stack>
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
-                  {provider.isAvailable() && provider.currentDelay > 0.0005 && (
+                  {provider.isAvailable() && provider.currentDelay > 0.0001 && (
                     <Tooltip
                       title="delay from the host (in seconds)"
                       placement="bottom-start"
