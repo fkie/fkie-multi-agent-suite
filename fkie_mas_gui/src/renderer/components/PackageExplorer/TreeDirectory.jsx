@@ -2,7 +2,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import { TreeView } from '@mui/x-tree-view';
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { FileIcon } from 'react-file-icon';
 
@@ -178,7 +178,7 @@ function TreeDirectory({
    * Memoize the generation of the tree to improve render performance
    * The idea is to prevent rerendering when scrolling/focusing the component
    */
-  const generateTree = () => {
+  const generateTree = useMemo(() => {
     return (
       <TreeView
         aria-label="package list"
@@ -245,18 +245,18 @@ function TreeDirectory({
         {/* <Box sx={{ height: '6em', width: '100%' }} /> */}
       </TreeView>
     );
-  };
-  // , [
-  //   expanded,
-  //   packageItemsTree,
-  //   selectedItems,
-  //   handleToggle,
-  //   handleSelect,
-  //   handleFileDoubleClick,
-  //   buildTreePackageItems,
-  // ]);
+  }, [
+    expanded,
+    packageItemsTree,
+    selectedItems,
+    handleToggle,
+    handleSelect,
+    selectedPackage,
+    handleFileDoubleClick,
+    buildTreePackageItems,
+  ]);
 
-  return generateTree();
+  return generateTree;
 }
 
 TreeDirectory.defaultProps = {

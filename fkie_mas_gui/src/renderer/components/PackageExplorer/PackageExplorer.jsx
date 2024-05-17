@@ -221,9 +221,21 @@ function PackageExplorer({ packageList, selectedProvider }) {
         fl = fl.filter((f) => {
           // check file extension for "interesting" files
           const fileExtension = getFileExtension(f.path);
-          return ['launch', 'yaml', 'md', 'h', 'hpp', 'c', 'cpp'].includes(
-            fileExtension,
-          );
+          return [
+            'launch',
+            'yaml',
+            'md',
+            'h',
+            'hpp',
+            'c',
+            'cpp',
+            'py',
+            'xml',
+            'txt',
+            'sdf',
+            'config',
+            'cfg',
+          ].includes(fileExtension);
         });
       } else {
         setIgnoringNonRelevantPackageFiles(false);
@@ -475,12 +487,14 @@ function PackageExplorer({ packageList, selectedProvider }) {
             }
           }}
         >
-          <TreeDirectory
-            selectedPackage={selectedPackage}
-            packageItemsTree={packageItemsTree}
-            onNodeSelect={handleSelect}
-            onFileDoubleClick={onFileDoubleClick}
-          />
+          {Object.keys(packageItemsTree).length > 0 && (
+            <TreeDirectory
+              selectedPackage={selectedPackage}
+              packageItemsTree={packageItemsTree}
+              onNodeSelect={handleSelect}
+              onFileDoubleClick={onFileDoubleClick}
+            />
+          )}
         </Box>
         <Box>
           <Paper elevation={2}>
