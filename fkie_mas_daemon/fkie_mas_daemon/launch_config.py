@@ -334,13 +334,17 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         result = ''
         if isinstance(value, str):
             result = value
+        elif isinstance(value, List):
+            result += ' '.join([self._to_string(val) for val in value])
+        elif value and isinstance(value, launch.Substitution):
+            result += self._launch_context.perform_substitution(value)
+            if ' ' in result and '{' in result:
+                result = f"'{result}'"
         elif value and isinstance(value[0], launch.Substitution):
             result += launch.utilities.perform_substitutions(
                 self._launch_context, value)
             if ' ' in result and '{' in result:
                 result = f"'{result}'"
-        elif isinstance(value, List):
-            result += ' '.join([self._to_string(val) for val in value])
         elif value is not None:
             Log.warn("IGNORED while _to_string", value)
         else:
