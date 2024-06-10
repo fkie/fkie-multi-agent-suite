@@ -567,10 +567,12 @@ function HostTreeViewPanel() {
         );
       }
       if (withNoLaunch.length > 0) {
-        skippedNodes.concat(withNoLaunch);
-        logCtx.error(
+        withNoLaunch.forEach((nodeName) => {
+          skippedNodes.set(nodeName, 'no launch file');
+        });
+        logCtx.debug(
           `No launch file for ${withNoLaunch.length} nodes found`,
-          node2Start,
+          JSON.stringify(node2Start),
         );
       }
       if (withMultiLaunch.length > 0) {
@@ -581,7 +583,7 @@ function HostTreeViewPanel() {
         setNodesToStart(node2Start);
       }
     },
-    [queueItemsQueueMain, rosCtx, logCtx],
+    [queueItemsQueueMain, logCtx, updateWithAssociations],
   );
 
   /**
