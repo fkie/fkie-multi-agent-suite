@@ -48,7 +48,7 @@ import { CmdType } from '../../../providers';
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 
 import useQueue from '../../../hooks/useQueue';
-import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/events';
+import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/eventTypes';
 import {
   EVENT_EDITOR_SELECT_RANGE,
   EVENT_OPEN_COMPONENT,

@@ -24,7 +24,7 @@ import { SearchBar, colorFromHostname } from '../../../components';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { RosNode } from '../../../models';
-import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/events';
+import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/eventTypes';
 import { findIn } from '../../../utils/index';
 
 function NodeLoggerPanel(node) {

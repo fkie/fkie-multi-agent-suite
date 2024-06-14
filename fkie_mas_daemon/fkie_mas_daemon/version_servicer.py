@@ -28,6 +28,7 @@ from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.crossbar.runtime_interface import DaemonVersion
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket import register_ws_method
 import fkie_mas_daemon as nmd
 from . import version
 
@@ -41,6 +42,7 @@ class VersionServicer(CrossbarBaseSession):
         self._version, self._date = version.detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
+        register_ws_method("ros.daemon.get_version", self.get_version)
 
     def stop(self):
         self.shutdown()

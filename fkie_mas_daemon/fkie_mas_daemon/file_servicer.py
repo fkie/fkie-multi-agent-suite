@@ -41,6 +41,7 @@ from fkie_mas_pylib.crossbar.file_interface import LogPathClearResult
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system.screen import get_logfile
 from fkie_mas_pylib.system.screen import get_ros_logfile
+from fkie_mas_pylib.websocket import register_ws_method
 
 
 class FileServicer(CrossbarBaseSession):
@@ -53,6 +54,13 @@ class FileServicer(CrossbarBaseSession):
         CrossbarBaseSession.__init__(self, loop, realm, port)
         # TODO: clear cache after detected change or time?
         self.CB_DIR_CACHE = {}
+        register_ws_method("ros.packages.get_list", self.getPackageList)
+        register_ws_method("ros.path.get_log_paths", self.getLogPaths)
+        register_ws_method("ros.path.clear_log_paths", self.clearLogPaths)
+        register_ws_method("ros.path.get_list", self.getPathList)
+        register_ws_method("ros.path.get_list_recursive", self.getPathListRecursive)
+        register_ws_method("ros.file.get", self.getFileContent)
+        register_ws_method("ros.file.save", self.saveFileContent)
 
     def stop(self):
         """ """

@@ -27,12 +27,12 @@ import {
 } from 'notistack';
 import { SettingsContext } from '../../context/SettingsContext';
 import { PATH_EVENT_TYPE } from '../../models';
-import CrossbarIOProvider from '../../providers/crossbar_io/CrossbarIOProvider';
+import Provider from '../../providers/Provider';
 
 interface ReloadFileComponentProps {
   id: SnackbarKey | undefined;
   message: SnackbarMessage;
-  provider: CrossbarIOProvider;
+  provider: Provider;
   modifiedFile: string;
   modification: PATH_EVENT_TYPE;
   launchFile: string;

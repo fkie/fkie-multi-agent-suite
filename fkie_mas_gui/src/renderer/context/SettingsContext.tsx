@@ -2,9 +2,16 @@ import React, { createContext, useMemo, useReducer } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import URI from '../models/Crossbar';
 
-export const getCrossbarPortFromRos = (rosVersion: string) => {
-  return rosVersion === '2' ? 11811 : 11911;
+export const getDefaultPortFromRos: (
+  connectionType: string,
+  rosVersion: string,
+) => number = (connectionType, rosVersion) => {
+  if (connectionType === 'crossbar-wamp') {
+    return rosVersion === '2' ? 11811 : 11911;
+  }
+  return rosVersion === '2' ? 35430 : 35530;
 };
+
 export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
   changed: number;

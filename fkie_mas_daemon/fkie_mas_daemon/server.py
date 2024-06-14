@@ -26,6 +26,8 @@ import os
 import sys
 import threading
 import time
+import websockets
+import rclpy
 
 # crossbar-io dependencies
 import asyncio
@@ -50,6 +52,7 @@ from fkie_mas_pylib.system.host import get_host_name
 from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket import WebSocketHandler
 import fkie_mas_daemon as nmd
 
 from fkie_mas_daemon.file_servicer import FileServicer
@@ -60,7 +63,6 @@ from fkie_mas_daemon.rosstate_servicer import RosStateServicer
 from fkie_mas_daemon.screen_servicer import ScreenServicer
 from fkie_mas_daemon.version_servicer import VersionServicer
 from fkie_mas_daemon.version import detect_version
-
 
 
 class Server:
@@ -143,6 +145,36 @@ class Server:
         self.rosstate_servicer = None
         self.parameter_servicer = None
 
+    async def ws_handler(self, websocket, path):
+        handler = WebSocketHandler(websocket, path, self.crossbar_loop)
+        await handler.spin()
+        # self.ws_connections.add(websocket)
+        # print(f"path: {path}")
+        # try:
+        #     async for message in websocket:
+        #         print(message)
+        #         await websocket.send("Hi")
+        # except websockets.ConnectionClosedError:
+        #     pass
+        # finally:
+        #     self.ws_connections.remove(websocket)
+
+    async def websocket_main(self, port=35430):
+        nmd.ros_node.get_logger().info(
+            f"Open Websocket on port {port}")
+        try:
+            async with websockets.serve(self.ws_handler, "0.0.0.0", port):
+                while rclpy.ok():
+                    await asyncio.sleep(1)
+                # try:
+                #     await asyncio.Future()
+                # except:
+                #     import traceback
+                #     print(traceback.format_exc())
+        except:
+            import traceback
+            print(traceback.format_exc())
+
     def start(self, port: int, displayed_name: Text = "") -> bool:
         if displayed_name:
             self.name = displayed_name
@@ -151,6 +183,9 @@ class Server:
         self.insecure_port = port
         if server.port() != port:
             self.name = f"{self.name}_{port}"
+
+        asyncio.run_coroutine_threadsafe(
+            self.websocket_main(), self.crossbar_loop)
         nmd.ros_node.get_logger().info(
             f"Connect to crossbar server on port {port}")
         self._endpoint_msg.name = self.name
@@ -166,6 +201,14 @@ class Server:
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         return True
+
+    async def crossbar_connect(self) -> None:
+        current_task = asyncio.current_task()
+        if not self.crossbar_connecting:
+            task = asyncio.create_task(self.crossbar_connect_async())
+        else:
+            task = current_task
+        await asyncio.gather(task)
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)

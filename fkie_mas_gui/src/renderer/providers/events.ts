@@ -8,109 +8,91 @@ import {
   SubscriberEvent,
   SystemWarningGroup,
 } from '../models';
-import CrossbarIOProvider from './crossbar_io/CrossbarIOProvider';
+import Provider from './Provider';
 
 export { ConnectionState };
 
-export const EVENT_PROVIDER_ACTIVITY = 'EVENT_PROVIDER_ACTIVITY' as const;
-export const EVENT_PROVIDER_DISCOVERED = 'EVENT_PROVIDER_DISCOVERED' as const;
-export const EVENT_PROVIDER_REMOVED = 'EVENT_PROVIDER_REMOVED' as const;
-export const EVENT_PROVIDER_LAUNCH_LIST = 'EVENT_PROVIDER_LAUNCH_LIST' as const;
-export const EVENT_PROVIDER_PATH_EVENT = 'EVENT_PROVIDER_PATH_EVENT' as const;
-export const EVENT_PROVIDER_ROS_NODES = 'EVENT_PROVIDER_ROS_NODES' as const;
-export const EVENT_PROVIDER_SCREENS = 'EVENT_PROVIDER_SCREENS' as const;
-export const EVENT_PROVIDER_STATE = 'EVENT_PROVIDER_STATE' as const;
-export const EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX =
-  'EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX' as const;
-export const EVENT_PROVIDER_TIME_DIFF = 'EVENT_PROVIDER_TIME_DIFF' as const;
-export const EVENT_PROVIDER_WARNINGS = 'EVENT_PROVIDER_WARNINGS' as const;
-export const EVENT_PROVIDER_DELAY = 'EVENT_PROVIDER_DELAY' as const;
-
 export class EventProviderActivity {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   active: boolean;
 
   type: string;
 
-  constructor(
-    provider: CrossbarIOProvider,
-    active: boolean,
-    type: string = '',
-  ) {
+  constructor(provider: Provider, active: boolean, type: string = '') {
     this.provider = provider;
     this.active = active;
     this.type = type;
   }
 }
 export class EventProviderDiscovered {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
-  reporter: CrossbarIOProvider;
+  reporter: Provider;
 
-  constructor(provider: CrossbarIOProvider, reporter: CrossbarIOProvider) {
+  constructor(provider: Provider, reporter: Provider) {
     this.provider = provider;
     this.reporter = reporter;
   }
 }
 
 export class EventProviderRemoved {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
-  reporter: CrossbarIOProvider;
+  reporter: Provider;
 
-  constructor(provider: CrossbarIOProvider, reporter: CrossbarIOProvider) {
+  constructor(provider: Provider, reporter: Provider) {
     this.provider = provider;
     this.reporter = reporter;
   }
 }
 
 export class EventProviderLaunchList {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   launches: LaunchContent[];
 
-  constructor(provider: CrossbarIOProvider, launches: LaunchContent[]) {
+  constructor(provider: Provider, launches: LaunchContent[]) {
     this.provider = provider;
     this.launches = launches;
   }
 }
 
 export class EventProviderPathEvent {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   path: PathEvent;
 
-  constructor(provider: CrossbarIOProvider, path: PathEvent) {
+  constructor(provider: Provider, path: PathEvent) {
     this.provider = provider;
     this.path = path;
   }
 }
 
 export class EventProviderRosNodes {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   nodes: RosNode[];
 
-  constructor(provider: CrossbarIOProvider, nodes: RosNode[]) {
+  constructor(provider: Provider, nodes: RosNode[]) {
     this.provider = provider;
     this.nodes = nodes;
   }
 }
 
 export class EventProviderScreens {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   screens: ScreensMapping[];
 
-  constructor(provider: CrossbarIOProvider, screens: ScreensMapping[]) {
+  constructor(provider: Provider, screens: ScreensMapping[]) {
     this.provider = provider;
     this.screens = screens;
   }
 }
 
 export class EventProviderState {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   newState: ConnectionState;
 
@@ -119,7 +101,7 @@ export class EventProviderState {
   details: string;
 
   constructor(
-    provider: CrossbarIOProvider,
+    provider: Provider,
     newState: ConnectionState,
     oldState: ConnectionState,
     details: string = '',
@@ -132,44 +114,44 @@ export class EventProviderState {
 }
 
 export class EventProviderSubscriberEvent {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   event: SubscriberEvent;
 
-  constructor(provider: CrossbarIOProvider, event: SubscriberEvent) {
+  constructor(provider: Provider, event: SubscriberEvent) {
     this.provider = provider;
     this.event = event;
   }
 }
 
 export class EventProviderTimeDiff {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   timeDiff: number;
 
-  constructor(provider: CrossbarIOProvider, timeDiff: number) {
+  constructor(provider: Provider, timeDiff: number) {
     this.provider = provider;
     this.timeDiff = timeDiff;
   }
 }
 
 export class EventProviderWarnings {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   warnings: SystemWarningGroup[];
 
-  constructor(provider: CrossbarIOProvider, warnings: SystemWarningGroup[]) {
+  constructor(provider: Provider, warnings: SystemWarningGroup[]) {
     this.provider = provider;
     this.warnings = warnings;
   }
 }
 
 export class EventProviderDelay {
-  provider: CrossbarIOProvider;
+  provider: Provider;
 
   delay: number;
 
-  constructor(provider: CrossbarIOProvider, delay: number) {
+  constructor(provider: Provider, delay: number) {
     this.provider = provider;
     this.delay = delay;
   }

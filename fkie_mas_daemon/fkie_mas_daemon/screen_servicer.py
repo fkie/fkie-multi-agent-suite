@@ -35,6 +35,7 @@ from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.crossbar.runtime_interface import ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.websocket import register_ws_method
 import fkie_mas_daemon as nmd
 
 
@@ -52,6 +53,8 @@ class ScreenServicer(CrossbarBaseSession):
         self._screens_set = set()
         self._screen_nodes_set = set()
         self._sceen_crossbar_msg: List[ScreensMapping] = []
+        register_ws_method("ros.screen.kill_node", self.kill_node)
+        register_ws_method("ros.screen.get_list", self.get_screen_list)
 
     def start(self):
         self._screen_thread = threading.Thread(

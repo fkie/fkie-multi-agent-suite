@@ -58,7 +58,7 @@ import ScreensMapping from './ScreensMapping';
 // Other structs
 import LogEvent, { LoggingLevel } from './LogEvent';
 import LogPathItem from './LogPathItem';
-import LoggerConfig, { LogLevelType } from './LoggerConfig';
+import { LogLevelType, LoggerConfig } from './LoggerConfig';
 import Result from './Result';
 
 import SubscriberEvent from './SubscriberEvent';

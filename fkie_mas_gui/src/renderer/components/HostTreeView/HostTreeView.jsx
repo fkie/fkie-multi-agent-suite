@@ -458,7 +458,7 @@ function HostTreeView({
         stopNodes([syncNode.idGlobal]);
       } else {
         const lc = new ProviderLaunchConfiguration(
-          provider.crossbar.host,
+          provider.connection.host,
           provider.rosVersion,
         );
         lc.sync.enable = true;

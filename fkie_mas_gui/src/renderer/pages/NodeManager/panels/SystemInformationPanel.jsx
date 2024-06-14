@@ -74,7 +74,7 @@ function SystemInformationPanel({ providerId }) {
   useEffect(() => {
     if (provider) {
       const infoContent = {};
-      infoContent.URI = `${provider.host()}:${provider.crossbar.port}`;
+      infoContent.URI = `${provider.host()}:${provider.connection.port}`;
       infoContent.ROS_VERSION = provider.rosState.ros_version;
       infoContent.ROS_DISTRO = provider.rosState.ros_distro;
       if (provider.rosState.ros_version === '1') {

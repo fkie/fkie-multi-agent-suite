@@ -78,6 +78,7 @@ from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import is_local
 from fkie_mas_pylib.system.url import equal_uri
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
+from fkie_mas_pylib.websocket import register_ws_method
 
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
@@ -158,6 +159,20 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self._loaded_files: Dict[CfgId, LaunchConfig] = dict()
         self._observed_launch_files: Dict[str, List[str]] = {}
         self._watchdog_observer.start()
+        register_ws_method("ros.launch.load", self.load_launch)
+        register_ws_method("ros.launch.reload", self.reload_launch)
+        register_ws_method("ros.launch.unload", self.unload_launch)
+        register_ws_method("ros.launch.get_list", self.get_list)
+        register_ws_method("ros.launch.start_node", self.start_node)
+        register_ws_method("ros.launch.start_nodes", self.start_nodes)
+        register_ws_method("ros.launch.get_included_files",
+                           self.get_included_files)
+        register_ws_method("ros.launch.interpret_path", self.interpret_path)
+        register_ws_method("ros.launch.get_msg_struct", self.get_msg_struct)
+        register_ws_method("ros.launch.publish_message", self.publish_message)
+        register_ws_method("ros.launch.get_srv_struct", self.get_srv_struct)
+        register_ws_method("ros.launch.call_service", self.call_service)
+        register_ws_method("ros.subscriber.start", self.start_subscriber)
 
     def _terminated(self):
         Log.info(f"{self.__class__.__name__}: terminated launch context")
@@ -321,8 +336,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
 
         launchfile = request.path
         daemonuri = ''

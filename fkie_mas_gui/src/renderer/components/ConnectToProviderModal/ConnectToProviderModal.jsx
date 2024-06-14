@@ -49,12 +49,12 @@ import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
 import {
   SettingsContext,
-  getCrossbarPortFromRos,
+  getDefaultPortFromRos,
 } from '../../context/SettingsContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import ProviderLaunchConfiguration from '../../models/ProviderLaunchConfiguration';
-import CrossbarIOProvider from '../../providers/crossbar_io/CrossbarIOProvider';
-import { EVENT_PROVIDER_ROS_NODES } from '../../providers/events';
+import Provider from '../../providers/Provider';
+import { EVENT_PROVIDER_ROS_NODES } from '../../providers/eventTypes';
 import { generateUniqueId } from '../../utils';
 import { EVENT_OPEN_CONNECT } from '../../utils/events';
 import CopyButton from '../UI/CopyButton';
@@ -358,7 +358,7 @@ function ConnectToProviderModal() {
     }
     const port = startParameter.port
       ? startParameter.port
-      : getCrossbarPortFromRos(startParameter.rosVersion) +
+      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion) +
         startParameter.networkId;
     // join each host separately
     await Promise.all(
@@ -366,7 +366,8 @@ function ConnectToProviderModal() {
         let host = crossbarHost;
         if (crossbarHost.ip) host = crossbarHost.ip;
         setStartProviderDescription(`Connecting to ${host} ...`);
-        const newProvider = new CrossbarIOProvider(
+        console.log(`connecting to ${host}:${port}`);
+        const newProvider = new Provider(
           settingsCtx,
           host,
           startParameter.rosVersion,

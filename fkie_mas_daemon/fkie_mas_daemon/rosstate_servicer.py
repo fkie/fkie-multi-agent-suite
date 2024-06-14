@@ -56,6 +56,7 @@ from fkie_mas_pylib.names import ns_join
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import get_hostname
 from fkie_mas_pylib.system.url import get_port
+from fkie_mas_pylib.websocket import register_ws_method
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_msgs.msg import DiscoveredState
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
@@ -80,6 +81,13 @@ class RosStateServicer(CrossbarBaseSession):
         self._ts_state_notified = 0
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
+        register_ws_method("ros.provider.get_list", self.crossbar_get_provider_list)
+        register_ws_method("ros.nodes.get_list", self.crossbar_get_node_list)
+        register_ws_method("ros.nodes.get_loggers", self.crossbar_get_loggers)
+        register_ws_method("ros.nodes.set_logger_level", self.crossbar_set_logger_level)
+        register_ws_method("ros.nodes.stop_node", self.stop_node)
+        register_ws_method("ros.subscriber.stop", self.stop_subscriber)
+        register_ws_method("ros.provider.get_timestamp", self.getProviderTimestamp)
 
     def start(self):
         qos_state_profile = QoSProfile(depth=100,

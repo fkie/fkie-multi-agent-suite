@@ -35,7 +35,7 @@ import { LoggingContext } from '../../../context/LoggingContext';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { SubscriberFilter } from '../../../models';
-import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from '../../../providers/events';
+import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from '../../../providers/eventTypes';
 
 function TopicEchoPanel({
   showOptions,

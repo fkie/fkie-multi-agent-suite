@@ -47,7 +47,7 @@ import {
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
-} from '../../../providers/events';
+} from '../../../providers/eventTypes';
 import {
   EVENT_OPEN_COMPONENT,
   EVENT_OPEN_CONNECT,
@@ -343,6 +343,7 @@ function ProviderPanel() {
   );
 
   const generateWarningsView = useCallback((provider) => {
+    if (!provider.warnings) return <></>;
     const warnings = provider.warnings.filter(
       (group) => group.warnings.length > 0,
     );
