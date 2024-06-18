@@ -32,7 +32,7 @@ from typing import Union
 from numbers import Number
 
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
-from .base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from .runtime_interface import RosParameter
 
 

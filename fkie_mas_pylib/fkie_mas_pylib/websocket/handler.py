@@ -27,8 +27,9 @@ import threading
 from types import SimpleNamespace
 import websockets
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.websocket.globals import WS_CONNECTIONS, WS_REGISTRATIONS
+from fkie_mas_pylib.interface import SelfEncoder
+# from fkie_mas_pylib.websocket.globals import WS_CONNECTIONS, WS_REGISTRATIONS
+from fkie_mas_pylib.websocket import globals
 from fkie_mas_pylib.websocket import ws_publish_to
 
 
@@ -44,28 +45,17 @@ class QueueItem:
 
 class WebSocketHandler:
 
-    def __init__(self, websocket: websockets.WebSocketServerProtocol, path: str, async_loop: asyncio.AbstractEventLoop):
+    def __init__(self, websocket: websockets.WebSocketServerProtocol, path: str, asyncio_loop: asyncio.AbstractEventLoop):
         self.websocket = websocket
         self.path = path
         self._shutdown = False
-        self.async_loop = async_loop
-        # self.queue = PQueue(100)
+        self.asyncio_loop = asyncio_loop
         self.queue = asyncio.Queue()
-        global WS_CONNECTIONS
-        WS_CONNECTIONS.add(self)
+        # global WS_CONNECTIONS
+        globals.WS_CONNECTIONS.add(self)
         self.subscriptions = set()
-        # self._recv_thread = threading.Thread(
-        #     target=self.spin, daemon=True)
-        # self._recv_thread.start()
-        # self._send_thread = threading.Thread(
-        #     target=self._broadcast_handler, daemon=True)
-        # self._send_thread.start()
-        # self._broadcast_task = asyncio.create_task(self._broadcast_handler())
-        # self._broadcast_task = asyncio.run_coroutine_threadsafe(
-        self._broadcast_routine_task = asyncio.run_coroutine_threadsafe(
-            self._broadcast_handler(), asyncio.get_event_loop())
-        # asyncio.run_coroutine_threadsafe(
-        #     self.handle(), async_loop)
+        self.asyncio_loop.create_task(self.spin())
+        self.asyncio_loop.create_task(self._broadcast_handler())
 
     def shutdown(self):
         self._shutdown = True
@@ -73,6 +63,9 @@ class WebSocketHandler:
     async def spin(self):
         try:
             print("handler started")
+            import traceback
+            for line in traceback.format_stack():
+                print(line.strip())
             async for message in self.websocket:
                 try:
                     print(message)
@@ -92,7 +85,7 @@ class WebSocketHandler:
                         continue
                     if hasattr(msg, 'id'):
                         # handle rpc calls
-                        global WS_REGISTRATIONS
+                        # global WS_REGISTRATIONS
                         if msg.uri == 'sub':
                             # create subscription
                             Log.info(
@@ -112,16 +105,16 @@ class WebSocketHandler:
                             self.queue.put_nowait(QueueItem(json.dumps(
                                 reply, cls=SelfEncoder), priority=0))
                             # await self.websocket.send(json.dumps(reply, cls=SelfEncoder))
-                        elif msg.uri in WS_REGISTRATIONS:
+                        elif msg.uri in globals.WS_REGISTRATIONS:
                             print(
                                 f"handle uri {msg.uri}, params: {msg.params}")
                             # task = asyncio.create_task(
                             #     self.handle_callback(msg.id, WS_REGISTRATIONS[msg.uri], msg.params if hasattr(msg, 'params') else []))
                             # await asyncio.gather(task)
                             self.handle_callback(
-                                msg.id, WS_REGISTRATIONS[msg.uri], msg.params if hasattr(msg, 'params') else [])
+                                msg.id, globals.WS_REGISTRATIONS[msg.uri], msg.params if hasattr(msg, 'params') else [])
                             # asyncio.run_coroutine_threadsafe(
-                            #     self.handle_callback(msg.id, WS_REGISTRATIONS[msg.uri], msg.params if hasattr(msg, 'params') else []), self.async_loop)
+                            #     self.handle_callback(msg.id, WS_REGISTRATIONS[msg.uri], msg.params if hasattr(msg, 'params') else []), self.asyncio_loop)
                         else:
                             print(
                                 f"not found {msg.uri}, params: {msg.params}")
@@ -147,8 +140,8 @@ class WebSocketHandler:
             print(traceback.format_exc())
         finally:
             print("handler removed")
-            global WS_CONNECTIONS
-            WS_CONNECTIONS.remove(self)
+            # global WS_CONNECTIONS
+            globals.WS_CONNECTIONS.remove(self)
             # self._broadcast_task.cancel()
 
     def handle_callback(self, id, callback, args=[]):

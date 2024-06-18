@@ -26,7 +26,7 @@ import json
 from types import SimpleNamespace
 import websockets
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.websocket import ws_publish_to
 
 
@@ -42,14 +42,14 @@ class QueueItem:
 
 class WebSocketClient:
 
-    def __init__(self, port: int, async_loop: asyncio.AbstractEventLoop):
+    def __init__(self, port: int, asyncio_loop: asyncio.AbstractEventLoop):
         self.port = port
         self._shutdown = False
         # self.queue = PQueue(100)
         self.queue = asyncio.Queue()
         self.subscriptions = {}
         self.websocket = None
-        self.async_loop = async_loop
+        self.asyncio_loop = asyncio_loop
         # self._recv_thread = threading.Thread(
         #     target=self.spin, daemon=True)
         # self._recv_thread.start()
@@ -63,11 +63,11 @@ class WebSocketClient:
         # self._send_routine_task = asyncio.run_coroutine_threadsafe(
         #     self._send_handler(), asyncio.get_event_loop())
         # asyncio.run_coroutine_threadsafe(
-        #     self.handle(), async_loop)
+        #     self.handle(), asyncio_loop)
         print("1")
-        self.async_loop.create_task(self.spin())
+        self.asyncio_loop.create_task(self.spin())
         print("2")
-        self.async_loop.create_task(self._send_handler())
+        self.asyncio_loop.create_task(self._send_handler())
         print("3")
 
     def shutdown(self):

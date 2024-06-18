@@ -584,6 +584,7 @@ export function RosProviderReact(
           provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
           // already connected
           await provider.getDaemonVersion();
+          console.log(`VERSION OK!!!!!!!!!!!!!!!!!!!`);
           provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
           return true;
         }
@@ -1281,9 +1282,9 @@ export function RosProviderReact(
       case ConnectionState.STATES.STARTING:
         // this state is set by this context while it starts nodes
         break;
-      case ConnectionState.STATES.CROSSBAR_CONNECTED:
+      case ConnectionState.STATES.SERVER_CONNECTED:
         break;
-      case ConnectionState.STATES.CROSSBAR_REGISTERED:
+      case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
         break;
       case ConnectionState.STATES.CONNECTED:
         // trigger updates on state change

@@ -22,23 +22,18 @@
 
 
 import asyncio
-from autobahn import wamp
 import json
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import DaemonVersion
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import DaemonVersion
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.websocket import ws_register_method
 import fkie_mas_daemon as nmd
 from . import version
 
 
-class VersionServicer(CrossbarBaseSession):
-    def __init__(
-        self, loop: asyncio.AbstractEventLoop, realm: str = "ros", port: int = 11911
-    ):
+class VersionServicer:
+    def __init__(self, loop: asyncio.AbstractEventLoop):
         Log.info("Create ROS2 version servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port)
         self._version, self._date = version.detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
@@ -47,7 +42,6 @@ class VersionServicer(CrossbarBaseSession):
     def stop(self):
         self.shutdown()
 
-    @wamp.register("ros.daemon.get_version")
     def get_version(self) -> DaemonVersion:
         Log.info(f"{self.__class__.__name__}: get daemon version ")
         reply = DaemonVersion(self._version, self._date)

@@ -24,29 +24,21 @@
 import argparse
 import asyncio
 import json
-import os
 import sys
-import threading
 import time
 import traceback
 from importlib import import_module
 from types import SimpleNamespace
 from typing import Optional
-
-import asyncio
-from websockets.sync.client import connect
-
 import rclpy
 from rclpy.duration import Duration
-from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
-
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberEvent
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberFilter
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
+from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
+from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.client import WebSocketClient
-
 import fkie_mas_daemon as nmd
 from fkie_mas_pylib.logging.logging import Log
 from .msg_encoder import MsgEncoder
@@ -71,7 +63,6 @@ class RosSubscriberLauncher:
     DEFAULT_WINDOWS_SIZE = 5000
 
     def __init__(self, test_env=False):
-        self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
         # change terminal name
         parsed_args, remaining_args = self.parser.parse_known_args()
@@ -80,20 +71,10 @@ class RosSubscriberLauncher:
         self.namespace, self.name = ros2_subscriber_nodename_tuple(
             parsed_args.topic)
         print('\33]0;%s\a' % (self.name), end='', flush=True)
-        # self._displayed_name = parsed_args.name
-        # self._port = parsed_args.port
-        # self._load = parsed_args.load
-        if 'ROS_DOMAIN_ID' in os.environ:
-            self.ros_domain_id = int(os.environ['ROS_DOMAIN_ID'])
-            # TODO: switch domain id
-            # os.environ.pop('ROS_DOMAIN_ID')
+        self._port = parsed_args.ws_port
         rclpy.init(args=remaining_args)
         # NM_NAMESPACE
-        self.rosnode = rclpy.create_node(self.name, namespace=self.namespace)
-
-        # self.executor = MultiThreadedExecutor(num_threads=3)
-        # self.executor.add_node(self.rosnode)
-
+        self.ros_node = rclpy.create_node(self.name, namespace=self.namespace)
         self._topic = parsed_args.topic
         self._message_type = parsed_args.message_type
         self._count_received = 0
@@ -105,8 +86,7 @@ class RosSubscriberLauncher:
         if self._window == 0:
             self._window = self.DEFAULT_WINDOWS_SIZE
         self._tcp_no_delay = parsed_args.tcp_no_delay
-        self._crossbar_port = parsed_args.crossbar_port
-        self._crossbar_realm = parsed_args.crossbar_realm
+        self._ws_port = parsed_args.ws_port
         self._parsed_args = parsed_args
 
         self._send_ts = 0
@@ -119,12 +99,12 @@ class RosSubscriberLauncher:
         self._bytes = []
         self._bws = []
 
-        nmd.ros_node = self.rosnode
+        nmd.ros_node = self.ros_node
         # set loglevel to DEBUG
         # nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
         # get a reference to the global node for logging
-        Log.set_ros2_logging_node(self.rosnode)
+        Log.set_ros2_logging_node(self.ros_node)
 
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
         splitted_type = self._message_type.replace('/', '.').rsplit('.', 1)
@@ -138,34 +118,19 @@ class RosSubscriberLauncher:
                 f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
 
         self.__msg_class = sub_class
-        self.async_loop = asyncio.get_event_loop()
-        self.async_loop.create_task(self.ros_loop())
-        # CrossbarBaseSession.__init__(
-        #     self, self.async_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
-        # self._crossbarThread = threading.Thread(
-        #     target=self.run_async_forever, args=(self.async_loop,), daemon=True)
-        # self._crossbarThread.start()
-        self.wsClient = WebSocketClient(
-            35430 + self.ros_domain_id, self.async_loop)
+        self.asyncio_loop = asyncio.get_event_loop()
+        self.asyncio_loop.create_task(self.ros_loop())
+        self.asyncio_loop.create_task(self.subscribe())
+        self.wsClient = WebSocketClient(self._port, self.asyncio_loop)
         # qos_state_profile = QoSProfile(depth=100,
         #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
         #                                # reliability=QoSReliabilityPolicy.RELIABLE)
         #                                )
-        self.rosnode.get_logger().info(
+        self.ros_node.get_logger().info(
             f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
-        # self.subscribe_to(
-        #     f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
         self.wsClient.subscribe(
             f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
-        try:
-            qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
-            self.sub = nmd.ros_node.create_subscription(
-                self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
-        except Exception:
-            import traceback
-            print(f"BBBB {traceback.format_exc()}")
-        # self.async_loop.create_task(self.subscribe())
 
     def __del__(self):
         self.stop()
@@ -177,7 +142,7 @@ class RosSubscriberLauncher:
 
     async def ros_loop(self):
         while rclpy.ok():
-            rclpy.spin_once(self.rosnode, timeout_sec=0)
+            rclpy.spin_once(self.ros_node, timeout_sec=0)
             await asyncio.sleep(1e-4)
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
@@ -247,7 +212,7 @@ class RosSubscriberLauncher:
         reliability_reliable_endpoints_count = 0
         durability_transient_local_endpoints_count = 0
 
-        pubs_info = self.rosnode.get_publishers_info_by_topic(topic)
+        pubs_info = self.ros_node.get_publishers_info_by_topic(topic)
         publishers_count = len(pubs_info)
         if publishers_count == 0:
             return qos_profile
@@ -288,24 +253,20 @@ class RosSubscriberLauncher:
 
     def spin(self):
         try:
-            print("create task")
-            # self.async_loop.create_task(self.executor.spin)
-            print("create run")
-            self.async_loop.run_forever()
-            # rclpy.spin(self.rosnode)
+            self.asyncio_loop.run_forever()
+            # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             pass
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
-            self.rosnode.get_logger().warning('Start failed: %s' %
+            self.ros_node.get_logger().warning('Start failed: %s' %
                                               traceback.format_exc())
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
         print('shutdown rclpy')
-        # self.executor.shutdown()
         self.sub.destroy()
         rclpy.shutdown()
         print('bye!')
@@ -362,10 +323,8 @@ class RosSubscriberLauncher:
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--crossbar_port', nargs='?', type=int,
-                            required=True,  help='port for crossbar server')
-        parser.add_argument('--crossbar_realm', nargs='?', type=str,
-                            default='ros',  help='realm crossbar server')
+        parser.add_argument('--ws_port', nargs='?', type=int,
+                            required=True,  help='port for ws server')
         parser.add_argument('-t', '--topic', nargs='?', required=True,
                             help="Name of the ROS topic to listen to (e.g. '/chatter')")
         parser.add_argument("-m", "--message_type", nargs='?', required=True,
@@ -392,12 +351,8 @@ class RosSubscriberLauncher:
         return parser
 
     def stop(self):
-        if hasattr(self, 'async_loop'):
-            self.async_loop.stop()
-
-    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
+        if hasattr(self, 'asyncio_loop'):
+            self.asyncio_loop.stop()
 
     async def _msg_handle(self, data):
         self._count_received += 1
@@ -423,8 +378,6 @@ class RosSubscriberLauncher:
                 self._send_ts = now
                 timeouted = True
         if event.latched or timeouted:
-            # self.publish_to(
-            #     f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
             self.wsClient.publish(
                 f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), resend_after_connect=self._latched)
 

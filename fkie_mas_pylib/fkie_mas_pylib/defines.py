@@ -70,7 +70,7 @@ SCREEN = "/usr/bin/screen"
 SCREEN_NAME_MAX_CHARS = 74
 
 
-NMD_DEFAULT_PORT = 11811
+NMD_DEFAULT_PORT = 35430
 ''':var NMD_DEFAULT_PORT: default port of node manager daemon.'''
 
 

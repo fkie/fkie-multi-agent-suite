@@ -32,7 +32,7 @@ from .subscriber_node import RosSubscriberLauncher
 #     # package is not installed
 #     pass
 
-# the rosnode is assigned in :class:RosNodeLauncher while init
+# the ros_node is assigned in :class:RosNodeLauncher while init
 ros_node: Node = None
 launcher: RosNodeLauncher = None
 
@@ -40,9 +40,11 @@ launcher: RosNodeLauncher = None
 def main():
     global launcher
     launcher = RosNodeLauncher()
+    print("START")
     launcher.spin()
 
 def subscriber():
     global launcher
     launcher = RosSubscriberLauncher()
+    print("START2")
     launcher.spin()

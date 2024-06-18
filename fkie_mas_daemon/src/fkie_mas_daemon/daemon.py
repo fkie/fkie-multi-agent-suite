@@ -34,11 +34,9 @@ from fkie_mas_msgs.srv import LoadLaunchResponse
 from fkie_mas_msgs.srv import Task
 from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.crossbar import server
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.timer import RepeatTimer
-from fkie_mas_pylib.websocket import ws_publish_to
+from fkie_mas_pylib.websocket import ws_publish_to, ws_port
 from fkie_mas_daemon.version import detect_version
 
 
@@ -55,7 +53,7 @@ from .parameter_servicer import ParameterServicer
 
 class MASDaemon:
     def __init__(self, test_env=False):
-        self.crossbar_port = server.port()
+        self.crossbar_port = ws_port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
         self._timer_crossbar_ready = None

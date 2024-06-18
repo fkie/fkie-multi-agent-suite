@@ -2,7 +2,7 @@
 
 Early stage development of a new Node Manager for ROS (1/2).
 
-The MAS GUI is composed by two main parts: A Back-End component (powered by [Crossbar](https://crossbar.io/)), and a Front-End Component (powered by [Electron](https://www.electronjs.org/) and [ReactJS](https://reactjs.org/)).
+The MAS GUI is composed by two main parts: A Back-End component (daemon with WebSocket), and a Front-End Component (powered by [Electron](https://www.electronjs.org/) and [ReactJS](https://reactjs.org/)).
 
 ## Install
 
@@ -10,10 +10,9 @@ We need to first install dependencies and run both Front and Back-End components
 
 ### Install dependencies
 
-The code have been tested with `NodeJS v18.19.0` and `Crossbar v22.2.1`:
+The code have been tested with `NodeJS v18.19.0`:
 
 ```bash
-sudo snap install crossbar
 sudo apt install nodejs yarn libsecret-1-dev
 ```
 

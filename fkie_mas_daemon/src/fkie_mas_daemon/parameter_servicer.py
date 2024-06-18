@@ -26,9 +26,9 @@ import asyncio
 from autobahn import wamp
 from types import SimpleNamespace
 
-from fkie_mas_pylib.crossbar.runtime_interface import RosParameter
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import RosParameter
+from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
+from fkie_mas_pylib.interface.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.parameters.ros1_parameters import ROS1Parameters
 
@@ -38,7 +38,7 @@ class ParameterServicer(CrossbarBaseSession):
     Interface for ROS1 parameters (using parameter server)
     '''
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 35685, test_env=False) -> None:
         Log.info("Create ROS2 parameter servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._handler = ROS1Parameters()

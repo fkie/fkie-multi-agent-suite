@@ -34,10 +34,10 @@ from types import SimpleNamespace
 
 import rospy
 from roslib import message
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberEvent
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberFilter
+from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
+from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
+from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.logging.logging import Log
 
 

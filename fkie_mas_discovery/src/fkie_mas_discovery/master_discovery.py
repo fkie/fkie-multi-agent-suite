@@ -43,9 +43,9 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
-from fkie_mas_pylib.crossbar.runtime_interface import RosProvider
-from fkie_mas_pylib.crossbar.runtime_interface import SystemWarning
-from fkie_mas_pylib.crossbar.runtime_interface import SystemWarningGroup
+from fkie_mas_pylib.interface.runtime_interface import RosProvider
+from fkie_mas_pylib.interface.runtime_interface import SystemWarning
+from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.logging.logging import Log
 
 

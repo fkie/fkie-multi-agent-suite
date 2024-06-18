@@ -26,15 +26,15 @@ from autobahn import wamp
 
 import os
 import signal
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
+from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
+from fkie_mas_pylib.interface.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 
 
 class ScreenServicer(CrossbarBaseSession):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 35685, test_env=False):
         Log.info("Create screen servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)

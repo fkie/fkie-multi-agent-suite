@@ -23,13 +23,11 @@
 
 from typing import Text
 import os
-import sys
 import threading
 import time
 import websockets
 import rclpy
 
-# crossbar-io dependencies
 import asyncio
 import json
 from types import SimpleNamespace
@@ -46,13 +44,11 @@ from fkie_mas_msgs.srv import LoadLaunch
 from fkie_mas_msgs.srv import Task
 from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.names import ns_join
-from fkie_mas_pylib.crossbar import server
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.host import get_host_name
 from fkie_mas_pylib.system.timer import RepeatTimer
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.websocket import ws_publish_to
+from fkie_mas_pylib.websocket import ws_publish_to, ws_port
 from fkie_mas_pylib.websocket.handler import WebSocketHandler
 import fkie_mas_daemon as nmd
 
@@ -67,79 +63,51 @@ from fkie_mas_daemon.version import detect_version
 
 
 class Server:
-    def __init__(self, rosnode, *, default_domain_id=-1):
-        self.rosnode = rosnode
-        self.crossbar_port = server.port()
-        self.crossbar_realm = "ros"
-        self.crossbar_loop = asyncio.get_event_loop()
+    def __init__(self, ros_node, loop: asyncio.AbstractEventLoop, *, default_domain_id=-1):
+        self.ros_node = ros_node
+        self.ws_port = ws_port()
+        self.asyncio_loop = loop
         self._version, self._date = detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
         self._settings = Settings(version=self._version)
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
-            rosnode.get_logger().warn(
+            ros_node.get_logger().warn(
                 "default ROS_DOMAIN_ID=%d overwritten to %d" % (
                     0, self.ros_domain_id)
             )
         self.name = get_host_name()
         self.uri = ""
-        self._timer_crossbar_ready = None
+        self._timer_ws_ready = None
         self.monitor_servicer = MonitorServicer(
-            self._settings, self.crossbar_loop, self.crossbar_realm, self.crossbar_port
-        )
-        self.file_servicer = FileServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
-        )
-        self.screen_servicer = ScreenServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
-        )
-        self.rosstate_servicer = RosStateServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
-        )
-        self.parameter_servicer = ParameterServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
-        )
+            self._settings, self.asyncio_loop)
+        self.file_servicer = FileServicer(self.asyncio_loop)
+        self.screen_servicer = ScreenServicer(self.asyncio_loop)
+        self.rosstate_servicer = RosStateServicer(self.asyncio_loop)
+        self.parameter_servicer = ParameterServicer(self.asyncio_loop)
         self.launch_servicer = LaunchServicer(
-            self.crossbar_loop,
-            self.crossbar_realm,
-            self.crossbar_port,
+            self.asyncio_loop,
             ros_domain_id=self.ros_domain_id,
         )
-        self.version_servicer = VersionServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
-        )
+        self.version_servicer = VersionServicer(self.asyncio_loop)
 
-        rosnode.create_service(
-            LoadLaunch, "~/start_launch", self._rosservice_start_launch
-        )
-        rosnode.create_service(
-            LoadLaunch, "~/load_launch", self._rosservice_load_launch
-        )
-        rosnode.create_service(Task, "~/run", self._rosservice_start_node)
-        qos_profile = QoSProfile(
-            depth=10,
-            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-            # history=QoSHistoryPolicy.KEEP_LAST,
-            reliability=QoSReliabilityPolicy.RELIABLE,
-        )
-        self.pub_endpoint = rosnode.create_publisher(
-            Endpoint, "daemons", qos_profile=qos_profile
-        )
         self.rosname = ns_join(
             nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
         self._endpoint_msg = Endpoint(
             name=self.name,
-            uri=self.rosstate_servicer.uri,
+            uri=f"ws://{get_host_name()}:{self.ws_port}",
             ros_name=self.rosname,
             ros_domain_id=self.ros_domain_id,
             on_shutdown=False,
             pid=os.getpid(),
         )
+        self.asyncio_loop.create_task(self.ros_register())
+        self.asyncio_loop.create_task(self.websocket_main())
         self._ws_thread = None
 
     def __del__(self):
-        self.crossbar_loop.stop()
+        self.asyncio_loop.stop()
         self.version_servicer = None
         self.launch_servicer = None
         self.monitor_servicer = None
@@ -148,7 +116,7 @@ class Server:
         self.parameter_servicer = None
 
     async def ws_handler(self, websocket, path):
-        handler = WebSocketHandler(websocket, path, self.crossbar_loop)
+        handler = WebSocketHandler(websocket, path, self.asyncio_loop)
         await handler.spin()
         # self.ws_connections.add(websocket)
         # print(f"path: {path}")
@@ -165,64 +133,46 @@ class Server:
         nmd.ros_node.get_logger().info(
             f"Open Websocket on port {port}")
         try:
-            # with websockets.serve(self.ws_handler, "0.0.0.0", port) as server:
-            #     while rclpy.ok():
-            #         time.sleep(1)
-            #     server.serve_forever()
             async with websockets.serve(self.ws_handler, "0.0.0.0", port):
                 # await asyncio.Future()
                 while rclpy.ok():
                     await asyncio.sleep(1)
-                # try:
-                #     await asyncio.Future()
-                # except:
-                #     import traceback
-                #     print(traceback.format_exc())
         except:
             import traceback
             print(traceback.format_exc())
 
+    async def ros_register(self):
+       self.ros_node.create_service(
+           LoadLaunch, "~/start_launch", self._rosservice_start_launch
+       )
+       self.ros_node.create_service(
+           LoadLaunch, "~/load_launch", self._rosservice_load_launch
+       )
+       self.ros_node.create_service(Task, "~/run", self._rosservice_start_node)
+       qos_profile = QoSProfile(
+           depth=10,
+           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+           # history=QoSHistoryPolicy.KEEP_LAST,
+           reliability=QoSReliabilityPolicy.RELIABLE,
+       )
+       self.pub_endpoint = self.ros_node.create_publisher(
+           Endpoint, "daemons", qos_profile=qos_profile
+       )
+
     def start(self, port: int, displayed_name: Text = "") -> bool:
+        nmd.ros_node.get_logger().info(
+            f"start websocket server on port {port}")
         if displayed_name:
             self.name = displayed_name
-        port = self.crossbar_port
         # update name if port is not a default one
         self.insecure_port = port
-        if server.port() != port:
+        if ws_port() != port:
             self.name = f"{self.name}_{port}"
-        # self._ws_thread = threading.Thread(
-        #     target=self.websocket_main, daemon=True)
-        # self._ws_thread.start()
-
-        asyncio.run_coroutine_threadsafe(
-            self.websocket_main(), self.crossbar_loop)
-        nmd.ros_node.get_logger().info(
-            f"Connect to crossbar server on port {port}")
         self._endpoint_msg.name = self.name
-        self._crossbarThread = threading.Thread(
-            target=self.run_async_forever, args=(
-                self.crossbar_loop,), daemon=True
-        )
-        self._crossbarThread.start()
-        # self._crossbarNotificationThread = threading.Thread(
-        #     target=self._crossbar_notify_if_regsitered, daemon=True
-        # )
-        # self._crossbarNotificationThread.start()
+        self._endpoint_msg.uri = f"ws://{get_host_name()}:{port}"
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         return True
-
-    async def crossbar_connect(self) -> None:
-        current_task = asyncio.current_task()
-        if not self.crossbar_connecting:
-            task = asyncio.create_task(self.crossbar_connect_async())
-        else:
-            task = current_task
-        await asyncio.gather(task)
-
-    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
 
     def _crossbar_notify_if_regsitered(self):
         registration_finished = False
@@ -236,24 +186,22 @@ class Server:
             registration_finished &= self.monitor_servicer.crossbar_registered
             time.sleep(0.5)
         self.publish_daemon_state(True)
-        self._crossbar_send_status(True)
+        self._ws_send_status(True)
 
-    def _crossbar_send_status(self, status: bool):
+    def _ws_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
-        self.rosstate_servicer.publish_to(
-            "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
         ws_publish_to(
             "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
         if status:
-            if self._timer_crossbar_ready is None:
-                self._timer_crossbar_ready = RepeatTimer(3.0,
-                                                         self._crossbar_send_status, args=(
-                                                             True,))
-                self._timer_crossbar_ready.start()
+            if self._timer_ws_ready is None:
+                self._timer_ws_ready = RepeatTimer(3.0,
+                                                   self._ws_send_status, args=(
+                                                       True,))
+                self._timer_ws_ready.start()
         else:
-            if self._timer_crossbar_ready is not None:
-                self._timer_crossbar_ready.cancel()
-                self._timer_crossbar_ready = None
+            if self._timer_ws_ready is not None:
+                self._timer_ws_ready.cancel()
+                self._timer_ws_ready = None
 
     def publish_daemon_state(self, is_running: bool = True):
         self._endpoint_msg.on_shutdown = not is_running
@@ -269,7 +217,7 @@ class Server:
     def shutdown(self):
         WAIT_TIMEOUT = 3
         self.publish_daemon_state(False)
-        self._crossbar_send_status(False)
+        self._ws_send_status(False)
         self.version_servicer.stop()
         self.screen_servicer.stop()
         self.launch_servicer.stop()
@@ -278,12 +226,12 @@ class Server:
         self.rosstate_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
-        shutdown_task = self.crossbar_loop.create_task(
-            self.crossbar_loop.shutdown_asyncgens()
+        shutdown_task = self.asyncio_loop.create_task(
+            self.asyncio_loop.shutdown_asyncgens()
         )
-        self.rosnode.destroy_publisher(self.pub_endpoint)
+        self.ros_node.destroy_publisher(self.pub_endpoint)
         sleep_time = 0.5
-        while not shutdown_task.done() or self.parameter_servicer.crossbar_connected:
+        while not shutdown_task.done():
             time.sleep(sleep_time)
             sleep_time += 0.5
             if sleep_time > WAIT_TIMEOUT:
@@ -293,7 +241,7 @@ class Server:
         pass
         # self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
 
-    def _rosservice_start_launch(self, request, response):
+    async def _rosservice_start_launch(self, request, response):
         nmd.ros_node.get_logger().info(
             "Service request to load and start %s" % request.path
         )
@@ -313,7 +261,7 @@ class Server:
         # self.launch_servicer.load_launch_file(xml.interpret_path(request.path), True)
         return response
 
-    def _rosservice_load_launch(self, request, response):
+    async def _rosservice_load_launch(self, request, response):
         nmd.ros_node.get_logger().info("Service request to load %s" % request.path)
         params = {
             "ros_package": "",
@@ -330,7 +278,7 @@ class Server:
             raise Exception(result.status.msg)
         return response
 
-    def _rosservice_start_node(self, request, response):
+    async def _rosservice_start_node(self, request, response):
         """
         Callback for the ROS service to start a node.
         """

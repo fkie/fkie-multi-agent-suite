@@ -8,15 +8,9 @@ Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this 
 
 ## Install
 
-The communication between the GUI and the Daemon (on each host) is based on [WAMP](https://wamp-proto.org/). It needs a running [WAMP Router](https://wamp-proto.org/implementations.html#routers). We use crossbar.
+The communication between the GUI and the Daemon (on each host) is based on WebSockets on port 35430+(ROS_DOMAIN_ID), __35685+(NetworkId) with ROS1__. These ports should be open in the firewall.
 
 ### Install dependencies
-
-The code have been tested with `Crossbar v22.2.1`:
-
-```bash
-sudo snap install crossbar
-```
 
 You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
 

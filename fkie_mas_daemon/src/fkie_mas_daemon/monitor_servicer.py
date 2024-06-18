@@ -39,13 +39,13 @@ except ImportError as err:
 
 
 from fkie_mas_daemon.monitor.service import Service
-from fkie_mas_pylib.crossbar.runtime_interface import DiagnosticArray
-from fkie_mas_pylib.crossbar.runtime_interface import DiagnosticStatus
-from fkie_mas_pylib.crossbar.runtime_interface import LoggerConfig
-from fkie_mas_pylib.crossbar.runtime_interface import SystemEnvironment
-from fkie_mas_pylib.crossbar.runtime_interface import SystemInformation
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import DiagnosticArray
+from fkie_mas_pylib.interface.runtime_interface import DiagnosticStatus
+from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
+from fkie_mas_pylib.interface.runtime_interface import SystemEnvironment
+from fkie_mas_pylib.interface.runtime_interface import SystemInformation
+from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
+from fkie_mas_pylib.interface.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.defines import SETTINGS_PATH
@@ -57,7 +57,7 @@ class MonitorServicer(CrossbarBaseSession):
         settings,
         loop: asyncio.AbstractEventLoop,
         realm: str = "ros",
-        port: int = 11911,
+        port: int = 35685,
         test_env=False,
     ):
         Log.info("Create monitor servicer")

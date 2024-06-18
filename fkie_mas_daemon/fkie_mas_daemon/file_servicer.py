@@ -26,39 +26,34 @@ import os
 import re
 
 import asyncio
-from autobahn import wamp
 import json
-from types import SimpleNamespace
 from typing import List
 from fkie_mas_pylib import ros_pkg
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.file_interface import FileItem
-from fkie_mas_pylib.crossbar.file_interface import RosPackage
-from fkie_mas_pylib.crossbar.file_interface import PathItem
-from fkie_mas_pylib.crossbar.file_interface import LogPathItem
-from fkie_mas_pylib.crossbar.file_interface import LogPathClearResult
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.file_interface import FileItem
+from fkie_mas_pylib.interface.file_interface import RosPackage
+from fkie_mas_pylib.interface.file_interface import PathItem
+from fkie_mas_pylib.interface.file_interface import LogPathItem
+from fkie_mas_pylib.interface.file_interface import LogPathClearResult
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system.screen import get_logfile
 from fkie_mas_pylib.system.screen import get_ros_logfile
 from fkie_mas_pylib.websocket import ws_register_method
 
 
-class FileServicer(CrossbarBaseSession):
+class FileServicer:
     FILE_CHUNK_SIZE = 1024
 
-    def __init__(
-        self, loop: asyncio.AbstractEventLoop, realm: str = "ros", port: int = 11911
-    ):
+    def __init__(self, loop: asyncio.AbstractEventLoop):
         Log.info("Create ROS2 file manager servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port)
         # TODO: clear cache after detected change or time?
         self.CB_DIR_CACHE = {}
         ws_register_method("ros.packages.get_list", self.getPackageList)
         ws_register_method("ros.path.get_log_paths", self.getLogPaths)
         ws_register_method("ros.path.clear_log_paths", self.clearLogPaths)
         ws_register_method("ros.path.get_list", self.getPathList)
-        ws_register_method("ros.path.get_list_recursive", self.getPathListRecursive)
+        ws_register_method("ros.path.get_list_recursive",
+                           self.getPathListRecursive)
         ws_register_method("ros.file.get", self.getFileContent)
         ws_register_method("ros.file.save", self.saveFileContent)
 
@@ -66,9 +61,9 @@ class FileServicer(CrossbarBaseSession):
         """ """
         self.shutdown()
 
-    @wamp.register("ros.packages.get_list")
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.packages.get_list]")
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.packages.get_list]")
         clear_cache = False
         if clear_cache:
             try:
@@ -84,11 +79,11 @@ class FileServicer(CrossbarBaseSession):
         # fill the input fields
         ret = ros_pkg.get_packages(None)
         for name, path in ret.items():
-            package = RosPackage(name=name, path=os.path.join(path, "share", name))
+            package = RosPackage(
+                name=name, path=os.path.join(path, "share", name))
             package_list.append(package)
         return json.dumps(package_list, cls=SelfEncoder)
 
-    @wamp.register("ros.path.get_log_paths")
     def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.path.get_log_paths] for {nodes}"
@@ -117,7 +112,6 @@ class FileServicer(CrossbarBaseSession):
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.path.clear_log_paths")
     def clearLogPaths(self, nodes: List[str]) -> List[LogPathClearResult]:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.path.clear_log_paths] for {nodes}"
@@ -158,7 +152,6 @@ class FileServicer(CrossbarBaseSession):
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.path.get_list")
     def getPathList(self, inputPath: str) -> List[PathItem]:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.path.get_list] for {inputPath}"
@@ -244,7 +237,6 @@ class FileServicer(CrossbarBaseSession):
             )
         return path_list
 
-    @wamp.register("ros.path.get_list_recursive")
     def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.path.get_list_recursive] for {inputPath}"
@@ -255,7 +247,6 @@ class FileServicer(CrossbarBaseSession):
 
         return json.dumps(path_list, cls=SelfEncoder)
 
-    @wamp.register("ros.file.get")
     def getFileContent(self, requestPath: str) -> FileItem:
         Log.info("Request to [ros.file.get] for %s" % requestPath)
         with FileIO(requestPath, "r") as outfile:
@@ -272,12 +263,12 @@ class FileServicer(CrossbarBaseSession):
                 FileItem(requestPath, mTime, fSize, content, encoding), cls=SelfEncoder
             )
 
-    @wamp.register("ros.file.save")
     def saveFileContent(self, request_json: FileItem) -> int:
         # Covert input dictionary into a proper python object
-        file = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        file = request_json
+        # file = json.loads(
+        #     json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
+        # )
         Log.info("Request to [ros.file.save] for %s" % file.path)
         with FileIO(file.path, "w+") as outfile:
             content = file.value

@@ -9,7 +9,7 @@ export const getDefaultPortFromRos: (
   if (connectionType === 'crossbar-wamp') {
     return rosVersion === '2' ? 11811 : 11911;
   }
-  return rosVersion === '2' ? 35430 : 35530;
+  return rosVersion === '2' ? 35430 : 35685;
 };
 
 export interface ISettingsContext {

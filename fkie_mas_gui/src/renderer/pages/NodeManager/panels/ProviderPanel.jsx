@@ -168,8 +168,8 @@ function ProviderPanel() {
   const generateStatusView = useCallback(
     (provider) => {
       switch (provider.connectionState) {
-        case ConnectionState.STATES.CROSSBAR_CONNECTED:
-        case ConnectionState.STATES.CROSSBAR_REGISTERED:
+        case ConnectionState.STATES.SERVER_CONNECTED:
+        case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
         case ConnectionState.STATES.CONNECTING:
           return (
             <Stack
@@ -562,8 +562,8 @@ function ProviderPanel() {
                 </TableCell>
                 <TableCell style={{ padding: 0 }}>
                   {![
-                    ConnectionState.STATES.CROSSBAR_CONNECTED,
-                    ConnectionState.STATES.CROSSBAR_REGISTERED,
+                    ConnectionState.STATES.SERVER_CONNECTED,
+                    ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED,
                     ConnectionState.STATES.STARTING,
                     ConnectionState.STATES.CONNECTING,
                     ConnectionState.STATES.CONNECTED,

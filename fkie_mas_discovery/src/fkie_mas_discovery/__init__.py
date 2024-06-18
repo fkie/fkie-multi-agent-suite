@@ -52,7 +52,7 @@ def get_default_rtcp_port(zeroconf=False):
     except:
         import traceback
         print(traceback.format_exc())
-        return 11911 if zeroconf else 11611
+        return 35685 if zeroconf else 11611
 
 
 def set_terminal_name(name):

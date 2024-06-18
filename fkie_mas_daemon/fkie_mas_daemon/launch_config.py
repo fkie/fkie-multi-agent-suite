@@ -52,9 +52,9 @@ from launch.launch_description import LaunchDescription
 import launch_ros
 import composition_interfaces.srv
 
-from fkie_mas_pylib.crossbar.runtime_interface import RosNode
-from fkie_mas_pylib.crossbar.launch_interface import LaunchArgument
-from fkie_mas_pylib.crossbar.launch_interface import LaunchNodeInfo
+from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.launch_interface import LaunchArgument
+from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib import names
 from fkie_mas_pylib import ros_pkg
@@ -726,9 +726,9 @@ class LaunchConfig(object):
     @classmethod
     def get_launch_arguments(cls, filename: str, provided_args: list) -> List[LaunchArgument]:
         '''
-        :param list(fkie_mas_msgs.crossbar.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
+        :param list(fkie_mas_pylib.interface.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
         :return: a list with args being used in the roslaunch file.
-        :rtype: list(fkie_mas_msgs.crossbar.runtime_interface.RosParameter)
+        :rtype: list(fkie_mas_pylib.interface.runtime_interface.RosParameter)
         '''
         context = LaunchContext()
         launch_description = get_launch_description_from_any_launch_file(

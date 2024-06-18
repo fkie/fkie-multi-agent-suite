@@ -31,7 +31,6 @@ from typing import Union
 import os
 import json
 import asyncio
-from autobahn import wamp
 import signal
 import threading
 import time
@@ -39,14 +38,13 @@ import time
 from composition_interfaces.srv import ListNodes
 from composition_interfaces.srv import UnloadNode
 
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import RosProvider
-from fkie_mas_pylib.crossbar.runtime_interface import RosNode
-from fkie_mas_pylib.crossbar.runtime_interface import RosTopic
-from fkie_mas_pylib.crossbar.runtime_interface import RosService
-from fkie_mas_pylib.crossbar.runtime_interface import LoggerConfig
-from fkie_mas_pylib.crossbar.launch_interface import LaunchContent
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import RosProvider
+from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import RosTopic
+from fkie_mas_pylib.interface.runtime_interface import RosService
+from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
+from fkie_mas_pylib.interface.launch_interface import LaunchContent
 from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
 from fkie_mas_pylib.defines import NM_NAMESPACE
 from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
@@ -65,12 +63,10 @@ from fkie_mas_msgs.msg import Endpoint
 import fkie_mas_daemon as nmd
 
 
-class RosStateServicer(CrossbarBaseSession):
+class RosStateServicer:
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = NMD_DEFAULT_PORT, test_env=False):
+    def __init__(self, loop: asyncio.AbstractEventLoop, test_env=False):
         Log.info("Create ros_state servicer")
-        CrossbarBaseSession.__init__(
-            self, loop, realm, port, test_env=test_env)
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
@@ -81,13 +77,15 @@ class RosStateServicer(CrossbarBaseSession):
         self._ts_state_notified = 0
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
-        ws_register_method("ros.provider.get_list", self.crossbar_get_provider_list)
-        ws_register_method("ros.nodes.get_list", self.crossbar_get_node_list)
-        ws_register_method("ros.nodes.get_loggers", self.crossbar_get_loggers)
-        ws_register_method("ros.nodes.set_logger_level", self.crossbar_set_logger_level)
+        self._on_shutdown = False
+        ws_register_method("ros.provider.get_list", self.get_provider_list)
+        ws_register_method("ros.nodes.get_list", self.get_node_list)
+        ws_register_method("ros.nodes.get_loggers", self.get_loggers)
+        ws_register_method("ros.nodes.set_logger_level", self.set_logger_level)
         ws_register_method("ros.nodes.stop_node", self.stop_node)
         ws_register_method("ros.subscriber.stop", self.stop_subscriber)
-        ws_register_method("ros.provider.get_timestamp", self.getProviderTimestamp)
+        ws_register_method("ros.provider.get_timestamp",
+                           self.get_provider_timestamp)
 
     def start(self):
         qos_state_profile = QoSProfile(depth=100,
@@ -120,9 +118,8 @@ class RosStateServicer(CrossbarBaseSession):
             result.append(provider)
         return result
 
-    def _crossbar_publish_masters(self):
+    def _publish_masters(self):
         result = self._endpoints_to_provider(self._endpoints)
-        self.publish_to('ros.provider.list', result)
         ws_publish_to('ros.provider.list', result)
 
     def get_publisher_count(self):
@@ -135,8 +132,8 @@ class RosStateServicer(CrossbarBaseSession):
             if self.topic_state_publisher_count:
                 # check if we have a discovery node
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
-                    self.publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
-                    ws_publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
+                    ws_publish_to('ros.discovery.ready', {
+                                  'status': False, 'timestamp': time.time() * 1000})
                     self.topic_state_publisher_count = 0
                     self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
@@ -144,10 +141,8 @@ class RosStateServicer(CrossbarBaseSession):
             if self._ts_state_updated > self._ts_state_notified:
                 if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                     self._ts_state_notified = self._ts_state_updated
-                    self.publish_to('ros.nodes.changed', {
-                                    "timestamp": self._ts_state_updated})
                     ws_publish_to('ros.nodes.changed', {
-                                    "timestamp": self._ts_state_updated})
+                        "timestamp": self._ts_state_updated})
                     nmd.launcher.server.screen_servicer.system_change()
             time.sleep(1.0 / self._rate_check_discovery_node)
 
@@ -162,8 +157,8 @@ class RosStateServicer(CrossbarBaseSession):
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
-        self.publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
-        ws_publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
+        ws_publish_to('ros.discovery.ready', {
+                      'status': False, 'timestamp': time.time() * 1000})
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''
@@ -172,7 +167,6 @@ class RosStateServicer(CrossbarBaseSession):
         :type msg: fkie_mas_msgs.DiscoveredState<XXX>
         '''
         if not self.topic_state_publisher_count:
-            self.publish_to('ros.discovery.ready', {'status': True})
             ws_publish_to('ros.discovery.ready', {'status': True})
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
@@ -183,7 +177,7 @@ class RosStateServicer(CrossbarBaseSession):
             new_ros_state[guid] = participant
         self._ros_state = new_ros_state
         self._ros_node_list = None
-        # notify crossbar clients, but not to often
+        # notify WebSocket clients, but not to often
         # notifications are sent from _check_discovery_node()
         self._ts_state_updated = time.time()
 
@@ -210,35 +204,30 @@ class RosStateServicer(CrossbarBaseSession):
             is_new = True
         if is_new:
             self._endpoints[msg.uri] = msg
-            self._crossbar_publish_masters()
+            self._publish_masters()
 
-    @wamp.register('ros.provider.get_list')
-    def crossbar_get_provider_list(self) -> str:
+    def get_provider_list(self) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.get_list')
-    def crossbar_get_node_list(self, forceRefresh: bool = True) -> str:
+    def get_node_list(self, forceRefresh: bool = True) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
         node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
 
         return json.dumps(node_list, cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.get_loggers')
-    def crossbar_get_loggers(self, name: str) -> str:
+    def get_loggers(self, name: str) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', not implemented")
         loggerConfigs: List[LoggerConfig] = []
         return json.dumps({'result': False, 'logger': loggerConfigs, 'message': 'not implemented'}, cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.set_logger_level')
-    def crossbar_set_logger_level(self, name: str, logger: List[LoggerConfig]) -> str:
+    def set_logger_level(self, name: str, logger: List[LoggerConfig]) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}', not implemented")
         return json.dumps({'result': False, 'message': 'not implemented'}, cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.stop_node')
     def stop_node(self, name: str) -> bool:
         Log.info(f"{self.__class__.__name__}: Request to stop node '{name}'")
         node: RosNode = self.get_ros_node(name)
@@ -258,18 +247,17 @@ class RosStateServicer(CrossbarBaseSession):
                 {'result': True, 'message': ''}, cls=SelfEncoder)
         nmd.launcher.server.screen_servicer.system_change()
         if node is not None:
-            nmd.launcher.server.launch_servicer.node_stopped(os.path.join(node.namespace, node.name))
+            nmd.launcher.server.launch_servicer.node_stopped(
+                os.path.join(node.namespace, node.name))
         return result
 
-    @wamp.register('ros.subscriber.stop')
     def stop_subscriber(self, topic_name: str) -> bool:
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
         ns, name = ros2_subscriber_nodename_tuple(topic_name)
         return self.stop_node(os.path.join(ns, name))
 
-    @wamp.register('ros.provider.get_timestamp')
-    def getProviderTimestamp(self, timestamp) -> str:
+    def get_provider_timestamp(self, timestamp) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
@@ -326,7 +314,7 @@ class RosStateServicer(CrossbarBaseSession):
         # self._ros_node_list is cleared on updates in _on_msg_state()
         # otherwise we use a cached list
         if self._ros_node_list is None or forceRefresh:
-            self._ros_node_list = self.to_crossbar()
+            self._ros_node_list = self.node_list_to_json()
         return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
@@ -378,13 +366,13 @@ class RosStateServicer(CrossbarBaseSession):
                 break
         return cls.get_message_type(result)
 
-    def to_crossbar(self) -> List[RosNode]:
+    def node_list_to_json(self) -> List[RosNode]:
         node_dict = {}
         topic_by_id = {}
         topic_objs = {}
         service_by_id = {}
         service_objs = {}
-        Log.debug(f"{self.__class__.__name__}: create graph for crossbar")
+        Log.debug(f"{self.__class__.__name__}: create graph for websocket")
 
         def _get_node_from(node_ns, node_name, node_guid):
             key = (node_ns, node_name, node_guid)

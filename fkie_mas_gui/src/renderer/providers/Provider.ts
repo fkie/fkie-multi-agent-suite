@@ -344,6 +344,7 @@ export default class Provider {
           this.getPackageList();
           this.updateScreens(null);
           // this.launchGetList();
+          this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
           return true;
         }
         return false;
@@ -377,12 +378,12 @@ export default class Provider {
         oldState === ConnectionState.STATES.STARTING
       ) {
         delay(3000);
-      } else if (state === ConnectionState.STATES.CROSSBAR_CONNECTED) {
+      } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
         this.registerCallbacks()
           .then(() => {
             if (this.isAvailable()) {
               this.setConnectionState(
-                ConnectionState.STATES.CROSSBAR_REGISTERED,
+                ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED,
                 '',
               );
               return true;
@@ -392,7 +393,7 @@ export default class Provider {
           .catch((error) => {
             this.setConnectionState(ConnectionState.STATES.ERRORED, error);
           });
-      } else if (state === ConnectionState.STATES.CROSSBAR_REGISTERED) {
+      } else if (state === ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED) {
         // wait until daemon.ready received
         // backup for backward compatibility => call updateDaemonInit
         this.updateDaemonInit();
@@ -2618,7 +2619,7 @@ export default class Provider {
     // connected state is set after all crossbar connections are registered
     this.daemon = false;
     this.discovery = false;
-    this.setConnectionState(ConnectionState.STATES.CROSSBAR_CONNECTED, '');
+    this.setConnectionState(ConnectionState.STATES.SERVER_CONNECTED, '');
   };
 
   /*

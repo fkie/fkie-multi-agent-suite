@@ -60,12 +60,12 @@ from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import RosNode
-from fkie_mas_pylib.crossbar.runtime_interface import ScreensMapping
-from fkie_mas_pylib.crossbar.runtime_interface import SystemWarning
-from fkie_mas_pylib.crossbar.runtime_interface import SystemWarningGroup
+from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
+from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
+from fkie_mas_pylib.interface.runtime_interface import SystemWarning
+from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system import ros1_masteruri
 
@@ -251,7 +251,7 @@ class MasterMonitor(CrossbarBaseSession):
 
         self.provider_list = []
         self.crossbar_realm = "ros"
-        self.crossbar_port = 11911
+        self.crossbar_port = 35685
         if rpcport != 22622:
             # TODO: Put "300" in a constant global value to prevent inconsistencies
             self.crossbar_port = rpcport + 300

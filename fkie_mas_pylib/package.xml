@@ -14,7 +14,6 @@
 
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-catkin-pkg</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-catkin-pkg</depend>
-  <depend condition="$ROS_VERSION == 2 or $ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
   <depend condition="$ROS_VERSION == 1">rospy</depend>
   <depend condition="$ROS_VERSION == 2">rclpy</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-ruamel.yaml</depend>
