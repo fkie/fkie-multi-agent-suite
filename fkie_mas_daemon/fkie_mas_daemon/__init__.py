@@ -40,11 +40,9 @@ launcher: RosNodeLauncher = None
 def main():
     global launcher
     launcher = RosNodeLauncher()
-    print("START")
     launcher.spin()
 
 def subscriber():
     global launcher
     launcher = RosSubscriberLauncher()
-    print("START2")
     launcher.spin()

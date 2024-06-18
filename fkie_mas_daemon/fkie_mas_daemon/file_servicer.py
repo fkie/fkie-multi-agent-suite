@@ -59,7 +59,7 @@ class FileServicer:
 
     def stop(self):
         """ """
-        self.shutdown()
+        pass
 
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         Log.info(

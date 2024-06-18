@@ -46,15 +46,15 @@ class QueueItem:
 class WebSocketHandler:
 
     def __init__(self, websocket: websockets.WebSocketServerProtocol, path: str, asyncio_loop: asyncio.AbstractEventLoop):
+        print(f"CREATE {websocket.origin}")
         self.websocket = websocket
         self.path = path
         self._shutdown = False
         self.asyncio_loop = asyncio_loop
         self.queue = asyncio.Queue()
-        # global WS_CONNECTIONS
         globals.WS_CONNECTIONS.add(self)
         self.subscriptions = set()
-        self.asyncio_loop.create_task(self.spin())
+
         self.asyncio_loop.create_task(self._broadcast_handler())
 
     def shutdown(self):
@@ -62,10 +62,7 @@ class WebSocketHandler:
 
     async def spin(self):
         try:
-            print("handler started")
-            import traceback
-            for line in traceback.format_stack():
-                print(line.strip())
+            print(f"handler started {self.websocket}")
             async for message in self.websocket:
                 try:
                     print(message)
@@ -85,7 +82,6 @@ class WebSocketHandler:
                         continue
                     if hasattr(msg, 'id'):
                         # handle rpc calls
-                        # global WS_REGISTRATIONS
                         if msg.uri == 'sub':
                             # create subscription
                             Log.info(
@@ -126,7 +122,7 @@ class WebSocketHandler:
                     elif hasattr(msg, 'message'):
                         print(f"publish to {msg.uri}: {msg.message}")
                         ws_publish_to(msg.uri, msg.message)
-                    await asyncio.sleep(0)
+                    # await asyncio.sleep(0)
                 except Exception as error:
                     import traceback
                     print(traceback.format_exc())
@@ -159,7 +155,6 @@ class WebSocketHandler:
             print(f"ERRORRR {error}")
         if error is None:
             reply = f'{{"id": {id}, "result": {result}}}'
-            print(f"  reply: {reply}")
         else:
             reply = f'{{"id": {id}, "error": {error}}}'
             print(f"  error: ${error}")
@@ -171,22 +166,16 @@ class WebSocketHandler:
             print(f"  {uri} add")
             self.queue.put_nowait(QueueItem(f'{{"uri": "{uri}", "message": {message}}}', priority=1))
 
-    # async def _broadcast_task(self) -> None:
-    #     task = asyncio.create_task(self._broadcast_handler())
-    #     await asyncio.gather(task)
-
     async def _broadcast_handler(self):
         print(f"***** broadcast START")
         try:
             while not self._shutdown:
                 try:
                     print(f"***** broadcast get")
-                    # Implement custom logic based on queue.qsize() and
+                    # TODO Implement custom logic based on queue.qsize() and
                     # websocket.transport.get_write_buffer_size() here.
                     item = await self.queue.get()
-                    print(f"PUBLISH message: {item.data}")
                     await self.websocket.send(item.data)
-                    await asyncio.sleep(0)
                 except Exception:
                     import traceback
                     print(traceback.format_exc())

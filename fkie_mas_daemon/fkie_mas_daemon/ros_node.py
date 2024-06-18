@@ -122,6 +122,7 @@ class RosNodeLauncher(object):
             pass
             # import traceback
             # print(traceback.format_exc())
+        self.asyncio_loop.stop()
         print('bye!')
 
     def _run_tests(self):

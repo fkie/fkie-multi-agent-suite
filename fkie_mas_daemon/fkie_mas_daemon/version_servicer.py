@@ -40,7 +40,7 @@ class VersionServicer:
         ws_register_method("ros.daemon.get_version", self.get_version)
 
     def stop(self):
-        self.shutdown()
+        pass
 
     def get_version(self) -> DaemonVersion:
         Log.info(f"{self.__class__.__name__}: get daemon version ")

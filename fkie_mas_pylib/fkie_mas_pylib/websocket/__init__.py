@@ -16,7 +16,6 @@ def ws_publish_to(uri: str, message: str) -> bool:
     if not isinstance(message, str):
         message = json.dumps(message, cls=SelfEncoder)
     for con in globals.WS_CONNECTIONS:
-        print(f"  add to queue")
         con.publish(uri, message)
 
 
@@ -28,7 +27,7 @@ def ws_port() -> int:
         o = urlparse(muri)
         port = o.port
         if o.scheme == 'http':
-            port += 600
+            port += 24374
         return port
     else:
         # use defaults for ROS2

@@ -137,13 +137,13 @@ class LaunchServicer(LoggingEventHandler):
     '''
     '''
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, ros_domain_id=-1):
+    def __init__(self, loop: asyncio.AbstractEventLoop, ws_port: int):
         Log.info("Create ROS2 launch servicer")
         LoggingEventHandler.__init__(self)
         self._watchdog_observer = Observer()
         self.__launch_context = LaunchContext(argv=sys.argv[1:])
         self.__launch_context._set_asyncio_loop(asyncio.get_event_loop())
-        self.ros_domain_id = ros_domain_id
+        self.ws_port = ws_port
         self.xml_validator = LaunchValidator()
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
         self._real_paths = {}  # link <-> real path; real path <-> real path
@@ -185,7 +185,6 @@ class LaunchServicer(LoggingEventHandler):
         Stop watchdog and cancel the autostart of the nodes.
         '''
         self._is_running = False
-        self.shutdown()
         self._watchdog_observer.stop()
 
     def on_any_event(self, event: FileSystemEvent):
@@ -989,7 +988,7 @@ class LaunchServicer(LoggingEventHandler):
         # args = [f"__name:={fullname}"]
         # args.append(f'--name={fullname}')
         args = []
-        args.append(f'--ws_port={self.port}')
+        args.append(f'--ws_port={self.ws_port}')
         args.append(f'--topic={topic}')
         args.append(f'--message_type={request.message_type}')
         if request.filter.no_data:

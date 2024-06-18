@@ -88,7 +88,7 @@ class Server:
         self.parameter_servicer = ParameterServicer(self.asyncio_loop)
         self.launch_servicer = LaunchServicer(
             self.asyncio_loop,
-            ros_domain_id=self.ros_domain_id,
+            ws_port=self.ws_port,
         )
         self.version_servicer = VersionServicer(self.asyncio_loop)
 
@@ -102,8 +102,6 @@ class Server:
             on_shutdown=False,
             pid=os.getpid(),
         )
-        self.asyncio_loop.create_task(self.ros_register())
-        self.asyncio_loop.create_task(self.websocket_main())
         self._ws_thread = None
 
     def __del__(self):
@@ -170,6 +168,8 @@ class Server:
             self.name = f"{self.name}_{port}"
         self._endpoint_msg.name = self.name
         self._endpoint_msg.uri = f"ws://{get_host_name()}:{port}"
+        self.asyncio_loop.create_task(self.ros_register())
+        self.asyncio_loop.create_task(self.websocket_main(port))
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         return True
@@ -226,16 +226,16 @@ class Server:
         self.rosstate_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
-        shutdown_task = self.asyncio_loop.create_task(
-            self.asyncio_loop.shutdown_asyncgens()
-        )
+        # shutdown_task = self.asyncio_loop.create_task(
+        #     self.asyncio_loop.shutdown_asyncgens()
+        # )
         self.ros_node.destroy_publisher(self.pub_endpoint)
-        sleep_time = 0.5
-        while not shutdown_task.done():
-            time.sleep(sleep_time)
-            sleep_time += 0.5
-            if sleep_time > WAIT_TIMEOUT:
-                break
+        # sleep_time = 0.5
+        # while not shutdown_task.done():
+        #     time.sleep(sleep_time)
+        #     sleep_time += 0.5
+        #     if sleep_time > WAIT_TIMEOUT:
+        #         break
 
     def load_launch_file(self, path, autostart=False):
         pass

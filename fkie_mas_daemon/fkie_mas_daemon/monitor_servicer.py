@@ -56,7 +56,6 @@ class MonitorServicer:
 
     def stop(self):
         self._monitor.stop()
-        self.shutdown()
 
     def getSystemInfo(self) -> SystemInformation:
         Log.info("request: get system info")
