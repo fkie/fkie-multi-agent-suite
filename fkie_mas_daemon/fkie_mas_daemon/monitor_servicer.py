@@ -41,7 +41,7 @@ from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.defines import SETTINGS_PATH
-from fkie_mas_pylib.websocket import register_ws_method
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 
 
 class MonitorServicer(CrossbarBaseSession):
@@ -51,12 +51,13 @@ class MonitorServicer(CrossbarBaseSession):
         Log.info("Create monitor servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._monitor = Service(settings, self.diagnosticsCbPublisher)
-        register_ws_method("ros.provider.get_system_info", self.getSystemInfo)
-        register_ws_method("ros.provider.get_system_env", self.getSystemEnv)
-        register_ws_method("ros.provider.get_warnings", self.getProviderWarnings)
-        register_ws_method("ros.provider.get_diagnostics", self.getDiagnostics)
-        register_ws_method("ros.provider.ros_clean_purge", self.rosCleanPurge)
-        register_ws_method("ros.provider.shutdown", self.rosShutdown)
+        ws_register_method("ros.provider.get_system_info", self.getSystemInfo)
+        ws_register_method("ros.provider.get_system_env", self.getSystemEnv)
+        ws_register_method("ros.provider.get_warnings",
+                           self.getProviderWarnings)
+        ws_register_method("ros.provider.get_diagnostics", self.getDiagnostics)
+        ws_register_method("ros.provider.ros_clean_purge", self.rosCleanPurge)
+        ws_register_method("ros.provider.shutdown", self.rosShutdown)
 
     def stop(self):
         self._monitor.stop()
@@ -99,6 +100,8 @@ class MonitorServicer(CrossbarBaseSession):
             "ros.provider.diagnostics",
             json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder),
         )
+        ws_publish_to("ros.provider.diagnostics",
+                      json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder),)
 
     @wamp.register("ros.provider.get_diagnostics")
     def getDiagnostics(self) -> DiagnosticArray:

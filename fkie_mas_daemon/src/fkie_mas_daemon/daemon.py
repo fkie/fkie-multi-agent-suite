@@ -38,6 +38,7 @@ from fkie_mas_pylib.crossbar import server
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.timer import RepeatTimer
+from fkie_mas_pylib.websocket import ws_publish_to
 from fkie_mas_daemon.version import detect_version
 
 
@@ -131,7 +132,7 @@ class MASDaemon:
 
         # Log.info(f"Connect to crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}")
         self._crossbarThread = threading.Thread(
-            target=self.run_crossbar_forever, args=(
+            target=self.run_async_forever, args=(
                 self.crossbar_loop,), daemon=True
         )
         self._crossbarThread.start()
@@ -140,7 +141,7 @@ class MASDaemon:
         )
         self._crossbarNotificationThread.start()
 
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
@@ -159,6 +160,7 @@ class MASDaemon:
     def _crossbar_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
         self.launch_servicer.publish_to("ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
+        ws_publish_to("ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
         if status:
             if self._timer_crossbar_ready is None:
                 self._timer_crossbar_ready = RepeatTimer(3.0,

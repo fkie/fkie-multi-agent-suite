@@ -33,15 +33,19 @@ from importlib import import_module
 from types import SimpleNamespace
 from typing import Optional
 
+import asyncio
+from websockets.sync.client import connect
+
 import rclpy
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.crossbar.runtime_interface import SubscriberEvent
 from fkie_mas_pylib.crossbar.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
+from fkie_mas_pylib.websocket.client import WebSocketClient
 
 import fkie_mas_daemon as nmd
 from fkie_mas_pylib.logging.logging import Log
@@ -59,7 +63,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-class RosSubscriberLauncher(CrossbarBaseSession):
+class RosSubscriberLauncher:
     '''
     Launches the ROS node to forward a topic subscription.
     '''
@@ -87,8 +91,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         # NM_NAMESPACE
         self.rosnode = rclpy.create_node(self.name, namespace=self.namespace)
 
-        self.executor = MultiThreadedExecutor(num_threads=3)
-        self.executor.add_node(self.rosnode)
+        # self.executor = MultiThreadedExecutor(num_threads=3)
+        # self.executor.add_node(self.rosnode)
 
         self._topic = parsed_args.topic
         self._message_type = parsed_args.message_type
@@ -103,6 +107,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         self._tcp_no_delay = parsed_args.tcp_no_delay
         self._crossbar_port = parsed_args.crossbar_port
         self._crossbar_realm = parsed_args.crossbar_realm
+        self._parsed_args = parsed_args
 
         self._send_ts = 0
         self._latched_messages = []
@@ -133,29 +138,50 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                 f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
 
         self.__msg_class = sub_class
-        self.crossbar_loop = asyncio.get_event_loop()
-        CrossbarBaseSession.__init__(
-            self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
-        self._crossbarThread = threading.Thread(
-            target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
-        self._crossbarThread.start()
+        self.async_loop = asyncio.get_event_loop()
+        self.async_loop.create_task(self.ros_loop())
+        # CrossbarBaseSession.__init__(
+        #     self, self.async_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
+        # self._crossbarThread = threading.Thread(
+        #     target=self.run_async_forever, args=(self.async_loop,), daemon=True)
+        # self._crossbarThread.start()
+        self.wsClient = WebSocketClient(
+            35430 + self.ros_domain_id, self.async_loop)
         # qos_state_profile = QoSProfile(depth=100,
         #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
         #                                # reliability=QoSReliabilityPolicy.RELIABLE)
         #                                )
-        qos_state_profile = self.choose_qos(parsed_args, self._topic)
         self.rosnode.get_logger().info(
             f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
-        self.sub = nmd.ros_node.create_subscription(
-            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
-        self.subscribe_to(
+        # self.subscribe_to(
+        #     f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
+        self.wsClient.subscribe(
             f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
+        try:
+            qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
+            self.sub = nmd.ros_node.create_subscription(
+                self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        except Exception:
+            import traceback
+            print(f"BBBB {traceback.format_exc()}")
+        # self.async_loop.create_task(self.subscribe())
 
     def __del__(self):
         self.stop()
 
+    async def subscribe(self):
+        qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
+        self.sub = nmd.ros_node.create_subscription(
+            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+
+    async def ros_loop(self):
+        while rclpy.ok():
+            rclpy.spin_once(self.rosnode, timeout_sec=0)
+            await asyncio.sleep(1e-4)
+
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
+
     def profile_configure_short_keys(self,
                                      profile: rclpy.qos.QoSProfile = None, reliability: Optional[str] = None,
                                      durability: Optional[str] = None, depth: Optional[int] = None, history: Optional[str] = None,
@@ -262,7 +288,10 @@ class RosSubscriberLauncher(CrossbarBaseSession):
 
     def spin(self):
         try:
-            self.executor.spin()
+            print("create task")
+            # self.async_loop.create_task(self.executor.spin)
+            print("create run")
+            self.async_loop.run_forever()
             # rclpy.spin(self.rosnode)
         except KeyboardInterrupt:
             pass
@@ -275,10 +304,10 @@ class RosSubscriberLauncher(CrossbarBaseSession):
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-        self.sub.destroy()
         print('shutdown rclpy')
-        self.executor.shutdown()
-        # rclpy.shutdown()
+        # self.executor.shutdown()
+        self.sub.destroy()
+        rclpy.shutdown()
         print('bye!')
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
@@ -363,14 +392,14 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         return parser
 
     def stop(self):
-        if hasattr(self, 'crossbar_loop'):
-            self.crossbar_loop.stop()
+        if hasattr(self, 'async_loop'):
+            self.async_loop.stop()
 
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
-    def _msg_handle(self, data):
+    async def _msg_handle(self, data):
         self._count_received += 1
         self._latched = False
         # self._latched = data._connection_header['latching'] != '0'
@@ -394,8 +423,10 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                 self._send_ts = now
                 timeouted = True
         if event.latched or timeouted:
-            self.publish_to(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
+            # self.publish_to(
+            #     f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
+            self.wsClient.publish(
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), resend_after_connect=self._latched)
 
     def _get_message_size(self, msg):
         # print("size:", msg.__sizeof__())
@@ -473,8 +504,11 @@ class RosSubscriberLauncher(CrossbarBaseSession):
 
     def _clb_update_filter(self, json_filter: SubscriberFilter):
         # Convert filter settings into a proper python object
-        request = json.loads(json.dumps(json_filter),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(json_filter),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = json_filter
         Log.info(f"update filter for {self._topic}[{self._message_type}]")
         self._no_data = request.no_data
         self._no_arr = request.no_arr

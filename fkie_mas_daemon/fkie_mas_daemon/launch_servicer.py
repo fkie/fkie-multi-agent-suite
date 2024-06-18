@@ -78,7 +78,7 @@ from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import is_local
 from fkie_mas_pylib.system.url import equal_uri
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
-from fkie_mas_pylib.websocket import register_ws_method
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
@@ -150,8 +150,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self.ros_domain_id = ros_domain_id
         self.xml_validator = LaunchValidator()
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
-        self._real_paths = {} # link <-> real path; real path <-> real path
-        self._node_exec = {} # node name <-> executable path
+        self._real_paths = {}  # link <-> real path; real path <-> real path
+        self._node_exec = {}  # node name <-> executable path
         self._included_files = []
         self._included_dirs = []
         self._is_running = True
@@ -159,20 +159,20 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self._loaded_files: Dict[CfgId, LaunchConfig] = dict()
         self._observed_launch_files: Dict[str, List[str]] = {}
         self._watchdog_observer.start()
-        register_ws_method("ros.launch.load", self.load_launch)
-        register_ws_method("ros.launch.reload", self.reload_launch)
-        register_ws_method("ros.launch.unload", self.unload_launch)
-        register_ws_method("ros.launch.get_list", self.get_list)
-        register_ws_method("ros.launch.start_node", self.start_node)
-        register_ws_method("ros.launch.start_nodes", self.start_nodes)
-        register_ws_method("ros.launch.get_included_files",
+        ws_register_method("ros.launch.load", self.load_launch)
+        ws_register_method("ros.launch.reload", self.reload_launch)
+        ws_register_method("ros.launch.unload", self.unload_launch)
+        ws_register_method("ros.launch.get_list", self.get_list)
+        ws_register_method("ros.launch.start_node", self.start_node)
+        ws_register_method("ros.launch.start_nodes", self.start_nodes)
+        ws_register_method("ros.launch.get_included_files",
                            self.get_included_files)
-        register_ws_method("ros.launch.interpret_path", self.interpret_path)
-        register_ws_method("ros.launch.get_msg_struct", self.get_msg_struct)
-        register_ws_method("ros.launch.publish_message", self.publish_message)
-        register_ws_method("ros.launch.get_srv_struct", self.get_srv_struct)
-        register_ws_method("ros.launch.call_service", self.call_service)
-        register_ws_method("ros.subscriber.start", self.start_subscriber)
+        ws_register_method("ros.launch.interpret_path", self.interpret_path)
+        ws_register_method("ros.launch.get_msg_struct", self.get_msg_struct)
+        ws_register_method("ros.launch.publish_message", self.publish_message)
+        ws_register_method("ros.launch.get_srv_struct", self.get_srv_struct)
+        ws_register_method("ros.launch.call_service", self.call_service)
+        ws_register_method("ros.subscriber.start", self.start_subscriber)
 
     def _terminated(self):
         Log.info(f"{self.__class__.__name__}: terminated launch context")
@@ -209,6 +209,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             Log.debug(
                 f"{self.__class__.__name__}: observed change {event.event_type} on {event.src_path}, reported path: {path}")
             self.publish_to('ros.path.changed', change_event)
+            ws_publish_to('ros.path.changed', change_event)
 
     def _add_file_to_observe(self, path: str):
         real_path = os.path.realpath(path)
@@ -338,7 +339,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         # Covert input dictionary into a proper python object
         try:
             request = json.loads(json.dumps(request_json),
-                                object_hook=lambda d: SimpleNamespace(**d))
+                                 object_hook=lambda d: SimpleNamespace(**d))
         except:
             request = request_json
 
@@ -419,6 +420,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
             # notify changes to crossbar GUI
             self.publish_to('ros.launch.changed', {})
+            ws_publish_to('ros.launch.changed', {})
             self._add_launch_to_observer(launch_config)
             Log.debug(f"{self.__class__.__name__}: ..load complete!")
         except Exception as e:
@@ -432,6 +434,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.status.msg = err_details
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.status.code = 'OK'
+        return result
         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     @wamp.register('ros.launch.reload')
@@ -443,8 +446,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
 
         daemonuri = ''
         if hasattr(request, 'masteruri'):
@@ -471,6 +477,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # TODO: added change detection for nodes parameters
                 # notify changes to crossbar GUI
                 self.publish_to('ros.launch.changed', {})
+                ws_publish_to('ros.launch.changed', {})
                 self._add_launch_to_observer(launch_config)
             except Exception as e:
                 old_launch.load()
@@ -493,8 +500,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.unload]")
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
 
         Log.debug(
             f"{self.__class__.__name__}: UnloadLaunch request:\n {request}")
@@ -512,6 +522,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
                 # notify changes to crossbar GUI
                 self.publish_to('ros.launch.changed', {})
+                ws_publish_to('ros.launch.changed', {})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)
@@ -583,8 +594,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             f"{self.__class__.__name__}: Request to [ros.launch.start_node]")
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
 
         result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
 
@@ -663,8 +677,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     @wamp.register('ros.launch.get_included_files')
     def get_included_files(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
         path = request.path
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{path}]")
@@ -706,8 +723,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     @wamp.register('ros.launch.interpret_path')
     def interpret_path(self, request_json: LaunchInterpretPathRequest) -> List[LaunchInterpretPathReply]:
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
         text = request.text
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.launch.interpret_path]: {text}")
@@ -881,8 +901,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     def publish_message(self, request_json: LaunchPublishMessage) -> None:
         try:
             # Convert input dictionary into a proper python object
-            request = json.loads(json.dumps(request_json),
-                                 object_hook=lambda d: SimpleNamespace(**d))
+            try:
+                request = json.loads(json.dumps(request_json),
+                                     object_hook=lambda d: SimpleNamespace(**d))
+            except:
+                request = request_json
             Log.debug(
                 f"{self.__class__.__name__}: Request to [ros.launch.publish_message]: msg [{request.msg_type}]")
             opt_str = ''
@@ -952,8 +975,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         # Convert input dictionary into a proper python object
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.launch.call_service]: {request_json}")
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
         result = LaunchMessageStruct(request.srv_type)
         try:
             splitted_type = request.srv_type.replace('/', '.').split('.')
@@ -1003,8 +1029,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     @wamp.register('ros.subscriber.start')
     def start_subscriber(self, request_json: SubscriberNode) -> bool:
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            request = json.loads(json.dumps(request_json),
+                                object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            request = request_json
         topic = request.topic
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.subscriber.start]: {topic}")

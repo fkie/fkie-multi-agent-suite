@@ -56,7 +56,7 @@ from fkie_mas_pylib.names import ns_join
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import get_hostname
 from fkie_mas_pylib.system.url import get_port
-from fkie_mas_pylib.websocket import register_ws_method
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_msgs.msg import DiscoveredState
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
@@ -81,13 +81,13 @@ class RosStateServicer(CrossbarBaseSession):
         self._ts_state_notified = 0
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
-        register_ws_method("ros.provider.get_list", self.crossbar_get_provider_list)
-        register_ws_method("ros.nodes.get_list", self.crossbar_get_node_list)
-        register_ws_method("ros.nodes.get_loggers", self.crossbar_get_loggers)
-        register_ws_method("ros.nodes.set_logger_level", self.crossbar_set_logger_level)
-        register_ws_method("ros.nodes.stop_node", self.stop_node)
-        register_ws_method("ros.subscriber.stop", self.stop_subscriber)
-        register_ws_method("ros.provider.get_timestamp", self.getProviderTimestamp)
+        ws_register_method("ros.provider.get_list", self.crossbar_get_provider_list)
+        ws_register_method("ros.nodes.get_list", self.crossbar_get_node_list)
+        ws_register_method("ros.nodes.get_loggers", self.crossbar_get_loggers)
+        ws_register_method("ros.nodes.set_logger_level", self.crossbar_set_logger_level)
+        ws_register_method("ros.nodes.stop_node", self.stop_node)
+        ws_register_method("ros.subscriber.stop", self.stop_subscriber)
+        ws_register_method("ros.provider.get_timestamp", self.getProviderTimestamp)
 
     def start(self):
         qos_state_profile = QoSProfile(depth=100,
@@ -123,6 +123,7 @@ class RosStateServicer(CrossbarBaseSession):
     def _crossbar_publish_masters(self):
         result = self._endpoints_to_provider(self._endpoints)
         self.publish_to('ros.provider.list', result)
+        ws_publish_to('ros.provider.list', result)
 
     def get_publisher_count(self):
         if hasattr(self, 'topic_name_endpoint') and self.topic_name_endpoint is not None:
@@ -135,6 +136,7 @@ class RosStateServicer(CrossbarBaseSession):
                 # check if we have a discovery node
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
                     self.publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
+                    ws_publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
                     self.topic_state_publisher_count = 0
                     self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
@@ -143,6 +145,8 @@ class RosStateServicer(CrossbarBaseSession):
                 if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                     self._ts_state_notified = self._ts_state_updated
                     self.publish_to('ros.nodes.changed', {
+                                    "timestamp": self._ts_state_updated})
+                    ws_publish_to('ros.nodes.changed', {
                                     "timestamp": self._ts_state_updated})
                     nmd.launcher.server.screen_servicer.system_change()
             time.sleep(1.0 / self._rate_check_discovery_node)
@@ -159,6 +163,7 @@ class RosStateServicer(CrossbarBaseSession):
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
         self.publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
+        ws_publish_to('ros.discovery.ready', {'status': False, 'timestamp': time.time() * 1000})
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''
@@ -168,6 +173,7 @@ class RosStateServicer(CrossbarBaseSession):
         '''
         if not self.topic_state_publisher_count:
             self.publish_to('ros.discovery.ready', {'status': True})
+            ws_publish_to('ros.discovery.ready', {'status': True})
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
         # update the participant info (IP addresses)

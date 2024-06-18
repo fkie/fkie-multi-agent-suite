@@ -1,0 +1,3 @@
+
+WS_CONNECTIONS = set()
+WS_REGISTRATIONS = {}

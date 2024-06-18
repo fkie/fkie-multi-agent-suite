@@ -9,6 +9,7 @@ from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.parameters.ros2_parameters import ROS2Parameters
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 import fkie_mas_daemon as nmd
 
 
@@ -19,8 +20,14 @@ class ParameterServicer(CrossbarBaseSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11811, test_env=False) -> None:
         Log.info("Create ROS2 parameter servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
+        CrossbarBaseSession.__init__(
+            self, loop, realm, port, test_env=test_env)
         self._handler = ROS2Parameters(nmd.ros_node)
+        ws_register_method("ros.parameters.get_list", self.getParameterList)
+        ws_register_method("ros.parameters.get_node_parameters", self.getNodeParameters)
+        ws_register_method("ros.parameters.has_parameter", self.hasParameter)
+        ws_register_method("ros.parameters.set_parameter", self.setParameter)
+        ws_register_method("ros.parameters.delete_parameters", self.deleteParameters)
 
     def stop(self):
         self.shutdown()
@@ -63,8 +70,11 @@ class ParameterServicer(CrossbarBaseSession):
         '''
         Set the value of a parameter
         '''
-        parameter = json.loads(json.dumps(_parameter),
-                               object_hook=lambda d: SimpleNamespace(**d))
+        try:
+            parameter = json.loads(json.dumps(_parameter),
+                                   object_hook=lambda d: SimpleNamespace(**d))
+        except:
+            parameter = _parameter
         Log.info(
             f'ros.parameters.set_parameter: [{parameter.name}] to {parameter.value}')
         result = None

@@ -1762,7 +1762,12 @@ export default class Provider {
     if (hasTopic) {
       this.echoTopics = this.echoTopics.filter((e) => e !== topic);
       const cbTopic = this.generateCrossbarTopic(topic);
-      await this.connection.closeSubscription(cbTopic);
+      await this.connection.closeSubscription(cbTopic).catch((err) => {
+        this.logger?.error(
+          `Provider [${this.name()}]: close subscription failed`,
+          `${err}`,
+        );
+      });
     }
     const result = await this.makeCall(URI.ROS_SUBSCRIBER_STOP, [topic], true)
       .catch((err) => {
@@ -2556,7 +2561,7 @@ export default class Provider {
           .call(_uri, _args)
           .catch((err) => {
             // TODO
-            console.log(`ERROR cc ${err}`);
+            console.log(`ERROR cc ${JSON.stringify(err)}`);
             throw Error(err);
           });
         return r;

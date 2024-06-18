@@ -128,7 +128,7 @@ class SubscriberNode(CrossbarBaseSession):
             CrossbarBaseSession.__init__(
                 self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
             self._crossbarThread = threading.Thread(
-                target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+                target=self.run_async_forever, args=(self.crossbar_loop,), daemon=True)
             self._crossbarThread.start()
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
@@ -145,7 +145,7 @@ class SubscriberNode(CrossbarBaseSession):
         if hasattr(self, 'crossbar_loop'):
             self.crossbar_loop.stop()
 
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 

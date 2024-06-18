@@ -52,7 +52,8 @@ from fkie_mas_pylib.system.host import get_host_name
 from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.websocket import WebSocketHandler
+from fkie_mas_pylib.websocket import ws_publish_to
+from fkie_mas_pylib.websocket.handler import WebSocketHandler
 import fkie_mas_daemon as nmd
 
 from fkie_mas_daemon.file_servicer import FileServicer
@@ -135,6 +136,7 @@ class Server:
             on_shutdown=False,
             pid=os.getpid(),
         )
+        self._ws_thread = None
 
     def __del__(self):
         self.crossbar_loop.stop()
@@ -163,7 +165,12 @@ class Server:
         nmd.ros_node.get_logger().info(
             f"Open Websocket on port {port}")
         try:
+            # with websockets.serve(self.ws_handler, "0.0.0.0", port) as server:
+            #     while rclpy.ok():
+            #         time.sleep(1)
+            #     server.serve_forever()
             async with websockets.serve(self.ws_handler, "0.0.0.0", port):
+                # await asyncio.Future()
                 while rclpy.ok():
                     await asyncio.sleep(1)
                 # try:
@@ -183,6 +190,9 @@ class Server:
         self.insecure_port = port
         if server.port() != port:
             self.name = f"{self.name}_{port}"
+        # self._ws_thread = threading.Thread(
+        #     target=self.websocket_main, daemon=True)
+        # self._ws_thread.start()
 
         asyncio.run_coroutine_threadsafe(
             self.websocket_main(), self.crossbar_loop)
@@ -190,14 +200,14 @@ class Server:
             f"Connect to crossbar server on port {port}")
         self._endpoint_msg.name = self.name
         self._crossbarThread = threading.Thread(
-            target=self.run_crossbar_forever, args=(
+            target=self.run_async_forever, args=(
                 self.crossbar_loop,), daemon=True
         )
         self._crossbarThread.start()
-        self._crossbarNotificationThread = threading.Thread(
-            target=self._crossbar_notify_if_regsitered, daemon=True
-        )
-        self._crossbarNotificationThread.start()
+        # self._crossbarNotificationThread = threading.Thread(
+        #     target=self._crossbar_notify_if_regsitered, daemon=True
+        # )
+        # self._crossbarNotificationThread.start()
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         return True
@@ -210,7 +220,7 @@ class Server:
             task = current_task
         await asyncio.gather(task)
 
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
@@ -231,6 +241,8 @@ class Server:
     def _crossbar_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
         self.rosstate_servicer.publish_to(
+            "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
+        ws_publish_to(
             "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
         if status:
             if self._timer_crossbar_ready is None:

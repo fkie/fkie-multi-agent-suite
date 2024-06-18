@@ -569,26 +569,6 @@ export function RosProviderReact(
     [getProviderById, launchFile],
   );
 
-  /**
-   * Forces an update on the provider list for all connected provider.
-   */
-  const refreshProviderList = useDebounceCallback(() => {
-    // remove discoverd provider
-    const newProviders = providers.filter((prov) => {
-      return prov.discovered === undefined;
-    });
-    setProviders(newProviders);
-    try {
-      newProviders.forEach((provider) => {
-        provider.updateProviderList();
-        provider.getDaemonVersion();
-      });
-    } catch (error: any) {
-      // ignore errors while refresh
-      logCtx.debug(`refreshProviderList failed`, JSON.stringify(error), false);
-    }
-  }, debounceTimeout);
-
   /** Connects to the given provider and add it to the list. */
   const connectToProvider: (prov: Provider) => Promise<boolean> = useCallback(
     async (prov) => {
@@ -658,6 +638,37 @@ export function RosProviderReact(
       setProvidersAddQueue,
     ],
   );
+
+  /**
+   * Forces an update on the provider list for all connected provider.
+   */
+  const refreshProviderList = useDebounceCallback(() => {
+    // remove discoverd provider
+    const newProviders = providers.filter((prov) => {
+      return prov.discovered === undefined;
+    });
+    setProviders(newProviders);
+    newProviders.forEach((provider) => {
+      try {
+        provider.updateProviderList();
+        provider.getDaemonVersion().catch((err) => {
+          logCtx.debug(
+            `refreshProvider ${provider.name()} failed`,
+            JSON.stringify(err),
+            false,
+          );
+          connectToProvider(provider);
+        });
+      } catch (error: any) {
+        // ignore errors while refresh
+        logCtx.debug(
+          `refreshProviderList failed`,
+          JSON.stringify(error),
+          false,
+        );
+      }
+    });
+  }, debounceTimeout);
 
   const startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean> =
     useCallback(

@@ -32,6 +32,7 @@ from typing import Union
 from numbers import Number
 
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
+from .base_session import SelfEncoder
 from .runtime_interface import RosParameter
 
 
@@ -83,6 +84,7 @@ class LaunchLoadReply:
         self.changed_nodes = changed_nodes
 
     def __str__(self):
+        return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
         return json.dumps(dict(self), ensure_ascii=False)
 
 
@@ -95,6 +97,7 @@ class LaunchFile:
         self.host = host
 
     def __str__(self):
+        return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
         return json.dumps(dict(self), ensure_ascii=False)
 
 

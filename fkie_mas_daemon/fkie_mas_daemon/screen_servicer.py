@@ -35,7 +35,7 @@ from fkie_mas_pylib.crossbar.base_session import SelfEncoder
 from fkie_mas_pylib.crossbar.runtime_interface import ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.websocket import register_ws_method
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 import fkie_mas_daemon as nmd
 
 
@@ -53,8 +53,8 @@ class ScreenServicer(CrossbarBaseSession):
         self._screens_set = set()
         self._screen_nodes_set = set()
         self._sceen_crossbar_msg: List[ScreensMapping] = []
-        register_ws_method("ros.screen.kill_node", self.kill_node)
-        register_ws_method("ros.screen.get_list", self.get_screen_list)
+        ws_register_method("ros.screen.kill_node", self.kill_node)
+        ws_register_method("ros.screen.get_list", self.get_screen_list)
 
     def start(self):
         self._screen_thread = threading.Thread(
@@ -104,6 +104,7 @@ class ScreenServicer(CrossbarBaseSession):
                     Log.debug(
                         f"{self.__class__.__name__}: publish ros.screen.list with {len(crossbar_msg)} nodes.")
                     self.publish_to('ros.screen.list', crossbar_msg)
+                    ws_publish_to('ros.screen.list', crossbar_msg)
                     self._screen_crossbar_msg = crossbar_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
@@ -134,11 +135,13 @@ class ScreenServicer(CrossbarBaseSession):
                     nodeName = os.path.basename(name)
                     if cmdStr.find(f"__node:={nodeName}") > -1:
                         successCur = True
-                        Log.info(f"{self.__class__.__name__}: Kill process '{nPid}', cmd: {cmdStr}")
+                        Log.info(
+                            f"{self.__class__.__name__}: Kill process '{nPid}', cmd: {cmdStr}")
                         os.kill(nPid, sig)
                         break
             if not successCur:
-                Log.info(f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid}'")
+                Log.info(
+                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid}'")
                 os.kill(pid, signal.SIGKILL)
                 successCur = True
             if successCur:

@@ -98,8 +98,8 @@ export default class WebsocketConnection extends ProviderConnection {
       return Promise.resolve(false);
     });
     this.websocket.addEventListener('message', (event: MessageEvent) => {
-      // logCtx.debug(`received from ${this.websocket?.url}`, `${event.data.toString()}`);
-      this.handleMessage(event.data.toString());
+      console.info(`received from ${this.websocket?.url}: ${event.data}`);
+      this.handleMessage(event.data);
     });
     const start = Date.now();
     const waitForConnection = (
@@ -240,7 +240,9 @@ export default class WebsocketConnection extends ProviderConnection {
 
   handleMessage: (msg: string) => void = (msg) => {
     try {
+      console.log(`handle msg: ${msg}`);
       const message = JSON.parse(msg);
+      console.log(`parsed msg: ${JSON.stringify(message)}`);
       if ('id' in message) {
         // object with "id" means the response for an rpc request
         if (!this.queue[message.id]) {
@@ -266,7 +268,8 @@ export default class WebsocketConnection extends ProviderConnection {
             message: message.error,
           });
         } else {
-          this.queue[message.id].promise[0](JSON.parse(message.result));
+          console.log(`OK ${JSON.stringify(message.result)}`);
+          this.queue[message.id].promise[0](message.result);
         }
 
         delete this.queue[message.id];
@@ -274,13 +277,13 @@ export default class WebsocketConnection extends ProviderConnection {
         // handle subscriptions
         const cbSub = this.subscriptions[message.uri];
         if (cbSub) {
-          cbSub(JSON.parse(message.result));
+          cbSub(message.message);
         }
       }
     } catch (error) {
       this.logger?.warn(
         `[${this.uri}] error while handle received message: ${error}`,
-        '',
+        `${JSON.stringify(msg)}`,
         false,
       );
     }

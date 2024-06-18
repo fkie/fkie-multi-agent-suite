@@ -261,7 +261,7 @@ class MasterMonitor(CrossbarBaseSession):
         if connect_crossbar:
             self.crossbar_loop = asyncio.get_event_loop()
             self._crossbarThread = threading.Thread(
-                target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+                target=self.run_async_forever, args=(self.crossbar_loop,), daemon=True)
             self._crossbarThread.start()
             CrossbarBaseSession.__init__(
                 self, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
@@ -1159,7 +1159,7 @@ class MasterMonitor(CrossbarBaseSession):
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
 
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
         print("run_forever_exited")
