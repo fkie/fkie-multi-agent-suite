@@ -150,7 +150,7 @@ class MasterMonitor:
 
     INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr='', connect_server=False, ws_port=35685):
+    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr='', connect_server=False, server_port=35685):
         '''
         Initialize method. Creates an XML-RPC server on given port and starts this
         in its own thread.
@@ -251,18 +251,18 @@ class MasterMonitor:
 
         self.provider_list = []
         self.ws_port = ws_port()
-        if ws_port != self.ws_port:
-            self.ws_port = ws_port
+        if server_port != self.ws_port:
+            self.ws_port = server_port
 
         # Start websocket server only if requested
         self.connect_server = connect_server
         if connect_server:
             self.asyncio_loop = asyncio.get_event_loop()
-            self.asyncio_loop.create_task(self.ros_loop())
+            # self.asyncio_loop.create_task(self.ros_loop())
             # self.asyncio_loop.create_task(self.subscribe())
             self.wsClient = WebSocketClient(self.ws_port, self.asyncio_loop)
             self._wsThread = threading.Thread(
-                target=self.asyncio_loop.run_async_forever, daemon=True)
+                target=self.asyncio_loop.run_forever, daemon=True)
             self._wsThread.start()
             ws_register_method("ros.screen.get_list", self.getScreenList)
             ws_register_method("ros.provider.get_list", self.getProviderList)
