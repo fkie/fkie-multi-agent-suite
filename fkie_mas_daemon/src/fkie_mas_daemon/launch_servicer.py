@@ -28,7 +28,6 @@ import roslib.msgs
 import roslib.names
 import roslib.packages
 import rospkg
-import ruamel.yaml
 import shlex
 import subprocess
 import threading
@@ -37,7 +36,6 @@ import traceback
 import json
 from types import SimpleNamespace
 import asyncio
-from autobahn import wamp
 
 from typing import List
 from watchdog.observers import Observer
@@ -55,8 +53,7 @@ from .startcfg import StartConfig
 from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
-from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
-from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
 from fkie_mas_pylib.interface.launch_interface import LaunchCallService
 from fkie_mas_pylib.interface.launch_interface import LaunchFile
@@ -81,6 +78,7 @@ from fkie_mas_pylib.system import exceptions
 from fkie_mas_pylib.system import ros1_masteruri
 from fkie_mas_pylib.system.url import equal_uri
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 
 from fkie_mas_msgs.msg import LinkStatesStamped
 
@@ -137,24 +135,20 @@ class CfgId(object):
         return False
 
 
-class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
+class LaunchServicer(LoggingEventHandler):
     """
     """
 
     def __init__(
         self,
         monitor_servicer,
-        loop: asyncio.AbstractEventLoop,
-        realm: str = "ros",
-        port: int = 35685,
         test_env=False,
     ):
         Log.info("Create launch manger servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         LoggingEventHandler.__init__(self)
         self._watchdog_observer = Observer()
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
-        self._real_paths = {} # link <-> real path; real path <-> real path
+        self._real_paths = {}  # link <-> real path; real path <-> real path
         self._included_files = []
         self._included_dirs = []
         self._launch_includes = {}
@@ -163,6 +157,20 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
         self._monitor_servicer = monitor_servicer
         self._watchdog_observer.start()
+        ws_register_method("ros.launch.load", self.load_launch)
+        ws_register_method("ros.launch.reload", self.reload_launch)
+        ws_register_method("ros.launch.unload", self.unload_launch)
+        ws_register_method("ros.launch.get_list", self.get_list)
+        ws_register_method("ros.launch.start_node", self.start_node)
+        ws_register_method("ros.launch.start_nodes", self.start_nodes)
+        ws_register_method("ros.launch.get_included_files",
+                           self.get_included_files)
+        ws_register_method("ros.launch.interpret_path", self.interpret_path)
+        ws_register_method("ros.launch.get_msg_struct", self.get_msg_struct)
+        ws_register_method("ros.launch.publish_message", self.publish_message)
+        ws_register_method("ros.launch.get_srv_struct", self.get_srv_struct)
+        ws_register_method("ros.launch.call_service", self.call_service)
+        ws_register_method("ros.subscriber.start", self.start_subscriber)
 
     def _terminated(self):
         Log.info("terminated launch context")
@@ -179,7 +187,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         """
         global IS_RUNNING
         IS_RUNNING = False
-        self.shutdown()
         self._watchdog_observer.stop()
 
     def on_any_event(self, event: FileSystemEvent):
@@ -198,8 +205,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 "srcPath": path,
                 "affected": affected_launch_files,
             }
-            Log.debug("observed change %s on %s, reported path: %s" % (event.event_type, event.src_path, path))
-            self.publish_to("ros.path.changed", change_event)
+            Log.debug("observed change %s on %s, reported path: %s" %
+                      (event.event_type, event.src_path, path))
+            ws_publish_to('ros.path.changed', change_event)
 
     def load_launch_file(self, path, autostart=False):
         """
@@ -212,14 +220,16 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         :param str path: the absolute path of the launch file
         :param bool autostart: True to start all nodes after the launch file was loaded.
         """
-        launch_config = LaunchConfig(path, monitor_servicer=self._monitor_servicer)
+        launch_config = LaunchConfig(
+            path, monitor_servicer=self._monitor_servicer)
         loaded, res_argv = launch_config.load([])
         if loaded:
             Log.debug("loaded %s\n  used args: %s" % (path, utf8(res_argv)))
             self._loaded_files[CfgId(path, "")] = launch_config
             if autostart:
                 start_thread = threading.Thread(
-                    target=self._autostart_nodes_threaded, args=(launch_config,)
+                    target=self._autostart_nodes_threaded, args=(
+                        launch_config,)
                 )
                 start_thread.start()
         else:
@@ -253,7 +263,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             try:
                 if self._get_start_exclude(cfg, node_fullname):
                     # skip autostart
-                    Log.debug("%s is in exclude list, skip autostart", node_fullname)
+                    Log.debug(
+                        "%s is in exclude list, skip autostart", node_fullname)
                     continue
                 self._autostart_node(node_fullname, cfg)
             except Exception as err:
@@ -327,7 +338,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     )
                     topic = ""
                 elif not rosgraph.names.is_global(topic):
-                    topic = rospy.names.ns_join(rosgraph.names.namespace(node), topic)
+                    topic = rospy.names.ns_join(
+                        rosgraph.names.namespace(node), topic)
         except Exception:
             pass
         return topic
@@ -360,7 +372,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             if directory not in self._included_dirs:
                 if directory in self._observed_dirs:
                     Log.debug("remove directory from observer: %s" % directory)
-                    self._watchdog_observer.unschedule(self._observed_dirs[directory])
+                    self._watchdog_observer.unschedule(
+                        self._observed_dirs[directory])
                     del self._observed_dirs[directory]
         except ValueError:
             pass
@@ -403,18 +416,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         except Exception as e:
             Log.error("_add_launch_to_observer %s:\n%s" % (str(path), e))
 
-    @wamp.register("ros.launch.load")
     def load_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
         """
-        Loads launch file by crossbar request
+        Loads launch file by request
         """
         Log.debug("Request to [ros.launch.load]")
         result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
 
         # Covert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
 
         launchfile = request.path
         Log.debug(
@@ -469,7 +479,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         # it is already loaded?
         if (launchfile, request.masteruri) in list(self._loaded_files.keys()):
             result.status.code = "ALREADY_OPEN"
-            result.status.msg = utf8("Launch file %s already loaded!" % (launchfile))
+            result.status.msg = utf8(
+                "Launch file %s already loaded!" % (launchfile))
             Log.debug("..load aborted, ALREADY_OPEN")
             return json.dumps(result, cls=SelfEncoder)
 
@@ -527,13 +538,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     )
                 else:
                     result.args.append(
-                        LaunchArgument(name=name, value=None, default_value=value)
+                        LaunchArgument(name=name, value=None,
+                                       default_value=value)
                     )
-            self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
+            self._loaded_files[CfgId(
+                launchfile, request.masteruri)] = launch_config
             Log.debug("..load complete!")
 
-            # notify changes to crossbar GUI
-            self.publish_to("ros.launch.changed", {})
+            # notify GUI about changes
+            ws_publish_to('ros.launch.changed', {})
             self._add_launch_to_observer(launchfile)
         except Exception as e:
             err_text = "%s loading failed!" % launchfile
@@ -545,18 +558,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         result.status.code = "OK"
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.reload")
     def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
         """
-        Reloads launch file by crossbar request
+        Reloads launch file by request
         """
         Log.debug("Request to [ros.launch.reload]")
         result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
 
         # Covert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
 
         Log.debug(
             "Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s"
@@ -629,15 +639,16 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                                     or n.remap_args != new_n.remap_args
                                 ):
                                     nodes2start.add(
-                                        roslib.names.ns_join(n.namespace, n.name)
+                                        roslib.names.ns_join(
+                                            n.namespace, n.name)
                                     )
                     # filter out anonymous nodes
                     for n in nodes2start:
                         if not re.search(r"\d{3,6}_\d{10,}", n):
                             result.changed_nodes.append(n)
 
-                # notify changes to crossbar GUI
-                self.publish_to("ros.launch.changed", {})
+                # notify GUI about changes
+                ws_publish_to('ros.launch.changed', {})
                 self._add_launch_to_observer(request.path)
             except Exception as e:
                 print(traceback.format_exc())
@@ -653,14 +664,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             return json.dumps(result, cls=SelfEncoder)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.unload")
     def unload_launch(self, request_json: LaunchFile) -> LaunchLoadReply:
         Log.debug("Request to [ros.launch.unload]")
 
         # Covert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
 
         Log.debug("UnloadLaunch request:\n%s" % str(request))
         result = LaunchLoadReply(paths=[], changed_nodes=[], args=[])
@@ -673,8 +681,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 del self._loaded_files[cfgid]
                 result.status.code = "OK"
 
-                # notify changes to crossbar GUI
-                self.publish_to("ros.launch.changed", {})
+                # notify GUI about changes
+                ws_publish_to('ros.launch.changed', {})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -685,7 +693,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.status.code = "FILE_NOT_FOUND"
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.get_list")
     def get_list(self) -> List[LaunchContent]:
         Log.debug("Request to [ros.launch.get_list]")
         requested_files = list(self._loaded_files.keys())
@@ -719,7 +726,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 with open(item.filename, "r") as launch_file:
                     for line_number, line_text in enumerate(launch_file):
                         if f'name="{item.launch_name}"' in line_text:
-                            lines_with_node_name.append([line_number + 1, line_text])
+                            lines_with_node_name.append(
+                                [line_number + 1, line_text])
 
                 line_number = -1
                 start_column = 0
@@ -742,7 +750,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     ]
 
                 if len(line_text) > 0:
-                    start_column = line_text.index(f'name="{item.launch_name}"') + 7
+                    start_column = line_text.index(
+                        f'name="{item.launch_name}"') + 7
                     end_column = start_column + len(item.launch_name)
 
                 # range in text where the node appears
@@ -802,16 +811,19 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     splits = re.split(r"[;,\s]\s*", line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(item.namespace, split))
+                        values.append(roslib.names.ns_join(
+                            item.namespace, split))
                     associations[node_fullname] = values
                 # DEPRECATED 'associations'
-                associations_param = roslib.names.ns_join(node_fullname, "associations")
+                associations_param = roslib.names.ns_join(
+                    node_fullname, "associations")
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r"[;,\s]\s*", line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(item.namespace, split))
+                        values.append(roslib.names.ns_join(
+                            item.namespace, split))
                     associations[node_fullname] = values
             for node, ass in associations.items():
                 assmsg = LaunchAssociations(node=node, nodes=ass)
@@ -820,14 +832,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
         return json.dumps(reply, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.start_node")
     def start_node(self, request_json: LaunchNode) -> LaunchNodeReply:
         Log.debug("Request to [ros.launch.start_node]")
 
         # Covert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
 
         result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
 
@@ -854,7 +863,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 result.status.msg = (
                     "Node '%s' found in multiple launch files" % request.name
                 )
-                result.launch_files.extend([lcfg.filename for lcfg in launch_configs])
+                result.launch_files.extend(
+                    [lcfg.filename for lcfg in launch_configs])
                 return json.dumps(result, cls=SelfEncoder)
             try:
                 result.launch_files.append(launch_configs[0].filename)
@@ -897,7 +907,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         finally:
             return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.start_nodes")
     def start_nodes(
         self, request_json: List[LaunchNode], continue_on_error: bool = True
     ) -> List[LaunchNodeReply]:
@@ -913,16 +922,14 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.get_included_files")
     def get_included_files(
         self, request_json: LaunchIncludedFilesRequest
     ) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
         path = request.path
-        Log.debug("Request to [ros.launch.get_included_files]: Path [%s]" % str(path))
+        Log.debug(
+            "Request to [ros.launch.get_included_files]: Path [%s]" % str(path))
         result = []
         try:
             search_in_ext = SEARCH_IN_EXT
@@ -971,7 +978,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             )
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.get_msg_struct")
     def get_msg_struct(self, msg_type: str) -> LaunchMessageStruct:
         Log.info(f"Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
         result = LaunchMessageStruct(msg_type)
@@ -997,7 +1003,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.get_srv_struct")
     def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
         Log.info(f"Request to [ros.launch.get_srv_struct]: msg [{srv_type}]")
         result = LaunchMessageStruct(srv_type)
@@ -1027,12 +1032,14 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     def _dict_from_slots(cls, slots, types, values={}):
         result = []
         for slot, msg_type in zip(slots, types):
-            base_type, is_array, _array_length = roslib.msgs.parse_type(msg_type)
+            base_type, is_array, _array_length = roslib.msgs.parse_type(
+                msg_type)
             if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in [
                 "time",
                 "duration",
             ]:
-                default_value = "now" if base_type in ["time", "duration"] else ""
+                default_value = "now" if base_type in [
+                    "time", "duration"] else ""
                 if slot in values and values[slot]:
                     default_value = values[slot]
                 result.append(
@@ -1046,7 +1053,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 )
             else:
                 try:
-                    list_msg_class = roslib.message.get_message_class(base_type)
+                    list_msg_class = roslib.message.get_message_class(
+                        base_type)
                     if is_array and slot in values:
                         subresult = []
                         for slot_value in values[slot]:
@@ -1082,7 +1090,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                         )
                 except ValueError as e:
                     print(traceback.format_exc())
-                    Log.warn(f"Error while parse message type '{msg_type}': {e}")
+                    Log.warn(
+                        f"Error while parse message type '{msg_type}': {e}")
                     raise ValueError(
                         f"Error while parse message type '{msg_type}': {e}"
                     )
@@ -1103,7 +1112,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
     def _pubstr_from_dict(self, param_dict):
         result = dict()
-        fields = param_dict if isinstance(param_dict, list) else param_dict["def"]
+        fields = param_dict if isinstance(
+            param_dict, list) else param_dict["def"]
         for field in fields:
             if not field["def"]:
                 # simple types
@@ -1124,7 +1134,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # it is a complex field type
                 if "value" in field:
                     for array_element in field["value"]:
-                        result_array.append(self._pubstr_from_dict(array_element))
+                        result_array.append(
+                            self._pubstr_from_dict(array_element))
                 # append created array
                 if result_array:
                     result[field["name"]] = result_array
@@ -1134,13 +1145,10 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     result[field["name"]] = subresult
         return result
 
-    @wamp.register("ros.launch.publish_message")
     def publish_message(self, request_json: LaunchPublishMessage) -> None:
         try:
             # Convert input dictionary into a proper python object
-            request = json.loads(
-                json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-            )
+            request = request_json
             Log.debug(
                 f"Request to [ros.launch.publish_message]: msg [{request.msg_type}]"
             )
@@ -1172,13 +1180,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
             print(traceback.format_exc())
 
-    @wamp.register("ros.launch.call_service")
     def call_service(self, request_json: LaunchCallService) -> None:
         # Convert input dictionary into a proper python object
-        Log.debug(f"Request to [ros.launch.call_service]: msg [{request_json}]")
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        Log.debug(
+            f"Request to [ros.launch.call_service]: msg [{request_json}]")
+        request = request_json
         result = LaunchMessageStruct(request.srv_type)
         try:
             service_class = roslib.message.get_service_class(request.srv_type)
@@ -1222,14 +1228,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.launch.interpret_path")
     def interpret_path(
         self, request_json: LaunchInterpretPathRequest
     ) -> List[LaunchInterpretPathReply]:
         # Covert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
         text = request.text
         Log.debug("Request to [ros.launch.interpret_path]: %s" % str(text))
         args = {arg.name: arg.value for arg in request.args}
@@ -1256,7 +1259,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                             for arg_name in args_in_name:
                                 if arg_name in args:
                                     req_args.append(
-                                        LaunchArgument(arg_name, args[arg_name])
+                                        LaunchArgument(
+                                            arg_name, args[arg_name])
                                     )
                                 else:
                                     req_args.append(LaunchArgument(arg_name))
@@ -1289,19 +1293,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.append(reply)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.subscriber.start")
     def start_subscriber(self, request_json: SubscriberNode) -> bool:
         # Covert input dictionary into a proper python object
-        request = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        request = request_json
         topic = request.topic
         Log.debug("Request to [ros.subscriber.start]: %s" % str(topic))
         startcfg = StartConfig("fkie_mas_daemon", "mas-subscriber")
         startcfg.fullname = f"/mas_subscriber/{topic.strip('/')}"
         startcfg.args = [f"__name:={startcfg.fullname}"]
-        startcfg.args.append(f"--crossbar_port={self.port}")
-        startcfg.args.append(f"--crossbar_realm={self.realm}")
+        startcfg.args.append(f"--ws_port={self.port}")
         startcfg.args.append(f"--topic={topic}")
         startcfg.args.append(f"--message_type={request.message_type}")
         if request.filter.no_data:

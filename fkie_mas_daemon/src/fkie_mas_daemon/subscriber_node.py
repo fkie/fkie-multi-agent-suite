@@ -34,11 +34,11 @@ from types import SimpleNamespace
 
 import rospy
 from roslib import message
-from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
-from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
 from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.client import WebSocketClient
 
 
 def str2bool(v):
@@ -64,14 +64,14 @@ class MsgEncoder(json.JSONEncoder):
     def default(self, obj):
         result = {}
         if isinstance(obj, bytes):
-            #obj_bytes = [byte for byte in obj]
+            # obj_bytes = [byte for byte in obj]
             obj_bytes = []
             for byte in obj:
                 if len(obj_bytes) >= 10:
                     break
                 obj_bytes.append(byte)
-            result = ', '.join(map(str,obj_bytes))
-            result = result + f'...(of {len(obj)} values)' 
+            result = ', '.join(map(str, obj_bytes))
+            result = result + f'...(of {len(obj)} values)'
         else:
             for key in obj.__slots__:
                 skip = False
@@ -86,7 +86,7 @@ class MsgEncoder(json.JSONEncoder):
         return result
 
 
-class SubscriberNode(CrossbarBaseSession):
+class SubscriberNode:
 
     DEFAULT_WINDOWS_SIZE = 100
 
@@ -107,8 +107,7 @@ class SubscriberNode(CrossbarBaseSession):
         if self._window == 0:
             self._window = self.DEFAULT_WINDOWS_SIZE
         self._tcp_no_delay = parsed_args.tcp_no_delay
-        self._crossbar_port = parsed_args.crossbar_port
-        self._crossbar_realm = parsed_args.crossbar_realm
+        self._ws_port = parsed_args.ws_port
         self._first_msg_ts = 0
 
         self._send_ts = 0
@@ -124,12 +123,16 @@ class SubscriberNode(CrossbarBaseSession):
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
         self.__msg_class = message.get_message_class(self._message_type)
         if self.__msg_class:
-            self.crossbar_loop = asyncio.get_event_loop()
-            CrossbarBaseSession.__init__(
-                self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
-            self._crossbarThread = threading.Thread(
-                target=self.run_async_forever, args=(self.crossbar_loop,), daemon=True)
-            self._crossbarThread.start()
+            self.asyncio_loop = asyncio.get_event_loop()
+            self.asyncio_loop.create_task(self.ros_loop())
+            # self.asyncio_loop.create_task(self.subscribe())
+            self.wsClient = WebSocketClient(self._port, self.asyncio_loop)
+            self.wsClient.subscribe(
+                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
+
+            self._wsThread = threading.Thread(
+                target=self.asyncio_loop.run_async_forever, daemon=True)
+            self._wsThread.start()
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
             self.subscribe_to(
@@ -142,19 +145,13 @@ class SubscriberNode(CrossbarBaseSession):
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'crossbar_loop'):
-            self.crossbar_loop.stop()
-
-    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
+        if hasattr(self, 'asyncio_loop'):
+            self.asyncio_loop.stop()
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--crossbar_port', nargs='?', type=int,
-                            required=True,  help='port for crossbar server')
-        parser.add_argument('--crossbar_realm', nargs='?', type=str,
-                            default='ros',  help='realm crossbar server')
+        parser.add_argument('--ws_port', nargs='?', type=int,
+                            required=True,  help='port for websocket server')
         parser.add_argument('-t', '--topic', nargs='?', required=True,
                             help="Name of the ROS topic to listen to (e.g. '/chatter')")
         parser.add_argument("-m", "--message_type", nargs='?', required=True,
@@ -200,8 +197,8 @@ class SubscriberNode(CrossbarBaseSession):
                 self._send_ts = now
                 timeouted = True
         if (event.latched and time.time() - self._first_msg_ts < 2.0) or timeouted:
-            self.publish_to(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
+            self.wsClient.publish(
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), resend_after_connect=self._latched)
 
     def _get_message_size(self, msg):
         buff = None

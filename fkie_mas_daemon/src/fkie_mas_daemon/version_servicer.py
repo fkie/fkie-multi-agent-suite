@@ -20,32 +20,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import asyncio
-from autobahn import wamp
 import json
-from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
-from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import DaemonVersion
 from . import version
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket import ws_register_method
 
 
-class VersionServicer(CrossbarBaseSession):
+class VersionServicer:
     def __init__(
         self,
-        loop: asyncio.AbstractEventLoop,
-        realm: str = "ros",
-        port: int = 35685,
         test_env=False,
     ):
         Log.info("Create version servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._version, self._date = version.detect_version("fkie_mas_daemon")
+        ws_register_method("ros.daemon.get_version", self.get_version)
 
     def stop(self):
-        self.shutdown()
+        pass
 
-    @wamp.register("ros.daemon.get_version")
     def get_version(self) -> DaemonVersion:
         Log.info(f"{self.__class__.__name__}: get daemon version ")
         reply = DaemonVersion(self._version, self._date)

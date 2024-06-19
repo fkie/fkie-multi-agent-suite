@@ -31,7 +31,7 @@ import traceback
 import rospy
 
 from .daemon import MASDaemon
-from fkie_mas_pylib.crossbar import server
+from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.system.screen import test_screen
 from fkie_mas_pylib.logging.logging import Log
 from .subscriber_node import SubscriberNode
@@ -76,7 +76,7 @@ def init_arg_parser():
                                                            " statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;"
                                                            " comma separated for multiple files")
     parser.add_argument('--port', nargs='?', type=int,
-                            default=server.port(),  help='change port for crossbar server')
+                            default=ws_port(),  help='change port for websocket server')
     return parser
 
 
@@ -130,7 +130,7 @@ def start_server(node_name='mas_daemon'):
 
 def create_subscriber(node_name='mas_subscriber'):
     '''
-    Creates a subscriber to forward received messages to crossbar server.
+    Creates a subscriber to forward received messages to websocket server.
     '''
     # setup the loglevel
     log_level = rospy.DEBUG

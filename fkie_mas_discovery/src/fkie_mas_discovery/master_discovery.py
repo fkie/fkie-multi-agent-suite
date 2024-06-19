@@ -548,7 +548,7 @@ class Discoverer(object):
         # this parameter stores the state of the remote nodes. If the state is changed
         # the cache for contacts of remote nodes will be cleared.
         self._changed = False
-        self._crossbar_reported_masters = set()
+        self._json_reported_masters = set()
         self._last_datetime = time.time()
         self.ROSMASTER_HZ = rospy.get_param(
             '~rosmaster_hz', Discoverer.ROSMASTER_HZ)
@@ -629,7 +629,7 @@ class Discoverer(object):
         mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
         is_ip6 = self._is_ipv6_group(mgroup)
         self.master_monitor = MasterMonitor(
-            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_crossbar=True)
+            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True)
         # create timer to check for ros master changes
         self._timer_ros_changes = threading.Timer(
             0.1, self.checkROSMaster_loop)
@@ -711,7 +711,7 @@ class Discoverer(object):
                               self.master_monitor.rpcport, -1, -1)
             self._publish_current_state(msg=msg)
             self.masters.clear()
-            self._crossbar_publish_masters()
+            self._json_publish_masters()
             # finish the RPC server and timer
             self.master_monitor.shutdown()
             time.sleep(0.2)
@@ -927,7 +927,7 @@ class Discoverer(object):
                 self._rem_address(r[0][0])
                 del self.masters[r]
             if to_remove:
-                self._crossbar_publish_masters()
+                self._json_publish_masters()
 
     def _recv_loop_from_queue(self):
         while not self.do_finish:
@@ -998,7 +998,7 @@ class Discoverer(object):
                                     address[0], monitor_port, master.masteruri))
                                 self._rem_address(address[0])
                                 del self.masters[master_key]
-                                self._crossbar_publish_masters()
+                                self._json_publish_masters()
                         elif master_key in self.masters:
                             # update the timestamp of existing master
                             Log.debug(
@@ -1032,9 +1032,9 @@ class Discoverer(object):
                 except Exception as e:
                     Log.warn("Error while decode message: %s", str(e))
 
-    def _crossbar_publish_masters(self):
+    def _json_publish_masters(self):
         try:
-            crossbar_reported_masters = set()
+            json_reported_masters = set()
             result = []
             for (addr, port), master in self.masters.items():
                 # TODO: Check provider port
@@ -1048,10 +1048,10 @@ class Discoverer(object):
                                            hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
                     cbmaster.ros_domain_id = self.mcast_port - 11511
                     result.append(cbmaster)
-                    crossbar_reported_masters.add(master.masteruri)
-            if not (crossbar_reported_masters == self._crossbar_reported_masters):
+                    json_reported_masters.add(master.masteruri)
+            if not (json_reported_masters == self._json_reported_masters):
                 self.master_monitor.setProviderList(result)
-                self._crossbar_reported_masters = crossbar_reported_masters
+                self._json_reported_masters = json_reported_masters
         except Exception as cpe:
             import traceback
             Log.warn(traceback.format_exc())
@@ -1161,7 +1161,7 @@ class Discoverer(object):
                     rospy.Service('~refresh', std_srvs.srv.Empty,
                                   self.rosservice_refresh)
                 if master_state.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
-                    self._crossbar_publish_masters()
+                    self._json_publish_masters()
             except:
                 traceback.print_exc()
 
@@ -1182,16 +1182,16 @@ class Discoverer(object):
 
     def update_master_errors(self):
         result = []
-        crossbar_w_ip_mismatch = SystemWarningGroup(
+        json_w_ip_mismatch = SystemWarningGroup(
             SystemWarningGroup.ID_ADDR_MISMATCH)
-        crossbar_w_resolve = SystemWarningGroup(
+        json_w_resolve = SystemWarningGroup(
             SystemWarningGroup.ID_RESOLVE_FAILED)
-        crossbar_w_udp_send = SystemWarningGroup(
+        json_w_udp_send = SystemWarningGroup(
             SystemWarningGroup.ID_UDP_SEND)
-        crossbar_w_exception = SystemWarningGroup(
+        json_w_exception = SystemWarningGroup(
             SystemWarningGroup.ID_EXCEPTION)
-        crossbar_warnings = [crossbar_w_ip_mismatch, crossbar_w_resolve,
-                             crossbar_w_udp_send, crossbar_w_exception]
+        json_warnings = [json_w_ip_mismatch, json_w_resolve,
+                             json_w_udp_send, json_w_exception]
         with self.__lock:
             try:
                 current_errors = self.master_monitor.getMasterErrors()[1]
@@ -1214,27 +1214,27 @@ class Discoverer(object):
                                         if msg not in current_errors:
                                             Log.warn(msg)
                                         result.append(msg)
-                                        crossbar_w_ip_mismatch.append(
+                                        json_w_ip_mismatch.append(
                                             SystemWarning(msg=msg_err, hint=msg_hint))
                         except Exception as e:
                             msg_err = f"Error while resolve address for {v.masteruri}: {str(e)}"
                             result.append(msg_err)
-                            crossbar_w_resolve.append(
+                            json_w_resolve.append(
                                 SystemWarning(msg=msg_err))
                             Log.warn(msg_err)
                 try:
                     for _addr, msg in SEND_ERRORS.items():
                         result.append('%s' % msg)
-                        crossbar_w_udp_send.append(SystemWarning(msg=msg))
+                        json_w_udp_send.append(SystemWarning(msg=msg))
                 except:
                     pass
             except Exception as e:
                 msg_err = f"{str(e)}"
                 result.append(msg_err)
                 Log.warn(msg_err)
-                crossbar_w_exception.append(SystemWarning(msg=msg_err))
+                json_w_exception.append(SystemWarning(msg=msg_err))
         self.master_monitor.update_master_errors(result)
-        self.master_monitor.update_errors_crossbar(crossbar_warnings)
+        self.master_monitor.update_errors_json(json_warnings)
 
     def rosservice_list_masters(self, req):
         '''

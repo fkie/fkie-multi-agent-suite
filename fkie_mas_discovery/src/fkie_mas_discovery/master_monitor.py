@@ -51,23 +51,23 @@ except ImportError:
 import json
 from typing import List, Dict
 
-# crossbar-io dependencies
 import asyncio
-from autobahn import wamp
 
 from .common import get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
-from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
 from fkie_mas_pylib.interface.runtime_interface import SystemWarning
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system import ros1_masteruri
+from fkie_mas_pylib.websocket import ws_port
+from fkie_mas_pylib.websocket.client import WebSocketClient
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -122,7 +122,7 @@ class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
                                     logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
-class MasterMonitor(CrossbarBaseSession):
+class MasterMonitor:
     '''
     This class provides methods to get the state from the ROS master using his
     RPC API and test for changes. Furthermore an XML-RPC server will be created
@@ -150,14 +150,14 @@ class MasterMonitor(CrossbarBaseSession):
 
     INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-    def __init__(self, rpcport=11611, do_retry=True, ipv6=False, rpc_addr='', connect_crossbar=False):
+    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr='', connect_server=False, ws_port=35685):
         '''
         Initialize method. Creates an XML-RPC server on given port and starts this
         in its own thread.
 
-        :param rpcport: the port number for the XML-RPC server
+        :param rpc_port: the port number for the XML-RPC server
 
-        :type rpcport:  int
+        :type rpc_port:  int
 
         :param do_retry: retry to create XML-RPC server
 
@@ -186,15 +186,15 @@ class MasterMonitor(CrossbarBaseSession):
 
         self.__master_state = None
         '''the current state of the ROS master'''
-        self.rpcport = rpcport
+        self.rpc_port = rpc_port
         '''the port number of the RPC server'''
 
         self._printed_errors = dict()
         self._last_clearup_ts = time.time()
-        self._crossbar_warning_groups = {}
+        self._json_warning_groups = {}
         self._screens_set = set()
         self._screen_nodes_set = set()
-        self._sceen_crossbar_msg: List(ScreensMapping) = []
+        self._sceen_json_msg: List(ScreensMapping) = []
 
         self._master_errors = list()
         # Create an XML-RPC server
@@ -205,7 +205,7 @@ class MasterMonitor(CrossbarBaseSession):
                 if ipv6:
                     RPCClass = RPCThreadingV6
                 self.rpcServer = RPCClass(
-                    (rpc_addr, rpcport), logRequests=False, allow_none=True)
+                    (rpc_addr, rpc_port), logRequests=False, allow_none=True)
                 Log.info("Start RPC-XML Server at %s",
                          self.rpcServer.server_address)
                 self.rpcServer.register_introspection_functions()
@@ -231,9 +231,9 @@ class MasterMonitor(CrossbarBaseSession):
             except socket.error as e:
                 if not do_retry:
                     raise Exception(
-                        "Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?" % (rpcport, e))
+                        "Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?" % (rpc_port, e))
                 Log.warn(
-                    "Error while start RPC-XML server on port %d: %s\nTry again..." % (rpcport, e))
+                    "Error while start RPC-XML server on port %d: %s\nTry again..." % (rpc_port, e))
                 time.sleep(1)
             except:
                 print(traceback.format_exc())
@@ -250,21 +250,30 @@ class MasterMonitor(CrossbarBaseSession):
             rospy.get_param('~hide_services', []), 'hide_services')
 
         self.provider_list = []
-        self.crossbar_realm = "ros"
-        self.crossbar_port = 35685
-        if rpcport != 22622:
-            # TODO: Put "300" in a constant global value to prevent inconsistencies
-            self.crossbar_port = rpcport + 300
+        self.ws_port = ws_port()
+        if ws_port != self.ws_port:
+            self.ws_port = ws_port
 
-        # Start Crossbar server only if requested
-        self.connect_crossbar = connect_crossbar
-        if connect_crossbar:
-            self.crossbar_loop = asyncio.get_event_loop()
-            self._crossbarThread = threading.Thread(
-                target=self.run_async_forever, args=(self.crossbar_loop,), daemon=True)
-            self._crossbarThread.start()
-            CrossbarBaseSession.__init__(
-                self, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        # Start websocket server only if requested
+        self.connect_server = connect_server
+        if connect_server:
+            self.asyncio_loop = asyncio.get_event_loop()
+            self.asyncio_loop.create_task(self.ros_loop())
+            # self.asyncio_loop.create_task(self.subscribe())
+            self.wsClient = WebSocketClient(self.ws_port, self.asyncio_loop)
+            self._wsThread = threading.Thread(
+                target=self.asyncio_loop.run_async_forever, daemon=True)
+            self._wsThread.start()
+            ws_register_method("ros.screen.get_list", self.getScreenList)
+            ws_register_method("ros.provider.get_list", self.getProviderList)
+            ws_register_method("ros.nodes.get_list", self.get_node_list)
+            ws_register_method("ros.nodes.stop_node", self.stop_node)
+            ws_register_method("ros.subscriber.stop", self.stop_subscriber)
+            ws_register_method("ros.provider.get_timestamp", self.getProviderTimestamp)
+            ws_register_method("ros.provider.get_warnings", self.get_provider_warnings)
+            ws_register_method("ros.system.get_uri", self.get_system_uri)
+            ws_register_method("ros.nodes.unregister",self.unregister_node)
+
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
@@ -286,11 +295,11 @@ class MasterMonitor(CrossbarBaseSession):
         self._update_launch_uris()
         # === END: UPDATE THE LAUNCH URIS Section ===
         self._screen_do_check = False
-        if self.connect_crossbar:
+        if self.connect_server:
             self._screen_thread = threading.Thread(
                 target=self.checkScreens, daemon=True)
             self._screen_thread.start()
-            self.publish_to('ros.discovery.ready', {'status': True})
+            ws_publish_to('ros.discovery.ready', {'status': True})
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -313,8 +322,8 @@ class MasterMonitor(CrossbarBaseSession):
                 self._timer_update_launch_uris.cancel()
             except Exception:
                 pass
-        if self.connect_crossbar:
-            self.disconnect()
+        if self.connect_server and hasattr(self, 'asyncio_loop'):
+            self.asyncio_loop.stop()
         if hasattr(self, 'rpcServer'):
             if self._master is not None:
                 Log.info("Unsubscribe from parameter `/roslaunch/uris`")
@@ -922,11 +931,11 @@ class MasterMonitor(CrossbarBaseSession):
                     result = True
                     timejump_msg = "Timejump into past detected! Restart all ROS nodes, includes master_discovery, please!"
                     Log.warn(timejump_msg)
-                    crossbar_w_timejump = SystemWarningGroup(
+                    json_w_timejump = SystemWarningGroup(
                         SystemWarningGroup.ID_TIME_JUMP)
-                    crossbar_w_timejump.append(SystemWarning(
+                    json_w_timejump.append(SystemWarning(
                         msg='Timejump into past detected!', hint='Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!'))
-                    self.update_errors_crossbar([crossbar_w_timejump])
+                    self.update_errors_json([json_w_timejump])
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
                     self._exit_timer = threading.Timer(
@@ -943,9 +952,9 @@ class MasterMonitor(CrossbarBaseSession):
                     self.__master_state.timestamp_local = ts_local
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
-            if result and self.connect_crossbar:
+            if result and self.connect_server:
                 result = {"timestamp": self.__new_master_state.timestamp}
-                self.publish_to('ros.nodes.changed', result)
+                ws_publish_to('ros.nodes.changed', result)
                 self._screen_do_check = True
             return result
 
@@ -967,46 +976,42 @@ class MasterMonitor(CrossbarBaseSession):
     def update_master_errors(self, error_list: List[str]):
         self._master_errors = list(error_list)
 
-    def update_errors_crossbar(self, crossbar_warnings: List[SystemWarningGroup]):
-        if not self.connect_crossbar:
+    def update_errors_json(self, json_warnings: List[SystemWarningGroup]):
+        if not self.connect_server:
             return
         updated = False
-        for group in crossbar_warnings:
-            if group.id not in self._crossbar_warning_groups:
+        for group in json_warnings:
+            if group.id not in self._json_warning_groups:
                 updated = True
-                self._crossbar_warning_groups[group.id] = group
-            elif not self._crossbar_warning_groups[group.id] == group:
+                self._json_warning_groups[group.id] = group
+            elif not self._json_warning_groups[group.id] == group:
                 updated = True
-                self._crossbar_warning_groups[group.id] = group
+                self._json_warning_groups[group.id] = group
         if updated:
             count_warnings = 0
-            for wg in self._crossbar_warning_groups.values():
+            for wg in self._json_warning_groups.values():
                 count_warnings += len(wg.warnings)
             Log.debug(
-                f"ros.provider.warnings with {count_warnings} warnings in {len(self._crossbar_warning_groups)} groups")
-            self.publish_to('ros.provider.warnings', list(
-                self._crossbar_warning_groups.values()))
+                f"ros.provider.warnings with {count_warnings} warnings in {len(self._json_warning_groups)} groups")
+            ws_publish_to('ros.provider.warnings', list(
+                self._json_warning_groups.values()))
 
-    @wamp.register('ros.provider.get_warnings')
     def get_provider_warnings(self) -> str:
         Log.info('Request to [ros.provider.get_warnings]')
         return json.dumps(list(
-            self._crossbar_warning_groups.values()), cls=SelfEncoder)
+            self._json_warning_groups.values()), cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.get_list')
     def get_node_list(self) -> str:
         Log.info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = []
         if self.__master_state is not None:
-            node_list = self.__master_state.toCrossbar()
+            node_list = self.__master_state.toJson()
         return json.dumps(node_list, cls=SelfEncoder)
 
-    @wamp.register('ros.system.get_uri')
     def get_system_uri(self) -> str:
         Log.info('Request to [ros.system.get_uri]')
-        return f"{self.getMasteruri()} [{self.crossbar_port}]"
+        return f"{self.getMasteruri()} [{self.ws_port}]"
 
-    @wamp.register('ros.nodes.stop_node')
     def stop_node(self, name: str) -> bool:
         Log.info(f"Request to stop node '{name}'")
         success = False
@@ -1047,7 +1052,6 @@ class MasterMonitor(CrossbarBaseSession):
                 socket.setdefaulttimeout(None)
         return json.dumps({'result': success, 'message': message}, cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.unregister')
     def unregister_node(self, name: str) -> bool:
         Log.info(f"Request to unregister node '{name}'")
         success = False
@@ -1113,22 +1117,22 @@ class MasterMonitor(CrossbarBaseSession):
                             name=node_name, screens=[session_name])
                     new_screens_set.add(session_name)
                     new_screen_nodes_set.add(node_name)
-                # create crossbar message
-                crossbar_msg: List(ScreensMapping) = []
+                # create json message
+                json_msg: List(ScreensMapping) = []
                 for node_name, msg in screen_dict.items():
-                    crossbar_msg.append(msg)
+                    json_msg.append(msg)
                 # add nodes without screens send by the last message
                 gone_screen_nodes = self._screen_nodes_set - new_screen_nodes_set
                 for sn in gone_screen_nodes:
-                    crossbar_msg.append(ScreensMapping(name=sn, screens=[]))
+                    json_msg.append(ScreensMapping(name=sn, screens=[]))
                 # publish the message only on difference
                 div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
                 div_screens = self._screens_set ^ new_screens_set
                 if div_screen_nodes or div_screens:
                     Log.debug(
-                        f"publish ros.screen.list with {len(crossbar_msg)} nodes.")
-                    self.publish_to('ros.screen.list', crossbar_msg)
-                    self._screen_crossbar_msg = crossbar_msg
+                        f"publish ros.screen.list with {len(json_msg)} nodes.")
+                    ws_publish_to('ros.screen.list', json_msg)
+                    self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
                 last_check = 0
@@ -1136,24 +1140,22 @@ class MasterMonitor(CrossbarBaseSession):
                 last_check += 1
             time.sleep(1.0)
 
-    @wamp.register('ros.screen.get_list')
     def getScreenList(self) -> str:
         Log.info('Request to [ros.screen.get_list]')
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
-        return json.dumps(self._screen_crossbar_msg, cls=SelfEncoder)
+        return json.dumps(self._screen_json_msg, cls=SelfEncoder)
 
 
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
-        if not self.connect_crossbar:
+        if not self.connect_server:
             return
         # notify changes
         if self._on_shutdown or not self.provider_list:
-            self.publish_to('ros.discovery.ready', {'status': False})
+            ws_publish_to('ros.discovery.ready', {'status': False})
         else:
-            self.publish_to('ros.provider.list', provider_list)
+            ws_publish_to('ros.provider.list', provider_list)
 
-    @wamp.register('ros.provider.get_list')
     def getProviderList(self) -> str:
         Log.info('Request to [ros.provider.get_list]')
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
@@ -1164,12 +1166,10 @@ class MasterMonitor(CrossbarBaseSession):
         loop.run_forever()
         print("run_forever_exited")
 
-    @wamp.register('ros.subscriber.stop')
     def stop_subscriber(self, topic_name: str) -> bool:
         Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
         return self.stop_node(f"/mas_subscriber/{topic_name.strip('/')}")
 
-    @wamp.register('ros.provider.get_timestamp')
     def getProviderTimestamp(self, timestamp) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))

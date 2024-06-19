@@ -37,11 +37,12 @@ from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.websocket import ws_publish_to, ws_port
+from fkie_mas_pylib.websocket.handler import WebSocketHandler
 from fkie_mas_daemon.version import detect_version
 
 
-# crossbar-io dependencies
 import asyncio
+import websockets
 
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
@@ -53,10 +54,9 @@ from .parameter_servicer import ParameterServicer
 
 class MASDaemon:
     def __init__(self, test_env=False):
-        self.crossbar_port = ws_port()
-        self.crossbar_realm = "ros"
-        self.crossbar_loop = asyncio.get_event_loop()
-        self._timer_crossbar_ready = None
+        self.ws_port = ws_port()
+        self.asyncio_loop = asyncio.get_event_loop()
+        self._timer_daemon_ready = None
         self._test_env = test_env
         self._version, self._date = detect_version("fkie_mas_daemon")
         self._settings = Settings(version=self._version)
@@ -80,115 +80,87 @@ class MASDaemon:
         self.parameter_servicer = None
         self.file_servicer = None
         self.screen_servicer = None
-        self.crossbar_loop.stop()
+        self.asyncio_loop.stop()
 
     def _update_parameter(self, settings):
         # self._verbosity = settings.param("global/verbosity", "INFO")
         pass
 
+    async def ws_handler(self, websocket, path):
+        handler = WebSocketHandler(websocket, path, self.asyncio_loop)
+        await handler.spin()
+
+    async def websocket_main(self, port=35685):
+        Log.info(f"Open Websocket on port {port}")
+        try:
+            async with websockets.serve(self.ws_handler, "0.0.0.0", port):
+                # await asyncio.Future()
+                while not rospy.is_shutdown():
+                    await asyncio.sleep(1)
+        except:
+            import traceback
+            print(traceback.format_exc())
+
     def start(self, port=None):
-        crossbar_port = port if (port != None) else self.crossbar_port
-        Log.info(f"Start crossbar with port {crossbar_port}")
+        use_port = port if (port != None) else self.ws_port
+        self.asyncio_loop.create_task(self.websocket_main(use_port))
         self.monitor_servicer = MonitorServicer(
             self._settings,
-            self.crossbar_loop,
-            self.crossbar_realm,
-            crossbar_port,
+            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.launch_servicer = LaunchServicer(
             self.monitor_servicer,
-            self.crossbar_loop,
-            self.crossbar_realm,
-            crossbar_port,
+            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.parameter_servicer = ParameterServicer(
-            self.crossbar_loop,
-            self.crossbar_realm,
-            crossbar_port,
+            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.file_servicer = FileServicer(
-            self.crossbar_loop,
-            self.crossbar_realm,
-            crossbar_port,
+            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.screen_servicer = ScreenServicer(
-            self.crossbar_loop,
-            self.crossbar_realm,
-            crossbar_port,
+            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.version_servicer = VersionServicer(
-            self.crossbar_loop,
-            self.crossbar_realm,
-            crossbar_port,
+            self.asyncio_loop,
             test_env=self._test_env,
         )
 
-        # Log.info(f"Connect to crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}")
-        self._crossbarThread = threading.Thread(
-            target=self.run_async_forever, args=(
-                self.crossbar_loop,), daemon=True
+        Log.info(f"Start websocket server @ ws://0.0.0.0:{ws_port}")
+        self._wsThread = threading.Thread(
+            target=self.asyncio_loop.run_forever, daemon=True
         )
-        self._crossbarThread.start()
-        self._crossbarNotificationThread = threading.Thread(
-            target=self._crossbar_notify_if_regsitered, daemon=True
-        )
-        self._crossbarNotificationThread.start()
+        self._wsThread.start()
+        self._daemon_send_status(True)
 
-    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-
-    def _crossbar_notify_if_regsitered(self):
-        registration_finished = False
-        while not registration_finished:
-            registration_finished = True
-            registration_finished &= self.launch_servicer.crossbar_registered
-            registration_finished &= self.screen_servicer.crossbar_registered
-            registration_finished &= self.file_servicer.crossbar_registered
-            registration_finished &= self.parameter_servicer.crossbar_registered
-            registration_finished &= self.version_servicer.crossbar_registered
-            time.sleep(0.5)
-        self._crossbar_send_status(True)
-
-    def _crossbar_send_status(self, status: bool):
-        # try to send notification to crossbar subscribers
-        self.launch_servicer.publish_to("ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
-        ws_publish_to("ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
+    def _daemon_send_status(self, status: bool):
+        # try to send notification to websocket subscribers
+        ws_publish_to("ros.daemon.ready", {
+                      "status": status, 'timestamp': time.time() * 1000})
         if status:
-            if self._timer_crossbar_ready is None:
-                self._timer_crossbar_ready = RepeatTimer(3.0,
-                                                         self._crossbar_send_status, args=(
-                                                             True,))
-                self._timer_crossbar_ready.start()
+            if self._timer_daemon_ready is None:
+                self._timer_daemon_ready = RepeatTimer(3.0,
+                                                       self._daemon_send_status, args=(
+                                                           True,))
+                self._timer_daemon_ready.start()
         else:
-            if self._timer_crossbar_ready is not None:
-                self._timer_crossbar_ready.cancel()
-                self._timer_crossbar_ready = None
+            if self._timer_daemon_ready is not None:
+                self._timer_daemon_ready.cancel()
+                self._timer_daemon_ready = None
 
     def shutdown(self):
-        WAIT_TIMEOUT = 3
-        self._crossbar_send_status(False)
-        shutdown_task = self.crossbar_loop.create_task(
-            self.crossbar_loop.shutdown_asyncgens()
-        )
+        self._daemon_send_status(False)
         self.version_servicer.stop()
         self.launch_servicer.stop()
         self.monitor_servicer.stop()
-        self.parameter_servicer.shutdown()
-        self.file_servicer.shutdown()
+        self.parameter_servicer.stop()
+        self.file_servicer.stop()
         self.screen_servicer.stop()
-        sleep_time = 0.5
-        while not shutdown_task.done() or self.screen_servicer.crossbar_connected:
-            time.sleep(sleep_time)
-            sleep_time += 0.5
-            if sleep_time > WAIT_TIMEOUT:
-                print("break")
-                break
 
     def load_launch_file(self, path, autostart=False):
         self.launch_servicer.load_launch_file(

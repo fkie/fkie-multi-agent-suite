@@ -172,24 +172,12 @@ class Server:
         self.asyncio_loop.create_task(self.websocket_main(port))
         self.rosstate_servicer.start()
         self.screen_servicer.start()
-        return True
-
-    def _crossbar_notify_if_regsitered(self):
-        registration_finished = False
-        while not registration_finished:
-            registration_finished = True
-            registration_finished &= self.launch_servicer.crossbar_registered
-            registration_finished &= self.screen_servicer.crossbar_registered
-            registration_finished &= self.rosstate_servicer.crossbar_registered
-            registration_finished &= self.parameter_servicer.crossbar_registered
-            registration_finished &= self.version_servicer.crossbar_registered
-            registration_finished &= self.monitor_servicer.crossbar_registered
-            time.sleep(0.5)
         self.publish_daemon_state(True)
         self._ws_send_status(True)
+        return True
 
     def _ws_send_status(self, status: bool):
-        # try to send notification to crossbar subscribers
+        # try to send notification to websocket subscribers
         ws_publish_to(
             "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
         if status:

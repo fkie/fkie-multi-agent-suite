@@ -21,30 +21,25 @@
 # SOFTWARE.
 
 import json
-import asyncio
-from autobahn import wamp
 
 import os
 import signal
-from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
-from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.websocket import ws_register_method
 
 
-class ScreenServicer(CrossbarBaseSession):
+class ScreenServicer:
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 35685, test_env=False):
+    def __init__(self, test_env=False):
         Log.info("Create screen servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
+        ws_register_method("ros.screen.kill_node", self.killNode)
 
     def stop(self):
-        global IS_RUNNING
-        IS_RUNNING = False
-        self.shutdown()
+        pass
 
-    @wamp.register('ros.screen.kill_node')
     def killNode(self, name: str) -> bool:
         Log.info("Kill node '%s'", name)
         success = False

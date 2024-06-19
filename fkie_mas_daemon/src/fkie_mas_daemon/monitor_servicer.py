@@ -22,8 +22,6 @@
 
 from typing import List
 import json
-import asyncio
-from autobahn import wamp
 import os
 import psutil
 import signal
@@ -31,6 +29,7 @@ import threading
 from types import SimpleNamespace
 import sys
 import rospy
+from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 
 try:
     from roscpp.srv import GetLoggers, SetLoggerLevel, SetLoggerLevelRequest
@@ -44,31 +43,32 @@ from fkie_mas_pylib.interface.runtime_interface import DiagnosticStatus
 from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
 from fkie_mas_pylib.interface.runtime_interface import SystemEnvironment
 from fkie_mas_pylib.interface.runtime_interface import SystemInformation
-from fkie_mas_pylib.interface.base_session import CrossbarBaseSession
-from fkie_mas_pylib.interface.base_session import SelfEncoder
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.defines import SETTINGS_PATH
 
 
-class MonitorServicer(CrossbarBaseSession):
+class MonitorServicer:
     def __init__(
         self,
         settings,
-        loop: asyncio.AbstractEventLoop,
-        realm: str = "ros",
-        port: int = 35685,
         test_env=False,
     ):
         Log.info("Create monitor servicer")
-        CrossbarBaseSession.__init__(
-            self, loop, realm, port, test_env=test_env)
         self._monitor = Service(settings, self.diagnosticsCbPublisher)
+        ws_register_method("ros.provider.get_system_info", self.getSystemInfo)
+        ws_register_method("ros.provider.get_system_env", self.getSystemEnv)
+        ws_register_method("ros.provider.get_diagnostics", self.getDiagnostics)
+        ws_register_method("ros.provider.ros_clean_purge", self.rosCleanPurge)
+        ws_register_method("ros.provider.shutdown", self.rosShutdown)
+        ws_register_method("ros.nodes.get_loggers", self.getLoggers)
+        ws_register_method("ros.nodes.set_logger_level", self.setLoggerLevel)
 
     def stop(self):
         self._monitor.stop()
 
-    def _toCrossbarDiagnostics(self, rosmsg):
+    def _toJsonDiagnostics(self, rosmsg):
         cbMsg = DiagnosticArray(
             float(rosmsg.header.stamp.secs)
             + float(rosmsg.header.stamp.nsecs) / 1000000000.0, []
@@ -84,31 +84,25 @@ class MonitorServicer(CrossbarBaseSession):
         return cbMsg
 
     def diagnosticsCbPublisher(self, rosmsg):
-        self.publish_to(
-            "ros.provider.diagnostics",
-            json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder),
-        )
+        ws_publish_to("ros.provider.diagnostics",
+                      json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),)
 
-    @wamp.register("ros.provider.get_diagnostics")
     def getDiagnostics(self) -> DiagnosticArray:
-        Log.info("crossbar: get diagnostics")
+        Log.info("interface: get diagnostics")
         rosmsg = self._monitor.get_diagnostics(0, 0)
-        # copy message to the crossbar structure
-        return json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder)
+        # copy message to the json structure
+        return json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder)
 
-    @wamp.register("ros.provider.get_system_info")
     def getSystemInfo(self) -> SystemInformation:
-        Log.info("crossbar: get system info")
+        Log.info("interface: get system info")
         return json.dumps(SystemInformation(), cls=SelfEncoder)
 
-    @wamp.register("ros.provider.get_system_env")
     def getSystemEnv(self) -> SystemEnvironment:
-        Log.info("crossbar: get system env")
+        Log.info("interface: get system env")
         return json.dumps(SystemEnvironment(), cls=SelfEncoder)
 
-    @wamp.register("ros.provider.ros_clean_purge")
     def rosCleanPurge(self) -> {bool, str}:
-        Log.info("crossbar: ros_clean_purge")
+        Log.info("interface: ros_clean_purge")
         result = False
         message = ''
         try:
@@ -118,21 +112,17 @@ class MonitorServicer(CrossbarBaseSession):
             message = str(error)
         return json.dumps({result: result, message: message}, cls=SelfEncoder)
 
-    @wamp.register("ros.provider.shutdown")
     def rosShutdown(self) -> {bool, str}:
         Log.info("ros.provider.shutdown")
         result = False
         message = ''
         procs = []
-        crossbarPid = -1
         try:
             for process in psutil.process_iter():
                 cmdStr = ' '.join(process.cmdline())
                 if cmdStr.find(SETTINGS_PATH) > -1:
-                    if (cmdStr.find('crossbar') > -1):
-                        # store crossbar pid to kill it last
-                        crossbarPid = process.pid
-                    elif (cmdStr.find('mas-daemon') == -1):
+                    # stop daemon after all other processes are killed
+                    if (cmdStr.find('mas-daemon') == -1):
                         procs.append(process)
                         process.terminate()
             gone, alive = psutil.wait_procs(procs, timeout=3)
@@ -144,9 +134,6 @@ class MonitorServicer(CrossbarBaseSession):
             print(traceback.format_exc())
             message = str(error)
         screen.wipe()
-        shutdown_timer = threading.Timer(
-            0.5, self._killSelf, ([crossbarPid]if crossbarPid != -1 else [], signal.SIGTERM))
-        shutdown_timer.start()
         return json.dumps({result: result, message: message}, cls=SelfEncoder)
 
     def _killSelf(self, pidList=[], sig=signal.SIGTERM):
@@ -154,7 +141,6 @@ class MonitorServicer(CrossbarBaseSession):
             os.kill(pid, sig)
         os.kill(os.getpid(), signal.SIGINT)
 
-    @wamp.register('ros.nodes.get_loggers')
     def getLoggers(self, name: str) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}'")
@@ -166,7 +152,6 @@ class MonitorServicer(CrossbarBaseSession):
             loggerConfigs.append(LoggerConfig(level=logger.level, name=logger.name))
         return json.dumps(loggerConfigs, cls=SelfEncoder)
 
-    @wamp.register('ros.nodes.set_logger_level')
     def setLoggerLevel(self, name: str, logger_json: List[LoggerConfig]) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")

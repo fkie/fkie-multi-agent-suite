@@ -1365,7 +1365,7 @@ class MasterInfo(object):
 
         return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
 
-    def toCrossbar(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
+    def toJson(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
         try:
             iffilter = filter_interface
             ros_nodes = dict()
