@@ -78,7 +78,7 @@ class Server:
                     0, self.ros_domain_id)
             )
         self.name = get_host_name()
-        self.uri = ""
+        self.uri = f"ws://{get_host_name()}:{self.ws_port}"
         self._timer_ws_ready = None
         self.monitor_servicer = MonitorServicer(
             self._settings, self.asyncio_loop)
@@ -96,7 +96,7 @@ class Server:
             nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
         self._endpoint_msg = Endpoint(
             name=self.name,
-            uri=f"ws://{get_host_name()}:{self.ws_port}",
+            uri=self.uri,
             ros_name=self.rosname,
             ros_domain_id=self.ros_domain_id,
             on_shutdown=False,

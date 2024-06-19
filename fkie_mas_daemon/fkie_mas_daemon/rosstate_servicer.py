@@ -112,7 +112,7 @@ class RosStateServicer:
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
         for uri, endpoint in endpoints.items():
-            origin = self.uri == uri
+            origin = uri == nmd.launcher.server.uri
             provider = RosProvider(
                 name=endpoint.name, host=get_hostname(endpoint.uri), port=get_port(endpoint.uri), origin=origin, hostnames=[get_hostname(endpoint.uri)])
             result.append(provider)
