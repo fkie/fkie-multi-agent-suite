@@ -77,7 +77,7 @@ class FileServicer:
     #                 pass
     #                 # self._peers[context.peer()] = context
 
-    def stop():
+    def stop(self):
         pass
 
     def getFileContent(self, requestPath: str) -> FileItem:

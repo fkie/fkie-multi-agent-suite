@@ -106,32 +106,26 @@ class MASDaemon:
         self.asyncio_loop.create_task(self.websocket_main(use_port))
         self.monitor_servicer = MonitorServicer(
             self._settings,
-            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.launch_servicer = LaunchServicer(
             self.monitor_servicer,
-            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.parameter_servicer = ParameterServicer(
-            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.file_servicer = FileServicer(
-            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.screen_servicer = ScreenServicer(
-            self.asyncio_loop,
             test_env=self._test_env,
         )
         self.version_servicer = VersionServicer(
-            self.asyncio_loop,
             test_env=self._test_env,
         )
 
-        Log.info(f"Start websocket server @ ws://0.0.0.0:{ws_port}")
+        Log.info(f"Start websocket server @ ws://0.0.0.0:{use_port}")
         self._wsThread = threading.Thread(
             target=self.asyncio_loop.run_forever, daemon=True
         )

@@ -126,6 +126,7 @@ def start_server(node_name='mas_daemon'):
         sys.stdout.write(traceback.format_exc())
         sys.stdout.flush()
         os.kill(os.getpid(), signal.SIGKILL)
+    print("bye!")
 
 
 def create_subscriber(node_name='mas_subscriber'):

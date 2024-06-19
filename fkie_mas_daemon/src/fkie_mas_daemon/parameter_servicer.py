@@ -46,7 +46,7 @@ class ParameterServicer:
         ws_register_method("ros.parameters.set_parameter", self.setParameter)
         ws_register_method("ros.parameters.delete_parameters", self.deleteParameters)
     
-    def stop():
+    def stop(self):
         pass
 
     def getParameterList(self):

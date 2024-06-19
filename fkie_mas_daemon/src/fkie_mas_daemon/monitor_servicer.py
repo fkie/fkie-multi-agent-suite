@@ -50,11 +50,7 @@ from fkie_mas_pylib.defines import SETTINGS_PATH
 
 
 class MonitorServicer:
-    def __init__(
-        self,
-        settings,
-        test_env=False,
-    ):
+    def __init__(self, settings, test_env=False):
         Log.info("Create monitor servicer")
         self._monitor = Service(settings, self.diagnosticsCbPublisher)
         ws_register_method("ros.provider.get_system_info", self.getSystemInfo)
@@ -149,7 +145,8 @@ class MonitorServicer:
         get_logger = rospy.ServiceProxy(service_name, GetLoggers)
         resp = get_logger()
         for logger in resp.loggers:
-            loggerConfigs.append(LoggerConfig(level=logger.level, name=logger.name))
+            loggerConfigs.append(LoggerConfig(
+                level=logger.level, name=logger.name))
         return json.dumps(loggerConfigs, cls=SelfEncoder)
 
     def setLoggerLevel(self, name: str, logger_json: List[LoggerConfig]) -> str:
