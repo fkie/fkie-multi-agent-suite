@@ -33,13 +33,13 @@ from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
 
 
 class ScreenServicer:
 
-    def __init__(self, loop: asyncio.AbstractEventLoop):
+    def __init__(self, websocket: WebSocketServer):
         Log.info("Create ROS2 screen servicer")
         self._is_running = True
         self._screen_check_rate = 1
@@ -50,8 +50,9 @@ class ScreenServicer:
         self._screens_set = set()
         self._screen_nodes_set = set()
         self._screen_json_msg: List[ScreensMapping] = []
-        ws_register_method("ros.screen.kill_node", self.kill_node)
-        ws_register_method("ros.screen.get_list", self.get_screen_list)
+        self.websocket = websocket
+        websocket.register("ros.screen.kill_node", self.kill_node)
+        websocket.register("ros.screen.get_list", self.get_screen_list)
 
     def start(self):
         self._screen_thread = threading.Thread(
@@ -99,7 +100,7 @@ class ScreenServicer:
                 if div_screen_nodes or div_screens:
                     Log.debug(
                         f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
-                    ws_publish_to('ros.screen.list', json_msg)
+                    self.websocket.publish('ros.screen.list', json_msg)
                     self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set

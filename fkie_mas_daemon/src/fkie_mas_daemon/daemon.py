@@ -36,8 +36,8 @@ from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.timer import RepeatTimer
-from fkie_mas_pylib.websocket import ws_publish_to, ws_port
-from fkie_mas_pylib.websocket.handler import WebSocketHandler
+from fkie_mas_pylib.websocket import ws_port
+from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_daemon.version import detect_version
 
 
@@ -67,6 +67,7 @@ class MASDaemon:
         self.parameter_servicer = None
         self.file_servicer = None
         self.screen_servicer = None
+        self.ws_server = WebSocketServer(self.asyncio_loop)
         rospy.Service("~start_launch", LoadLaunch,
                       self._rosservice_start_launch)
         rospy.Service("~load_launch", LoadLaunch, self._rosservice_load_launch)
@@ -86,24 +87,9 @@ class MASDaemon:
         # self._verbosity = settings.param("global/verbosity", "INFO")
         pass
 
-    async def ws_handler(self, websocket, path):
-        handler = WebSocketHandler(websocket, path, self.asyncio_loop)
-        await handler.spin()
-
-    async def websocket_main(self, port=35685):
-        Log.info(f"Open Websocket on port {port}")
-        try:
-            async with websockets.serve(self.ws_handler, "0.0.0.0", port):
-                # await asyncio.Future()
-                while not rospy.is_shutdown():
-                    await asyncio.sleep(1)
-        except:
-            import traceback
-            print(traceback.format_exc())
-
     def start(self, port=None):
         use_port = port if (port != None) else self.ws_port
-        self.asyncio_loop.create_task(self.websocket_main(use_port))
+        self.ws_server.start(port)
         self.monitor_servicer = MonitorServicer(
             self._settings,
             test_env=self._test_env,
@@ -134,8 +120,8 @@ class MASDaemon:
 
     def _daemon_send_status(self, status: bool):
         # try to send notification to websocket subscribers
-        ws_publish_to("ros.daemon.ready", {
-                      "status": status, 'timestamp': time.time() * 1000})
+        self.ws_server.publish("ros.daemon.ready", {
+            "status": status, 'timestamp': time.time() * 1000})
         if status:
             if self._timer_daemon_ready is None:
                 self._timer_daemon_ready = RepeatTimer(3.0,

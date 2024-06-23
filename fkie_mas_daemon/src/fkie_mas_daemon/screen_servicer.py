@@ -27,15 +27,15 @@ import signal
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.websocket import ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 
 
 class ScreenServicer:
 
-    def __init__(self, test_env=False):
+    def __init__(self, websocket:WebSocketServer, test_env=False):
         Log.info("Create screen servicer")
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
-        ws_register_method("ros.screen.kill_node", self.killNode)
+        websocket.register("ros.screen.kill_node", self.killNode)
 
     def stop(self):
         pass

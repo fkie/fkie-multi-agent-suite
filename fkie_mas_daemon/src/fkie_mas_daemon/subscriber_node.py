@@ -124,14 +124,14 @@ class SubscriberNode:
         self.__msg_class = message.get_message_class(self._message_type)
         if self.__msg_class:
             self.asyncio_loop = asyncio.get_event_loop()
-            self.asyncio_loop.create_task(self.ros_loop())
+            # self.asyncio_loop.create_task(self.ros_loop())
             # self.asyncio_loop.create_task(self.subscribe())
             self.wsClient = WebSocketClient(self._port, self.asyncio_loop)
             self.wsClient.subscribe(
                 f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
 
             self._wsThread = threading.Thread(
-                target=self.asyncio_loop.run_async_forever, daemon=True)
+                target=self.asyncio_loop.run_forever, daemon=True)
             self._wsThread.start()
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
@@ -198,7 +198,7 @@ class SubscriberNode:
                 timeouted = True
         if (event.latched and time.time() - self._first_msg_ts < 2.0) or timeouted:
             self.wsClient.publish(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), resend_after_connect=self._latched)
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
 
     def _get_message_size(self, msg):
         buff = None

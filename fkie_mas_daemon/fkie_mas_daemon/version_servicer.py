@@ -26,18 +26,18 @@ import json
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import DaemonVersion
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.websocket import ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
 from . import version
 
 
 class VersionServicer:
-    def __init__(self, loop: asyncio.AbstractEventLoop):
+    def __init__(self, websocket: WebSocketServer):
         Log.info("Create ROS2 version servicer")
         self._version, self._date = version.detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
-        ws_register_method("ros.daemon.get_version", self.get_version)
+        websocket.register("ros.daemon.get_version", self.get_version)
 
     def stop(self):
         pass

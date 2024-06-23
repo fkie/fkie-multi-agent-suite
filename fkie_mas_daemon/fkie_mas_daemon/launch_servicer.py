@@ -75,7 +75,7 @@ from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import is_local
 from fkie_mas_pylib.system.url import equal_uri
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
-from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
@@ -137,7 +137,7 @@ class LaunchServicer(LoggingEventHandler):
     '''
     '''
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, ws_port: int):
+    def __init__(self, websocket: WebSocketServer, ws_port: int):
         Log.info("Create ROS2 launch servicer")
         LoggingEventHandler.__init__(self)
         self._watchdog_observer = Observer()
@@ -155,20 +155,21 @@ class LaunchServicer(LoggingEventHandler):
         self._loaded_files: Dict[CfgId, LaunchConfig] = dict()
         self._observed_launch_files: Dict[str, List[str]] = {}
         self._watchdog_observer.start()
-        ws_register_method("ros.launch.load", self.load_launch)
-        ws_register_method("ros.launch.reload", self.reload_launch)
-        ws_register_method("ros.launch.unload", self.unload_launch)
-        ws_register_method("ros.launch.get_list", self.get_list)
-        ws_register_method("ros.launch.start_node", self.start_node)
-        ws_register_method("ros.launch.start_nodes", self.start_nodes)
-        ws_register_method("ros.launch.get_included_files",
+        self.websocket = websocket
+        websocket.register("ros.launch.load", self.load_launch)
+        websocket.register("ros.launch.reload", self.reload_launch)
+        websocket.register("ros.launch.unload", self.unload_launch)
+        websocket.register("ros.launch.get_list", self.get_list)
+        websocket.register("ros.launch.start_node", self.start_node)
+        websocket.register("ros.launch.start_nodes", self.start_nodes)
+        websocket.register("ros.launch.get_included_files",
                            self.get_included_files)
-        ws_register_method("ros.launch.interpret_path", self.interpret_path)
-        ws_register_method("ros.launch.get_msg_struct", self.get_msg_struct)
-        ws_register_method("ros.launch.publish_message", self.publish_message)
-        ws_register_method("ros.launch.get_srv_struct", self.get_srv_struct)
-        ws_register_method("ros.launch.call_service", self.call_service)
-        ws_register_method("ros.subscriber.start", self.start_subscriber)
+        websocket.register("ros.launch.interpret_path", self.interpret_path)
+        websocket.register("ros.launch.get_msg_struct", self.get_msg_struct)
+        websocket.register("ros.launch.publish_message", self.publish_message)
+        websocket.register("ros.launch.get_srv_struct", self.get_srv_struct)
+        websocket.register("ros.launch.call_service", self.call_service)
+        websocket.register("ros.subscriber.start", self.start_subscriber)
 
     def _terminated(self):
         Log.info(f"{self.__class__.__name__}: terminated launch context")
@@ -203,7 +204,7 @@ class LaunchServicer(LoggingEventHandler):
                             "affected": affected_launch_files}
             Log.debug(
                 f"{self.__class__.__name__}: observed change {event.event_type} on {event.src_path}, reported path: {path}")
-            ws_publish_to('ros.path.changed', change_event)
+            self.websocket.publish('ros.path.changed', change_event)
 
     def _add_file_to_observe(self, path: str):
         real_path = os.path.realpath(path)
@@ -408,7 +409,7 @@ class LaunchServicer(LoggingEventHandler):
             # result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
             # notify GUI about changes
-            ws_publish_to('ros.launch.changed', {})
+            self.websocket.publish('ros.launch.changed', {})
             self._add_launch_to_observer(launch_config)
             Log.debug(f"{self.__class__.__name__}: ..load complete!")
         except Exception as e:
@@ -459,7 +460,7 @@ class LaunchServicer(LoggingEventHandler):
                 result.status.code = 'OK'
                 # TODO: added change detection for nodes parameters
                 # notify GUI about changes
-                ws_publish_to('ros.launch.changed', {})
+                self.websocket.publish('ros.launch.changed', {})
                 self._add_launch_to_observer(launch_config)
             except Exception as e:
                 old_launch.load()
@@ -498,7 +499,7 @@ class LaunchServicer(LoggingEventHandler):
                 result.status.code = 'OK'
 
                 # notify GUI about changes
-                ws_publish_to('ros.launch.changed', {})
+                self.websocket.publish('ros.launch.changed', {})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)

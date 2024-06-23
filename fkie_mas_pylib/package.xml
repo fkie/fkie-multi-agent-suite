@@ -18,6 +18,7 @@
   <depend condition="$ROS_VERSION == 2">rclpy</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-ruamel.yaml</depend>
   <depend condition="$ROS_PYTHON_VERSION == 3">python3-ruamel.yaml</depend>
+  <depend condition="$ROS_PYTHON_VERSION == 3">python3-websockets</depend>
   <depend>fkie_mas_msgs</depend>
 
   <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>

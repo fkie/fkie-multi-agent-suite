@@ -39,7 +39,7 @@ from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system.screen import get_logfile
 from fkie_mas_pylib.system.screen import get_ros_logfile
-from fkie_mas_pylib.websocket import ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_daemon.strings import utf8
 
 from typing import List
@@ -52,20 +52,21 @@ class FileServicer:
 
     def __init__(
         self,
+        websocket: WebSocketServer,
         test_env=False,
     ):
         Log.info("Create file manger servicer")
         self.DIR_CACHE = {}
         self.CB_DIR_CACHE = {}
         self._peers = {}
-        ws_register_method("ros.packages.get_list", self.getPackageList)
-        ws_register_method("ros.path.get_log_paths", self.getLogPaths)
-        ws_register_method("ros.path.clear_log_paths", self.clearLogPaths)
-        ws_register_method("ros.path.get_list", self.getPathList)
-        ws_register_method("ros.path.get_list_recursive",
+        websocket.register("ros.packages.get_list", self.getPackageList)
+        websocket.register("ros.path.get_log_paths", self.getLogPaths)
+        websocket.register("ros.path.clear_log_paths", self.clearLogPaths)
+        websocket.register("ros.path.get_list", self.getPathList)
+        websocket.register("ros.path.get_list_recursive",
                            self.getPathListRecursive)
-        ws_register_method("ros.file.get", self.getFileContent)
-        ws_register_method("ros.file.save", self.saveFileContent)
+        websocket.register("ros.file.get", self.getFileContent)
+        websocket.register("ros.file.save", self.saveFileContent)
 
     #     def _terminated(self):
     #         Log.info("terminated context")

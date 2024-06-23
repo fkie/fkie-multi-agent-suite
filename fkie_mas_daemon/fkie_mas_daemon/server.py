@@ -48,8 +48,9 @@ from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.host import get_host_name
 from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.websocket import ws_publish_to, ws_port
+from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.handler import WebSocketHandler
+from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
 
 from fkie_mas_daemon.file_servicer import FileServicer
@@ -63,13 +64,31 @@ from fkie_mas_daemon.version import detect_version
 
 
 class Server:
-    def __init__(self, ros_node, loop: asyncio.AbstractEventLoop, *, default_domain_id=-1):
+    def __init__(self, ros_node, *, loop: asyncio.AbstractEventLoop, default_domain_id=-1):
         self.ros_node = ros_node
         self.ws_port = ws_port()
         self.asyncio_loop = loop
         self._version, self._date = detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
+        self.ros_node.create_service(
+            LoadLaunch, "~/start_launch", self._rosservice_start_launch
+        )
+        self.ros_node.create_service(
+            LoadLaunch, "~/load_launch", self._rosservice_load_launch
+        )
+        self.ros_node.create_service(
+            Task, "~/run", self._rosservice_start_node)
+        qos_profile = QoSProfile(
+            depth=10,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            # history=QoSHistoryPolicy.KEEP_LAST,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+        )
+        self.pub_endpoint = self.ros_node.create_publisher(
+            Endpoint, "daemons", qos_profile=qos_profile
+        )
+        self.ws_server = WebSocketServer(self.asyncio_loop)
         self._settings = Settings(version=self._version)
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
@@ -81,16 +100,16 @@ class Server:
         self.uri = f"ws://{get_host_name()}:{self.ws_port}"
         self._timer_ws_ready = None
         self.monitor_servicer = MonitorServicer(
-            self._settings, self.asyncio_loop)
-        self.file_servicer = FileServicer(self.asyncio_loop)
-        self.screen_servicer = ScreenServicer(self.asyncio_loop)
-        self.rosstate_servicer = RosStateServicer(self.asyncio_loop)
-        self.parameter_servicer = ParameterServicer(self.asyncio_loop)
+            self._settings, self.ws_server)
+        self.file_servicer = FileServicer(self.ws_server)
+        self.screen_servicer = ScreenServicer(self.ws_server)
+        self.rosstate_servicer = RosStateServicer(self.ws_server)
+        self.parameter_servicer = ParameterServicer(self.ws_server)
         self.launch_servicer = LaunchServicer(
-            self.asyncio_loop,
+            self.ws_server,
             ws_port=self.ws_port,
         )
-        self.version_servicer = VersionServicer(self.asyncio_loop)
+        self.version_servicer = VersionServicer(self.ws_server)
 
         self.rosname = ns_join(
             nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
@@ -112,51 +131,7 @@ class Server:
         self.screen_servicer = None
         self.rosstate_servicer = None
         self.parameter_servicer = None
-
-    async def ws_handler(self, websocket, path):
-        handler = WebSocketHandler(websocket, path, self.asyncio_loop)
-        await handler.spin()
-        # self.ws_connections.add(websocket)
-        # print(f"path: {path}")
-        # try:
-        #     async for message in websocket:
-        #         print(message)
-        #         await websocket.send("Hi")
-        # except websockets.ConnectionClosedError:
-        #     pass
-        # finally:
-        #     self.ws_connections.remove(websocket)
-
-    async def websocket_main(self, port=35430):
-        nmd.ros_node.get_logger().info(
-            f"Open Websocket on port {port}")
-        try:
-            async with websockets.serve(self.ws_handler, "0.0.0.0", port):
-                # await asyncio.Future()
-                while rclpy.ok():
-                    await asyncio.sleep(1)
-        except:
-            import traceback
-            print(traceback.format_exc())
-
-    async def ros_register(self):
-       self.ros_node.create_service(
-           LoadLaunch, "~/start_launch", self._rosservice_start_launch
-       )
-       self.ros_node.create_service(
-           LoadLaunch, "~/load_launch", self._rosservice_load_launch
-       )
-       self.ros_node.create_service(Task, "~/run", self._rosservice_start_node)
-       qos_profile = QoSProfile(
-           depth=10,
-           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-           # history=QoSHistoryPolicy.KEEP_LAST,
-           reliability=QoSReliabilityPolicy.RELIABLE,
-       )
-       self.pub_endpoint = self.ros_node.create_publisher(
-           Endpoint, "daemons", qos_profile=qos_profile
-       )
-
+ 
     def start(self, port: int, displayed_name: Text = "") -> bool:
         nmd.ros_node.get_logger().info(
             f"start websocket server on port {port}")
@@ -168,8 +143,7 @@ class Server:
             self.name = f"{self.name}_{port}"
         self._endpoint_msg.name = self.name
         self._endpoint_msg.uri = f"ws://{get_host_name()}:{port}"
-        self.asyncio_loop.create_task(self.ros_register())
-        self.asyncio_loop.create_task(self.websocket_main(port))
+        self.ws_server.start(port)
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         self.publish_daemon_state(True)
@@ -178,7 +152,7 @@ class Server:
 
     def _ws_send_status(self, status: bool):
         # try to send notification to websocket subscribers
-        ws_publish_to(
+        self.ws_server.publish(
             "ros.daemon.ready", {"status": status, 'timestamp': time.time() * 1000})
         if status:
             if self._timer_ws_ready is None:
@@ -197,13 +171,10 @@ class Server:
             self.pub_endpoint.publish(self._endpoint_msg)
         except Exception as a:
             pass
-            return
-            import traceback
-
-            print(traceback.format_exc())
+            # import traceback
+            # print(traceback.format_exc())
 
     def shutdown(self):
-        WAIT_TIMEOUT = 3
         self.publish_daemon_state(False)
         self._ws_send_status(False)
         self.version_servicer.stop()
@@ -214,16 +185,7 @@ class Server:
         self.rosstate_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
-        # shutdown_task = self.asyncio_loop.create_task(
-        #     self.asyncio_loop.shutdown_asyncgens()
-        # )
         self.ros_node.destroy_publisher(self.pub_endpoint)
-        # sleep_time = 0.5
-        # while not shutdown_task.done():
-        #     time.sleep(sleep_time)
-        #     sleep_time += 0.5
-        #     if sleep_time > WAIT_TIMEOUT:
-        #         break
 
     def load_launch_file(self, path, autostart=False):
         pass

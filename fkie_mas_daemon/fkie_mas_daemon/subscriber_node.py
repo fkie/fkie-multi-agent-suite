@@ -106,7 +106,7 @@ class RosSubscriberLauncher:
         # get a reference to the global node for logging
         Log.set_ros2_logging_node(self.ros_node)
 
-        Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
+        Log.info(f"start ROS subscriber for {self._topic}[{self._message_type}]")
         splitted_type = self._message_type.replace('/', '.').rsplit('.', 1)
         splitted_type.reverse()
         module = import_module(splitted_type.pop())
@@ -127,8 +127,7 @@ class RosSubscriberLauncher:
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
         #                                # reliability=QoSReliabilityPolicy.RELIABLE)
         #                                )
-        self.ros_node.get_logger().info(
-            f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
+        Log.info(f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
         self.wsClient.subscribe(
             f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
 
@@ -144,6 +143,7 @@ class RosSubscriberLauncher:
         while rclpy.ok():
             rclpy.spin_once(self.ros_node, timeout_sec=0)
             await asyncio.sleep(1e-4)
+
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
 
@@ -251,8 +251,12 @@ class RosSubscriberLauncher:
 
         return qos_profile
 
+    def exception_handler(self, loop, error):
+        pass
+
     def spin(self):
         try:
+            self.asyncio_loop.set_exception_handler(self.exception_handler)
             self.asyncio_loop.run_forever()
             # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
@@ -261,14 +265,14 @@ class RosSubscriberLauncher:
             # on load error the process will be killed to notify user
             # in node_manager about error
             self.ros_node.get_logger().warning('Start failed: %s' %
-                                              traceback.format_exc())
+                                               traceback.format_exc())
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
         print('shutdown rclpy')
         self.sub.destroy()
-        rclpy.shutdown()
+        # rclpy.shutdown()
         print('bye!')
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
@@ -351,6 +355,8 @@ class RosSubscriberLauncher:
         return parser
 
     def stop(self):
+        if self.wsClient:
+            self.wsClient.shutdown()
         if hasattr(self, 'asyncio_loop'):
             self.asyncio_loop.stop()
 
@@ -369,8 +375,6 @@ class RosSubscriberLauncher:
                 data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
         event.count = self._count_received
         self._calc_stats(data, event)
-        print(f"publish_to: ",
-              f"ros.subscriber.event.{self._topic.replace('/', '_')}")
         timeouted = self._hz == 0
         if self._hz != 0:
             now = time.time()
@@ -379,7 +383,7 @@ class RosSubscriberLauncher:
                 timeouted = True
         if event.latched or timeouted:
             self.wsClient.publish(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), resend_after_connect=self._latched)
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
 
     def _get_message_size(self, msg):
         # print("size:", msg.__sizeof__())

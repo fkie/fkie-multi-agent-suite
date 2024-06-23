@@ -29,7 +29,7 @@ from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.parameters.ros1_parameters import ROS1Parameters
-from fkie_mas_pylib.websocket import ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 
 
 class ParameterServicer:
@@ -37,14 +37,14 @@ class ParameterServicer:
     Interface for ROS1 parameters (using parameter server)
     '''
 
-    def __init__(self, test_env=False) -> None:
+    def __init__(self, websocket: WebSocketServer, test_env=False) -> None:
         Log.info("Create ROS2 parameter servicer")
         self._handler = ROS1Parameters()
-        ws_register_method("ros.parameters.get_list", self.getParameterList)
-        ws_register_method("ros.parameters.get_node_parameters", self.getNodeParameters)
-        ws_register_method("ros.parameters.has_parameter", self.hasParameter)
-        ws_register_method("ros.parameters.set_parameter", self.setParameter)
-        ws_register_method("ros.parameters.delete_parameters", self.deleteParameters)
+        websocket.register("ros.parameters.get_list", self.getParameterList)
+        websocket.register("ros.parameters.get_node_parameters", self.getNodeParameters)
+        websocket.register("ros.parameters.has_parameter", self.hasParameter)
+        websocket.register("ros.parameters.set_parameter", self.setParameter)
+        websocket.register("ros.parameters.delete_parameters", self.deleteParameters)
     
     def stop(self):
         pass

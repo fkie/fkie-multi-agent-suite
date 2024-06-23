@@ -89,8 +89,17 @@ class RosNodeLauncher(object):
 
     async def ros_loop(self):
         while rclpy.ok():
-            rclpy.spin_once(self.ros_node, timeout_sec=0)
-            await asyncio.sleep(1e-4)
+            try:
+
+                rclpy.spin_once(self.ros_node, timeout_sec=0)
+                await asyncio.sleep(1e-4)
+            except Exception:
+                # import traceback
+                # print(traceback.format_exc())
+                pass
+
+    def exception_handler(self, loop, error):
+        pass
 
     def spin(self):
         try:
@@ -98,8 +107,8 @@ class RosNodeLauncher(object):
                 self._port, displayed_name=self._displayed_name)
             if self.success_start:
                 self._load_launches()
+                self.asyncio_loop.set_exception_handler(self.exception_handler)
                 self.asyncio_loop.run_forever()
-                # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             pass
         except Exception:
@@ -114,15 +123,6 @@ class RosNodeLauncher(object):
             # os.kill(os.getpid(), signal.SIGKILL)
         print('shutdown own server')
         self.server.shutdown()
-        print('shutdown rclpy')
-        self.ros_node.destroy_node()
-        try:
-            rclpy.shutdown()
-        except Exception:
-            pass
-            # import traceback
-            # print(traceback.format_exc())
-        self.asyncio_loop.stop()
         print('bye!')
 
     def _run_tests(self):

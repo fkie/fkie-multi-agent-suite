@@ -26,7 +26,6 @@ import json
 import os
 import psutil
 import signal
-import threading
 
 
 from fkie_mas_daemon.monitor.service import Service
@@ -39,20 +38,21 @@ from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.defines import SETTINGS_PATH
-from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 
 
 class MonitorServicer:
-    def __init__(self, settings, loop: asyncio.AbstractEventLoop):
+    def __init__(self, settings, websocket: WebSocketServer):
         Log.info("Create monitor servicer")
         self._monitor = Service(settings, self.diagnosticsCbPublisher)
-        ws_register_method("ros.provider.get_system_info", self.getSystemInfo)
-        ws_register_method("ros.provider.get_system_env", self.getSystemEnv)
-        ws_register_method("ros.provider.get_warnings",
+        self.websocket = websocket
+        websocket.register("ros.provider.get_system_info", self.getSystemInfo)
+        websocket.register("ros.provider.get_system_env", self.getSystemEnv)
+        websocket.register("ros.provider.get_warnings",
                            self.getProviderWarnings)
-        ws_register_method("ros.provider.get_diagnostics", self.getDiagnostics)
-        ws_register_method("ros.provider.ros_clean_purge", self.rosCleanPurge)
-        ws_register_method("ros.provider.shutdown", self.rosShutdown)
+        websocket.register("ros.provider.get_diagnostics", self.getDiagnostics)
+        websocket.register("ros.provider.ros_clean_purge", self.rosCleanPurge)
+        websocket.register("ros.provider.shutdown", self.rosShutdown)
 
     def stop(self):
         self._monitor.stop()
@@ -87,8 +87,8 @@ class MonitorServicer:
         return cbMsg
 
     def diagnosticsCbPublisher(self, rosmsg):
-        ws_publish_to("ros.provider.diagnostics",
-                      json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),)
+        self.websocket.publish("ros.provider.diagnostics",
+                               json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),)
 
     def getDiagnostics(self) -> DiagnosticArray:
         Log.info("request: get diagnostics")

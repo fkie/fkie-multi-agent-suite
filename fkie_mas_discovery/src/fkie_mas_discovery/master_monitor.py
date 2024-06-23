@@ -67,7 +67,6 @@ from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system import ros1_masteruri
 from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.client import WebSocketClient
-from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -264,15 +263,15 @@ class MasterMonitor:
             self._wsThread = threading.Thread(
                 target=self.asyncio_loop.run_forever, daemon=True)
             self._wsThread.start()
-            ws_register_method("ros.screen.get_list", self.getScreenList)
-            ws_register_method("ros.provider.get_list", self.getProviderList)
-            ws_register_method("ros.nodes.get_list", self.get_node_list)
-            ws_register_method("ros.nodes.stop_node", self.stop_node)
-            ws_register_method("ros.subscriber.stop", self.stop_subscriber)
-            ws_register_method("ros.provider.get_timestamp", self.getProviderTimestamp)
-            ws_register_method("ros.provider.get_warnings", self.get_provider_warnings)
-            ws_register_method("ros.system.get_uri", self.get_system_uri)
-            ws_register_method("ros.nodes.unregister",self.unregister_node)
+            self.wsClient.register("ros.screen.get_list", self.getScreenList)
+            self.wsClient.register("ros.provider.get_list", self.getProviderList)
+            self.wsClient.register("ros.nodes.get_list", self.get_node_list)
+            self.wsClient.register("ros.nodes.stop_node", self.stop_node)
+            self.wsClient.register("ros.subscriber.stop", self.stop_subscriber)
+            self.wsClient.register("ros.provider.get_timestamp", self.getProviderTimestamp)
+            self.wsClient.register("ros.provider.get_warnings", self.get_provider_warnings)
+            self.wsClient.register("ros.system.get_uri", self.get_system_uri)
+            self.wsClient.register("ros.nodes.unregister",self.unregister_node)
 
 
         # === UPDATE THE LAUNCH URIS Section ===
@@ -299,7 +298,7 @@ class MasterMonitor:
             self._screen_thread = threading.Thread(
                 target=self.checkScreens, daemon=True)
             self._screen_thread.start()
-            ws_publish_to('ros.discovery.ready', {'status': True})
+            self.wsClient.publish('ros.discovery.ready', {'status': True})
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -954,7 +953,7 @@ class MasterMonitor:
             self.__master_state.check_ts = self.__new_master_state.timestamp
             if result and self.connect_server:
                 result = {"timestamp": self.__new_master_state.timestamp}
-                ws_publish_to('ros.nodes.changed', result)
+                self.wsClient.publish('ros.nodes.changed', result)
                 self._screen_do_check = True
             return result
 
@@ -993,7 +992,7 @@ class MasterMonitor:
                 count_warnings += len(wg.warnings)
             Log.debug(
                 f"ros.provider.warnings with {count_warnings} warnings in {len(self._json_warning_groups)} groups")
-            ws_publish_to('ros.provider.warnings', list(
+            self.wsClient.publish('ros.provider.warnings', list(
                 self._json_warning_groups.values()))
 
     def get_provider_warnings(self) -> str:
@@ -1131,7 +1130,7 @@ class MasterMonitor:
                 if div_screen_nodes or div_screens:
                     Log.debug(
                         f"publish ros.screen.list with {len(json_msg)} nodes.")
-                    ws_publish_to('ros.screen.list', json_msg)
+                    self.wsClient.publish('ros.screen.list', json_msg)
                     self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
@@ -1152,16 +1151,16 @@ class MasterMonitor:
             return
         # notify changes
         if self._on_shutdown or not self.provider_list:
-            ws_publish_to('ros.discovery.ready', {'status': False})
+            self.wsClient.publish('ros.discovery.ready', {'status': False})
         else:
-            ws_publish_to('ros.provider.list', provider_list)
+            self.wsClient.publish('ros.provider.list', provider_list)
 
     def getProviderList(self) -> str:
         Log.info('Request to [ros.provider.get_list]')
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
 
-    def run_async_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+    def run_async_forever(self) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
         print("run_forever_exited")

@@ -54,7 +54,7 @@ from fkie_mas_pylib.names import ns_join
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import get_hostname
 from fkie_mas_pylib.system.url import get_port
-from fkie_mas_pylib.websocket import ws_publish_to, ws_register_method
+from fkie_mas_pylib.websocket.server import WebSocketServer
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_msgs.msg import DiscoveredState
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
@@ -65,7 +65,7 @@ import fkie_mas_daemon as nmd
 
 class RosStateServicer:
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, test_env=False):
+    def __init__(self, websocket: WebSocketServer, test_env=False):
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
@@ -78,13 +78,14 @@ class RosStateServicer:
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
         self._on_shutdown = False
-        ws_register_method("ros.provider.get_list", self.get_provider_list)
-        ws_register_method("ros.nodes.get_list", self.get_node_list)
-        ws_register_method("ros.nodes.get_loggers", self.get_loggers)
-        ws_register_method("ros.nodes.set_logger_level", self.set_logger_level)
-        ws_register_method("ros.nodes.stop_node", self.stop_node)
-        ws_register_method("ros.subscriber.stop", self.stop_subscriber)
-        ws_register_method("ros.provider.get_timestamp",
+        self.websocket = websocket
+        websocket.register("ros.provider.get_list", self.get_provider_list)
+        websocket.register("ros.nodes.get_list", self.get_node_list)
+        websocket.register("ros.nodes.get_loggers", self.get_loggers)
+        websocket.register("ros.nodes.set_logger_level", self.set_logger_level)
+        websocket.register("ros.nodes.stop_node", self.stop_node)
+        websocket.register("ros.subscriber.stop", self.stop_subscriber)
+        websocket.register("ros.provider.get_timestamp",
                            self.get_provider_timestamp)
 
     def start(self):
@@ -120,7 +121,7 @@ class RosStateServicer:
 
     def _publish_masters(self):
         result = self._endpoints_to_provider(self._endpoints)
-        ws_publish_to('ros.provider.list', result)
+        self.websocket.publish('ros.provider.list', result)
 
     def get_publisher_count(self):
         if hasattr(self, 'topic_name_endpoint') and self.topic_name_endpoint is not None:
@@ -132,8 +133,8 @@ class RosStateServicer:
             if self.topic_state_publisher_count:
                 # check if we have a discovery node
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
-                    ws_publish_to('ros.discovery.ready', {
-                                  'status': False, 'timestamp': time.time() * 1000})
+                    self.websocket.publish('ros.discovery.ready', {
+                        'status': False, 'timestamp': time.time() * 1000})
                     self.topic_state_publisher_count = 0
                     self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
@@ -141,7 +142,7 @@ class RosStateServicer:
             if self._ts_state_updated > self._ts_state_notified:
                 if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                     self._ts_state_notified = self._ts_state_updated
-                    ws_publish_to('ros.nodes.changed', {
+                    self.websocket.publish('ros.nodes.changed', {
                         "timestamp": self._ts_state_updated})
                     nmd.launcher.server.screen_servicer.system_change()
             time.sleep(1.0 / self._rate_check_discovery_node)
@@ -157,8 +158,8 @@ class RosStateServicer:
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
-        ws_publish_to('ros.discovery.ready', {
-                      'status': False, 'timestamp': time.time() * 1000})
+        self.websocket.publish('ros.discovery.ready', {
+            'status': False, 'timestamp': time.time() * 1000})
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''
@@ -167,7 +168,7 @@ class RosStateServicer:
         :type msg: fkie_mas_msgs.DiscoveredState<XXX>
         '''
         if not self.topic_state_publisher_count:
-            ws_publish_to('ros.discovery.ready', {'status': True})
+            self.websocket.publish('ros.discovery.ready', {'status': True})
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
         # update the participant info (IP addresses)

@@ -1,22 +1,5 @@
-
-import json
 import os
 from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.websocket import globals
-
-def ws_register_method(uri: str, callback):
-    globals.WS_REGISTRATIONS[uri] = callback
-
-
-def ws_publish_to(uri: str, message: str) -> bool:
-    print(f"PUBLISH {uri}: {message} === {type(message)}")
-    # global WS_CONNECTIONS
-    message = message
-    if not isinstance(message, str):
-        message = json.dumps(message, cls=SelfEncoder)
-    for con in globals.WS_CONNECTIONS:
-        con.publish(uri, message)
 
 
 def ws_port() -> int:
