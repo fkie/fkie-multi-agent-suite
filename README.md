@@ -8,7 +8,7 @@ Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this 
 
 ## Install
 
-The communication between the GUI and the Daemon (on each host) is based on WebSockets on port 35430+(ROS_DOMAIN_ID), __35685+(NetworkId) with ROS1__. These ports should be open in the firewall.
+The communication between the GUI and the Daemon (on each host) is based on WebSockets on port __35430+(ROS_DOMAIN_ID)__, 35685+(NetworkId) with ROS1. These ports should be open in the firewall.
 
 ### Install dependencies
 

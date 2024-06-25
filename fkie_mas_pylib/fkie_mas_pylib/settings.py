@@ -22,6 +22,7 @@
 
 import os
 import ruamel.yaml
+import ruamel.yaml.compat
 import threading
 
 from fkie_mas_pylib.logging.logging import Log
@@ -162,8 +163,8 @@ class Settings:
             try:
                 self._cfg = self.default()
                 with open(self.filename, 'r') as stream:
-                    result = ruamel.yaml.load(
-                        stream, Loader=ruamel.yaml.Loader)
+                    yaml = ruamel.yaml.YAML(typ='rt')
+                    result = yaml.load(stream)
                     if result is None:
                         Log.info('reset configuration file %s' %
                                  self.filename)
@@ -183,22 +184,19 @@ class Settings:
         '''
         with open(self.filename, 'w') as stream:
             try:
-                ruamel.yaml.dump(self._cfg, stream,
-                                 Dumper=ruamel.yaml.RoundTripDumper)
+                yaml = ruamel.yaml.YAML(typ='rt')
+                yaml.dump(self._cfg, stream)
                 Log.debug(f"Configuration saved to '{self.filename}'")
             except ruamel.yaml.YAMLError as exc:
                 Log.warn(
                     f"Cant't save configuration to '{self.filename}': {exc}")
 
-    def yaml(self, _ns_list=[]):
-        '''
-        :param list ns_list: Filter option. Currently not used!
-        :return: Create YAML string representation from configuration dictionary structure.
-        :rtype: str
-        '''
-        return ruamel.yaml.dump(self._cfg, Dumper=ruamel.yaml.RoundTripDumper)
+    def fromString(self, data: str):
+        stream = ruamel.yaml.compat.StringIO(data)
+        yaml = ruamel.yaml.YAML(typ='rt')
+        return yaml.load(stream)
 
-    def apply(self, data):
+    def apply(self, data: dict):
         '''
         Applies data (string representation of YAML).
         After new data are set the configuration will be saved to file.
@@ -207,8 +205,7 @@ class Settings:
         :param str data: YAML as string representation.
         '''
         with self._mutex:
-            self._cfg = self._apply_recursive(ruamel.yaml.load(
-                data, Loader=ruamel.yaml.Loader), self._cfg)
+            self._cfg = self._apply_recursive(data, self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
                 Log.info("Reset configuration requested!")
