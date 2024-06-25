@@ -24,6 +24,8 @@ In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
 sudo apt install libsecret-1-dev
 ```
 
+> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the __rmw_fastrtps_cpp__ ROS library. If you are using a different DDS for your system, you will need to change the environment variable for __mas-discovery__ by setting ```export RMW_IMPLEMENTATION=rmw_fastrtps_cpp```.
+
 ### Build ROS FKIE packages
 
 You can run the following commands to setup a build from source:
