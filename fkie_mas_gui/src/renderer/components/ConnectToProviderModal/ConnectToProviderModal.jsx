@@ -362,9 +362,9 @@ function ConnectToProviderModal() {
         startParameter.networkId;
     // join each host separately
     await Promise.all(
-      hosts.map(async (crossbarHost) => {
-        let host = crossbarHost;
-        if (crossbarHost.ip) host = crossbarHost.ip;
+      hosts.map(async (remoteHost) => {
+        let host = remoteHost;
+        if (remoteHost.ip) host = remoteHost.ip;
         setStartProviderDescription(`Connecting to ${host} ...`);
         console.log(`connecting to ${host}:${port}`);
         const newProvider = new Provider(

@@ -172,7 +172,8 @@ class RosParameter:
             else:
                 return self.value
         if self.type is not None:
-            print(f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")
+            print(
+                f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")
         return self.value
 
     def __str__(self) -> str:
@@ -209,7 +210,7 @@ class RosProvider:
     """
     :param str name: the name of the ROS Host
     :param str host: hostname
-    :param int port: port of crossbar server
+    :param int port: port of the interface server (websocket or crossbar-wamp)
     :param str masteruri: master uri
     :param bool origin: True if the provider represents itself, otherwise it is a discovered provider.
     :param str[] hostnames: All known hostnames for this provides, e.g. IPv4 IPv6 or names.
@@ -244,10 +245,11 @@ class RosProvider:
 
         # add distro to name, to prevent collisions when ROS1 and ROS2
         # run simultaneously on the same host
+        # type: crossbar-wamp, websocket
         self.name = f"{name} [{self.ros_distro}]"
         self.host = host
         self.port = port
-        self.type = "crossbar-wamp"
+        self.type = "websocket"
         self.masteruri = masteruri
         self.origin = origin
         self.hostnames = hostnames if hostnames is not None else []
@@ -258,9 +260,6 @@ class RosProvider:
 
 class SystemInformation:
     """
-    :param str name: the name of the ROS Host
-    :param str host: hostname
-    :param int port: port of crossbar server
     """
 
     def getSystemInfo(self):
@@ -329,14 +328,9 @@ class SystemInformation:
 
 class SystemEnvironment:
     """
-    :param str name: the name of the ROS Host
-    :param str host: hostname
-    :param int port: port of crossbar server
     """
 
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self) -> None:
         try:
             self.environment = dict(os.environ)
         except:

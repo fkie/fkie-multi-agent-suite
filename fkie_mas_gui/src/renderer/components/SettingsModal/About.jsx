@@ -219,13 +219,6 @@ function About() {
         <Typography variant="body">
           <Stack>
             <Link
-              href="https://snapcraft.io/crossbar"
-              target="_blank"
-              rel="noopener"
-            >
-              https://snapcraft.io/crossbar
-            </Link>
-            <Link
               href="https://github.com/tsl0922/ttyd"
               target="_blank"
               rel="noopener"

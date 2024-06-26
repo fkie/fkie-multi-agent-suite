@@ -20,7 +20,7 @@ interface ISubscriptions {
 }
 
 /**
- * CrossbarIOConnection class to connect with a running WAMP Router
+ * WebsocketConnection class to connect with a running daemon with websocket 
  */
 export default class WebsocketConnection extends ProviderConnection {
   static type = 'websocket';
@@ -98,7 +98,6 @@ export default class WebsocketConnection extends ProviderConnection {
       return Promise.resolve(false);
     });
     this.websocket.addEventListener('message', (event: MessageEvent) => {
-      console.info(`received from ${this.websocket?.url}: ${event.data}`);
       this.handleMessage(event.data);
     });
     const start = Date.now();
@@ -240,9 +239,7 @@ export default class WebsocketConnection extends ProviderConnection {
 
   handleMessage: (msg: string) => void = (msg) => {
     try {
-      console.log(`handle msg: ${msg}`);
       const message = JSON.parse(msg);
-      console.log(`parsed msg: ${JSON.stringify(message)}`);
       if ('id' in message) {
         // object with "id" means the response for an rpc request
         if (!this.queue[message.id]) {
@@ -268,7 +265,6 @@ export default class WebsocketConnection extends ProviderConnection {
             message: message.error,
           });
         } else {
-          console.log(`OK ${JSON.stringify(message.result)}`);
           this.queue[message.id].promise[0](message.result);
         }
 

@@ -26,7 +26,7 @@ export interface ILoggingContext {
   warn: (description: string, details: string, showSnackbar?: boolean) => void;
   error: (description: string, details: string, showSnackbar?: boolean) => void;
   clearLogs?: () => void;
-  debugCrossbar: (
+  debugInterface: (
     uri: string,
     result: any,
     details?: any,
@@ -45,7 +45,7 @@ export const DEFAULT_LOGGING = {
   success: () => {},
   warn: () => {},
   error: () => {},
-  debugCrossbar: () => {},
+  debugInterface: () => {},
 };
 
 // TODO Add valid github issue repository
@@ -157,13 +157,13 @@ export function LoggingProvider({
     setLogs(() => []);
   };
 
-  const debugCrossbar = (
+  const debugInterface = (
     uri: string,
     msg: any,
     details?: any,
     providerName?: string,
   ) => {
-    // check settings crossbar uri
+    // check settings to debug by uri
 
     let parsedMsg = null;
     try {
@@ -185,9 +185,9 @@ export function LoggingProvider({
       }
     }
 
-    if (settingsCtx.get('debugCrossbarUris').includes(uri)) {
+    if (settingsCtx.get('debugByUri').includes(uri)) {
       debug(
-        `[CROSSBAR] ${providerName} (${uri}): ${parseDetails}}`,
+        `[URI] ${providerName} (${uri}): ${parseDetails}}`,
         JSON.stringify(parsedMsg),
       );
     }
@@ -203,7 +203,7 @@ export function LoggingProvider({
       warn,
       error,
       clearLogs,
-      debugCrossbar,
+      debugInterface,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [logs, countErrors],

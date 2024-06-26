@@ -202,12 +202,12 @@ export default class Provider {
   private currentRequestList = new Set();
 
   /**
-   * constructor that initializes a new instance of a CrossbarIO object.
+   * constructor that initializes a new instance of a provider object.
    *
    * @param {ISettingsContext} settings - External settings
-   * @param {string} host - IP address or hostname of a CROSSBAR server on remote host.
+   * @param {string} host - IP address or hostname of a remote server on remote host.
    * @param {string} rosVersion - ROS version as string of {'1', '2'}
-   * @param {number} port - Port of a CROSSBAR server on remote host. If zero, it depends on the ros version.
+   * @param {number} port - Port of a remote server on remote host. If zero, it depends on the ros version.
    * @param {ILoggingContext | null} logger - External logger
    */
   constructor(
@@ -377,7 +377,8 @@ export default class Provider {
         state === ConnectionState.STATES.CONNECTING &&
         oldState === ConnectionState.STATES.STARTING
       ) {
-        delay(3000);
+        // TODO: delay if use crossbar-wamp server
+        // delay(3000);
       } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
         this.registerCallbacks()
           .then(() => {
@@ -1122,7 +1123,7 @@ export default class Provider {
   };
 
   /**
-   * Terminate all running subprocesses (ROS, Crossbar, TTYD) of the provider
+   * Terminate all running subprocesses (ROS, TTYD) of the provider
    *
    * @return {Promise<IResult>}
    */
@@ -1673,7 +1674,7 @@ export default class Provider {
     return Promise.resolve(result);
   };
 
-  private generateCrossbarTopic: (topic: string) => string = (topic) => {
+  private generateSubscriberUri: (topic: string) => string = (topic) => {
     return `${URI.ROS_SUBSCRIBER_EVENT_PREFIX}.${topic.replaceAll('/', '_')}`;
   };
 
@@ -1682,7 +1683,7 @@ export default class Provider {
    * First closes all existing providers and then create new ones.
    */
   private callbackNewSubscribedMessage: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugCrossbar(
+    this.logger?.debugInterface(
       URI.ROS_SUBSCRIBER_EVENT_PREFIX,
       msg,
       '',
@@ -1738,7 +1739,7 @@ export default class Provider {
           return parsed;
         });
       if (result) {
-        const cbTopic = this.generateCrossbarTopic(request.topic);
+        const cbTopic = this.generateSubscriberUri(request.topic);
         this.registerCallback(cbTopic, this.callbackNewSubscribedMessage);
         this.logger?.debug(
           `Started subscriber node for '${request.topic} [${
@@ -1762,7 +1763,7 @@ export default class Provider {
     const hasTopic = this.echoTopics.includes(topic);
     if (hasTopic) {
       this.echoTopics = this.echoTopics.filter((e) => e !== topic);
-      const cbTopic = this.generateCrossbarTopic(topic);
+      const cbTopic = this.generateSubscriberUri(topic);
       await this.connection.closeSubscription(cbTopic).catch((err) => {
         this.logger?.error(
           `Provider [${this.name()}]: close subscription failed`,
@@ -2311,7 +2312,7 @@ export default class Provider {
    * Callback of master daemon ready status (true/false)
    */
   private callbackDaemonReady: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugCrossbar(URI.ROS_DAEMON_READY, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
 
     console.log(`DAEMEON ${JSON.stringify(msg)}`);
     const msgObj = msg as unknown as ProviderDaemonReady;
@@ -2333,7 +2334,7 @@ export default class Provider {
    * Callback of master discovery ready status (true/false)
    */
   private callbackDiscoveryReady: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugCrossbar(URI.ROS_DISCOVERY_READY, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_DISCOVERY_READY, msg, '', this.id);
     const msgObj = msg as unknown as ProviderDiscoveryReady;
     this.discovery = msgObj.status;
   };
@@ -2427,7 +2428,7 @@ export default class Provider {
   };
 
   private callbackChangedFile: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugCrossbar(URI.ROS_PATH_CHANGED, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_PATH_CHANGED, msg, '', this.id);
     if (!msg || (await this.lockRequest('callbackChangedFile'))) {
       return;
     }
@@ -2443,7 +2444,7 @@ export default class Provider {
    * Update the screen state of each node reported in the list of ScreensMapping.
    */
   private callbackScreensUpdate: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugCrossbar(URI.ROS_SCREEN_LIST, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_SCREEN_LIST, msg, '', this.id);
     if (!msg) {
       return;
     }
@@ -2457,7 +2458,7 @@ export default class Provider {
   private callbackDiagnosticsUpdate: (msg: JSONObject) => void = async (
     msg,
   ) => {
-    this.logger?.debugCrossbar(URI.ROS_PROVIDER_DIAGNOSTICS, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_PROVIDER_DIAGNOSTICS, msg, '', this.id);
     if (!msg) {
       return;
     }
@@ -2468,7 +2469,7 @@ export default class Provider {
    * Update the provider warnings reported in the list of SystemWarningGroup.
    */
   private callbackProviderWarnings: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugCrossbar(URI.ROS_PROVIDER_WARNINGS, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_PROVIDER_WARNINGS, msg, '', this.id);
     if (!msg) {
       return;
     }
@@ -2562,7 +2563,7 @@ export default class Provider {
           .call(_uri, _args)
           .catch((err) => {
             // TODO
-            console.log(`ERROR cc ${JSON.stringify(err)}`);
+            console.log(`${JSON.stringify(err)}`);
             throw Error(err);
           });
         return r;
@@ -2581,7 +2582,7 @@ export default class Provider {
         if (currentAttempt >= this.callAttempts) {
           this.unlockRequest(uri);
           throw Error(
-            `[CROSSBAR] (${uri}) [${this.name()}]: Max call attempts (${
+            `[URI] (${uri}) [${this.name()}]: Max call attempts (${
               this.callAttempts
             }) reached!`,
           );
@@ -2589,7 +2590,7 @@ export default class Provider {
 
         // didn't work, wait and repeat
         this.logger?.info(
-          `[CROSSBAR] (${uri}) [${this.name()}]`,
+          `[URI] (${uri}) [${this.name()}]`,
           `Waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
           false,
         );
@@ -2601,7 +2602,7 @@ export default class Provider {
     const result = await callRequest(uri, args);
     // const result = await this.connection.call(uri, args);
     this.unlockRequest(uri);
-    this.logger?.debugCrossbar(uri, result, '', this.name());
+    this.logger?.debugInterface(uri, result, '', this.name());
     return result;
   };
 
@@ -2616,7 +2617,7 @@ export default class Provider {
   };
 
   private onOpenConnection = () => {
-    // connected state is set after all crossbar connections are registered
+    // connected state is set after all remote connections are registered
     this.daemon = false;
     this.discovery = false;
     this.setConnectionState(ConnectionState.STATES.SERVER_CONNECTED, '');

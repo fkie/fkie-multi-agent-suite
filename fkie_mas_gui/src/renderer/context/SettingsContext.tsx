@@ -1,6 +1,6 @@
 import React, { createContext, useMemo, useReducer } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import URI from '../models/Crossbar';
+import URI from '../models/uris';
 
 export const getDefaultPortFromRos: (
   connectionType: string,
@@ -130,8 +130,8 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: LOG_LEVEL_LIST,
     description: 'displayed log levels',
   },
-  debugCrossbarUris: {
-    label: 'Crossbar URIs',
+  debugByUri: {
+    label: 'Interface URIs',
     type: 'string[]',
     default: [
       URI.ROS_PROVIDER_GET_LIST,

@@ -584,7 +584,6 @@ export function RosProviderReact(
           provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
           // already connected
           await provider.getDaemonVersion();
-          console.log(`VERSION OK!!!!!!!!!!!!!!!!!!!`);
           provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
           return true;
         }
@@ -792,7 +791,7 @@ export function RosProviderReact(
               }),
             );
             // wait a little bit until the ros node is unregistered
-            await delay(2000);
+            await delay(1000);
           }
 
           // Start Daemon
@@ -983,7 +982,7 @@ export function RosProviderReact(
   };
 
   /**
-   * Register subscriptions for crossbar URI callbacks for a given provider
+   * Register subscriptions for URI callbacks for a given provider
    */
   const registerSubscriber = useCallback(
     async (
@@ -1309,7 +1308,7 @@ export function RosProviderReact(
   useCustomEventListener(
     EVENT_PROVIDER_WARNINGS,
     (data: EventProviderWarnings) => {
-      logCtx.debugCrossbar(
+      logCtx.debugInterface(
         'ros.provider.warnings',
         data.warnings,
         '',

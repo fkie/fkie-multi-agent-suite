@@ -105,39 +105,6 @@ const createWindow = async () => {
   mainWindow.on('close', (e) => {
     e.preventDefault();
     mainWindow?.webContents.send('ShutdownInterface:terminateSubprocesses');
-    // dialog
-    //   .showMessageBox({
-    //     type: 'question',
-    //     buttons: ['Just close the GUI', 'Kill all subprocesses'],
-    //     defaultId: 0,
-    //     cancelId: 0,
-    //     title: 'Kill on exit?',
-    //     message: 'Would you like to kill all subprocesses before exiting?',
-    //   })
-    //   .then(({ response }) => {
-    //     if (response) {
-    //       const find = require('find-process');
-    //       find('name', 'SCREEN', true).then((list: any[]) => {
-    //         list = list.filter(
-    //           (p) => p.cmd.includes('ros.fkie') || p.cmd.includes('crossbar'),
-    //         );
-    //         console.log('Killing %s screens', list.length);
-    //         list.forEach((p: any) => {
-    //           console.log(p.cmd);
-    //           process.kill(p.pid);
-    //         });
-    //         if (mainWindow) {
-    //           mainWindow.destroy();
-    //         }
-    //         app.quit();
-    //       });
-    //     } else {
-    //       if (mainWindow) {
-    //         mainWindow.destroy();
-    //       }
-    //       app.quit();
-    //     }
-    //   });
   });
 
   mainWindow.on('closed', () => {
@@ -149,7 +116,6 @@ const createWindow = async () => {
 
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((data) => {
-    console.log('URRI', data.url);
     if (data.url === 'about:blank') {
       return {
         action: 'allow',

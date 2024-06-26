@@ -65,7 +65,7 @@ import SubscriberEvent from './SubscriberEvent';
 import SubscriberFilter from './SubscriberFilter';
 import SubscriberNode from './SubscriberNode';
 
-import URI from './Crossbar';
+import URI from './uris';
 import SystemWarning from './SystemWarning';
 import SystemWarningGroup from './SystemWarningGroup';
 

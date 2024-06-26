@@ -1,4 +1,4 @@
-// list of supported Crossbar URIs
+// list of supported interface URIs
 const URI = {
   ROS_DAEMON_READY: 'ros.daemon.ready',
   ROS_DISCOVERY_READY: 'ros.discovery.ready',
