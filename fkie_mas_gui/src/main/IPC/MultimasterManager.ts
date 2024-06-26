@@ -107,7 +107,7 @@ class MultimasterManager {
     } else if (versStr === '2') {
       let domainPrefix = "";
       if (port !== undefined && port !== 0) {
-        domainPrefix = `ROS_DOMAIN_ID=${port} `;
+        domainPrefix = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=${port} `;
       }
       cmdMasterDiscovery = `${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? '--respawn' : ''
