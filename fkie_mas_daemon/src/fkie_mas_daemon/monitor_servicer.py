@@ -52,6 +52,7 @@ from fkie_mas_pylib.defines import SETTINGS_PATH
 class MonitorServicer:
     def __init__(self, settings, websocket: WebSocketServer, test_env=False):
         Log.info("Create monitor servicer")
+        self._killTimer = None
         self._monitor = Service(settings, self.diagnosticsCbPublisher)
         self.websocket = websocket
         websocket.register("ros.provider.get_system_info", self.getSystemInfo)
@@ -125,6 +126,8 @@ class MonitorServicer:
             gone, alive = psutil.wait_procs(procs, timeout=3)
             for p in alive:
                 p.kill()
+            self._killTimer = threading.Timer(1.0, self._killSelf)
+            self._killTimer.start()
             result = True
         except Exception as error:
             import traceback
