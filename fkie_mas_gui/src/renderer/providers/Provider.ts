@@ -660,7 +660,7 @@ export default class Provider {
       })
       .then((value) => {
         console.log(
-          `value as unknown as DaemonVersion: ${JSON.stringify(value as unknown as DaemonVersion)}`,
+          `value as DaemonVersion: ${JSON.stringify(value as unknown as DaemonVersion)}`,
         );
         return value as unknown as DaemonVersion;
       });
@@ -2313,8 +2313,6 @@ export default class Provider {
    */
   private callbackDaemonReady: (msg: JSONObject) => void = (msg) => {
     this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
-
-    console.log(`DAEMEON ${JSON.stringify(msg)}`);
     const msgObj = msg as unknown as ProviderDaemonReady;
     if (msgObj.status && !this.daemon) {
       this.updateDaemonInit();

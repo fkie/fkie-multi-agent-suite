@@ -791,7 +791,7 @@ export function RosProviderReact(
               }),
             );
             // wait a little bit until the ros node is unregistered
-            await delay(1000);
+            // await delay(1000);
           }
 
           // Start Daemon
