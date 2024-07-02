@@ -14,7 +14,8 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
                   package_name + '.launch',
                   package_name + '.logging',
                   package_name + '.parameters',
-                  package_name + '.system'],
+                  package_name + '.system',
+                  package_name + '.websocket'],
         package_dir={'': '.'}
     )
 
@@ -46,7 +47,8 @@ else:
                   package_name + '.launch',
                   package_name + '.logging',
                   package_name + '.parameters',
-                  package_name + '.system'],
+                  package_name + '.system'.
+                  package_name + '.websocket'],
         data_files=[
             ('share/ament_index/resource_index/packages',
              ['resource/' + package_name]),
