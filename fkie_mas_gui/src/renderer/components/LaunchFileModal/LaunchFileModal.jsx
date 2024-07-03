@@ -103,6 +103,8 @@ function LaunchFileModal({
               historyList = [];
               // historyList = options.filter((value) => value !== argValue);
             }
+            // complement history with initial values in case they have never been used
+            historyList = [...new Set([...historyList, argValue])]
             argList.push({
               name: arg.name,
               value: argValue,
@@ -436,7 +438,7 @@ function LaunchFileModal({
                           // scroll through the options using mouse wheel
                           const options = arg.choices
                             ? arg.choices
-                            : [...new Set([...arg.history, arg.value])];
+                            : arg.history;
                           let newIndex = -1;
                           options.forEach((value, index) => {
                             if (value === event.target.value) {
