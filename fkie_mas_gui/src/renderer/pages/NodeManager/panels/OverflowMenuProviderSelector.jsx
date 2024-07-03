@@ -1,7 +1,7 @@
-import PropTypes from 'prop-types';
-
 import MoreVertSharpIcon from '@mui/icons-material/MoreVert';
 import { IconButton } from '@mui/material';
+import PropTypes from 'prop-types';
+import { useMemo } from 'react';
 import OverflowMenu from '../../../components/UI/OverflowMenu';
 
 function OverflowMenuProviderSelector({
@@ -11,51 +11,55 @@ function OverflowMenuProviderSelector({
   args,
   icon: MyIcon,
 }) {
-  const providerOptions = [];
-  providerMap?.forEach((providerName, providerId) => {
-    providerOptions.push({
-      // name: `${providerName}#${providerId}`,
-      name: providerName,
-      key: `${actionType}-${providerId}`,
-      providerId,
-      onClick: () => {
-        onClick(actionType, providerId, providerName, args);
-      },
+  const createMenu = useMemo(() => {
+    const providerOptions = [];
+    providerMap?.forEach((providerName, providerId) => {
+      providerOptions.push({
+        // name: `${providerName}#${providerId}`,
+        name: providerName,
+        key: `${actionType}-${providerId}`,
+        providerId,
+        onClick: () => {
+          onClick(actionType, providerId, providerName, args);
+        },
+      });
     });
-  });
-  if (providerMap?.size > 1) {
+    if (providerMap?.size > 1) {
+      return (
+        <OverflowMenu
+          icon={<MyIcon sx={{ fontSize: 'inherit' }} />}
+          options={providerOptions}
+          id="provider-options"
+          showBadge
+          colorizeItems
+        />
+      );
+    }
+    if (providerMap?.size === 1) {
+      return (
+        <IconButton
+          size="small"
+          onClick={() => {
+            onClick(
+              actionType,
+              providerOptions[0].providerId,
+              providerOptions[0].name,
+              args,
+            );
+          }}
+        >
+          <MyIcon sx={{ fontSize: 'inherit' }} />
+        </IconButton>
+      );
+    }
     return (
-      <OverflowMenu
-        icon={<MyIcon sx={{ fontSize: 'inherit' }} />}
-        options={providerOptions}
-        id="provider-options"
-        showBadge
-        colorizeItems
-      />
-    );
-  }
-  if (providerMap?.size === 1) {
-    return (
-      <IconButton
-        size="small"
-        onClick={() => {
-          onClick(
-            actionType,
-            providerOptions[0].providerId,
-            providerOptions[0].name,
-            args,
-          );
-        }}
-      >
+      <IconButton size="small" disabled>
         <MyIcon sx={{ fontSize: 'inherit' }} />
       </IconButton>
     );
-  }
-  return (
-    <IconButton size="small" disabled>
-      <MyIcon sx={{ fontSize: 'inherit' }} />
-    </IconButton>
-  );
+  }, [providerMap, actionType, args]);
+
+  return createMenu;
 }
 
 OverflowMenuProviderSelector.defaultProps = {
