@@ -436,7 +436,7 @@ function LaunchFileModal({
                           // scroll through the options using mouse wheel
                           const options = arg.choices
                             ? arg.choices
-                            : arg.history;
+                            : [...new Set([...arg.history, arg.value])];
                           let newIndex = -1;
                           options.forEach((value, index) => {
                             if (value === event.target.value) {
