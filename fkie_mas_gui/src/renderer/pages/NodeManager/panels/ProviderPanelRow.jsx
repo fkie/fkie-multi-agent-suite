@@ -30,6 +30,7 @@ import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_WARNINGS,
+  EVENT_PROVIDER_STATE
 } from '../../../providers/eventTypes';
 import {
   EVENT_OPEN_COMPONENT,
@@ -83,15 +84,19 @@ function ProviderPanelRow({ provider }) {
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_DELAY, (data) => {
     if (data.provider.id === provider.id) {
       debouncedCallbackUpdateDelay();
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_WARNINGS, (data) => {
+    if (data.provider.id === provider.id) {
+      forceUpdate();
+    }
+  });
+
+  useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
     if (data.provider.id === provider.id) {
       forceUpdate();
     }
