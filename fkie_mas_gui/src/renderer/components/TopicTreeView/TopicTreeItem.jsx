@@ -220,7 +220,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     >
                       {pubNodeName}
                     </Typography>
-                    <CopyButton value={pubNodeName} />
+                    <CopyButton value={pubNodeName} fontSize="0.7em" />
                   </Stack>
                 );
               })}
@@ -241,7 +241,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     >
                       {subNodeName}
                     </Typography>
-                    <CopyButton value={subNodeName} />
+                    <CopyButton value={subNodeName} fontSize="0.7em" />
                   </Stack>
                 );
               })}
