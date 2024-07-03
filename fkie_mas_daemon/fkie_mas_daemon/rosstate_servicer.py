@@ -242,7 +242,7 @@ class RosStateServicer:
                 unloaded = self.stop_composed_node(node)
             if not unloaded:
                 result = nmd.launcher.server.screen_servicer.kill_node(
-                    os.path.join(node.namespace, node.name), signal.SIGINT)
+                    os.path.join(node.namespace, node.name), signal.SIGTERM)
         if unloaded:
             result = json.dumps(
                 {'result': True, 'message': ''}, cls=SelfEncoder)
