@@ -2506,6 +2506,7 @@ export default class Provider {
     }
     await this.connection.closeSubscriptions();
     // await this.connection.connection.closeRegistrations();
+    this.logger?.info(`register callbacks for ${this.id}`, '', false);
 
     this.registerCallback(URI.ROS_PROVIDER_LIST, this.updateProviderList);
     this.registerCallback(URI.ROS_DAEMON_READY, this.callbackDaemonReady);

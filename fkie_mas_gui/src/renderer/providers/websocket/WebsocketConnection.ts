@@ -20,7 +20,7 @@ interface ISubscriptions {
 }
 
 /**
- * WebsocketConnection class to connect with a running daemon with websocket 
+ * WebsocketConnection class to connect with a running daemon with websocket
  */
 export default class WebsocketConnection extends ProviderConnection {
   static type = 'websocket';
@@ -224,9 +224,10 @@ export default class WebsocketConnection extends ProviderConnection {
    * Close all subscriptions
    */
   closeSubscriptions: () => Promise<void> = async () => {
-    Object.keys(this.subscriptions).forEach((key) => {
-      this.closeSubscription(key);
+    Object.keys(this.subscriptions).forEach(async (key) => {
+      await this.call('unsub', [key]);
     });
+    this.subscriptions = {};
   };
 
   /**
