@@ -47,7 +47,7 @@ else:
                   package_name + '.launch',
                   package_name + '.logging',
                   package_name + '.parameters',
-                  package_name + '.system'.
+                  package_name + '.system',
                   package_name + '.websocket'],
         data_files=[
             ('share/ament_index/resource_index/packages',
