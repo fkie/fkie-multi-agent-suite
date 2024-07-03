@@ -766,20 +766,20 @@ function HostTreeView({
     expanded,
     providerNodeTree,
     selectedItems,
-    handleToggle,
-    // handleSelect, <= causes too many re-renders
     rosCtx,
-    getMasterSyncNode,
     settingsCtx,
-    handleDoubleClick,
-    getProviderTags,
+    // handleToggle, <= causes too many re-renders
+    // handleSelect, <= causes too many re-renders
+    // getMasterSyncNode,     <= causes too many re-renders
+    // handleDoubleClick,     <= causes too many re-renders
+    // getProviderTags,       <= causes too many re-renders
     // selectNodesFromLaunch, <= causes too many re-renders
-    onRemoveLaunch,
-    onReloadLaunch,
-    toggleMasterSync,
-    createSingleTerminalCmdPanel,
+    // onRemoveLaunch,        <= causes too many re-renders
+    // onReloadLaunch,        <= causes too many re-renders
+    // toggleMasterSync,      <= causes too many re-renders
+    // createSingleTerminalCmdPanel,  <= causes too many re-renders
     // buildHostTreeViewItem, <= causes too many re-renders
-    setKeyNodeList,
+    // setKeyNodeList,        <= causes too many re-renders
   ]);
 
   return generateTree;

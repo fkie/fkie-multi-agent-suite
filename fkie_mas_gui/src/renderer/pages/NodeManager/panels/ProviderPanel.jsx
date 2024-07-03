@@ -62,7 +62,7 @@ function ProviderPanel() {
         <Table aria-label="hosts table">
           <TableBody>
             {providerRowsFiltered.map((provider) => {
-              return <ProviderPanelRow provider={provider} />;
+              return <ProviderPanelRow key={provider.id} provider={provider} />;
             })}
           </TableBody>
         </Table>

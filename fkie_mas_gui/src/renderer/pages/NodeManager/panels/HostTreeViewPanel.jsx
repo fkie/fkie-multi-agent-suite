@@ -1,5 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
-
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 // mui imports
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import CancelPresentationIcon from '@mui/icons-material/CancelPresentation';
@@ -43,11 +42,9 @@ import { NavigationContext } from '../../../context/NavigationContext';
 import { RosContext } from '../../../context/RosContext';
 import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
-import { RosNode, RosNodeStatus, getBaseName } from '../../../models';
-import { CmdType } from '../../../providers';
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-
 import useQueue from '../../../hooks/useQueue';
+import { RosNodeStatus, getBaseName } from '../../../models';
+import { CmdType } from '../../../providers';
 import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/eventTypes';
 import {
   EVENT_EDITOR_SELECT_RANGE,
@@ -56,6 +53,7 @@ import {
   eventOpenComponent,
 } from '../../../utils/events';
 import { findIn } from '../../../utils/index';
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import FileEditorPanel from './FileEditorPanel';
 import NodeLoggerPanel from './NodeLoggerPanel';
 import ParameterPanel from './ParameterPanel';
@@ -1094,6 +1092,352 @@ function HostTreeViewPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRemoteNodes]);
 
+  const createButtonBox = useMemo(() => {
+    return (
+      <ButtonGroup orientation="vertical" aria-label="ros node control group">
+        {navCtx.selectedNodes?.length > 0 && (
+          <Tooltip
+            title="Start"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="Start"
+              onClick={() => {
+                startSelectedNodes();
+              }}
+            >
+              <PlayArrowIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && (
+          <Tooltip
+            title="Stop"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="Stop"
+              onClick={() => {
+                stopSelectedNodes();
+              }}
+            >
+              <StopIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && <Divider />}
+        {navCtx.selectedNodes?.length > 0 && (
+          <Tooltip
+            title="Restart"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="Restart"
+              onClick={() => {
+                restartSelectedNodes();
+              }}
+            >
+              <RestartAltIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && (
+          <Tooltip title="Kill" placement="left">
+            <IconButton
+              size="medium"
+              aria-label="Kill"
+              onClick={() => {
+                killSelectedNodes();
+              }}
+            >
+              <CancelPresentationIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && (
+          <Tooltip title="Unregister ROS1 nodes" placement="left">
+            <IconButton
+              size="medium"
+              aria-label="Unregister"
+              onClick={() => {
+                unregisterSelectedNodes();
+              }}
+            >
+              <DeleteForeverIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedProviders?.length > 0 && <Divider />}
+        {navCtx.selectedProviders?.length > 0 && (
+          <Tooltip
+            title="Open Terminal (external terminal with shift+click)"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="Open Terminal"
+              onClick={(event) => {
+                // open a new terminal for each selected provider
+                navCtx.selectedProviders.forEach((providerId) => {
+                  const prov = rosCtx.getProviderById(providerId);
+                  const emptyNode = new RosNode();
+                  emptyNode.name = '';
+                  emptyNode.providerId = providerId;
+                  emptyNode.providerName = prov?.name();
+                  createSingleTerminalPanel(
+                    CmdType.TERMINAL,
+                    emptyNode,
+                    '',
+                    event.nativeEvent.shiftKey,
+                  );
+                });
+              }}
+            >
+              <TerminalIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}{' '}
+        {navCtx.selectedProviders?.length > 0 && (
+          <Tooltip
+            title="Select screens (external terminal with shift+click)"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="Select screens"
+              onClick={(event) => {
+                navCtx.selectedProviders.forEach((providerId) => {
+                  const prov = rosCtx.getProviderById(providerId);
+                  const emptyNode = new RosNode();
+                  emptyNode.name = prov?.name();
+                  emptyNode.providerId = providerId;
+                  emptyNode.providerName = prov?.name();
+                  emptyNode.screens = [];
+                  prov?.screens.forEach((screen) => {
+                    emptyNode.screens = [
+                      ...emptyNode.screens,
+                      ...screen.screens,
+                    ];
+                  });
+                  const sl = {
+                    node: emptyNode,
+                    external: event.nativeEvent.shiftKey,
+                  };
+                  setNodeScreens((prevNodes) =>
+                    prevNodes ? [...prevNodes, sl] : [sl],
+                  );
+                });
+              }}
+            >
+              <DynamicFeedOutlinedIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedProviders?.length > 0 && (
+          <Tooltip
+            title="Parameters"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="Parameters"
+              onClick={() => {
+                createParameterPanel(null, navCtx.selectedProviders);
+              }}
+            >
+              <TuneIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}{' '}
+        {navCtx.selectedProviders?.length > 0 && (
+          <Tooltip
+            title="ros clean purge"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+          >
+            <IconButton
+              size="medium"
+              aria-label="ros clean purge"
+              onClick={() => {
+                setRosCleanPurge(true);
+              }}
+            >
+              <DeleteSweepIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && (
+            <Tooltip
+              title="Edit"
+              placement="left"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <IconButton
+                size="medium"
+                aria-label="Edit"
+                onClick={() => {
+                  createFileEditorPanel(getSelectedNodes());
+                }}
+              >
+                <BorderColorIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && (
+            <Tooltip
+              title="Parameters"
+              placement="left"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <IconButton
+                size="medium"
+                aria-label="Parameters"
+                onClick={() => {
+                  createParameterPanel(getSelectedNodes(), null);
+                }}
+              >
+                <TuneIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && <Divider />}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && (
+            <Tooltip
+              title="Screen (external terminal with shift+click)"
+              placement="left"
+            >
+              <IconButton
+                size="medium"
+                aria-label="Screen"
+                onClick={(event) => {
+                  getSelectedNodes().forEach((node) => {
+                    if (node.screens.length === 1) {
+                      // 1 screen available
+                      node.screens.forEach((screen) => {
+                        createSingleTerminalPanel(
+                          CmdType.SCREEN,
+                          node,
+                          screen,
+                          event.nativeEvent.shiftKey,
+                        );
+                      });
+                    } else if (node.screens.length > 1) {
+                      // Multiple screens available
+                      setNodeScreens((prevNodes) =>
+                        prevNodes
+                          ? [
+                              ...prevNodes,
+                              {
+                                node,
+                                external: event.nativeEvent.shiftKey,
+                              },
+                            ]
+                          : [
+                              {
+                                node,
+                                external: event.nativeEvent.shiftKey,
+                              },
+                            ],
+                      );
+                    } else {
+                      // no screens, try to find by node name instead
+                      createSingleTerminalPanel(
+                        CmdType.SCREEN,
+                        node,
+                        undefined,
+                        event.nativeEvent.shiftKey,
+                      );
+                    }
+                  });
+                }}
+              >
+                <WysiwygIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && (
+            <Tooltip title="Change log level" placement="left">
+              <IconButton
+                size="medium"
+                aria-label="Log Level"
+                onClick={(event) => {
+                  getSelectedNodes().forEach((node) => {
+                    createLoggerPanel(node);
+                  });
+                }}
+              >
+                <SettingsInputCompositeOutlinedIcon
+                  fontSize="inherit"
+                  sx={{ rotate: '90deg' }}
+                />
+              </IconButton>
+            </Tooltip>
+          )}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && (
+            <Tooltip
+              title="Log (external terminal with shift+click)"
+              placement="left"
+            >
+              <IconButton
+                size="medium"
+                aria-label="Log"
+                onClick={(event) => {
+                  getSelectedNodes().forEach((node) => {
+                    createSingleTerminalPanel(
+                      CmdType.LOG,
+                      node,
+                      undefined,
+                      event.nativeEvent.shiftKey,
+                    );
+                  });
+                }}
+              >
+                <SubjectIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+        {navCtx.selectedNodes?.length > 0 &&
+          navCtx.selectedProviders?.length === 0 && (
+            <Tooltip title="Clear Logs" placement="left">
+              <IconButton
+                size="medium"
+                aria-label="Clear Logs"
+                onClick={() => {
+                  clearLogs(getSelectedNodes(), null);
+                }}
+              >
+                <DeleteSweepIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+      </ButtonGroup>
+    );
+  }, [navCtx.selectedNodes, navCtx.selectedProviders]);
+
   return (
     <Box
       // ref={panelRef}
@@ -1196,350 +1540,7 @@ function HostTreeViewPanel() {
           </Box>
           <Box>
             <Paper elevation={2} sx={{ border: 0 }}>
-              <ButtonGroup
-                orientation="vertical"
-                aria-label="ros node control group"
-              >
-                {navCtx.selectedNodes?.length > 0 && (
-                  <Tooltip
-                    title="Start"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="Start"
-                      onClick={() => {
-                        startSelectedNodes();
-                      }}
-                    >
-                      <PlayArrowIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedNodes?.length > 0 && (
-                  <Tooltip
-                    title="Stop"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="Stop"
-                      onClick={() => {
-                        stopSelectedNodes();
-                      }}
-                    >
-                      <StopIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedNodes?.length > 0 && <Divider />}
-                {navCtx.selectedNodes?.length > 0 && (
-                  <Tooltip
-                    title="Restart"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="Restart"
-                      onClick={() => {
-                        restartSelectedNodes();
-                      }}
-                    >
-                      <RestartAltIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedNodes?.length > 0 && (
-                  <Tooltip title="Kill" placement="left">
-                    <IconButton
-                      size="medium"
-                      aria-label="Kill"
-                      onClick={() => {
-                        killSelectedNodes();
-                      }}
-                    >
-                      <CancelPresentationIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedNodes?.length > 0 && (
-                  <Tooltip title="Unregister ROS1 nodes" placement="left">
-                    <IconButton
-                      size="medium"
-                      aria-label="Unregister"
-                      onClick={() => {
-                        unregisterSelectedNodes();
-                      }}
-                    >
-                      <DeleteForeverIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedProviders?.length > 0 && <Divider />}
-                {navCtx.selectedProviders?.length > 0 && (
-                  <Tooltip
-                    title="Open Terminal (external terminal with shift+click)"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="Open Terminal"
-                      onClick={(event) => {
-                        // open a new terminal for each selected provider
-                        navCtx.selectedProviders.forEach((providerId) => {
-                          const prov = rosCtx.getProviderById(providerId);
-                          const emptyNode = new RosNode();
-                          emptyNode.name = '';
-                          emptyNode.providerId = providerId;
-                          emptyNode.providerName = prov?.name();
-                          createSingleTerminalPanel(
-                            CmdType.TERMINAL,
-                            emptyNode,
-                            '',
-                            event.nativeEvent.shiftKey,
-                          );
-                        });
-                      }}
-                    >
-                      <TerminalIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}{' '}
-                {navCtx.selectedProviders?.length > 0 && (
-                  <Tooltip
-                    title="Select screens (external terminal with shift+click)"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="Select screens"
-                      onClick={(event) => {
-                        navCtx.selectedProviders.forEach((providerId) => {
-                          const prov = rosCtx.getProviderById(providerId);
-                          const emptyNode = new RosNode();
-                          emptyNode.name = prov?.name();
-                          emptyNode.providerId = providerId;
-                          emptyNode.providerName = prov?.name();
-                          emptyNode.screens = [];
-                          prov?.screens.forEach((screen) => {
-                            emptyNode.screens = [
-                              ...emptyNode.screens,
-                              ...screen.screens,
-                            ];
-                          });
-                          const sl = {
-                            node: emptyNode,
-                            external: event.nativeEvent.shiftKey,
-                          };
-                          setNodeScreens((prevNodes) =>
-                            prevNodes ? [...prevNodes, sl] : [sl],
-                          );
-                        });
-                      }}
-                    >
-                      <DynamicFeedOutlinedIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedProviders?.length > 0 && (
-                  <Tooltip
-                    title="Parameters"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="Parameters"
-                      onClick={() => {
-                        createParameterPanel(null, navCtx.selectedProviders);
-                      }}
-                    >
-                      <TuneIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}{' '}
-                {navCtx.selectedProviders?.length > 0 && (
-                  <Tooltip
-                    title="ros clean purge"
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
-                    <IconButton
-                      size="medium"
-                      aria-label="ros clean purge"
-                      onClick={() => {
-                        setRosCleanPurge(true);
-                      }}
-                    >
-                      <DeleteSweepIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && (
-                    <Tooltip
-                      title="Edit"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Edit"
-                        onClick={() => {
-                          createFileEditorPanel(getSelectedNodes());
-                        }}
-                      >
-                        <BorderColorIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && (
-                    <Tooltip
-                      title="Parameters"
-                      placement="left"
-                      enterDelay={tooltipDelay}
-                      enterNextDelay={tooltipDelay}
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Parameters"
-                        onClick={() => {
-                          createParameterPanel(getSelectedNodes(), null);
-                        }}
-                      >
-                        <TuneIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && <Divider />}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && (
-                    <Tooltip
-                      title="Screen (external terminal with shift+click)"
-                      placement="left"
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Screen"
-                        onClick={(event) => {
-                          getSelectedNodes().forEach((node) => {
-                            if (node.screens.length === 1) {
-                              // 1 screen available
-                              node.screens.forEach((screen) => {
-                                createSingleTerminalPanel(
-                                  CmdType.SCREEN,
-                                  node,
-                                  screen,
-                                  event.nativeEvent.shiftKey,
-                                );
-                              });
-                            } else if (node.screens.length > 1) {
-                              // Multiple screens available
-                              setNodeScreens((prevNodes) =>
-                                prevNodes
-                                  ? [
-                                      ...prevNodes,
-                                      {
-                                        node,
-                                        external: event.nativeEvent.shiftKey,
-                                      },
-                                    ]
-                                  : [
-                                      {
-                                        node,
-                                        external: event.nativeEvent.shiftKey,
-                                      },
-                                    ],
-                              );
-                            } else {
-                              // no screens, try to find by node name instead
-                              createSingleTerminalPanel(
-                                CmdType.SCREEN,
-                                node,
-                                undefined,
-                                event.nativeEvent.shiftKey,
-                              );
-                            }
-                          });
-                        }}
-                      >
-                        <WysiwygIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && (
-                    <Tooltip title="Change log level" placement="left">
-                      <IconButton
-                        size="medium"
-                        aria-label="Log Level"
-                        onClick={(event) => {
-                          getSelectedNodes().forEach((node) => {
-                            createLoggerPanel(node);
-                          });
-                        }}
-                      >
-                        <SettingsInputCompositeOutlinedIcon
-                          fontSize="inherit"
-                          sx={{ rotate: '90deg' }}
-                        />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && (
-                    <Tooltip
-                      title="Log (external terminal with shift+click)"
-                      placement="left"
-                    >
-                      <IconButton
-                        size="medium"
-                        aria-label="Log"
-                        onClick={(event) => {
-                          getSelectedNodes().forEach((node) => {
-                            createSingleTerminalPanel(
-                              CmdType.LOG,
-                              node,
-                              undefined,
-                              event.nativeEvent.shiftKey,
-                            );
-                          });
-                        }}
-                      >
-                        <SubjectIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                {navCtx.selectedNodes?.length > 0 &&
-                  navCtx.selectedProviders?.length === 0 && (
-                    <Tooltip title="Clear Logs" placement="left">
-                      <IconButton
-                        size="medium"
-                        aria-label="Clear Logs"
-                        onClick={() => {
-                          clearLogs(getSelectedNodes(), null);
-                        }}
-                      >
-                        <DeleteSweepIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-              </ButtonGroup>
+              {createButtonBox}
             </Paper>
           </Box>
         </Stack>
