@@ -149,8 +149,6 @@ function PackageExplorerPanel() {
   );
 }
 
-PackageExplorerPanel.defaultProps = {};
-
 PackageExplorerPanel.propTypes = {};
 
 export default PackageExplorerPanel;

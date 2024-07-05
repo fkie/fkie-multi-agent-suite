@@ -46,7 +46,7 @@ function FileEditorPanel({
   providerId,
   rootFilePath,
   currentFilePath,
-  fileRange,
+  fileRange = null,
 }) {
   const monaco = useMonaco();
   const settingsCtx = useContext(SettingsContext);
@@ -1087,10 +1087,6 @@ function FileEditorPanel({
     </Stack>
   );
 }
-
-FileEditorPanel.defaultProps = {
-  fileRange: null,
-};
 
 FileEditorPanel.propTypes = {
   tabId: PropTypes.string.isRequired,

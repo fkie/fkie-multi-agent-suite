@@ -537,8 +537,6 @@ function ProviderPanelRow({ provider }) {
   return createTableRow;
 }
 
-ProviderPanelRow.defaultProps = {};
-
 ProviderPanelRow.propTypes = {
   provider: PropTypes.object.isRequired,
 };

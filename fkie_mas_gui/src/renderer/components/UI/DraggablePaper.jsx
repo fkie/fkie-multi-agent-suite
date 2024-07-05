@@ -12,8 +12,6 @@ function DraggablePaper(props) {
   );
 }
 
-DraggablePaper.defaultProps = {};
-
 DraggablePaper.propTypes = {};
 
 export default DraggablePaper;

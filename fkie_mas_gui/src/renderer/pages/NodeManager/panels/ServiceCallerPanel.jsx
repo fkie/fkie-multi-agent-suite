@@ -24,7 +24,7 @@ import useLocalStorage from '../../../hooks/useLocalStorage';
 import { LaunchCallService } from '../../../models';
 import InputElements from './MessageDialogPanel/InputElements';
 
-function ServiceCallerPanel({ serviceName, providerId }) {
+function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
   const settingsCtx = useContext(SettingsContext);
   const [history, setHistory] = useLocalStorage(`ServiceStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
@@ -510,11 +510,6 @@ function ServiceCallerPanel({ serviceName, providerId }) {
     </Box>
   );
 }
-
-ServiceCallerPanel.defaultProps = {
-  serviceName: null,
-  providerId: '',
-};
 
 ServiceCallerPanel.propTypes = {
   serviceName: PropTypes.string,

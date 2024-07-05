@@ -61,19 +61,20 @@ const ParameterTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 
 const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
   {
-    bgColor,
-    color,
-    labelRoot,
-    labelIcon,
-    labelInfo,
-    labelCount,
-    labelText,
-    requestData,
-    colorForDarkMode,
-    bgColorForDarkMode,
-    param,
-    providerName,
-    updateParameter,
+    color = '#1a73e8',
+    bgColor = '#e8f0fe',
+    colorForDarkMode = '#B8E7FB',
+    bgColorForDarkMode = '#071318',
+    labelRoot = '',
+    labelIcon = null,
+    labelInfo = '',
+    labelCount = null,
+    labelText = '',
+    requestData = false,
+    param = null,
+    providerName = '',
+    updateParameter = () => {},
+
     ...other
   },
   ref,
@@ -274,22 +275,6 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
     />
   );
 });
-
-ParameterTreeItem.defaultProps = {
-  color: '#1a73e8',
-  bgColor: '#e8f0fe',
-  colorForDarkMode: '#B8E7FB',
-  bgColorForDarkMode: '#071318',
-  labelRoot: '',
-  labelIcon: null,
-  labelInfo: '',
-  labelCount: null,
-  labelText: '',
-  requestData: false,
-  param: null,
-  providerName: '',
-  updateParameter: () => {},
-};
 
 ParameterTreeItem.propTypes = {
   bgColor: PropTypes.string,

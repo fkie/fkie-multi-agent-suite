@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react';
 
 function SearchBar({
   onSearch,
-  placeholder,
-  defaultValue,
-  fullWidth,
-  searchIcon,
+  placeholder = 'Filter',
+  defaultValue = '',
+  fullWidth = true,
+  searchIcon = true,
 }) {
   const [searched, setSearched] = useState(defaultValue);
 
@@ -67,13 +67,6 @@ function SearchBar({
     />
   );
 }
-
-SearchBar.defaultProps = {
-  placeholder: 'Filter',
-  defaultValue: '',
-  fullWidth: true,
-  searchIcon: true,
-};
 
 SearchBar.propTypes = {
   onSearch: PropTypes.func.isRequired,

@@ -19,8 +19,8 @@ function ExplorerTree({
   providerId,
   rootFilePath,
   includedFiles,
-  selectedUriPath,
-  modifiedUriPaths,
+  selectedUriPath = '',
+  modifiedUriPaths = [],
 }) {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
@@ -144,11 +144,6 @@ function ExplorerTree({
     </TreeView>
   );
 }
-
-ExplorerTree.defaultProps = {
-  selectedUriPath: '',
-  modifiedUriPaths: [],
-};
 
 ExplorerTree.propTypes = {
   tabId: PropTypes.string.isRequired,

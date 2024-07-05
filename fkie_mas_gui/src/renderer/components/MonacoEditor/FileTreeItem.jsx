@@ -50,17 +50,17 @@ const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 
 const FileTreeItem = React.forwardRef(function FileTreeItem(
   {
-    labelIcon,
-    labelText,
-    textColor,
-    labelInfo,
-    labelLine,
-    modified,
-    selected,
-    onClick,
-    onLabelClick,
-    onLabelDoubleClick,
-    onLinenumberClick,
+    labelIcon = null,
+    textColor = '',
+    labelText = '',
+    labelInfo = '',
+    labelLine = -1,
+    modified = false,
+    selected = false,
+    onClick = null,
+    onLabelClick = null,
+    onLabelDoubleClick = null,
+    onLinenumberClick = null,
     ...other
   },
   ref,
@@ -148,20 +148,6 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
     />
   );
 });
-
-FileTreeItem.defaultProps = {
-  labelIcon: null,
-  textColor: '',
-  labelText: '',
-  labelInfo: '',
-  labelLine: -1,
-  modified: false,
-  selected: false,
-  onClick: null,
-  onLabelClick: null,
-  onLabelDoubleClick: null,
-  onLinenumberClick: null,
-};
 
 FileTreeItem.propTypes = {
   labelIcon: PropTypes.object,

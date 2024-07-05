@@ -9,7 +9,7 @@ import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { generateUniqueId } from '../../../utils';
 
-function SystemInformationPanel({ providerId }) {
+function SystemInformationPanel({ providerId = '' }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
@@ -203,9 +203,6 @@ function SystemInformationPanel({ providerId }) {
     </Box>
   );
 }
-SystemInformationPanel.defaultProps = {
-  providerId: '',
-};
 
 SystemInformationPanel.propTypes = {
   providerId: PropTypes.string,

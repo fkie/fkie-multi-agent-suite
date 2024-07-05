@@ -23,8 +23,8 @@ import DraggablePaper from '../UI/DraggablePaper';
 function MapSelectionModal({
   list,
   onConfirmCallback,
-  onCancelCallback,
-  useRadioGroup,
+  onCancelCallback = null,
+  useRadioGroup = false,
 }) {
   const [open, setOpen] = useState(true);
   const [selectedItems, setSelectedItems] = useState(
@@ -200,11 +200,6 @@ function MapSelectionModal({
     </Dialog>
   );
 }
-
-MapSelectionModal.defaultProps = {
-  onCancelCallback: null,
-  useRadioGroup: false,
-};
 
 MapSelectionModal.propTypes = {
   list: PropTypes.array.isRequired, // [{'title': 'ab', 'list': ['a', 'b']}]

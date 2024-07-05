@@ -347,8 +347,6 @@ function NodeLoggerPanel(node) {
   );
 }
 
-NodeLoggerPanel.defaultProps = {};
-
 NodeLoggerPanel.propTypes = {
   node: PropTypes.instanceOf(RosNode).isRequired,
 };

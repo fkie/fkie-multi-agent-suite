@@ -7,9 +7,9 @@ import OverflowMenu from '../../../components/UI/OverflowMenu';
 function OverflowMenuProviderSelector({
   onClick,
   providerMap,
-  actionType,
-  args,
-  icon: MyIcon,
+  actionType = '',
+  args = {},
+  icon: MyIcon = MoreVertSharpIcon,
 }) {
   const createMenu = useMemo(() => {
     const providerOptions = [];
@@ -61,12 +61,6 @@ function OverflowMenuProviderSelector({
 
   return createMenu;
 }
-
-OverflowMenuProviderSelector.defaultProps = {
-  actionType: '',
-  args: {},
-  icon: MoreVertSharpIcon,
-};
 
 OverflowMenuProviderSelector.propTypes = {
   onClick: PropTypes.func.isRequired, // onClick(actionType, providerId, providerName, args)

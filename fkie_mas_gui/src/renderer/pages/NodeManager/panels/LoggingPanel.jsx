@@ -366,8 +366,6 @@ function LoggingPanel() {
   );
 }
 
-LoggingPanel.defaultProps = {};
-
 LoggingPanel.propTypes = {};
 
 export default LoggingPanel;

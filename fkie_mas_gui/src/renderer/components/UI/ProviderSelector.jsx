@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from 'react';
 
 import { RosContext } from '../../context/RosContext';
 
-function ProviderSelector({ defaultProvider, setSelectedProvider }) {
+function ProviderSelector({ defaultProvider = '', setSelectedProvider }) {
   const rosCtx = useContext(RosContext);
   const [currentProvider, setCurrentProvider] = useState(defaultProvider);
   const [providerNames, setProviderNames] = useState(
@@ -79,10 +79,6 @@ function ProviderSelector({ defaultProvider, setSelectedProvider }) {
     </Select>
   );
 }
-
-ProviderSelector.defaultProps = {
-  defaultProvider: '',
-};
 
 ProviderSelector.propTypes = {
   defaultProvider: PropTypes.string,

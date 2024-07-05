@@ -39,8 +39,6 @@ function OverflowMenuService({ onClick, serviceName, providerId }) {
   return createMenu;
 }
 
-OverflowMenuService.defaultProps = {};
-
 OverflowMenuService.propTypes = {
   onClick: PropTypes.func.isRequired,
   serviceName: PropTypes.string.isRequired,

@@ -80,8 +80,4 @@ function OverflowMenuNodeDetails() {
   return createMenu;
 }
 
-OverflowMenuNodeDetails.defaultProps = {};
-
-OverflowMenuNodeDetails.propTypes = {};
-
 export default OverflowMenuNodeDetails;

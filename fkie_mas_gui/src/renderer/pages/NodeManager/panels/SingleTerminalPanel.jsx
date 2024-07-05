@@ -15,11 +15,11 @@ import {
 function SingleTerminalPanel({
   id,
   type,
-  providerId,
-  node,
-  screen,
-  width,
-  cmd,
+  node = null,
+  screen = null,
+  providerId = '',
+  width = null,
+  cmd = '',
 }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -168,14 +168,6 @@ function SingleTerminalPanel({
 
   return createTerminalView;
 }
-
-SingleTerminalPanel.defaultProps = {
-  node: null,
-  screen: null,
-  providerId: '',
-  width: null,
-  cmd: '',
-};
 
 SingleTerminalPanel.propTypes = {
   id: PropTypes.string.isRequired,

@@ -263,8 +263,6 @@ function LaunchFilePanel({ launchContent }) {
   );
 }
 
-LaunchFilePanel.defaultProps = {};
-
 LaunchFilePanel.propTypes = {
   launchContent: PropTypes.instanceOf(LaunchContent).isRequired,
 };

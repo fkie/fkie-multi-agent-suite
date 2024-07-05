@@ -47,7 +47,13 @@ const SearchTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 }));
 
 const SearchFileTreeItem = React.forwardRef(function SearchFileTreeItem(
-  { labelIcon, labelText, labelInfo, labelCount, ...other },
+  {
+    labelIcon = null,
+    labelText = '',
+    labelInfo = '',
+    labelCount = 0,
+    ...other
+  },
   ref,
 ) {
   return (
@@ -90,13 +96,6 @@ const SearchFileTreeItem = React.forwardRef(function SearchFileTreeItem(
   );
 });
 
-SearchFileTreeItem.defaultProps = {
-  labelIcon: null,
-  labelText: '',
-  labelInfo: '',
-  labelCount: 0,
-};
-
 SearchFileTreeItem.propTypes = {
   labelIcon: PropTypes.object,
   labelText: PropTypes.string,
@@ -105,7 +104,13 @@ SearchFileTreeItem.propTypes = {
 };
 
 const SearchResultTreeItem = React.forwardRef(function SearchResultTreeItem(
-  { labelIcon, labelText, labelInfo, onClick, ...other },
+  {
+    labelIcon = null,
+    labelText = '',
+    labelInfo = '',
+    onClick = null,
+    ...other
+  },
   ref,
 ) {
   return (
@@ -139,13 +144,6 @@ const SearchResultTreeItem = React.forwardRef(function SearchResultTreeItem(
     />
   );
 });
-
-SearchResultTreeItem.defaultProps = {
-  labelIcon: null,
-  labelText: '',
-  labelInfo: '',
-  onClick: null,
-};
 
 SearchResultTreeItem.propTypes = {
   labelIcon: PropTypes.object,

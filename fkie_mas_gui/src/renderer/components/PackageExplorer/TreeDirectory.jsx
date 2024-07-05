@@ -17,9 +17,9 @@ import PackageItemTree from './PackageItemTree';
 
 function TreeDirectory({
   packageItemsTree,
-  selectedPackage,
-  onNodeSelect,
-  onFileDoubleClick,
+  selectedPackage = {},
+  onNodeSelect = () => {},
+  onFileDoubleClick = () => {},
 }) {
   const [expanded, setExpanded] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -258,12 +258,6 @@ function TreeDirectory({
 
   return generateTree;
 }
-
-TreeDirectory.defaultProps = {
-  selectedPackage: {},
-  onNodeSelect: () => {},
-  onFileDoubleClick: () => {},
-};
 
 TreeDirectory.propTypes = {
   packageItemsTree: PropTypes.any.isRequired,

@@ -10,11 +10,11 @@ import { FileItem } from '../../models';
 let pressedKeys = [];
 
 function MonacoDiffEditor({
-  referenceFile,
-  currentFile,
-  height,
-  onChangeFile,
-  onKeyCommands,
+  referenceFile = null,
+  currentFile = null,
+  height = null,
+  onChangeFile = null,
+  onKeyCommands = null,
 }) {
   const settingsCtx = useContext(SettingsContext);
   // const [modifiedEditorObject, setModifiedEditorObject] = useState(null);
@@ -89,14 +89,6 @@ function MonacoDiffEditor({
     </Box>
   );
 }
-
-MonacoDiffEditor.defaultProps = {
-  referenceFile: null,
-  currentFile: null,
-  height: null,
-  onChangeFile: null,
-  onKeyCommands: null,
-};
 
 MonacoDiffEditor.propTypes = {
   referenceFile: PropTypes.instanceOf(FileItem),

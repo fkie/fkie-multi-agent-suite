@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import useLocalStorage from '../../../../hooks/useLocalStorage';
 
-function StringInput({ id, messageStruct, filterText }) {
+function StringInput({ id = '', messageStruct = null, filterText = '' }) {
   const [historyStruct, setHistoryStruct] = useLocalStorage(
     `MessageStruct:history`,
     {},
@@ -144,12 +144,6 @@ function StringInput({ id, messageStruct, filterText }) {
     />
   );
 }
-
-StringInput.defaultProps = {
-  id: '',
-  messageStruct: null,
-  filterText: '',
-};
 
 StringInput.propTypes = {
   id: PropTypes.string,

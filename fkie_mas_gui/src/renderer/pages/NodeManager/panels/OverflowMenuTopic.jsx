@@ -68,8 +68,6 @@ function OverflowMenuTopic({ onClick, topicName, providerId }) {
   return createMenu;
 }
 
-OverflowMenuTopic.defaultProps = {};
-
 OverflowMenuTopic.propTypes = {
   onClick: PropTypes.func.isRequired,
   topicName: PropTypes.string.isRequired,

@@ -52,19 +52,19 @@ const StyledTreeItemRoot = styled((props) => <TreeItem {...props} />)(
 );
 
 function PackageItemTree({
-  iconColor,
   bgColor,
   color,
-  labelIcon: LabelIcon,
-  labelIconComponent,
   labelText,
-  tooltip,
-  enableCopy,
-  nodeId,
   paddingLeft,
-  onClick,
-  onDoubleClick,
-  menuItems,
+  nodeId = '',
+  iconColor = '',
+  tooltip = '',
+  enableCopy = true,
+  onClick = () => {},
+  onDoubleClick = () => {},
+  menuItems = [],
+  labelIcon: LabelIcon = null,
+  labelIconComponent = null,
   ...other
 }) {
   return (
@@ -132,18 +132,6 @@ function PackageItemTree({
     />
   );
 }
-
-PackageItemTree.defaultProps = {
-  nodeId: '',
-  iconColor: '',
-  tooltip: '',
-  enableCopy: true,
-  onClick: () => {},
-  onDoubleClick: () => {},
-  menuItems: [],
-  labelIcon: null,
-  labelIconComponent: null,
-};
 
 PackageItemTree.propTypes = {
   nodeId: PropTypes.string,

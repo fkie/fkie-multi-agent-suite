@@ -80,10 +80,10 @@ const Components = {
 };
 
 function InputElements({
-  messageStruct,
-  parentName,
-  filterText,
-  onCopyToClipboard,
+  messageStruct = null,
+  parentName = 'undefined',
+  filterText = '',
+  onCopyToClipboard = null,
 }) {
   const [arrayCount, setArrayCount] = useState(0);
   const [idSuffix] = useState(`${parentName}-${messageStruct.name}`);
@@ -331,13 +331,6 @@ function InputElements({
     </Alert>
   );
 }
-
-InputElements.defaultProps = {
-  messageStruct: null,
-  parentName: 'undefined',
-  filterText: '',
-  onCopyToClipboard: null,
-};
 
 InputElements.propTypes = {
   messageStruct: PropTypes.any,

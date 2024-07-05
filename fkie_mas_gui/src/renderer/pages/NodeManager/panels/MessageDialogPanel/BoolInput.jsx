@@ -9,7 +9,7 @@ import {
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 
-function BoolInput({ id, messageStruct, filterText }) {
+function BoolInput({ id = '', messageStruct = null, filterText = '' }) {
   const [value, setValue] = useState(messageStruct.is_array ? '' : false);
   const [isVisible, setVisible] = useState('');
 
@@ -114,12 +114,6 @@ function BoolInput({ id, messageStruct, filterText }) {
     </Stack>
   );
 }
-
-BoolInput.defaultProps = {
-  id: '',
-  messageStruct: null,
-  filterText: '',
-};
 
 BoolInput.propTypes = {
   id: PropTypes.string,

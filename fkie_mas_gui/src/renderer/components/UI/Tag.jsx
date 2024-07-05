@@ -12,7 +12,13 @@ const chipDefaultColors = [
   'warning',
 ];
 
-function Tag({ title, text, color, copyButton, wrap }) {
+function Tag({
+  title = '',
+  text = '',
+  color = 'info',
+  copyButton = '',
+  wrap = true,
+}) {
   const isDefaultColor = chipDefaultColors.includes(color);
 
   const chipSX = {
@@ -49,14 +55,6 @@ function Tag({ title, text, color, copyButton, wrap }) {
     />
   );
 }
-
-Tag.defaultProps = {
-  title: '',
-  text: '',
-  color: 'info',
-  copyButton: '',
-  wrap: true,
-};
 
 Tag.propTypes = {
   title: PropTypes.string,

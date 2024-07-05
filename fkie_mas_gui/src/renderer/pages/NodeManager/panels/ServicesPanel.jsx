@@ -48,7 +48,7 @@ const headers = [
   },
 ];
 
-function ServicesPanel({ initialSearchTerm }) {
+function ServicesPanel({ initialSearchTerm = '' }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [services, setServices] = useState([]);
@@ -252,10 +252,6 @@ function ServicesPanel({ initialSearchTerm }) {
     </Box>
   );
 }
-
-ServicesPanel.defaultProps = {
-  initialSearchTerm: '',
-};
 
 ServicesPanel.propTypes = {
   initialSearchTerm: PropTypes.string,

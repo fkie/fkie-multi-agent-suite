@@ -76,7 +76,7 @@ class TopicExtendedInfo {
   }
 }
 
-function TopicsPanel({ initialSearchTerm }) {
+function TopicsPanel({ initialSearchTerm = '' }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [topics, setTopics] = useState([]); // [topicInfo: TopicExtendedInfo]
@@ -464,10 +464,6 @@ function TopicsPanel({ initialSearchTerm }) {
   }, [rootDataList, expanded, selectedItems, topicForSelected]);
   return createPanel;
 }
-
-TopicsPanel.defaultProps = {
-  initialSearchTerm: '',
-};
 
 TopicsPanel.propTypes = {
   initialSearchTerm: PropTypes.string,

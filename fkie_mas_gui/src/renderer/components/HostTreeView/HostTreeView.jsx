@@ -49,13 +49,13 @@ const compareTreeProvider = (a, b) => {
 };
 
 function HostTreeView({
-  providerNodeTree,
-  onNodeSelect,
-  onProviderSelect,
-  showLoggers,
-  startNodes,
-  stopNodes,
-  restartNodes,
+  providerNodeTree = [],
+  onNodeSelect = () => {},
+  onProviderSelect = () => {},
+  showLoggers = () => {},
+  startNodes = () => {},
+  stopNodes = () => {},
+  restartNodes = () => {},
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -774,16 +774,6 @@ function HostTreeView({
 
   return generateTree;
 }
-
-HostTreeView.defaultProps = {
-  providerNodeTree: [],
-  onNodeSelect: () => {},
-  onProviderSelect: () => {},
-  showLoggers: () => {},
-  startNodes: () => {},
-  stopNodes: () => {},
-  restartNodes: () => {},
-};
 
 HostTreeView.propTypes = {
   providerNodeTree: PropTypes.array,

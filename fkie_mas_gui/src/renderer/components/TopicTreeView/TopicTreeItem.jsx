@@ -56,18 +56,18 @@ const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 
 const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   {
-    bgColor,
-    color,
-    labelRoot,
-    labelIcon,
-    labelInfo,
-    labelCount,
-    labelText,
-    requestData,
-    colorForDarkMode,
-    bgColorForDarkMode,
-    topicInfo,
-    providerName,
+    color = '#1a73e8',
+    bgColor = '#e8f0fe',
+    colorForDarkMode = '#B8E7FB',
+    bgColorForDarkMode = '#071318',
+    labelRoot = '',
+    labelIcon = null,
+    labelInfo = '',
+    labelCount = null,
+    labelText = '',
+    requestData = false,
+    topicInfo = null,
+    providerName = '',
     ...other
   },
   ref,
@@ -255,21 +255,6 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
     />
   );
 });
-
-TopicTreeItem.defaultProps = {
-  color: '#1a73e8',
-  bgColor: '#e8f0fe',
-  colorForDarkMode: '#B8E7FB',
-  bgColorForDarkMode: '#071318',
-  labelRoot: '',
-  labelIcon: null,
-  labelInfo: '',
-  labelCount: null,
-  labelText: '',
-  requestData: false,
-  topicInfo: null,
-  providerName: '',
-};
 
 TopicTreeItem.propTypes = {
   bgColor: PropTypes.string,

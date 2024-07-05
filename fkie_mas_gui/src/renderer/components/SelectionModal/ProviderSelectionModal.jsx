@@ -21,7 +21,7 @@ import { delay } from '../../utils';
 import DraggablePaper from '../UI/DraggablePaper';
 
 function ListSelectionModal({
-  title,
+  title = 'Select providers',
   providers,
   onCloseCallback,
   onConfirmCallback,
@@ -181,10 +181,6 @@ function ListSelectionModal({
     </Dialog>
   );
 }
-
-ListSelectionModal.defaultProps = {
-  title: 'Select providers',
-};
 
 ListSelectionModal.propTypes = {
   title: PropTypes.string,

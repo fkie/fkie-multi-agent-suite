@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { useContext } from 'react';
 import { LoggingContext } from '../../context/LoggingContext';
 
-function CopyButton({ value, fontSize }) {
+function CopyButton({ value, fontSize = 'inherit' }) {
   const logCtx = useContext(LoggingContext);
 
   return (
@@ -22,10 +22,6 @@ function CopyButton({ value, fontSize }) {
     </IconButton>
   );
 }
-
-CopyButton.defaultProps = {
-  fontSize: 'inherit',
-};
 
 CopyButton.propTypes = {
   value: PropTypes.string.isRequired,

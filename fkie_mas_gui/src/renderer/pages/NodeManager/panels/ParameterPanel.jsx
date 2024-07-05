@@ -25,7 +25,7 @@ import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import { findIn } from '../../../utils/index';
 
-export default function ParameterPanel({ nodes, providers }) {
+export default function ParameterPanel({ nodes = null, providers = null }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
@@ -513,11 +513,6 @@ export default function ParameterPanel({ nodes, providers }) {
     </Box>
   );
 }
-
-ParameterPanel.defaultProps = {
-  nodes: null,
-  providers: null,
-};
 
 ParameterPanel.propTypes = {
   nodes: PropTypes.arrayOf(PropTypes.any),

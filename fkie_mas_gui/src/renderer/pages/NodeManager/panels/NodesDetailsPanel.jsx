@@ -769,8 +769,6 @@ function NodesDetailsPanel() {
   );
 }
 
-NodesDetailsPanel.defaultProps = {};
-
 NodesDetailsPanel.propTypes = {};
 
 export default NodesDetailsPanel;

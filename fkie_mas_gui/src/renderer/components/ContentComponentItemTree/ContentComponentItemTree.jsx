@@ -7,13 +7,13 @@ import * as React from 'react';
 const ContentComponentItemTree = React.forwardRef(
   function ContentComponentItemTree(props, ref) {
     const {
-      classes,
-      className,
-      label,
-      nodeId,
-      icon: iconProp,
-      expansionIcon,
-      displayIcon,
+      classes = null,
+      className = '',
+      label = null,
+      nodeId = '',
+      icon: iconProp = null,
+      expansionIcon = null,
+      displayIcon = null,
     } = props;
 
     const {
@@ -71,16 +71,6 @@ const ContentComponentItemTree = React.forwardRef(
     );
   },
 );
-
-ContentComponentItemTree.defaultProps = {
-  classes: null,
-  nodeId: '',
-  className: '',
-  displayIcon: null,
-  expansionIcon: null,
-  icon: null,
-  label: null,
-};
 
 ContentComponentItemTree.propTypes = {
   /**

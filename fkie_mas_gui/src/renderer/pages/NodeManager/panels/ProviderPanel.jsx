@@ -110,8 +110,6 @@ function ProviderPanel() {
   );
 }
 
-ProviderPanel.defaultProps = {};
-
 ProviderPanel.propTypes = {};
 
 export default ProviderPanel;

@@ -19,7 +19,13 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
+function OverflowMenu({
+  icon = <MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />,
+  options = [],
+  id = 'overflow-menu',
+  showBadge = false,
+  colorizeItems = false,
+}) {
   const settingsCtx = useContext(SettingsContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -106,14 +112,6 @@ function OverflowMenu({ icon, options, id, showBadge, colorizeItems }) {
     </StyledBadge>
   );
 }
-
-OverflowMenu.defaultProps = {
-  icon: <MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />,
-  options: [],
-  id: 'overflow-menu',
-  showBadge: false,
-  colorizeItems: false,
-};
 
 OverflowMenu.propTypes = {
   icon: PropTypes.object,

@@ -38,11 +38,11 @@ import { SubscriberFilter } from '../../../models';
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from '../../../providers/eventTypes';
 
 function TopicEchoPanel({
-  showOptions,
-  showDetails,
-  defaultProvider,
-  defaultTopic,
-  defaultNoData,
+  showOptions = true,
+  showDetails = false,
+  defaultProvider = '',
+  defaultTopic = '',
+  defaultNoData = false,
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -509,14 +509,6 @@ function TopicEchoPanel({
     </Box>
   );
 }
-
-TopicEchoPanel.defaultProps = {
-  showOptions: true,
-  showDetails: false,
-  defaultProvider: '',
-  defaultTopic: '',
-  defaultNoData: false,
-};
 
 TopicEchoPanel.propTypes = {
   showOptions: PropTypes.bool,

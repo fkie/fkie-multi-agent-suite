@@ -28,7 +28,7 @@ function LaunchFileModal({
   selectedProvider,
   selectedLaunchFile,
   setSelectedLaunchFile,
-  onLaunchCallback,
+  onLaunchCallback = () => {},
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -104,7 +104,7 @@ function LaunchFileModal({
               // historyList = options.filter((value) => value !== argValue);
             }
             // complement history with initial values in case they have never been used
-            historyList = [...new Set([...historyList, argValue])]
+            historyList = [...new Set([...historyList, argValue])];
             argList.push({
               name: arg.name,
               value: argValue,
@@ -534,8 +534,6 @@ function LaunchFileModal({
     </Dialog>
   );
 }
-
-LaunchFileModal.defaultProps = { onLaunchCallback: () => {} };
 
 LaunchFileModal.propTypes = {
   selectedProvider: PropTypes.string.isRequired,

@@ -13,7 +13,7 @@ import {
 } from '../../utils/events';
 import { SearchFileTreeItem, SearchResultTreeItem } from './SearchTreeItem';
 
-function SearchTree({ tabId, ownUriPaths, searchTerm }) {
+function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
   const monaco = useMonaco();
   const [expandedSearchResults, setExpandedSearchResults] = useState([]);
   const [globalSearchTree, setGlobalSearchTree] = useState({});
@@ -138,11 +138,6 @@ function SearchTree({ tabId, ownUriPaths, searchTerm }) {
     </TreeView>
   );
 }
-
-SearchTree.defaultProps = {
-  searchTerm: '',
-  ownUriPaths: [],
-};
 
 SearchTree.propTypes = {
   tabId: PropTypes.string.isRequired,

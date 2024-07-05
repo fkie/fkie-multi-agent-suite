@@ -42,7 +42,7 @@ function LaunchFileList({
   selectNodesFromLaunch,
   onRemoveLaunch,
   onReloadLaunch,
-  onMouseOver,
+  onMouseOver = () => {},
 }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -190,10 +190,6 @@ function LaunchFileList({
     </List>
   );
 }
-
-LaunchFileList.defaultProps = {
-  onMouseOver: () => {},
-};
 
 LaunchFileList.propTypes = {
   providerId: PropTypes.string.isRequired,

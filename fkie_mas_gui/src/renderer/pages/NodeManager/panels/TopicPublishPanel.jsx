@@ -28,7 +28,7 @@ import useLocalStorage from '../../../hooks/useLocalStorage';
 import { LaunchPublishMessage } from '../../../models';
 import InputElements from './MessageDialogPanel/InputElements';
 
-function TopicPublishPanel({ topicName, providerId }) {
+function TopicPublishPanel({ topicName = null, providerId = '' }) {
   const [history, setHistory] = useLocalStorage(`MessageStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
   const rosCtx = useContext(RosContext);
@@ -524,11 +524,6 @@ function TopicPublishPanel({ topicName, providerId }) {
     </Box>
   );
 }
-
-TopicPublishPanel.defaultProps = {
-  topicName: null,
-  providerId: '',
-};
 
 TopicPublishPanel.propTypes = {
   topicName: PropTypes.string,
