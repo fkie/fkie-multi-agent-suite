@@ -9,7 +9,7 @@ from rcl_interfaces.msg import ParameterType
 from rcl_interfaces.msg import Parameter
 from rcl_interfaces.msg import ParameterValue
 
-from fkie_mas_pylib.crossbar.runtime_interface import RosParameter
+from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.logging.logging import Log
 
 

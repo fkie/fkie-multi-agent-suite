@@ -2,7 +2,7 @@ from typing import List
 from rclpy.node import Node
 
 from fkie_mas_pylib.parameters.ros2_parameter_interface import ParameterInterface
-from fkie_mas_pylib.crossbar.runtime_interface import RosParameter
+from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.logging.logging import Log
 
 

@@ -333,7 +333,7 @@ export default function ParameterPanel({ nodes, providers }) {
 
   const getIcon = (obj) => {
     if (Object.hasOwn(obj, 'isLocalHost')) {
-      // it is CrossbarIOProvider
+      // it is Provider
       return ComputerIcon;
       // return PrecisionManufacturingIcon;
     }

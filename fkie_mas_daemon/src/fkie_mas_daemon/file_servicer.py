@@ -1,50 +1,31 @@
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 from io import FileIO
 import os
-import shutil
 import re
 
 import json
-import asyncio
-from autobahn import wamp
-from types import SimpleNamespace
 
-from . import file_item
 from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib import settings
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.file_interface import FileItem
-from fkie_mas_pylib.crossbar.file_interface import RosPackage
-from fkie_mas_pylib.crossbar.file_interface import PathItem
-from fkie_mas_pylib.crossbar.file_interface import LogPathItem
-from fkie_mas_pylib.crossbar.file_interface import LogPathClearResult
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.file_interface import FileItem
+from fkie_mas_pylib.interface.file_interface import RosPackage
+from fkie_mas_pylib.interface.file_interface import PathItem
+from fkie_mas_pylib.interface.file_interface import LogPathItem
+from fkie_mas_pylib.interface.file_interface import LogPathClearResult
 from fkie_mas_pylib.defines import PACKAGE_FILE
 from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system.screen import get_logfile
 from fkie_mas_pylib.system.screen import get_ros_logfile
+from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_daemon.strings import utf8
 
 from typing import List
@@ -52,21 +33,26 @@ from typing import List
 MANIFEST_FILE = "manifest.xml"
 
 
-class FileServicer(CrossbarBaseSession):
+class FileServicer:
     FILE_CHUNK_SIZE = 1024
 
     def __init__(
         self,
-        loop: asyncio.AbstractEventLoop,
-        realm: str = "ros",
-        port: int = 11911,
+        websocket: WebSocketServer,
         test_env=False,
     ):
         Log.info("Create file manger servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self.DIR_CACHE = {}
         self.CB_DIR_CACHE = {}
         self._peers = {}
+        websocket.register("ros.packages.get_list", self.getPackageList)
+        websocket.register("ros.path.get_log_paths", self.getLogPaths)
+        websocket.register("ros.path.clear_log_paths", self.clearLogPaths)
+        websocket.register("ros.path.get_list", self.getPathList)
+        websocket.register("ros.path.get_list_recursive",
+                           self.getPathListRecursive)
+        websocket.register("ros.file.get", self.getFileContent)
+        websocket.register("ros.file.save", self.saveFileContent)
 
     #     def _terminated(self):
     #         Log.info("terminated context")
@@ -78,7 +64,9 @@ class FileServicer(CrossbarBaseSession):
     #                 pass
     #                 # self._peers[context.peer()] = context
 
-    @wamp.register("ros.file.get")
+    def stop(self):
+        pass
+
     def getFileContent(self, requestPath: str) -> FileItem:
         Log.info("Request to [ros.file.get] for %s" % requestPath)
         with FileIO(requestPath, "r") as outfile:
@@ -95,12 +83,9 @@ class FileServicer(CrossbarBaseSession):
                 FileItem(requestPath, mTime, fSize, content, encoding), cls=SelfEncoder
             )
 
-    @wamp.register("ros.file.save")
     def saveFileContent(self, request_json: FileItem) -> int:
         # Covert input dictionary into a proper python object
-        file = json.loads(
-            json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d)
-        )
+        file = request_json
         Log.info("Request to [ros.file.save] for %s" % file.path)
         with FileIO(file.path, "w+") as outfile:
             content = file.value
@@ -113,7 +98,6 @@ class FileServicer(CrossbarBaseSession):
             bytesWritten = outfile.write(content)
             return json.dumps(bytesWritten, cls=SelfEncoder)
 
-    @wamp.register("ros.path.get_list")
     def getPathList(self, inputPath: str) -> List[PathItem]:
         Log.info("Request to [ros.path.get_list] for %s" % inputPath)
         path_list: List[PathItem] = []
@@ -197,7 +181,6 @@ class FileServicer(CrossbarBaseSession):
             )
         return path_list
 
-    @wamp.register("ros.path.get_list_recursive")
     def getPathListRecursive(
         self, inputPath: str, filter=["node_modules"]
     ) -> List[PathItem]:
@@ -207,7 +190,6 @@ class FileServicer(CrossbarBaseSession):
         )
         return json.dumps(path_list, cls=SelfEncoder)
 
-    @wamp.register("ros.packages.get_list")
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         Log.info("Request to [ros.packages.get_list]")
         clear_cache = False
@@ -238,7 +220,6 @@ class FileServicer(CrossbarBaseSession):
             import traceback
             raise Exception(traceback.format_exc())
 
-    @wamp.register("ros.path.get_log_paths")
     def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
         Log.info("Request to [ros.path.get_log_paths] for %s" % nodes)
         result = []
@@ -265,7 +246,6 @@ class FileServicer(CrossbarBaseSession):
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register("ros.path.clear_log_paths")
     def clearLogPaths(self, nodes: List[str]) -> List[LogPathClearResult]:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.path.clear_log_paths] for {nodes}"

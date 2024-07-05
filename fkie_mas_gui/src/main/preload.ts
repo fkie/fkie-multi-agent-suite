@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld('PasswordManager', {
     ipcRenderer.invoke('PasswordManager:deletePassword', service, account),
 });
 
-// TODO remove SFTP if crossbar ros.file.get and ros.file.save works
+// TODO remove SFTP if websocket ros.file.get and ros.file.save works
 // Register SFTP Manager
 // contextBridge.exposeInMainWorld('FileManagerWrapper', {
 //   checkPassword: (credential: ICredential) =>

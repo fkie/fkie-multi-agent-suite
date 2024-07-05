@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
+import { ConnectionState } from '../providers';
 import {
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_PATH_EVENT,
@@ -18,6 +19,8 @@ import {
   EVENT_PROVIDER_SCREENS,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
+} from '../providers/eventTypes';
+import {
   EventProviderDiscovered,
   EventProviderPathEvent,
   EventProviderRemoved,
@@ -26,9 +29,6 @@ import {
   EventProviderState,
   EventProviderWarnings,
 } from '../providers/events';
-
-import { ConnectionState } from '../providers';
-import CrossbarIOProvider from '../providers/crossbar_io/CrossbarIOProvider';
 
 import MultimasterManager from '../../main/IPC/MultimasterManager';
 import { IROSInfo, ROSInfo } from '../../main/IPC/ROSInfo';
@@ -47,13 +47,13 @@ import {
   SubscriberNode,
   getFileName,
 } from '../models';
-import { delay } from '../utils';
+import Provider from '../providers/Provider';
 import { LoggingContext } from './LoggingContext';
 import { SSHContext } from './SSHContext';
 import {
   LAUNCH_FILE_EXTENSIONS,
   SettingsContext,
-  getCrossbarPortFromRos,
+  getDefaultPortFromRos,
 } from './SettingsContext';
 
 declare global {
@@ -69,13 +69,13 @@ export interface IRosProviderContext {
   rosInfo: IROSInfo | null;
   systemInfo: ISystemInfo | null;
   multimasterManager: MultimasterManager | null;
-  providers: CrossbarIOProvider[];
-  providersConnected: CrossbarIOProvider[];
+  providers: Provider[];
+  providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
-  connectToProvider: (provider: CrossbarIOProvider) => Promise<boolean>;
+  connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (
-    provider: CrossbarIOProvider,
+    provider: Provider,
     forceStartWithDefault: boolean,
   ) => Promise<boolean>;
   startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean>;
@@ -89,8 +89,8 @@ export interface IRosProviderContext {
   getProviderById: (
     providerId: string,
     includeNotAvailable: boolean,
-  ) => CrossbarIOProvider | undefined;
-  getProviderByHost: (hostName: string) => CrossbarIOProvider | null;
+  ) => Provider | undefined;
+  getProviderByHost: (hostName: string) => Provider | null;
   registerSubscriber: (
     providerId: string,
     topic: string,
@@ -99,7 +99,7 @@ export interface IRosProviderContext {
   ) => void;
   unregisterSubscriber: (providerId: string, topic: string) => void;
   updateFilterRosTopic: (
-    provider: CrossbarIOProvider,
+    provider: Provider,
     topicName: string,
     msg: SubscriberFilter,
   ) => void;
@@ -157,13 +157,9 @@ export function RosProviderReact(
   const [systemInfo, setSystemInfo] = useState<ISystemInfo | null>(null);
   const [multimasterManager, setMultimasterManager] =
     useState<MultimasterManager | null>(null);
-  const [providersAddQueue, setProvidersAddQueue] = useState<
-    CrossbarIOProvider[]
-  >([]);
-  const [providers, setProviders] = useState<CrossbarIOProvider[]>([]);
-  const [providersConnected, setProvidersConnected] = useState<
-    CrossbarIOProvider[]
-  >([]);
+  const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(
     DEFAULT.mapProviderRosNodes,
@@ -253,7 +249,7 @@ export function RosProviderReact(
         const p = providers.find((provider) => {
           return (
             provider.isAvailable() &&
-            (provider.crossbar.host === hostName ||
+            (provider.connection.host === hostName ||
               provider.hostnames.includes(hostName))
           );
         });
@@ -273,12 +269,12 @@ export function RosProviderReact(
     (
       hosts: string[],
       port: number = 0,
-      defaultValue: CrossbarIOProvider | null = null,
+      defaultValue: Provider | null = null,
     ) => {
       const p = providers.find((provider) => {
         let result = true;
-        if (port !== 0 && provider.crossbar.port !== 0) {
-          result = provider.crossbar.port === port;
+        if (port !== 0 && provider.connection.port !== 0) {
+          result = provider.connection.port === port;
         }
         if (!result) return false;
         // join hostnames without duplicates
@@ -371,7 +367,7 @@ export function RosProviderReact(
    */
   const launchFile = useCallback(
     async (
-      provider: CrossbarIOProvider,
+      provider: Provider,
       filePath: string,
       args: LaunchArgument[],
       reload = false,
@@ -404,7 +400,7 @@ export function RosProviderReact(
         forceFirstFile,
         requestArgs,
         `${provider.rosState.masteruri ? provider.rosState.masteruri : ''}`,
-        provider.crossbar.host,
+        provider.connection.host,
       );
 
       console.log(`LOAD LAUNCH: ${JSON.stringify(request)}`);
@@ -459,7 +455,7 @@ export function RosProviderReact(
   function createRestartNodesAlertComponent(
     key: SnackbarKey | undefined,
     message: string,
-    provider: CrossbarIOProvider,
+    provider: Provider,
     changedNodes: string[],
     modifiedFile: string,
   ) {
@@ -509,7 +505,7 @@ export function RosProviderReact(
       if (
         LAUNCH_FILE_EXTENSIONS.find((fe) => modifiedFile.indexOf(fe) !== -1)
       ) {
-        const provider = getProviderById(providerId) as CrossbarIOProvider;
+        const provider = getProviderById(providerId) as Provider;
         if (!provider) return;
 
         // Launch file again using last arguments
@@ -539,22 +535,25 @@ export function RosProviderReact(
             result.reply.changed_nodes.length > 0
           ) {
             // ask use if nodes should be restarted
-            enqueueSnackbar(`Do you want to restart ${result.reply.changed_nodes.length} nodes on: `, {
-              persist: true,
-              anchorOrigin: {
-                vertical: 'top',
-                horizontal: 'right',
+            enqueueSnackbar(
+              `Do you want to restart ${result.reply.changed_nodes.length} nodes on: `,
+              {
+                persist: true,
+                anchorOrigin: {
+                  vertical: 'top',
+                  horizontal: 'right',
+                },
+                preventDuplicate: true,
+                content: (key, message) =>
+                  createRestartNodesAlertComponent(
+                    key,
+                    `${message}`,
+                    provider,
+                    result.reply.changed_nodes,
+                    modifiedFile,
+                  ),
               },
-              preventDuplicate: true,
-              content: (key, message) =>
-                createRestartNodesAlertComponent(
-                  key,
-                  `${message}`,
-                  provider,
-                  result.reply.changed_nodes,
-                  modifiedFile,
-                ),
-            });
+            );
           }
         }
         if (result && !result.success) {
@@ -569,6 +568,76 @@ export function RosProviderReact(
     [getProviderById, launchFile],
   );
 
+  /** Connects to the given provider and add it to the list. */
+  const connectToProvider: (prov: Provider) => Promise<boolean> = useCallback(
+    async (prov) => {
+      // check / add the provider
+      const provider = getProviderByHosts(
+        prov.hostnames,
+        prov.connection.port,
+        prov,
+      ) as Provider;
+
+      try {
+        if (provider.isAvailable()) {
+          provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
+          // already connected
+          await provider.getDaemonVersion();
+          provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
+          return true;
+        }
+      } catch (error: any) {
+        logCtx.debug(
+          `Could not initialize provider [${provider.name()}] (${
+            provider.type
+          }) in [ws://${provider.connection.host}:${provider.connection.port}]`,
+          `Error: ${JSON.stringify(error)}`,
+        );
+        provider.setConnectionState(
+          ConnectionState.STATES.ERRORED,
+          JSON.stringify(error),
+        );
+        return false;
+      }
+      provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
+      provider.isLocalHost = isLocalHost(provider.connection.host);
+      try {
+        if (await provider.init()) {
+          return true;
+        }
+        const error = `Could not initialize provider [${provider.name()}] (${
+          provider.type
+        }) in [ws://${provider.connection.host}:${provider.connection.port}]`;
+        // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
+        logCtx.error(error, '');
+        provider.errorDetails = `${error}`;
+        provider.setConnectionState(
+          ConnectionState.STATES.UNREACHABLE,
+          JSON.stringify(error),
+        );
+      } catch (error: any) {
+        logCtx.debug(
+          `Could not initialize provider [${provider.name()}] (${
+            provider.type
+          }) in [ws://${provider.connection.host}:${provider.connection.port}]`,
+          `Error: ${JSON.stringify(error)}`,
+        );
+        provider.setConnectionState(
+          ConnectionState.STATES.UNREACHABLE,
+          JSON.stringify(error),
+        );
+      }
+      return false;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      logCtx,
+      // startProvider,
+      getProviderByHosts,
+      setProvidersAddQueue,
+    ],
+  );
+
   /**
    * Forces an update on the provider list for all connected provider.
    */
@@ -578,87 +647,27 @@ export function RosProviderReact(
       return prov.discovered === undefined;
     });
     setProviders(newProviders);
-    try {
-      newProviders.forEach((provider) => {
+    newProviders.forEach((provider) => {
+      try {
         provider.updateProviderList();
-        provider.getDaemonVersion();
-      });
-    } catch (error: any) {
-      // ignore errors while refresh
-      logCtx.debug(`refreshProviderList failed`, JSON.stringify(error), false);
-    }
+        provider.getDaemonVersion().catch((err) => {
+          logCtx.debug(
+            `refreshProvider ${provider.name()} failed`,
+            JSON.stringify(err),
+            false,
+          );
+          connectToProvider(provider);
+        });
+      } catch (error: any) {
+        // ignore errors while refresh
+        logCtx.debug(
+          `refreshProviderList failed`,
+          JSON.stringify(error),
+          false,
+        );
+      }
+    });
   }, debounceTimeout);
-
-  /** Connects to the given provider and add it to the list. */
-  const connectToProvider: (prov: CrossbarIOProvider) => Promise<boolean> =
-    useCallback(
-      async (prov) => {
-        // check / add the provider
-        const provider = getProviderByHosts(
-          prov.hostnames,
-          prov.crossbar.port,
-          prov,
-        ) as CrossbarIOProvider;
-
-        try {
-          if (provider.isAvailable()) {
-            provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
-            // already connected
-            await provider.getDaemonVersion();
-            provider.setConnectionState(ConnectionState.STATES.CONNECTED, '');
-            return true;
-          }
-        } catch (error: any) {
-          logCtx.debug(
-            `Could not initialize provider [${provider.name()}] (${
-              provider.type
-            } )in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`,
-            `Error: ${JSON.stringify(error)}`,
-          );
-          provider.setConnectionState(
-            ConnectionState.STATES.ERRORED,
-            JSON.stringify(error),
-          );
-          return false;
-        }
-        provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');
-        provider.isLocalHost = isLocalHost(provider.crossbar.host);
-        try {
-          if (await provider.init()) {
-            return true;
-          }
-          const error = `Could not initialize provider [${provider.name()}] (${
-            provider.type
-          } ) in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`;
-          // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
-          logCtx.error(error, '');
-          provider.errorDetails = `${error}`;
-          provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
-            JSON.stringify(error),
-          );
-        } catch (error: any) {
-          logCtx.debug(
-            `Could not initialize provider [${provider.name()}] (${
-              provider.type
-            } )in [ws://${provider.crossbar.host}:${provider.crossbar.port}]`,
-            `Error: ${JSON.stringify(error)}`,
-          );
-          provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
-            JSON.stringify(error),
-          );
-        }
-        return false;
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [
-        logCtx,
-        // startProvider,
-        getProviderByHosts,
-        setProvidersAddQueue,
-      ],
-    );
 
   const startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean> =
     useCallback(
@@ -674,15 +683,16 @@ export function RosProviderReact(
 
           const port = config.port
             ? config.port
-            : getCrossbarPortFromRos(config.rosVersion) + config.networkId;
+            : getDefaultPortFromRos(Provider.type, config.rosVersion) +
+              config.networkId;
           // check and add provider if new
           let provider = getProviderByHosts(
             [config.host],
             port,
             null,
-          ) as CrossbarIOProvider;
+          ) as Provider;
           if (!provider) {
-            provider = new CrossbarIOProvider(
+            provider = new Provider(
               settingsCtx,
               config.host,
               config.rosVersion,
@@ -732,9 +742,9 @@ export function RosProviderReact(
           if (config.forceRestart && systemNodes?.length > 0) {
             // stop all requested system nodes, daemon as last node
             let nodesToStop = [];
-            let syncNode = undefined;
-            let daemonNode = undefined;
-            let discoveryNode = undefined;
+            let syncNode;
+            let daemonNode;
+            let discoveryNode;
             if (config.sync.enable) {
               syncNode = systemNodes.find(
                 (n) =>
@@ -780,7 +790,7 @@ export function RosProviderReact(
               }),
             );
             // wait a little bit until the ros node is unregistered
-            await delay(2000);
+            // await delay(1000);
           }
 
           // Start Daemon
@@ -936,13 +946,10 @@ export function RosProviderReact(
     );
 
   const startProvider: (
-    provider: CrossbarIOProvider,
+    provider: Provider,
     forceStartWithDefault: boolean,
   ) => Promise<boolean> = useCallback(
-    async (
-      provider: CrossbarIOProvider,
-      forceStartWithDefault: boolean = true,
-    ) => {
+    async (provider: Provider, forceStartWithDefault: boolean = true) => {
       provider.setConnectionState(ConnectionState.STATES.STARTING, '');
       const cfg = provider.startConfiguration;
       if (cfg) {
@@ -968,13 +975,45 @@ export function RosProviderReact(
     [startConfig],
   );
 
+  const startMasterSync = useCallback(
+    async (host: string, rosVersion: string) => {
+      if (!multimasterManager) return false;
+      const isLocal = isLocalHost(host);
+      const credential = isLocal ? null : SSHCtx.getCredentialHost(host);
+      if (!isLocal && !credential) {
+        logCtx.error(
+          `'Missing SSH credentials to starting Multimaster-Sync on host '${host}'`,
+          '',
+        );
+        return false;
+      }
+      logCtx.debug(`Starting Multimaster-Sync on host '${host}'`, '');
+      const resultStartSync = await multimasterManager.startMasterSync(
+        rosVersion,
+        credential,
+        undefined,
+        [],
+        [],
+      );
+      if (!resultStartSync.result) {
+        logCtx.warn(
+          `Failed to start sync on host '${host}'`,
+          resultStartSync.message,
+        );
+        return false;
+      }
+      return true;
+    },
+    [SSHCtx, isLocalHost, logCtx, multimasterManager],
+  );
+
   const getProviderName = (providerId: string) => {
     const name = providers.filter((item) => item.id === providerId)[0]?.name();
     return name || '';
   };
 
   /**
-   * Register subscriptions for crossbar URI callbacks for a given provider
+   * Register subscriptions for URI callbacks for a given provider
    */
   const registerSubscriber = useCallback(
     async (
@@ -983,7 +1022,7 @@ export function RosProviderReact(
       messageType: string,
       filter: SubscriberFilter,
     ) => {
-      const provider = getProviderById(providerId) as CrossbarIOProvider;
+      const provider = getProviderById(providerId) as Provider;
       if (!provider) {
         logCtx.error(
           `Can not start subscriber for: ${topic}`,
@@ -1004,7 +1043,7 @@ export function RosProviderReact(
 
   const unregisterSubscriber = useCallback(
     async (providerId: string, topic: string) => {
-      const provider = getProviderById(providerId) as CrossbarIOProvider;
+      const provider = getProviderById(providerId) as Provider;
       if (!provider) {
         logCtx.error(
           `Can not stop subscriber for: ${topic}`,
@@ -1034,11 +1073,7 @@ export function RosProviderReact(
    * Update the filter for given topic
    */
   const updateFilterRosTopic = useCallback(
-    async (
-      provider: CrossbarIOProvider,
-      topicName: string,
-      msg: SubscriberFilter,
-    ) => {
+    async (provider: Provider, topicName: string, msg: SubscriberFilter) => {
       if (!provider.isAvailable()) {
         return;
       }
@@ -1050,7 +1085,7 @@ export function RosProviderReact(
   function createReloadFileAlertComponent(
     key: SnackbarKey | undefined,
     message: string,
-    provider: CrossbarIOProvider,
+    provider: Provider,
     modifiedFile: string,
     modification: PATH_EVENT_TYPE,
     launchFilePath: string,
@@ -1114,8 +1149,8 @@ export function RosProviderReact(
         prev.filter((prov) => {
           return (
             prov.discovered === undefined || // by user connected provider cannot be removed by event
-            (data.provider.crossbar.port !== prov.crossbar.port &&
-              data.provider.crossbar.host !== prov.crossbar.host)
+            (data.provider.connection.port !== prov.connection.port &&
+              data.provider.connection.host !== prov.connection.host)
           );
         }),
       );
@@ -1143,22 +1178,25 @@ export function RosProviderReact(
         });
         if (nodes.length > 0) {
           // ask use if nodes should be restarted
-          enqueueSnackbar(`Binary changed, do you want to restart ${nodes.length} nodes on: `, {
-            persist: true,
-            anchorOrigin: {
-              vertical: 'top',
-              horizontal: 'right',
+          enqueueSnackbar(
+            `Binary changed, do you want to restart ${nodes.length} nodes on: `,
+            {
+              persist: true,
+              anchorOrigin: {
+                vertical: 'top',
+                horizontal: 'right',
+              },
+              preventDuplicate: true,
+              content: (key, message) =>
+                createRestartNodesAlertComponent(
+                  key,
+                  `${message}`,
+                  data.provider,
+                  nodes,
+                  data.path.srcPath,
+                ),
             },
-            preventDuplicate: true,
-            content: (key, message) =>
-              createRestartNodesAlertComponent(
-                key,
-                `${message}`,
-                data.provider,
-                nodes,
-                data.path.srcPath,
-              ),
-          });
+          );
         }
       }
       data.path.affected.forEach((arg: string) => {
@@ -1274,9 +1312,9 @@ export function RosProviderReact(
       case ConnectionState.STATES.STARTING:
         // this state is set by this context while it starts nodes
         break;
-      case ConnectionState.STATES.CROSSBAR_CONNECTED:
+      case ConnectionState.STATES.SERVER_CONNECTED:
         break;
-      case ConnectionState.STATES.CROSSBAR_REGISTERED:
+      case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
         break;
       case ConnectionState.STATES.CONNECTED:
         // trigger updates on state change
@@ -1301,7 +1339,7 @@ export function RosProviderReact(
   useCustomEventListener(
     EVENT_PROVIDER_WARNINGS,
     (data: EventProviderWarnings) => {
-      logCtx.debugCrossbar(
+      logCtx.debugInterface(
         'ros.provider.warnings',
         data.warnings,
         '',
@@ -1328,7 +1366,11 @@ export function RosProviderReact(
       if (!hostnames) {
         hostnames = prov?.host() ? [prov?.host()] : [];
       }
-      const provider = getProviderByHosts(hostnames, prov?.crossbar.port, null);
+      const provider = getProviderByHosts(
+        hostnames,
+        prov?.connection.port,
+        null,
+      );
       if (provider === null) {
         if (prov) {
           setProviders((oldValue) => {
@@ -1380,6 +1422,7 @@ export function RosProviderReact(
       connectToProvider,
       startProvider,
       startConfig,
+      startMasterSync,
       removeProvider,
       refreshProviderList,
       closeProviders,

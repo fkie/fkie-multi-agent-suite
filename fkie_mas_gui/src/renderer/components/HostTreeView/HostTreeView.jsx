@@ -29,12 +29,7 @@ import {
 } from './HostTreeViewUtils';
 import LaunchFileList from './LaunchFileList';
 
-import {
-  LaunchFile,
-  ProviderLaunchConfiguration,
-  RosNodeStatus,
-  getFileName,
-} from '../../models';
+import { LaunchFile, RosNodeStatus, getFileName } from '../../models';
 
 const compareTreeItems = (a, b) => {
   // place system groups are at the end
@@ -457,12 +452,7 @@ function HostTreeView({
       if (syncNode) {
         stopNodes([syncNode.idGlobal]);
       } else {
-        const lc = new ProviderLaunchConfiguration(
-          provider.crossbar.host,
-          provider.rosVersion,
-        );
-        lc.sync.enable = true;
-        rosCtx.startConfig(lc);
+        rosCtx.startMasterSync(provider.connection.host, provider.rosVersion);
       }
     },
     [getMasterSyncNode, rosCtx, stopNodes],
@@ -766,20 +756,20 @@ function HostTreeView({
     expanded,
     providerNodeTree,
     selectedItems,
-    handleToggle,
-    // handleSelect, <= causes too many re-renders
     rosCtx,
-    getMasterSyncNode,
     settingsCtx,
-    handleDoubleClick,
-    getProviderTags,
+    // handleToggle, <= causes too many re-renders
+    // handleSelect, <= causes too many re-renders
+    // getMasterSyncNode,     <= causes too many re-renders
+    // handleDoubleClick,     <= causes too many re-renders
+    // getProviderTags,       <= causes too many re-renders
     // selectNodesFromLaunch, <= causes too many re-renders
-    onRemoveLaunch,
-    onReloadLaunch,
-    toggleMasterSync,
-    createSingleTerminalCmdPanel,
+    // onRemoveLaunch,        <= causes too many re-renders
+    // onReloadLaunch,        <= causes too many re-renders
+    // toggleMasterSync,      <= causes too many re-renders
+    // createSingleTerminalCmdPanel,  <= causes too many re-renders
     // buildHostTreeViewItem, <= causes too many re-renders
-    setKeyNodeList,
+    // setKeyNodeList,        <= causes too many re-renders
   ]);
 
   return generateTree;

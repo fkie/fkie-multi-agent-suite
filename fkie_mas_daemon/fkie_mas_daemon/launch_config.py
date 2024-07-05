@@ -1,24 +1,10 @@
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 
 from typing import Dict
@@ -52,9 +38,9 @@ from launch.launch_description import LaunchDescription
 import launch_ros
 import composition_interfaces.srv
 
-from fkie_mas_pylib.crossbar.runtime_interface import RosNode
-from fkie_mas_pylib.crossbar.launch_interface import LaunchArgument
-from fkie_mas_pylib.crossbar.launch_interface import LaunchNodeInfo
+from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.launch_interface import LaunchArgument
+from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib import names
 from fkie_mas_pylib import ros_pkg
@@ -724,13 +710,14 @@ class LaunchConfig(object):
             arg_match = re.search(r"\$\(\s*arg\s*", value)
 
     @classmethod
-    def get_launch_arguments(cls, filename: str, provided_args: list) -> List[LaunchArgument]:
+    def get_launch_arguments(cls, context: LaunchContext, filename: str, provided_args: list) -> List[LaunchArgument]:
         '''
-        :param list(fkie_mas_msgs.crossbar.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
+        :param list(fkie_mas_pylib.interface.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
         :return: a list with args being used in the roslaunch file.
-        :rtype: list(fkie_mas_msgs.crossbar.runtime_interface.RosParameter)
+        :rtype: list(fkie_mas_pylib.interface.runtime_interface.RosParameter)
         '''
-        context = LaunchContext()
+
+        # context = LaunchContext()
         launch_description = get_launch_description_from_any_launch_file(
             filename)
         launch_arguments: List[launch.actions.declare_launch_argument.DeclareLaunchArgument] = launch_description.get_launch_arguments()

@@ -1,10 +1,17 @@
 import React, { createContext, useMemo, useReducer } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import URI from '../models/Crossbar';
+import URI from '../models/uris';
 
-export const getCrossbarPortFromRos = (rosVersion: string) => {
-  return rosVersion === '2' ? 11811 : 11911;
+export const getDefaultPortFromRos: (
+  connectionType: string,
+  rosVersion: string,
+) => number = (connectionType, rosVersion) => {
+  if (connectionType === 'crossbar-wamp') {
+    return rosVersion === '2' ? 11811 : 11911;
+  }
+  return rosVersion === '2' ? 35430 : 35685;
 };
+
 export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
   changed: number;
@@ -24,7 +31,7 @@ export const LAUNCH_FILE_EXTENSIONS = [
 ];
 
 export const DEFAULT_SETTINGS = {
-  MIN_VERSION_DAEMON: '2.1.2',
+  MIN_VERSION_DAEMON: '3.0.0',
   fgColor: '#1a73e8',
   bgColor: '#fafafa',
   fgColorForDarkMode: '#B8E7FB',
@@ -123,8 +130,8 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: LOG_LEVEL_LIST,
     description: 'displayed log levels',
   },
-  debugCrossbarUris: {
-    label: 'Crossbar URIs',
+  debugByUri: {
+    label: 'Interface URIs',
     type: 'string[]',
     default: [
       URI.ROS_PROVIDER_GET_LIST,

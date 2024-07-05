@@ -4,7 +4,7 @@
   <description>
      The messages required by multimaster packages.
   </description>
-  <version>2.0.0</version>
+  <version>3.0.0</version>
   <license>MIT</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>

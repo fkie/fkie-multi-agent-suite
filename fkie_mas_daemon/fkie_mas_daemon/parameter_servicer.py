@@ -1,31 +1,31 @@
 from typing import List
 import json
-import asyncio
-from autobahn import wamp
-from types import SimpleNamespace
 
-from fkie_mas_pylib.crossbar.runtime_interface import RosParameter
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import RosParameter
+from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.parameters.ros2_parameters import ROS2Parameters
+from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
 
 
-class ParameterServicer(CrossbarBaseSession):
+class ParameterServicer:
     '''
     Interface for ROS2 parameters
     '''
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11811, test_env=False) -> None:
+    def __init__(self, websocket: WebSocketServer, test_env=False) -> None:
         Log.info("Create ROS2 parameter servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._handler = ROS2Parameters(nmd.ros_node)
+        websocket.register("ros.parameters.get_list", self.getParameterList)
+        websocket.register("ros.parameters.get_node_parameters", self.getNodeParameters)
+        websocket.register("ros.parameters.has_parameter", self.hasParameter)
+        websocket.register("ros.parameters.set_parameter", self.setParameter)
+        websocket.register("ros.parameters.delete_parameters", self.deleteParameters)
 
     def stop(self):
-        self.shutdown()
+        pass
 
-    @wamp.register('ros.parameters.get_list')
     def getParameterList(self):
         '''
         Return a list with all registered parameters values and types
@@ -36,7 +36,6 @@ class ParameterServicer(CrossbarBaseSession):
         p_list = self._handler.getParameterList()
         return json.dumps(p_list, cls=SelfEncoder)
 
-    @wamp.register('ros.parameters.get_node_parameters')
     def getNodeParameters(self, nodes: List[str]):
         '''
         Return a list with all registered parameters values and types for a given Node
@@ -47,7 +46,6 @@ class ParameterServicer(CrossbarBaseSession):
         p_list = self._handler.getNodeParameters(nodes)
         return json.dumps(p_list, cls=SelfEncoder)
 
-    @wamp.register('ros.parameters.has_parameter')
     def hasParameter(self, parameter_name: str):
         '''
         Check if a parameter exists
@@ -58,20 +56,17 @@ class ParameterServicer(CrossbarBaseSession):
         result = self._handler.hasParameter(parameter_name)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register('ros.parameters.set_parameter')
     def setParameter(self, _parameter: RosParameter):
         '''
         Set the value of a parameter
         '''
-        parameter = json.loads(json.dumps(_parameter),
-                               object_hook=lambda d: SimpleNamespace(**d))
+        parameter = _parameter
         Log.info(
             f'ros.parameters.set_parameter: [{parameter.name}] to {parameter.value}')
         result = None
         result = self._handler.setParameter(parameter)
         return json.dumps(result, cls=SelfEncoder)
 
-    @wamp.register('ros.parameters.delete_parameters')
     def deleteParameters(self, parameters: List[str]):
         '''
         Delete a list of parameters

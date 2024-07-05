@@ -379,87 +379,90 @@ function TopicsPanel({ initialSearchTerm }) {
     );
   }, [expanded, rootDataList, topicTreeToStyledItems]);
 
-  return (
-    <Box
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-    >
-      <Stack
-        spacing={1}
+  const createPanel = useMemo(() => {
+    return (
+      <Box
         height="100%"
-        // sx={{
-        //   height: '100%',
-        //   display: 'flex',
-        // }}
+        overflow="auto"
+        backgroundColor={settingsCtx.get('backgroundColor')}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Stack direction="row" paddingTop="5px">
-            <Tooltip
-              title="Echo"
-              placement="bottom"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-            >
-              <span>
-                <IconButton
-                  disabled={!topicForSelected}
-                  size="small"
-                  aria-label="Subscribe to topic and show the output"
-                  onClick={() => {
-                    onEchoClick(topicForSelected);
-                  }}
-                >
-                  <ChatBubbleOutlineIcon fontSize="inherit" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip
-              title="Publish to"
-              placement="bottom"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-            >
-              <span>
-                <IconButton
-                  disabled={!topicForSelected}
-                  size="small"
-                  aria-label="Create a publisher"
-                  onClick={() => {
-                    onPublishClick(topicForSelected);
-                  }}
-                >
-                  <PlayCircleOutlineIcon fontSize="inherit" />
-                </IconButton>
-              </span>
+        <Stack
+          spacing={1}
+          height="100%"
+          // sx={{
+          //   height: '100%',
+          //   display: 'flex',
+          // }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" paddingTop="5px">
+              <Tooltip
+                title="Echo"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
+                <span>
+                  <IconButton
+                    disabled={!topicForSelected}
+                    size="small"
+                    aria-label="Subscribe to topic and show the output"
+                    onClick={() => {
+                      onEchoClick(topicForSelected);
+                    }}
+                  >
+                    <ChatBubbleOutlineIcon fontSize="inherit" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip
+                title="Publish to"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+              >
+                <span>
+                  <IconButton
+                    disabled={!topicForSelected}
+                    size="small"
+                    aria-label="Create a publisher"
+                    onClick={() => {
+                      onPublishClick(topicForSelected);
+                    }}
+                  >
+                    <PlayCircleOutlineIcon fontSize="inherit" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
+
+            <SearchBar
+              onSearch={onSearch}
+              placeholder="Filter Topics (<space> for OR, + for AND)"
+              defaultValue={initialSearchTerm}
+              fullWidth
+            />
+            <Tooltip title="Reload topic list" placement="left">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  getTopicList();
+                }}
+              >
+                <RefreshIcon sx={{ fontSize: 'inherit' }} />
+              </IconButton>
             </Tooltip>
           </Stack>
-
-          <SearchBar
-            onSearch={onSearch}
-            placeholder="Filter Topics (<space> for OR, + for AND)"
-            defaultValue={initialSearchTerm}
-            fullWidth
-          />
-          <Tooltip title="Reload topic list" placement="left">
-            <IconButton
-              size="small"
-              onClick={() => {
-                getTopicList();
-              }}
-            >
-              <RefreshIcon sx={{ fontSize: 'inherit' }} />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" height="100%" overflow="auto">
+            <Box width="100%" height="100%" overflow="auto">
+              {createTreeView}
+            </Box>
+          </Stack>
         </Stack>
-        <Stack direction="row" height="100%" overflow="auto">
-          <Box width="100%" height="100%" overflow="auto">
-            {createTreeView}
-          </Box>
-        </Stack>
-      </Stack>
-    </Box>
-  );
+      </Box>
+    );
+  }, [rootDataList, expanded, selectedItems, topicForSelected]);
+  return createPanel;
 }
 
 TopicsPanel.defaultProps = {

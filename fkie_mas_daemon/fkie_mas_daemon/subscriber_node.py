@@ -1,48 +1,30 @@
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 
 import argparse
-import asyncio
 import json
-import os
 import sys
-import threading
 import time
+import threading
 import traceback
 from importlib import import_module
 from types import SimpleNamespace
 from typing import Optional
-
 import rclpy
 from rclpy.duration import Duration
-from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
-
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberEvent
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberFilter
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
+from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
-
+from fkie_mas_pylib.websocket import ws_port
+from fkie_mas_pylib.websocket.client import WebSocketClient
 import fkie_mas_daemon as nmd
 from fkie_mas_pylib.logging.logging import Log
 from .msg_encoder import MsgEncoder
@@ -59,7 +41,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-class RosSubscriberLauncher(CrossbarBaseSession):
+class RosSubscriberLauncher:
     '''
     Launches the ROS node to forward a topic subscription.
     '''
@@ -67,7 +49,6 @@ class RosSubscriberLauncher(CrossbarBaseSession):
     DEFAULT_WINDOWS_SIZE = 5000
 
     def __init__(self, test_env=False):
-        self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
         # change terminal name
         parsed_args, remaining_args = self.parser.parse_known_args()
@@ -76,20 +57,10 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         self.namespace, self.name = ros2_subscriber_nodename_tuple(
             parsed_args.topic)
         print('\33]0;%s\a' % (self.name), end='', flush=True)
-        # self._displayed_name = parsed_args.name
-        # self._port = parsed_args.port
-        # self._load = parsed_args.load
-        if 'ROS_DOMAIN_ID' in os.environ:
-            self.ros_domain_id = int(os.environ['ROS_DOMAIN_ID'])
-            # TODO: switch domain id
-            # os.environ.pop('ROS_DOMAIN_ID')
+        self._port = parsed_args.ws_port
         rclpy.init(args=remaining_args)
         # NM_NAMESPACE
-        self.rosnode = rclpy.create_node(self.name, namespace=self.namespace)
-
-        self.executor = MultiThreadedExecutor(num_threads=3)
-        self.executor.add_node(self.rosnode)
-
+        self.ros_node = rclpy.create_node(self.name, namespace=self.namespace)
         self._topic = parsed_args.topic
         self._message_type = parsed_args.message_type
         self._count_received = 0
@@ -101,8 +72,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         if self._window == 0:
             self._window = self.DEFAULT_WINDOWS_SIZE
         self._tcp_no_delay = parsed_args.tcp_no_delay
-        self._crossbar_port = parsed_args.crossbar_port
-        self._crossbar_realm = parsed_args.crossbar_realm
+        self._ws_port = parsed_args.ws_port
+        self._parsed_args = parsed_args
 
         self._send_ts = 0
         self._latched_messages = []
@@ -114,14 +85,14 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         self._bytes = []
         self._bws = []
 
-        nmd.ros_node = self.rosnode
+        nmd.ros_node = self.ros_node
         # set loglevel to DEBUG
         # nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
         # get a reference to the global node for logging
-        Log.set_ros2_logging_node(self.rosnode)
+        Log.set_ros2_logging_node(self.ros_node)
 
-        Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
+        Log.info(f"start ROS subscriber for {self._topic}[{self._message_type}]")
         splitted_type = self._message_type.replace('/', '.').rsplit('.', 1)
         splitted_type.reverse()
         module = import_module(splitted_type.pop())
@@ -133,29 +104,24 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                 f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
 
         self.__msg_class = sub_class
-        self.crossbar_loop = asyncio.get_event_loop()
-        CrossbarBaseSession.__init__(
-            self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
-        self._crossbarThread = threading.Thread(
-            target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
-        self._crossbarThread.start()
+        qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
+        self.sub = nmd.ros_node.create_subscription(
+            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        self.wsClient = WebSocketClient(self._port)
         # qos_state_profile = QoSProfile(depth=100,
         #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
         #                                # reliability=QoSReliabilityPolicy.RELIABLE)
         #                                )
-        qos_state_profile = self.choose_qos(parsed_args, self._topic)
-        self.rosnode.get_logger().info(
-            f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
-        self.sub = nmd.ros_node.create_subscription(
-            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
-        self.subscribe_to(
+        Log.info(f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
+        self.wsClient.subscribe(
             f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
 
     def __del__(self):
         self.stop()
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
+
     def profile_configure_short_keys(self,
                                      profile: rclpy.qos.QoSProfile = None, reliability: Optional[str] = None,
                                      durability: Optional[str] = None, depth: Optional[int] = None, history: Optional[str] = None,
@@ -221,7 +187,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         reliability_reliable_endpoints_count = 0
         durability_transient_local_endpoints_count = 0
 
-        pubs_info = self.rosnode.get_publishers_info_by_topic(topic)
+        pubs_info = self.ros_node.get_publishers_info_by_topic(topic)
         publishers_count = len(pubs_info)
         if publishers_count == 0:
             return qos_profile
@@ -262,23 +228,21 @@ class RosSubscriberLauncher(CrossbarBaseSession):
 
     def spin(self):
         try:
-            self.executor.spin()
-            # rclpy.spin(self.rosnode)
+            rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             pass
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
-            self.rosnode.get_logger().warning('Start failed: %s' %
-                                              traceback.format_exc())
+            self.ros_node.get_logger().warning('Start failed: %s' %
+                                               traceback.format_exc())
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-        self.sub.destroy()
         print('shutdown rclpy')
-        self.executor.shutdown()
-        # rclpy.shutdown()
+        self.sub.destroy()
+        rclpy.shutdown()
         print('bye!')
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
@@ -333,10 +297,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--crossbar_port', nargs='?', type=int,
-                            required=True,  help='port for crossbar server')
-        parser.add_argument('--crossbar_realm', nargs='?', type=str,
-                            default='ros',  help='realm crossbar server')
+        parser.add_argument('--ws_port', nargs='?', type=int,
+                            required=True,  help='port for ws server')
         parser.add_argument('-t', '--topic', nargs='?', required=True,
                             help="Name of the ROS topic to listen to (e.g. '/chatter')")
         parser.add_argument("-m", "--message_type", nargs='?', required=True,
@@ -363,14 +325,12 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         return parser
 
     def stop(self):
-        if hasattr(self, 'crossbar_loop'):
-            self.crossbar_loop.stop()
+        if self.wsClient:
+            self.wsClient.shutdown()
+        if hasattr(self, 'wsClient'):
+            self.wsClient.shutdown()
 
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-
-    def _msg_handle(self, data):
+    async def _msg_handle(self, data):
         self._count_received += 1
         self._latched = False
         # self._latched = data._connection_header['latching'] != '0'
@@ -385,8 +345,6 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                 data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
         event.count = self._count_received
         self._calc_stats(data, event)
-        print(f"publish_to: ",
-              f"ros.subscriber.event.{self._topic.replace('/', '_')}")
         timeouted = self._hz == 0
         if self._hz != 0:
             now = time.time()
@@ -394,8 +352,8 @@ class RosSubscriberLauncher(CrossbarBaseSession):
                 self._send_ts = now
                 timeouted = True
         if event.latched or timeouted:
-            self.publish_to(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
+            self.wsClient.publish(
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
 
     def _get_message_size(self, msg):
         # print("size:", msg.__sizeof__())
@@ -471,10 +429,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
 
         self._last_received_ts = current_time
 
-    def _clb_update_filter(self, json_filter: SubscriberFilter):
-        # Convert filter settings into a proper python object
-        request = json.loads(json.dumps(json_filter),
-                             object_hook=lambda d: SimpleNamespace(**d))
+    def _clb_update_filter(self, request: SubscriberFilter):
         Log.info(f"update filter for {self._topic}[{self._message_type}]")
         self._no_data = request.no_data
         self._no_arr = request.no_arr

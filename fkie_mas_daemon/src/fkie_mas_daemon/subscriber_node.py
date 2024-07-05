@@ -1,24 +1,10 @@
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 from typing import Any
 from typing import Callable
@@ -26,19 +12,17 @@ from typing import Union
 from typing import Tuple
 
 import argparse
-import asyncio
 import json
-import threading
 import time
 from types import SimpleNamespace
 
 import rospy
 from roslib import message
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberEvent
-from fkie_mas_pylib.crossbar.runtime_interface import SubscriberFilter
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
+from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.client import WebSocketClient
 
 
 def str2bool(v):
@@ -64,14 +48,14 @@ class MsgEncoder(json.JSONEncoder):
     def default(self, obj):
         result = {}
         if isinstance(obj, bytes):
-            #obj_bytes = [byte for byte in obj]
+            # obj_bytes = [byte for byte in obj]
             obj_bytes = []
             for byte in obj:
                 if len(obj_bytes) >= 10:
                     break
                 obj_bytes.append(byte)
-            result = ', '.join(map(str,obj_bytes))
-            result = result + f'...(of {len(obj)} values)' 
+            result = ', '.join(map(str, obj_bytes))
+            result = result + f'...(of {len(obj)} values)'
         else:
             for key in obj.__slots__:
                 skip = False
@@ -86,7 +70,7 @@ class MsgEncoder(json.JSONEncoder):
         return result
 
 
-class SubscriberNode(CrossbarBaseSession):
+class SubscriberNode:
 
     DEFAULT_WINDOWS_SIZE = 100
 
@@ -107,8 +91,7 @@ class SubscriberNode(CrossbarBaseSession):
         if self._window == 0:
             self._window = self.DEFAULT_WINDOWS_SIZE
         self._tcp_no_delay = parsed_args.tcp_no_delay
-        self._crossbar_port = parsed_args.crossbar_port
-        self._crossbar_realm = parsed_args.crossbar_realm
+        self._ws_port = parsed_args.ws_port
         self._first_msg_ts = 0
 
         self._send_ts = 0
@@ -124,16 +107,11 @@ class SubscriberNode(CrossbarBaseSession):
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
         self.__msg_class = message.get_message_class(self._message_type)
         if self.__msg_class:
-            self.crossbar_loop = asyncio.get_event_loop()
-            CrossbarBaseSession.__init__(
-                self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
-            self._crossbarThread = threading.Thread(
-                target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
-            self._crossbarThread.start()
+            self.wsClient = WebSocketClient(self._ws_port)
+            self.wsClient.subscribe(
+                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
-            self.subscribe_to(
-                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
         else:
             raise Exception(
                 f"Cannot load message class for [{self._message_type}]. Did you build messages?")
@@ -142,19 +120,13 @@ class SubscriberNode(CrossbarBaseSession):
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'crossbar_loop'):
-            self.crossbar_loop.stop()
-
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
+        if hasattr(self, 'wsClient'):
+            self.wsClient.shutdown()
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--crossbar_port', nargs='?', type=int,
-                            required=True,  help='port for crossbar server')
-        parser.add_argument('--crossbar_realm', nargs='?', type=str,
-                            default='ros',  help='realm crossbar server')
+        parser.add_argument('--ws_port', nargs='?', type=int,
+                            required=True,  help='port for websocket server')
         parser.add_argument('-t', '--topic', nargs='?', required=True,
                             help="Name of the ROS topic to listen to (e.g. '/chatter')")
         parser.add_argument("-m", "--message_type", nargs='?', required=True,
@@ -185,7 +157,7 @@ class SubscriberNode(CrossbarBaseSession):
         # print(data._connection_header)
         # print(dir(data))
         # print("SIZE", data.__sizeof__())
-        print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
+        # print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
         if not self._no_data:
@@ -200,8 +172,8 @@ class SubscriberNode(CrossbarBaseSession):
                 self._send_ts = now
                 timeouted = True
         if (event.latched and time.time() - self._first_msg_ts < 2.0) or timeouted:
-            self.publish_to(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
+            self.wsClient.publish(
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
 
     def _get_message_size(self, msg):
         buff = None
@@ -272,10 +244,7 @@ class SubscriberNode(CrossbarBaseSession):
 
         self._last_received_ts = current_time
 
-    def _clb_update_filter(self, json_filter: SubscriberFilter):
-        # Convert filter settings into a proper python object
-        request = json.loads(json.dumps(json_filter),
-                             object_hook=lambda d: SimpleNamespace(**d))
+    def _clb_update_filter(self, request: SubscriberFilter):
         Log.info(f"update filter for {self._topic}[{self._message_type}]")
         self._no_data = request.no_data
         self._no_arr = request.no_arr

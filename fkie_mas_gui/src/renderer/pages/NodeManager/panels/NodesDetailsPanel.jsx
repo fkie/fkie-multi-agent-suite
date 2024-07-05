@@ -232,7 +232,7 @@ function NodesDetailsPanel() {
   );
 
   const createNodeDetailsView = useMemo(() => {
-    return nodesShow.map((node) => {
+    const result = nodesShow.map((node) => {
       return (
         <Stack
           key={node.idGlobal}
@@ -728,6 +728,7 @@ function NodesDetailsPanel() {
         </Stack>
       );
     });
+    return result;
   }, [
     nodesShow,
     showNodeInfo,
@@ -736,8 +737,8 @@ function NodesDetailsPanel() {
     showSubscribers,
     showServices,
     showPaths,
-    onTopicClick,
-    onServiceClick,
+    // onTopicClick,    <= causes unnecessary rebuilds
+    // onServiceClick,  <= causes unnecessary rebuilds
     rosCtx,
     logPaths,
   ]);

@@ -1,28 +1,12 @@
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 
-import asyncio
-from autobahn import wamp
 import json
 import os
 import psutil
@@ -30,19 +14,18 @@ import signal
 import threading
 import time
 from typing import Dict, List
-from fkie_mas_pylib.crossbar.base_session import CrossbarBaseSession
-from fkie_mas_pylib.crossbar.base_session import SelfEncoder
-from fkie_mas_pylib.crossbar.runtime_interface import ScreensMapping
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
 
 
-class ScreenServicer(CrossbarBaseSession):
+class ScreenServicer:
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
+    def __init__(self, websocket: WebSocketServer):
         Log.info("Create ROS2 screen servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port)
         self._is_running = True
         self._screen_check_rate = 1
         self._screen_check_force_after_default = 10
@@ -51,7 +34,10 @@ class ScreenServicer(CrossbarBaseSession):
         self._screen_thread = None
         self._screens_set = set()
         self._screen_nodes_set = set()
-        self._sceen_crossbar_msg: List[ScreensMapping] = []
+        self._screen_json_msg: List[ScreensMapping] = []
+        self.websocket = websocket
+        websocket.register("ros.screen.kill_node", self.kill_node)
+        websocket.register("ros.screen.get_list", self.get_screen_list)
 
     def start(self):
         self._screen_thread = threading.Thread(
@@ -60,7 +46,6 @@ class ScreenServicer(CrossbarBaseSession):
 
     def stop(self):
         self._is_running = False
-        self.shutdown()
 
     def _check_screens(self):
         last_check = 0
@@ -85,23 +70,23 @@ class ScreenServicer(CrossbarBaseSession):
                             name=node_name, screens=[session_name])
                     new_screens_set.add(session_name)
                     new_screen_nodes_set.add(node_name)
-                # create crossbar message
-                crossbar_msg: List[ScreensMapping] = []
+                # create json message
+                json_msg: List[ScreensMapping] = []
                 for node_name, msg in screen_dict.items():
-                    crossbar_msg.append(msg)
+                    json_msg.append(msg)
                 # add nodes without screens send by the last message
                 gone_screen_nodes = self._screen_nodes_set - new_screen_nodes_set
                 for sn in gone_screen_nodes:
-                    crossbar_msg.append(ScreensMapping(name=sn, screens=[]))
+                    json_msg.append(ScreensMapping(name=sn, screens=[]))
 
                 # publish the message only on difference
                 div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
                 div_screens = self._screens_set ^ new_screens_set
                 if div_screen_nodes or div_screens:
                     Log.debug(
-                        f"{self.__class__.__name__}: publish ros.screen.list with {len(crossbar_msg)} nodes.")
-                    self.publish_to('ros.screen.list', crossbar_msg)
-                    self._screen_crossbar_msg = crossbar_msg
+                        f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
+                    self.websocket.publish('ros.screen.list', json_msg)
+                    self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
                 last_check = 0
@@ -112,7 +97,6 @@ class ScreenServicer(CrossbarBaseSession):
     def system_change(self) -> None:
         self._screen_do_check = True
 
-    @wamp.register('ros.screen.kill_node')
     def kill_node(self, name: str, sig: signal = signal.SIGKILL) -> bool:
         Log.info(f"{self.__class__.__name__}: Kill node '{name}'")
         self._screen_do_check = True
@@ -131,19 +115,20 @@ class ScreenServicer(CrossbarBaseSession):
                     nodeName = os.path.basename(name)
                     if cmdStr.find(f"__node:={nodeName}") > -1:
                         successCur = True
-                        Log.info(f"{self.__class__.__name__}: Kill process '{nPid}', cmd: {cmdStr}")
+                        Log.info(
+                            f"{self.__class__.__name__}: Kill process '{nPid}', cmd: {cmdStr}")
                         os.kill(nPid, sig)
                         break
             if not successCur:
-                Log.info(f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid}'")
+                Log.info(
+                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid}'")
                 os.kill(pid, signal.SIGKILL)
                 successCur = True
             if successCur:
                 success = True
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
-    @wamp.register('ros.screen.get_list')
     def get_screen_list(self) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
-        return json.dumps(self._screen_crossbar_msg, cls=SelfEncoder)
+        return json.dumps(self._screen_json_msg, cls=SelfEncoder)

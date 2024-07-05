@@ -58,14 +58,14 @@ import ScreensMapping from './ScreensMapping';
 // Other structs
 import LogEvent, { LoggingLevel } from './LogEvent';
 import LogPathItem from './LogPathItem';
-import LoggerConfig, { LogLevelType } from './LoggerConfig';
+import { LogLevelType, LoggerConfig } from './LoggerConfig';
 import Result from './Result';
 
 import SubscriberEvent from './SubscriberEvent';
 import SubscriberFilter from './SubscriberFilter';
 import SubscriberNode from './SubscriberNode';
 
-import URI from './Crossbar';
+import URI from './uris';
 import SystemWarning from './SystemWarning';
 import SystemWarningGroup from './SystemWarningGroup';
 

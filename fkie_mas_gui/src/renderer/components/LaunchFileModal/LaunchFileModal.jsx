@@ -78,7 +78,7 @@ function LaunchFileModal({
           host,
         );
         const result = await provider.launchLoadFile(request);
-
+        if (!result) return;
         if (result.status.code === 'ALREADY_OPEN') {
           logCtx.warn(
             `Launch file [${getFileName(path)}] was already loaded`,

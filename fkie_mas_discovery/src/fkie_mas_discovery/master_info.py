@@ -1,24 +1,10 @@
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 import socket
 try:
@@ -31,9 +17,9 @@ import rospy
 from .common import get_hostname
 from .filter_interface import FilterInterface
 from fkie_mas_pylib import names
-from fkie_mas_pylib.crossbar.runtime_interface import RosNode
-from fkie_mas_pylib.crossbar.runtime_interface import RosService
-from fkie_mas_pylib.crossbar.runtime_interface import RosTopic
+from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import RosService
+from fkie_mas_pylib.interface.runtime_interface import RosTopic
 from fkie_mas_pylib.system import screen
 
 from typing import List, Dict
@@ -1365,7 +1351,7 @@ class MasterInfo(object):
 
         return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
 
-    def toCrossbar(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
+    def toJson(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
         try:
             iffilter = filter_interface
             ros_nodes = dict()

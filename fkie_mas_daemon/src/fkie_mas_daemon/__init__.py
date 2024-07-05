@@ -1,25 +1,11 @@
 #!/usr/bin/env python
-# The MIT License (MIT)
-
-# Copyright (c) 2014-2024 Fraunhofer FKIE, Alexander Tiderko
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
 
 
 import argparse
@@ -31,7 +17,7 @@ import traceback
 import rospy
 
 from .daemon import MASDaemon
-from fkie_mas_pylib.crossbar import server
+from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.system.screen import test_screen
 from fkie_mas_pylib.logging.logging import Log
 from .subscriber_node import SubscriberNode
@@ -76,7 +62,7 @@ def init_arg_parser():
                                                            " statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;"
                                                            " comma separated for multiple files")
     parser.add_argument('--port', nargs='?', type=int,
-                            default=server.port(),  help='change port for crossbar server')
+                            default=ws_port(),  help='change port for websocket server')
     return parser
 
 
@@ -126,11 +112,12 @@ def start_server(node_name='mas_daemon'):
         sys.stdout.write(traceback.format_exc())
         sys.stdout.flush()
         os.kill(os.getpid(), signal.SIGKILL)
+    print("bye!")
 
 
 def create_subscriber(node_name='mas_subscriber'):
     '''
-    Creates a subscriber to forward received messages to crossbar server.
+    Creates a subscriber to forward received messages to websocket server.
     '''
     # setup the loglevel
     log_level = rospy.DEBUG
