@@ -48,7 +48,6 @@ import {
   getFileName,
 } from '../models';
 import Provider from '../providers/Provider';
-import { delay } from '../utils';
 import { LoggingContext } from './LoggingContext';
 import { SSHContext } from './SSHContext';
 import {
@@ -976,6 +975,38 @@ export function RosProviderReact(
     [startConfig],
   );
 
+  const startMasterSync = useCallback(
+    async (host: string, rosVersion: string) => {
+      if (!multimasterManager) return false;
+      const isLocal = isLocalHost(host);
+      const credential = isLocal ? null : SSHCtx.getCredentialHost(host);
+      if (!isLocal && !credential) {
+        logCtx.error(
+          `'Missing SSH credentials to starting Multimaster-Sync on host '${host}'`,
+          '',
+        );
+        return false;
+      }
+      logCtx.debug(`Starting Multimaster-Sync on host '${host}'`, '');
+      const resultStartSync = await multimasterManager.startMasterSync(
+        rosVersion,
+        credential,
+        undefined,
+        [],
+        [],
+      );
+      if (!resultStartSync.result) {
+        logCtx.warn(
+          `Failed to start sync on host '${host}'`,
+          resultStartSync.message,
+        );
+        return false;
+      }
+      return true;
+    },
+    [SSHCtx, isLocalHost, logCtx, multimasterManager],
+  );
+
   const getProviderName = (providerId: string) => {
     const name = providers.filter((item) => item.id === providerId)[0]?.name();
     return name || '';
@@ -1391,6 +1422,7 @@ export function RosProviderReact(
       connectToProvider,
       startProvider,
       startConfig,
+      startMasterSync,
       removeProvider,
       refreshProviderList,
       closeProviders,

@@ -29,12 +29,7 @@ import {
 } from './HostTreeViewUtils';
 import LaunchFileList from './LaunchFileList';
 
-import {
-  LaunchFile,
-  ProviderLaunchConfiguration,
-  RosNodeStatus,
-  getFileName,
-} from '../../models';
+import { LaunchFile, RosNodeStatus, getFileName } from '../../models';
 
 const compareTreeItems = (a, b) => {
   // place system groups are at the end
@@ -457,12 +452,7 @@ function HostTreeView({
       if (syncNode) {
         stopNodes([syncNode.idGlobal]);
       } else {
-        const lc = new ProviderLaunchConfiguration(
-          provider.connection.host,
-          provider.rosVersion,
-        );
-        lc.sync.enable = true;
-        rosCtx.startConfig(lc);
+        rosCtx.startMasterSync(provider.connection.host, provider.rosVersion);
       }
     },
     [getMasterSyncNode, rosCtx, stopNodes],
