@@ -26,9 +26,7 @@ from typing import Union
 from typing import Tuple
 
 import argparse
-import asyncio
 import json
-import threading
 import time
 from types import SimpleNamespace
 
@@ -123,16 +121,9 @@ class SubscriberNode:
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
         self.__msg_class = message.get_message_class(self._message_type)
         if self.__msg_class:
-            self.asyncio_loop = asyncio.get_event_loop()
-            # self.asyncio_loop.create_task(self.ros_loop())
-            # self.asyncio_loop.create_task(self.subscribe())
-            self.wsClient = WebSocketClient(self._port, self.asyncio_loop)
+            self.wsClient = WebSocketClient(self._port)
             self.wsClient.subscribe(
                 f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
-
-            self._wsThread = threading.Thread(
-                target=self.asyncio_loop.run_forever, daemon=True)
-            self._wsThread.start()
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
             self.subscribe_to(
@@ -145,8 +136,8 @@ class SubscriberNode:
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'asyncio_loop'):
-            self.asyncio_loop.stop()
+        if hasattr(self, 'wsClient'):
+            self.wsClient.shutdown()
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()

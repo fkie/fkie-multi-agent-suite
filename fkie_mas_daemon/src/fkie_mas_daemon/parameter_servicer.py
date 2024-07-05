@@ -22,7 +22,6 @@
 
 from typing import List
 import json
-import asyncio
 from types import SimpleNamespace
 
 from fkie_mas_pylib.interface.runtime_interface import RosParameter

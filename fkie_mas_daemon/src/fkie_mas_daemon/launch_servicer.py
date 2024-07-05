@@ -28,14 +28,10 @@ import roslib.msgs
 import roslib.names
 import roslib.packages
 import rospkg
-import shlex
-import subprocess
 import threading
 import traceback
 
 import json
-from types import SimpleNamespace
-import asyncio
 
 from typing import List
 from watchdog.observers import Observer

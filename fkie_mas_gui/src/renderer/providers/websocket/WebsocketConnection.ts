@@ -224,10 +224,13 @@ export default class WebsocketConnection extends ProviderConnection {
    * Close all subscriptions
    */
   closeSubscriptions: () => Promise<void> = async () => {
-    Object.keys(this.subscriptions).forEach(async (key) => {
-      await this.call('unsub', [key]);
+    Object.keys(this.subscriptions).every(async (key) => {
+      await this.call('unsub', [key]).catch((error) => {
+        this.logger?.warn(`failed unregister ${key}`, `${error}`, false);
+      });
     });
     this.subscriptions = {};
+    return Promise.resolve();
   };
 
   /**

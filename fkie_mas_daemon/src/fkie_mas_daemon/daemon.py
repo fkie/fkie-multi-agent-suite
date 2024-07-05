@@ -20,11 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from concurrent import futures
-import json
 import rospy
-import os
-import threading
 import time
 
 from fkie_mas_msgs.srv import ListNodes
@@ -39,11 +35,6 @@ from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_daemon.version import detect_version
-
-
-import asyncio
-import websockets
-
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
@@ -55,7 +46,6 @@ from .parameter_servicer import ParameterServicer
 class MASDaemon:
     def __init__(self, test_env=False):
         self.ws_port = ws_port()
-        self.asyncio_loop = asyncio.get_event_loop()
         self._timer_daemon_ready = None
         self._test_env = test_env
         self._version, self._date = detect_version("fkie_mas_daemon")
@@ -67,7 +57,7 @@ class MASDaemon:
         self.parameter_servicer = None
         self.file_servicer = None
         self.screen_servicer = None
-        self.ws_server = WebSocketServer(self.asyncio_loop)
+        self.ws_server = WebSocketServer()
         rospy.Service("~start_launch", LoadLaunch,
                       self._rosservice_start_launch)
         rospy.Service("~load_launch", LoadLaunch, self._rosservice_load_launch)
@@ -81,7 +71,6 @@ class MASDaemon:
         self.parameter_servicer = None
         self.file_servicer = None
         self.screen_servicer = None
-        self.asyncio_loop.stop()
 
     def _update_parameter(self, settings):
         # self._verbosity = settings.param("global/verbosity", "INFO")
@@ -89,7 +78,8 @@ class MASDaemon:
 
     def start(self, port=None):
         use_port = port if (port != None) else self.ws_port
-        self.ws_server.start(port)
+        Log.info(f"Start websocket server @ ws://0.0.0.0:{use_port}")
+        self.ws_server.start_threaded(use_port)
         self.monitor_servicer = MonitorServicer(
             self._settings,
             test_env=self._test_env,
@@ -110,12 +100,6 @@ class MASDaemon:
         self.version_servicer = VersionServicer(
             test_env=self._test_env,
         )
-
-        Log.info(f"Start websocket server @ ws://0.0.0.0:{use_port}")
-        self._wsThread = threading.Thread(
-            target=self.asyncio_loop.run_forever, daemon=True
-        )
-        self._wsThread.start()
         self._daemon_send_status(True)
 
     def _daemon_send_status(self, status: bool):

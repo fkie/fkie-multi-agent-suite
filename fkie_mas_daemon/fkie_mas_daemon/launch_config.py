@@ -724,13 +724,14 @@ class LaunchConfig(object):
             arg_match = re.search(r"\$\(\s*arg\s*", value)
 
     @classmethod
-    def get_launch_arguments(cls, filename: str, provided_args: list) -> List[LaunchArgument]:
+    def get_launch_arguments(cls, context: LaunchContext, filename: str, provided_args: list) -> List[LaunchArgument]:
         '''
         :param list(fkie_mas_pylib.interface.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
         :return: a list with args being used in the roslaunch file.
         :rtype: list(fkie_mas_pylib.interface.runtime_interface.RosParameter)
         '''
-        context = LaunchContext()
+
+        # context = LaunchContext()
         launch_description = get_launch_description_from_any_launch_file(
             filename)
         launch_arguments: List[launch.actions.declare_launch_argument.DeclareLaunchArgument] = launch_description.get_launch_arguments()

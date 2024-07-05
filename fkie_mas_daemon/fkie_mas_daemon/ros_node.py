@@ -21,14 +21,10 @@
 # SOFTWARE.
 
 
-import asyncio
 import argparse
 import os
-import signal
 import sys
 import threading
-import time
-import traceback
 
 import rclpy
 from rclpy.client import SrvType
@@ -80,35 +76,21 @@ class RosNodeLauncher(object):
         # test for screen after ros_node log modul is available.
         self._run_tests()
         # nmd.ros_node.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
-        # start server and load launch files provided by arguments
-        self.asyncio_loop = asyncio.get_event_loop()
-        self.asyncio_loop.create_task(self.ros_loop())
         self.server = Server(
-            self.ros_node, loop=self.asyncio_loop, default_domain_id=self.ros_domain_id)
+            self.ros_node, default_domain_id=self.ros_domain_id)
         self.success_start = False
-
-    async def ros_loop(self):
-        while rclpy.ok():
-            try:
-
-                rclpy.spin_once(self.ros_node, timeout_sec=0)
-                await asyncio.sleep(1e-4)
-            except Exception:
-                # import traceback
-                # print(traceback.format_exc())
-                pass
 
     def exception_handler(self, loop, error):
         pass
 
     def spin(self):
         try:
+            # start server and load launch files provided by arguments
             self.success_start = self.server.start(
                 self._port, displayed_name=self._displayed_name)
             if self.success_start:
                 self._load_launches()
-                self.asyncio_loop.set_exception_handler(self.exception_handler)
-                self.asyncio_loop.run_forever()
+                rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             pass
         except Exception:
@@ -123,6 +105,7 @@ class RosNodeLauncher(object):
             # os.kill(os.getpid(), signal.SIGKILL)
         print('shutdown own server')
         self.server.shutdown()
+        rclpy.shutdown()
         print('bye!')
 
     def _run_tests(self):

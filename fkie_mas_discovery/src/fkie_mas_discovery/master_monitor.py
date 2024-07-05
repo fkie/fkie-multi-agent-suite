@@ -51,8 +51,6 @@ except ImportError:
 import json
 from typing import List, Dict
 
-import asyncio
-
 from .common import get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
@@ -256,13 +254,7 @@ class MasterMonitor:
         # Start websocket server only if requested
         self.connect_server = connect_server
         if connect_server:
-            self.asyncio_loop = asyncio.get_event_loop()
-            # self.asyncio_loop.create_task(self.ros_loop())
-            # self.asyncio_loop.create_task(self.subscribe())
-            self.wsClient = WebSocketClient(self.ws_port, self.asyncio_loop)
-            self._wsThread = threading.Thread(
-                target=self.asyncio_loop.run_forever, daemon=True)
-            self._wsThread.start()
+            self.wsClient = WebSocketClient(self.ws_port)
             self.wsClient.register("ros.screen.get_list", self.getScreenList)
             self.wsClient.register("ros.provider.get_list", self.getProviderList)
             self.wsClient.register("ros.nodes.get_list", self.get_node_list)
@@ -321,8 +313,8 @@ class MasterMonitor:
                 self._timer_update_launch_uris.cancel()
             except Exception:
                 pass
-        if self.connect_server and hasattr(self, 'asyncio_loop'):
-            self.asyncio_loop.stop()
+        if self.connect_server:
+            self.wsClient.shutdown()
         if hasattr(self, 'rpcServer'):
             if self._master is not None:
                 Log.info("Unsubscribe from parameter `/roslaunch/uris`")
@@ -1159,11 +1151,6 @@ class MasterMonitor:
         Log.info('Request to [ros.provider.get_list]')
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
-
-    def run_async_forever(self) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-        print("run_forever_exited")
 
     def stop_subscriber(self, topic_name: str) -> bool:
         Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))

@@ -1,6 +1,5 @@
 from typing import List
 import json
-import asyncio
 
 from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.interface import SelfEncoder

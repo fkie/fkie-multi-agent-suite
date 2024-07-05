@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 
-import asyncio
 import json
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import DaemonVersion

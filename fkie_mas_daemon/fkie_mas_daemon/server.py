@@ -23,15 +23,7 @@
 
 from typing import Text
 import os
-import threading
 import time
-import websockets
-import rclpy
-
-import asyncio
-import json
-from types import SimpleNamespace
-
 from rclpy.qos import (
     QoSProfile,
     QoSDurabilityPolicy,
@@ -49,7 +41,6 @@ from fkie_mas_pylib.system.host import get_host_name
 from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.websocket import ws_port
-from fkie_mas_pylib.websocket.handler import WebSocketHandler
 from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
 
@@ -64,10 +55,9 @@ from fkie_mas_daemon.version import detect_version
 
 
 class Server:
-    def __init__(self, ros_node, *, loop: asyncio.AbstractEventLoop, default_domain_id=-1):
+    def __init__(self, ros_node, *, default_domain_id=-1):
         self.ros_node = ros_node
         self.ws_port = ws_port()
-        self.asyncio_loop = loop
         self._version, self._date = detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
@@ -88,7 +78,7 @@ class Server:
         self.pub_endpoint = self.ros_node.create_publisher(
             Endpoint, "daemons", qos_profile=qos_profile
         )
-        self.ws_server = WebSocketServer(self.asyncio_loop)
+        self.ws_server = WebSocketServer()
         self._settings = Settings(version=self._version)
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
@@ -124,7 +114,6 @@ class Server:
         self._ws_thread = None
 
     def __del__(self):
-        self.asyncio_loop.stop()
         self.version_servicer = None
         self.launch_servicer = None
         self.monitor_servicer = None
@@ -143,7 +132,7 @@ class Server:
             self.name = f"{self.name}_{port}"
         self._endpoint_msg.name = self.name
         self._endpoint_msg.uri = f"ws://{get_host_name()}:{port}"
-        self.ws_server.start(port)
+        self.ws_server.start_threaded(port)
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         self.publish_daemon_state(True)

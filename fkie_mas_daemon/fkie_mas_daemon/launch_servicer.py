@@ -20,7 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
+import asyncio
+import json
 import os
 import re
 import rclpy
@@ -28,14 +29,7 @@ import shlex
 import sys
 import traceback
 from importlib import import_module
-
 from launch.launch_context import LaunchContext
-import asyncio
-
-import json
-from types import SimpleNamespace
-import asyncio
-
 from typing import Dict
 from typing import List
 from watchdog.observers import Observer
@@ -141,6 +135,8 @@ class LaunchServicer(LoggingEventHandler):
         Log.info("Create ROS2 launch servicer")
         LoggingEventHandler.__init__(self)
         self._watchdog_observer = Observer()
+        # to be able to use LaunchContext in a thread we need a valid asyncio.AbstractEventLoop from main thread
+        # this is used by LaunchContext internal queue
         self.__launch_context = LaunchContext(argv=sys.argv[1:])
         self.__launch_context._set_asyncio_loop(asyncio.get_event_loop())
         self.ws_port = ws_port
@@ -388,7 +384,7 @@ class LaunchServicer(LoggingEventHandler):
             provided_args = [arg.name for arg in request.args]
             # get the list with needed launch args
             req_args = LaunchConfig.get_launch_arguments(
-                launchfile, request.args)
+                self.__launch_context, launchfile, request.args)
             # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
@@ -402,7 +398,7 @@ class LaunchServicer(LoggingEventHandler):
             launch_arguments = [(arg.name, arg.value) for arg in request.args]
             # context=self.__launch_context
             launch_config = LaunchConfig(
-                launchfile, daemonuri=daemonuri, launch_arguments=launch_arguments)
+                launchfile, context=self.__launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
             Log.debug(f"{self.__class__.__name__}: daemonuri: {daemonuri}")
             # _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
@@ -452,7 +448,7 @@ class LaunchServicer(LoggingEventHandler):
                 old_launch.unload()
                 # use argv from already open file
                 launch_config = LaunchConfig(
-                    old_launch.filename, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
+                    old_launch.filename, context=self.__launch_context, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 # stored_roscfg = cfg.roscfg
                 # argv = cfg.argv

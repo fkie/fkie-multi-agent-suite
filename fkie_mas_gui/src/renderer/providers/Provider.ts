@@ -2504,25 +2504,36 @@ export default class Provider {
     if (!this.isAvailable()) {
       return;
     }
-    await this.connection.closeSubscriptions();
-    // await this.connection.connection.closeRegistrations();
-    this.logger?.info(`register callbacks for ${this.id}`, '', false);
+    await this.connection
+      .closeSubscriptions()
+      .catch((error) => {
+        this.setConnectionState(ConnectionState.STATES.ERRORED, error);
+        return false;
+      })
+      .then(() => {
+        // await this.connection.connection.closeRegistrations();
+        this.logger?.info(`register callbacks for ${this.id}`, '', false);
 
-    this.registerCallback(URI.ROS_PROVIDER_LIST, this.updateProviderList);
-    this.registerCallback(URI.ROS_DAEMON_READY, this.callbackDaemonReady);
-    this.registerCallback(URI.ROS_DISCOVERY_READY, this.callbackDiscoveryReady);
-    this.registerCallback(URI.ROS_LAUNCH_CHANGED, this.updateRosNodes);
-    this.registerCallback(URI.ROS_NODES_CHANGED, this.updateRosNodes);
-    this.registerCallback(URI.ROS_PATH_CHANGED, this.callbackChangedFile);
-    this.registerCallback(URI.ROS_SCREEN_LIST, this.callbackScreensUpdate);
-    this.registerCallback(
-      URI.ROS_PROVIDER_WARNINGS,
-      this.callbackProviderWarnings,
-    );
-    this.registerCallback(
-      URI.ROS_PROVIDER_DIAGNOSTICS,
-      this.callbackDiagnosticsUpdate,
-    );
+        this.registerCallback(URI.ROS_PROVIDER_LIST, this.updateProviderList);
+        this.registerCallback(URI.ROS_DAEMON_READY, this.callbackDaemonReady);
+        this.registerCallback(
+          URI.ROS_DISCOVERY_READY,
+          this.callbackDiscoveryReady,
+        );
+        this.registerCallback(URI.ROS_LAUNCH_CHANGED, this.updateRosNodes);
+        this.registerCallback(URI.ROS_NODES_CHANGED, this.updateRosNodes);
+        this.registerCallback(URI.ROS_PATH_CHANGED, this.callbackChangedFile);
+        this.registerCallback(URI.ROS_SCREEN_LIST, this.callbackScreensUpdate);
+        this.registerCallback(
+          URI.ROS_PROVIDER_WARNINGS,
+          this.callbackProviderWarnings,
+        );
+        this.registerCallback(
+          URI.ROS_PROVIDER_DIAGNOSTICS,
+          this.callbackDiagnosticsUpdate,
+        );
+        return true;
+      });
   };
 
   /* Generic functions */
@@ -2562,7 +2573,11 @@ export default class Provider {
           .call(_uri, _args)
           .catch((err) => {
             // TODO
-            console.log(`${JSON.stringify(err)}`);
+            this.logger?.warn(
+              `failed call ${_uri}@${this.name()}: ${err}`,
+              '',
+              false,
+            );
             throw Error(err);
           });
         return r;

@@ -22,10 +22,10 @@
 
 
 import argparse
-import asyncio
 import json
 import sys
 import time
+import threading
 import traceback
 from importlib import import_module
 from types import SimpleNamespace
@@ -118,10 +118,10 @@ class RosSubscriberLauncher:
                 f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
 
         self.__msg_class = sub_class
-        self.asyncio_loop = asyncio.get_event_loop()
-        self.asyncio_loop.create_task(self.ros_loop())
-        self.asyncio_loop.create_task(self.subscribe())
-        self.wsClient = WebSocketClient(self._port, self.asyncio_loop)
+        qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
+        self.sub = nmd.ros_node.create_subscription(
+            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        self.wsClient = WebSocketClient(self._port)
         # qos_state_profile = QoSProfile(depth=100,
         #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
@@ -133,17 +133,6 @@ class RosSubscriberLauncher:
 
     def __del__(self):
         self.stop()
-
-    async def subscribe(self):
-        qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
-        self.sub = nmd.ros_node.create_subscription(
-            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
-
-    async def ros_loop(self):
-        while rclpy.ok():
-            rclpy.spin_once(self.ros_node, timeout_sec=0)
-            await asyncio.sleep(1e-4)
-
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
 
@@ -251,14 +240,9 @@ class RosSubscriberLauncher:
 
         return qos_profile
 
-    def exception_handler(self, loop, error):
-        pass
-
     def spin(self):
         try:
-            self.asyncio_loop.set_exception_handler(self.exception_handler)
-            self.asyncio_loop.run_forever()
-            # rclpy.spin(self.ros_node)
+            rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             pass
         except Exception:
@@ -272,7 +256,7 @@ class RosSubscriberLauncher:
             # os.kill(os.getpid(), signal.SIGKILL)
         print('shutdown rclpy')
         self.sub.destroy()
-        # rclpy.shutdown()
+        rclpy.shutdown()
         print('bye!')
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
@@ -357,8 +341,8 @@ class RosSubscriberLauncher:
     def stop(self):
         if self.wsClient:
             self.wsClient.shutdown()
-        if hasattr(self, 'asyncio_loop'):
-            self.asyncio_loop.stop()
+        if hasattr(self, 'wsClient'):
+            self.wsClient.shutdown()
 
     async def _msg_handle(self, data):
         self._count_received += 1

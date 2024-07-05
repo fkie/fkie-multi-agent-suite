@@ -25,7 +25,6 @@ from io import FileIO
 import os
 import re
 
-import asyncio
 import json
 from typing import List
 from fkie_mas_pylib import ros_pkg

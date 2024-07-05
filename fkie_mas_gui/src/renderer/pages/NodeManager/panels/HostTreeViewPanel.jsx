@@ -43,7 +43,7 @@ import { RosContext } from '../../../context/RosContext';
 import { SSHContext } from '../../../context/SSHContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import useQueue from '../../../hooks/useQueue';
-import { RosNodeStatus, getBaseName } from '../../../models';
+import { RosNode, RosNodeStatus, getBaseName } from '../../../models';
 import { CmdType } from '../../../providers';
 import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/eventTypes';
 import {
@@ -81,8 +81,6 @@ function HostTreeViewPanel() {
   // updated and filtered node tree
   // providerNodeTree: list of {providerId: string, nodeTree: object}
   const [providerNodeTree, setProviderNodeTree] = useState([]);
-  // launchContentList: list of {providerId: string, launches: LaunchContent[]}
-  const [launchContentList, setLaunchContentList] = useState([]);
   const [rosCleanPurge, setRosCleanPurge] = useState(false);
   const [nodeScreens, setNodeScreens] = useState(null);
   const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
@@ -146,8 +144,8 @@ function HostTreeViewPanel() {
       nodes.forEach((node) => {
         nodeItemMap.set(node.idGlobal, node);
         // filter nodes by user text
-        if (filterText.length > 0) {
-          const isMatch = findIn(filterText, [
+        if (searchTerm.length > 0) {
+          const isMatch = findIn(searchTerm, [
             node.name,
             node.group,
             node.providerName,
@@ -1436,6 +1434,7 @@ function HostTreeViewPanel() {
           )}
       </ButtonGroup>
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navCtx.selectedNodes, navCtx.selectedProviders]);
 
   return (
@@ -1529,7 +1528,6 @@ function HostTreeViewPanel() {
           <Box width="100%" height="100%" overflow="auto">
             <HostTreeView
               providerNodeTree={providerNodeTree}
-              launchContentList={launchContentList}
               onNodeSelect={handleNodesSelect}
               onProviderSelect={handleProviderSelect}
               showLoggers={createLoggerPanelFromId}

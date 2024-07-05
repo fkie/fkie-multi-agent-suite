@@ -21,60 +21,55 @@
 # SOFTWARE.
 
 
-import asyncio
 import json
-import rclpy
+import threading
 import websockets
+import websockets.sync
+import websockets.sync.server
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.websocket.handler import WebSocketHandler
 
 
-class QueueItem:
-
-    def __init__(self, data: str, priority=1):
-        self.data = data
-        self.priority = priority
-
-    def __lt__(self, other):
-        return self.priority < other.priority
-
-
 class WebSocketServer:
 
-    def __init__(self, asyncio_loop: asyncio.AbstractEventLoop):
+    def __init__(self):
         self._shutdown = False
-        self.queue = asyncio.Queue()
         self.subscriptions = {}
         self.handler = set()
         self.registrations = {}
         self.rpcs = {}
-        self.asyncio_loop = asyncio_loop
+        self._spin_thread = None
+        self._server = None
 
     def shutdown(self):
         self._shutdown = True
+        if (self._server):
+            self._server.shutdown()
+            self._server = None
 
-    async def ws_handler(self, websocket, path):
-        handler = WebSocketHandler(self, websocket, path, self.asyncio_loop)
+    def ws_handler(self, websocket):
+        handler = WebSocketHandler(self, websocket)
         self.handler.add(handler)
-        await handler.spin()
+        handler.spin()
         self.handler.remove(handler)
         # TODO: remove all registered rpcs
 
-    async def spin(self, port=35430):
+    def spin(self, port=35430):
         Log.info(
             f"Open Websocket on port {port}")
         try:
-            async with websockets.serve(self.ws_handler, "0.0.0.0", port):
-                # await asyncio.Future()
-                while rclpy.ok():
-                    await asyncio.sleep(1)
-        except:
+            with websockets.sync.server.serve(self.ws_handler, "0.0.0.0", port) as server:
+                self._server = server
+                server.serve_forever()
+        except Exception:
             import traceback
-            print("CATCHED: ", traceback.format_exc())
+            print("Error while start websocket server: ", traceback.format_exc())
 
-    def start(self, port=35430):
-        self.asyncio_loop.create_task(self.spin(port))
+    def start_threaded(self, port=35430):
+        self._spin_thread = threading.Thread(
+            target=self.spin, args=(port,), daemon=True)
+        self._spin_thread.start()
 
     def subscribe(self, uri: str, callback):
         self.subscriptions[uri] = callback
