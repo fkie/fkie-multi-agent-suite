@@ -1,25 +1,10 @@
-// The MIT License (MIT)
+// ****************************************************************************
 //
-// Copyright (c) 2014-2024 Fraunhofer FKIE
+// Copyright(c) 2014 - 2024 Fraunhofer FKIE
+// Author : Alexander Tiderko
+// License : MIT
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-
+// ****************************************************************************
 
 // This code is based on rmw_fastrtps/rmw_fastrtps_shared_cpp/include/rmw_fastrtps_shared_cpp/custom_participant_info.hpp
 
@@ -67,18 +52,15 @@ std::string getEnvironmentVariable(std::string const &key)
     return val == NULL ? std::string("") : std::string(val);
 }
 
-
 void convert_gid_to_msg(const eprosima::fastrtps::rtps::GUID_t &gid, fkie_mas_msgs::msg::Gid &msg_gid)
 {
     rmw_fastrtps_shared_cpp::copy_from_fastrtps_guid_to_byte_array(gid, const_cast<uint8_t *>(msg_gid.data.begin()));
 }
 
-
 void convert_msg_to_gid(const fkie_mas_msgs::msg::Gid &msg_gid, eprosima::fastrtps::rtps::GUID_t &gid)
 {
     rmw_fastrtps_shared_cpp::copy_from_byte_array_to_fastrtps_guid(const_cast<uint8_t *>(msg_gid.data.begin()), &gid);
 }
-
 
 class CustomParticipantListener : public rclcpp::Node,
                                   public eprosima::fastrtps::ParticipantListener,
@@ -102,8 +84,9 @@ public:
         RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
         RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
         participant_attr.rtps.setName(full_name.erase(0, 1).c_str());
-        char* ros_domain_id = getenv("ROS_DOMAIN_ID");
-        if (ros_domain_id != NULL) {
+        char *ros_domain_id = getenv("ROS_DOMAIN_ID");
+        if (ros_domain_id != NULL)
+        {
             RCLCPP_INFO(get_logger(), "listen to domain id: %s", ros_domain_id);
             participant_attr.domainId = atoi(ros_domain_id);
         }
@@ -136,7 +119,7 @@ public:
 
     void onSubscriberDiscovery(
         eprosima::fastrtps::Participant *participant,
-        eprosima::fastrtps::rtps::ReaderDiscoveryInfo &&/*info*/) override
+        eprosima::fastrtps::rtps::ReaderDiscoveryInfo && /*info*/) override
     {
         (void)participant;
 
@@ -153,12 +136,11 @@ public:
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_READER);
         // }
         publish_notification();
-
     }
 
     void onPublisherDiscovery(
         eprosima::fastrtps::Participant *participant,
-        eprosima::fastrtps::rtps::WriterDiscoveryInfo &&/*info*/) override
+        eprosima::fastrtps::rtps::WriterDiscoveryInfo && /*info*/) override
     {
         (void)participant;
 
@@ -177,7 +159,6 @@ public:
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_WRITER);
         // }
         publish_notification();
-
     }
 
     template <class T>
@@ -230,7 +211,7 @@ public:
             {
                 pi.enclave = std::string(name_found->second.begin(), name_found->second.end());
                 RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   name '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
-            }            // get as defined since foxy
+            } // get as defined since foxy
             auto enclave_found = map.find("enclave");
             if (enclave_found != map.end())
             {

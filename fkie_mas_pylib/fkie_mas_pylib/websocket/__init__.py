@@ -1,3 +1,11 @@
+# ****************************************************************************
+#
+# Copyright (c) 2014-2024 Fraunhofer FKIE
+# Author: Alexander Tiderko
+# License: MIT
+#
+# ****************************************************************************
+
 import os
 from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
 
