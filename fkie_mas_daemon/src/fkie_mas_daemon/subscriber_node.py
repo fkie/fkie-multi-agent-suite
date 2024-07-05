@@ -107,13 +107,11 @@ class SubscriberNode:
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
         self.__msg_class = message.get_message_class(self._message_type)
         if self.__msg_class:
-            self.wsClient = WebSocketClient(self._port)
+            self.wsClient = WebSocketClient(self._ws_port)
             self.wsClient.subscribe(
                 f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
-            self.subscribe_to(
-                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
         else:
             raise Exception(
                 f"Cannot load message class for [{self._message_type}]. Did you build messages?")
@@ -159,7 +157,7 @@ class SubscriberNode:
         # print(data._connection_header)
         # print(dir(data))
         # print("SIZE", data.__sizeof__())
-        print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
+        # print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
         if not self._no_data:
@@ -246,10 +244,7 @@ class SubscriberNode:
 
         self._last_received_ts = current_time
 
-    def _clb_update_filter(self, json_filter: SubscriberFilter):
-        # Convert filter settings into a proper python object
-        request = json.loads(json.dumps(json_filter),
-                             object_hook=lambda d: SimpleNamespace(**d))
+    def _clb_update_filter(self, request: SubscriberFilter):
         Log.info(f"update filter for {self._topic}[{self._message_type}]")
         self._no_data = request.no_data
         self._no_arr = request.no_arr

@@ -694,7 +694,7 @@ class Discoverer(object):
             # send notification that the master is going off
             msg = struct.pack(Discoverer.HEARTBEAT_FMT, b'R', Discoverer.VERSION,
                               int(self.HEARTBEAT_HZ * 10), -1, -1,
-                              self.master_monitor.rpcport, -1, -1)
+                              self.master_monitor.rpc_port, -1, -1)
             self._publish_current_state(msg=msg)
             self.masters.clear()
             self._json_publish_masters()
@@ -815,7 +815,7 @@ class Discoverer(object):
             return struct.pack(Discoverer.HEARTBEAT_FMT, b'R', Discoverer.VERSION,
                                int(self.HEARTBEAT_HZ * 10),
                                int(t), int((t - (int(t))) * 1000000000),
-                               self.master_monitor.rpcport,
+                               self.master_monitor.rpc_port,
                                int(local_t), int((local_t - (int(local_t))) * 1000000000))
         return None
 
@@ -823,7 +823,7 @@ class Discoverer(object):
         version = Discoverer.VERSION if Discoverer.VERSION > 2 else 3
         msg = struct.pack(Discoverer.HEARTBEAT_FMT, b'R', version,
                           int(self.HEARTBEAT_HZ * 10), 0, 0,
-                          self.master_monitor.rpcport, 0, 0)
+                          self.master_monitor.rpc_port, 0, 0)
         return msg
 
     def checkROSMaster_loop(self):

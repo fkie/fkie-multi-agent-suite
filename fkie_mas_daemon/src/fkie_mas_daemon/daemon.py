@@ -68,22 +68,28 @@ class MASDaemon:
         self.ws_server.start_threaded(use_port)
         self.monitor_servicer = MonitorServicer(
             self._settings,
+            self.ws_server,
             test_env=self._test_env,
         )
         self.launch_servicer = LaunchServicer(
             self.monitor_servicer,
+            self.ws_server,
             test_env=self._test_env,
         )
         self.parameter_servicer = ParameterServicer(
+            self.ws_server,
             test_env=self._test_env,
         )
         self.file_servicer = FileServicer(
+            self.ws_server,
             test_env=self._test_env,
         )
         self.screen_servicer = ScreenServicer(
+            self.ws_server,
             test_env=self._test_env,
         )
         self.version_servicer = VersionServicer(
+            self.ws_server,
             test_env=self._test_env,
         )
         self._daemon_send_status(True)

@@ -1285,7 +1285,7 @@ class LaunchServicer(LoggingEventHandler):
         startcfg = StartConfig("fkie_mas_daemon", "mas-subscriber")
         startcfg.fullname = f"/mas_subscriber/{topic.strip('/')}"
         startcfg.args = [f"__name:={startcfg.fullname}"]
-        startcfg.args.append(f"--ws_port={self.port}")
+        startcfg.args.append(f"--ws_port={self.websocket.port}")
         startcfg.args.append(f"--topic={topic}")
         startcfg.args.append(f"--message_type={request.message_type}")
         if request.filter.no_data:

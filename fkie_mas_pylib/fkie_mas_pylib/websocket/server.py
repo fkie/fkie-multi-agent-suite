@@ -9,6 +9,11 @@
 
 import json
 import threading
+from types import SimpleNamespace
+from typing import Any
+from typing import Callable
+from typing import Tuple
+from typing import Union
 import websockets
 import websockets.sync
 import websockets.sync.server
@@ -20,13 +25,15 @@ from fkie_mas_pylib.websocket.handler import WebSocketHandler
 class WebSocketServer:
 
     def __init__(self):
+        self._lock = threading.RLock()
         self._shutdown = False
-        self.subscriptions = {}
-        self.handler = set()
-        self.registrations = {}
-        self.rpcs = {}
+        self._subscriptions = {}
+        self._handler = set()
+        self._registrations = {}
+        self._remote_registrations = {}
         self._spin_thread = None
         self._server = None
+        self.port = -1
 
     def shutdown(self):
         self._shutdown = True
@@ -34,38 +41,73 @@ class WebSocketServer:
             self._server.shutdown()
             self._server = None
 
-    def ws_handler(self, websocket):
+    def ws_handler(self, websocket) -> None:
         handler = WebSocketHandler(self, websocket)
-        self.handler.add(handler)
+        with self._lock:
+            self._handler.add(handler)
         handler.spin()
-        self.handler.remove(handler)
+        with self._lock:
+            self._handler.remove(handler)
         # TODO: remove all registered rpcs
 
-    def spin(self, port=35430):
+    # blocking call
+    def spin(self, port: int=35430) -> None:
         Log.info(
             f"Open Websocket on port {port}")
         try:
             with websockets.sync.server.serve(self.ws_handler, "0.0.0.0", port) as server:
                 self._server = server
+                self.port = port
                 server.serve_forever()
         except Exception:
             import traceback
             print("Error while start websocket server: ", traceback.format_exc())
 
-    def start_threaded(self, port=35430):
+    def start_threaded(self, port: int=35430) -> None:
         self._spin_thread = threading.Thread(
             target=self.spin, args=(port,), daemon=True)
         self._spin_thread.start()
 
-    def subscribe(self, uri: str, callback):
-        self.subscriptions[uri] = callback
+    def subscribe(self, uri: str, callback: Callable[[Any], None]) -> None:
+        with self._lock:
+            Log.info(f"subscribe {uri}")
+            self._subscriptions[uri] = callback
 
-    def register(self, uri: str, callback):
-        self.registrations[uri] = callback
+    def register(self, uri: str, callback: Callable[[int, ], None]) -> None:
+        with self._lock:
+            Log.info(f"register local callback for {uri}")
+            self._registrations[uri] = callback
 
-    def publish(self, uri: str, message: str) -> bool:
-        message = message
-        if not isinstance(message, str):
-            message = json.dumps(message, cls=SelfEncoder)
-        for con in self.handler:
-            con.publish(uri, message)
+    def register_rpc(self, uri: str, handler: WebSocketHandler) -> None:
+        with self._lock:
+            Log.info(f"register remote {uri} @ {handler.address}")
+            self._remote_registrations[uri] = handler
+
+    def unregister_rpc(self, uri: str, handler: WebSocketHandler) -> None:
+        with self._lock:
+            try:
+                if self._remote_registrations[uri] == handler:
+                    Log.info(f"unregister remote {uri} @ {handler.address}")
+                    del self._remote_registrations[uri]
+            except:
+                pass
+
+    def publish(self, uri: str, message: Union[str, object]) -> bool:
+        with self._lock:
+            msg = message
+            if not isinstance(msg, str):
+                msg = json.dumps(msg, cls=SelfEncoder)
+            for con in self._handler:
+                con.publish(uri, msg)
+            if uri in self._subscriptions:
+                # forward to local subscriptions
+                self._subscriptions[uri](json.loads(
+                    msg, object_hook=lambda d: SimpleNamespace(**d)))
+
+    def get_callback(self, uri: str) -> Tuple[Union[Callable[[int, ], None], None], bool]:
+        with self._lock:
+            if uri in self._registrations:
+                return (self._registrations[uri], True)
+            elif uri in self._remote_registrations:
+                return (self._remote_registrations[uri], False)
+        return (None, False)

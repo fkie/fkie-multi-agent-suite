@@ -111,9 +111,9 @@ class MasterMonitor:
     RPC API and test for changes. Furthermore an XML-RPC server will be created
     to offer the complete current state of the ROS master by one method call.
 
-    :param rpcport: the port number for the XML-RPC server
+    :param rpc_port: the port number for the XML-RPC server
 
-    :type rpcport:  int
+    :type rpc_port:  int
 
     :param do_retry: retry to create XML-RPC server
 
@@ -177,7 +177,7 @@ class MasterMonitor:
         self._json_warning_groups = {}
         self._screens_set = set()
         self._screen_nodes_set = set()
-        self._sceen_json_msg: List(ScreensMapping) = []
+        self._sceen_json_msg: List[ScreensMapping] = []
 
         self._master_errors = list()
         # Create an XML-RPC server
@@ -813,7 +813,7 @@ class MasterMonitor:
         if self.__master_state is not None:
             with self._state_access_lock:
                 t = self.__master_state.timestamp
-        return ('%.9f' % t, str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpcport))
+        return ('%.9f' % t, str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpc_port))
 
     def getMasterErrors(self):
         '''

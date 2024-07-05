@@ -11,6 +11,9 @@ import json
 import threading
 import time
 from types import SimpleNamespace
+from typing import Any
+from typing import Callable
+from typing import Union
 import websockets
 import websockets.sync
 import websockets.sync.client
@@ -20,13 +23,16 @@ from fkie_mas_pylib.websocket.queue import QueueItem, PQueue
 
 
 class WebSocketClient:
+    '''
+    Helper class to communicate with daemon's websocket server.
+    '''
 
     def __init__(self, port: int):
         self.port = port
         self._shutdown = False
         self.queue = PQueue(100)
         self.subscriptions = {}
-        self.rpcs = {}
+        self.registrations = {}
         self.connection = None
         self._conn_try = 0
         self._msg_id = 0
@@ -37,10 +43,10 @@ class WebSocketClient:
             target=self._send_handler, daemon=True)
         self._send_thread.start()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self._shutdown = True
 
-    def subscribe(self, uri: str, callback):
+    def subscribe(self, uri: str, callback: Callable[[Any], None]) -> None:
         self.subscriptions[uri] = callback
         if self.connection:
             Log.info(f"subscribe to {uri}")
@@ -49,23 +55,25 @@ class WebSocketClient:
             request = {"uri": "sub", "id": self._msg_id, "params": [uri]}
             self.publish("sub", json.dumps(request))
 
-    def register(self, uri: str, callback):
-        self.rpcs[uri] = callback
+    def register(self, uri: str, callback: Callable[[int, ], None]) -> None:
+        self.registrations[uri] = callback
         if self.connection:
-            Log.info(f"rigister callback for {uri}")
+            Log.info(f"register callback for {uri}")
             # send registration
             self._msg_id += 1
             request = {"uri": "reg", "id": self._msg_id, "params": [uri]}
             self.publish("reg", json.dumps(request))
 
-    def recv_handler(self):
+    # blocking call
+    def recv_handler(self) -> None:
         while not self._shutdown:
             try:
                 uri = f"ws://localhost:{self.port}"
                 with websockets.sync.client.connect(uri) as connection:
                     try:
                         self._conn_try = 0
-                        Log.info(f"connected to {uri}")
+                        Log.info(
+                            f"connected to {uri}, own address: {connection.local_address}")
                         self.connection = connection
                         # send subscriptions
                         for key in self.subscriptions.keys():
@@ -76,7 +84,7 @@ class WebSocketClient:
                             self.queue.put(QueueItem(json.dumps(
                                 request, cls=SelfEncoder), priority=0))
                         # send registrations
-                        for key in self.rpcs.keys():
+                        for key in self.registrations.keys():
                             Log.info(f"register callback for {key}")
                             self._msg_id += 1
                             request = {"uri": "reg",
@@ -84,7 +92,6 @@ class WebSocketClient:
                             self.queue.put(QueueItem(json.dumps(
                                 request, cls=SelfEncoder), priority=0))
                         for message in connection:
-                        # while message:
                             try:
                                 msg = json.loads(message,
                                                  object_hook=lambda d: SimpleNamespace(**d))
@@ -98,13 +105,11 @@ class WebSocketClient:
                                                 msg.message)
                                     if hasattr(msg, 'params'):
                                         self.handle_callback(
-                                            msg.id, self.rpcs[msg.uri], msg.params if hasattr(msg, 'params') else [])
+                                            msg.id, self.registrations[msg.uri], msg.params if hasattr(msg, 'params') else [])
                             except Exception as error:
                                 import traceback
-                                print(traceback.format_exc())
                                 Log.warn(
                                     f"[{self.connection.remote_address}]: {error}")
-                            # message = websocket.recv()
                     except websockets.exceptions.ConnectionClosedOK:
                         pass
                     except websockets.exceptions.ConnectionClosedError:
@@ -128,8 +133,8 @@ class WebSocketClient:
                 self._conn_try += 1
                 time.sleep(1)
 
-    def handle_callback(self, id, callback, args=[]):
-        Log.debug(f"handle callback {id}: {args}")
+    def handle_callback(self, id, callback: Callable[[Any], Union[str, object]], args=[]) -> None:
+        Log.info(f"handle callback {id}: {args}")
         result = None
         error = None
         reply = ''
@@ -146,12 +151,16 @@ class WebSocketClient:
             reply = f'{{"id": {id}, "error": {error}}}'
         self.queue.put(QueueItem(reply, priority=0))
 
-    def publish(self, uri: str, message: str, latched=False):
-        # TODO: resend_after_connect
+    def publish(self, uri: str, message: str, latched=False) -> None:
+        # TODO: add resend_after_connect?
         latched_value = 'true' if latched else 'false'
+        msg = message
+        if not isinstance(msg, str):
+            msg = json.dumps(msg, cls=SelfEncoder)
         self.queue.put(
-            QueueItem(f'{{"uri": "{uri}", "message": {message}, "latched": {latched_value}}}', priority=1))
+            QueueItem(f'{{"uri": "{uri}", "message": {msg}, "latched": {latched_value}}}', priority=1))
 
+    # blocking call
     def _send_handler(self):
         try:
             while not self._shutdown:

@@ -429,13 +429,7 @@ class RosSubscriberLauncher:
 
         self._last_received_ts = current_time
 
-    def _clb_update_filter(self, json_filter: SubscriberFilter):
-        # Convert filter settings into a proper python object
-        try:
-            request = json.loads(json.dumps(json_filter),
-                                 object_hook=lambda d: SimpleNamespace(**d))
-        except:
-            request = json_filter
+    def _clb_update_filter(self, request: SubscriberFilter):
         Log.info(f"update filter for {self._topic}[{self._message_type}]")
         self._no_data = request.no_data
         self._no_arr = request.no_arr

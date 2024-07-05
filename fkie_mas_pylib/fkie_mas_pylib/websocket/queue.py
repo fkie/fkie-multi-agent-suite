@@ -7,6 +7,7 @@
 # ****************************************************************************
 
 import threading
+from typing import Union
 from fkie_mas_pylib.logging.logging import Log
 
 
@@ -16,7 +17,7 @@ class Full(Exception):
 
 class QueueItem:
 
-    def __init__(self, data: str, priority=1):
+    def __init__(self, data: str, priority: int=1):
         self.data = data
         self.priority = priority
 
@@ -26,7 +27,7 @@ class QueueItem:
 
 class PQueue(object):
 
-    def __init__(self, maxsize=0, logger_name='queue'):
+    def __init__(self, maxsize: int=0, logger_name: str='queue'):
         '''
         :param int maxsize: The maximal queue length for each priority. No new items are added if this size is reached. Zero to disable the limit for each priority.
         :param str logger_name: the name of this priority queue used for logging or exceptions.
@@ -43,7 +44,7 @@ class PQueue(object):
         self._idx = [2, 1, 0]
         self._count = 0
 
-    def clear(self):
+    def clear(self) -> None:
         Log.debug(f"Queue {self._logger_name}: clear queue")
         with self._cv:
             for idx in self._idx:
@@ -52,7 +53,7 @@ class PQueue(object):
                 self._counts[idx] = 0
             self._cv.notify()
 
-    def put(self, item: QueueItem):
+    def put(self, item: QueueItem) -> None:
         if self._maxsize > 0 and self._counts[item.priority] >= self._maxsize:
             raise Full(
                 f"Queue `{self._logger_name}` for priority {item.priority} is full")
@@ -63,7 +64,7 @@ class PQueue(object):
             self._counts[item.priority] += 1
             self._cv.notify()
 
-    def get(self, block=True):
+    def get(self, block=True) -> Union[QueueItem, None]:
         try:
             with self._cv:
                 if self.size() == 0:
@@ -84,7 +85,7 @@ class PQueue(object):
             import traceback
             print(traceback.format_exc())
 
-    def size(self, priority=None):
+    def size(self, priority: Union[int, None]=None) -> int:
         if priority is None:
             return self._count
         if priority in self._counts:
