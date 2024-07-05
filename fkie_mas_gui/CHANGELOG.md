@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0 05.07.2024
+
+Replaced crossbar by websocket
+Reduced count of rerenders while update ROS state
+
 ## 1.4.4 - 06.05.2024
 
 Show logging panel on click on snackbar message
