@@ -162,6 +162,7 @@ class WebSocketHandler:
                 result = json.dumps(result, cls=SelfEncoder)
         except Exception:
             import traceback
+            print(traceback.format_exc())
             error = traceback.format_exc()
         if error is None:
             reply = f'{{"id": {id}, "result": {result}}}'

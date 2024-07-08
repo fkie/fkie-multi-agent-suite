@@ -8,7 +8,6 @@
 
 from typing import List
 import json
-from types import SimpleNamespace
 
 from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.interface import SelfEncoder
@@ -64,12 +63,10 @@ class ParameterServicer:
         result = self._handler.hasParameter(parameter_name)
         return json.dumps(result, cls=SelfEncoder)
 
-    def setParameter(self, _parameter: RosParameter):
+    def setParameter(self, parameter: RosParameter):
         '''
         Set the value of a parameter
         '''
-        parameter = json.loads(json.dumps(_parameter),
-                               object_hook=lambda d: SimpleNamespace(**d))
         Log.info(
             f'ros.parameters.set_parameter: [{parameter.name}] to {parameter.value}')
         result = None

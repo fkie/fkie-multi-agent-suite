@@ -17,17 +17,20 @@ class Full(Exception):
 
 class QueueItem:
 
-    def __init__(self, data: str, priority: int=1):
+    def __init__(self, data: str, priority: int = 1):
         self.data = data
         self.priority = priority
 
     def __lt__(self, other):
         return self.priority < other.priority
 
+    def __str__(self):
+        return f"<QueueItem data={self.data}, priority={self.priority}/>"
+
 
 class PQueue(object):
 
-    def __init__(self, maxsize: int=0, logger_name: str='queue'):
+    def __init__(self, maxsize: int = 0, logger_name: str = 'queue'):
         '''
         :param int maxsize: The maximal queue length for each priority. No new items are added if this size is reached. Zero to disable the limit for each priority.
         :param str logger_name: the name of this priority queue used for logging or exceptions.
@@ -85,7 +88,7 @@ class PQueue(object):
             import traceback
             print(traceback.format_exc())
 
-    def size(self, priority: Union[int, None]=None) -> int:
+    def size(self, priority: Union[int, None] = None) -> int:
         if priority is None:
             return self._count
         if priority in self._counts:

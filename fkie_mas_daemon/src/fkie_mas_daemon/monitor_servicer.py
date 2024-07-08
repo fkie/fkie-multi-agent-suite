@@ -12,7 +12,6 @@ import os
 import psutil
 import signal
 import threading
-from types import SimpleNamespace
 import sys
 import rospy
 from fkie_mas_pylib.websocket.server import WebSocketServer
@@ -142,9 +141,7 @@ class MonitorServicer:
     def setLoggerLevel(self, name: str, logger_json: List[LoggerConfig]) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
-        # Covert input dictionary into a proper python object
-        loggers = json.loads(json.dumps(logger_json),
-                             object_hook=lambda d: SimpleNamespace(**d))
+        loggers = logger_json
         # request the current logger
         service_name_get = '%s/get_loggers' % name
         get_logger = rospy.ServiceProxy(service_name_get, GetLoggers)
