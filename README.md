@@ -8,7 +8,7 @@ Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this 
 
 ## Install
 
-The communication between the GUI and the Daemon (on each host) is based on WebSockets on port __35430+(ROS_DOMAIN_ID)__, 35685+(NetworkId) with ROS1. These ports should be open in the firewall.
+The communication between the GUI and the Daemon (on each host) is based on WebSockets on port **35430+(ROS_DOMAIN_ID)**, 35685+(NetworkId) with ROS1. These ports should be open in the firewall.
 
 ### Install dependencies
 
@@ -24,7 +24,13 @@ In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
 sudo apt install libsecret-1-dev
 ```
 
-> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the __rmw_fastrtps_cpp__ ROS library. If you are using a different DDS for your system, you will need to change the environment variable for __mas-discovery__ by setting ```export RMW_IMPLEMENTATION=rmw_fastrtps_cpp```.
+> A python3-websockets version >11 is required. You can install it using pip:
+
+```bash
+pip install "websockets>=12.0"
+```
+
+> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. If you are using a different DDS for your system, you will need to change the environment variable for **mas-discovery** by setting `export RMW_IMPLEMENTATION=rmw_fastrtps_cpp`.
 
 ### Build ROS FKIE packages
 
@@ -61,11 +67,11 @@ mv ./mas-gui.AppImage ~/.local/bin/.
 
 > We are working on the documentation for the new version. Until then you can still use the old one. Apart from the package names, all old functions should be supported.
 
-* [multimaster\_fkie](http://fkie.github.io/multimaster_fkie)
-* [discovery](http://fkie.github.io/multimaster_fkie/master_discovery.html) -- `discovery using multicast or zeroconf`
-* [synchronization](http://fkie.github.io/multimaster_fkie/master_sync.html) -- `master synchronization`
-* [Node Manager GUI](http://fkie.github.io/multimaster_fkie/node_manager.html) -- `A GUI to manage the configuration on local and remote ROS masters`
-* [Node Manager daemon](http://fkie.github.io/multimaster_fkie/node_manager_daemon.html) -- `Helper node allows an easy (auto)start of remote nodes and manage remote launch files`
+- [multimaster_fkie](http://fkie.github.io/multimaster_fkie)
+- [discovery](http://fkie.github.io/multimaster_fkie/master_discovery.html) -- `discovery using multicast or zeroconf`
+- [synchronization](http://fkie.github.io/multimaster_fkie/master_sync.html) -- `master synchronization`
+- [Node Manager GUI](http://fkie.github.io/multimaster_fkie/node_manager.html) -- `A GUI to manage the configuration on local and remote ROS masters`
+- [Node Manager daemon](http://fkie.github.io/multimaster_fkie/node_manager_daemon.html) -- `Helper node allows an easy (auto)start of remote nodes and manage remote launch files`
 
 For ROS interfaces and parameterization see the [ROS Wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you can find example launch files in each package.
 
