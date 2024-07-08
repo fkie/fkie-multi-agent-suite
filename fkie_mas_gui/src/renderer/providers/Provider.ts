@@ -1660,8 +1660,12 @@ export default class Provider {
           `Provider [${this.name()}]: Error at callService()`,
           `${err}`,
         );
+        return null;
       })
       .then((value) => {
+        if (!value) {
+          return null;
+        }
         const parsed = value as unknown as LaunchMessageStruct;
         const response = new LaunchMessageStruct(
           parsed.msg_type,

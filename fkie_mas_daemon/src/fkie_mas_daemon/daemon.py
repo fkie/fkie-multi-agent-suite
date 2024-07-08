@@ -123,13 +123,13 @@ class MASDaemon:
             xml.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
-        Log.info("Service request to load and start %s" % request.path)
+        Log.info(f"Service request to load and start {request.path}")
         self.launch_servicer.load_launch_file(
             xml.interpret_path(request.path), True)
         return LoadLaunchResponse()
 
     def _rosservice_load_launch(self, request):
-        Log.info("Service request to load %s" % request.path)
+        Log.info(f"Service request to load {request.path}")
         self.launch_servicer.load_launch_file(
             xml.interpret_path(request.path), False)
         return LoadLaunchResponse()

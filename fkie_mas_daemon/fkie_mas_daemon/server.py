@@ -106,10 +106,9 @@ class Server:
         self.screen_servicer = None
         self.rosstate_servicer = None
         self.parameter_servicer = None
- 
+
     def start(self, port: int, displayed_name: Text = "") -> bool:
-        nmd.ros_node.get_logger().info(
-            f"start websocket server on port {port}")
+        Log.info(f"start websocket server on port {port}")
         if displayed_name:
             self.name = displayed_name
         # update name if port is not a default one
@@ -167,9 +166,7 @@ class Server:
         # self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
 
     async def _rosservice_start_launch(self, request, response):
-        nmd.ros_node.get_logger().info(
-            "Service request to load and start %s" % request.path
-        )
+        Log.info(f"call service to load and start {request.path}")
         params = {
             "ros_package": "",
             "launch": "",
@@ -187,7 +184,7 @@ class Server:
         return response
 
     async def _rosservice_load_launch(self, request, response):
-        nmd.ros_node.get_logger().info("Service request to load %s" % request.path)
+        Log.info(f"call service to load {request.path}")
         params = {
             "ros_package": "",
             "launch": "",
@@ -207,6 +204,7 @@ class Server:
         """
         Callback for the ROS service to start a node.
         """
+        Log.info(f"call service to start node {request.node}")
         params = {
             "name": request.node,
             "opt_binary": "",

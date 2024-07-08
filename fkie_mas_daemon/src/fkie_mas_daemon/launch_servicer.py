@@ -990,7 +990,6 @@ class LaunchServicer(LoggingEventHandler):
     def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
         Log.info(f"Request to [ros.launch.get_srv_struct]: msg [{srv_type}]")
         result = LaunchMessageStruct(srv_type)
-
         try:
             mclass = roslib.message.get_service_class(srv_type)
             if mclass is None:
@@ -1166,7 +1165,7 @@ class LaunchServicer(LoggingEventHandler):
 
     def call_service(self, request_json: LaunchCallService) -> None:
         # Convert input dictionary into a proper python object
-        Log.debug(
+        Log.info(
             f"Request to [ros.launch.call_service]: msg [{request_json}]")
         request = request_json
         result = LaunchMessageStruct(request.srv_type)
@@ -1187,7 +1186,7 @@ class LaunchServicer(LoggingEventHandler):
             genpy.message.fill_message_args(
                 request_class, srv_params, keys=keys)
             call_result = rospy.ServiceProxy(
-                request.service_name, service_class)()
+                request.service_name, service_class)(request_class)
             result.data = json.loads(json.dumps(
                 call_result, cls=MsgEncoder, **{"no_arr": False, "no_str": False}))
             result.valid = True
