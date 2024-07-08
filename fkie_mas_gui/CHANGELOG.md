@@ -1,6 +1,11 @@
 # Changelog
 
-## 2.0.0 05.07.2024
+## 2.0.1 - 08.07.2024
+
+Fixed: call service in ros1 and ros2
+Fixed: set logger level in ros1
+
+## 2.0.0 - 05.07.2024
 
 Replaced crossbar by websocket
 Reduced count of rerenders while update ROS state
