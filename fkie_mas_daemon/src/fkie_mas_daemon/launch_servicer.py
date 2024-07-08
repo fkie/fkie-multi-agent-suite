@@ -400,7 +400,7 @@ class LaunchServicer(LoggingEventHandler):
         except Exception as e:
             Log.error("_add_launch_to_observer %s:\n%s" % (str(path), e))
 
-    def load_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+    def load_launch(self, request_json: LaunchLoadRequest, return_as_json=True) -> LaunchLoadReply:
         """
         Loads launch file by request
         """
@@ -435,7 +435,7 @@ class LaunchServicer(LoggingEventHandler):
                         "Launch files %s in package %s found!"
                         % (request.launch, request.ros_package)
                     )
-                    return json.dumps(result, cls=SelfEncoder)
+                    return json.dumps(result, cls=SelfEncoder) if return_as_json else result
                 elif len(paths) > 1:
                     if request.force_first_file:
                         launchfile = paths[0]
@@ -448,7 +448,7 @@ class LaunchServicer(LoggingEventHandler):
                         for mp in paths:
                             result.paths.append(mp)
                         Log.debug("..load aborted, MULTIPLE_LAUNCHES")
-                        return json.dumps(result, cls=SelfEncoder)
+                        return json.dumps(result, cls=SelfEncoder) if return_as_json else result
                 else:
                     launchfile = paths[0]
             except rospkg.ResourceNotFound as rnf:
@@ -457,7 +457,7 @@ class LaunchServicer(LoggingEventHandler):
                     "Package %s not found: %s" % (request.ros_package, rnf)
                 )
                 Log.debug("..load aborted, FILE_NOT_FOUND")
-                return json.dumps(result, cls=SelfEncoder)
+                return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.paths.append(launchfile)
 
         # it is already loaded?
@@ -466,7 +466,7 @@ class LaunchServicer(LoggingEventHandler):
             result.status.msg = utf8(
                 "Launch file %s already loaded!" % (launchfile))
             Log.debug("..load aborted, ALREADY_OPEN")
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
         # load launch configuration
         try:
@@ -504,7 +504,7 @@ class LaunchServicer(LoggingEventHandler):
                 if len(result.args) > 0:
                     result.status.code = "PARAMS_REQUIRED"
                     Log.debug("..load aborted, PARAMS_REQUIRED")
-                    return json.dumps(result, cls=SelfEncoder)
+                    return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
             argv = [
                 "%s:=%s" % (arg.name, arg.value)
@@ -538,9 +538,9 @@ class LaunchServicer(LoggingEventHandler):
             Log.warn("Loading launch file: %s", err_details)
             result.status.code = "ERROR"
             result.status.msg = utf8(err_details)
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.status.code = "OK"
-        return json.dumps(result, cls=SelfEncoder)
+        return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
         """

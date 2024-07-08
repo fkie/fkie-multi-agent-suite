@@ -405,7 +405,6 @@ class LaunchServicer(LoggingEventHandler):
             result.status.msg = err_details
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.status.code = 'OK'
-        return result
         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
@@ -907,7 +906,7 @@ class LaunchServicer(LoggingEventHandler):
 
     def call_service(self, request_json: LaunchCallService) -> None:
         # Convert input dictionary into a proper python object
-        Log.debug(
+        Log.info(
             f"{self.__class__.__name__}: Request to [ros.launch.call_service]: {request_json}")
         request = request_json
         result = LaunchMessageStruct(request.srv_type)
@@ -943,16 +942,16 @@ class LaunchServicer(LoggingEventHandler):
             Log.debug(
                 f"{self.__class__.__name__}: requester: making request: {service_request}")
             future = cli.call_async(service_request)
-            rclpy.spin_until_future_complete(
-                nmd.ros_node, future, nmd.launcher.executor, 30.0)
-            if future.result() is not None:
-                result.data = message_to_ordereddict(future.result())
-                result.valid = True
+            rclpy.spin_until_future_complete(nmd.ros_node, future, None, 30.)
+            try:
+                response = future.result()
+            except Exception as e:
+                response.error_msg = 'Exception while calling service: %r' % e
             else:
-                result.error_msg = 'Exception while calling service: %r' % future.exception()
+                result.data = message_to_ordereddict(response)
+                result.valid = True
         except Exception as err:
             import traceback
-            print(traceback.format_exc())
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 

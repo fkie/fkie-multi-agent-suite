@@ -20,6 +20,8 @@ from fkie_mas_msgs.msg import Endpoint
 from fkie_mas_msgs.srv import ListNodes
 from fkie_mas_msgs.srv import LoadLaunch
 from fkie_mas_msgs.srv import Task
+from fkie_mas_pylib.interface.launch_interface import LaunchNode
+from fkie_mas_pylib.interface.launch_interface import LaunchLoadRequest
 from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.names import ns_join
 from fkie_mas_pylib.settings import Settings
@@ -177,10 +179,10 @@ class Server:
             "masteruri": "",
             "host": "",
         }
-        result = self.launch_servicer.load_launch(params, return_as_json=False)
+        result = self.launch_servicer.load_launch(LaunchLoadRequest(path=request.path), return_as_json=False)
         if result.status.code != "OK":
             raise Exception(result.status.msg)
-        # self.launch_servicer.load_launch_file(xml.interpret_path(request.path), True)
+        # TODO start nodes
         return response
 
     async def _rosservice_load_launch(self, request, response):
@@ -195,7 +197,9 @@ class Server:
             "masteruri": "",
             "host": "",
         }
-        result = self.launch_servicer.load_launch(params, return_as_json=False)
+
+        result = self.launch_servicer.load_launch(
+            LaunchLoadRequest(path=request.path), return_as_json=False)
         if result.status.code != "OK":
             raise Exception(result.status.msg)
         return response
@@ -215,7 +219,7 @@ class Server:
             "reload_global_param": False,
             "cmd_prefix": "",
         }
-        result = self.launch_servicer.start_node(params, return_as_json=False)
+        result = self.launch_servicer.start_node(LaunchNode(name=request.node), return_as_json=False)
         if result.status.code != "OK":
             raise Exception(result.status.msg)
         return response
