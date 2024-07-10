@@ -16,9 +16,10 @@ import {
   Stack,
   TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes, { bool, string } from 'prop-types';
+import PropTypes from 'prop-types';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
 import SearchBar from '../../../components/UI/SearchBar';
@@ -85,7 +86,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
     ) {
       result = Number(value);
     } else if (valueType.startsWith('bool')) {
-      if (typeof(value) === 'string') {
+      if (typeof value === 'string') {
         result = ('yes', 'true', 't', 'y', '1').includes(value.toLoverCase());
       } else if (!value) {
         result = false;
@@ -107,7 +108,11 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
         if (field.def.length === 0) {
           // simple types
           if (field.value || withEmptyFields) {
-            if (field.value || typeof(field.value) === 'bool' || field.type.startsWith('bool')) {
+            if (
+              field.value ||
+              typeof field.value === 'bool' ||
+              field.type.startsWith('bool')
+            ) {
               if (field.is_array) {
                 const values = field.value.split(/\s*,\s*/);
                 // TODO: add check for arrays with constant length
@@ -391,6 +396,12 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
       <Stack spacing={1} margin={0.5}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography fontWeight="bold">{topicName}</Typography>
+          <Typography color="grey" fontSize="0.8em">
+            {provider?.name()}
+          </Typography>
+        </Stack>
         <Stack direction="row" spacing={1}>
           {messageStruct?.def.length > 0 && (
             <SearchBar

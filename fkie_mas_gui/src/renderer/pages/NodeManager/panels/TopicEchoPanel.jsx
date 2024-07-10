@@ -268,6 +268,7 @@ function TopicEchoPanel({
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
       <Paper
+        width="100%"
         elevation={1}
         sx={
           {
@@ -275,7 +276,14 @@ function TopicEchoPanel({
             // borderTop: 1,
           }
         }
+        overflow="auto"
       >
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography fontWeight="bold">{topicName}</Typography>
+          <Typography color="grey" fontSize="0.8em">
+            {currentProvider?.name()}
+          </Typography>
+        </Stack>
         <Stack>
           {showOptions && (
             <Stack spacing={0.5} margin={0.5} direction="row">
@@ -455,15 +463,12 @@ function TopicEchoPanel({
                   })}
                 </Select>
               </Tooltip>
-              <Box sx={{ flexGrow: 1 }}>
-                {/* <Divider orientation="vertical"/> */}
-              </Box>
-              <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
+              {/* <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
                 <ProviderSelector
                   defaultProvider={selectedProvider}
                   setSelectedProvider={(provId) => setSelectedProvider(provId)}
                 />
-              </FormControl>
+              </FormControl> */}
             </Stack>
           )}
         </Stack>

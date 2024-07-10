@@ -38,10 +38,10 @@ import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import OverflowMenuService from './OverflowMenuService';
 import OverflowMenuTopic from './OverflowMenuTopic';
 import ServiceCallerPanel from './ServiceCallerPanel';
+import ServicesPanel from './ServicesPanel';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
 import TopicsPanel from './TopicsPanel';
-import ServicesPanel from './ServicesPanel';
 
 const compareTopics = (a, b) => {
   if (a.name < b.name) {

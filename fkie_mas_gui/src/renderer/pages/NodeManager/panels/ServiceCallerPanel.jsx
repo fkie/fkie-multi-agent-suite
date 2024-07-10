@@ -11,6 +11,7 @@ import {
   FormLabel,
   Stack,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
@@ -33,7 +34,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceStruct, setServiceStruct] = useState(null);
   const [serviceStructOrg, setServiceStructOrg] = useState(null);
-  const [provider, setProvider] = useState('');
+  const [provider, setProvider] = useState(null);
   const [inputElements, setInputElements] = useState(null);
 
   const [callServiceStatus, setCallServiceStatus] = useState('');
@@ -381,6 +382,12 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
       <Stack spacing={1} margin={1}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography fontWeight="bold">{serviceName}</Typography>
+          <Typography color="grey" fontSize="0.8em">
+            {provider?.name()}
+          </Typography>
+        </Stack>
         {serviceStruct?.def.length > 0 && (
           <Stack direction="row" spacing={1}>
             <SearchBar
