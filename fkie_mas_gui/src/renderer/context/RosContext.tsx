@@ -578,6 +578,9 @@ export function RosProviderReact(
         prov,
       ) as Provider;
 
+      if (provider.connection.connected()) {
+        return true;
+      }
       try {
         if (provider.isAvailable()) {
           provider.setConnectionState(ConnectionState.STATES.CONNECTING, '');

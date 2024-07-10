@@ -366,6 +366,125 @@ function NodesDetailsPanel() {
 
           {node && (
             <Stack spacing={1}>
+              {showSubscribers && (
+                <>
+                  <Typography variant="caption">
+                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                      Subscribed Topics:
+                      {` [${node.subscribers.size}]`}
+                    </Box>
+                  </Typography>
+                  {node.subscribers.size > 0 && (
+                    <TableContainer component={Paper}>
+                      <Table size="small" aria-label="a dense table">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={0}
+                              >
+                                {showConnections && (
+                                  <Chip
+                                    size="small"
+                                    title="pub"
+                                    color="default"
+                                    label="pub"
+                                  />
+                                )}
+                                {showConnections && (
+                                  <Chip
+                                    size="small"
+                                    title="sub"
+                                    color="default"
+                                    label="sub"
+                                  />
+                                )}
+                                <Typography
+                                  marginLeft="0.5em"
+                                  fontWeight="bold"
+                                  variant="body2"
+                                >
+                                  Topic Name
+                                </Typography>
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {Array.from(node.subscribers.values())
+                            .sort(compareTopics)
+                            .map((topic) => (
+                              <TableRow key={topic.name}>
+                                <TableCell style={{ padding: 0 }}>
+                                  <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={0}
+                                  >
+                                    <OverflowMenuTopic
+                                      onClick={onTopicClick}
+                                      topicName={topic.name}
+                                      providerId={node.providerId}
+                                    />
+                                    {showConnections && (
+                                      <Stack direction="row">
+                                        <Chip
+                                          size="small"
+                                          title="publishers"
+                                          // showZero={true}
+                                          color={(() => {
+                                            if (topic.publisher.length === 0)
+                                              return 'warning';
+                                            return 'default';
+                                          })()}
+                                          label={topic.publisher.length}
+                                        />
+                                        <Chip
+                                          size="small"
+                                          title="subscribers"
+                                          // showZero={true}
+                                          color={
+                                            topic.subscriber.length > 0
+                                              ? 'default'
+                                              : 'warning'
+                                          }
+                                          label={topic.subscriber.length}
+                                        />
+                                      </Stack>
+                                    )}
+                                    <Button
+                                      size="small"
+                                      style={{
+                                        marginLeft: 1,
+                                        textTransform: 'none',
+                                        justifyContent: 'left',
+                                      }}
+                                      onClick={(event) =>
+                                        onTopicClick(
+                                          event.nativeEvent.ctrlKey
+                                            ? 'PUBLISH'
+                                            : 'ECHO',
+                                          topic.name,
+                                          node.providerId,
+                                          event.nativeEvent.shiftKey,
+                                        )
+                                      }
+                                    >
+                                      {`${topic.name}`}
+                                    </Button>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </>
+              )}
+
               {showPublishers && (
                 <>
                   <Typography variant="caption">
@@ -473,125 +592,6 @@ function NodesDetailsPanel() {
                                           event.nativeEvent.shiftKey,
                                         );
                                       }}
-                                    >
-                                      {`${topic.name}`}
-                                    </Button>
-                                  </Stack>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </>
-              )}
-
-              {showSubscribers && (
-                <>
-                  <Typography variant="caption">
-                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
-                      Subscribed Topics:
-                      {` [${node.subscribers.size}]`}
-                    </Box>
-                  </Typography>
-                  {node.subscribers.size > 0 && (
-                    <TableContainer component={Paper}>
-                      <Table size="small" aria-label="a dense table">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>
-                              <Stack
-                                direction="row"
-                                alignItems="center"
-                                spacing={0}
-                              >
-                                {showConnections && (
-                                  <Chip
-                                    size="small"
-                                    title="pub"
-                                    color="default"
-                                    label="pub"
-                                  />
-                                )}
-                                {showConnections && (
-                                  <Chip
-                                    size="small"
-                                    title="sub"
-                                    color="default"
-                                    label="sub"
-                                  />
-                                )}
-                                <Typography
-                                  marginLeft="0.5em"
-                                  fontWeight="bold"
-                                  variant="body2"
-                                >
-                                  Topic Name
-                                </Typography>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {Array.from(node.subscribers.values())
-                            .sort(compareTopics)
-                            .map((topic) => (
-                              <TableRow key={topic.name}>
-                                <TableCell style={{ padding: 0 }}>
-                                  <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    spacing={0}
-                                  >
-                                    <OverflowMenuTopic
-                                      onClick={onTopicClick}
-                                      topicName={topic.name}
-                                      providerId={node.providerId}
-                                    />
-                                    {showConnections && (
-                                      <Stack direction="row">
-                                        <Chip
-                                          size="small"
-                                          title="publishers"
-                                          // showZero={true}
-                                          color={(() => {
-                                            if (topic.publisher.length === 0)
-                                              return 'warning';
-                                            return 'default';
-                                          })()}
-                                          label={topic.publisher.length}
-                                        />
-                                        <Chip
-                                          size="small"
-                                          title="subscribers"
-                                          // showZero={true}
-                                          color={
-                                            topic.subscriber.length > 0
-                                              ? 'default'
-                                              : 'warning'
-                                          }
-                                          label={topic.subscriber.length}
-                                        />
-                                      </Stack>
-                                    )}
-                                    <Button
-                                      size="small"
-                                      style={{
-                                        marginLeft: 1,
-                                        textTransform: 'none',
-                                        justifyContent: 'left',
-                                      }}
-                                      onClick={(event) =>
-                                        onTopicClick(
-                                          event.nativeEvent.ctrlKey
-                                            ? 'PUBLISH'
-                                            : 'ECHO',
-                                          topic.name,
-                                          node.providerId,
-                                          event.nativeEvent.shiftKey,
-                                        )
-                                      }
                                     >
                                       {`${topic.name}`}
                                     </Button>
