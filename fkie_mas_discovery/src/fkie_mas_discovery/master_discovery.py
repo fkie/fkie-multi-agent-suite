@@ -1027,7 +1027,7 @@ class Discoverer(object):
                 if master.online:
                     cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
                                            host=addr[0],
-                                           port=port + 300,
+                                           port=port + 24074,
                                            masteruri=master.masteruri if len(
                                                master.masteruri) > 0 else f'{addr}:{port}',
                                            origin=master.masteruri == self.master_monitor.getMasteruri(),
