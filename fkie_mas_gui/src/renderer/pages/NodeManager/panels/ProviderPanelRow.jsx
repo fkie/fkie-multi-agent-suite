@@ -1,4 +1,5 @@
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import CheckIcon from '@mui/icons-material/Check';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
@@ -167,7 +168,9 @@ function ProviderPanelRow({ provider }) {
         case ConnectionState.STATES.CONNECTED:
           return (
             <Stack direction="row" alignItems="center">
-              <div style={{ color: 'green' }}>{provider.connectionState}</div>
+              {/* <div style={{ color: 'green' }}>{provider.connectionState}</div> */}
+              <CheckIcon style={{ color: 'green' }} fontSize="0.6em" />
+
               <Tooltip title="Disconnect" placement="bottom">
                 <IconButton
                   onClick={() => {
@@ -383,6 +386,28 @@ function ProviderPanelRow({ provider }) {
     return 'red';
   }, []);
 
+  const formatDelay = useCallback((delay) => {
+    const dp = (delay > 0) ? delay : delay * -1.0;
+    if (dp < 0.001) {
+      return `${(dp * 1000.0).toFixed(1)}ms`
+    }
+    if (dp < 0.5) {
+      return `${(dp * 1000.0).toFixed(0)}ms`
+    }
+    return `${dp.toFixed(0)}s`
+    {provider.currentDelay < 0.1
+      ? provider.currentDelay.toFixed(3)
+      : provider.currentDelay.toFixed(2)}
+
+    if (delay < 0.1) {
+      return 'green';
+    }
+    if (delay < 0.5) {
+      return 'orange';
+    }
+    return 'red';
+  }, []);
+
   const createTableRow = useMemo(() => {
     return (
       <TableRow
@@ -442,7 +467,7 @@ function ProviderPanelRow({ provider }) {
           </Stack>
         </TableCell>
         <TableCell style={{ padding: 0 }}>
-          {provider.isAvailable() && provider.currentDelay > 0.0001 && (
+          {provider.isAvailable() && (
             <Tooltip
               title="delay from the host (in seconds)"
               placement="bottom-start"
@@ -451,12 +476,11 @@ function ProviderPanelRow({ provider }) {
             >
               <Typography
                 variant="body2"
+                fontSize="0.8em"
                 sx={{ paddingLeft: '0.5em', paddingRight: '0.5em' }}
                 color={getDelayColor(provider.currentDelay)}
               >
-                {provider.currentDelay < 0.1
-                  ? provider.currentDelay.toFixed(3)
-                  : provider.currentDelay.toFixed(2)}
+                {formatDelay(provider.currentDelay)}
               </Typography>
             </Tooltip>
           )}

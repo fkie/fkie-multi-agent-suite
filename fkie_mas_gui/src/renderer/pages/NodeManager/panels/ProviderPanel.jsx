@@ -58,7 +58,8 @@ function ProviderPanel() {
 
   const createProviderTable = useMemo(() => {
     const result = (
-      <TableContainer>
+      // <TableContainer  height="100%" style={{ overflowX: 'scroll', flexGrow: 1 }}>
+      <TableContainer  height="100%" style={{ flexGrow: 1 }}>
         <Table aria-label="hosts table">
           <TableBody>
             {providerRowsFiltered.map((provider) => {
@@ -77,7 +78,7 @@ function ProviderPanel() {
       spacing={1}
       height="100%"
       // width="100%"
-      overflow="auto"
+      // overflow="auto"
       backgroundColor={settingsCtx.get('backgroundColor')}
     >
       <Stack direction="row" spacing={0.5}>
@@ -105,7 +106,7 @@ function ProviderPanel() {
           </IconButton>
         </Tooltip>
       </Stack>
-      {createProviderTable}
+      <Stack height="100%">{createProviderTable}</Stack>
     </Stack>
   );
 }
