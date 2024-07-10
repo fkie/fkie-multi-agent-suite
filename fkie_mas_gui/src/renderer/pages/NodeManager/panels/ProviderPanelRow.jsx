@@ -29,8 +29,8 @@ import { CmdType, ConnectionState } from '../../../providers';
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
+  EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
-  EVENT_PROVIDER_STATE
 } from '../../../providers/eventTypes';
 import {
   EVENT_OPEN_COMPONENT,
@@ -282,6 +282,18 @@ function ProviderPanelRow({ provider }) {
           return (
             <Stack direction="row" alignItems="center">
               <div style={{ color: 'grey' }}>{provider.connectionState}</div>
+              {window.CommandExecutor && (
+                <Tooltip title="Start daemon" placement="bottom">
+                  <IconButton
+                    color="default"
+                    onClick={() => {
+                      handleStartProvider(provider);
+                    }}
+                  >
+                    <PlayCircleOutlineIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title="Join to running daemon" placement="bottom">
                 <IconButton
                   color="default"
