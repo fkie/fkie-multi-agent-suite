@@ -7,7 +7,6 @@
 # ****************************************************************************
 
 
-
 import os
 import subprocess
 import sys
@@ -150,6 +149,7 @@ def test_screen() -> None:
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
     create_screen_cfg(True)
 
+
 def create_screen_cfg(clear_previous: bool = False) -> None:
     '''
     Create screen configuration file
@@ -165,18 +165,20 @@ def create_screen_cfg(clear_previous: bool = False) -> None:
     dir_path = os.path.dirname(filename)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+    # try to fix empty LD_LIBRARY_PATH path issues in screen
+    if os.environ['LD_LIBRARY_PATH']:
+        os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
     if not os.path.exists(filename):
         with open(filename, 'w') as sf:
             sf.write('logfile flush 0\n')
-            # try to fix empty LD_LIBRARY_PATH path issues in screen
-            if os.environ['LD_LIBRARY_PATH']:
-                os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
             sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
             # if os.environ['LD_LIBRARY_PATH']:
             #     sf.write(f"setenv LD_LIBRARY_PATH {os.environ['LD_LIBRARY_PATH']}\n")
             if ('ROS_DOMAIN_ID' in os.environ):
-                sf.write(f"setenv ROS_DOMAIN_ID {os.environ['ROS_DOMAIN_ID']}\n")
+                sf.write(
+                    f"setenv ROS_DOMAIN_ID {os.environ['ROS_DOMAIN_ID']}\n")
     return filename
+
 
 def get_logfile(session: str = None, node: str = None, for_new_screen: bool = False, namespace: str = '/') -> str:
     '''
@@ -193,7 +195,8 @@ def get_logfile(session: str = None, node: str = None, for_new_screen: bool = Fa
         if os.path.exists(path) or for_new_screen:
             return path
     if node is not None:
-        path = "%s.log" % os.path.join(LOG_PATH, create_session_name(node, namespace).strip('.'))
+        path = "%s.log" % os.path.join(
+            LOG_PATH, create_session_name(node, namespace).strip('.'))
         if os.path.exists(path) or for_new_screen:
             return path
     return get_ros_logfile(node, namespace)
