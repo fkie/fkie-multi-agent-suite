@@ -114,11 +114,26 @@ const removeDDSuid = (item) => {
   return lastIndex === -1 ? item : item.substring(0, lastIndex);
 };
 
+/**
+ * Return the first and last letter of the base name
+ *
+ * @param {string} path - Ros topic/service/node name
+ */
+const getRosNameAbb = (name) => {
+  if (!name) return name;
+  const base = name.replace(/^.*[\\/]/, '').replace(/@.*/, '');
+  if (base) {
+    return `${base[0]}${base[base.length - 1]}`;
+  }
+  return name;
+};
+
 export {
   delay,
   extractSubstring,
   findIn,
   generateUniqueId,
+  getRosNameAbb,
   pathJoin,
   removeDDSuid,
 };
