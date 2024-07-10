@@ -3,7 +3,6 @@ import {
   Box,
   ButtonGroup,
   IconButton,
-  Paper,
   Stack,
   TextField,
   Tooltip,
@@ -179,6 +178,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
   // Reset states upon packageList or history modification.
   useEffect(() => {
     updateStates();
+    setSelectedFile(null);
   }, [packageList, selectedPackage, launchFileHistory, updateStates]);
 
   /**
@@ -417,47 +417,101 @@ function PackageExplorer({ packageList, selectedProvider }) {
   return (
     <>
       <Stack>
-        <Autocomplete
-          id="autocomplete-package-search"
-          size="small"
-          autoHighlight
-          clearOnEscape
-          disableListWrap
-          noOptionsText="Package not found"
-          options={packageListFiltered}
-          getOptionLabel={(option) => option.name}
-          isOptionEqualToValue={(option, value) => option.name === value.name}
-          // sx={{ flexGrow: 1 }}
-          // This prevents warnings on invalid autocomplete values
-          value={selectedPackage}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Search Package"
-              color="info"
-              variant="outlined"
-              margin="dense"
-              size="small"
-              autoFocus
-              sx={{ fontSize: 'inherit' }}
-            />
-          )}
-          onChange={(event, newSelectedPackage) => {
-            if (!newSelectedPackage) {
-              setSelectedPackage(null);
-            }
-            setSelectedPackage(newSelectedPackage);
-            handleOnSelectPackage(newSelectedPackage);
-          }}
-          onInputChange={(event, newInputValue) => {
-            searchCallback(newInputValue);
-          }}
-          // isOptionEqualToValue={(option, value) => {
-          //   return (
-          //     value === undefined || value === '' || option.path === value.path
-          //   );
-          // }}
-        />
+        <Stack direction="row" justifyItems="expand" alignItems="center">
+          <Autocomplete
+            id="autocomplete-package-search"
+            size="small"
+            fullWidth={true}
+            autoHighlight
+            clearOnEscape
+            disableListWrap
+            noOptionsText="Package not found"
+            options={packageListFiltered}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(option, value) => option.name === value.name}
+            // sx={{ flexGrow: 1 }}
+            // This prevents warnings on invalid autocomplete values
+            value={selectedPackage}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Search Package"
+                color="info"
+                variant="outlined"
+                margin="dense"
+                size="small"
+                autoFocus
+                sx={{ fontSize: 'inherit' }}
+              />
+            )}
+            onChange={(event, newSelectedPackage) => {
+              if (!newSelectedPackage) {
+                setSelectedPackage(null);
+              }
+              setSelectedPackage(newSelectedPackage);
+              handleOnSelectPackage(newSelectedPackage);
+            }}
+            onInputChange={(event, newInputValue) => {
+              searchCallback(newInputValue);
+            }}
+            // isOptionEqualToValue={(option, value) => {
+            //   return (
+            //     value === undefined || value === '' || option.path === value.path
+            //   );
+            // }}
+          />
+          <ButtonGroup
+            orientation="horizontal"
+            aria-label="launch file control group"
+          >
+            <Tooltip
+              title="Edit File"
+              placement="left"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <span>
+                <IconButton
+                  disabled={!selectedFile}
+                  size="small"
+                  aria-label="Edit File"
+                  onClick={() => {
+                    onEditFile(selectedFile);
+                  }}
+                >
+                  <BorderColorIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip
+              title="Load"
+              placement="left"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <span>
+                <IconButton
+                  disabled={
+                    !(
+                      selectedFile &&
+                      LAUNCH_FILE_EXTENSIONS.find(
+                        (fe) => selectedFile.path.indexOf(fe) !== -1,
+                      )
+                    )
+                  }
+                  size="small"
+                  aria-label="load"
+                  onClick={() => {
+                    setSelectedLaunchFile({ ...selectedFile });
+                  }}
+                >
+                  <InputIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </ButtonGroup>
+        </Stack>
+
         {ignoringNonRelevantPackageFiles && (
           <Tag
             key="ignore-non-relevant-packages"
@@ -496,7 +550,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
             />
           )}
         </Box>
-        <Box>
+        {/* <Box>
           <Paper elevation={2}>
             <ButtonGroup
               orientation="vertical"
@@ -549,7 +603,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
               </Tooltip>
             </ButtonGroup>
           </Paper>
-        </Box>
+        </Box> */}
       </Stack>
       {selectedLaunchFile && (
         <LaunchFileModal
