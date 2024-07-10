@@ -1023,18 +1023,17 @@ class Discoverer(object):
             json_reported_masters = set()
             result = []
             for (addr, port), master in self.masters.items():
-                # TODO: Check provider port
-                if master.online:
-                    cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
-                                           host=addr[0],
-                                           port=port + 24074,
-                                           masteruri=master.masteruri if len(
-                                               master.masteruri) > 0 else f'{addr}:{port}',
-                                           origin=master.masteruri == self.master_monitor.getMasteruri(),
-                                           hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
-                    cbmaster.ros_domain_id = self.mcast_port - 11511
-                    result.append(cbmaster)
-                    json_reported_masters.add(master.masteruri)
+                # check for master.online
+                cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
+                                        host=addr[0],
+                                        port=port + 24074,
+                                        masteruri=master.masteruri if len(
+                                            master.masteruri) > 0 else f'{addr}:{port}',
+                                        origin=master.masteruri == self.master_monitor.getMasteruri(),
+                                        hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
+                cbmaster.ros_domain_id = self.mcast_port - 11511
+                result.append(cbmaster)
+                json_reported_masters.add(master.masteruri)
             if not (json_reported_masters == self._json_reported_masters):
                 self.master_monitor.setProviderList(result)
                 self._json_reported_masters = json_reported_masters
