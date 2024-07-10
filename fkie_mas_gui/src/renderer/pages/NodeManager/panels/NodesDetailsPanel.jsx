@@ -41,6 +41,7 @@ import ServiceCallerPanel from './ServiceCallerPanel';
 import TopicEchoPanel from './TopicEchoPanel';
 import TopicPublishPanel from './TopicPublishPanel';
 import TopicsPanel from './TopicsPanel';
+import ServicesPanel from './ServicesPanel';
 
 const compareTopics = (a, b) => {
   if (a.name < b.name) {
@@ -107,7 +108,7 @@ function NodesDetailsPanel() {
       if (rosTopicType === 'clipboard') {
         if (navigator && navigator.clipboard) {
           navigator.clipboard.writeText(topic);
-          logCtx.success('Topic name copied!');
+          logCtx.success(`${topic} copied!`);
         }
         return;
       }
@@ -204,7 +205,7 @@ function NodesDetailsPanel() {
       if (rosServiceType === 'clipboard') {
         if (navigator && navigator.clipboard) {
           navigator.clipboard.writeText(service);
-          logCtx.success('Service name copied!');
+          logCtx.success(`${service} copied!`);
         }
         return;
       }
@@ -225,7 +226,18 @@ function NodesDetailsPanel() {
         return;
       }
       if (rosServiceType === 'INFO') {
-        logCtx.warn('Info Service Panel not implemented!');
+        emitCustomEvent(
+          EVENT_OPEN_COMPONENT,
+          eventOpenComponent(
+            `service-${generateUniqueId()}`,
+            `${service}`,
+            <ServicesPanel initialSearchTerm={service} />,
+            true,
+            LAYOUT_TABS.NODES,
+            new LayoutTabConfig(false, 'info'),
+          ),
+        );
+        return;
       }
     },
     [logCtx],
