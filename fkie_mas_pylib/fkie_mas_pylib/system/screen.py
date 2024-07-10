@@ -148,8 +148,9 @@ def test_screen() -> None:
     '''
     if not os.path.isfile(SCREEN):
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
+    create_screen_cfg(True)
 
-def create_screen_cfg() -> None:
+def create_screen_cfg(clear_previous: bool = False) -> None:
     '''
     Create screen configuration file
 
@@ -159,20 +160,22 @@ def create_screen_cfg() -> None:
     if ('ROS_DOMAIN_ID' in os.environ):
         dId = f'_{os.environ["ROS_DOMAIN_ID"]}'
     filename = os.path.join(SETTINGS_PATH, 'screens', f'screen{dId}.cfg')
+    if clear_previous and os.path.exists(filename):
+        os.remove(filename)
     dir_path = os.path.dirname(filename)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-    with open(filename, 'w') as sf:
-        sf.write('logfile flush 0\n')
-        # try to fix empty LD_LIBRARY_PATH path issues in screen
-        if os.environ['LD_LIBRARY_PATH']:
-            os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
-        sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
-        # if os.environ['LD_LIBRARY_PATH']:
-        #     sf.write(f"setenv LD_LIBRARY_PATH {os.environ['LD_LIBRARY_PATH']}\n")
-        if ('ROS_DOMAIN_ID' in os.environ):
-            sf.write(f"setenv ROS_DOMAIN_ID {os.environ['ROS_DOMAIN_ID']}\n")
-
+    if not os.path.exists(filename):
+        with open(filename, 'w') as sf:
+            sf.write('logfile flush 0\n')
+            # try to fix empty LD_LIBRARY_PATH path issues in screen
+            if os.environ['LD_LIBRARY_PATH']:
+                os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
+            sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
+            # if os.environ['LD_LIBRARY_PATH']:
+            #     sf.write(f"setenv LD_LIBRARY_PATH {os.environ['LD_LIBRARY_PATH']}\n")
+            if ('ROS_DOMAIN_ID' in os.environ):
+                sf.write(f"setenv ROS_DOMAIN_ID {os.environ['ROS_DOMAIN_ID']}\n")
     return filename
 
 def get_logfile(session: str = None, node: str = None, for_new_screen: bool = False, namespace: str = '/') -> str:
