@@ -160,14 +160,14 @@ class WebSocketHandler:
             result = callback(*(arg for arg in args))
             if not isinstance(result, str):
                 result = json.dumps(result, cls=SelfEncoder)
-        except Exception:
+        except Exception as err:
             import traceback
             print(traceback.format_exc())
-            error = traceback.format_exc()
+            error = err
         if error is None:
             reply = f'{{"id": {id}, "result": {result}}}'
         else:
-            reply = f'{{"id": {id}, "error": {error}}}'
+            reply = f'{{"id": {id}, "error": "{error}"}}'
         self.queue.put(QueueItem(reply, priority=0))
 
     # def handle_remote_callback(self, msg):

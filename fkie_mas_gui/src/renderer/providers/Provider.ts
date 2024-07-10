@@ -2581,10 +2581,13 @@ export default class Provider {
           .catch((err) => {
             // TODO
             this.logger?.warn(
-              `failed call ${_uri}@${this.name()}: ${err}`,
+              `failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`,
               '',
               false,
             );
+            if (Object.hasOwn(err, 'result')) {
+              return err;
+            }
             throw Error(err);
           });
         return r;
