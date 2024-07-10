@@ -69,7 +69,7 @@ const DEFAULT_LAYOUT = {
     children: [
       {
         type: 'row',
-        weight: 30,
+        width: 350,
         children: [
           {
             id: LAYOUT_TAB_SETS.HOSTS,
