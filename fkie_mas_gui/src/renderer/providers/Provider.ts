@@ -334,7 +334,6 @@ export default class Provider {
       .then((dv) => {
         if (this.isAvailable()) {
           this.daemonVersion = dv;
-          this.updateProviderList();
           this.updateSystemWarnings();
           this.updateTimeDiff();
           this.getProviderSystemInfo();
@@ -345,6 +344,7 @@ export default class Provider {
           this.updateScreens(null);
           // this.launchGetList();
           this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
+          this.updateProviderList();
           return true;
         }
         return false;
@@ -585,9 +585,12 @@ export default class Provider {
         return null;
       })
       .then((value) => {
-        const result = value as unknown as FileItem;
-        result.host = this.host();
-        return result;
+        if (value) {
+          const result = value as unknown as FileItem;
+          result.host = this.host();
+          return result;
+        }
+        return null;
       });
     if (fileItem) {
       return Promise.resolve({ file: fileItem, error: '' });
@@ -2316,7 +2319,7 @@ export default class Provider {
    * Callback of master daemon ready status (true/false)
    */
   private callbackDaemonReady: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
+    // this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
     const msgObj = msg as unknown as ProviderDaemonReady;
     if (msgObj.status && !this.daemon) {
       this.updateDaemonInit();
