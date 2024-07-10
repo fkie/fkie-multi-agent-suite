@@ -18,10 +18,11 @@ import {
   Tooltip,
 } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
+import PropTypes, { bool, string } from 'prop-types';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
 import SearchBar from '../../../components/UI/SearchBar';
+import { LoggingContext } from '../../../context/LoggingContext';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 import useLocalStorage from '../../../hooks/useLocalStorage';
@@ -31,6 +32,7 @@ import InputElements from './MessageDialogPanel/InputElements';
 function TopicPublishPanel({ topicName = null, providerId = '' }) {
   const [history, setHistory] = useLocalStorage(`MessageStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
+  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [substituteKeywords, setSubstituteKeywords] = useState(true);
@@ -83,7 +85,11 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
     ) {
       result = Number(value);
     } else if (valueType.startsWith('bool')) {
-      result = ('yes', 'true', 't', 'y', '1').includes(value.toLoverCase());
+      if (typeof(value) === 'string') {
+        result = ('yes', 'true', 't', 'y', '1').includes(value.toLoverCase());
+      } else if (!value) {
+        result = false;
+      }
     }
     return result;
   }
@@ -101,7 +107,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
         if (field.def.length === 0) {
           // simple types
           if (field.value || withEmptyFields) {
-            if (field.value) {
+            if (field.value || typeof(field.value) === 'bool' || field.type.startsWith('bool')) {
               if (field.is_array) {
                 const values = field.value.split(/\s*,\s*/);
                 // TODO: add check for arrays with constant length
@@ -207,6 +213,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
     if (!messageStruct) return;
     const json = messageStructToString(messageStruct, false, true);
     navigator.clipboard.writeText(json);
+    logCtx.success(`${json} copied!`);
   }, 300);
 
   const getTopicStructData = useCallback(async () => {
