@@ -154,6 +154,8 @@ class SubscriberNode:
     def _msg_handle(self, data):
         self._count_received += 1
         self._latched = data._connection_header['latching'] != '0'
+        if self._first_msg_ts == 0:
+            self._first_msg_ts = time.time()
         # print(data._connection_header)
         # print(dir(data))
         # print("SIZE", data.__sizeof__())
