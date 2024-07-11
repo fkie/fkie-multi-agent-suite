@@ -205,6 +205,7 @@ function ExternalAppsModal() {
         title="External Apps"
         placement="right"
         enterDelay={settingsCtx.get('tooltipEnterDelay')}
+        disableInteractive
       >
         <IconButton
           sx={{

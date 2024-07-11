@@ -1099,6 +1099,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1117,6 +1118,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1136,6 +1138,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1149,7 +1152,7 @@ function HostTreeViewPanel() {
           </Tooltip>
         )}
         {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip title="Kill" placement="left">
+          <Tooltip title="Kill" placement="left" disableInteractive>
             <IconButton
               size="medium"
               aria-label="Kill"
@@ -1162,7 +1165,11 @@ function HostTreeViewPanel() {
           </Tooltip>
         )}
         {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip title="Unregister ROS1 nodes" placement="left">
+          <Tooltip
+            title="Unregister ROS1 nodes"
+            placement="left"
+            disableInteractive
+          >
             <IconButton
               size="medium"
               aria-label="Unregister"
@@ -1181,6 +1188,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1212,6 +1220,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1250,6 +1259,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1268,6 +1278,7 @@ function HostTreeViewPanel() {
             placement="left"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
+            disableInteractive
           >
             <IconButton
               size="medium"
@@ -1287,6 +1298,7 @@ function HostTreeViewPanel() {
               placement="left"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <IconButton
                 size="medium"
@@ -1306,6 +1318,7 @@ function HostTreeViewPanel() {
               placement="left"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <IconButton
                 size="medium"
@@ -1325,6 +1338,7 @@ function HostTreeViewPanel() {
             <Tooltip
               title="Screen (external terminal with shift+click)"
               placement="left"
+              disableInteractive
             >
               <IconButton
                 size="medium"
@@ -1377,7 +1391,11 @@ function HostTreeViewPanel() {
           )}
         {navCtx.selectedNodes?.length > 0 &&
           navCtx.selectedProviders?.length === 0 && (
-            <Tooltip title="Change log level" placement="left">
+            <Tooltip
+              title="Change log level"
+              placement="left"
+              disableInteractive
+            >
               <IconButton
                 size="medium"
                 aria-label="Log Level"
@@ -1399,6 +1417,7 @@ function HostTreeViewPanel() {
             <Tooltip
               title="Log (external terminal with shift+click)"
               placement="left"
+              disableInteractive
             >
               <IconButton
                 size="medium"
@@ -1420,7 +1439,7 @@ function HostTreeViewPanel() {
           )}
         {navCtx.selectedNodes?.length > 0 &&
           navCtx.selectedProviders?.length === 0 && (
-            <Tooltip title="Clear Logs" placement="left">
+            <Tooltip title="Clear Logs" placement="left" disableInteractive>
               <IconButton
                 size="medium"
                 aria-label="Clear Logs"
@@ -1453,6 +1472,7 @@ function HostTreeViewPanel() {
               placement="left"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <ToggleButton
                 size="small"
@@ -1476,6 +1496,7 @@ function HostTreeViewPanel() {
               placement="left"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <IconButton
                 size="small"

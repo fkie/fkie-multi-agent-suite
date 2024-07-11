@@ -59,7 +59,7 @@ function ProviderPanel() {
   const createProviderTable = useMemo(() => {
     const result = (
       // <TableContainer  height="100%" style={{ overflowX: 'scroll', flexGrow: 1 }}>
-      <TableContainer  height="100%" style={{ flexGrow: 1 }}>
+      <TableContainer height="100%" style={{ flexGrow: 1 }}>
         <Table aria-label="hosts table">
           <TableBody>
             {providerRowsFiltered.map((provider) => {
@@ -96,6 +96,7 @@ function ProviderPanel() {
           placement="bottom"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
+          disableInteractive
         >
           <IconButton
             edge="start"

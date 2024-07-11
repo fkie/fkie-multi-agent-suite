@@ -214,13 +214,14 @@ function NodesDetailsPanel() {
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             `call-service-${generateUniqueId()}`,
-            `Call Service - ${service}`,
+            service,
             <ServiceCallerPanel
               serviceName={service}
               providerId={providerId}
             />,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
+            new LayoutTabConfig(false, LAYOUT_TABS.SERVICES),
           ),
         );
         return;
@@ -237,7 +238,6 @@ function NodesDetailsPanel() {
             new LayoutTabConfig(false, 'info'),
           ),
         );
-        return;
       }
     },
     [logCtx],

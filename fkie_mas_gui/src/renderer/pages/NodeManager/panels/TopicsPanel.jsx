@@ -401,6 +401,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <span>
                   <IconButton
@@ -420,6 +421,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <span>
                   <IconButton
@@ -442,7 +444,11 @@ function TopicsPanel({ initialSearchTerm = '' }) {
               defaultValue={initialSearchTerm}
               fullWidth
             />
-            <Tooltip title="Reload topic list" placement="left">
+            <Tooltip
+              title="Reload topic list"
+              placement="left"
+              disableInteractive
+            >
               <IconButton
                 size="small"
                 onClick={() => {

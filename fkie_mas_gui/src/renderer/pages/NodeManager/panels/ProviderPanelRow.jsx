@@ -1,5 +1,5 @@
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import CheckIcon from '@mui/icons-material/Check';
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import JoinFullIcon from '@mui/icons-material/JoinFull';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
@@ -136,12 +136,12 @@ function ProviderPanelRow({ provider }) {
               spacing="0.5em"
               paddingRight="0.5em"
             >
-              <Tooltip title="Connecting" placement="bottom">
+              <Tooltip title="Connecting" placement="bottom" disableInteractive>
                 <span style={{ color: 'blue' }}>connecting</span>
               </Tooltip>
 
               <CircularProgress size="1em" />
-              <Tooltip title="cancel" placement="bottom">
+              <Tooltip title="cancel" placement="bottom" disableInteractive>
                 <IconButton
                   onClick={() => {
                     closeProviderHandler(provider.id);
@@ -171,7 +171,7 @@ function ProviderPanelRow({ provider }) {
               {/* <div style={{ color: 'green' }}>{provider.connectionState}</div> */}
               <CheckIcon style={{ color: 'green' }} fontSize="0.6em" />
 
-              <Tooltip title="Disconnect" placement="bottom">
+              <Tooltip title="Disconnect" placement="bottom" disableInteractive>
                 <IconButton
                   onClick={() => {
                     closeProviderHandler(provider.id);
@@ -189,6 +189,7 @@ function ProviderPanelRow({ provider }) {
               <Tooltip
                 title={`Can't access remote host! Please add SSH credentials.`}
                 placement="bottom"
+                disableInteractive
               >
                 <Button
                   style={{ textTransform: 'none' }}
@@ -207,7 +208,11 @@ function ProviderPanelRow({ provider }) {
                   </Typography>
                 </Button>
               </Tooltip>
-              <Tooltip title="Start daemon" placement="bottom">
+              <Tooltip
+                title="Start daemon"
+                placement="bottom"
+                disableInteractive
+              >
                 <IconButton
                   color="default"
                   onClick={() => {
@@ -241,6 +246,7 @@ function ProviderPanelRow({ provider }) {
                     : ''
                 }`}
                 placement="bottom"
+                disableInteractive
               >
                 <span>
                   {window.CommandExecutor && (
@@ -269,7 +275,11 @@ function ProviderPanelRow({ provider }) {
                 </span>
               </Tooltip>
 
-              <Tooltip title="Join to running daemon" placement="bottom">
+              <Tooltip
+                title="Join to running daemon"
+                placement="bottom"
+                disableInteractive
+              >
                 <IconButton
                   color="default"
                   onClick={() => {
@@ -286,7 +296,11 @@ function ProviderPanelRow({ provider }) {
             <Stack direction="row" alignItems="center">
               <div style={{ color: 'grey' }}>{provider.connectionState}</div>
               {window.CommandExecutor && (
-                <Tooltip title="Start daemon" placement="bottom">
+                <Tooltip
+                  title="Start daemon"
+                  placement="bottom"
+                  disableInteractive
+                >
                   <IconButton
                     color="default"
                     onClick={() => {
@@ -297,7 +311,11 @@ function ProviderPanelRow({ provider }) {
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip title="Join to running daemon" placement="bottom">
+              <Tooltip
+                title="Join to running daemon"
+                placement="bottom"
+                disableInteractive
+              >
                 <IconButton
                   color="default"
                   onClick={() => {
@@ -326,6 +344,7 @@ function ProviderPanelRow({ provider }) {
             (item) => item.id,
           )}`}
           placement="bottom"
+          disableInteractive
         >
           <IconButton
             color="default"
@@ -387,17 +406,19 @@ function ProviderPanelRow({ provider }) {
   }, []);
 
   const formatDelay = useCallback((delay) => {
-    const dp = (delay > 0) ? delay : delay * -1.0;
+    const dp = delay > 0 ? delay : delay * -1.0;
     if (dp < 0.001) {
-      return `${(dp * 1000.0).toFixed(1)}ms`
+      return `${(dp * 1000.0).toFixed(1)}ms`;
     }
     if (dp < 0.5) {
-      return `${(dp * 1000.0).toFixed(0)}ms`
+      return `${(dp * 1000.0).toFixed(0)}ms`;
     }
-    return `${dp.toFixed(0)}s`
-    {provider.currentDelay < 0.1
-      ? provider.currentDelay.toFixed(3)
-      : provider.currentDelay.toFixed(2)}
+    return `${dp.toFixed(0)}s`;
+    {
+      provider.currentDelay < 0.1
+        ? provider.currentDelay.toFixed(3)
+        : provider.currentDelay.toFixed(2);
+    }
 
     if (delay < 0.1) {
       return 'green';
@@ -469,10 +490,11 @@ function ProviderPanelRow({ provider }) {
         <TableCell style={{ padding: 0 }}>
           {provider.isAvailable() && (
             <Tooltip
-              title="delay from the host (in seconds)"
+              title="websocket delay from the host"
               placement="bottom-start"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <Typography
                 variant="body2"
@@ -492,6 +514,7 @@ function ProviderPanelRow({ provider }) {
               placement="bottom-start"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <IconButton
                 edge="start"
@@ -546,7 +569,7 @@ function ProviderPanelRow({ provider }) {
             ConnectionState.STATES.CONNECTING,
             ConnectionState.STATES.CONNECTED,
           ].includes(provider.connectionState) && (
-            <Tooltip title="Remove host" placement="bottom">
+            <Tooltip title="Remove host" placement="bottom" disableInteractive>
               <IconButton
                 color="error"
                 onClick={() => {

@@ -325,7 +325,7 @@ function FileEditorPanel({
 
       // set package name
       const modelPackageName = ownUriToPackageDict[model.uri.path];
-      setPackageName(modelPackageName ? modelPackageName : '');
+      setPackageName(modelPackageName || '');
       // set range is available
       if (range) {
         setSelectionRange(range);
@@ -436,10 +436,8 @@ function FileEditorPanel({
     // update height and width of the split panel on the left side
     if (!(enableExplorer || enableGlobalSearch)) {
       setSideBarWidth(sideBarMinSize);
-    } else {
-      if (sideBarWidth <= sideBarMinSize) {
-        setSideBarWidth(savedSideBarUserWidth);
-      }
+    } else if (sideBarWidth <= sideBarMinSize) {
+      setSideBarWidth(savedSideBarUserWidth);
     }
     if (enableExplorer) {
       if (enableGlobalSearch) {
@@ -836,7 +834,11 @@ function FileEditorPanel({
         >
           <Stack>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Tooltip title="Explorer (Ctrl+Shift+E)" placement="right">
+              <Tooltip
+                title="Explorer (Ctrl+Shift+E)"
+                placement="right"
+                disableInteractive
+              >
                 <ToggleButton
                   size="small"
                   value="showExplorer"
@@ -872,7 +874,11 @@ function FileEditorPanel({
           </Stack>
           <Stack paddingTop="2px">
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Tooltip title="Search (Ctrl+Shift+F)" placement="right">
+              <Tooltip
+                title="Search (Ctrl+Shift+F)"
+                placement="right"
+                disableInteractive
+              >
                 <ToggleButton
                   size="small"
                   value="showSearch"
@@ -928,7 +934,7 @@ function FileEditorPanel({
             ref={infoRef}
             style={getHostStyle()}
           >
-            <Tooltip title="Save File">
+            <Tooltip title="Save File" disableInteractive>
               <span>
                 <IconButton
                   edge="end"
@@ -942,7 +948,7 @@ function FileEditorPanel({
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title="Open parent file">
+            <Tooltip title="Open parent file" disableInteractive>
               <IconButton
                 edge="end"
                 aria-label="Open parent file"
@@ -969,7 +975,7 @@ function FileEditorPanel({
                 <UpgradeIcon style={{ fontSize: '0.8em' }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Reload current file from host">
+            <Tooltip title="Reload current file from host" disableInteractive>
               <IconButton
                 edge="end"
                 aria-label="Reload file"
@@ -1006,6 +1012,7 @@ function FileEditorPanel({
                         title={`changed ${getFileName(path)}`}
                         enterDelay={tooltipDelay}
                         enterNextDelay={tooltipDelay}
+                        disableInteractive
                       >
                         <Link
                           noWrap

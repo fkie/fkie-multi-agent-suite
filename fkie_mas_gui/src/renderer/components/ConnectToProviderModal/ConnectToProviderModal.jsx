@@ -1180,7 +1180,7 @@ function ConnectToProviderModal() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Tooltip title="Start system nodes" placement="bottom">
+      <Tooltip title="Start system nodes" placement="bottom" disableInteractive>
         <IconButton
           color="primary"
           onClick={() => {

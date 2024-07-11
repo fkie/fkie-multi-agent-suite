@@ -15,7 +15,7 @@ function OverflowMenuService({ onClick, serviceName, providerId }) {
         options={[
           {
             name: (
-              <Stack direction="row" spacing={1} alignItems={'center'}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <InfoOutlinedIcon sx={{ fontSize: 'inherit' }} />
                 <Typography>Info</Typography>
               </Stack>
@@ -27,7 +27,7 @@ function OverflowMenuService({ onClick, serviceName, providerId }) {
           },
           {
             name: (
-              <Stack direction="row" spacing={1} alignItems={'center'}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <SyncAltOutlinedIcon sx={{ fontSize: 'inherit' }} />
                 <Typography>Call</Typography>
               </Stack>
@@ -39,7 +39,7 @@ function OverflowMenuService({ onClick, serviceName, providerId }) {
           },
           {
             name: (
-              <Stack direction="row" spacing={1} alignItems={'center'}>
+              <Stack direction="row" spacing={1} alignItems="center">
                 <ContentCopyIcon sx={{ fontSize: 'inherit' }} />
                 <Typography>Copy name to Clipboard</Typography>
               </Stack>

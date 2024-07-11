@@ -9,6 +9,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
 import SubjectIcon from '@mui/icons-material/Subject';
+import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import TopicIcon from '@mui/icons-material/Topic';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -45,6 +46,7 @@ import { SettingsContext } from '../../context/SettingsContext';
 import { SSHContext } from '../../context/SSHContext';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { CmdType } from '../../providers';
+import { getRosNameAbb } from '../../utils';
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_OPEN_COMPONENT,
@@ -218,6 +220,7 @@ function NodeManager() {
           id: data.id,
           type: 'tab',
           name: data.title,
+          content: `${data.title}bal`,
           component: data.id,
           panelGroup: data.panelGroup,
           enableClose: data.closable,
@@ -348,6 +351,28 @@ function NodeManager() {
     node /* TabNode */,
     renderValues /* ITabRenderValues */,
   ) {
+    // add tooltip to the abbreviations
+    if (
+      ![
+        'Hosts',
+        'Node Details',
+        'Packages',
+        'Nodes',
+        'Topics',
+        'Services',
+        'Parameter',
+      ].includes(renderValues.name)
+    ) {
+      renderValues.content = (
+        <Tooltip
+          title={renderValues.name}
+          placement="bottom"
+          disableInteractive
+        >
+          <Typography>{getRosNameAbb(renderValues.name)}</Typography>
+        </Tooltip>
+      );
+    }
     switch (node.getId()) {
       case LAYOUT_TABS.LOGGING:
         renderValues.content = '';
@@ -356,6 +381,7 @@ function NodeManager() {
             title="Logging (mas gui)"
             placement="top"
             enterDelay={tooltipDelay}
+            disableInteractive
           >
             <Badge
               color="info"
@@ -407,6 +433,11 @@ function NodeManager() {
               <PlayCircleOutlineIcon sx={{ fontSize: 'inherit' }} />
             );
             break;
+          case LAYOUT_TABS.SERVICES:
+            renderValues.leading = (
+              <SyncAltOutlinedIcon sx={{ fontSize: 'inherit' }} />
+            );
+            break;
           case 'info':
             renderValues.leading = (
               <InfoOutlinedIcon sx={{ fontSize: 'inherit' }} />
@@ -432,50 +463,59 @@ function NodeManager() {
         }
         if (node.getConfig()?.openExternal && window.CommandExecutor) {
           renderValues.buttons.push(
-            <IconButton
+            <Tooltip
               key={`button-close-${node.getId()}`}
-              onMouseDown={(event) => {
-                if (node.getConfig().terminalConfig) {
-                  const openExternalTerminal = async (config, tabNodeId) => {
-                    // create a terminal command
-                    const provider = rosCtx.getProviderById(config.providerId);
-                    const terminalCmd = await provider.cmdForType(
-                      config.type,
-                      config.nodeName,
-                      config.topicName,
-                      config.screen,
-                      config.cmd,
-                    );
-                    // open screen in a new terminal
-                    try {
-                      window.CommandExecutor?.execTerminal(
-                        provider.isLocalHost
-                          ? null
-                          : SSHCtx.getCredentialHost(provider.host()),
-                        `"${config.type.toLocaleUpperCase()} ${
-                          config.nodeName
-                        }@${provider.host()}"`,
-                        terminalCmd.cmd,
-                      );
-                      deleteTab(tabNodeId);
-                    } catch (error) {
-                      logCtx.error(
-                        `Can't open external terminal for ${config.nodeName}`,
-                        error,
-                        true,
-                      );
-                    }
-                  };
-                  openExternalTerminal(
-                    node.getConfig().terminalConfig,
-                    node.getId(),
-                  );
-                }
-                event.stopPropagation();
-              }}
+              title="open in external terminal"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              disableInteractive
             >
-              <CallMadeIcon sx={{ fontSize: 'inherit' }} />
-            </IconButton>,
+              <IconButton
+                onMouseDown={(event) => {
+                  if (node.getConfig().terminalConfig) {
+                    const openExternalTerminal = async (config, tabNodeId) => {
+                      // create a terminal command
+                      const provider = rosCtx.getProviderById(
+                        config.providerId,
+                      );
+                      const terminalCmd = await provider.cmdForType(
+                        config.type,
+                        config.nodeName,
+                        config.topicName,
+                        config.screen,
+                        config.cmd,
+                      );
+                      // open screen in a new terminal
+                      try {
+                        window.CommandExecutor?.execTerminal(
+                          provider.isLocalHost
+                            ? null
+                            : SSHCtx.getCredentialHost(provider.host()),
+                          `"${config.type.toLocaleUpperCase()} ${
+                            config.nodeName
+                          }@${provider.host()}"`,
+                          terminalCmd.cmd,
+                        );
+                        deleteTab(tabNodeId);
+                      } catch (error) {
+                        logCtx.error(
+                          `Can't open external terminal for ${config.nodeName}`,
+                          error,
+                          true,
+                        );
+                      }
+                    };
+                    openExternalTerminal(
+                      node.getConfig().terminalConfig,
+                      node.getId(),
+                    );
+                  }
+                  event.stopPropagation();
+                }}
+              >
+                <CallMadeIcon sx={{ fontSize: 'inherit' }} />
+              </IconButton>
+            </Tooltip>,
           );
         }
         break;
@@ -497,6 +537,7 @@ function NodeManager() {
           placement="right"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
+          disableInteractive
         >
           <span>
             <IconButton

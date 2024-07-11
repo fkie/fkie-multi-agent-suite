@@ -1,5 +1,4 @@
 import LayoutTabConfig from '../pages/NodeManager/layout/LayoutTabConfig';
-import { getRosNameAbb } from '../utils';
 
 export const EVENT_CLOSE_COMPONENT = 'EVENT_CLOSE_COMPONENT' as const;
 export const EVENT_OPEN_COMPONENT = 'EVENT_OPEN_COMPONENT' as const;
@@ -15,10 +14,9 @@ export function eventOpenComponent(
   panelGroup: string = '', // panel or tab id where to place the new tab
   config: LayoutTabConfig = new LayoutTabConfig(false, panelGroup), // a place to hold json config for the hosted component
 ) {
-  const titleAbb = getRosNameAbb(title);
   return {
     id,
-    title: titleAbb,
+    title,
     closable,
     component,
     panelGroup,

@@ -29,7 +29,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
 } from '../../../utils/events';
-import { LAYOUT_TAB_SETS } from '../layout';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
 import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
 import ServiceCallerPanel from './ServiceCallerPanel';
 
@@ -91,7 +91,7 @@ function ServicesPanel({ initialSearchTerm = '' }) {
     }
 
     const newFilteredServices = services.filter((service) => {
-      let isMatch = findIn(searchTerm, [service.name, service.srvtype]);
+      const isMatch = findIn(searchTerm, [service.name, service.srvtype]);
       if (isMatch) {
         return isMatch;
       }
@@ -123,6 +123,7 @@ function ServicesPanel({ initialSearchTerm = '' }) {
             />,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
+            new LayoutTabConfig(false, LAYOUT_TABS.SERVICES),
           ),
         );
       }
@@ -163,7 +164,11 @@ function ServicesPanel({ initialSearchTerm = '' }) {
               defaultValue={initialSearchTerm}
               fullWidth
             />
-            <Tooltip title="Reload service list" placement="left">
+            <Tooltip
+              title="Reload service list"
+              placement="left"
+              disableInteractive
+            >
               <IconButton
                 size="small"
                 onClick={() => {
@@ -210,7 +215,11 @@ function ServicesPanel({ initialSearchTerm = '' }) {
                     return (
                       <TableRow key={rowId}>
                         <TableCell key={`${rowId}-actions`}>
-                          <Tooltip title="Call service" enterDelay={1000}>
+                          <Tooltip
+                            title="Call service"
+                            enterDelay={1000}
+                            disableInteractive
+                          >
                             <div>
                               <OverflowMenuProviderSelector
                                 onClick={onCallActionClick}
