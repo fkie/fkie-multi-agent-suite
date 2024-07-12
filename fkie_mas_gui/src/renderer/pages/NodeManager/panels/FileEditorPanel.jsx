@@ -1,4 +1,4 @@
-import Editor, { useMonaco } from '@monaco-editor/react';
+import * as Monaco from '@monaco-editor/react';
 import CloudSyncOutlinedIcon from '@mui/icons-material/CloudSyncOutlined';
 import FolderCopyOutlinedIcon from '@mui/icons-material/FolderCopyOutlined';
 import SaveAltOutlinedIcon from '@mui/icons-material/SaveAltOutlined';
@@ -48,7 +48,7 @@ function FileEditorPanel({
   currentFilePath,
   fileRange = null,
 }) {
-  const monaco = useMonaco();
+  const monaco = Monaco.useMonaco();
   const settingsCtx = useContext(SettingsContext);
   const rosCtx = useContext(RosContext);
   const SSHCtx = useContext(SSHContext);
@@ -1061,7 +1061,7 @@ function FileEditorPanel({
             </Alert>
           )}
           {/* {activeModel && ( */}
-          <Editor
+          <Monaco.Editor
             key="editor"
             height={editorHeight}
             width={editorWidth}

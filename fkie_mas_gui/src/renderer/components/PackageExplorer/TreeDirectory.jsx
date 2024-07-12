@@ -1,6 +1,6 @@
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import { TreeView } from '@mui/x-tree-view';
+import { SimpleTreeView } from '@mui/x-tree-view';
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -130,7 +130,7 @@ function TreeDirectory({
         return (
           <PackageItemTree
             key={`${packageName}#${file.id}`}
-            nodeId={`${file.id}`}
+            itemId={`${file.id}`}
             labelText={file.name.replace('/', '')}
             tooltip={isLaunchFile ? file.path : ''}
             enableCopy={!!isLaunchFile}
@@ -154,7 +154,7 @@ function TreeDirectory({
         // valid children means that item is a directory
         <PackageItemTree
           key={`${packageName}#${directoryName}`}
-          nodeId={`${packageName}#${directoryName}`}
+          itemId={`${packageName}#${directoryName}`}
           labelText={directoryName.replace('/', '')}
           labelIcon={FolderOutlinedIcon}
           enableCopy={false}
@@ -180,17 +180,16 @@ function TreeDirectory({
    */
   const generateTree = useMemo(() => {
     return (
-      <TreeView
+      <SimpleTreeView
         aria-label="package list"
-        defaultCollapseIcon={<ArrowDropDownIcon />}
-        defaultExpandIcon={<ArrowRightIcon />}
+        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // use either the expanded state or the key of the file directory (expand the first layer)
-        expanded={
+        expandedItems={
           expanded.length > 0 ? expanded : Object.keys(packageItemsTree)
         }
-        selected={selectedItems}
-        onNodeToggle={handleToggle}
-        onNodeSelect={handleSelect}
+        selectedItems={selectedItems}
+        onExpandedItemsChange={handleToggle}
+        onSelectedItemsChange={handleSelect}
         multiSelect={false}
       >
         {Object.entries(packageItemsTree).map(([packageName, itemTree]) => {
@@ -201,7 +200,7 @@ function TreeDirectory({
             return (
               <PackageItemTree
                 key={`${packageName}#${file.id}`}
-                nodeId={`${file.id}`}
+                itemId={`${file.id}`}
                 labelText={`${file.name.replace('/', '')} [${file.package}]`}
                 labelIconComponent={
                   <FileIcon
@@ -223,7 +222,7 @@ function TreeDirectory({
           return (
             <PackageItemTree
               key={packageName}
-              nodeId={packageName}
+              itemId={packageName}
               labelText={packageName}
               tooltip={selectedPackage?.path}
               enableCopy={!!selectedPackage}
@@ -243,7 +242,7 @@ function TreeDirectory({
 
         {/* this box creates an empty space at the end, to prevent items to be covered by app bar */}
         {/* <Box sx={{ height: '6em', width: '100%' }} /> */}
-      </TreeView>
+      </SimpleTreeView>
     );
   }, [
     expanded,

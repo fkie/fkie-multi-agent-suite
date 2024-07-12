@@ -210,7 +210,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
           sx={{
             display: 'flex',
             alignItems: 'center',
-            p: 0.3,
+            // p: 0.3,
             pr: 0,
           }}
         >

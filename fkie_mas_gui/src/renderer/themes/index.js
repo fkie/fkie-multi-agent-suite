@@ -1,4 +1,4 @@
-import 'typeface-cormorant';
+// import 'typeface-cormorant';
 import darkThemeDef from './darkTheme';
 import lightThemeDef from './lightTheme';
 

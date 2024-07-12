@@ -7,9 +7,8 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 
 import React from 'react';
 
-import { bind, debounce } from 'decko';
 import { saveAs } from 'file-saver';
-import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
+import { IDisposable, ITerminalAddon, Terminal } from '@xterm/xterm';
 import * as Zmodem from 'zmodem.js/src/zmodem_browser';
 
 export interface FlowControl {
@@ -48,10 +47,18 @@ export class ZmodemAddon
   constructor(props: Props) {
     super(props);
 
+    this.handleError = this.handleError.bind(this)
+    this.zmodemInit = this.zmodemInit.bind(this)
+    this.zmodemReset = this.zmodemReset.bind(this)
+    this.zmodemWrite = this.zmodemWrite.bind(this)
+    this.zmodemSend = this.zmodemSend.bind(this)
+    this.zmodemDetect = this.zmodemDetect.bind(this)
+    this.receiveFile = this.receiveFile.bind(this)
+    this.writeProgress = this.writeProgress.bind(this)
+
     this.zmodemInit();
   }
 
-  @bind
   private handleError(e: Error, reason: string) {
     console.error(`[ttyd] zmodem ${reason}: `, e);
     this.zmodemReset();
@@ -70,7 +77,6 @@ export class ZmodemAddon
     }
   }
 
-  @bind
   private zmodemInit() {
     this.session = null;
     this.sentry = new Zmodem.Sentry({
@@ -81,7 +87,6 @@ export class ZmodemAddon
     });
   }
 
-  @bind
   private zmodemReset() {
     if (!this.terminal) return;
 
@@ -96,7 +101,6 @@ export class ZmodemAddon
     this.terminal.focus();
   }
 
-  @bind
   private zmodemWrite(data: ArrayBuffer): void {
     const { control } = this.props;
     const { limit, highWater, lowWater, pause, resume } = control;
@@ -123,13 +127,11 @@ export class ZmodemAddon
     if (terminal) terminal.write(rawData);
   }
 
-  @bind
   private zmodemSend(data: ArrayLike<number>): void {
     const { sender } = this.props;
     sender(data);
   }
 
-  @bind
   private zmodemDetect(detection: Zmodem.Detection): void {
     const { terminal, receiveFile, zmodemReset } = this;
     if (!terminal) return;
@@ -163,7 +165,6 @@ export class ZmodemAddon
   //     .catch((e: Error) => handleError(e, 'send'));
   // }
 
-  @bind
   private receiveFile() {
     const { session, writeProgress, handleError } = this;
 
@@ -188,7 +189,6 @@ export class ZmodemAddon
     session.start();
   }
 
-  @bind
   private writeProgress(offer: Zmodem.Offer) {
     const { terminal, bytesHuman } = this;
 

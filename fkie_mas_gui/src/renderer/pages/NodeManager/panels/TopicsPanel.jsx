@@ -1,4 +1,4 @@
-import { TreeView } from '@mui/x-tree-view';
+import { SimpleTreeView } from '@mui/x-tree-view';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -42,7 +42,7 @@ class TopicExtendedInfo {
   subscribers = [];
 
   // providers = {}; // {providerId: string, providerName: string}
-  // nodes = {}; //{(providerId: string, nodeId: string): nodeName: string}
+  // nodes = {}; //{(providerId: string, itemId: string): nodeName: string}
 
   constructor(topic, providerId, providerName) {
     this.id = `${topic.name}/${providerName}`;
@@ -311,7 +311,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
         return (
           <TopicTreeItem
             key={item.groupKey}
-            nodeId={item.groupKey}
+            itemId={item.groupKey}
             labelRoot={rootPath}
             labelText={`${groupName}`}
             labelCount={item.count}
@@ -326,7 +326,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
     return (
       <TopicTreeItem
         key={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
-        nodeId={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
+        itemId={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
         labelRoot={rootPath}
         labelText={`${treeItem.name}`}
         labelInfo={treeItem.msgtype}
@@ -354,18 +354,17 @@ function TopicsPanel({ initialSearchTerm = '' }) {
 
   const createTreeView = useMemo(() => {
     return (
-      <TreeView
+      <SimpleTreeView
         aria-label="parameters"
-        expanded={expanded}
-        defaultCollapseIcon={<ArrowDropDownIcon />}
-        defaultExpandIcon={<ArrowRightIcon />}
+        expandedItems={expanded}
+        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
-        onNodeSelect={(event, nodeId) => {
-          setSelectedItems(nodeId);
-          const index = expanded.indexOf(nodeId);
+        onSelectedItemsChange={(event, itemId) => {
+          setSelectedItems(itemId);
+          const index = expanded.indexOf(itemId);
           const copyExpanded = [...expanded];
           if (index === -1) {
-            copyExpanded.push(nodeId);
+            copyExpanded.push(itemId);
           } else {
             copyExpanded.splice(index, 1);
           }
@@ -375,7 +374,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
         {rootDataList.map((item) => {
           return topicTreeToStyledItems('', item);
         })}
-      </TreeView>
+      </SimpleTreeView>
     );
   }, [expanded, rootDataList, topicTreeToStyledItems]);
 

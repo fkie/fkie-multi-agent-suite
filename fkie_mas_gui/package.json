@@ -1,329 +1,97 @@
 {
-  "name": "fkie-mas-gui",
-  "version": "2.0.1",
+  "name": "fkie_mas_gui",
+  "version": "2.0.2",
   "description": "GUI to manage running ROS components",
   "license": "MIT",
-  "keywords": [
-    "electron",
-    "ros",
-    "react",
-    "typescript"
-  ],
-  "homepage": "https://github.com/fkie/fkie-multi-agent-suite",
+  "author": "Alexander Tiderko <alexander.tiderko@fkie.fraunhofer.de>",
   "contributors": [
     "Alexander Tiderko <alexander.tiderko@fkie.fraunhofer.de>",
     "Carlos Tampier <carlos.tampier.cotoras@fkie.fraunhofer.de>",
     "Francisco Garcia"
   ],
-  "main": "./src/main/main.ts",
+  "homepage": "https://github.com/fkie/fkie-multi-agent-suite",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fkie/fkie-multi-agent-suite"
+  },
+  "main": "./out/main/index.js",
   "scripts": {
-    "build": "concurrently \"npm run build:main\" \"npm run build:renderer\"",
-    "build:dll": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
-    "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.prod.ts",
-    "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
-    "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
-    "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
-    "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
-    "package-publish": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always && npm run build:dll",
-    "portable": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never -l portable",
-    "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
-    "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
-    "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
-    "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
-    "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest",
-    "clean": "ts-node ./.erb/scripts/clean.js && yarn cache clean",
-    "build:analyze": "ANALYZE=true yarn run build",
-    "rebuild_ssh2": "cd release/app && yarn add ssh2 --force",
-    "compile-win32": "ts-node ./.erb/scripts/clean.js dist && yarn install && yarn run build && electron-builder -w -p always",
-    "compile-darwin": "ts-node ./.erb/scripts/clean.js dist && yarn install && yarn run build && electron-builder -m -p always",
-    "compile-linux": "ts-node ./.erb/scripts/clean.js dist && yarn install && yarn run build && electron-builder -l -p never",
-    "docs:generate": "jsdoc -c jsdoc.config.json"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "cross-env NODE_ENV=development eslint --cache"
-    ],
-    "*.json,.{eslintrc,prettierrc}": [
-      "prettier --ignore-path .eslintignore --parser json --write"
-    ],
-    "*.{css,scss}": [
-      "prettier --ignore-path .eslintignore --single-quote --write"
-    ],
-    "*.{html,md,yml}": [
-      "prettier --ignore-path .eslintignore --single-quote --write"
-    ]
-  },
-  "browserslist": [
-    "last 2 versions",
-    "> 1%",
-    "not dead",
-    "not op_mini all"
-  ],
-  "prettier": {
-    "singleQuote": true,
-    "overrides": [
-      {
-        "files": [
-          ".prettierrc",
-          ".eslintrc"
-        ],
-        "options": {
-          "parser": "json"
-        }
-      }
-    ],
-    "plugins": [
-      "prettier-plugin-organize-imports"
-    ]
-  },
-  "jest": {
-    "moduleDirectories": [
-      "node_modules",
-      "release/app/node_modules",
-      "src"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "jsx",
-      "ts",
-      "tsx",
-      "json"
-    ],
-    "moduleNameMapper": {
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/.erb/mocks/fileMock.js",
-      "\\.(css|less|sass|scss)$": "identity-obj-proxy"
-    },
-    "setupFiles": [
-      "./.erb/scripts/check-build-exists.ts"
-    ],
-    "testEnvironment": "<rootDir>/test/custom-test-env.js",
-    "testEnvironmentOptions": {
-      "url": "http://localhost/"
-    },
-    "testPathIgnorePatterns": [
-      "release/app/dist",
-      ".erb/dll"
-    ],
-    "transform": {
-      "\\.(ts|tsx|js|jsx)$": "ts-jest"
-    }
+    "format": "prettier --write .",
+    "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "start": "electron-vite preview",
+    "dev": "electron-vite dev -- --trace-warnings",
+    "build": "npm run typecheck && electron-vite build",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "build:linux:publish": "electron-vite build && electron-builder --linux --publish always"
   },
   "dependencies": {
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^3.0.0",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
     "@monaco-editor/react": "^4.6.0",
-    "@mui/icons-material": "^5.11.16",
-    "@mui/material": "^5.15.3",
-    "@mui/system": "^5.14.19",
-    "@mui/x-tree-view": "^6.17.0",
+    "@mui/icons-material": "^5.16.1",
+    "@mui/material": "^5.16.0",
+    "@mui/x-tree-view": "^7.10.0",
     "@react-hook/debounce": "^4.0.0",
-    "@react-hook/window-size": "^3.0.7",
-    "@types/ssh2-sftp-client": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-search": "^0.15.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/addon-webgl": "^0.18.0",
     "@xterm/xterm": "^5.5.0",
     "autobahn-browser": "^22.11.1",
-    "child_process": "^1.0.2",
-    "clsx": "^2.1.0",
-    "decko": "^1.2.0",
-    "electron": "^26.2.1",
-    "electron-debug": "^3.2.0",
-    "electron-log": "^4.4.8",
-    "electron-settings": "^4.0.2",
-    "electron-updater": "^6.1.4",
+    "electron-log": "^5.1.5",
+    "electron-settings": "^4.0.4",
+    "electron-updater": "^6.2.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "file-saver": "^2.0.5",
-    "find-process": "^1.4.7",
     "flexlayout-react": "^0.7.15",
-    "history": "^5.3.0",
-    "hostile": "^1.3.3",
-    "monaco-editor": "^0.47.0",
+    "hostile": "^1.4.0",
+    "jtest": "^0.0.1",
+    "keytar": "^7.9.0",
     "notistack": "^3.0.1",
-    "path": "^0.12.7",
-    "process": "^0.11.10",
-    "prop-types": "^15.8.1",
-    "react": "^18.2.0",
     "react-app-polyfill": "^3.0.0",
     "react-custom-events": "^1.1.1",
-    "react-dom": "^18.2.0",
     "react-draggable": "^4.4.6",
-    "react-file-icon": "^1.3.0",
-    "react-hook-form": "^7.44.3",
+    "react-file-icon": "^1.5.0",
     "react-json-view": "^1.21.3",
-    "react-router-dom": "^6.16.0",
+    "react-router-dom": "^6.24.1",
     "react-split-pane": "^0.1.92",
-    "react-virtuoso": "^4.6.2",
-    "react-window": "^1.8.9",
-    "roslib": "^1.3.0",
-    "systeminformation": "^5.22.0",
-    "typeface-cormorant": "^1.1.13",
-    "uuid": "^9.0.1",
+    "react-virtuoso": "^4.7.11",
+    "react-window": "^1.8.10",
+    "sass": "^1.77.7",
+    "ssh2": "^1.15.0",
+    "systeminformation": "^5.22.11",
+    "uuid": "^10.0.0",
     "zmodem.js": "^0.1.10"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.7",
-    "@babel/plugin-proposal-decorators": "^7.23.7",
-    "@babel/plugin-transform-class-properties": "^7.23.3",
-    "@babel/plugin-transform-object-rest-spread": "^7.23.4",
-    "@babel/preset-env": "^7.23.7",
-    "@babel/preset-typescript": "^7.23.3",
-    "@electron/notarize": "^2.1.0",
-    "@electron/rebuild": "^3.6.0",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
-    "@svgr/webpack": "^8.1.0",
-    "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
-    "@testing-library/jest-dom": "^6.4.2",
-    "@testing-library/react": "^14.0.0",
-    "@types/file-saver": "^2.0.5",
-    "@types/hostile": "^1.3.0",
-    "@types/jest": "^29.5.5",
-    "@types/node": "20.6.2",
-    "@types/react": "^18.2.46",
-    "@types/react-dom": "^18.2.18",
-    "@types/react-test-renderer": "^18.0.1",
-    "@types/roslib": "^1.3.1",
-    "@types/webpack-bundle-analyzer": "^4.6.0",
-    "@typescript-eslint/eslint-plugin": "^6.7.0",
-    "@typescript-eslint/parser": "^6.7.0",
-    "babel-jest": "^29.5.0",
-    "browserslist-config-erb": "^0.0.3",
-    "chalk": "^4.1.2",
-    "concurrently": "^8.2.1",
-    "core-js": "^3.32.2",
-    "cross-env": "^7.0.3",
-    "css-loader": "^6.10.0",
-    "css-minimizer-webpack-plugin": "^6.0.0",
-    "csstype": "^3.1.3",
-    "detect-port": "^1.5.1",
+    "@babel/plugin-proposal-decorators": "^7.24.7",
+    "@electron-toolkit/eslint-config-prettier": "^2.0.0",
+    "@electron-toolkit/eslint-config-ts": "^2.0.0",
+    "@electron-toolkit/tsconfig": "^1.0.1",
+    "@types/node": "^20.14.8",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^31.0.2",
     "electron-builder": "^24.13.3",
-    "electron-devtools-installer": "^3.2.0",
-    "electronmon": "^2.0.2",
+    "electron-vite": "^2.3.0",
     "eslint": "^8.57.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-config-erb": "^4.1.0",
-    "eslint-import-resolver-typescript": "^3.6.0",
-    "eslint-import-resolver-webpack": "^0.13.7",
-    "eslint-plugin-compat": "^4.2.0",
-    "eslint-plugin-import": "^2.28.1",
-    "eslint-plugin-jest": "^27.4.0",
-    "eslint-plugin-jsx-a11y": "^6.7.1",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "file-loader": "^6.2.0",
-    "html-webpack-plugin": "^5.5.3",
-    "identity-obj-proxy": "^3.0.0",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "jsdoc": "^4.0.2",
-    "jsdoc-babel": "^0.5.0",
-    "lint-staged": "^13.2.2",
-    "mini-css-extract-plugin": "^2.7.6",
-    "prettier": "^3.0.3",
-    "prettier-plugin-organize-imports": "^3.2.4",
-    "react-refresh": "^0.14.0",
-    "react-test-renderer": "^18.2.0",
-    "rimraf": "^5.0.1",
-    "sass": "^1.67.0",
-    "sass-loader": "^13.3.2",
-    "style-loader": "^3.3.3",
-    "terser-webpack-plugin": "^5.3.9",
-    "ts-jest": "^29.1.1",
-    "ts-loader": "^9.4.4",
-    "ts-node": "^10.9.1",
-    "tsconfig-paths-webpack-plugin": "^4.1.0",
-    "typescript": "^5.2.2",
-    "url-loader": "^4.1.1",
-    "webpack": "^5.90.3",
-    "webpack-bundle-analyzer": "^4.10.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.4",
-    "webpack-merge": "^5.10.0"
-  },
-  "build": {
-    "productName": "fkie-mas-gui",
-    "executableName": "mas-gui",
-    "appId": "org.erb.fkie-mas-gui",
-    "asar": true,
-    "asarUnpack": "**\\*.{node,dll}",
-    "files": [
-      "dist",
-      "node_modules",
-      "package.json"
-    ],
-    "afterSign": ".erb/scripts/notarize.js",
-    "mac": {
-      "target": {
-        "target": "default",
-        "arch": [
-          "arm64",
-          "x64"
-        ]
-      },
-      "type": "distribution",
-      "hardenedRuntime": true,
-      "entitlements": "assets/entitlements.mac.plist",
-      "entitlementsInherit": "assets/entitlements.mac.plist",
-      "gatekeeperAssess": false
-    },
-    "dmg": {
-      "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ]
-    },
-    "win": {
-      "artifactName": "mas-gui-portable.${ext}",
-      "target": [
-        "portable",
-        "nsis"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "dir"
-      ],
-      "artifactName": "mas-gui.${ext}",
-      "category": "Development",
-      "synopsis": "Manage and control ROS nodes"
-    },
-    "deb": {
-      "priority": "standard"
-    },
-    "directories": {
-      "app": "release/app",
-      "buildResources": "assets",
-      "output": "release/build"
-    },
-    "extraResources": [
-      "./assets/**"
-    ],
-    "publish": {
-      "provider": "github",
-      "owner": "fkie",
-      "repo": "fkie-multi-agent-suite"
-    }
-  },
-  "devEngines": {
-    "node": ">=14.x",
-    "npm": ">=7.x"
-  },
-  "electronmon": {
-    "patterns": [
-      "!**/**",
-      "src/main/*"
-    ],
-    "logLevel": "verbose"
+    "eslint-plugin-react": "^7.34.3",
+    "prettier": "^3.3.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1"
   }
 }

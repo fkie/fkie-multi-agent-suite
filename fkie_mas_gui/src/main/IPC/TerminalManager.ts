@@ -1,20 +1,20 @@
-import log from 'electron-log';
-import { ARGUMENTS, getArgument, hasArgument } from '../CommandLineInterface';
-import { ICredential } from '../models/ICredential';
-import CommandExecutor from './CommandExecutor';
-import { ROSInfo } from './ROSInfo';
+import log from 'electron-log'
+import { ARGUMENTS, getArgument, hasArgument } from '../CommandLineInterface'
+import { ICredential } from '../models/ICredential'
+import CommandExecutor from './CommandExecutor'
+import { ROSInfo } from './ROSInfo'
 
 /**
  * Class TerminalManager: Allows to create terminal objects to interact with console
  */
 class TerminalManager {
-  commandExecutor: CommandExecutor;
+  commandExecutor: CommandExecutor
 
-  rosInfo: ROSInfo;
+  rosInfo: ROSInfo
 
   constructor() {
-    this.commandExecutor = new CommandExecutor();
-    this.rosInfo = new ROSInfo();
+    this.commandExecutor = new CommandExecutor()
+    this.rosInfo = new ROSInfo()
   }
 
   /**
@@ -27,36 +27,36 @@ class TerminalManager {
   public spawnTerminal: (
     rosVersion?: string | null,
     credential?: ICredential | null,
-    port?: number,
+    port?: number
   ) => Promise<{ result: boolean; message: string }> = (
     rosVersion = null,
     credential = null,
-    port = undefined,
+    port = undefined
   ) => {
-    let version = rosVersion;
+    let version = rosVersion
     if (!version) {
-      version = this.rosInfo.version === '1' ? '1' : '2';
-      log.debug(`use ROS version: ${version}`);
+      version = this.rosInfo.version === '1' ? '1' : '2'
+      log.debug(`use ROS version: ${version}`)
     }
-    const portNumber = port || getArgument(ARGUMENTS.TTYD_PORT);
+    const portNumber = port || getArgument(ARGUMENTS.TTYD_PORT)
 
-    const ttydCmd = `${this.getPathTTY()} --writable --port ${portNumber} bash`;
+    const ttydCmd = `${this.getPathTTY()} --writable --port ${portNumber} bash`
 
-    let cmd = '';
+    let cmd = ''
     if (version === '1') {
-      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true; `;
+      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true; `
     } else if (version === '2') {
-      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true; `;
+      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true; `
     } else {
       return Promise.resolve({
         result: false,
-        message: 'Could not start [ttyd], ROS is not available',
-      });
+        message: 'Could not start [ttyd], ROS is not available'
+      })
     }
 
-    log.info(`Starting [ttyd-${portNumber}]: [${cmd}]`);
-    return this.commandExecutor.exec(credential, cmd);
-  };
+    log.info(`Starting [ttyd-${portNumber}]: [${cmd}]`)
+    return this.commandExecutor.exec(credential, cmd)
+  }
 
   /**
    * Returns the path of the suitable executable for the current platform
@@ -65,13 +65,13 @@ class TerminalManager {
    */
   private getPathTTY: () => string = () => {
     if (hasArgument(ARGUMENTS.TTYD_PATH)) {
-      const path = getArgument(ARGUMENTS.TTYD_PATH);
-      if (path) return path;
+      const path = getArgument(ARGUMENTS.TTYD_PATH)
+      if (path) return path
     }
 
     // TODO Add executables and paths for windows and MAC
-    return 'ttyd';
-  };
+    return 'ttyd'
+  }
 }
 
-export default TerminalManager;
+export default TerminalManager

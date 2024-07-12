@@ -10,7 +10,7 @@ We need to first install dependencies and run both Front and Back-End components
 
 ### Install dependencies
 
-The code have been tested with `NodeJS v18.19.0`:
+The code have been tested with `NodeJS v20.15.0`:
 
 ```bash
 sudo apt install nodejs yarn libsecret-1-dev
@@ -30,10 +30,10 @@ sudo snap install ttyd --classic
 sudo curl --compressed -o- -L https://yarnpkg.com/install.sh | bash
 ```
 
-#### Update nodejs to v18
+#### Update nodejs to v20
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
@@ -63,8 +63,9 @@ colcon build --packages-select fkie_mas_meta
 Only for developer mode: Download and install JavaScript module dependencies:
 
 ```bash
-cd app
-yarn install
+cd fkie_mas_gui
+npm install --legacy-peer-deps
+npm run build
 ```
 
 ## Usage
@@ -72,21 +73,23 @@ yarn install
 Run the app in developer mode:
 
 ```bash
-yarn start
+npm run dev
 ```
 
 The app will start automatically the local daemon and master discovery nodes.
 
 ## Start only as node (without GUI)
 
+> broken after switch to vite-electron
+
 Set environment variable ELECTRON_RUN_AS_NODE before start.
 
 ```bash
 export ELECTRON_RUN_AS_NODE=true
-yarn start
+npm run dev
 ```
 
-Then open in browser <http://localhost:1212>
+Then open in browser <http://localhost:6274>
 
 ## Supported interface URIs
 
@@ -146,18 +149,11 @@ Then open in browser <http://localhost:1212>
 
 ## Additional Tools
 
-- To package the client component into an AppImage and DEB package, run:
+- To package the client component into an AppImage and zip package, run:
 
 ```bash
-cd app
-yarn run compile-linux
-```
-
-- To run tests on the client component
-
-```bash
-cd app
-yarn run test
+cd fkie_mas_gui
+npm run build:linux
 ```
 
 ## Known Issues
@@ -173,7 +169,7 @@ export GLOBAL_AGENT_HTTPS_PROXY=http://XXX.XXX.XXX.XXX:XXXX
 
 ```bash
 cd release/app
-yarn add ssh2 --force
+npm add ssh2 --force
 ```
 
 - If you get the SFPT error: `getSftpChannel: Packet length XXXXXX exceeds max length of XXXXX`, it might be caused by an `echo` command on the `.bashrc` file. Make sure all `echo` commands are defined only for interactive shells. For instance in `.bashrc`:

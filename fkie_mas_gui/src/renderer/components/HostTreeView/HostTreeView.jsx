@@ -8,7 +8,7 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import HideSourceIcon from '@mui/icons-material/HideSource';
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { blue, green, grey, red } from '@mui/material/colors';
-import { TreeView } from '@mui/x-tree-view';
+import { SimpleTreeView } from '@mui/x-tree-view';
 import { emitCustomEvent } from 'react-custom-events';
 import { LoggingContext } from '../../context/LoggingContext';
 import { RosContext } from '../../context/RosContext';
@@ -255,8 +255,8 @@ function HostTreeView({
    * Callback when the show loggers floating button of a HostTreeViewItem is clicked
    */
   const onShowLoggersClick = useCallback(
-    (nodeId) => {
-      showLoggers(getNodeIdsFromTreeIds([nodeId]));
+    (itemId) => {
+      showLoggers(getNodeIdsFromTreeIds([itemId]));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedItems, keyNodeList],
@@ -266,11 +266,11 @@ function HostTreeView({
    * Callback when the start floating button of a HostTreeViewItem is clicked
    */
   const onStartClick = useCallback(
-    (nodeId) => {
-      if (selectedItems.includes(nodeId)) {
+    (itemId) => {
+      if (selectedItems.includes(itemId)) {
         startNodes(getNodeIdsFromTreeIds(selectedItems));
       } else {
-        startNodes(getNodeIdsFromTreeIds([nodeId]));
+        startNodes(getNodeIdsFromTreeIds([itemId]));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -281,11 +281,11 @@ function HostTreeView({
    * Callback when the stop floating button of a HostTreeViewItem is clicked
    */
   const onStopClick = useCallback(
-    (nodeId) => {
-      if (selectedItems.includes(nodeId)) {
+    (itemId) => {
+      if (selectedItems.includes(itemId)) {
         stopNodes(getNodeIdsFromTreeIds(selectedItems));
       } else {
-        stopNodes(getNodeIdsFromTreeIds([nodeId]));
+        stopNodes(getNodeIdsFromTreeIds([itemId]));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -296,11 +296,11 @@ function HostTreeView({
    * Callback when the restart floating button of a HostTreeViewItem is clicked
    */
   const onRestartClick = useCallback(
-    (nodeId) => {
-      if (selectedItems.includes(nodeId)) {
+    (itemId) => {
+      if (selectedItems.includes(itemId)) {
         restartNodes(getNodeIdsFromTreeIds(selectedItems));
       } else {
-        restartNodes(getNodeIdsFromTreeIds([nodeId]));
+        restartNodes(getNodeIdsFromTreeIds([itemId]));
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -482,19 +482,19 @@ function HostTreeView({
         return <div key={`${providerId}#${generateUniqueId()}`} />;
       }
       const { children, treePath, node } = treeItem;
-      const nodeId = `${providerId}#${treePath}`;
+      const itemId = `${providerId}#${treePath}`;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
         let label = node.name.replace(node.namespace, '');
         label = label[0] === '/' ? label.slice(1) : label;
         newKeyNodeList.push({
-          key: `${nodeId}#${node.id}`,
+          key: `${itemId}#${node.id}`,
           idGlobal: node.idGlobal,
         });
         return (
           <HostTreeViewItem
-            key={`${nodeId}#${node.id}`}
-            nodeId={`${nodeId}#${node.id}`}
+            key={`${itemId}#${node.id}`}
+            itemId={`${itemId}#${node.id}`}
             labelText={label}
             labelIcon={getNodeIcon(node.status)}
             iconColor={getNodeIconColor(node, settingsCtx.get('useDarkMode'))}
@@ -520,17 +520,17 @@ function HostTreeView({
             }
             onRestartClick={node.launchInfo ? onRestartClick : null}
             startTooltipText={
-              selectedItems.includes(nodeId)
+              selectedItems.includes(itemId)
                 ? 'Start selected nodes'
                 : 'Start this node'
             }
             stopTooltipText={
-              selectedItems.includes(nodeId)
+              selectedItems.includes(itemId)
                 ? 'Stop selected nodes'
                 : 'Stop this node'
             }
             restartTooltipText={
-              selectedItems.includes(nodeId)
+              selectedItems.includes(itemId)
                 ? 'Restart selected nodes'
                 : 'Restart this node'
             }
@@ -540,11 +540,11 @@ function HostTreeView({
       }
       // valid children means that item is a group
       const groupName = treePath.split('/').pop();
-      newKeyNodeList.push({ key: nodeId });
+      newKeyNodeList.push({ key: itemId });
       return (
         <HostTreeViewItem
-          key={nodeId}
-          nodeId={nodeId}
+          key={itemId}
+          itemId={itemId}
           labelText={groupName}
           labelIcon={node ? getNodeIcon(node.status) : getGroupIcon(children)}
           iconColor={
@@ -585,17 +585,17 @@ function HostTreeView({
               : null
           }
           startTooltipText={
-            selectedItems.includes(nodeId)
+            selectedItems.includes(itemId)
               ? 'Start selected nodes'
               : 'Start this group'
           }
           stopTooltipText={
-            selectedItems.includes(nodeId)
+            selectedItems.includes(itemId)
               ? 'Stop selected nodes'
               : 'Stop this group'
           }
           restartTooltipText={
-            selectedItems.includes(nodeId)
+            selectedItems.includes(itemId)
               ? 'Restart selected nodes'
               : 'Restart this group'
           }
@@ -645,21 +645,20 @@ function HostTreeView({
   const generateTree = useMemo(() => {
     const newKeyNodeList = [];
     const tree = (
-      <TreeView
+      <SimpleTreeView
         aria-label="node list"
-        defaultCollapseIcon={<ArrowDropDownIcon />}
-        defaultExpandIcon={<ArrowRightIcon />}
+        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         multiSelect
         // use either the expanded state or the key of the node tree (expand the first layer)
-        expanded={
+        expandedItems={
           expanded.length > 0
             ? expanded
             : providerNodeTree?.map((item) => item.providerId)
         }
         // sx={{ height: '100%' }}
-        selected={selectedItems}
-        onNodeToggle={handleToggle}
-        onNodeSelect={handleSelect}
+        selectedItems={selectedItems}
+        onExpandedItemsChange={handleToggle}
+        onSelectedItemsChange={handleSelect}
       >
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           const { providerId, nodeTree } = item;
@@ -679,7 +678,7 @@ function HostTreeView({
           return (
             <HostTreeViewItem
               key={providerId}
-              nodeId={providerId}
+              itemId={providerId}
               sx={getHostStyle(p)}
               buttonIcon={
                 p?.rosState.ros_version === '1'
@@ -747,7 +746,7 @@ function HostTreeView({
 
         {/* this box creates an empty space at the end, to prevent items to be covered by app bar */}
         {/* <Box sx={{ height: 130, width: '100%' }} /> */}
-      </TreeView>
+      </SimpleTreeView>
     );
     setKeyNodeList(newKeyNodeList);
     return tree;

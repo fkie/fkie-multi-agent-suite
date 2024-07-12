@@ -13,7 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import { TreeItem, TreeView } from '@mui/x-tree-view';
+import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -145,21 +145,20 @@ function LaunchFilePanel({ launchContent }) {
         {launchContent &&
           launchContent.args &&
           launchContent.args.length > 0 && (
-            <TreeView
+            <SimpleTreeView
               aria-label="file system navigator"
-              defaultCollapseIcon={<ExpandMoreIcon />}
-              defaultExpandIcon={<ChevronRightIcon />}
+              slots={{ collapseIcon: ExpandMoreIcon, expandIcon: ChevronRightIcon }}
             >
               {launchContent.args.map((arg) => {
                 return (
                   <TreeItem
                     key={`${arg.name}_${arg.name}`}
-                    nodeId={arg.name}
+                    itemId={arg.name}
                     label={`${arg.name}: [${arg.value}]`}
                   />
                 );
               })}
-            </TreeView>
+            </SimpleTreeView>
           )}
 
         {launchContent && nodelets.length > 0 && (
@@ -167,25 +166,24 @@ function LaunchFilePanel({ launchContent }) {
             <Typography variant="body">
               Nodelets {`[${nodelets.length}]`}
             </Typography>
-            <TreeView
+            <SimpleTreeView
               aria-label="file system navigator"
-              defaultCollapseIcon={<ExpandMoreIcon />}
-              defaultExpandIcon={<ChevronRightIcon />}
+              slots={{ collapseIcon: ExpandMoreIcon, expandIcon: ChevronRightIcon }}
             >
               {nodelets.map((nodelet) => {
                 return (
                   <TreeItem
-                    nodeId={nodelet.manager}
+                    itemId={nodelet.manager}
                     label={nodelet.manager}
                     key={nodelet.manager}
                   >
                     {nodelet.nodes.map((node) => {
-                      return <TreeItem nodeId={node} label={node} key={node} />;
+                      return <TreeItem itemId={node} label={node} key={node} />;
                     })}
                   </TreeItem>
                 );
               })}
-            </TreeView>
+            </SimpleTreeView>
           </>
         )}
 

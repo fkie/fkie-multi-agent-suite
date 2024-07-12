@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 
 import { Box, IconButton, Stack, Tooltip } from '@mui/material';
 
-import { TreeView } from '@mui/x-tree-view';
+import { SimpleTreeView } from '@mui/x-tree-view';
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
@@ -350,7 +350,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         return (
           <ParameterTreeItem
             key={param.id}
-            nodeId={param.id}
+            itemId={param.id}
             labelRoot={rootPath}
             labelText={`${param.name}`}
             labelInfo={param.type}
@@ -369,7 +369,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         return (
           <ParameterTreeItem
             key={group.groupKey}
-            nodeId={group.groupKey}
+            itemId={group.groupKey}
             labelRoot={rootPath}
             labelText={`${groupName}`}
             labelCount={group.count}
@@ -465,18 +465,17 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         </Stack>
         <Stack direction="row" height="100%" overflow="auto">
           <Box width="100%" height="100%" overflow="auto">
-            <TreeView
+            <SimpleTreeView
               aria-label="parameters"
-              expanded={expanded}
-              defaultCollapseIcon={<ArrowDropDownIcon />}
-              defaultExpandIcon={<ArrowRightIcon />}
+              expandedItems={expanded}
+              slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
               // defaultEndIcon={<div style={{ width: 24 }} />}
-              onNodeSelect={(event, nodeId) => {
-                setSelectedItems(nodeId);
-                const index = expanded.indexOf(nodeId);
+              onSelectedItemsChange={(event, itemId) => {
+                setSelectedItems(itemId);
+                const index = expanded.indexOf(itemId);
                 const copyExpanded = [...expanded];
                 if (index === -1) {
-                  copyExpanded.push(nodeId);
+                  copyExpanded.push(itemId);
                 } else {
                   copyExpanded.splice(index, 1);
                 }
@@ -488,7 +487,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
                 return (
                   <ParameterTreeItem
                     key={rootId}
-                    nodeId={`${rootId}`}
+                    itemId={`${rootId}`}
                     labelText={`${
                       Object.hasOwn(rootObj, 'system_node')
                         ? rootId
@@ -506,7 +505,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
                   </ParameterTreeItem>
                 );
               })}
-            </TreeView>
+            </SimpleTreeView>
           </Box>
         </Stack>
       </Stack>

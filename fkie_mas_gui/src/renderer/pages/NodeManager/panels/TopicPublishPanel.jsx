@@ -110,7 +110,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
           if (field.value || withEmptyFields) {
             if (
               field.value ||
-              typeof field.value === 'bool' ||
+              typeof field.value === 'boolean' ||
               field.type.startsWith('bool')
             ) {
               if (field.is_array) {
