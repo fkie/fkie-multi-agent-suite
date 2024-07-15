@@ -474,7 +474,7 @@ function TopicEchoPanel({
         </Stack>
         {content && showStatistics && (
           <Stack margin={0.5} spacing={1}>
-            <Stack spacing={1} direction="row">
+            <Stack spacing={1} direction="row" fontSize="0.8em">
               {content.latched && (
                 <Box
                   style={{
@@ -487,7 +487,7 @@ function TopicEchoPanel({
               <Box>{content.count} messages</Box>
               <Box>average rate: {content.rate.toFixed(2)} Hz</Box>
             </Stack>
-            <Stack spacing={1} direction="row">
+            <Stack spacing={1} direction="row" fontSize="0.8em">
               <Box>
                 bw: {normalizePrint(content.bw, 2, '/s')} [min:{' '}
                 {normalizePrint(content.bw_min, 0, '/s')}, max:{' '}
