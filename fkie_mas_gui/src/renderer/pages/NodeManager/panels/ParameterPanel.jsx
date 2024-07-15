@@ -1,50 +1,50 @@
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { Box, IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, IconButton, Stack, Tooltip } from "@mui/material";
 
-import { SimpleTreeView } from '@mui/x-tree-view';
+import { SimpleTreeView } from "@mui/x-tree-view";
 
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import ComputerIcon from '@mui/icons-material/Computer';
-import DeleteIcon from '@mui/icons-material/Delete';
-import HideSourceIcon from '@mui/icons-material/HideSource';
-import Label from '@mui/icons-material/Label';
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import ComputerIcon from "@mui/icons-material/Computer";
+import DeleteIcon from "@mui/icons-material/Delete";
+import HideSourceIcon from "@mui/icons-material/HideSource";
+import Label from "@mui/icons-material/Label";
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import RefreshIcon from "@mui/icons-material/Refresh";
 
-import { ParameterTreeItem } from '../../../components';
-import SearchBar from '../../../components/UI/SearchBar';
+import { ParameterTreeItem } from "../../../components";
+import SearchBar from "../../../components/UI/SearchBar";
 import {
   DEFAULT_BUG_TEXT,
   LoggingContext,
-} from '../../../context/LoggingContext';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { findIn } from '../../../utils/index';
+} from "../../../context/LoggingContext";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { findIn } from "../../../utils/index";
 
 export default function ParameterPanel({ nodes = null, providers = null }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
-  const [roots, setRoots] = useState(new Map('', {}));
-  const [rootData, setRootData] = useState(new Map('', {}));
-  const [rootDataFiltered, setRootDataFiltered] = useState(new Map('', []));
-  const [rootDataTree, setRootDataTree] = useState(new Map('', []));
+  const [roots, setRoots] = useState(new Map("", {}));
+  const [rootData, setRootData] = useState(new Map("", {}));
+  const [rootDataFiltered, setRootDataFiltered] = useState(new Map("", []));
+  const [rootDataTree, setRootDataTree] = useState(new Map("", []));
   const [expanded, setExpanded] = useState([]);
   const [nodeFilter, setNodeFilter] = useState(false);
-  const [searched, setSearched] = useState('');
+  const [searched, setSearched] = useState("");
   const [selectedItems, setSelectedItems] = useState(null);
 
   // debounced search callback
   // search in the origin parameter list and create a new one
   const onSearch = useDebounceCallback((searchTerm) => {
     setSearched(searchTerm);
-    const filteredData = new Map('', {});
+    const filteredData = new Map("", {});
     if (!searchTerm) {
       rootData.forEach((paramList, rootName) => {
         filteredData.set(rootName, paramList);
@@ -69,13 +69,13 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
   const getParameterList = useCallback(async () => {
     if (!rosCtx.initialized) return;
-    setRootData(new Map('', {}));
-    setRootDataFiltered(new Map('', []));
+    setRootData(new Map("", {}));
+    setRootDataFiltered(new Map("", []));
 
-    const parameterMapLocal = new Map('', '');
+    const parameterMapLocal = new Map("", "");
 
     Array.from(roots).forEach(async ([rootId, rootObj]) => {
-      if (Object.hasOwn(rootObj, 'system_node')) {
+      if (Object.hasOwn(rootObj, "system_node")) {
         // dirty check to test if object is RosNode
         // TODO: optimize request if all nodes are from the same provider
         const provider = rosCtx.getProviderById(rootObj.providerId);
@@ -150,7 +150,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
       if (result) {
         logCtx.success(
-          'Parameter updated successfully',
+          "Parameter updated successfully",
           `Parameter: ${parameter.name}, value: ${parameter.value}`,
         );
       } else {
@@ -202,12 +202,12 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   // callback when deleting parameters
   const onDeleteParameters = useCallback(async () => {
     if (!rootDataFiltered || rootDataFiltered.size === 0) {
-      logCtx.warn('No parameters to be deleted', '');
+      logCtx.warn("No parameters to be deleted", "");
       return;
     }
 
     // Sort parameter by provider
-    const paramsToBeDeleted = new Map('', []);
+    const paramsToBeDeleted = new Map("", []);
 
     rootDataFiltered.forEach(([p, key]) => {
       if (!paramsToBeDeleted.has(p.providerId)) {
@@ -251,14 +251,14 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
   // get group name from id of group tree item
   const fromGroupId = (id) => {
-    if (id.endsWith('#')) {
+    if (id.endsWith("#")) {
       const trimmed = id.slice(0, -1);
       return {
         groupName: trimmed.substr(
-          trimmed.lastIndexOf('/') + 1,
+          trimmed.lastIndexOf("/") + 1,
           trimmed.length - 1,
         ),
-        fullPrefix: trimmed.substr(0, id.lastIndexOf('/')),
+        fullPrefix: trimmed.substr(0, id.lastIndexOf("/")),
       };
     }
     return { groupName: id, fullPrefix: id };
@@ -273,14 +273,14 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   // parameters are grouped only if more then one is in the group
   const fillTree = (name, fullPrefix, params) => {
     if (!params) return [];
-    const byPrefixP1 = new Map('', []);
+    const byPrefixP1 = new Map("", []);
     // count parameter for each group
     params.forEach((param) => {
       const nameSuffix = param.name.slice(fullPrefix.length + 1);
-      const [firstName, ...restName] = nameSuffix.split('/');
+      const [firstName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {
         const groupName = firstName;
-        const restNameSuffix = restName.join('/');
+        const restNameSuffix = restName.join("/");
         const groupId = toGroupId(groupName, fullPrefix);
         if (byPrefixP1.has(groupId)) {
           byPrefixP1.get(groupId).push({ restNameSuffix, param });
@@ -306,6 +306,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
             groupKey: key,
             params: fillTree(key, `${fullPrefix}/${groupName}`, groupParams),
             count: value.length,
+            fullPrefix: fullPrefix ? fullPrefix : name,
           },
         ]);
       } else {
@@ -317,11 +318,11 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
   // create parameter tree from filtered parameter list
   useEffect(() => {
-    const tree = new Map('', []);
+    const tree = new Map("", []);
     Array.from(roots).map(([rootName, rootObj]) => {
       const subtree = fillTree(
         rootName,
-        nodeFilter ? `${rootName}` : '',
+        nodeFilter ? `${rootName}` : "",
         rootDataFiltered.get(rootName),
       );
       tree.set(rootName, subtree);
@@ -332,12 +333,12 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   }, [nodeFilter, rootDataFiltered, roots]);
 
   const getIcon = (obj) => {
-    if (Object.hasOwn(obj, 'isLocalHost')) {
+    if (Object.hasOwn(obj, "isLocalHost")) {
       // it is Provider
       return ComputerIcon;
       // return PrecisionManufacturingIcon;
     }
-    if (Object.hasOwn(obj, 'system_node')) {
+    if (Object.hasOwn(obj, "system_node")) {
       // it is RosNode
       return Label;
     }
@@ -349,7 +350,6 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
       if (param.providerId) {
         return (
           <ParameterTreeItem
-            key={param.id}
             itemId={param.id}
             labelRoot={rootPath}
             labelText={`${param.name}`}
@@ -368,8 +368,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         const newRootName = `${fullPrefix}/${groupName}`;
         return (
           <ParameterTreeItem
-            key={group.groupKey}
-            itemId={group.groupKey}
+            itemId={`${group.fullPrefix}-${newRootName}`}
             labelRoot={rootPath}
             labelText={`${groupName}`}
             labelCount={group.count}
@@ -383,7 +382,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
   const deleteParamsFromIds = (treeItemId) => {
     // Sort parameter by provider
-    const paramsToBeDeleted = new Map('', []);
+    const paramsToBeDeleted = new Map("", []);
     rootData.forEach((paramList, rootName) => {
       paramList.forEach((p) => {
         let addParam = false;
@@ -391,7 +390,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           addParam = true;
         } else if (p.id === treeItemId) {
           addParam = true;
-        } else if (treeItemId.endsWith('#')) {
+        } else if (treeItemId.endsWith("#")) {
           const trimmed = treeItemId.slice(0, treeItemId.length - 2);
           addParam = p.name.startsWith(trimmed);
         }
@@ -406,11 +405,40 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     deleteParameters(paramsToBeDeleted);
   };
 
+  const createParameterItems = useMemo(() => {
+    return (
+      <>
+        {Array.from(roots).map(([rootId, rootObj]) => {
+          const filteredItems = rootDataFiltered.get(rootId);
+          return (
+            <ParameterTreeItem
+              itemId={`${rootId}`}
+              labelText={`${
+                Object.hasOwn(rootObj, "system_node")
+                  ? rootId
+                  : rosCtx.getProviderName(rootId)
+              }`}
+              labelIcon={getIcon(rootObj)}
+              labelCount={filteredItems ? filteredItems.length : null}
+              requestData={!rootData.has(rootId)}
+              providerName={rosCtx.getProviderName(rootId)}
+            >
+              {paramTreeToStyledItems(
+                nodeFilter ? `${rootId}` : "",
+                rootDataTree.get(rootId),
+              )}
+            </ParameterTreeItem>
+          );
+        })}
+      </>
+    );
+  }, [roots, rootDataTree, nodeFilter, rootDataFiltered]);
+
   return (
     <Box
       height="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack
         spacing={1}
@@ -448,7 +476,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           />
           <Tooltip title="Reload parameter list" placement="bottom">
             <IconButton size="small" onClick={getParameterList}>
-              <RefreshIcon sx={{ fontSize: 'inherit' }} />
+              <RefreshIcon sx={{ fontSize: "inherit" }} />
             </IconButton>
           </Tooltip>
           {searched && (
@@ -458,7 +486,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
                 onClick={onDeleteParameters}
                 color="warning"
               >
-                <DeleteIcon sx={{ fontSize: 'inherit' }} />
+                <DeleteIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
           )}
@@ -468,7 +496,10 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
             <SimpleTreeView
               aria-label="parameters"
               expandedItems={expanded}
-              slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
+              slots={{
+                collapseIcon: ArrowDropDownIcon,
+                expandIcon: ArrowRightIcon,
+              }}
               // defaultEndIcon={<div style={{ width: 24 }} />}
               onSelectedItemsChange={(event, itemId) => {
                 setSelectedItems(itemId);
@@ -481,30 +512,15 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
                 }
                 setExpanded(copyExpanded);
               }}
+              // workaround for https://github.com/mui/mui-x/issues/12622
+              onItemFocus={(e, itemId) => {
+                const input = document.getElementById(`input-${itemId}`);
+                if (input) {
+                  input.focus();
+                }
+              }}
             >
-              {Array.from(roots).map(([rootId, rootObj]) => {
-                const filteredItems = rootDataFiltered.get(rootId);
-                return (
-                  <ParameterTreeItem
-                    key={rootId}
-                    itemId={`${rootId}`}
-                    labelText={`${
-                      Object.hasOwn(rootObj, 'system_node')
-                        ? rootId
-                        : rosCtx.getProviderName(rootId)
-                    }`}
-                    labelIcon={getIcon(rootObj)}
-                    labelCount={filteredItems ? filteredItems.length : null}
-                    requestData={!rootData.has(rootId)}
-                    providerName={rosCtx.getProviderName(rootId)}
-                  >
-                    {paramTreeToStyledItems(
-                      nodeFilter ? `${rootId}` : '',
-                      rootDataTree.get(rootId),
-                    )}
-                  </ParameterTreeItem>
-                );
-              })}
+              {createParameterItems}
             </SimpleTreeView>
           </Box>
         </Stack>
