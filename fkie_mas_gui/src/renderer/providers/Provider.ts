@@ -340,7 +340,7 @@ export default class Provider {
           this.getProviderSystemEnv();
           this.updateRosNodes();
           this.updateDiagnostics(null);
-          this.getPackageList();
+          // this.getPackageList();  <- this request is done by package explorer
           this.updateScreens(null);
           // this.launchGetList();
           this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
