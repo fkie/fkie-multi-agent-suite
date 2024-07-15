@@ -350,6 +350,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
       if (param.providerId) {
         return (
           <ParameterTreeItem
+            key={param.id}
             itemId={param.id}
             labelRoot={rootPath}
             labelText={`${param.name}`}
@@ -368,6 +369,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         const newRootName = `${fullPrefix}/${groupName}`;
         return (
           <ParameterTreeItem
+            key={`${group.fullPrefix}-${newRootName}`}
             itemId={`${group.fullPrefix}-${newRootName}`}
             labelRoot={rootPath}
             labelText={`${groupName}`}
@@ -412,6 +414,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           const filteredItems = rootDataFiltered.get(rootId);
           return (
             <ParameterTreeItem
+              key={`${rootId}`}
               itemId={`${rootId}`}
               labelText={`${
                 Object.hasOwn(rootObj, "system_node")
