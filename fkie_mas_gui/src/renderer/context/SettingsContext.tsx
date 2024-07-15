@@ -31,7 +31,7 @@ export const LAUNCH_FILE_EXTENSIONS = [
 ];
 
 export const DEFAULT_SETTINGS = {
-  MIN_VERSION_DAEMON: '3.0.1',
+  MIN_VERSION_DAEMON: '3.0.2',
   fgColor: '#1a73e8',
   bgColor: '#fafafa',
   fgColorForDarkMode: '#B8E7FB',

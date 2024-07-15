@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.2 - 15.07.2024
+
+Added icons to overflow menu for topics and services in node details panel
+Added info to service details
+Added title to publisher, echo and service call panel
+Changed show subscribers first in node details panel
+Changed position of the control buttons in package explorer
+Changed: use abbreviations for closable tabs
+Improved host visualization
+Fixed: copy message in publish dialog
+Fixed: show start button on disconnected providers
+
 ## 2.0.1 - 08.07.2024
 
 Fixed: call service in ros1 and ros2
