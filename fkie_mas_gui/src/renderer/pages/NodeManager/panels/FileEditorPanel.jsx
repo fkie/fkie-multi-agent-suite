@@ -828,107 +828,111 @@ function FileEditorPanel({
         split="vertical"
         minSize={sideBarMinSize}
         resizerSize={6}
-        >
-        <SplitPane
-          // defaultSize={sideBarWidth}
-          sizes={[explorerBarHeight]}
-          onChange={([size]) => {
-            if (size !== explorerBarHeight && size >= explorerBarMinSize) {
-              setSavedExplorerBarHight(size);
-            }
-            setExplorerBarHeight(size);
-          }}
-          split="horizontal"
-          resizerSize={6}
-          minSize={explorerBarMinSize}
-        >
-          <Stack>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Tooltip
-                title="Explorer (Ctrl+Shift+E)"
-                placement="right"
-                disableInteractive
-              >
-                <ToggleButton
-                  size="small"
-                  value="showExplorer"
-                  selected={enableExplorer}
-                  onChange={() => {
-                    handleChangeExplorer(!enableExplorer);
-                  }}
-                >
-                  <FolderCopyOutlinedIcon sx={{ fontSize: "inherit" }} />
-                </ToggleButton>
-              </Tooltip>
-              {enableExplorer && sideBarWidth > fontSize * 7 && (
-                <Typography fontSize="0.8em">Explorer</Typography>
-              )}
-            </Stack>
-            {enableExplorer && (
-              <Stack
-                overflow="auto"
-                direction="column"
-                height={explorerBarHeight}
-                width={sideBarWidth}
-              >
-                <ExplorerTree
-                  tabId={tabId}
-                  providerId={providerId}
-                  rootFilePath={rootFilePath}
-                  includedFiles={includedFiles}
-                  selectedUriPath={activeModel?.path}
-                  modifiedUriPaths={modifiedFiles}
-                />
+      >
+        <Pane minSize={sideBarMinSize}>
+          <SplitPane
+            // defaultSize={sideBarWidth}
+            sizes={[explorerBarHeight]}
+            onChange={([size]) => {
+              if (size !== explorerBarHeight && size >= explorerBarMinSize) {
+                setSavedExplorerBarHight(size);
+              }
+              setExplorerBarHeight(size);
+            }}
+            split="horizontal"
+            resizerSize={6}
+            minSize={explorerBarMinSize}
+          >
+            <Pane minSize={explorerBarMinSize}>
+              <Stack>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Tooltip
+                    title="Explorer (Ctrl+Shift+E)"
+                    placement="right"
+                    disableInteractive
+                  >
+                    <ToggleButton
+                      size="small"
+                      value="showExplorer"
+                      selected={enableExplorer}
+                      onChange={() => {
+                        handleChangeExplorer(!enableExplorer);
+                      }}
+                    >
+                      <FolderCopyOutlinedIcon sx={{ fontSize: "inherit" }} />
+                    </ToggleButton>
+                  </Tooltip>
+                  {enableExplorer && sideBarWidth > fontSize * 7 && (
+                    <Typography fontSize="0.8em">Explorer</Typography>
+                  )}
+                </Stack>
+                {enableExplorer && (
+                  <Stack
+                    overflow="auto"
+                    direction="column"
+                    height={explorerBarHeight}
+                    width={sideBarWidth}
+                  >
+                    <ExplorerTree
+                      tabId={tabId}
+                      providerId={providerId}
+                      rootFilePath={rootFilePath}
+                      includedFiles={includedFiles}
+                      selectedUriPath={activeModel?.path}
+                      modifiedUriPaths={modifiedFiles}
+                    />
+                  </Stack>
+                )}
               </Stack>
-            )}
-          </Stack>
-          <Stack paddingTop="2px">
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Tooltip
-                title="Search (Ctrl+Shift+F)"
-                placement="right"
-                disableInteractive
-              >
-                <ToggleButton
-                  size="small"
-                  value="showSearch"
-                  selected={enableGlobalSearch}
-                  onChange={() => handleChangeSearch(!enableGlobalSearch)}
+            </Pane>
+            <Stack paddingTop="2px">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Tooltip
+                  title="Search (Ctrl+Shift+F)"
+                  placement="right"
+                  disableInteractive
                 >
-                  <SearchOutlinedIcon sx={{ fontSize: "inherit" }} />
-                </ToggleButton>
-              </Tooltip>
+                  <ToggleButton
+                    size="small"
+                    value="showSearch"
+                    selected={enableGlobalSearch}
+                    onChange={() => handleChangeSearch(!enableGlobalSearch)}
+                  >
+                    <SearchOutlinedIcon sx={{ fontSize: "inherit" }} />
+                  </ToggleButton>
+                </Tooltip>
+                {enableGlobalSearch && (
+                  <SearchBar
+                    onSearch={(value) => {
+                      setGlobalSearchTerm(value);
+                    }}
+                    placeholder="Search in all included files..."
+                    defaultValue={globalSearchTerm}
+                    searchIcon={false}
+                  />
+                )}
+              </Stack>
               {enableGlobalSearch && (
-                <SearchBar
-                  onSearch={(value) => {
-                    setGlobalSearchTerm(value);
-                  }}
-                  placeholder="Search in all included files..."
-                  defaultValue={globalSearchTerm}
-                  searchIcon={false}
-                />
+                <Stack
+                  direction="column"
+                  height={
+                    panelRef.current.getBoundingClientRect().height -
+                    explorerBarHeight -
+                    fontSize * 2 -
+                    8
+                  }
+                  overflow="auto"
+                >
+                  <SearchTree
+                    tabId={tabId}
+                    ownUriPaths={ownUriPaths}
+                    searchTerm={globalSearchTerm}
+                  />
+                </Stack>
               )}
             </Stack>
-            {enableGlobalSearch && (
-              <Stack
-                direction="column"
-                height={
-                  panelRef.current.getBoundingClientRect().height -
-                  explorerBarHeight -
-                  fontSize * 2 -
-                  8
-                }
-                overflow="auto"
-              >
-                <SearchTree
-                  tabId={tabId}
-                  ownUriPaths={ownUriPaths}
-                  searchTerm={globalSearchTerm}
-                />
-              </Stack>
-            )}
-          </Stack>
-        </SplitPane>
+          </SplitPane>
+        </Pane>
         <Stack
           sx={{
             flex: 1,
