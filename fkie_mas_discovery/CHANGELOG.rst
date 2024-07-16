@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.1 (2024-07-16)
+------------------
+* fkie_mas_discovery: fixed start mas discovery in different networks, broken after switch to websockets
+* Contributors: Alexander Tiderko
+
 3.0.0 (2024-07-05)
 ------------------
 * fkie_mas_discovery: replaced crossbar by websocket

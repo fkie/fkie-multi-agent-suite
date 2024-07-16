@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 - 16.07.2024
+
+Switched from webpack to electron-vite builder
+Use abbreviations for closable tabs
+Fixed: start mas discovery in different networks
+
 ## 2.0.2 - 15.07.2024
 
 Added icons to overflow menu for topics and services in node details panel
