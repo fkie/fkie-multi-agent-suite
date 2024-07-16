@@ -63,7 +63,7 @@
     "react-custom-events": "^1.1.1",
     "react-draggable": "^4.4.6",
     "react-file-icon": "^1.5.0",
-    "react-json-view": "^1.21.3",
+    "react-json-tree": "^0.19.0",
     "react-router-dom": "^6.24.1",
     "react-split-pane": "^0.1.92",
     "react-virtuoso": "^4.7.11",

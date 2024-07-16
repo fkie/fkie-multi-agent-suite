@@ -20,6 +20,7 @@ import { NavigationProvider } from './context/NavigationContext'
 import { RosProviderReact } from './context/RosContext'
 import { SSHProvider } from './context/SSHContext'
 import { SettingsProvider } from './context/SettingsContext'
+import React from 'react'
 
 const container = document.getElementById('root')
 if (container) {
