@@ -440,7 +440,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                 variant="outlined"
                 margin="dense"
                 size="small"
-                autoFocus
+                // autoFocus
                 sx={{ fontSize: 'inherit' }}
               />
             )}
