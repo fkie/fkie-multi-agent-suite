@@ -763,6 +763,12 @@ export default class Provider {
         };
       })
       .then((value) => {
+        if (Object.keys(value as {}).includes('result')) {
+          return {
+            timestamp: 0,
+            diff: 0,
+          };
+        }
         return value as IProviderTimestamp;
       });
     if (providerResponse.timestamp > 0) {
@@ -821,6 +827,9 @@ export default class Provider {
         return null;
       })
       .then((value) => {
+        if (Object.keys(value as {}).includes('result')) {
+          return [];
+        }
         return value as unknown as IRosNode[];
       });
 
@@ -893,7 +902,7 @@ export default class Provider {
           });
 
           this.logger?.debug(`Nodes updated for [${this.name()}]`, ``);
-          this.discovery = true;
+          this.discovery = rawNodeList.length > 0;
           return Array.from(nodeList.values());
         }
       } catch (error) {
@@ -2015,6 +2024,9 @@ export default class Provider {
         return null;
       })
       .then((value) => {
+        if (Object.keys(value as {}).includes('result')) {
+          return [];
+        }
         const screenMappings = value as unknown as ScreensMapping[];
         const screenList: ScreensMapping[] = [];
         screenMappings?.forEach((p: ScreensMapping) => {
@@ -2069,6 +2081,9 @@ export default class Provider {
           return null;
         })
         .then((value) => {
+          if (Object.keys(value as {}).includes('result')) {
+            return [];
+          }
           const warnings = value as unknown as SystemWarningGroup[];
           this.warnings = warnings;
           return warnings;
@@ -2585,7 +2600,7 @@ export default class Provider {
               '',
               false,
             );
-            if (Object.hasOwn(err, 'result')) {
+            if (Object.keys(err).includes('result')) {
               return err;
             }
             throw Error(err);

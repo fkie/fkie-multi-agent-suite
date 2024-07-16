@@ -100,7 +100,7 @@ Then open in browser <http://localhost:6274>
 | ros.daemon.get_version             | RPC  | `() => DaemonVersion`                                                    | see fkie_mas_pylib/interface/runtime_interface/DaemonVersion                             |
 | ros.file.get                       | RPC  | `(path: str) => FileItem`                                                | see fkie_mas_pylib/interface/file_interface/FileItem                                     |
 | ros.file.save                      | RPC  | `(file: FileItem) => number`                                             | write file content to providers file system. Return count of written bytes.              |
-| ros.nodes.get_list                 | RPC  | `() => RosNode[]`                                                        | see fkie_mas_pylib/interface/runtime_interface/RosNode                                   |
+| ros.nodes.get_list                 | RPC  | `() => RosNode[] or {result: bool, message: str}`                        | see fkie_mas_pylib/interface/runtime_interface/RosNode                                   |
 | ros.nodes.changed                  | PUB  | `=> "timestamp": float`                                                  | Triggers when node changed (start, stop etc...)                                          |
 | ros.provider.list                  | PUB  | `=> RosProvider[]`                                                       | see fkie_mas_pylib/interface/runtime_interface/RosProvider                               |
 | ros.provider.get_list              | RPC  | `() => RosProvider[]`                                                    | Request the list of current providers                                                    |
@@ -110,7 +110,7 @@ Then open in browser <http://localhost:6274>
 | ros.provider.ros_clean_purge       | RPC  | `() => {result: bool, message: str}`                                     | clean ros log path                                                                       |
 | ros.provider.shutdown              | RPC  | `() => {result: bool, message: str}`                                     | kill all screens started by provider                                                     |
 | ros.provider.warnings              | PUB  | `=> SystemWarningGroup[]`                                                | see fkie_mas_pylib/interface/runtime_interface/SystemWarningGroup                        |
-| ros.provider.get_warnings          | RPC  | `() => SystemWarningGroup[]`                                             | see fkie_mas_pylib/interface/file_interface/RosPackage                                   |
+| ros.provider.get_warnings          | RPC  | `() => SystemWarningGroup[] or {result: bool, message: str}`             | see fkie_mas_pylib/interface/file_interface/RosPackage                                   |
 | ros.packages.get_list              | RPC  | `(clear_cache: bool) => RosPackage[]`                                    | see fkie_mas_pylib/interface/file_interface/RosPackage                                   |
 | ros.path.get_list                  | RPC  | `(inputPath: str) => PathItem[]`                                         | see fkie_mas_pylib/interface/file_interface/PathItem                                     |
 | ros.path.get_list_recursive        | RPC  | `(inputPath: str) => PathItem[]`                                         | Return all files/folders included in input path                                          |
@@ -134,7 +134,7 @@ Then open in browser <http://localhost:6274>
 | ros.nodes.stop_node                | RPC  | `(name/id: str) => {result: bool, message: str}`                         | Stop a node using ROS                                                                    |
 | ros.nodes.unregister               | RPC  | `(name: str) => {result: bool, message: str}`                            | Unregister all topics and services of a node using ROS                                   |
 | ros.screen.kill_node               | RPC  | `(name: str) => {result: bool, message: str}`                            | Kill screen of a given node                                                              |
-| ros.screen.get_list                | RPC  | `() => ScreensMapping[]`                                                 | Returns a list off all screens and their name converted to ROS node name                 |
+| ros.screen.get_list                | RPC  | `() => ScreensMapping[] or {result: bool, message: str}`                 | Returns a list off all screens and their name converted to ROS node name                 |
 | ros.screen.list                    | PUB  | `=> ScreensMapping[]`                                                    | Triggers when screens are changed                                                        |
 | ros.subscriber.start               | RPC  | `(request: SubscriberNode) => bool`                                      | Start subscriber for given topic                                                         |
 | ros.subscriber.stop                | RPC  | `(topic: str) => bool`                                                   | Stop subscriber for given topic                                                          |
