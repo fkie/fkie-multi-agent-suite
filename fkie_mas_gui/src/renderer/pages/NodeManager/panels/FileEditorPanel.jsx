@@ -1,9 +1,9 @@
-import * as Monaco from '@monaco-editor/react';
-import CloudSyncOutlinedIcon from '@mui/icons-material/CloudSyncOutlined';
-import FolderCopyOutlinedIcon from '@mui/icons-material/FolderCopyOutlined';
-import SaveAltOutlinedIcon from '@mui/icons-material/SaveAltOutlined';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import UpgradeIcon from '@mui/icons-material/Upgrade';
+import * as Monaco from "@monaco-editor/react";
+import CloudSyncOutlinedIcon from "@mui/icons-material/CloudSyncOutlined";
+import FolderCopyOutlinedIcon from "@mui/icons-material/FolderCopyOutlined";
+import SaveAltOutlinedIcon from "@mui/icons-material/SaveAltOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import UpgradeIcon from "@mui/icons-material/Upgrade";
 import {
   Alert,
   IconButton,
@@ -12,34 +12,42 @@ import {
   ToggleButton,
   Tooltip,
   Typography,
-} from '@mui/material';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useCustomEventListener } from 'react-custom-events';
-import SplitPane from 'react-split-pane';
-import ExplorerTree from '../../../components/MonacoEditor/ExplorerTree';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
+import SplitPane, { Pane } from "split-pane-react";
+import "split-pane-react/esm/themes/default.css";
+import ExplorerTree from "../../../components/MonacoEditor/ExplorerTree";
 import {
   createDocumentSymbols,
   createXMLDependencyProposals,
-} from '../../../components/MonacoEditor/MonacoTools';
-import SearchTree from '../../../components/MonacoEditor/SearchTree';
-import { colorFromHostname } from '../../../components/UI/Colors';
-import SearchBar from '../../../components/UI/SearchBar';
-import { LoggingContext } from '../../../context/LoggingContext';
-import { MonacoContext } from '../../../context/MonacoContext';
-import { RosContext } from '../../../context/RosContext';
-import { SSHContext } from '../../../context/SSHContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import useLocalStorage from '../../../hooks/useLocalStorage';
+} from "../../../components/MonacoEditor/MonacoTools";
+import SearchTree from "../../../components/MonacoEditor/SearchTree";
+import { colorFromHostname } from "../../../components/UI/Colors";
+import SearchBar from "../../../components/UI/SearchBar";
+import { LoggingContext } from "../../../context/LoggingContext";
+import { MonacoContext } from "../../../context/MonacoContext";
+import { RosContext } from "../../../context/RosContext";
+import { SSHContext } from "../../../context/SSHContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import useLocalStorage from "../../../hooks/useLocalStorage";
 import {
   FileItem,
   FileLanguageAssociations,
   LaunchIncludedFilesRequest,
   getFileAbb,
   getFileName,
-} from '../../../models';
-import { EVENT_EDITOR_SELECT_RANGE } from '../../../utils/events';
+} from "../../../models";
+import { EVENT_EDITOR_SELECT_RANGE } from "../../../utils/events";
+
+const layoutCSS = {
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
 
 function FileEditorPanel({
   tabId,
@@ -62,25 +70,25 @@ function FileEditorPanel({
   const resizeObserver = useRef(null);
   const componentWillUnmount = useRef(false);
   const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage(
-    'Editor:sideBarWidth',
-    settingsCtx.get('fontSize') * 20,
+    "Editor:sideBarWidth",
+    settingsCtx.get("fontSize") * 20
   );
   const [savedExplorerBarHight, setSavedExplorerBarHight] = useLocalStorage(
-    'Editor:explorerBarHight',
-    settingsCtx.get('fontSize') * 20,
+    "Editor:explorerBarHight",
+    settingsCtx.get("fontSize") * 20
   );
   const [fontSize, setFontSize] = useState(16);
   const [sideBarMinSize, setSideBarMinSize] = useState(
-    settingsCtx.get('fontSize') * 2,
+    settingsCtx.get("fontSize") * 2
   );
   const [sideBarWidth, setSideBarWidth] = useState(
-    settingsCtx.get('fontSize') * 2,
+    settingsCtx.get("fontSize") * 2
   );
   const [explorerBarMinSize, setExplorerBarMinSize] = useState(
-    settingsCtx.get('fontSize') * 2,
+    settingsCtx.get("fontSize") * 2
   );
   const [explorerBarHeight, setExplorerBarHeight] = useState(
-    settingsCtx.get('fontSize') * 2,
+    settingsCtx.get("fontSize") * 2
   );
   const [editorHeight, setEditorHeight] = useState(20);
   const [editorWidth, setEditorWidth] = useState(20);
@@ -88,33 +96,33 @@ function FileEditorPanel({
   const [panelSize, setPanelSize] = useState(null);
   // ----- size handling end
 
-  const [providerName, setProviderName] = useState('');
-  const [providerHost, setProviderHost] = useState('');
-  const [packageName, setPackageName] = useState('');
+  const [providerName, setProviderName] = useState("");
+  const [providerHost, setProviderHost] = useState("");
+  const [packageName, setPackageName] = useState("");
   const [initialized, setInitialized] = useState(false);
   const [activeModel, setActiveModel] = useState(null);
   const [ownUriPaths, setOwnUriPaths] = useState([]);
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState([]);
-  const [monacoViewStates] = useState(new Map('', ''));
+  const [monacoViewStates] = useState(new Map("", ""));
   const [clickRequest, setClickRequest] = useState(null);
 
   const [enableGlobalSearch, setEnableGlobalSearch] = useState(false);
   const [enableExplorer, setEnableExplorer] = useState(false);
-  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 
   const [selectionRange, setSelectionRange] = useState(null);
   const [modifiedFiles, setModifiedFiles] = useState([]);
   const [includedFiles, setIncludedFiles] = useState([]);
   const [includeDecorations, setIncludeDecorations] = useState([]);
-  const [notificationDescription, setNotificationDescription] = useState('');
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const [notificationDescription, setNotificationDescription] = useState("");
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const createUriPath = useCallback(
     (path) => {
       return `/${tabId}:${path}`;
     },
-    [tabId],
+    [tabId]
   );
 
   /**
@@ -126,13 +134,13 @@ function FileEditorPanel({
       if (!monaco) return null;
       if (!path || path.length === 0) return null;
       let modelUri = path;
-      if (modelUri.indexOf(':') === -1) {
+      if (modelUri.indexOf(":") === -1) {
         // create uriPath
         modelUri = createUriPath(path);
       }
       return monaco.editor.getModel(monaco.Uri.file(modelUri));
     },
-    [createUriPath, monaco],
+    [createUriPath, monaco]
   );
 
   /**
@@ -154,7 +162,7 @@ function FileEditorPanel({
     return monaco.editor.createModel(
       file.value,
       FileLanguageAssociations[file.extension],
-      pathUri,
+      pathUri
     );
   };
 
@@ -189,14 +197,14 @@ function FileEditorPanel({
     (isExpanded) => {
       setEnableExplorer(isExpanded);
     },
-    [setEnableExplorer],
+    [setEnableExplorer]
   );
 
   const handleChangeSearch = useCallback(
     (isExpanded) => {
       setEnableGlobalSearch(isExpanded);
     },
-    [setEnableGlobalSearch],
+    [setEnableGlobalSearch]
   );
 
   /**
@@ -218,14 +226,14 @@ function FileEditorPanel({
       }
       return undefined;
     },
-    [includeDecorations],
+    [includeDecorations]
   );
 
   const addMonacoDisposable = useCallback(
     (disposable) => {
       setMonacoDisposables((prev) => [...prev, disposable]);
     },
-    [setMonacoDisposables],
+    [setMonacoDisposables]
   );
 
   // update modified files in this panel and context
@@ -257,7 +265,7 @@ function FileEditorPanel({
             // Add a different style to "clickable" definitions
             newDecorators.push({
               range: match.range,
-              options: { inlineClassName: 'filePathDecoration' },
+              options: { inlineClassName: "filePathDecoration" },
             });
             newIncludeDecorations.push({
               resource: f.inc_path,
@@ -279,7 +287,7 @@ function FileEditorPanel({
       let model = getModelFromPath(uriPath);
       if (!model || forceReload) {
         const filePath =
-          uriPath.indexOf(':') === -1 ? uriPath : uriPath.split(':')[1];
+          uriPath.indexOf(":") === -1 ? uriPath : uriPath.split(":")[1];
         const provider = rosCtx.getProviderById(providerId);
         if (provider) {
           const result = await provider.getFileContent(filePath);
@@ -288,7 +296,7 @@ function FileEditorPanel({
           } else {
             logCtx.error(
               `Could not get file: ${filePath}`,
-              `Provider: ${provider.name()}`,
+              `Provider: ${provider.name()}`
             );
             return false;
           }
@@ -297,7 +305,7 @@ function FileEditorPanel({
 
       // get model from path if exists
       if (!model) {
-        logCtx.error(`Could not get model for file: ${uriPath}`, '');
+        logCtx.error(`Could not get model for file: ${uriPath}`, "");
         return false;
       }
 
@@ -307,7 +315,7 @@ function FileEditorPanel({
       if (currentModel) {
         monacoViewStates.set(
           currentModel.uri.path,
-          editorRef.current.saveViewState(),
+          editorRef.current.saveViewState()
         );
       }
 
@@ -325,7 +333,7 @@ function FileEditorPanel({
 
       // set package name
       const modelPackageName = ownUriToPackageDict[model.uri.path];
-      setPackageName(modelPackageName || '');
+      setPackageName(modelPackageName || "");
       // set range is available
       if (range) {
         setSelectionRange(range);
@@ -344,7 +352,7 @@ function FileEditorPanel({
       setActiveModel,
       getModelFromPath,
       updateModifiedFiles,
-    ],
+    ]
   );
 
   /** select node definition on event. */
@@ -371,9 +379,9 @@ function FileEditorPanel({
 
   const saveCurrentFile = useCallback(
     async (editorModel) => {
-      const path = editorModel.uri.path.split(':')[1];
+      const path = editorModel.uri.path.split(":")[1];
       // TODO change encoding if the file is encoded as HEX
-      const fileToSave = new FileItem('', path, '', '', editorModel.getValue());
+      const fileToSave = new FileItem("", path, "", "", editorModel.getValue());
       const providerObj = rosCtx.getProviderById(providerId);
       if (providerObj) {
         const result = await providerObj.saveFileContent(fileToSave);
@@ -392,12 +400,12 @@ function FileEditorPanel({
       } else {
         logCtx.error(
           `Provider ${providerId} not found`,
-          `can not save file: ${path}`,
+          `can not save file: ${path}`
         );
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.getProviderById, monaco, setActiveModel, getModelFromPath],
+    [rosCtx.getProviderById, monaco, setActiveModel, getModelFromPath]
   );
 
   const debouncedWidthUpdate = useDebounceCallback(
@@ -405,13 +413,13 @@ function FileEditorPanel({
       setEditorWidth(newWidth);
     },
     [setEditorWidth],
-    50,
+    50
   );
 
   useEffect(() => {
     if (panelRef.current) {
       debouncedWidthUpdate(
-        panelRef.current.getBoundingClientRect().width - sideBarWidth,
+        panelRef.current.getBoundingClientRect().width - sideBarWidth
       );
     }
   }, [debouncedWidthUpdate, sideBarWidth]);
@@ -429,7 +437,7 @@ function FileEditorPanel({
         }
       }
     },
-    [activeModel, setActiveModel, getModelFromPath, updateModifiedFiles],
+    [activeModel, setActiveModel, getModelFromPath, updateModifiedFiles]
   );
 
   useEffect(() => {
@@ -457,7 +465,7 @@ function FileEditorPanel({
   ]);
 
   useEffect(() => {
-    const newFontSize = settingsCtx.get('fontSize');
+    const newFontSize = settingsCtx.get("fontSize");
     setFontSize(newFontSize);
     setSideBarMinSize(newFontSize * 2 + 2);
     setSideBarWidth(newFontSize * 2 + 2);
@@ -485,7 +493,7 @@ function FileEditorPanel({
   useEffect(() => {
     if (!panelSize) return;
     setEditorHeight(
-      panelSize.height - infoRef.current?.getBoundingClientRect().height,
+      panelSize.height - infoRef.current?.getBoundingClientRect().height
     );
     setEditorWidth(panelSize.width - sideBarWidth);
     setPanelHeight(panelSize.height);
@@ -528,36 +536,36 @@ function FileEditorPanel({
         monaco.editor.getModels().forEach((model) => {
           if (
             model.getValue().length === 0 &&
-            model.uri.path.indexOf(':') === -1
+            model.uri.path.indexOf(":") === -1
           ) {
             model.dispose();
           }
         });
         // remove modified files from context
-        monacoCtx.updateModifiedFiles(tabId, '', []);
+        monacoCtx.updateModifiedFiles(tabId, "", []);
       }
     };
   }, [monacoDisposables, monaco, ownUriPaths, monacoCtx, tabId]);
 
   const onKeyDown = (event) => {
-    if (event.ctrlKey && event.shiftKey && event.key === 'E') {
+    if (event.ctrlKey && event.shiftKey && event.key === "E") {
       setEnableExplorer(!enableExplorer);
     }
-    if (event.ctrlKey && event.shiftKey && event.key === 'F') {
+    if (event.ctrlKey && event.shiftKey && event.key === "F") {
       setEnableGlobalSearch(!enableGlobalSearch);
     }
   };
 
   const getHostStyle = () => {
-    if (providerName && settingsCtx.get('colorizeHosts')) {
+    if (providerName && settingsCtx.get("colorizeHosts")) {
       return {
         flexGrow: 1,
-        borderBottomStyle: 'solid',
+        borderBottomStyle: "solid",
         borderBottomColor: colorFromHostname(providerName),
-        borderBottomWidth: '0.3em',
+        borderBottomWidth: "0.3em",
       };
     }
-    return { flexGrow: 1, alignItems: 'center' };
+    return { flexGrow: 1, alignItems: "center" };
   };
 
   // Most important function:
@@ -573,47 +581,47 @@ function FileEditorPanel({
     }
     if (!monaco) {
       // monaco is not yet available
-      setNotificationDescription('monaco is not yet available');
+      setNotificationDescription("monaco is not yet available");
       return;
     }
     if (!currentFilePath || currentFilePath.length === 0) {
-      setNotificationDescription('[currentFilePath] Invalid file path');
+      setNotificationDescription("[currentFilePath] Invalid file path");
       return;
     }
     if (!rootFilePath || rootFilePath.length === 0) {
-      setNotificationDescription('[rootFilePath] Invalid file path');
+      setNotificationDescription("[rootFilePath] Invalid file path");
       return;
     }
     // search host based on selected provider
     const provider = rosCtx.getProviderById(providerId);
     if (!provider) {
       setNotificationDescription(
-        `Provider with id ${providerId} not available`,
+        `Provider with id ${providerId} not available`
       );
       return;
     }
     if (provider && !provider.host()) {
       logCtx.error(
-        'The provider does not have configured any host.',
-        'Please check your provider configuration',
+        "The provider does not have configured any host.",
+        "Please check your provider configuration"
       );
       setNotificationDescription(
-        'The provider does not have configured any host.',
+        "The provider does not have configured any host."
       );
       return;
     }
     setProviderHost(provider.host());
     setProviderName(provider.name());
-    setNotificationDescription('Getting file from provider...');
+    setNotificationDescription("Getting file from provider...");
     // get file content from provider and create monaco model
     const getFileAndIncludesAsync = async () => {
       const result = await provider.getFileContent(currentFilePath);
       if (result.error) {
         console.error(
-          `Could not open file: [${result.file.fileName}]: ${result.error}`,
+          `Could not open file: [${result.file.fileName}]: ${result.error}`
         );
         setNotificationDescription(
-          `Could not open file: [${result.file.fileName}]: ${result.error}`,
+          `Could not open file: [${result.file.fileName}]: ${result.error}`
         );
         return;
       }
@@ -621,7 +629,7 @@ function FileEditorPanel({
       if (!model) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
         setNotificationDescription(
-          `Could not create model for: [${result.file.fileName}]`,
+          `Could not create model for: [${result.file.fileName}]`
         );
         return;
       }
@@ -630,9 +638,9 @@ function FileEditorPanel({
 
       // Ignore "non-launch" files
       // TODO: Add parameter Here
-      if (!['launch', 'xml', 'xacro'].includes(result.file.extension)) {
+      if (!["launch", "xml", "xacro"].includes(result.file.extension)) {
         setIncludedFiles([]);
-        setNotificationDescription('');
+        setNotificationDescription("");
         return;
       }
 
@@ -663,17 +671,17 @@ function FileEditorPanel({
           if (!m) {
             logCtx.error(
               `Could not create model for included file: [${file.fileName}]`,
-              `Host: ${provider.host()}, root file: ${file.path}`,
+              `Host: ${provider.host()}, root file: ${file.path}`
             );
           }
         } else {
           console.error(
-            `Could not open included file: [${file.fileName}]: ${error}`,
+            `Could not open included file: [${file.fileName}]: ${error}`
           );
         }
       });
       setIncludedFiles(includedFilesLocal);
-      setNotificationDescription('');
+      setNotificationDescription("");
     };
     getFileAndIncludesAsync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -693,13 +701,13 @@ function FileEditorPanel({
   ]);
 
   // get text from clipboard for suggestions
-  let clipTextSuggest = '';
+  let clipTextSuggest = "";
   let clipTextReadyForSuggest = false;
   const getClipboardTextForSuggest = async () => {
     await navigator.clipboard.readText().then((cbText) => {
       clipTextSuggest = cbText;
       clipTextReadyForSuggest = true;
-      editorRef.current.trigger('anything', 'editor.action.triggerSuggest', {
+      editorRef.current.trigger("anything", "editor.action.triggerSuggest", {
         suggestions: [],
       });
       return true;
@@ -710,7 +718,7 @@ function FileEditorPanel({
     // !=> the goto functionality is provided by clickRequest
 
     // personalize launch file objects
-    ['xml', 'launch'].forEach((e) => {
+    ["xml", "launch"].forEach((e) => {
       // Add Completion provider for XML and launch files
       addMonacoDisposable(
         monaco.languages.registerCompletionItemProvider(e, {
@@ -729,7 +737,7 @@ function FileEditorPanel({
                 suggestions: createXMLDependencyProposals(
                   monaco,
                   range,
-                  clipTextSuggest,
+                  clipTextSuggest
                 ),
               };
             }
@@ -738,7 +746,7 @@ function FileEditorPanel({
               suggestions: [],
             };
           },
-        }),
+        })
       );
 
       // register definition providers
@@ -754,30 +762,30 @@ function FileEditorPanel({
       // Add symbols XML and launch files
       addMonacoDisposable(
         monaco.languages.registerDocumentSymbolProvider(e, {
-          displayName: 'ROS Symbols',
+          displayName: "ROS Symbols",
           provideDocumentSymbols: (model, token) => {
             return createDocumentSymbols(model, token);
           },
-        }),
+        })
       );
     });
 
     addMonacoDisposable(
       editorRef.current.addAction({
-        id: 'save_action',
-        label: 'Save',
+        id: "save_action",
+        label: "Save",
         keybindings: [
           // eslint-disable-next-line no-bitwise
           monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
         ],
         precondition: null,
         keybindingContext: null,
-        contextMenuGroupId: 'navigation',
+        contextMenuGroupId: "navigation",
         contextMenuOrder: 1.0,
         run: async (editorInstance) => {
           saveCurrentFile(editorInstance.getModel());
         },
-      }),
+      })
     );
   };
 
@@ -809,28 +817,30 @@ function FileEditorPanel({
       overflow="auto"
     >
       <SplitPane
-        minSize={sideBarMinSize}
         // defaultSize={sideBarWidth}
-        size={sideBarWidth}
-        onChange={(size) => {
-          if (size !== sideBarMinSize) {
+        sizes={[sideBarWidth]}
+        onChange={([size]) => {
+          if (size !== sideBarMinSize && size >= sideBarMinSize) {
             setSavedSideBarUserWidth(size);
           }
           setSideBarWidth(size);
         }}
         split="vertical"
-      >
+        minSize={sideBarMinSize}
+        resizerSize={6}
+        >
         <SplitPane
-          minSize={explorerBarMinSize}
           // defaultSize={sideBarWidth}
-          size={explorerBarHeight}
-          onChange={(size) => {
-            if (size !== explorerBarHeight) {
+          sizes={[explorerBarHeight]}
+          onChange={([size]) => {
+            if (size !== explorerBarHeight && size >= explorerBarMinSize) {
               setSavedExplorerBarHight(size);
             }
             setExplorerBarHeight(size);
           }}
           split="horizontal"
+          resizerSize={6}
+          minSize={explorerBarMinSize}
         >
           <Stack>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -847,7 +857,7 @@ function FileEditorPanel({
                     handleChangeExplorer(!enableExplorer);
                   }}
                 >
-                  <FolderCopyOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                  <FolderCopyOutlinedIcon sx={{ fontSize: "inherit" }} />
                 </ToggleButton>
               </Tooltip>
               {enableExplorer && sideBarWidth > fontSize * 7 && (
@@ -885,7 +895,7 @@ function FileEditorPanel({
                   selected={enableGlobalSearch}
                   onChange={() => handleChangeSearch(!enableGlobalSearch)}
                 >
-                  <SearchOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                  <SearchOutlinedIcon sx={{ fontSize: "inherit" }} />
                 </ToggleButton>
               </Tooltip>
               {enableGlobalSearch && (
@@ -944,7 +954,7 @@ function FileEditorPanel({
                     saveCurrentFile(editorRef.current.getModel());
                   }}
                 >
-                  <SaveAltOutlinedIcon style={{ fontSize: '0.8em' }} />
+                  <SaveAltOutlinedIcon style={{ fontSize: "0.8em" }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -953,26 +963,26 @@ function FileEditorPanel({
                 edge="end"
                 aria-label="Open parent file"
                 onClick={async () => {
-                  const path = activeModel?.path.split(':')[1];
+                  const path = activeModel?.path.split(":")[1];
                   const parentPaths = includedFiles.filter(
-                    (item) => path === item.inc_path,
+                    (item) => path === item.inc_path
                   );
                   parentPaths.forEach(async (item) => {
                     const result = await setEditorModel(
-                      `${activeModel?.path.split(':')[0]}:${item.path}`,
+                      `${activeModel?.path.split(":")[0]}:${item.path}`,
                       null,
                       null,
-                      false,
+                      false
                     );
                     if (result) {
                       logCtx.success(
-                        `Parent file opened [${getFileName(path)}]`,
+                        `Parent file opened [${getFileName(path)}]`
                       );
                     }
                   });
                 }}
               >
-                <UpgradeIcon style={{ fontSize: '0.8em' }} />
+                <UpgradeIcon style={{ fontSize: "0.8em" }} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Reload current file from host" disableInteractive>
@@ -987,19 +997,19 @@ function FileEditorPanel({
                   }
                 }}
               >
-                <CloudSyncOutlinedIcon style={{ fontSize: '0.8em' }} />
+                <CloudSyncOutlinedIcon style={{ fontSize: "0.8em" }} />
               </IconButton>
             </Tooltip>
             <Stack direction="row" width="100%">
               <Typography
                 noWrap
                 style={{
-                  padding: '0.1em',
-                  fontWeight: 'normal',
-                  fontSize: '0.8em',
+                  padding: "0.1em",
+                  fontWeight: "normal",
+                  fontSize: "0.8em",
                 }}
               >
-                {activeModel?.modified ? '*s' : ''}
+                {activeModel?.modified ? "*s" : ""}
                 {getFileName(activeModel?.path)}
               </Typography>
               <Stack direction="row" marginLeft={0.4} spacing={0.2}>
@@ -1040,9 +1050,9 @@ function FileEditorPanel({
               <Typography
                 noWrap
                 style={{
-                  padding: '0.4em',
+                  padding: "0.4em",
                   fontWeight: 100,
-                  fontSize: '0.6em',
+                  fontSize: "0.6em",
                 }}
               >
                 {packageName} &#8226; {providerName}
@@ -1054,7 +1064,7 @@ function FileEditorPanel({
               severity="warning"
               style={{ minWidth: 0 }}
               onClose={() => {
-                setNotificationDescription('');
+                setNotificationDescription("");
               }}
             >
               {notificationDescription}
@@ -1065,7 +1075,7 @@ function FileEditorPanel({
             key="editor"
             height={editorHeight}
             width={editorWidth}
-            theme={settingsCtx.get('useDarkMode') ? 'vs-dark' : 'light'}
+            theme={settingsCtx.get("useDarkMode") ? "vs-dark" : "light"}
             onMount={handleEditorDidMount}
             onChange={handleEditorChange}
             options={{
@@ -1076,11 +1086,11 @@ function FileEditorPanel({
               mouseWheelZoom: true,
               scrollBeyondLastLine: false,
               smoothScrolling: false,
-              wordWrap: 'off',
-              fontSize: settingsCtx.get('fontSize'),
+              wordWrap: "off",
+              fontSize: settingsCtx.get("fontSize"),
               minimap: { enabled: true },
               selectOnLineNumbers: true,
-              'bracketPairColorization.enabled': true,
+              "bracketPairColorization.enabled": true,
               guides: {
                 bracketPairs: true,
               },
