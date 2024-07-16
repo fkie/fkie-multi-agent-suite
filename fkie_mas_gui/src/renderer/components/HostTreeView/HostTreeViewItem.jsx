@@ -183,7 +183,9 @@ function HostTreeViewItem({
                   onButtonIconClick();
                 }}
               >
-                <ButtonIcon sx={{ color: buttonIconColor }} />
+                <ButtonIcon
+                  sx={{ color: buttonIconColor, fontSize: "inherit" }}
+                />
               </IconButton>
             </Tooltip>
           )}
