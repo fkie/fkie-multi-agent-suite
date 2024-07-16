@@ -1,20 +1,19 @@
-/* eslint import/prefer-default-export: off, import/no-mutable-exports: off */
-import path from 'path';
-import { URL } from 'url';
+import path from 'path'
+import { URL } from 'url'
 
-export let resolveHtmlPath: (htmlFileName: string) => string;
+export let resolveHtmlPath: (htmlFileName: string) => string
 
 if (process.env.NODE_ENV === 'development') {
-  const port = process.env.PORT || 1212;
-  resolveHtmlPath = (htmlFileName: string) => {
-    const url = new URL(`http://localhost:${port}`);
-    url.pathname = htmlFileName;
-    return url.href;
-  };
+  const port = process.env.PORT || 1212
+  resolveHtmlPath = (htmlFileName: string): string => {
+    const url = new URL(`http://localhost:${port}`)
+    url.pathname = htmlFileName
+    return url.href
+  }
 } else {
-  resolveHtmlPath = (htmlFileName: string) => {
-    return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`;
-  };
+  resolveHtmlPath = (htmlFileName: string): string => {
+    return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`
+  }
 }
 
 /**
@@ -25,9 +24,9 @@ if (process.env.NODE_ENV === 'development') {
 const delay: (ms: number) => void = (ms: number) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve('');
-    }, ms);
-  });
-};
+      resolve('')
+    }, ms)
+  })
+}
 
-export { delay };
+export { delay }

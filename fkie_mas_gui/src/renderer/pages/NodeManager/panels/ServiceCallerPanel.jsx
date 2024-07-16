@@ -1,5 +1,5 @@
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
   Alert,
   AlertTitle,
@@ -12,33 +12,34 @@ import {
   Stack,
   Tooltip,
   Typography,
-} from '@mui/material';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import ReactJson from 'react-json-view';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { JSONTree } from "react-json-tree";
+import { darkThemeJson } from "../../../themes/darkTheme";
+import { lightThemeJson } from "../../../themes/lightTheme";
+import { SearchBar } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import useLocalStorage from "../../../hooks/useLocalStorage";
+import { LaunchCallService } from "../../../models";
+import InputElements from "./MessageDialogPanel/InputElements";
 
-import { SearchBar } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import useLocalStorage from '../../../hooks/useLocalStorage';
-import { LaunchCallService } from '../../../models';
-import InputElements from './MessageDialogPanel/InputElements';
-
-function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
+function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
   const settingsCtx = useContext(SettingsContext);
   const [history, setHistory] = useLocalStorage(`ServiceStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
   const rosCtx = useContext(RosContext);
-  const [serviceType, setServiceType] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [serviceType, setServiceType] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [serviceStruct, setServiceStruct] = useState(null);
   const [serviceStructOrg, setServiceStructOrg] = useState(null);
   const [provider, setProvider] = useState(null);
   const [inputElements, setInputElements] = useState(null);
 
-  const [callServiceStatus, setCallServiceStatus] = useState('');
-  const [callServiceDescription, setCallServiceDescription] = useState('');
+  const [callServiceStatus, setCallServiceStatus] = useState("");
+  const [callServiceDescription, setCallServiceDescription] = useState("");
   const [callServiceIsSubmitting, setCallServiceIsSubmitting] = useState(false);
   const [resultError, setResultError] = useState(null);
   const [resultMessage, setResultMessage] = useState(null);
@@ -50,37 +51,37 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
     return json.replace(
       /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
       (match) => {
-        let cls = 'number';
+        let cls = "number";
         if (/^"/.test(match)) {
           if (/:$/.test(match)) {
-            cls = 'key';
+            cls = "key";
           } else {
-            cls = 'string';
+            cls = "string";
           }
         } else if (/true|false/.test(match)) {
-          cls = 'boolean';
+          cls = "boolean";
         } else if (/null/.test(match)) {
-          cls = 'null';
+          cls = "null";
         }
-        return cls === 'key' || cls === 'number' || cls === 'boolean'
-          ? match.replaceAll('"', '')
+        return cls === "key" || cls === "number" || cls === "boolean"
+          ? match.replaceAll('"', "")
           : match;
-      },
+      }
     );
   }
 
   function str2typedValue(value, valueType) {
     let result = value;
-    if (valueType.search('int') !== -1) {
+    if (valueType.search("int") !== -1) {
       result = Number(value);
     } else if (
-      valueType.search('float') !== -1 ||
-      valueType.search('double') !== -1
+      valueType.search("float") !== -1 ||
+      valueType.search("double") !== -1
     ) {
       result = Number(value);
-    } else if (valueType.startsWith('bool')) {
+    } else if (valueType.startsWith("bool")) {
       try {
-        result = ('yes', 'true', 't', 'y', '1').includes(value.toLowerCase());
+        result = ("yes", "true", "t", "y", "1").includes(value.toLowerCase());
       } catch {
         // Do nothing
       }
@@ -91,7 +92,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
   // The message struct is converted into a human-readable string.
   const messageStructToString = useCallback(
     (msgStruct, asDict, withEmptyFields) => {
-      if (!msgStruct) return '{}';
+      if (!msgStruct) return "{}";
       const result = {};
       let struct = msgStruct;
       if (msgStruct.def) {
@@ -114,7 +115,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
             } else if (field.default_value) {
               result[field.name] = field.default_value;
             } else {
-              result[field.name] = '';
+              result[field.name] = "";
             }
           }
         } else if (field.is_array) {
@@ -123,7 +124,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
           const val = field?.value ? field?.value : field.def;
           val.forEach((arrayElement) => {
             resultArray.push(
-              messageStructToString(arrayElement, true, withEmptyFields),
+              messageStructToString(arrayElement, true, withEmptyFields)
             );
           });
           // append created array
@@ -140,7 +141,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
           const subResult = messageStructToString(
             field.def,
             true,
-            withEmptyFields,
+            withEmptyFields
           );
           if (Object.keys(subResult).length > 0) {
             result[field.name] = subResult;
@@ -149,7 +150,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
       });
       return asDict ? result : dictToString(result);
     },
-    [],
+    []
   );
 
   // get item history after the history was loaded
@@ -210,12 +211,12 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
       const newProvider = rosCtx.getProviderById(providerId);
       if (newProvider && rosCtx.mapProviderRosNodes) {
         setProvider(newProvider);
-        let srvType = '';
+        let srvType = "";
         // Get messageType from node list of the provider
         const nodeList = rosCtx.mapProviderRosNodes.get(providerId);
         nodeList.forEach((node) => {
           node.services.forEach((service) => {
-            if (srvType === '' && serviceName === service.name) {
+            if (srvType === "" && serviceName === service.name) {
               srvType = service.srvtype;
             }
           });
@@ -235,7 +236,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
                 }
                 filterText={searchTerm}
                 onCopyToClipboard={onCopyToClipboard}
-              />,
+              />
             );
           }
         }
@@ -258,22 +259,22 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
         }
         filterText={searchText}
         onCopyToClipboard={onCopyToClipboard}
-      />,
+      />
     );
   }, 300);
 
   const handleCallService = async () => {
-    setResultError('');
+    setResultError("");
     setResultMessage(null);
-    setCallServiceStatus('active');
-    setCallServiceDescription('Calling service...');
+    setCallServiceStatus("active");
+    setCallServiceDescription("Calling service...");
     setCallServiceIsSubmitting(true);
 
     // store struct to history if new message
     const messageStr = messageStructToString(serviceStruct, false, false);
     const historyInStruct = history[serviceType];
     if (
-      messageStr !== '{}' &&
+      messageStr !== "{}" &&
       (!historyInStruct || historyInStruct?.length === 0)
     ) {
       updateHistory();
@@ -293,8 +294,8 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
       new LaunchCallService(
         serviceName,
         serviceType,
-        JSON.stringify(serviceStruct),
-      ),
+        JSON.stringify(serviceStruct)
+      )
     );
     if (srvResult) {
       if (srvResult.error_msg) {
@@ -308,9 +309,9 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
     setTimeoutObj(
       setTimeout(() => {
         setCallServiceIsSubmitting(false);
-        setCallServiceDescription('');
-        setCallServiceStatus('inactive');
-      }, 5000),
+        setCallServiceDescription("");
+        setCallServiceStatus("inactive");
+      }, 5000)
     );
   };
 
@@ -320,8 +321,8 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
       clearTimeout(timeoutObj);
       setTimeoutObj(null);
       setCallServiceIsSubmitting(false);
-      setCallServiceDescription('');
-      setCallServiceStatus('inactive');
+      setCallServiceDescription("");
+      setCallServiceStatus("inactive");
     }
   }, [timeoutObj, resultMessage, resultError]);
 
@@ -375,11 +376,26 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
     );
   }
 
+  const createJsonView = useMemo(() => {
+    return (
+      <JSONTree
+        data={resultMessage}
+        sortObjectKeys={true}
+        theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
+        invertTheme={false}
+        hideRoot={true}
+        shouldExpandNodeInitially={() => {
+          return true;
+        }}
+      />
+    );
+  }, [resultMessage, settingsCtx.changed]);
+
   return (
     <Box
       height="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack spacing={1} margin={1}>
         <Stack direction="row" alignItems="center" spacing={1}>
@@ -394,7 +410,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
               onSearch={(value) => {
                 try {
                   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  const re = new RegExp(value, 'i');
+                  const re = new RegExp(value, "i");
                   setSearchTerm(value);
                 } catch (error) {
                   // TODO: visualize error
@@ -409,7 +425,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
           {historyLength > 0 && (
             <Stack direction="column" spacing={1} alignItems="left">
               <FormLabel size="small">Publish history</FormLabel>
-              <ButtonGroup sx={{ maxHeight: '24px' }}>
+              <ButtonGroup sx={{ maxHeight: "24px" }}>
                 {historyLength > 0 && (
                   <Tooltip title="clear history entries" enterDelay={500}>
                     <Button
@@ -427,7 +443,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
                 )}
                 {historyLength > 0 &&
                   Array.from(Array(historyLength).keys()).map((index) =>
-                    createHistoryButton(index),
+                    createHistoryButton(index)
                   )}
                 {historyLength > 0 && (
                   <Tooltip title="remove oldest history entry" enterDelay={500}>
@@ -453,7 +469,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
               <div>{`${callServiceDescription} with arguments ${messageStructToString(
                 serviceStruct,
                 false,
-                false,
+                false
               )}`}</div>
             </Stack>
           ) : (
@@ -497,22 +513,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = '' }) {
             </AlertTitle>
           </Alert>
         )}
-        {resultMessage && (
-          // TODO: Add parameters for this
-          <ReactJson
-            name={false}
-            collapsed={false}
-            theme={settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'}
-            src={resultMessage}
-            collapseStringsAfterLength={30}
-            displayObjectSize={false}
-            enableClipboard
-            indentWidth={2}
-            displayDataTypes={false}
-            iconStyle="triangle"
-            quotesOnKeys={false}
-          />
-        )}
+        {resultMessage && createJsonView}
       </Stack>
     </Box>
   );

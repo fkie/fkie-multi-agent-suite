@@ -1,4 +1,4 @@
-import keytar from 'keytar';
+import keytar from 'keytar'
 
 /**
  * Class PasswordManager: Save/read passwords using the OS keychain (interfaced with keytar)
@@ -11,8 +11,8 @@ class PasswordManager {
    * @param {string} account - The string account name.
    * @return {string} Yields the string password or null if an entry for the given service and account was not found.
    */
-  public getPassword(service: string, account: string) {
-    return keytar.getPassword(service, account);
+  public getPassword(service: string, account: string): Promise<string | null> {
+    return keytar.getPassword(service, account)
   }
 
   /**
@@ -24,8 +24,8 @@ class PasswordManager {
    * @param {string} password - The string password. .
    * @return {void} Yields nothing.
    */
-  public setPassword(service: string, account: string, password: string) {
-    return keytar.setPassword(service, account, password);
+  public setPassword(service: string, account: string, password: string): Promise<void> {
+    return keytar.setPassword(service, account, password)
   }
 
   /**
@@ -35,9 +35,9 @@ class PasswordManager {
    * @param {string} account - The string account name.
    * @return {boolean} Yields true if a password was deleted, or false if an entry with the given service and account was not found.
    */
-  public deletePassword(service: string, account: string) {
-    return keytar.deletePassword(service, account);
+  public deletePassword(service: string, account: string): Promise<boolean> {
+    return keytar.deletePassword(service, account)
   }
 }
 
-export default PasswordManager;
+export default PasswordManager

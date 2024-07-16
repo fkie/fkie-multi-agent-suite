@@ -10,7 +10,7 @@ We need to first install dependencies and run both Front and Back-End components
 
 ### Install dependencies
 
-The code have been tested with `NodeJS v18.19.0`:
+The code have been tested with `NodeJS v20.15.0`:
 
 ```bash
 sudo apt install nodejs yarn libsecret-1-dev
@@ -30,10 +30,10 @@ sudo snap install ttyd --classic
 sudo curl --compressed -o- -L https://yarnpkg.com/install.sh | bash
 ```
 
-#### Update nodejs to v18
+#### Update nodejs to v20
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
@@ -63,8 +63,9 @@ colcon build --packages-select fkie_mas_meta
 Only for developer mode: Download and install JavaScript module dependencies:
 
 ```bash
-cd app
-yarn install
+cd fkie_mas_gui
+npm install --legacy-peer-deps
+npm run build
 ```
 
 ## Usage
@@ -72,51 +73,53 @@ yarn install
 Run the app in developer mode:
 
 ```bash
-yarn start
+npm run dev
 ```
 
 The app will start automatically the local daemon and master discovery nodes.
 
 ## Start only as node (without GUI)
 
+> broken after switch to vite-electron
+
 Set environment variable ELECTRON_RUN_AS_NODE before start.
 
 ```bash
 export ELECTRON_RUN_AS_NODE=true
-yarn start
+npm run dev
 ```
 
-Then open in browser <http://localhost:1212>
+Then open in browser <http://localhost:6274>
 
 ## Supported interface URIs
 
-| Interface URI                       | Type | Function                                                                 | Description                                                                              |
+| Interface URI                      | Type | Function                                                                 | Description                                                                              |
 | ---------------------------------- | ---- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | ros.daemon.ready                   | PUB  | `=> {'status': bool, "timestamp": float}`                                | Sent by the daemon at an interval                                                        |
 | ros.discovery.ready                | PUB  | `=> {'status': bool}`                                                    |                                                                                          |
-| ros.daemon.get_version             | RPC  | `() => DaemonVersion`                                                    | see fkie_mas_pylib/interface/runtime_interface/DaemonVersion                              |
-| ros.file.get                       | RPC  | `(path: str) => FileItem`                                                | see fkie_mas_pylib/interface/file_interface/FileItem                                      |
+| ros.daemon.get_version             | RPC  | `() => DaemonVersion`                                                    | see fkie_mas_pylib/interface/runtime_interface/DaemonVersion                             |
+| ros.file.get                       | RPC  | `(path: str) => FileItem`                                                | see fkie_mas_pylib/interface/file_interface/FileItem                                     |
 | ros.file.save                      | RPC  | `(file: FileItem) => number`                                             | write file content to providers file system. Return count of written bytes.              |
-| ros.nodes.get_list                 | RPC  | `() => RosNode[]`                                                        | see fkie_mas_pylib/interface/runtime_interface/RosNode                                    |
+| ros.nodes.get_list                 | RPC  | `() => RosNode[]`                                                        | see fkie_mas_pylib/interface/runtime_interface/RosNode                                   |
 | ros.nodes.changed                  | PUB  | `=> "timestamp": float`                                                  | Triggers when node changed (start, stop etc...)                                          |
-| ros.provider.list                  | PUB  | `=> RosProvider[]`                                                       | see fkie_mas_pylib/interface/runtime_interface/RosProvider                                |
+| ros.provider.list                  | PUB  | `=> RosProvider[]`                                                       | see fkie_mas_pylib/interface/runtime_interface/RosProvider                               |
 | ros.provider.get_list              | RPC  | `() => RosProvider[]`                                                    | Request the list of current providers                                                    |
-| ros.provider.get_timestamp         | RPC  | `(float) => "timestamp": float, "diff": float`                           | Request current time [ms] of the provider and calculate difference to given timestamp         |
+| ros.provider.get_timestamp         | RPC  | `(float) => "timestamp": float, "diff": float`                           | Request current time [ms] of the provider and calculate difference to given timestamp    |
 | ros.provider.get_diagnostics       | RPC  | `() => DiagnosticArray[]`                                                | Request all available diagnostics                                                        |
 | ros.provider.diagnostics           | PUB  | `=> DiagnosticArray[]`                                                   | updates to diagnostics                                                                   |
 | ros.provider.ros_clean_purge       | RPC  | `() => {result: bool, message: str}`                                     | clean ros log path                                                                       |
 | ros.provider.shutdown              | RPC  | `() => {result: bool, message: str}`                                     | kill all screens started by provider                                                     |
-| ros.provider.warnings              | PUB  | `=> SystemWarningGroup[]`                                                | see fkie_mas_pylib/interface/runtime_interface/SystemWarningGroup                         |
-| ros.provider.get_warnings          | RPC  | `() => SystemWarningGroup[]`                                             | see fkie_mas_pylib/interface/file_interface/RosPackage                                    |
-| ros.packages.get_list              | RPC  | `(clear_cache: bool) => RosPackage[]`                                    | see fkie_mas_pylib/interface/file_interface/RosPackage                                    |
-| ros.path.get_list                  | RPC  | `(inputPath: str) => PathItem[]`                                         | see fkie_mas_pylib/interface/file_interface/PathItem                                      |
+| ros.provider.warnings              | PUB  | `=> SystemWarningGroup[]`                                                | see fkie_mas_pylib/interface/runtime_interface/SystemWarningGroup                        |
+| ros.provider.get_warnings          | RPC  | `() => SystemWarningGroup[]`                                             | see fkie_mas_pylib/interface/file_interface/RosPackage                                   |
+| ros.packages.get_list              | RPC  | `(clear_cache: bool) => RosPackage[]`                                    | see fkie_mas_pylib/interface/file_interface/RosPackage                                   |
+| ros.path.get_list                  | RPC  | `(inputPath: str) => PathItem[]`                                         | see fkie_mas_pylib/interface/file_interface/PathItem                                     |
 | ros.path.get_list_recursive        | RPC  | `(inputPath: str) => PathItem[]`                                         | Return all files/folders included in input path                                          |
 | ros.path.get_log_paths             | RPC  | `(nodes: str[]) => RosPackage[]`                                         |                                                                                          |
 | ros.path.clear_log_paths           | RPC  | `(nodes: str[]) => {node: str, result: bool, message: str}[]`            | Removes log files (ROS and screen) for given nodes                                       |
 | ros.path.changed                   | PUB  | `=> {str: str, str: str[]}`                                              | Triggers when a file was changed.                                                        |
 | ros.launch.call_service            | RPC  | `(request: LaunchCallService) => LaunchMessageStruct`                    | Call a service.                                                                          |
-| ros.launch.load                    | RPC  | `(request: LaunchLoadRequest) => LaunchLoadReply`                        | Loads launch file by interface request                                                    |
-| ros.launch.reload                  | RPC  | `(request: LaunchLoadRequest) => LaunchLoadReply`                        | Reloads launch file by interface request                                                  |
+| ros.launch.load                    | RPC  | `(request: LaunchLoadRequest) => LaunchLoadReply`                        | Loads launch file by interface request                                                   |
+| ros.launch.reload                  | RPC  | `(request: LaunchLoadRequest) => LaunchLoadReply`                        | Reloads launch file by interface request                                                 |
 | ros.launch.unload                  | RPC  | `(request: LaunchFile) => LaunchLoadReply`                               | Unload a launch file                                                                     |
 | ros.launch.get_list                | RPC  | `() => LaunchContent[]`                                                  |                                                                                          |
 | ros.launch.start_node              | RPC  | `(request: LaunchNode) => LaunchNodeReply`                               |                                                                                          |
@@ -137,7 +140,7 @@ Then open in browser <http://localhost:1212>
 | ros.subscriber.stop                | RPC  | `(topic: str) => bool`                                                   | Stop subscriber for given topic                                                          |
 | ros.subscriber.event.{TOPIC}       | PUB  | `=> SubscriberEvent[]`                                                   | Event on received message by subscriber. TOPIC is a topic name with replaced '/' by '\_' |
 | ros.subscriber.filter.{TOPIC}      | SUB  | `=> SubscriberFilter`                                                    | Updates filter for subscribed message. TOPIC is a topic name with replaced '/' by '\_'   |
-| ros.system.get_uri                 | RPC  | `() => str`                                                              | Format ROS_MASTER_URI [INTERFACE PORT]                                                    |
+| ros.system.get_uri                 | RPC  | `() => str`                                                              | Format ROS_MASTER_URI [INTERFACE PORT]                                                   |
 | ros.parameters.get_list            | RPC  | `() => RosParameter[]`                                                   | Return all parameters as list (including values and types)                               |
 | ros.parameters.get_node_parameters | RPC  | `(nodes: str[]) => RosParameter[]`                                       | Return a parameter list for a given Node                                                 |
 | ros.parameters.has_parameter       | RPC  | `(parameter_name: str) => bool`                                          | Check if a parameter exists                                                              |
@@ -146,18 +149,11 @@ Then open in browser <http://localhost:1212>
 
 ## Additional Tools
 
-- To package the client component into an AppImage and DEB package, run:
+- To package the client component into an AppImage and zip package, run:
 
 ```bash
-cd app
-yarn run compile-linux
-```
-
-- To run tests on the client component
-
-```bash
-cd app
-yarn run test
+cd fkie_mas_gui
+npm run build:linux
 ```
 
 ## Known Issues
@@ -173,7 +169,7 @@ export GLOBAL_AGENT_HTTPS_PROXY=http://XXX.XXX.XXX.XXX:XXXX
 
 ```bash
 cd release/app
-yarn add ssh2 --force
+npm add ssh2 --force
 ```
 
 - If you get the SFPT error: `getSftpChannel: Packet length XXXXXX exceeds max length of XXXXX`, it might be caused by an `echo` command on the `.bashrc` file. Make sure all `echo` commands are defined only for interactive shells. For instance in `.bashrc`:

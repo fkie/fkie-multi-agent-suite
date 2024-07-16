@@ -1,15 +1,15 @@
-import PropTypes from 'prop-types';
-import { useContext, useEffect, useState } from 'react';
-import ReactJson from 'react-json-view';
+import PropTypes from "prop-types";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { JSONTree } from "react-json-tree";
+import { Box, Stack, Typography } from "@mui/material";
+import { CopyButton, SearchBar } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { generateUniqueId } from "../../../utils";
+import { darkThemeJson } from "../../../themes/darkTheme";
+import { lightThemeJson } from "../../../themes/lightTheme";
 
-import { Box, Stack, Typography } from '@mui/material';
-
-import { CopyButton, SearchBar } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { generateUniqueId } from '../../../utils';
-
-function SystemInformationPanel({ providerId = '' }) {
+function SystemInformationPanel({ providerId = "" }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
@@ -17,7 +17,7 @@ function SystemInformationPanel({ providerId = '' }) {
   const [provider, setProvider] = useState(null);
   const [providerDetails, setProviderDetails] = useState({});
   const [providerWarnings, setProviderWarnings] = useState([]);
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState("");
 
   /** filter dictionaries with system information by given filter */
   function filterNestObject(item) {
@@ -26,23 +26,23 @@ function SystemInformationPanel({ providerId = '' }) {
       let addKey = false;
       let nested = item[key];
       switch (typeof nested) {
-        case 'object':
+        case "object":
           nested = filterNestObject(item[key]);
-          if (!['{}', 'null'].includes(JSON.stringify(nested))) {
+          if (!["{}", "null"].includes(JSON.stringify(nested))) {
             addKey = true;
           }
           break;
-        case 'string':
+        case "string":
           if (nested?.toLocaleLowerCase().includes(filter)) {
             addKey = true;
           }
           break;
-        case 'number':
+        case "number":
           if (nested.toString().toLocaleLowerCase().includes(filter)) {
             addKey = true;
           }
           break;
-        case 'function':
+        case "function":
           nested = nested();
           if (nested?.toLocaleLowerCase().includes(filter)) {
             addKey = true;
@@ -77,25 +77,25 @@ function SystemInformationPanel({ providerId = '' }) {
       infoContent.URI = `${provider.host()}:${provider.connection.port}`;
       infoContent.ROS_VERSION = provider.rosState.ros_version;
       infoContent.ROS_DISTRO = provider.rosState.ros_distro;
-      if (provider.rosState.ros_version === '1') {
+      if (provider.rosState.ros_version === "1") {
         infoContent.ROS_MASTER_URI = provider.rosState.masteruri;
       }
-      if (provider.rosState.ros_version === '2') {
+      if (provider.rosState.ros_version === "2") {
         infoContent.ROS_DOMAIN_ID = provider.rosState.ros_domain_id;
       } else {
         infoContent.NETWORK_ID = provider.rosState.ros_domain_id;
       }
-      infoContent['System Information'] = provider.systemInfo?.system_info;
-      infoContent['System Environment'] = provider.systemEnv?.environment;
+      infoContent["System Information"] = provider.systemInfo?.system_info;
+      infoContent["System Environment"] = provider.systemEnv?.environment;
       // infoContent['Platform details'] = provider.platform_details;
       infoContent.Hostnames = provider.hostnames;
       if (provider.errorDetails) {
-        infoContent['Last error'] = provider.errorDetails;
+        infoContent["Last error"] = provider.errorDetails;
       }
       const versionDate = provider.daemonVersion.date
         ? ` (${provider.daemonVersion.date})`
-        : '';
-      infoContent['Daemon version'] =
+        : "";
+      infoContent["Daemon version"] =
         `${provider.daemonVersion.version}${versionDate}`;
       setProviderDetails(filterNestObject(infoContent));
       // join warnings to one list
@@ -112,11 +112,45 @@ function SystemInformationPanel({ providerId = '' }) {
     setProvider(rosCtx.getProviderById(providerId));
   }, [providerId, rosCtx, rosCtx.getProviderById]);
 
+  const createProviderDetails = useMemo(() => {
+    return (
+      <Stack sx={{ width: "100%" }}>
+        <h5>Provider Details</h5>
+        <JSONTree
+          data={providerDetails}
+          sortObjectKeys={true}
+          theme={
+            settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
+          }
+          invertTheme={false}
+          hideRoot={true}
+        />
+      </Stack>
+    );
+  }, [providerDetails, settingsCtx.changed]);
+
+  const createSystemInfoContent = useMemo(() => {
+    return (
+      <Stack sx={{ width: "100%" }}>
+        <h5>This System Information</h5>
+        <JSONTree
+          data={systemInfoContent}
+          sortObjectKeys={true}
+          theme={
+            settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
+          }
+          invertTheme={false}
+          hideRoot={true}
+        />
+      </Stack>
+    );
+  }, [systemInfoContent, settingsCtx.changed]);
+
   return (
     <Box
       height="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack direction="column" margin="0.5em" spacing="0.5em">
         <SearchBar
@@ -125,18 +159,18 @@ function SystemInformationPanel({ providerId = '' }) {
           defaultValue=""
         />
         <Stack spacing={1} direction="row">
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }}>
             Name:
           </Typography>
           <Typography variant="h5">{provider?.name()}</Typography>
           <CopyButton value={`${provider?.name()}`} />
         </Stack>
         {providerWarnings.length > 0 && (
-          <Stack sx={{ width: '100%' }}>
+          <Stack sx={{ width: "100%" }}>
             <h5>Warnings</h5>
             {providerWarnings.map((item) => {
               return (
-                <Stack key={generateUniqueId()} sx={{ width: '100%' }}>
+                <Stack key={generateUniqueId()} sx={{ width: "100%" }}>
                   <Typography variant="subtitle1" color="red">
                     {item.msg}
                   </Typography>
@@ -157,48 +191,8 @@ function SystemInformationPanel({ providerId = '' }) {
             })}
           </Stack>
         )}
-        {providerDetails && (
-          <Stack sx={{ width: '100%' }}>
-            <h5>Provider Details</h5>
-            <ReactJson
-              name={false}
-              collapsed={1}
-              theme={
-                settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
-              }
-              src={providerDetails}
-              collapseStringsAfterLength={100}
-              displayObjectSize={false}
-              enableClipboard
-              indentWidth={2}
-              displayDataTypes={false}
-              iconStyle="triangle"
-              quotesOnKeys={false}
-              sortKeys
-            />
-          </Stack>
-        )}
-        {systemInfoContent && (
-          <Stack sx={{ width: '100%' }}>
-            <h5>This System Information</h5>
-            <ReactJson
-              name={false}
-              collapsed={1}
-              theme={
-                settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
-              }
-              src={systemInfoContent}
-              collapseStringsAfterLength={200}
-              displayObjectSize={false}
-              enableClipboard
-              indentWidth={2}
-              displayDataTypes={false}
-              iconStyle="triangle"
-              quotesOnKeys={false}
-              sortKeys
-            />
-          </Stack>
-        )}
+        {providerDetails && createProviderDetails}
+        {systemInfoContent && createSystemInfoContent}
       </Stack>
     </Box>
   );

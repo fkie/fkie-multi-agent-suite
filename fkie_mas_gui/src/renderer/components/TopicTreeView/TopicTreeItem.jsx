@@ -118,7 +118,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
             sx={{
               display: 'flex',
               alignItems: 'center',
-              p: 0.3,
+              // p: 0.3,
               pr: 0,
             }}
           >

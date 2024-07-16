@@ -385,7 +385,7 @@ function LaunchFileModal({
                             variant="outlined"
                             margin="dense"
                             size="small"
-                            autoFocus
+                            // autoFocus
                           />
                         )}
                         renderOption={(props, option) => (

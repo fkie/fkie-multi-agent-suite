@@ -1,57 +1,46 @@
-import {
-  BrowserWindow,
-  Menu,
-  MenuItemConstructorOptions,
-  app,
-  shell,
-} from 'electron';
+import { BrowserWindow, Menu, MenuItemConstructorOptions, app, shell } from 'electron'
 
-const path = require('path');
+// const path = require('path')
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
-  selector?: string;
-  submenu?: DarwinMenuItemConstructorOptions[] | Menu;
+  selector?: string
+  submenu?: DarwinMenuItemConstructorOptions[] | Menu
 }
 
 export default class MenuBuilder {
-  mainWindow: BrowserWindow;
+  mainWindow: BrowserWindow
 
   constructor(mainWindow: BrowserWindow) {
-    this.mainWindow = mainWindow;
+    this.mainWindow = mainWindow
   }
 
   buildMenu(): Menu {
-    if (
-      process.env.NODE_ENV === 'development' ||
-      process.env.DEBUG_PROD === 'true'
-    ) {
-      this.setupDevelopmentEnvironment();
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true') {
+      this.setupDevelopmentEnvironment()
     }
 
     const template =
-      process.platform === 'darwin'
-        ? this.buildDarwinTemplate()
-        : this.buildDefaultTemplate();
+      process.platform === 'darwin' ? this.buildDarwinTemplate() : this.buildDefaultTemplate()
 
-    const menu = Menu.buildFromTemplate(template);
-    Menu.setApplicationMenu(menu);
+    const menu = Menu.buildFromTemplate(template)
+    Menu.setApplicationMenu(menu)
 
-    return menu;
+    return menu
   }
 
   setupDevelopmentEnvironment(): void {
     this.mainWindow.webContents.on('context-menu', (_, props) => {
-      const { x, y } = props;
+      const { x, y } = props
 
       Menu.buildFromTemplate([
         {
           label: 'Inspect element',
-          click: () => {
-            this.mainWindow.webContents.inspectElement(x, y);
-          },
-        },
-      ]).popup({ window: this.mainWindow });
-    });
+          click: (): void => {
+            this.mainWindow.webContents.inspectElement(x, y)
+          }
+        }
+      ]).popup({ window: this.mainWindow })
+    })
   }
 
   buildDarwinTemplate(): MenuItemConstructorOptions[] {
@@ -60,7 +49,7 @@ export default class MenuBuilder {
       submenu: [
         {
           label: 'About ElectronReact',
-          selector: 'orderFrontStandardAboutPanel:',
+          selector: 'orderFrontStandardAboutPanel:'
         },
         { type: 'separator' },
         { label: 'Services', submenu: [] },
@@ -68,24 +57,24 @@ export default class MenuBuilder {
         {
           label: 'Hide ElectronReact',
           accelerator: 'Command+H',
-          selector: 'hide:',
+          selector: 'hide:'
         },
         {
           label: 'Hide Others',
           accelerator: 'Command+Shift+H',
-          selector: 'hideOtherApplications:',
+          selector: 'hideOtherApplications:'
         },
         { label: 'Show All', selector: 'unhideAllApplications:' },
         { type: 'separator' },
         {
           label: 'Quit',
           accelerator: 'Command+Q',
-          click: () => {
-            app.quit();
-          },
-        },
-      ],
-    };
+          click: (): void => {
+            app.quit()
+          }
+        }
+      ]
+    }
     const subMenuEdit: DarwinMenuItemConstructorOptions = {
       label: 'Edit',
       submenu: [
@@ -98,100 +87,97 @@ export default class MenuBuilder {
         {
           label: 'Select All',
           accelerator: 'Command+A',
-          selector: 'selectAll:',
-        },
-      ],
-    };
+          selector: 'selectAll:'
+        }
+      ]
+    }
     const subMenuViewDev: MenuItemConstructorOptions = {
       label: 'View',
       submenu: [
         {
           label: 'Reload',
           accelerator: 'Command+R',
-          click: () => {
-            this.mainWindow.webContents.reload();
-          },
+          click: (): void => {
+            this.mainWindow.webContents.reload()
+          }
         },
         {
           label: 'Toggle Full Screen',
           accelerator: 'Ctrl+Command+F',
-          click: () => {
-            this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
-          },
+          click: (): void => {
+            this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen())
+          }
         },
         {
           label: 'Toggle Developer Tools',
           accelerator: 'Alt+Command+I',
-          click: () => {
-            this.mainWindow.webContents.toggleDevTools();
-          },
-        },
-      ],
-    };
+          click: (): void => {
+            this.mainWindow.webContents.toggleDevTools()
+          }
+        }
+      ]
+    }
     const subMenuViewProd: MenuItemConstructorOptions = {
       label: 'View',
       submenu: [
         {
           label: 'Toggle Full Screen',
           accelerator: 'Ctrl+Command+F',
-          click: () => {
-            this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
-          },
-        },
-      ],
-    };
+          click: (): void => {
+            this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen())
+          }
+        }
+      ]
+    }
     const subMenuWindow: DarwinMenuItemConstructorOptions = {
       label: 'Window',
       submenu: [
         {
           label: 'Minimize',
           accelerator: 'Command+M',
-          selector: 'performMiniaturize:',
+          selector: 'performMiniaturize:'
         },
         { label: 'Close', accelerator: 'Command+W', selector: 'performClose:' },
         { type: 'separator' },
-        { label: 'Bring All to Front', selector: 'arrangeInFront:' },
-      ],
-    };
+        { label: 'Bring All to Front', selector: 'arrangeInFront:' }
+      ]
+    }
     const subMenuHelp: MenuItemConstructorOptions = {
       label: 'Help',
       submenu: [
         {
           label: 'Learn More',
-          click() {
-            shell.openExternal('https://electronjs.org');
-          },
+          click(): void {
+            shell.openExternal('https://electronjs.org')
+          }
         },
         {
           label: 'Documentation',
-          click() {
-            shell.openExternal(
-              'https://github.com/electron/electron/tree/main/docs#readme',
-            );
-          },
+          click(): void {
+            shell.openExternal('https://github.com/electron/electron/tree/main/docs#readme')
+          }
         },
         {
           label: 'Community Discussions',
-          click() {
-            shell.openExternal('https://www.electronjs.org/community');
-          },
+          click(): void {
+            shell.openExternal('https://www.electronjs.org/community')
+          }
         },
         {
           label: 'Search Issues',
-          click() {
-            shell.openExternal('https://github.com/electron/electron/issues');
-          },
-        },
-      ],
-    };
+          click(): void {
+            shell.openExternal('https://github.com/electron/electron/issues')
+          }
+        }
+      ]
+    }
 
     const subMenuView =
-      process.env.NODE_ENV === 'development' ||
-      process.env.DEBUG_PROD === 'true'
+      process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
         ? subMenuViewDev
-        : subMenuViewProd;
+        : subMenuViewProd
 
-    return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp];
+    return [subMenuAbout, subMenuEdit, subMenuView, subMenuWindow, subMenuHelp]
   }
 
   buildDefaultTemplate() {
@@ -202,11 +188,11 @@ export default class MenuBuilder {
           {
             label: '&Close',
             accelerator: 'Ctrl+W',
-            click: () => {
-              this.mainWindow.close();
-            },
-          },
-        ],
+            click: (): void => {
+              this.mainWindow.close()
+            }
+          }
+        ]
       },
       {
         label: '&View',
@@ -214,55 +200,51 @@ export default class MenuBuilder {
           {
             label: '&Reload',
             accelerator: 'F5',
-            click: () => {
-              this.mainWindow.webContents.reload();
-            },
+            click: (): void => {
+              this.mainWindow.webContents.reload()
+            }
           },
           {
             label: 'Toggle &Full Screen',
             accelerator: 'F11',
-            click: () => {
-              this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
-            },
+            click: (): void => {
+              this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen())
+            }
           },
           {
             label: 'Toggle &Developer Tools',
             accelerator: 'F12',
-            click: () => {
-              this.mainWindow.webContents.toggleDevTools();
-            },
-          },
-        ],
+            click: (): void => {
+              this.mainWindow.webContents.toggleDevTools()
+            }
+          }
+        ]
       },
       {
         label: 'Help',
         submenu: [
           {
             label: 'Documentation \u{1F855}',
-            click() {
-              shell.openExternal('https://fkie.github.io/multimaster_fkie/');
-            },
+            click: (): void => {
+              shell.openExternal('https://fkie.github.io/multimaster_fkie/')
+            }
           },
           {
             label: 'Search Issues \u{1F855}',
-            click() {
-              shell.openExternal(
-                'https://github.com/fkie/fkie-multi-agent-suite/issues',
-              );
-            },
+            click: (): void => {
+              shell.openExternal('https://github.com/fkie/fkie-multi-agent-suite/issues')
+            }
           },
           {
             label: 'About \u{1F855}',
-            click: () => {
-              shell.openExternal(
-                'https://github.com/fkie/fkie-multi-agent-suite',
-              );
-            },
-          },
-        ],
-      },
-    ];
+            click: (): void => {
+              shell.openExternal('https://github.com/fkie/fkie-multi-agent-suite')
+            }
+          }
+        ]
+      }
+    ]
 
-    return templateDefault;
+    return templateDefault
   }
 }

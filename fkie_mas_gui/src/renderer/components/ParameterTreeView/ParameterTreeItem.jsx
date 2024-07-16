@@ -134,7 +134,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
       return (
         <TextField
           type="number"
-          id={param.id}
+          id={`input-${param.id}`}
           size="small"
           variant="standard"
           defaultValue={param.value}
@@ -151,7 +151,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
       // TODO: show proper list/arrays
       return (
         <TextField
-          id={param.id}
+        id={`input-${param.id}`}
           defaultValue={`${JSON.stringify(param.value)}`}
           placeholder={`${JSON.stringify(param.value)}`}
           variant="standard"
@@ -166,7 +166,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
     if (['bool'].includes(parameterType)) {
       return (
         <Switch
-          id={param.id}
+        id={`input-${param.id}`}
           checked={param.value ? true : false}
           onChange={(event) => {
             updateParameter(param, event.target.checked);
@@ -178,7 +178,8 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
     // default render (usually string)
     return (
       <TextField
-        id={param.id}
+        key={param.id}
+        id={`input-${param.id}`}
         defaultValue={`${param.value}`}
         placeholder={`${param.value}`}
         variant="standard"
@@ -210,7 +211,8 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
           sx={{
             display: 'flex',
             alignItems: 'center',
-            p: 0.3,
+            // p: 0.3,
+            padding: 0,
             pr: 0,
           }}
         >

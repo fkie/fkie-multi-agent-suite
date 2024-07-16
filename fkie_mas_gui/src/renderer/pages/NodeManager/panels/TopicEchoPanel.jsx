@@ -1,12 +1,12 @@
-import AbcIcon from '@mui/icons-material/Abc';
-import DataArrayIcon from '@mui/icons-material/DataArray';
-import DataObjectIcon from '@mui/icons-material/DataObject';
-import Filter1Icon from '@mui/icons-material/Filter1';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import NotesIcon from '@mui/icons-material/Notes';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PlaylistRemoveIcon from '@mui/icons-material/PlaylistRemove';
-import StopIcon from '@mui/icons-material/Stop';
+import AbcIcon from "@mui/icons-material/Abc";
+import DataArrayIcon from "@mui/icons-material/DataArray";
+import DataObjectIcon from "@mui/icons-material/DataObject";
+import Filter1Icon from "@mui/icons-material/Filter1";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import NotesIcon from "@mui/icons-material/Notes";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
+import StopIcon from "@mui/icons-material/Stop";
 import {
   Alert,
   AlertTitle,
@@ -23,25 +23,27 @@ import {
   ToggleButton,
   Tooltip,
   Typography,
-} from '@mui/material';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useCustomEventListener } from 'react-custom-events';
-import ReactJson from 'react-json-view';
+} from "@mui/material";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
+import { JSONTree } from "react-json-tree";
+import { darkThemeJson } from "../../../themes/darkTheme";
+import { lightThemeJson } from "../../../themes/lightTheme";
 
-import { v4 as uuid } from 'uuid';
-import { ProviderSelector } from '../../../components';
-import { LoggingContext } from '../../../context/LoggingContext';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { SubscriberFilter } from '../../../models';
-import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from '../../../providers/eventTypes';
+import { v4 as uuid } from "uuid";
+import { ProviderSelector } from "../../../components";
+import { LoggingContext } from "../../../context/LoggingContext";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { SubscriberFilter } from "../../../models";
+import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "../../../providers/eventTypes";
 
 function TopicEchoPanel({
   showOptions = true,
   showDetails = false,
-  defaultProvider = '',
-  defaultTopic = '',
+  defaultProvider = "",
+  defaultTopic = "",
   defaultNoData = false,
 }) {
   const rosCtx = useContext(RosContext);
@@ -73,7 +75,7 @@ function TopicEchoPanel({
     setQosAnchorEl(null);
   };
   let receivedIndex = 0;
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   // set default topic if defined
   useEffect(() => {
@@ -89,7 +91,7 @@ function TopicEchoPanel({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [content],
+    [content]
   );
 
   useCustomEventListener(
@@ -105,7 +107,7 @@ function TopicEchoPanel({
       receivedIndex += 1;
       setContent(event);
     },
-    [topicName],
+    [topicName]
   );
 
   // initialize provider
@@ -117,7 +119,7 @@ function TopicEchoPanel({
       noArr,
       noStr,
       hz,
-      windowSize,
+      windowSize
     );
     rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,19 +141,19 @@ function TopicEchoPanel({
     if (!provider) return;
     setCurrentProvider(provider);
 
-    let msgType = '';
+    let msgType = "";
     // Get messageType from node list of the provider
     const nodeList = rosCtx.mapProviderRosNodes.get(selectedProvider);
     // TODO: select QoS depending on publishers QoS, see choose_qos: https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
     nodeList.forEach((node) => {
       node.subscribers.forEach((topic) => {
-        if (msgType === '' && topicName === topic.name) {
+        if (msgType === "" && topicName === topic.name) {
           msgType = topic.msgtype;
         }
       });
-      if (msgType === '') {
+      if (msgType === "") {
         node.publishers.forEach((topic) => {
-          if (msgType === '' && topicName === topic.name) {
+          if (msgType === "" && topicName === topic.name) {
             msgType = topic.msgtype;
           }
         });
@@ -164,13 +166,13 @@ function TopicEchoPanel({
         noArr,
         noStr,
         hz,
-        windowSize,
+        windowSize
       );
       rosCtx.registerSubscriber(
         selectedProvider,
         topicName,
         msgType,
-        filterMsg,
+        filterMsg
       );
       setSubscribed(true);
     }
@@ -189,7 +191,7 @@ function TopicEchoPanel({
     if (pause) {
       close();
     }
-  }, [pause, close]);
+  }, [pause]);
 
   useEffect(() => {
     return () => {
@@ -201,7 +203,7 @@ function TopicEchoPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function normalizePrint(size, fixed = 2, per = '') {
+  function normalizePrint(size, fixed = 2, per = "") {
     if (size > 999999) {
       return `${(size / 1048576.0).toFixed(fixed)}MiB${per}`;
     }
@@ -237,22 +239,18 @@ function TopicEchoPanel({
               //   text={`${event.seq}`}
               // />
             )}
-            <ReactJson
+            <JSONTree
               key={`${event.key}`}
-              name={false}
-              // collapsed={2}
+              data={event?.data}
+              sortObjectKeys={true}
               theme={
-                settingsCtx.get('useDarkMode') ? 'grayscale' : 'rjv-default'
+                settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
               }
-              style={{ fontSize: '0.8em' }}
-              src={event?.data}
-              collapseStringsAfterLength={30}
-              displayObjectSize={false}
-              enableClipboard={false}
-              indentWidth={2}
-              displayDataTypes={false}
-              // iconStyle="triangle"
-              quotesOnKeys={false}
+              invertTheme={false}
+              hideRoot={true}
+              shouldExpandNodeInitially={([key]) => {
+                return true;
+              }}
             />
           </Stack>
         </Box>
@@ -265,7 +263,7 @@ function TopicEchoPanel({
       width="100%"
       height="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Paper
         width="100%"
@@ -363,13 +361,13 @@ function TopicEchoPanel({
                   <NotesIcon />
                 </ToggleButton>
               </Tooltip>
-              {currentProvider?.rosVersion === 'X' && (
+              {currentProvider?.rosVersion === "X" && (
                 <>
                   <Button
                     id="qos-button"
-                    aria-controls={openQos ? 'qos-menu' : undefined}
+                    aria-controls={openQos ? "qos-menu" : undefined}
                     aria-haspopup="true"
-                    aria-expanded={openQos ? 'true' : undefined}
+                    aria-expanded={openQos ? "true" : undefined}
                     variant="outlined"
                     disableElevation
                     onClick={handleQosClick}
@@ -380,7 +378,7 @@ function TopicEchoPanel({
                   <Menu
                     id="qos-menu"
                     MenuListProps={{
-                      'aria-labelledby': 'qos-button',
+                      "aria-labelledby": "qos-button",
                     }}
                     anchorEl={qosAnchorEl}
                     open={openQos}
@@ -409,7 +407,7 @@ function TopicEchoPanel({
                 </>
               )}
               <Tooltip
-                title={pause ? 'start subscriber' : 'stop subscriber'}
+                title={pause ? "start subscriber" : "stop subscriber"}
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
@@ -474,11 +472,11 @@ function TopicEchoPanel({
         </Stack>
         {content && showStatistics && (
           <Stack margin={0.5} spacing={1}>
-            <Stack spacing={1} direction="row">
+            <Stack spacing={1} direction="row" fontSize="0.8em">
               {content.latched && (
                 <Box
                   style={{
-                    fontWeight: 'bold',
+                    fontWeight: "bold",
                   }}
                 >
                   latched
@@ -487,22 +485,22 @@ function TopicEchoPanel({
               <Box>{content.count} messages</Box>
               <Box>average rate: {content.rate.toFixed(2)} Hz</Box>
             </Stack>
-            <Stack spacing={1} direction="row">
+            <Stack spacing={1} direction="row" fontSize="0.8em">
               <Box>
-                bw: {normalizePrint(content.bw, 2, '/s')} [min:{' '}
-                {normalizePrint(content.bw_min, 0, '/s')}, max:{' '}
-                {normalizePrint(content.bw_max, 0, '/s')}]
+                bw: {normalizePrint(content.bw, 2, "/s")} [min:{" "}
+                {normalizePrint(content.bw_min, 0, "/s")}, max:{" "}
+                {normalizePrint(content.bw_max, 0, "/s")}]
               </Box>
               <Box>
-                size: {normalizePrint(content.size, 2)} [min:{' '}
-                {normalizePrint(content.size_min, 0)}, max:{' '}
+                size: {normalizePrint(content.size, 2)} [min:{" "}
+                {normalizePrint(content.size_min, 0)}, max:{" "}
                 {normalizePrint(content.size_max, 0)}]
               </Box>
             </Stack>
           </Stack>
         )}
       </Paper>
-      <Stack sx={{ width: '100%' }}>
+      <Stack sx={{ width: "100%" }}>
         {history && !noData && generateJsonTopics}
         {!currentProvider && (
           <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>

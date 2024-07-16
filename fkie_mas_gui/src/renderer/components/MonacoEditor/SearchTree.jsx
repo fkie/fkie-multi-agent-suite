@@ -1,7 +1,7 @@
-import { useMonaco } from '@monaco-editor/react';
+import * as Monaco from '@monaco-editor/react';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import { TreeView } from '@mui/x-tree-view';
+import { SimpleTreeView } from '@mui/x-tree-view';
 import { useDebounceCallback } from '@react-hook/debounce';
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
@@ -14,7 +14,7 @@ import {
 import { SearchFileTreeItem, SearchResultTreeItem } from './SearchTreeItem';
 
 function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
-  const monaco = useMonaco();
+  const monaco = Monaco.useMonaco();
   const [expandedSearchResults, setExpandedSearchResults] = useState([]);
   const [globalSearchTree, setGlobalSearchTree] = useState({});
 
@@ -90,17 +90,16 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
   }
 
   return (
-    <TreeView
+    <SimpleTreeView
       aria-label="Search results"
-      expanded={expandedSearchResults}
-      defaultCollapseIcon={<ArrowDropDownIcon />}
-      defaultExpandIcon={<ArrowRightIcon />}
+      expandedItems={expandedSearchResults}
+      slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
       // defaultEndIcon={<div style={{ width: 24 }} />}
-      onNodeSelect={(event, nodeId) => {
-        const index = expandedSearchResults.indexOf(nodeId);
+      onSelectedItemsChange={(event, itemId) => {
+        const index = expandedSearchResults.indexOf(itemId);
         const copyExpanded = [...expandedSearchResults];
         if (index === -1) {
-          copyExpanded.push(nodeId);
+          copyExpanded.push(itemId);
         } else {
           copyExpanded.splice(index, 1);
         }
@@ -114,7 +113,7 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
           <SearchFileTreeItem
             fontSize="0.8em"
             key={fileName}
-            nodeId={fileName}
+            itemId={fileName}
             labelText={`${getFileName(fileName)}`}
             labelCount={entries.length}
           >
@@ -123,7 +122,7 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
                 <SearchResultTreeItem
                   fontSize="0.8em"
                   key={`${fileName}-${entry.lineNumber}`}
-                  nodeId={`${fileName}-${entry.lineNumber}`}
+                  itemId={`${fileName}-${entry.lineNumber}`}
                   labelText={`${entry.lineNumber}`}
                   labelInfo={entry.text}
                   onClick={() => {
@@ -135,7 +134,7 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
           </SearchFileTreeItem>
         );
       })}
-    </TreeView>
+    </SimpleTreeView>
   );
 }
 

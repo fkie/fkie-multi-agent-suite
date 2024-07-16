@@ -77,7 +77,7 @@ function HostTreeViewItem({
   color,
   labelText,
   paddingLeft,
-  nodeId = '',
+  itemId = '',
   iconColor = '',
   onClick = () => {},
   onDoubleClick = () => {},
@@ -153,7 +153,7 @@ function HostTreeViewItem({
   return (
     <StyledTreeItemRoot
       ContentComponent={ContentComponentItemTree}
-      nodeId={nodeId}
+      itemId={itemId}
       onDoubleClick={onDoubleClick}
       onMouseOver={onHover}
       onMouseOut={onHoverOut}
@@ -166,7 +166,7 @@ function HostTreeViewItem({
           }}
         >
           {menuItems && menuItems.length > 0 && (
-            <OverflowMenu options={menuItems} id={`${nodeId}-options"`} />
+            <OverflowMenu options={menuItems} id={`${itemId}-options"`} />
           )}
 
           {ButtonIcon && (
@@ -292,7 +292,7 @@ function HostTreeViewItem({
                         edge="end"
                         aria-label={startTooltipText}
                         onClick={() => {
-                          onStartClick(nodeId);
+                          onStartClick(itemId);
                         }}
                         disabled={!onStartClick}
                       >
@@ -316,7 +316,7 @@ function HostTreeViewItem({
                         edge="end"
                         aria-label={stopTooltipText}
                         onClick={() => {
-                          onStopClick(nodeId);
+                          onStopClick(itemId);
                         }}
                         disabled={!onStopClick}
                       >
@@ -340,7 +340,7 @@ function HostTreeViewItem({
                         edge="end"
                         aria-label={restartTooltipText}
                         onClick={() => {
-                          onRestartClick(nodeId);
+                          onRestartClick(itemId);
                         }}
                         disabled={!onRestartClick}
                       >
@@ -360,7 +360,7 @@ function HostTreeViewItem({
             <Typography
               onClick={onClick}
               onDoubleClick={() => {
-                if (onDoubleClick) onDoubleClick(labelText, nodeId);
+                if (onDoubleClick) onDoubleClick(labelText, itemId);
               }}
               variant="body2"
               sx={{ fontWeight: 'inherit', flexGrow: 1 }}
@@ -391,7 +391,7 @@ function HostTreeViewItem({
                 size="small"
                 onClick={() => {
                   if (onShowLoggersClick) {
-                    onShowLoggersClick(nodeId);
+                    onShowLoggersClick(itemId);
                   }
                 }}
               >
@@ -436,7 +436,7 @@ function HostTreeViewItem({
 }
 
 HostTreeViewItem.propTypes = {
-  nodeId: PropTypes.string,
+  itemId: PropTypes.string,
   iconColor: PropTypes.string,
   bgColor: PropTypes.string.isRequired,
   color: PropTypes.string.isRequired,

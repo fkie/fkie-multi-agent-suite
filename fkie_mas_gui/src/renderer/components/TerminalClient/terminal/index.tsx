@@ -5,34 +5,25 @@ MIT License
 Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
-import React from 'react';
+import React from 'react'
 
-import { FitAddon } from '@xterm/addon-fit';
-import { ISearchOptions, SearchAddon } from '@xterm/addon-search';
-import { WebLinksAddon } from '@xterm/addon-web-links';
-import { WebglAddon } from '@xterm/addon-webgl';
-import { ITerminalOptions, Terminal } from '@xterm/xterm';
-import { bind } from 'decko';
+import { FitAddon } from '@xterm/addon-fit'
+import { ISearchOptions, SearchAddon } from '@xterm/addon-search'
+import { WebLinksAddon } from '@xterm/addon-web-links'
+import { WebglAddon } from '@xterm/addon-webgl'
+import { ITerminalOptions, Terminal } from '@xterm/xterm'
 
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Button,
-  IconButton,
-  Stack,
-  TextField,
-} from '@mui/material';
+import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from '@mui/material'
 
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
+import FirstPageIcon from '@mui/icons-material/FirstPage'
+import LastPageIcon from '@mui/icons-material/LastPage'
 
-import SearchBar from '../../UI/SearchBar';
+import SearchBar from '../../UI/SearchBar'
 
-import { FlowControl, ZmodemAddon } from '../zmodem';
-import OverlayAddon from './overlay';
+import { FlowControl, ZmodemAddon } from '../zmodem'
+import OverlayAddon from './overlay'
 
-import '@xterm/xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css'
 
 const enum Command {
   // server side
@@ -44,89 +35,89 @@ const enum Command {
   INPUT = '0',
   RESIZE_TERMINAL = '1',
   PAUSE = '2',
-  RESUME = '3',
+  RESUME = '3'
 }
 
 export interface ClientOptions {
-  rendererType: 'dom' | 'canvas' | 'webgl';
-  disableLeaveAlert: boolean;
-  disableResizeOverlay: boolean;
-  titleFixed: string;
+  rendererType: 'dom' | 'canvas' | 'webgl'
+  disableLeaveAlert: boolean
+  disableResizeOverlay: boolean
+  titleFixed: string
 }
 
 interface Props {
-  id: string;
-  wsUrl: string;
-  tokenUrl: string;
-  clientOptions: ClientOptions;
-  termOptions: ITerminalOptions;
-  initialCommands: string[];
-  invisibleTerminal: boolean | null;
-  name: string;
-  onIncomingData: (data: string) => void | null;
-  onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
-  fontSize: number;
-  setFontsize: (size: number) => void | null;
+  id: string
+  wsUrl: string
+  tokenUrl: string
+  clientOptions: ClientOptions
+  termOptions: ITerminalOptions
+  initialCommands: string[]
+  invisibleTerminal: boolean | null
+  name: string
+  onIncomingData: (data: string) => void | null
+  onCtrlD: (wsUrl: string, tokenUrl: string) => void | null
+  fontSize: number
+  setFontsize: (size: number) => void | null
 }
 
 type XtermState = {
-  opened: boolean;
-};
+  opened: boolean
+}
 
 export class Xterm extends React.Component<Props, XtermState> {
-  private textEncoder: TextEncoder;
+  private textEncoder: TextEncoder
 
-  private textDecoder: TextDecoder;
+  private textDecoder: TextDecoder
 
-  private container: HTMLElement | null = null;
+  private container: HTMLElement | null = null
 
-  private terminal: Terminal | null = null;
+  private terminal: Terminal | null = null
 
-  private fitAddon: FitAddon;
+  private fitAddon: FitAddon
 
-  private searchAddon: SearchAddon;
+  private searchAddon: SearchAddon
 
-  private searchAddonOptions: ISearchOptions;
+  private searchAddonOptions: ISearchOptions
 
-  private overlayAddon: OverlayAddon | null = null;
+  private overlayAddon: OverlayAddon | null = null
 
-  private zModemAddon: ZmodemAddon | null = null;
+  private zModemAddon: ZmodemAddon | null = null
 
-  private webglAddon: WebglAddon | null = null;
+  private webglAddon: WebglAddon | null = null
 
-  private socket: WebSocket | null = null;
+  private socket: WebSocket | null = null
 
-  private token: string | null = null;
+  private token: string | null = null
 
-  private title: string = 'Terminal';
+  private title: string = 'Terminal'
 
-  private searchText: string = '';
+  private searchText: string = ''
 
-  private fontSize: number;
+  private fontSize: number
 
-  private resizeObserver: ResizeObserver | null = null;
+  private resizeObserver: ResizeObserver | null = null
 
-  private id: string = '';
+  private id: string = ''
 
   private lastContainerSize: { width: number; height: number } = {
     width: 0,
-    height: 0,
-  };
+    height: 0
+  }
 
   constructor(props: Props) {
-    super(props);
+    super(props)
 
     this.state = {
-      opened: false,
-    };
+      opened: false
+    }
 
-    this.id = props.id;
-    this.textEncoder = new TextEncoder();
-    this.textDecoder = new TextDecoder();
-    this.fitAddon = new FitAddon();
-    this.overlayAddon = new OverlayAddon();
+    this.id = props.id
+    this.textEncoder = new TextEncoder()
+    this.textDecoder = new TextDecoder()
+    this.fitAddon = new FitAddon()
+    this.overlayAddon = new OverlayAddon()
 
-    this.searchAddon = new SearchAddon();
+    this.searchAddon = new SearchAddon()
     this.searchAddonOptions = {
       regex: true,
       caseSensitive: false,
@@ -137,85 +128,92 @@ export class Xterm extends React.Component<Props, XtermState> {
         activeMatchBackground: '#d81e00',
         matchBorder: '#d81e00',
         matchOverviewRuler: '#d81e00',
-        activeMatchColorOverviewRuler: '#d81e00',
-      },
-    };
+        activeMatchColorOverviewRuler: '#d81e00'
+      }
+    }
 
     // TODO Add setting for this parameter
-    this.fontSize = props.fontSize;
+    this.fontSize = props.fontSize
+    this.onWindowUnload = this.onWindowUnload.bind(this)
+    this.onSocketOpen = this.onSocketOpen.bind(this)
+    this.onSocketError = this.onSocketError.bind(this)
+    this.onSocketData = this.onSocketData.bind(this)
+    this.setRendererType = this.setRendererType.bind(this)
+    this.openTerminal = this.openTerminal.bind(this)
+    this.connect = this.connect.bind(this)
+    this.pause = this.pause.bind(this)
+    this.applyOptions = this.applyOptions.bind(this)
+    this.onTerminalResize = this.onTerminalResize.bind(this)
+    this.onTerminalData = this.onTerminalData.bind(this)
+    this.resume = this.resume.bind(this)
+    this.sendData = this.sendData.bind(this)
   }
 
   async componentDidMount() {
     // await this.refreshToken();
-    this.openTerminal();
-    this.connect();
+    this.openTerminal()
+    this.connect()
 
     // show the name of the node during 300 ms at launch time
-    const { overlayAddon } = this;
-    const { name } = this.props;
-    overlayAddon?.showOverlay(name ? name : 'empty name', 300);
+    const { overlayAddon } = this
+    const { name } = this.props
+    overlayAddon?.showOverlay(name ? name : 'empty name', 300)
     if (this.container) {
       this.resizeObserver = new ResizeObserver(() => {
-        this.componentDidUpdate();
-        const rect = this.container?.getBoundingClientRect();
+        this.componentDidUpdate()
+        const rect = this.container?.getBoundingClientRect()
         if (
           rect &&
           rect.width > 0 &&
           (this.lastContainerSize.width !== rect.width ||
             this.lastContainerSize.height !== rect.height)
         ) {
-          this.lastContainerSize = { width: rect.width, height: rect.height };
-          const { fitAddon } = this;
-          fitAddon.fit();
+          this.lastContainerSize = { width: rect.width, height: rect.height }
+          const { fitAddon } = this
+          fitAddon.fit()
         }
-      });
-      this.resizeObserver.observe(this.container);
+      })
+      this.resizeObserver.observe(this.container)
     }
   }
 
   componentWillUnmount() {
     // send SIGINT on terminal close
-    this.socket?.close(1000, 'Component closed');
+    this.socket?.close(1000, 'Component closed')
 
-    if (this.terminal) this.terminal.dispose();
+    if (this.terminal) this.terminal.dispose()
     if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
+      this.resizeObserver.disconnect()
     }
   }
 
   componentDidUpdate() {
-    const { tokenUrl } = this.props;
-    if (
-      this.token !== tokenUrl ||
-      this.socket?.readyState === WebSocket.CLOSED
-    ) {
-      this.token = tokenUrl;
+    const { tokenUrl } = this.props
+    if (this.token !== tokenUrl || this.socket?.readyState === WebSocket.CLOSED) {
+      this.token = tokenUrl
 
-      this.socket?.close();
-      this.connect();
+      this.socket?.close()
+      this.connect()
     }
   }
 
-  @bind
   private onWindowUnload(event: BeforeUnloadEvent): string {
-    const { socket } = this;
+    const { socket } = this
     if (socket && socket.readyState === WebSocket.OPEN) {
-      const message = 'Close terminal? this will also terminate the command.';
-      event.returnValue = message;
-      return message;
+      const message = 'Close terminal? this will also terminate the command.'
+      event.returnValue = message
+      return message
     }
-    event.preventDefault();
-    return '';
+    event.preventDefault()
+    return ''
   }
 
-  @bind
   private onSocketOpen() {
-    const { socket, textEncoder, terminal, fitAddon, overlayAddon, state } =
-      this;
-    const dims = fitAddon.proposeDimensions();
+    const { socket, textEncoder, terminal, fitAddon, overlayAddon, state } = this
+    const dims = fitAddon.proposeDimensions()
     this.setState({
-      opened: true,
-    });
+      opened: true
+    })
 
     if (dims && socket) {
       socket.send(
@@ -223,15 +221,15 @@ export class Xterm extends React.Component<Props, XtermState> {
           JSON.stringify({
             AuthToken: this.token,
             columns: dims.cols,
-            rows: dims.rows,
-          }),
-        ),
-      );
+            rows: dims.rows
+          })
+        )
+      )
 
       if (state.opened && terminal) {
-        terminal.reset();
-        terminal.resize(dims.cols, dims.rows);
-        overlayAddon?.showOverlay('Reconnected', 300);
+        terminal.reset()
+        terminal.resize(dims.cols, dims.rows)
+        overlayAddon?.showOverlay('Reconnected', 300)
       }
     }
 
@@ -239,14 +237,14 @@ export class Xterm extends React.Component<Props, XtermState> {
     // this.onTerminalData('cd && clear \r');
 
     // send initial commands to terminal
-    const { initialCommands } = this.props;
+    const { initialCommands } = this.props
     if (initialCommands) {
       initialCommands.forEach((command) => {
-        this.onTerminalData(command);
-      });
+        this.onTerminalData(command)
+      })
     }
 
-    if (terminal) terminal.focus();
+    if (terminal) terminal.focus()
   }
 
   // // @bind
@@ -273,100 +271,96 @@ export class Xterm extends React.Component<Props, XtermState> {
   //   // }
   // }
 
-  @bind
   private onSocketError(_event: Event) {
     // might be fired when component is closed
     // console.error('[ttyd] websocket connection error: ', _event);
   }
 
-  @bind
   private onSocketData(event: MessageEvent) {
-    const { textDecoder, zModemAddon } = this;
-    const rawData = event.data as ArrayBuffer;
-    const cmd = String.fromCharCode(new Uint8Array(rawData)[0]);
-    const data = rawData.slice(1);
+    const { textDecoder, zModemAddon } = this
+    const rawData = event.data as ArrayBuffer
+    const cmd = String.fromCharCode(new Uint8Array(rawData)[0])
+    const data = rawData.slice(1)
 
-    const { onIncomingData } = this.props;
-    if (onIncomingData) onIncomingData(textDecoder.decode(data));
+    const { onIncomingData } = this.props
+    if (onIncomingData) onIncomingData(textDecoder.decode(data))
 
     switch (cmd) {
       case Command.OUTPUT:
-        zModemAddon?.consume(data);
-        break;
+        zModemAddon?.consume(data)
+        break
       case Command.SET_WINDOW_TITLE:
-        this.title = textDecoder.decode(data);
-        document.title = this.title;
-        break;
+        this.title = textDecoder.decode(data)
+        document.title = this.title
+        break
       case Command.SET_PREFERENCES: {
-        const preferences = JSON.parse(textDecoder.decode(data));
-        const { clientOptions } = this.props;
-        this.applyOptions({ ...clientOptions, ...preferences });
-        break;
+        const preferences = JSON.parse(textDecoder.decode(data))
+        const { clientOptions } = this.props
+        this.applyOptions({ ...clientOptions, ...preferences })
+        break
       }
 
       default:
-        console.warn(`[ttyd] unknown command: ${cmd}`);
-        break;
+        console.warn(`[ttyd] unknown command: ${cmd}`)
+        break
     }
   }
 
-  @bind
   private setRendererType(value: 'webgl') {
-    const { terminal } = this;
+    const { terminal } = this
 
     const disposeWebglRenderer = () => {
       try {
-        this.webglAddon?.dispose();
+        this.webglAddon?.dispose()
       } catch {
         // ignore
       }
-      this.webglAddon = null;
-    };
+      this.webglAddon = null
+    }
 
     switch (value) {
       case 'webgl':
-        if (this.webglAddon) return;
+        if (this.webglAddon) return
         try {
           if (
             window.WebGL2RenderingContext &&
             document.createElement('canvas').getContext('webgl2')
           ) {
-            this.webglAddon = new WebglAddon();
+            this.webglAddon = new WebglAddon()
             this.webglAddon.onContextLoss(() => {
-              disposeWebglRenderer();
-            });
+              disposeWebglRenderer()
+            })
 
-            if (terminal) terminal.loadAddon(this.webglAddon);
+            if (terminal) terminal.loadAddon(this.webglAddon)
             // console.debug(`[ttyd] WebGL renderer enabled`);
           }
         } catch (e) {
-          console.warn(`[ttyd] webgl2 init error`, e);
+          console.warn(`[ttyd] webgl2 init error`, e)
         }
-        break;
+        break
       default:
-        disposeWebglRenderer();
+        disposeWebglRenderer()
         // if (terminal) terminal.options.rendererType = value;
-        break;
+        break
     }
   }
 
-  @bind
   private openTerminal() {
-    const { termOptions } = this.props;
-    termOptions.allowProposedApi = true;
-    this.terminal = new Terminal(termOptions);
+    const { termOptions } = this.props
+    termOptions.allowProposedApi = true
+    this.terminal = new Terminal(termOptions)
 
-    const { terminal, container, fitAddon, searchAddon, overlayAddon } = this;
+    const { terminal, container, fitAddon, searchAddon, overlayAddon } = this
 
-    terminal.loadAddon(fitAddon);
-    terminal.loadAddon(searchAddon);
-    if (overlayAddon) terminal.loadAddon(overlayAddon);
-    terminal.loadAddon(new WebLinksAddon());
-    if (this.zModemAddon) terminal.loadAddon(this.zModemAddon);
-    terminal.onData(this.onTerminalData);
-    terminal.onResize(this.onTerminalResize);
-    if (container) terminal.open(container);
-    fitAddon.fit();
+    terminal.loadAddon(fitAddon)
+    terminal.loadAddon(searchAddon)
+    if (overlayAddon) terminal.loadAddon(overlayAddon)
+    terminal.loadAddon(new WebLinksAddon())
+    if (this.zModemAddon) terminal.loadAddon(this.zModemAddon)
+    terminal.onData(this.onTerminalData)
+    terminal.onResize(this.onTerminalResize)
+    if (container) terminal.open(container)
+    fitAddon.fit()
   }
 
   render() {
@@ -375,10 +369,10 @@ export class Xterm extends React.Component<Props, XtermState> {
       highWater: 10,
       lowWater: 4,
       pause: () => this.pause(),
-      resume: () => this.resume(),
-    } as FlowControl;
+      resume: () => this.resume()
+    } as FlowControl
 
-    const { invisibleTerminal } = this.props;
+    const { invisibleTerminal } = this.props
 
     // create an "invisible" terminal (visibility: 'hidden')
     // used for sending commands to a provider host
@@ -387,8 +381,8 @@ export class Xterm extends React.Component<Props, XtermState> {
       return (
         <div
           ref={(c) => {
-            this.container = c;
-            return this.container;
+            this.container = c
+            return this.container
           }}
           style={{ visibility: 'hidden', height: 0 }}
         >
@@ -396,25 +390,25 @@ export class Xterm extends React.Component<Props, XtermState> {
             key={`zmodem-${this.id}`}
             id={`zmodem-${this.id}`}
             ref={(c) => {
-              this.zModemAddon = c;
-              return this.zModemAddon;
+              this.zModemAddon = c
+              return this.zModemAddon
             }}
             sender={this.sendData}
             control={control}
           />
         </div>
-      );
+      )
     }
-    const { state, fitAddon } = this;
-    fitAddon.fit();
+    const { state, fitAddon } = this
+    fitAddon.fit()
 
     return (
       <Stack width="100%" height="100%" alignItems="center">
         {!state.opened && (
           <Alert severity="info">
             <AlertTitle>TTYD Daemon is not available</AlertTitle>
-            If you want to check this terminal, please start the terminal
-            manager daemon on the host.
+            If you want to check this terminal, please start the terminal manager daemon on the
+            host.
           </Alert>
         )}
 
@@ -430,10 +424,10 @@ export class Xterm extends React.Component<Props, XtermState> {
           >
             <SearchBar
               onSearch={(value: string) => {
-                const { searchAddon, searchAddonOptions } = this;
-                fitAddon.fit();
-                this.searchText = value;
-                searchAddon.findNext(value, searchAddonOptions);
+                const { searchAddon, searchAddonOptions } = this
+                fitAddon.fit()
+                this.searchText = value
+                searchAddon.findNext(value, searchAddonOptions)
               }}
               placeholder="Search Text (Supports Regular Expressions)"
               defaultValue={this.searchText}
@@ -445,9 +439,9 @@ export class Xterm extends React.Component<Props, XtermState> {
               // label="Previous"
               // leaveDelayMs={100}
               onClick={() => {
-                const { searchAddon, searchAddonOptions } = this;
-                fitAddon.fit();
-                searchAddon.findPrevious(this.searchText, searchAddonOptions);
+                const { searchAddon, searchAddonOptions } = this
+                fitAddon.fit()
+                searchAddon.findPrevious(this.searchText, searchAddonOptions)
               }}
             >
               <FirstPageIcon />
@@ -458,9 +452,9 @@ export class Xterm extends React.Component<Props, XtermState> {
               // label="Next"
               // leaveDelayMs={100}
               onClick={() => {
-                const { searchAddon, searchAddonOptions } = this;
-                fitAddon.fit();
-                searchAddon.findNext(this.searchText, searchAddonOptions);
+                const { searchAddon, searchAddonOptions } = this
+                fitAddon.fit()
+                searchAddon.findNext(this.searchText, searchAddonOptions)
               }}
             >
               <LastPageIcon />
@@ -478,17 +472,17 @@ export class Xterm extends React.Component<Props, XtermState> {
                   inputProps: {
                     min: 8,
                     max: 18,
-                    style: { textAlign: 'center' },
-                  },
+                    style: { textAlign: 'center' }
+                  }
                 }}
                 fullWidth
                 onChange={(event) => {
-                  this.fontSize = Number(event.target.value);
-                  const { terminal } = this;
-                  if (terminal) terminal.options.fontSize = this.fontSize;
-                  const { setFontsize } = this.props;
-                  if (setFontsize) setFontsize(this.fontSize);
-                  fitAddon.fit();
+                  this.fontSize = Number(event.target.value)
+                  const { terminal } = this
+                  if (terminal) terminal.options.fontSize = this.fontSize
+                  const { setFontsize } = this.props
+                  if (setFontsize) setFontsize(this.fontSize)
+                  fitAddon.fit()
                 }}
               />
             </Box>
@@ -498,8 +492,8 @@ export class Xterm extends React.Component<Props, XtermState> {
               color="secondary"
               variant="text"
               onClick={() => {
-                const { terminal } = this;
-                if (terminal) terminal.clear();
+                const { terminal } = this
+                if (terminal) terminal.clear()
               }}
             >
               Clear
@@ -509,8 +503,8 @@ export class Xterm extends React.Component<Props, XtermState> {
 
         <Box
           ref={(c) => {
-            this.container = c as HTMLElement;
-            return this.container;
+            this.container = c as HTMLElement
+            return this.container
           }}
           width="100%"
           height={state.opened ? '100%' : 0}
@@ -521,15 +515,15 @@ export class Xterm extends React.Component<Props, XtermState> {
             key={`zmodem-${this.id}`}
             id={`zmodem-${this.id}`}
             ref={(c) => {
-              this.zModemAddon = c;
-              return this.zModemAddon;
+              this.zModemAddon = c
+              return this.zModemAddon
             }}
             sender={this.sendData}
             control={control}
           />
         </Box>
       </Stack>
-    );
+    )
   }
 
   // @bind
@@ -547,50 +541,47 @@ export class Xterm extends React.Component<Props, XtermState> {
   //   }
   // }
 
-  @bind
   private connect() {
-    const { wsUrl } = this.props;
-    this.socket = new WebSocket(wsUrl, ['tty']);
+    const { wsUrl } = this.props
+    this.socket = new WebSocket(wsUrl, ['tty'])
 
-    this.socket.binaryType = 'arraybuffer';
-    this.socket.onopen = this.onSocketOpen;
-    this.socket.onmessage = this.onSocketData;
+    this.socket.binaryType = 'arraybuffer'
+    this.socket.onopen = this.onSocketOpen
+    this.socket.onmessage = this.onSocketData
     // this.socket.onclose = this.onSocketClose;
-    this.socket.onerror = this.onSocketError;
+    this.socket.onerror = this.onSocketError
   }
 
-  @bind
   private pause() {
-    const { textEncoder, socket } = this;
+    const { textEncoder, socket } = this
 
-    socket?.send(textEncoder.encode(Command.PAUSE));
+    socket?.send(textEncoder.encode(Command.PAUSE))
   }
 
-  @bind
   private applyOptions(options: any) {
-    const { fitAddon } = this;
+    const { fitAddon } = this
 
     Object.keys(options).forEach((key) => {
-      const value = options[key];
+      const value = options[key]
       switch (key) {
         case 'rendererType':
-          this.setRendererType(value);
-          break;
+          this.setRendererType(value)
+          break
         case 'disableLeaveAlert':
           if (value) {
-            window.removeEventListener('beforeunload', this.onWindowUnload);
+            window.removeEventListener('beforeunload', this.onWindowUnload)
           }
-          break;
+          break
         case 'disableResizeOverlay':
           if (value) {
-            console.debug(`[ttyd] Resize overlay disabled`);
+            console.debug(`[ttyd] Resize overlay disabled`)
           }
-          break;
+          break
         case 'disableReconnect':
           if (value) {
-            console.debug(`[ttyd] Reconnect disabled`);
+            console.debug(`[ttyd] Reconnect disabled`)
           }
-          break;
+          break
         // case 'titleFixed':
         //   if (!value || value === '') return;
         //   console.debug(`[ttyd] setting fixed title: ${value}`);
@@ -598,7 +589,7 @@ export class Xterm extends React.Component<Props, XtermState> {
         //   document.title = value;
         //   break;
         default:
-          console.debug(`[ttyd] option: ${key}=${JSON.stringify(value)}`);
+          console.debug(`[ttyd] option: ${key}=${JSON.stringify(value)}`)
           // TODO: Check if this is required
           // if (!terminal) break;
 
@@ -612,46 +603,42 @@ export class Xterm extends React.Component<Props, XtermState> {
           //   terminal.options[key] = value;
           // }
 
-          if (key.indexOf('font') === 0) fitAddon.fit();
+          if (key.indexOf('font') === 0) fitAddon.fit()
 
-          break;
+          break
       }
-    });
+    })
   }
 
-  @bind
   private onTerminalResize(size: { cols: number; rows: number }) {
-    const { socket, textEncoder } = this;
+    const { socket, textEncoder } = this
     if (socket && socket.readyState === WebSocket.OPEN) {
-      const msg = JSON.stringify({ columns: size.cols, rows: size.rows });
-      socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + msg));
+      const msg = JSON.stringify({ columns: size.cols, rows: size.rows })
+      socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + msg))
     }
   }
 
-  @bind
   private onTerminalData(data: string) {
     if (data?.charCodeAt(0) === 4) {
-      const { wsUrl, tokenUrl, onCtrlD } = this.props;
-      if (onCtrlD) onCtrlD(wsUrl, tokenUrl);
+      const { wsUrl, tokenUrl, onCtrlD } = this.props
+      if (onCtrlD) onCtrlD(wsUrl, tokenUrl)
     }
-    const { socket, textEncoder } = this;
+    const { socket, textEncoder } = this
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(textEncoder.encode(Command.INPUT + data));
+      socket.send(textEncoder.encode(Command.INPUT + data))
     }
   }
 
-  @bind
   private resume() {
-    const { textEncoder, socket } = this;
-    socket?.send(textEncoder.encode(Command.RESUME));
+    const { textEncoder, socket } = this
+    socket?.send(textEncoder.encode(Command.RESUME))
   }
 
-  @bind
   private sendData(data: ArrayLike<number>) {
-    const { socket } = this;
-    const payload = new Uint8Array(data.length + 1);
-    payload[0] = Command.INPUT.charCodeAt(0);
-    payload.set(data, 1);
-    socket?.send(payload);
+    const { socket } = this
+    const payload = new Uint8Array(data.length + 1)
+    payload[0] = Command.INPUT.charCodeAt(0)
+    payload.set(data, 1)
+    socket?.send(payload)
   }
 }

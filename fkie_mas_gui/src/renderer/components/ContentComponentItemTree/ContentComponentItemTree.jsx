@@ -1,5 +1,5 @@
 import Typography from '@mui/material/Typography';
-import { useTreeItem } from '@mui/x-tree-view';
+import { useTreeItemState } from '@mui/x-tree-view';
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import * as React from 'react';
@@ -10,7 +10,7 @@ const ContentComponentItemTree = React.forwardRef(
       classes = null,
       className = '',
       label = null,
-      nodeId = '',
+      itemId = '',
       icon: iconProp = null,
       expansionIcon = null,
       displayIcon = null,
@@ -24,7 +24,7 @@ const ContentComponentItemTree = React.forwardRef(
       handleExpansion,
       handleSelection,
       preventSelection,
-    } = useTreeItem(nodeId);
+    } = useTreeItemState(itemId);
 
     const icon = iconProp || expansionIcon || displayIcon;
 
@@ -100,7 +100,7 @@ ContentComponentItemTree.propTypes = {
   /**
    * The id of the node.
    */
-  nodeId: PropTypes.string,
+  itemId: PropTypes.string,
 };
 
 export default ContentComponentItemTree;

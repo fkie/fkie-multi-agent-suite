@@ -56,7 +56,7 @@ function PackageItemTree({
   color,
   labelText,
   paddingLeft,
-  nodeId = '',
+  itemId = '',
   iconColor = '',
   tooltip = '',
   enableCopy = true,
@@ -70,7 +70,7 @@ function PackageItemTree({
   return (
     <StyledTreeItemRoot
       ContentComponent={ContentComponentItemTree}
-      nodeId={nodeId}
+      itemId={itemId}
       label={
         <Box
           sx={{
@@ -79,13 +79,13 @@ function PackageItemTree({
             paddingLeft,
           }}
           onClick={() => {
-            if (onClick) onClick(labelText, nodeId);
+            if (onClick) onClick(labelText, itemId);
           }}
           onDoubleClick={(event, ok) => {
             if (onDoubleClick)
               onDoubleClick(
                 labelText,
-                nodeId,
+                itemId,
                 event.ctrlKey,
                 event.shiftKey,
                 event.altKey,
@@ -93,7 +93,7 @@ function PackageItemTree({
           }}
         >
           {menuItems && menuItems.length > 0 && (
-            <OverflowMenu options={menuItems} id={`${nodeId}-options"`} />
+            <OverflowMenu options={menuItems} id={`${itemId}-options"`} />
           )}
           {LabelIcon && (
             <LabelIcon
@@ -134,7 +134,7 @@ function PackageItemTree({
 }
 
 PackageItemTree.propTypes = {
-  nodeId: PropTypes.string,
+  itemId: PropTypes.string,
   iconColor: PropTypes.string,
   bgColor: PropTypes.string.isRequired,
   color: PropTypes.string.isRequired,
