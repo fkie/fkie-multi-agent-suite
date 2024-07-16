@@ -615,7 +615,7 @@ class Discoverer(object):
         mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
         is_ip6 = self._is_ipv6_group(mgroup)
         self.master_monitor = MasterMonitor(
-            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True)
+            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True, server_port=35685+(mcast_port-11511))
         # create timer to check for ros master changes
         self._timer_ros_changes = threading.Timer(
             0.1, self.checkROSMaster_loop)

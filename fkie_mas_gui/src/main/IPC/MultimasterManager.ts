@@ -217,11 +217,15 @@ class MultimasterManager {
       this.respawn ? '--respawn' : ''
     } ${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`
 
+    let port = rosVersion === '2' ? 35430 : 35685;
+    if (networkId !== undefined) {
+      port += networkId;
+    }
     if (versStr === '1') {
-      cmdDaemon = `rosrun ${cmdDaemon}; `
+      cmdDaemon = `rosrun ${cmdDaemon} --port ${port}; `
     } else if (versStr === '2') {
       if (networkId !== 0 && networkId !== undefined) {
-        cmdDaemon = `ROS_DOMAIN_ID=${networkId} ros2 run ${cmdDaemon}; `
+        cmdDaemon = `ROS_DOMAIN_ID=${networkId} ros2 run ${cmdDaemon} --port ${port}; `
       } else {
         cmdDaemon = `ros2 run ${cmdDaemon}; `
       }
