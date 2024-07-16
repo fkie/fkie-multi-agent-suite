@@ -31,7 +31,6 @@ dmg:
 linux:
   target:
     - AppImage
-    - tar.gz
   maintainer: fkie.cms
   category: Development
   synopsis: Manage and control ROS nodes
