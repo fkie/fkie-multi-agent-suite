@@ -334,7 +334,7 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     arg_name_list = f'--ros-args -r __name:={arg_name} -r __ns:={arg_ns}' if set_name else ''
     cmd = f'ros2 run {package} {executable} {arg_name_list}'
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
-        ' ') > -1 else a for a in args[1:])
+        ' ') > -1 else a for a in args[0:])
     if not set_name and node_params:
         node_params = f'--ros-args {node_params}'
     cmd_args = [screen.get_cmd(node=arg_name if arg_name else executable, namespace=arg_ns),
