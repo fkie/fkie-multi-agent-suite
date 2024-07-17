@@ -57,6 +57,7 @@ const createWindow = async (): Promise<void> => {
   const mainWindowStateKeeper = await windowStateKeeper('main');
 
   mainWindow = new BrowserWindow({
+    autoHideMenuBar: true,
     show: false,
     frame: true,
     x: mainWindowStateKeeper.x,
