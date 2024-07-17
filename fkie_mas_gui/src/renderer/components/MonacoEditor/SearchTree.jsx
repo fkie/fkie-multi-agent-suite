@@ -7,10 +7,7 @@ import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { emitCustomEvent } from 'react-custom-events';
 import { getFileName } from '../../models';
-import {
-  EVENT_EDITOR_SELECT_RANGE,
-  eventEditorSelectRange,
-} from '../../utils/events';
+import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from '../../utils/events';
 import { SearchFileTreeItem, SearchResultTreeItem } from './SearchTreeItem';
 
 function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
@@ -34,29 +31,24 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
       // search only in own models
       ownUriPaths.forEach((uriPath) => {
         const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
-        const matches = model.findMatches(
-          searchText,
-          true,
-          isRegex,
-          false,
-          null,
-          false,
-        );
-        matches.forEach((match) => {
-          const lineNumber = match.range.startLineNumber;
-          const text = model.getLineContent(match.range.startLineNumber);
+        if (model) {
+          const matches = model.findMatches(searchText, true, isRegex, false, null, false);
+          matches?.forEach((match) => {
+            const lineNumber = match.range.startLineNumber;
+            const text = model.getLineContent(match.range.startLineNumber);
 
-          if (!includedText.has(text)) {
-            searchResult.push({
-              file: model.uri.path,
-              text,
-              lineNumber,
-              range: match.range,
-            });
+            if (!includedText.has(text)) {
+              searchResult.push({
+                file: model.uri.path,
+                text,
+                lineNumber,
+                range: match.range,
+              });
 
-            includedText.add(text);
-          }
-        });
+              includedText.add(text);
+            }
+          });
+        }
       });
     }
     return searchResult;
@@ -83,10 +75,7 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
   }, [debouncedFindAllMatches, searchTerm]);
 
   function selectSearchResult(entry) {
-    emitCustomEvent(
-      EVENT_EDITOR_SELECT_RANGE,
-      eventEditorSelectRange(tabId, entry.file, entry.range),
-    );
+    emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, entry.file, entry.range));
   }
 
   return (

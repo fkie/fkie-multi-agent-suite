@@ -826,7 +826,6 @@ function FileEditorPanel({
           setSideBarWidth(size);
         }}
         split="vertical"
-        minSize={sideBarMinSize}
         resizerSize={6}
       >
         <Pane minSize={sideBarMinSize}>
@@ -841,7 +840,6 @@ function FileEditorPanel({
             }}
             split="horizontal"
             resizerSize={6}
-            minSize={explorerBarMinSize}
           >
             <Pane minSize={explorerBarMinSize}>
               <Stack>
