@@ -1,21 +1,9 @@
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  FormControl,
-  IconButton,
-  Stack,
-  Tooltip,
-} from '@mui/material';
-import { useCallback, useContext, useEffect, useState } from 'react';
-
+import { Alert, AlertTitle, Box, FormControl, IconButton, Stack, Tooltip } from '@mui/material';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCustomEventListener } from 'react-custom-events';
 import RefreshIcon from '@mui/icons-material/Refresh';
-
-import {
-  PackageExplorer,
-  ProviderSelector,
-  colorFromHostname,
-} from '../../../components';
+import { EVENT_PROVIDER_STATE } from '../../../providers/eventTypes';
+import { PackageExplorer, ProviderSelector, colorFromHostname } from '../../../components';
 import { RosContext } from '../../../context/RosContext';
 import { SettingsContext } from '../../../context/SettingsContext';
 
@@ -32,20 +20,24 @@ function PackageExplorerPanel() {
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   const updatePackageList = useCallback(
-    async (providerId) => {
+    async (providerId, force = false) => {
       if (!rosCtx.initialized) return;
       if (!rosCtx.providers) return;
       if (!providerId) return;
       if (providerId.length === 0) return;
 
       const provider = rosCtx.getProviderById(providerId);
-      if (!provider || !provider.isReady() || !provider.getPackageList) return;
-      const pl = await provider.getPackageList();
-      setPackageList(() => pl);
+      if (!provider) return;
+      if (!provider.packages || force) {
+        const pl = await provider.getPackageList();
+        setPackageList(() => pl);
+      } else {
+        setPackageList(() => provider.packages);
+      }
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.initialized, rosCtx.providers],
+    [rosCtx.initialized, rosCtx.providers]
   );
 
   // Update files when selected provider changes
@@ -83,15 +75,16 @@ function PackageExplorerPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider, settingsCtx.config]);
 
-  // useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
-  //   if (!selectedProvider) return;
-  //   if (
-  //     selectedProvider === data.provider.id &&
-  //     data.newState === ConnectionState.STATES.CONNECTED
-  //   ) {
-  //     updatePackageList(selectedProvider);
-  //   }
-  // });
+  useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
+    if (!selectedProvider) return;
+    if (selectedProvider === data.provider.id && data.newState === ConnectionState.STATES.CONNECTED) {
+      updatePackageList(selectedProvider);
+    }
+  });
+
+  const createPackageExplorer = useMemo(() => {
+    return <PackageExplorer selectedProvider={selectedProvider} packageList={packageList} />;
+  }, [selectedProvider, packageList]);
 
   return (
     <Box
@@ -121,7 +114,7 @@ function PackageExplorerPanel() {
                 <IconButton
                   size="small"
                   onClick={() => {
-                    updatePackageList(selectedProvider);
+                    updatePackageList(selectedProvider, true);
                   }}
                 >
                   <RefreshIcon fontSize="inherit" />
@@ -136,14 +129,7 @@ function PackageExplorerPanel() {
             Please connect to a ROS provider
           </Alert>
         )}
-        {selectedProvider && selectedProvider.length > 0 && (
-          <Stack overflow="auto">
-            <PackageExplorer
-              selectedProvider={selectedProvider}
-              packageList={packageList}
-            />
-          </Stack>
-        )}
+        {selectedProvider && selectedProvider.length > 0 && <Stack overflow="auto">{createPackageExplorer}</Stack>}
       </Stack>
     </Box>
   );
