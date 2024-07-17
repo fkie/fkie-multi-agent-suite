@@ -13,6 +13,7 @@ asarUnpack:
   - resources/**
 win:
   executableName: mas-gui
+  icon: 'icon/'
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -34,6 +35,7 @@ linux:
   maintainer: fkie.cms
   category: Development
   synopsis: Manage and control ROS nodes
+  icon: 'icon/'
 appImage:
   artifactName: mas-gui.${ext}
 npmRebuild: false
