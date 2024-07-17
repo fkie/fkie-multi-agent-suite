@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.1 - 17.07.2024
+
+Fixed: recursive search if some file models are not found
+Fixed: error handling if some websocket methods are not registered
+Fixed: host line height
+Fixed: update parameter panel after first start
+
 ## 2.1.0 - 16.07.2024
 
 Switched from webpack to electron-vite builder
