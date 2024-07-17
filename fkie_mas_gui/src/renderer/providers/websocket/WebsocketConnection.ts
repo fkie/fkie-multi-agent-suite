@@ -49,17 +49,14 @@ export default class WebsocketConnection extends ProviderConnection {
     useSSL: boolean = false,
     onClose: (reason: string, details: string) => void = () => {},
     onOpen: () => void = () => {},
-    logger: ILoggingContext | null = null,
+    logger: ILoggingContext | null = null
   ) {
     super();
     this.subscriptions = {};
     this.queue = {};
     this.rpcId = 0;
     this.logger = logger;
-    const providerPort =
-      port !== 0
-        ? port
-        : getDefaultPortFromRos(WebsocketConnection.type, rosVersion);
+    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion);
     this.uri = `ws://${host}:${providerPort}`;
 
     this.port = providerPort;
@@ -82,18 +79,12 @@ export default class WebsocketConnection extends ProviderConnection {
       this.onOpen();
     });
     this.websocket.addEventListener('close', (event: CloseEvent) => {
-      this.logger?.info(
-        `websocket disconnected from ${this.websocket?.url}`,
-        '',
-      );
+      this.logger?.info(`websocket disconnected from ${this.websocket?.url}`, '');
       this.websocket = null;
       this.onClose(event.reason, `${event.code}`);
     });
     this.websocket.addEventListener('error', (event) => {
-      this.logger?.error(
-        `error on connected to ${this.websocket?.url}`,
-        `event.type: ${JSON.stringify(event.type)}`,
-      );
+      this.logger?.error(`error on connected to ${this.websocket?.url}`, `event.type: ${JSON.stringify(event.type)}`);
       this.websocket = null;
       return Promise.resolve(false);
     });
@@ -101,10 +92,7 @@ export default class WebsocketConnection extends ProviderConnection {
       this.handleMessage(event.data);
     });
     const start = Date.now();
-    const waitForConnection = (
-      resolve: (value: any) => void,
-      reject: (reason?: any) => void,
-    ) => {
+    const waitForConnection = (resolve: (value: any) => void, reject: (reason?: any) => void) => {
       // connection available :)
       if (this.connected()) {
         resolve(true);
@@ -140,10 +128,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to subscribe for. (ex. 'ros.system.pong')
    * @param {function} callback - Callback to be executed when new messages arrives.
    */
-  subscribe: (
-    uri: string,
-    callback: (msg: JSONObject) => void,
-  ) => Promise<IResult> = async (uri, callback) => {
+  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async (uri, callback) => {
     this.subscriptions[uri] = callback;
     const result = await this.call('sub', [uri]).catch((err) => {
       return {
@@ -167,13 +152,9 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
    * @param {Object} params - Arguments passed to the call
    */
-  call: (uri: string, params: any[]) => Promise<JSONObject> = async (
-    uri,
-    params,
-  ) => {
+  call: (uri: string, params: any[]) => Promise<JSONObject> = async (uri, params) => {
     return new Promise((resolve, reject) => {
-      if (!this.connected())
-        reject(new Error(`[${this.uri}] socket not ready`));
+      if (!this.connected()) reject(new Error(`[${this.uri}] socket not ready`));
 
       const rpcId = this.generateRequestId();
 
@@ -198,12 +179,9 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to publish. (ex. 'ros.remote.ping')
    * @param {object} payload - payload to be sent with request
    */
-  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async (
-    uri,
-    payload,
-  ) => {
+  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async (uri, payload) => {
     if (!this.connected()) {
-      return Promise.resolve({
+      return Promise.reject({
         result: false,
         message: 'websocket not connected',
       });
@@ -254,9 +232,7 @@ export default class WebsocketConnection extends ProviderConnection {
         if ('error' in message === 'result' in message)
           this.queue[message.id].promise[1]({
             result: false,
-            message:
-              'Server response malformed. Response must include either "result"' +
-              ' or "error", but not both.',
+            message: 'Server response malformed. Response must include either "result"' + ' or "error", but not both.',
           });
 
         if (this.queue[message.id].timeout) {
@@ -269,7 +245,10 @@ export default class WebsocketConnection extends ProviderConnection {
             message: message.error,
           });
         } else {
-          this.queue[message.id].promise[0](message.result);
+          this.queue[message.id].promise[0]({
+            result: true,
+            message: message.result,
+          });
         }
 
         delete this.queue[message.id];
@@ -281,11 +260,7 @@ export default class WebsocketConnection extends ProviderConnection {
         }
       }
     } catch (error) {
-      this.logger?.warn(
-        `[${this.uri}] error while handle received message: ${error}`,
-        `${JSON.stringify(msg)}`,
-        false,
-      );
+      this.logger?.warn(`[${this.uri}] error while handle received message: ${error}`, `${JSON.stringify(msg)}`, false);
     }
   };
 }

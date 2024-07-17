@@ -35,7 +35,7 @@ import {
   SystemWarningGroup,
   URI,
 } from '../models';
-import JSONObject from '../models/JsonObject';
+import JSONObject, { JSONValue } from '../models/JsonObject';
 
 import { TagColors } from '../components/UI/Colors';
 
@@ -91,6 +91,11 @@ interface ProviderDaemonReady {
 
 interface ProviderDiscoveryReady {
   status: boolean;
+}
+
+interface CallResult {
+  result: boolean;
+  message: unknown | string;
 }
 
 /**
@@ -216,7 +221,7 @@ export default class Provider {
     rosVersion: string,
     port: number = 0,
     useSSL: boolean = false,
-    logger: ILoggingContext | null = null,
+    logger: ILoggingContext | null = null
   ) {
     this.logger = logger;
     this.settings = settings;
@@ -231,7 +236,7 @@ export default class Provider {
         useSSL,
         this.onCloseConnection,
         this.onOpenConnection,
-        logger,
+        logger
       );
     } else {
       this.connection = new WebsocketConnection(
@@ -241,7 +246,7 @@ export default class Provider {
         useSSL,
         this.onCloseConnection,
         this.onOpenConnection,
-        logger,
+        logger
       );
     }
   }
@@ -272,14 +277,8 @@ export default class Provider {
     nodeName: string,
     topicName: string,
     screenName: string,
-    cmd: string,
-  ) => Promise<CmdTerminal> = async (
-    type,
-    nodeName = '',
-    topicName = '',
-    screenName = '',
-    cmd = '',
-  ) => {
+    cmd: string
+  ) => Promise<CmdTerminal> = async (type, nodeName = '', topicName = '', screenName = '', cmd = '') => {
     const result = new CmdTerminal();
     switch (type) {
       case CmdType.CMD:
@@ -293,10 +292,7 @@ export default class Provider {
           // search screen with node name
           let createdScreenName = '';
           if (this.rosState.ros_version === '1') {
-            createdScreenName = nodeName
-              .substring(1)
-              .replaceAll('_', '__')
-              .replaceAll('/', '_');
+            createdScreenName = nodeName.substring(1).replaceAll('_', '__').replaceAll('/', '_');
           } else if (this.rosState.ros_version === '2') {
             createdScreenName = nodeName.substring(1).replaceAll('/', '.');
           }
@@ -350,58 +346,48 @@ export default class Provider {
         return false;
       })
       .catch((error) => {
-        this.setConnectionState(
-          ConnectionState.STATES.ERRORED,
-          `Daemon no reachable: ${error}`,
-        );
+        this.setConnectionState(ConnectionState.STATES.ERRORED, `Daemon no reachable: ${error}`);
         return false;
       });
   };
 
-  public setConnectionState: (state: ConnectionState, details: string) => void =
-    async (state: ConnectionState, details: string = '') => {
-      // ignore call with no state changes
-      if (this.connectionState === state) return;
+  public setConnectionState: (state: ConnectionState, details: string) => void = async (
+    state: ConnectionState,
+    details: string = ''
+  ) => {
+    // ignore call with no state changes
+    if (this.connectionState === state) return;
 
-      // update to new state
-      const oldState = this.connectionState;
-      this.connectionState = state;
-      this.errorDetails = details;
-      // send an event to inform all listener about new state
-      emitCustomEvent(
-        EVENT_PROVIDER_STATE,
-        new EventProviderState(this, state, oldState, details),
-      );
-      // get provider details depending on new state
-      if (
-        state === ConnectionState.STATES.CONNECTING &&
-        oldState === ConnectionState.STATES.STARTING
-      ) {
-        // TODO: delay if use crossbar-wamp server
-        // delay(3000);
-      } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
-        this.registerCallbacks()
-          .then(() => {
-            if (this.isAvailable()) {
-              this.setConnectionState(
-                ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED,
-                '',
-              );
-              return true;
-            }
-            return false;
-          })
-          .catch((error) => {
-            this.setConnectionState(ConnectionState.STATES.ERRORED, error);
-          });
-      } else if (state === ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED) {
-        // wait until daemon.ready received
-        // backup for backward compatibility => call updateDaemonInit
-        this.updateDaemonInit();
-      } else if (state === ConnectionState.STATES.CONNECTED) {
-        // if connected callbackDaemonReady calls updateDaemonInit()
-      }
-    };
+    // update to new state
+    const oldState = this.connectionState;
+    this.connectionState = state;
+    this.errorDetails = details;
+    // send an event to inform all listener about new state
+    emitCustomEvent(EVENT_PROVIDER_STATE, new EventProviderState(this, state, oldState, details));
+    // get provider details depending on new state
+    if (state === ConnectionState.STATES.CONNECTING && oldState === ConnectionState.STATES.STARTING) {
+      // TODO: delay if use crossbar-wamp server
+      // delay(3000);
+    } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
+      this.registerCallbacks()
+        .then(() => {
+          if (this.isAvailable()) {
+            this.setConnectionState(ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED, '');
+            return true;
+          }
+          return false;
+        })
+        .catch((error) => {
+          this.setConnectionState(ConnectionState.STATES.ERRORED, error);
+        });
+    } else if (state === ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED) {
+      // wait until daemon.ready received
+      // backup for backward compatibility => call updateDaemonInit
+      this.updateDaemonInit();
+    } else if (state === ConnectionState.STATES.CONNECTED) {
+      // if connected callbackDaemonReady calls updateDaemonInit()
+    }
+  };
 
   /**
    * Initializes the ROS provider
@@ -428,9 +414,7 @@ export default class Provider {
     });
     this.setConnectionState(
       ConnectionState.STATES.CLOSED,
-      closeError
-        ? `closed with error: ${JSON.stringify(closeError)}`
-        : 'closed',
+      closeError ? `closed with error: ${JSON.stringify(closeError)}` : 'closed'
     );
   };
 
@@ -478,25 +462,19 @@ export default class Provider {
    * @return {Provider} Empty
    */
   public updateProviderList: () => Promise<boolean> = async () => {
-    const rosProviders: RosProviderState[] = await this.makeCall(
-      URI.ROS_PROVIDER_GET_LIST,
-      [],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at updateProviderList()`,
-          `${err}`,
-        );
+    const rosProviders: RosProviderState[] = await this.makeCall(URI.ROS_PROVIDER_GET_LIST, [], true).then(
+      (value: CallResult) => {
+        if (value.result) {
+          return value.message as RosProviderState[];
+        }
+        this.logger?.error(`Provider [${this.name()}]: Error at updateProviderList()`, `${value.message}`);
         this.setConnectionState(
           ConnectionState.STATES.ERRORED,
-          `Provider [${this.name()}]: updateProviderList() result: ${err}`,
+          `Provider [${this.name()}]: updateProviderList() result: ${value.message}`
         );
         return [];
-      })
-      .then((value) => {
-        return value as RosProviderState[];
-      });
+      }
+    );
     if (rosProviders.length > 0) {
       this.logger?.debug(`Providers updated for [${this.name()}]`, ``);
       this.discovery = true;
@@ -533,27 +511,19 @@ export default class Provider {
             p.ros_version ? p.ros_version : '2',
             p.port,
             false, // TODO get useSSL from settings
-            this.logger,
+            this.logger
           );
-          oldRemoteProviders = oldRemoteProviders.filter(
-            (orp) => orp.url() !== np.url(),
-          );
+          oldRemoteProviders = oldRemoteProviders.filter((orp) => orp.url() !== np.url());
           np.rosState = p;
           np.discovered = [this.id];
           this.remoteProviders.push(np);
         }
       });
       this.remoteProviders.forEach((np) => {
-        emitCustomEvent(
-          EVENT_PROVIDER_DISCOVERED,
-          new EventProviderDiscovered(np, this),
-        );
+        emitCustomEvent(EVENT_PROVIDER_DISCOVERED, new EventProviderDiscovered(np, this));
       });
       oldRemoteProviders.forEach((p) => {
-        emitCustomEvent(
-          EVENT_PROVIDER_REMOVED,
-          new EventProviderRemoved(p, this),
-        );
+        emitCustomEvent(EVENT_PROVIDER_REMOVED, new EventProviderRemoved(p, this));
       });
       this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
       return Promise.resolve(true);
@@ -566,32 +536,17 @@ export default class Provider {
    *
    * @return {Promise<{ file: FileItem; error: string }>}
    */
-  public getFileContent: (
-    path: string,
-  ) => Promise<{ file: FileItem; error: string }> = async (path) => {
+  public getFileContent: (path: string) => Promise<{ file: FileItem; error: string }> = async (path) => {
     let error: string = '';
-    const fileItem: FileItem | null = await this.makeCall(
-      URI.ROS_FILE_GET,
-      [path],
-      false,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: can not get content for ${path}: `,
-          `${err}`,
-          false,
-        );
-        error = err;
-        return null;
-      })
-      .then((value) => {
-        if (value) {
-          const result = value as unknown as FileItem;
-          result.host = this.host();
-          return result;
-        }
-        return null;
-      });
+    const fileItem: FileItem | null = await this.makeCall(URI.ROS_FILE_GET, [path], false).then((value: CallResult) => {
+      if (value.result) {
+        const result = value.message as FileItem;
+        result.host = this.host();
+        return result;
+      }
+      this.logger?.error(`Provider [${this.name()}]: can not get content for ${path}: `, `${value.message}`, false);
+      return null;
+    });
     if (fileItem) {
       return Promise.resolve({ file: fileItem, error: '' });
     }
@@ -606,27 +561,16 @@ export default class Provider {
    *
    * @return {Promise<{ bytesWritten: number; error: string }>}
    */
-  public saveFileContent: (
-    file: FileItem,
-  ) => Promise<{ bytesWritten: number; error: string }> = async (file) => {
+  public saveFileContent: (file: FileItem) => Promise<{ bytesWritten: number; error: string }> = async (file) => {
     let error: string = '';
-    const bitesWritten: number = await this.makeCall(
-      URI.ROS_FILE_SAVE,
-      [file],
-      false,
-    )
-      .catch((err) => {
-        error = err;
-        this.logger?.error(
-          `Provider [${this.name()}]: can not save content to ${file.path}: `,
-          `${err}`,
-          false,
-        );
-        return -1;
-      })
-      .then((value) => {
-        return value as number;
-      });
+    const bitesWritten: number = await this.makeCall(URI.ROS_FILE_SAVE, [file], false).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as number;
+      }
+      error = value.message as string;
+      this.logger?.error(`Provider [${this.name()}]: can not save content to ${file.path}: `, `${error}`, false);
+      return -1;
+    });
     if (bitesWritten) {
       return Promise.resolve({
         bytesWritten: bitesWritten,
@@ -646,35 +590,24 @@ export default class Provider {
    */
   public getDaemonVersion: () => Promise<DaemonVersion> = async () => {
     let error: string = '';
-    const daemonVersion: DaemonVersion = await this.makeCall(
-      URI.ROS_DAEMON_VERSION,
-      [],
-      true,
-    )
-      .catch((err) => {
-        error = err;
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getDaemonVersion()`,
-          `${err}`,
-          false,
-        );
+    const daemonVersion: DaemonVersion | null = await this.makeCall(URI.ROS_DAEMON_VERSION, [], true).then(
+      (value: CallResult) => {
+        if (value.result) {
+          console.log(`value as DaemonVersion: ${JSON.stringify(value.message as unknown as DaemonVersion)}`);
+          return value.message as unknown as DaemonVersion;
+        }
+        error = value.message as string;
+        this.logger?.error(`Provider [${this.name()}]: Error at getDaemonVersion()`, `${error}`, false);
         this.daemon = false;
         return null;
-      })
-      .then((value) => {
-        console.log(
-          `value as DaemonVersion: ${JSON.stringify(value as unknown as DaemonVersion)}`,
-        );
-        return value as unknown as DaemonVersion;
-      });
+      }
+    );
     if (daemonVersion) {
       this.daemonVersion = daemonVersion;
       this.daemon = true;
       return Promise.resolve(this.daemonVersion);
     }
-    throw Error(
-      `Provider [${this.name()}]: getDaemonVersion() result: ${error}`,
-    );
+    throw Error(`Provider [${this.name()}]: getDaemonVersion() result: ${error}`);
   };
 
   /**
@@ -683,22 +616,14 @@ export default class Provider {
    * @return {Promise<any>}
    */
   public getProviderSystemInfo: () => Promise<any> = async () => {
-    const systemInfo = await this.makeCall(
-      URI.ROS_PROVIDER_GET_SYSTEM_INFO,
-      [],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getProviderSystemInfo()`,
-          `${err}`,
-        );
-        return {};
-      })
-      .then((value) => {
-        this.systemInfo = value;
+    const systemInfo = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_INFO, [], true).then((value: CallResult) => {
+      if (value.result) {
+        this.systemInfo = value.message as {};
         return this.systemInfo;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemInfo()`, `${value.message}`);
+      return {};
+    });
     return Promise.resolve(systemInfo);
   };
 
@@ -708,22 +633,14 @@ export default class Provider {
    * @return {Promise<any>}
    */
   public getProviderSystemEnv: () => Promise<any> = async () => {
-    const systemEnv = await this.makeCall(
-      URI.ROS_PROVIDER_GET_SYSTEM_ENV,
-      [],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getProviderSystemEnv()`,
-          `${err}`,
-        );
-        return {};
-      })
-      .then((value) => {
-        this.systemEnv = value;
+    const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: CallResult) => {
+      if (value.result) {
+        this.systemEnv = value.message as {};
         return this.systemEnv;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemEnv()`, `${value.message}`);
+      return {};
+    });
     return Promise.resolve(systemEnv);
   };
 
@@ -732,9 +649,7 @@ export default class Provider {
     const diffStartEnd = endTs - startTs;
     const diffToStart = remoteTs - startTs;
     const diffToEnd = endTs - remoteTs;
-    let result =
-      Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - diffStartEnd) /
-      2.0;
+    let result = Math.abs(Math.abs(diffToStart) + Math.abs(diffToEnd) - diffStartEnd) / 2.0;
     if (diffToStart < 0) {
       result *= -1.0;
     }
@@ -750,44 +665,25 @@ export default class Provider {
     const providerResponse: IProviderTimestamp = await this.makeCall(
       URI.ROS_PROVIDER_GET_TIMESTAMP,
       [startTs],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at updateTimeDiff()`,
-          `${err}`,
-        );
-        return {
-          timestamp: 0,
-          diff: 0,
-        };
-      })
-      .then((value) => {
-        if (Object.keys(value as {}).includes('result')) {
-          return {
-            timestamp: 0,
-            diff: 0,
-          };
-        }
-        return value as IProviderTimestamp;
-      });
+      true
+    ).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as IProviderTimestamp;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at updateTimeDiff()`, `${value.message}`);
+      return {
+        timestamp: 0,
+        diff: 0,
+      };
+    });
     if (providerResponse.timestamp > 0) {
       const endTs = Date.now();
-      this.timeDiff = this.calcTimeDiff(
-        startTs,
-        endTs,
-        providerResponse.timestamp,
-      );
+      this.timeDiff = this.calcTimeDiff(startTs, endTs, providerResponse.timestamp);
       this.logger?.debug(
-        `Time difference to [${this.name()}]: approx. ${
-          this.timeDiff
-        }, returned from daemon: ${providerResponse.diff}`,
-        ``,
+        `Time difference to [${this.name()}]: approx. ${this.timeDiff}, returned from daemon: ${providerResponse.diff}`,
+        ``
       );
-      emitCustomEvent(
-        EVENT_PROVIDER_TIME_DIFF,
-        new EventProviderTimeDiff(this, this.timeDiff),
-      );
+      emitCustomEvent(EVENT_PROVIDER_TIME_DIFF, new EventProviderTimeDiff(this, this.timeDiff));
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
@@ -815,23 +711,16 @@ export default class Provider {
       system_node: boolean;
       parent_id: string | null;
     }
-    const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true)
-      .catch((err) => {
-        if (`${err}`.includes('wamp.error.no_such_procedure')) {
-          this.discovery = false;
-        }
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getNodeList()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        if (Object.keys(value as {}).includes('result')) {
-          return [];
-        }
-        return value as unknown as IRosNode[];
-      });
+    const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as unknown as IRosNode[];
+      }
+      if (`${value.message}`.includes('wamp.error.no_such_procedure')) {
+        this.discovery = false;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getNodeList()`, `${value.message}`);
+      return [];
+    });
 
     if (rawNodeList) {
       // cast incoming object into a proper representation
@@ -840,14 +729,10 @@ export default class Provider {
         if (rawNodeList) {
           rawNodeList.forEach((n: IRosNode) => {
             let status = RosNodeStatus.UNKNOWN;
-            if (n.status && n.status === 'running')
-              status = RosNodeStatus.RUNNING;
-            else if (n.status && n.status === 'inactive')
-              status = RosNodeStatus.INACTIVE;
-            else if (n.status && n.status === 'not_monitored')
-              status = RosNodeStatus.NOT_MONITORED;
-            else if (n.status && n.status === 'dead')
-              status = RosNodeStatus.DEAD;
+            if (n.status && n.status === 'running') status = RosNodeStatus.RUNNING;
+            else if (n.status && n.status === 'inactive') status = RosNodeStatus.INACTIVE;
+            else if (n.status && n.status === 'not_monitored') status = RosNodeStatus.NOT_MONITORED;
+            else if (n.status && n.status === 'dead') status = RosNodeStatus.DEAD;
             else status = RosNodeStatus.UNKNOWN;
 
             const rn = new RosNode(
@@ -859,7 +744,7 @@ export default class Provider {
               n.pid,
               n.masteruri,
               n.location,
-              n.system_node,
+              n.system_node
             );
 
             if (n.parent_id) {
@@ -868,30 +753,17 @@ export default class Provider {
 
             // Add Array elements
             n.publishers.forEach((s: RosTopic) => {
-              rn.publishers.set(
-                s.name,
-                new RosTopic(s.name, s.msgtype, s.publisher, s.subscriber),
-              );
+              rn.publishers.set(s.name, new RosTopic(s.name, s.msgtype, s.publisher, s.subscriber));
             });
 
             n.subscribers.forEach((s: RosTopic) => {
-              rn.subscribers.set(
-                s.name,
-                new RosTopic(s.name, s.msgtype, s.publisher, s.subscriber),
-              );
+              rn.subscribers.set(s.name, new RosTopic(s.name, s.msgtype, s.publisher, s.subscriber));
             });
 
             n.services.forEach((s: RosService) => {
               rn.services.set(
                 s.name,
-                new RosService(
-                  s.name,
-                  s.srvtype,
-                  s.masteruri,
-                  s.service_API_URI,
-                  s.provider,
-                  s.location,
-                ),
+                new RosService(s.name, s.srvtype, s.masteruri, s.service_API_URI, s.provider, s.location)
               );
             });
 
@@ -906,10 +778,7 @@ export default class Provider {
           return Array.from(nodeList.values());
         }
       } catch (error) {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getNodeList()`,
-          `${error}`,
-        );
+        this.logger?.error(`Provider [${this.name()}]: Error at getNodeList()`, `${error}`);
         return Promise.resolve([]);
       }
     }
@@ -921,17 +790,13 @@ export default class Provider {
    * Return the URI.ROS_SYSTEM_GET_URI
    */
   public getSystemUri: () => Promise<string> = async () => {
-    const result = await this.makeCall(URI.ROS_SYSTEM_GET_URI, [], true)
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getSystemUri()`,
-          `${err}`,
-        );
-        return '';
-      })
-      .then((value) => {
-        return value as string;
-      });
+    const result = await this.makeCall(URI.ROS_SYSTEM_GET_URI, [], true).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as string;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getSystemUri()`, `${value.message}`);
+      return '';
+    });
     return result;
   };
 
@@ -953,23 +818,18 @@ export default class Provider {
       return 0;
     };
     this.packages = [];
-    const result = await this.makeCall('ros.packages.get_list', [], true)
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getPackageList()`,
-          `${err}`,
-        );
-        return [];
-      })
-      .then((value) => {
-        const rosPackageList: RosPackage[] = value as RosPackage[];
+    const result = await this.makeCall('ros.packages.get_list', [], true).then((value: CallResult) => {
+      if (value.result) {
+        const rosPackageList: RosPackage[] = value.message as RosPackage[];
         const packageList: RosPackage[] = [];
         rosPackageList?.forEach((p: RosPackage) => {
           packageList.push(new RosPackage(p.name, p.path));
         });
-
         return packageList.sort(comparePackages);
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getPackageList()`, `${value.message}`);
+      return [];
+    });
     this.packages = result;
     return Promise.resolve(result);
   };
@@ -978,11 +838,7 @@ export default class Provider {
   public getPackageName: (path: string) => string = (path) => {
     if (this.packages) {
       const packages = this.packages.filter((rosPackage) => {
-        return path.startsWith(
-          rosPackage.path.endsWith('/')
-            ? rosPackage.path
-            : `${rosPackage.path}/`,
-        );
+        return path.startsWith(rosPackage.path.endsWith('/') ? rosPackage.path : `${rosPackage.path}/`);
       });
       return packages.length > 0 ? `${packages[0]?.name}` : '';
     }
@@ -996,38 +852,21 @@ export default class Provider {
    * @return {Promise<PathItem[]>} Returns a list of [PathItem] elements
    */
   public getPathList: (path: string) => Promise<PathItem[]> = async (path) => {
-    const result = await this.makeCall(
-      URI.ROS_PATH_GET_LIST_RECURSIVE,
-      [path],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getPackageList()`,
-          `${err}`,
-        );
-        return [];
-      })
-      .then((value) => {
+    const result = await this.makeCall(URI.ROS_PATH_GET_LIST_RECURSIVE, [path], true).then((value: CallResult) => {
+      if (value.result) {
         const fileList: PathItem[] = [];
         const uniquePaths: string[] = [];
-        (value as PathItem[]).forEach((p: PathItem) => {
+        (value.message as PathItem[]).forEach((p: PathItem) => {
           if (!uniquePaths.includes(p.path)) {
-            fileList.push(
-              new PathItem(
-                p.path,
-                p.mtime,
-                p.size,
-                p.type,
-                this.connection.host,
-              ),
-            );
+            fileList.push(new PathItem(p.path, p.mtime, p.size, p.type, this.connection.host));
             uniquePaths.push(p.path);
           }
         });
-
         return fileList;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getPackageList()`, `${value.message}`);
+      return [];
+    });
     return Promise.resolve(result);
   };
 
@@ -1037,37 +876,18 @@ export default class Provider {
    * @param {string[]} nodes - List of node names to get log files
    * @return {Promise<LogPathItem>} Returns a list of [PathItem] elements
    */
-  public getLogPaths: (nodes: string[]) => Promise<LogPathItem[]> = async (
-    nodes,
-  ) => {
-    const result = await this.makeCall(
-      URI.ROS_PATH_GET_LOG_PATHS,
-      [nodes],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getLogPaths()`,
-          `${err}`,
-        );
-        return [];
-      })
-      .then((value) => {
+  public getLogPaths: (nodes: string[]) => Promise<LogPathItem[]> = async (nodes) => {
+    const result = await this.makeCall(URI.ROS_PATH_GET_LOG_PATHS, [nodes], true).then((value: CallResult) => {
+      if (value.result) {
         const logPathList: LogPathItem[] = [];
-        (value as LogPathItem[]).forEach((p: LogPathItem) => {
-          logPathList.push(
-            new LogPathItem(
-              p.node,
-              p.screen_log,
-              p.screen_log_exists,
-              p.ros_log,
-              p.ros_log_exists,
-            ),
-          );
+        (value.message as LogPathItem[]).forEach((p: LogPathItem) => {
+          logPathList.push(new LogPathItem(p.node, p.screen_log, p.screen_log_exists, p.ros_log, p.ros_log_exists));
         });
-
         return logPathList;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getLogPaths()`, `${value.message}`);
+      return [];
+    });
 
     return Promise.resolve(result);
   };
@@ -1078,34 +898,24 @@ export default class Provider {
    * @param {string[]} nodes - List of node names to clear log files
    * @return {Promise<IResultClearPath[]>} Returns a list of [PathItem] elements
    */
-  public clearLogPaths: (nodes: string[]) => Promise<IResultClearPath[]> =
-    async (nodes) => {
-      const result = await this.makeCall(
-        URI.ROS_PATH_CLEAR_LOG_PATHS,
-        [nodes],
-        true,
-      )
-        .catch((err) => {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at clearLogPaths()`,
-            `${err}`,
-          );
-          return [];
-        })
-        .then((value) => {
-          const logPathList: IResultClearPath[] = [];
-          (value as IResultClearPath[]).forEach((p: IResultClearPath) => {
-            logPathList.push({
-              node: p.node,
-              result: p.result,
-              message: p.message,
-            });
+  public clearLogPaths: (nodes: string[]) => Promise<IResultClearPath[]> = async (nodes) => {
+    const result = await this.makeCall(URI.ROS_PATH_CLEAR_LOG_PATHS, [nodes], true).then((value: CallResult) => {
+      if (value.result) {
+        const logPathList: IResultClearPath[] = [];
+        (value.message as IResultClearPath[]).forEach((p: IResultClearPath) => {
+          logPathList.push({
+            node: p.node,
+            result: p.result,
+            message: p.message,
           });
-
-          return logPathList;
         });
-      return Promise.resolve(result);
-    };
+        return logPathList;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at clearLogPaths()`, `${value.message}`);
+      return [];
+    });
+    return Promise.resolve(result);
+  };
 
   /**
    * Clear the path of log files for given nodes
@@ -1113,24 +923,16 @@ export default class Provider {
    * @return {Promise<IResult>} Returns a list of [PathItem] elements
    */
   public rosCleanPurge: () => Promise<IResult> = async () => {
-    const result = await this.makeCall(
-      URI.ROS_PROVIDER_ROS_CLEAN_PURGE,
-      [],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at rosCleanPurge()`,
-          `${err}`,
-        );
-        return {
-          result: false,
-          message: `Provider [${this.name()}]: Error at rosCleanPurge(): ${err}`,
-        };
-      })
-      .then((value) => {
-        return value as IResult;
-      });
+    const result = await this.makeCall(URI.ROS_PROVIDER_ROS_CLEAN_PURGE, [], true).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as IResult;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at rosCleanPurge()`, `${value.message}`);
+      return {
+        result: false,
+        message: `Provider [${this.name()}]: Error at rosCleanPurge(): ${value.message}`,
+      };
+    });
     return Promise.resolve(result);
   };
 
@@ -1140,20 +942,16 @@ export default class Provider {
    * @return {Promise<IResult>}
    */
   public shutdown: () => Promise<IResult> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [], true)
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at shutdown()`,
-          `${err}`,
-        );
-        return {
-          result: false,
-          message: `Provider [${this.name()}]: Error at shutdown(): ${err}`,
-        };
-      })
-      .then((value) => {
-        return value as IResult;
-      });
+    const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [], true).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as IResult;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at shutdown()`, `${value.message}`);
+      return {
+        result: false,
+        message: `Provider [${this.name()}]: Error at shutdown(): ${value.message}`,
+      };
+    });
     return Promise.resolve(result);
   };
 
@@ -1165,50 +963,32 @@ export default class Provider {
    * @param {LaunchLoadRequest} request - Launch request
    * @return {Promise<LaunchLoadReply>} Returns a LaunchLoadReply
    */
-  public launchLoadFile: (
-    request: LaunchLoadRequest,
-    reload: boolean,
-  ) => Promise<LaunchLoadReply | null> = async (request, reload) => {
+  public launchLoadFile: (request: LaunchLoadRequest, reload: boolean) => Promise<LaunchLoadReply | null> = async (
+    request,
+    reload
+  ) => {
     let result: LaunchLoadReply | null = null;
 
     if (reload)
-      result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true)
-        .then((value) => {
-          const parsed = value as unknown as LaunchLoadReply;
-          const loadReply = new LaunchLoadReply(
-            parsed.status,
-            parsed.paths,
-            parsed.args,
-            parsed.changed_nodes,
-          );
+      result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true).then((value: CallResult) => {
+        if (value.result) {
+          const parsed = value.message as LaunchLoadReply;
+          const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
           return loadReply;
-        })
-        .catch((err) => {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at launchLoadFile()`,
-            `${err}`,
-          );
-          return null;
-        });
+        }
+        this.logger?.error(`Provider [${this.name()}]: Error at launchLoadFile()`, `${value.message}`);
+        return null;
+      });
     else {
-      result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true)
-        .then((value) => {
-          const parsed = value as unknown as LaunchLoadReply;
-          const loadReply = new LaunchLoadReply(
-            parsed.status,
-            parsed.paths,
-            parsed.args,
-            parsed.changed_nodes,
-          );
+      result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true).then((value: CallResult) => {
+        if (value.result) {
+          const parsed = value.message as LaunchLoadReply;
+          const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
           return loadReply;
-        })
-        .catch((err) => {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at launchLoadFile()`,
-            `${err}`,
-          );
-          return null;
-        });
+        }
+        this.logger?.error(`Provider [${this.name()}]: Error at launchLoadFile()`, `${value.message}`);
+        return null;
+      });
     }
     return Promise.resolve(result);
   };
@@ -1219,27 +999,16 @@ export default class Provider {
    * @param {LaunchFile} request - Launch file to be removed
    * @return {Promise<LaunchLoadReply>} Returns a LaunchLoadReply
    */
-  public launchUnloadFile: (
-    request: LaunchFile,
-  ) => Promise<LaunchLoadReply | null> = async (request) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true)
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at launchUnloadFile()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        const parsed = value as unknown as LaunchLoadReply;
-        const loadReply = new LaunchLoadReply(
-          parsed.status,
-          parsed.paths,
-          parsed.args,
-          parsed.changed_nodes,
-        );
+  public launchUnloadFile: (request: LaunchFile) => Promise<LaunchLoadReply | null> = async (request) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as LaunchLoadReply;
+        const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
         return loadReply;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at launchUnloadFile()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -1247,76 +1016,66 @@ export default class Provider {
    * Updates the screens. This is called on message received by subscribed topic and also by request.
    * On request the msgs list should be null. In this case the list is requested by this method.
    */
-  public updateScreens: (msgs: ScreensMapping[] | null) => Promise<boolean> =
-    async (msgs = null) => {
-      let screens = msgs;
+  public updateScreens: (msgs: ScreensMapping[] | null) => Promise<boolean> = async (msgs = null) => {
+    let screens = msgs;
+    if (screens === null) {
+      screens = await this.getScreenList();
       if (screens === null) {
-        screens = await this.getScreenList();
-        if (screens === null) {
-          return Promise.resolve(false);
-        }
+        return Promise.resolve(false);
       }
-      this.screens = screens;
-      // update the screens
-      this.screens.forEach((s) => {
-        const matchingNode = this.rosNodes.find((node) => node.id === s.name);
-        if (matchingNode) {
-          // update = true;
-          matchingNode.screens = s.screens;
-        }
-      });
-      emitCustomEvent(
-        EVENT_PROVIDER_SCREENS,
-        new EventProviderScreens(this, screens),
-      );
-      return Promise.resolve(true);
-    };
+    }
+    this.screens = screens;
+    // update the screens
+    this.screens.forEach((s) => {
+      const matchingNode = this.rosNodes.find((node) => node.id === s.name);
+      if (matchingNode) {
+        // update = true;
+        matchingNode.screens = s.screens;
+      }
+    });
+    emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, screens));
+    return Promise.resolve(true);
+  };
 
   /**
    * Updates the diagnostics. This is called on message received by subscribed topic and also by request.
    * On request the msgs list should be null. In this case the list is requested by this method.
    */
-  public updateDiagnostics: (msg: DiagnosticArray | null) => Promise<boolean> =
-    async (msg = null) => {
-      let diags = msg;
+  public updateDiagnostics: (msg: DiagnosticArray | null) => Promise<boolean> = async (msg = null) => {
+    let diags = msg;
+    if (diags === null) {
+      diags = await this.getDiagnostics();
       if (diags === null) {
-        diags = await this.getDiagnostics();
-        if (diags === null) {
-          return Promise.resolve(false);
-        }
+        return Promise.resolve(false);
       }
-      // update the screens
-      diags.status.forEach((status) => {
-        const matchingNode = this.rosNodes.find(
-          (node) => node.id === status.name,
-        );
-        if (matchingNode) {
-          matchingNode.diagnosticLevel = status.level;
-          matchingNode.diagnosticMessage = status.message;
-          if (matchingNode.diagnosticStatus.length === 0) {
+    }
+    // update the screens
+    diags.status.forEach((status) => {
+      const matchingNode = this.rosNodes.find((node) => node.id === status.name);
+      if (matchingNode) {
+        matchingNode.diagnosticLevel = status.level;
+        matchingNode.diagnosticMessage = status.message;
+        if (matchingNode.diagnosticStatus.length === 0) {
+          matchingNode.diagnosticStatus.push(status);
+        } else {
+          // do not add the same value
+          const lastStatus = matchingNode.diagnosticStatus[matchingNode.diagnosticStatus.length - 1];
+          if (
+            lastStatus.level !== status.level ||
+            lastStatus.message !== status.message ||
+            lastStatus.values.length !== status.values.length
+          ) {
             matchingNode.diagnosticStatus.push(status);
-          } else {
-            // do not add the same value
-            const lastStatus =
-              matchingNode.diagnosticStatus[
-                matchingNode.diagnosticStatus.length - 1
-              ];
-            if (
-              lastStatus.level !== status.level ||
-              lastStatus.message !== status.message ||
-              lastStatus.values.length !== status.values.length
-            ) {
-              matchingNode.diagnosticStatus.push(status);
-            }
           }
         }
-      });
-      // emitCustomEvent(
-      //   EVENT_PROVIDER_DIAGNOSTICS,
-      //   new EventProviderDiagnostics(this, diags),
-      // );
-      return Promise.resolve(true);
-    };
+      }
+    });
+    // emitCustomEvent(
+    //   EVENT_PROVIDER_DIAGNOSTICS,
+    //   new EventProviderDiagnostics(this, diags),
+    // );
+    return Promise.resolve(true);
+  };
 
   /**
    * Get the list of nodes loaded in launch files. update launch files into provider object
@@ -1324,30 +1083,15 @@ export default class Provider {
    * @return {Promise<LaunchContent>} Returns a list of LaunchContent elements
    */
   public updateLaunchContent: () => Promise<boolean> = async () => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true)
-      .catch((err) => {
-        if (`${err}`.includes('wamp.error.no_such_procedure')) {
-          this.daemon = false;
-        }
-
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at updateLaunchContent()`,
-          `${err}`,
-        );
-        this.launchFiles = [];
-        return false;
-      })
-      .then((value) => {
-        const parsedList = value as unknown as LaunchContent[];
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsedList = value.message as LaunchContent[];
         const launchList: LaunchContent[] = [];
 
         if (parsedList) {
           parsedList.forEach((parsed: LaunchContent) => {
             // filter only the launch files associated to the provider
-            if (
-              this.rosState.masteruri &&
-              parsed.masteruri !== this.rosState.masteruri
-            ) {
+            if (this.rosState.masteruri && parsed.masteruri !== this.rosState.masteruri) {
               return;
             }
             launchList.push(
@@ -1357,19 +1101,14 @@ export default class Provider {
                 parsed.masteruri,
                 parsed.host,
                 parsed.nodes,
-                parsed.parameters.map(
-                  (p) => new RosParameter(p.name, p.value, p.type, this.id),
-                ),
-                parsed.associations,
-              ),
+                parsed.parameters.map((p) => new RosParameter(p.name, p.value, p.type, this.id)),
+                parsed.associations
+              )
             );
           });
         }
         this.launchFiles = launchList;
-        emitCustomEvent(
-          EVENT_PROVIDER_LAUNCH_LIST,
-          new EventProviderLaunchList(this, this.launchFiles),
-        );
+        emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
 
         // update nodes
         // Add nodes from launch files to the list of nodes
@@ -1377,17 +1116,12 @@ export default class Provider {
           launchFile.nodes.forEach((launchNode) => {
             const nodeParameters = new Map();
 
-            const uniqueNodeName = launchNode.unique_name
-              ? launchNode.unique_name
-              : '';
+            const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : '';
             if (uniqueNodeName) {
               // update parameters
               launchFile.parameters.forEach((p) => {
                 if (p.name.indexOf(uniqueNodeName) !== -1) {
-                  nodeParameters.set(
-                    p.name.replace(uniqueNodeName, ''),
-                    p.value,
-                  );
+                  nodeParameters.set(p.name.replace(uniqueNodeName, ''), p.value);
                 }
               });
 
@@ -1418,7 +1152,7 @@ export default class Provider {
                   uniqueNodeName,
                   launchNode.node_namespace ? launchNode.node_namespace : '',
                   '',
-                  RosNodeStatus.INACTIVE,
+                  RosNodeStatus.INACTIVE
                 );
                 n.launchPaths.add(launchFile.path);
                 n.parameters = nodeParameters;
@@ -1438,8 +1172,7 @@ export default class Provider {
         const composableManagers: string[] = [];
         this.rosNodes.forEach((n) => {
           // Check if this is a nodelet/composable and assign tags accordingly.
-          let composableParent =
-            n?.parent_id || n.launchInfo?.composable_container;
+          let composableParent = n?.parent_id || n.launchInfo?.composable_container;
           if (composableParent) {
             composableParent = composableParent.split('|').slice(-1).at(0);
             if (composableParent) {
@@ -1449,11 +1182,7 @@ export default class Provider {
               n.tags = [
                 {
                   text: 'Nodelet',
-                  color:
-                    TagColors[
-                      composableManagers.indexOf(composableParent) %
-                        TagColors.length
-                    ],
+                  color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
                 },
               ];
             }
@@ -1461,17 +1190,12 @@ export default class Provider {
         });
         // Assign tags to the found nodelet/composable managers.
         composableManagers.forEach((managerId) => {
-          const node = this.rosNodes.find(
-            (n) => n.id === managerId || n.name === managerId,
-          );
+          const node = this.rosNodes.find((n) => n.id === managerId || n.name === managerId);
           if (node) {
             node.tags = [
               {
                 text: 'Manager',
-                color:
-                  TagColors[
-                    composableManagers.indexOf(node.id) % TagColors.length
-                  ],
+                color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
               },
             ];
           }
@@ -1481,12 +1205,17 @@ export default class Provider {
         // this.rosNodes.sort(compareRosNodes);
         // await this.updateScreens(null);
         this.daemon = true;
-        emitCustomEvent(
-          EVENT_PROVIDER_ROS_NODES,
-          new EventProviderRosNodes(this, this.rosNodes),
-        );
+        emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
         return true;
-      });
+      }
+
+      if (`${value.message}`.includes('wamp.error.no_such_procedure')) {
+        this.daemon = false;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at updateLaunchContent()`, `${value.message}`);
+      this.launchFiles = [];
+      return false;
+    });
     return Promise.resolve(result);
   };
 
@@ -1496,23 +1225,12 @@ export default class Provider {
    * @param {LaunchIncludedFilesRequest} request - Launch file to be requested
    * @return {Promise<LogPathItem>} Returns a list of [PathItem] elements
    */
-  public launchGetIncludedFiles: (
-    request: LaunchIncludedFilesRequest,
-  ) => Promise<LaunchIncludedFile[] | null> = async (request) => {
-    const result = await this.makeCall(
-      URI.ROS_LAUNCH_GET_INCLUDED_FILES,
-      [request],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at launchGetIncludedFiles()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        const parsedList = value as unknown as LaunchIncludedFile[];
+  public launchGetIncludedFiles: (request: LaunchIncludedFilesRequest) => Promise<LaunchIncludedFile[] | null> = async (
+    request
+  ) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_INCLUDED_FILES, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsedList = value.message as unknown as LaunchIncludedFile[];
         const launchList: LaunchIncludedFile[] = [];
 
         if (parsedList) {
@@ -1539,15 +1257,18 @@ export default class Provider {
                   lf.rec_depth,
                   lf.args,
                   lf.default_inc_args,
-                  lf.size,
-                ),
+                  lf.size
+                )
               );
-            },
+            }
           );
         }
-
         return launchList;
-      });
+      }
+
+      this.logger?.error(`Provider [${this.name()}]: Error at launchGetIncludedFiles()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -1557,35 +1278,20 @@ export default class Provider {
    * @param {string} request - Topic type to be requested
    * @return {Promise<LaunchMessageStruct>} Returns a message struct
    */
-  public getMessageStruct: (
-    request: string,
-  ) => Promise<LaunchMessageStruct | null> = async (request: string) => {
-    const result = await this.makeCall(
-      URI.ROS_LAUNCH_GET_MSG_STRUCT,
-      [request],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getMessageStruct()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        const parsed = value as unknown as LaunchMessageStruct;
-        const response = new LaunchMessageStruct(
-          parsed.msg_type,
-          parsed.data,
-          parsed.valid,
-          parsed.error_msg,
-        );
+  public getMessageStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_MSG_STRUCT, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as LaunchMessageStruct;
+        const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
         if (response.valid) {
           return response.data;
         }
         this.logger?.error(`Can't parse message: ${request}`, parsed.error_msg);
         return null;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getMessageStruct()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -1595,35 +1301,20 @@ export default class Provider {
    * @param {string} request - Service type to be requested
    * @return {Promise<LaunchMessageStruct>} Returns a message struct
    */
-  public getServiceStruct: (
-    request: string,
-  ) => Promise<LaunchMessageStruct | null> = async (request: string) => {
-    const result = await this.makeCall(
-      URI.ROS_LAUNCH_GET_SRV_STRUCT,
-      [request],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getServiceStruct()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        const parsed = value as unknown as LaunchMessageStruct;
-        const response = new LaunchMessageStruct(
-          parsed.msg_type,
-          parsed.data,
-          parsed.valid,
-          parsed.error_msg,
-        );
+  public getServiceStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_SRV_STRUCT, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as LaunchMessageStruct;
+        const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
         if (response.valid) {
           return response.data;
         }
         this.logger?.error(`Can't parse service: ${request}`, parsed.error_msg);
         return null;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getServiceStruct()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -1633,25 +1324,16 @@ export default class Provider {
    * @param {LaunchPublishMessage} request - Launch request
    * @return {Promise<Boolean>} Returns true if success
    */
-  public publishMessage: (request: LaunchPublishMessage) => Promise<boolean> =
-    async (request) => {
-      const result = await this.makeCall(
-        URI.ROS_LAUNCH_PUBLISH_MESSAGE,
-        [request],
-        true,
-      )
-        .catch((err) => {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at publishMessage()`,
-            `${err}`,
-          );
-          return false;
-        })
-        .then((value) => {
-          return value as boolean;
-        });
-      return result;
-    };
+  public publishMessage: (request: LaunchPublishMessage) => Promise<boolean> = async (request) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_PUBLISH_MESSAGE, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as boolean;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at publishMessage()`, `${value.message}`);
+      return false;
+    });
+    return result;
+  };
 
   /**
    * Call Service
@@ -1659,34 +1341,19 @@ export default class Provider {
    * @param {LaunchCallService} request - Launch request
    * @return {Promise<LaunchMessageStruct | null>} Returns true if success
    */
-  public callService: (
-    request: LaunchCallService,
-  ) => Promise<LaunchMessageStruct | null> = async (request) => {
-    const result = await this.makeCall(
-      URI.ROS_LAUNCH_CALL_SERVICE,
-      [request],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at callService()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        if (!value) {
+  public callService: (request: LaunchCallService) => Promise<LaunchMessageStruct | null> = async (request) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_CALL_SERVICE, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        if (!value.message) {
           return null;
         }
-        const parsed = value as unknown as LaunchMessageStruct;
-        const response = new LaunchMessageStruct(
-          parsed.msg_type,
-          parsed.data,
-          parsed.valid,
-          parsed.error_msg,
-        );
+        const parsed = value.message as LaunchMessageStruct;
+        const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
         return response;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at callService()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -1699,12 +1366,7 @@ export default class Provider {
    * First closes all existing providers and then create new ones.
    */
   private callbackNewSubscribedMessage: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugInterface(
-      URI.ROS_SUBSCRIBER_EVENT_PREFIX,
-      msg,
-      '',
-      this.id,
-    );
+    this.logger?.debugInterface(URI.ROS_SUBSCRIBER_EVENT_PREFIX, msg, '', this.id);
 
     // ignore empty and duplicated messages
     if (msg.length === 0) {
@@ -1715,13 +1377,10 @@ export default class Provider {
       const msgParsed: SubscriberEvent = msg as unknown as SubscriberEvent;
       emitCustomEvent(
         `${EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX}_${msgParsed.topic}`,
-        new EventProviderSubscriberEvent(this, msgParsed),
+        new EventProviderSubscriberEvent(this, msgParsed)
       );
     } catch (error) {
-      this.logger?.error(
-        `[updateSubscribedMessage] Could not parse message ${msg}`,
-        `Error: ${error}`,
-      );
+      this.logger?.error(`[updateSubscribedMessage] Could not parse message ${msg}`, `Error: ${error}`);
     }
   };
 
@@ -1731,41 +1390,30 @@ export default class Provider {
    * @param {SubscriberNode} subscriber - Launch request
    * @return {Promise<boolean>} Returns true if success
    */
-  public startSubscriber: (request: SubscriberNode) => Promise<boolean> =
-    async (request) => {
-      const hasEcho = this.echoTopics.includes(request.topic);
-      if (hasEcho) {
-        return Promise.resolve(true);
+  public startSubscriber: (request: SubscriberNode) => Promise<boolean> = async (request) => {
+    const hasEcho = this.echoTopics.includes(request.topic);
+    if (hasEcho) {
+      return Promise.resolve(true);
+    }
+    this.echoTopics.push(request.topic);
+    const result = await this.makeCall(URI.ROS_SUBSCRIBER_START, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed: boolean = value.message as boolean;
+        return parsed;
       }
-      this.echoTopics.push(request.topic);
-      const result = await this.makeCall(
-        URI.ROS_SUBSCRIBER_START,
-        [request],
-        true,
-      )
-        .catch((err) => {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at startSubscriber()`,
-            `${err}`,
-          );
-          return false;
-        })
-        .then((value) => {
-          const parsed: boolean = value as boolean;
-          return parsed;
-        });
-      if (result) {
-        const cbTopic = this.generateSubscriberUri(request.topic);
-        this.registerCallback(cbTopic, this.callbackNewSubscribedMessage);
-        this.logger?.debug(
-          `Started subscriber node for '${request.topic} [${
-            request.message_type
-          }]' on '${this.name()}'`,
-          '',
-        );
-      }
-      return Promise.resolve(result);
-    };
+      this.logger?.error(`Provider [${this.name()}]: Error at startSubscriber()`, `${value.message}`);
+      return false;
+    });
+    if (result) {
+      const cbTopic = this.generateSubscriberUri(request.topic);
+      this.registerCallback(cbTopic, this.callbackNewSubscribedMessage);
+      this.logger?.debug(
+        `Started subscriber node for '${request.topic} [${request.message_type}]' on '${this.name()}'`,
+        ''
+      );
+    }
+    return Promise.resolve(result);
+  };
 
   /**
    * Stop subscriber node for given topic
@@ -1773,69 +1421,47 @@ export default class Provider {
    * @param {string} topic - topic name
    * @return {Promise<IResult>} Returns true if success
    */
-  public stopSubscriber: (topic: string) => Promise<IResult> = async (
-    topic,
-  ) => {
+  public stopSubscriber: (topic: string) => Promise<IResult> = async (topic) => {
     const hasTopic = this.echoTopics.includes(topic);
     if (hasTopic) {
       this.echoTopics = this.echoTopics.filter((e) => e !== topic);
       const cbTopic = this.generateSubscriberUri(topic);
       await this.connection.closeSubscription(cbTopic).catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: close subscription failed`,
-          `${err}`,
-        );
+        this.logger?.error(`Provider [${this.name()}]: close subscription failed`, `${err}`);
       });
     }
-    const result = await this.makeCall(URI.ROS_SUBSCRIBER_STOP, [topic], true)
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at stopSubscriber()`,
-          `${err}`,
-        );
-        return { result: false, message: err };
-      })
-      .then((value) => {
-        const res = value as boolean;
+    const result = await this.makeCall(URI.ROS_SUBSCRIBER_STOP, [topic], true).then((value: CallResult) => {
+      if (value.result) {
+        const res = value.message as boolean;
         return { result: res, message: '' };
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at stopSubscriber()`, `${value.message}`);
+      return { result: false, message: value.message as string };
+    });
     return Promise.resolve(result);
   };
 
   /**
    * Update the filter for given topic
    */
-  public updateFilterRosTopic: (
-    topicName: string,
-    msg: SubscriberFilter,
-  ) => Promise<IResult> = async (topicName, msg) => {
-    const cbTopic = `${URI.ROS_SUBSCRIBER_FILTER_PREFIX}.${topicName.replaceAll(
-      '/',
-      '_',
-    )}`;
-    this.logger?.debug(
-      `Provider: (${this.name()}) Publish to: [${cbTopic}]`,
-      '',
-    );
-    const result = await this.connection.publish(
-      cbTopic,
-      JSON.parse(JSON.stringify(msg)),
-    );
+  public updateFilterRosTopic: (topicName: string, msg: SubscriberFilter) => Promise<IResult> = async (
+    topicName,
+    msg
+  ) => {
+    const cbTopic = `${URI.ROS_SUBSCRIBER_FILTER_PREFIX}.${topicName.replaceAll('/', '_')}`;
+    this.logger?.debug(`Provider: (${this.name()}) Publish to: [${cbTopic}]`, '');
+    const result = await this.connection.publish(cbTopic, JSON.parse(JSON.stringify(msg)));
     return result;
   };
 
   /**
    * Start a ROS node using a given provider and node object
    */
-  public startNode: (node: RosNode) => Promise<IResultStartNode> = async (
-    node: RosNode,
-  ) => {
+  public startNode: (node: RosNode) => Promise<IResultStartNode> = async (node: RosNode) => {
     if (node.providerId !== this.id) {
       return {
         success: false,
-        message: `Inconsistent provider (${
-          node.providerName
-        } vs. ${this.name()})`,
+        message: `Inconsistent provider (${node.providerName} vs. ${this.name()})`,
         details: DEFAULT_BUG_TEXT,
         response: null,
       };
@@ -1848,34 +1474,15 @@ export default class Provider {
       `${node.launchPath}`, // opt_launch
       '', // log level
       '', // log format
-      node.masteruri?.length > 0
-        ? node.masteruri
-        : `${this.rosState.masteruri}`, // masteruri
+      node.masteruri?.length > 0 ? node.masteruri : `${this.rosState.masteruri}`, // masteruri
       true, // reload global parameters
-      '', // cmd
+      '' // cmd
     );
 
-    const result = await this.makeCall(
-      URI.ROS_LAUNCH_START_NODE,
-      [request],
-      true,
-    )
-      .catch((err) => {
-        return {
-          success: false,
-          message: 'Invalid message from [ros.launch.start_node]',
-          details: err,
-          response: null,
-        };
-      })
-      .then((value) => {
-        const parsed = value as unknown as LaunchNodeReply;
-        const response = new LaunchNodeReply(
-          parsed.name,
-          parsed.status,
-          parsed.paths,
-          parsed.launch_files,
-        );
+    const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as LaunchNodeReply;
+        const response = new LaunchNodeReply(parsed.name, parsed.status, parsed.paths, parsed.launch_files);
 
         if (!response) {
           return {
@@ -1945,7 +1552,14 @@ export default class Provider {
           details: `Node: ${node.id} Details: ${response.status.msg}`,
           response,
         };
-      });
+      }
+      return {
+        success: false,
+        message: 'Invalid message from [ros.launch.start_node]',
+        details: value.message as string,
+        response: null,
+      };
+    });
     return Promise.resolve(result);
   };
 
@@ -1956,23 +1570,19 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public stopNode: (id: string) => Promise<Result> = async (id) => {
-    const result = await this.makeCall(URI.ROS_NODES_STOP_NODE, [id], false)
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at stopNode()`,
-          `${err}`,
-        );
-        return new Result(false, `${err}`);
-      })
-      .then((value) => {
-        const parsed = value as Result;
+    const result = await this.makeCall(URI.ROS_NODES_STOP_NODE, [id], false).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as Result;
         if (parsed.result) {
           return parsed;
         }
         // use debug because of spamming messages when nodes does not run
         this.logger?.debug(`${parsed.message}`, parsed.message);
         return parsed;
-      });
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at stopNode()`, `${value.message}`);
+      return new Result(false, `${value.message}`);
+    });
 
     return Promise.resolve(result);
   };
@@ -1984,28 +1594,17 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public screenKillNode: (name: string) => Promise<Result> = async (name) => {
-    const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name], true)
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at screenKillNode()`,
-          `${err}`,
-        );
-        return new Result(
-          false,
-          `Provider [${this.name()}]: Error at screenKillNode(): ${err}`,
-        );
-      })
-      .then((value) => {
-        const parsed = value as Result;
+    const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as Result;
         if (!parsed.result) {
-          this.logger?.error(
-            `Fail to kill the node [${name}]: ${parsed.message}`,
-            parsed.message,
-            false,
-          );
+          this.logger?.error(`Fail to kill the node [${name}]: ${parsed.message}`, parsed.message, false);
         }
         return parsed;
-      });
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at screenKillNode()`, `${value.message}`);
+      return new Result(false, `Provider [${this.name()}]: Error at screenKillNode(): ${value.message}`);
+    });
     return Promise.resolve(result);
   };
 
@@ -2015,25 +1614,18 @@ export default class Provider {
    * @return {Promise<ScreensMapping[]>} Returns a list of screens
    */
   private getScreenList: () => Promise<ScreensMapping[] | null> = async () => {
-    const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true)
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getScreenList()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        if (Object.keys(value as {}).includes('result')) {
-          return [];
-        }
-        const screenMappings = value as unknown as ScreensMapping[];
+    const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true).then((value: CallResult) => {
+      if (value.result) {
+        const screenMappings = value.message as ScreensMapping[];
         const screenList: ScreensMapping[] = [];
         screenMappings?.forEach((p: ScreensMapping) => {
           screenList.push(new ScreensMapping(p.name, p.screens));
         });
         return screenList;
-      });
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getScreenList()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -2043,21 +1635,13 @@ export default class Provider {
    * @return {Promise<DiagnosticArray>}
    */
   private getDiagnostics: () => Promise<DiagnosticArray | null> = async () => {
-    const result = await this.makeCall(
-      URI.ROS_PROVIDER_GET_DIAGNOSTICS,
-      [],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.error(
-          `Provider [${this.name()}]: Error at getDiagnostics()`,
-          `${err}`,
-        );
-        return null;
-      })
-      .then((value) => {
-        return value as unknown as DiagnosticArray;
-      });
+    const result = await this.makeCall(URI.ROS_PROVIDER_GET_DIAGNOSTICS, [], true).then((value: CallResult) => {
+      if (value.result) {
+        return value.message as DiagnosticArray;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getDiagnostics()`, `${value.message}`);
+      return null;
+    });
     return Promise.resolve(result);
   };
 
@@ -2066,30 +1650,18 @@ export default class Provider {
    *
    * @return {Promise<SystemWarningGroup[]>}
    */
-  private updateSystemWarnings: () => Promise<SystemWarningGroup[] | null> =
-    async () => {
-      const result = await this.makeCall(
-        URI.ROS_PROVIDER_GET_WARNINGS,
-        [],
-        true,
-      )
-        .catch((err) => {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at updateSystemWarnings()`,
-            `${err}`,
-          );
-          return null;
-        })
-        .then((value) => {
-          if (Object.keys(value as {}).includes('result')) {
-            return [];
-          }
-          const warnings = value as unknown as SystemWarningGroup[];
-          this.warnings = warnings;
-          return warnings;
-        });
-      return Promise.resolve(result);
-    };
+  private updateSystemWarnings: () => Promise<SystemWarningGroup[] | null> = async () => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: CallResult) => {
+      if (value.result) {
+        const warnings = value.message as SystemWarningGroup[];
+        this.warnings = warnings;
+        return warnings;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at updateSystemWarnings()`, `${value.message}`);
+      return null;
+    });
+    return Promise.resolve(result);
+  };
 
   /**
    * Return a list with loggers for given node
@@ -2097,28 +1669,19 @@ export default class Provider {
    * @param {string} node - Node name
    * @return {Promise<LoggerConfig[]>} Returns a result
    */
-  public getNodeLoggers: (node: string) => Promise<LoggerConfig[]> = async (
-    node,
-  ) => {
-    const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node], true)
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at getNodeLoggers()`,
-          `${err}`,
-        );
-        return [];
-      })
-      .then((value) => {
+  public getNodeLoggers: (node: string) => Promise<LoggerConfig[]> = async (node) => {
+    const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node], true).then((value: CallResult) => {
+      if (value.result) {
         // handle the result of type: {result: bool, message: str}
-        if (!Array.isArray(value) && !value.result) {
-          this.logger?.error(
-            `Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`,
-            ``,
-          );
+        if (!Array.isArray(value.message) && !value.result) {
+          this.logger?.error(`Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`, ``);
           return [];
         }
-        return value as LoggerConfig[];
-      });
+        return value.message as LoggerConfig[];
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`);
+      return [];
+    });
     return Promise.resolve(result);
   };
 
@@ -2129,28 +1692,16 @@ export default class Provider {
    * @param {LoggerConfig[]} loggers - Node name
    * @return {Promise<Result>} Returns a result
    */
-  public setNodeLoggers: (
-    node: string,
-    loggers: LoggerConfig[],
-  ) => Promise<Result> = async (node, loggers) => {
-    const result = await this.makeCall(
-      URI.ROS_NODES_SET_LOGGER_LEVEL,
-      [node, loggers],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at getNodeLoggers()`,
-          `${err}`,
-        );
-        return new Result(
-          false,
-          `Provider [${this.name()}]: Error at getNodeLoggers(): ${err}`,
-        );
-      })
-      .then((value) => {
-        return value as Result;
-      });
+  public setNodeLoggers: (node: string, loggers: LoggerConfig[]) => Promise<Result> = async (node, loggers) => {
+    const result = await this.makeCall(URI.ROS_NODES_SET_LOGGER_LEVEL, [node, loggers], true).then(
+      (value: CallResult) => {
+        if (value.result) {
+          return value.message as Result;
+        }
+        this.logger?.debug(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`);
+        return new Result(false, `Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`);
+      }
+    );
     return Promise.resolve(result);
   };
 
@@ -2161,26 +1712,19 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public unregisterNode: (name: string) => Promise<Result> = async (name) => {
-    const result = await this.makeCall(URI.ROS_NODES_UNREGISTER, [name], true)
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at unregisterNode()`,
-          `${err}`,
-        );
-        return new Result(
-          false,
-          `Provider [${this.name()}]: Error at unregisterNode(): ${err}`,
-        );
-      })
-      .then((value) => {
-        const parsed = value as Result;
+    const result = await this.makeCall(URI.ROS_NODES_UNREGISTER, [name], true).then((value: CallResult) => {
+      if (value.result) {
+        const parsed = value.message as Result;
         if (parsed.result) {
           return parsed;
         }
         // use debug because of spamming messages when nodes does not run
         this.logger?.debug(`${parsed.message}`, parsed.message);
         return parsed;
-      });
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at unregisterNode()`, `${value.message}`);
+      return new Result(false, `Provider [${this.name()}]: Error at unregisterNode(): ${value.message}`);
+    });
     return Promise.resolve(result);
   };
 
@@ -2192,24 +1736,18 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public getParameterList: () => Promise<RosParameter[]> = async () => {
-    const result = await this.makeCall('ros.parameters.get_list', [], true)
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at getParameterList()`,
-          `${err}`,
-        );
-        return [];
-      })
-      .then((value) => {
+    const result = await this.makeCall('ros.parameters.get_list', [], true).then((value: CallResult) => {
+      if (value.result) {
         const paramList: RosParameter[] = [];
-        const parsed = value as RosParameter[];
+        const parsed = value.message as RosParameter[];
         parsed.forEach((item: RosParameter) => {
-          paramList.push(
-            new RosParameter(item.name, item.value, item.type, this.id),
-          );
+          paramList.push(new RosParameter(item.name, item.value, item.type, this.id));
         });
         return paramList;
-      });
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at getParameterList()`, `${value.message}`);
+      return [];
+    });
     return Promise.resolve(result);
   };
 
@@ -2219,32 +1757,23 @@ export default class Provider {
    * @param {string[]} nodes - List of node names
    * @return {Promise<Result>} Returns a result
    */
-  public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> =
-    async (nodes) => {
-      const result = await this.makeCall(
-        URI.ROS_PARAMETERS_GET_NODE_PARAMETERS,
-        [nodes],
-        true,
-      )
-        .catch((err) => {
-          this.logger?.debug(
-            `Provider [${this.name()}]: Error at stopNode()`,
-            `${err}`,
-          );
-          return [];
-        })
-        .then((value) => {
+  public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> = async (nodes) => {
+    const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], true).then(
+      (value: CallResult) => {
+        if (value.result) {
           const paramList: RosParameter[] = [];
-          const parsed = value as RosParameter[];
+          const parsed = value.message as RosParameter[];
           parsed.forEach((item: RosParameter) => {
-            paramList.push(
-              new RosParameter(item.name, item.value, item.type, this.id),
-            );
+            paramList.push(new RosParameter(item.name, item.value, item.type, this.id));
           });
           return paramList;
-        });
-      return Promise.resolve(result);
-    };
+        }
+        this.logger?.debug(`Provider [${this.name()}]: Error at stopNode()`, `${value.message}`);
+        return [];
+      }
+    );
+    return Promise.resolve(result);
+  };
 
   /**
    * Set the value of a parameter
@@ -2252,25 +1781,17 @@ export default class Provider {
    * @param {RosParameter} parameter
    * @return {Promise<Boolean>} Returns true if success
    */
-  public setParameter: (parameter: RosParameter) => Promise<boolean> = async (
-    parameter,
-  ) => {
-    const result = await this.makeCall(
-      URI.ROS_PARAMETERS_SET_PARAMETER,
-      [parameter],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at setParameter()`,
-          `${err}`,
-        );
+  public setParameter: (parameter: RosParameter) => Promise<boolean> = async (parameter) => {
+    const result = await this.makeCall(URI.ROS_PARAMETERS_SET_PARAMETER, [parameter], true).then(
+      (value: CallResult) => {
+        if (value.result) {
+          const parsed = value.message as boolean;
+          return parsed;
+        }
+        this.logger?.debug(`Provider [${this.name()}]: Error at setParameter()`, `${value.message}`);
         return false;
-      })
-      .then((value) => {
-        const parsed = value as boolean;
-        return parsed;
-      });
+      }
+    );
     return Promise.resolve(result);
   };
 
@@ -2280,24 +1801,16 @@ export default class Provider {
    * @param {string} parameterName
    * @return {Promise<Boolean>} Returns true if success
    */
-  public hasParameter: (parameterName: string) => Promise<boolean> = async (
-    parameterName,
-  ) => {
-    const result = await this.makeCall(
-      URI.ROS_PARAMETERS_HAS_PARAMETER,
-      [parameterName],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at hasParameter()`,
-          `${err}`,
-        );
+  public hasParameter: (parameterName: string) => Promise<boolean> = async (parameterName) => {
+    const result = await this.makeCall(URI.ROS_PARAMETERS_HAS_PARAMETER, [parameterName], true).then(
+      (value: CallResult) => {
+        if (value.result) {
+          return value.message as boolean;
+        }
+        this.logger?.debug(`Provider [${this.name()}]: Error at hasParameter()`, `${value.message}`);
         return false;
-      })
-      .then((value) => {
-        return value as boolean;
-      });
+      }
+    );
     return Promise.resolve(result);
   };
 
@@ -2307,24 +1820,16 @@ export default class Provider {
    * @param {string[]} parameters list of parameters to be deleted
    * @return {Promise<Boolean>} Returns true if success
    */
-  public deleteParameters: (parameters: string[]) => Promise<boolean> = async (
-    parameters,
-  ) => {
-    const result = await this.makeCall(
-      URI.ROS_PARAMETERS_DELETE_PARAMETERS,
-      [parameters],
-      true,
-    )
-      .catch((err) => {
-        this.logger?.debug(
-          `Provider [${this.name()}]: Error at setParameter()`,
-          `${err}`,
-        );
+  public deleteParameters: (parameters: string[]) => Promise<boolean> = async (parameters) => {
+    const result = await this.makeCall(URI.ROS_PARAMETERS_DELETE_PARAMETERS, [parameters], true).then(
+      (value: CallResult) => {
+        if (value.result) {
+          return value.message as boolean;
+        }
+        this.logger?.debug(`Provider [${this.name()}]: Error at setParameter()`, `${value.message}`);
         return false;
-      })
-      .then((value) => {
-        return value as boolean;
-      });
+      }
+    );
     return Promise.resolve(result);
   };
 
@@ -2340,12 +1845,8 @@ export default class Provider {
       this.updateDaemonInit();
     } else if (msgObj.timestamp) {
       // update diff state
-      this.currentDelay =
-        (Date.now() - msgObj.timestamp + this.timeDiff) / 1000.0;
-      emitCustomEvent(
-        EVENT_PROVIDER_DELAY,
-        new EventProviderDelay(this, this.currentDelay),
-      );
+      this.currentDelay = (Date.now() - msgObj.timestamp + this.timeDiff) / 1000.0;
+      emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
     }
     this.daemon = msgObj.status;
   };
@@ -2376,14 +1877,10 @@ export default class Provider {
       // exclude nodes belonging to a different provider
       if (!this.showRemoteNodes) {
         if (
-          (this.rosState.masteruri &&
-            n.masteruri !== this.rosState.masteruri) ||
+          (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
           (n.location instanceof String && n.location === 'remote') ||
           (n.location instanceof Array &&
-            !n.location.some(
-              (loc) =>
-                loc.startsWith('SHM') || loc.startsWith('UDPv4:[127.0.0.1]'),
-            ))
+            !n.location.some((loc) => loc.startsWith('SHM') || loc.startsWith('UDPv4:[127.0.0.1]')))
         ) {
           ignored = true;
         }
@@ -2421,9 +1918,7 @@ export default class Provider {
         }
       }
       // copy (selected) old state
-      const oldNode = this.rosNodes.find(
-        (item) => item.idGlobal === n.idGlobal,
-      );
+      const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
       if (oldNode) {
         n.diagnosticStatus = oldNode.diagnosticStatus;
         n.diagnosticLevel = oldNode.diagnosticLevel;
@@ -2453,10 +1948,7 @@ export default class Provider {
       return;
     }
 
-    emitCustomEvent(
-      EVENT_PROVIDER_PATH_EVENT,
-      new EventProviderPathEvent(this, msg as unknown as PathEvent),
-    );
+    emitCustomEvent(EVENT_PROVIDER_PATH_EVENT, new EventProviderPathEvent(this, msg as unknown as PathEvent));
     this.unlockRequest('callbackChangedFile');
   };
 
@@ -2475,9 +1967,7 @@ export default class Provider {
   /**
    * Update diagnostics of each node reported in the list of DiagnosticsArray.
    */
-  private callbackDiagnosticsUpdate: (msg: JSONObject) => void = async (
-    msg,
-  ) => {
+  private callbackDiagnosticsUpdate: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debugInterface(URI.ROS_PROVIDER_DIAGNOSTICS, msg, '', this.id);
     if (!msg) {
       return;
@@ -2494,31 +1984,16 @@ export default class Provider {
       return;
     }
 
-    const msgParsed: SystemWarningGroup[] =
-      msg as unknown as SystemWarningGroup[];
+    const msgParsed: SystemWarningGroup[] = msg as unknown as SystemWarningGroup[];
     this.warnings = msgParsed;
-    emitCustomEvent(
-      EVENT_PROVIDER_WARNINGS,
-      new EventProviderWarnings(this, msgParsed),
-    );
+    emitCustomEvent(EVENT_PROVIDER_WARNINGS, new EventProviderWarnings(this, msgParsed));
   };
 
-  private registerCallback: (
-    uri: string,
-    callback: (msg: JSONObject) => void,
-  ) => void = async (uri, callback) => {
-    this.logger?.debug(
-      `Provider: (${this.name()}) Subscribing to: [${uri}]`,
-      '',
-      false,
-    );
+  private registerCallback: (uri: string, callback: (msg: JSONObject) => void) => void = async (uri, callback) => {
+    this.logger?.debug(`Provider: (${this.name()}) Subscribing to: [${uri}]`, '', false);
     const result = await this.connection.subscribe(uri, callback);
     if (!result.result) {
-      this.logger?.error(
-        `Provider: (${this.name()}) Subscribing to: [${uri}] failed: ${result.message}`,
-        '',
-        false,
-      );
+      this.logger?.error(`Provider: (${this.name()}) Subscribing to: [${uri}] failed: ${result.message}`, '', false);
     }
   };
 
@@ -2538,22 +2013,13 @@ export default class Provider {
 
         this.registerCallback(URI.ROS_PROVIDER_LIST, this.updateProviderList);
         this.registerCallback(URI.ROS_DAEMON_READY, this.callbackDaemonReady);
-        this.registerCallback(
-          URI.ROS_DISCOVERY_READY,
-          this.callbackDiscoveryReady,
-        );
+        this.registerCallback(URI.ROS_DISCOVERY_READY, this.callbackDiscoveryReady);
         this.registerCallback(URI.ROS_LAUNCH_CHANGED, this.updateRosNodes);
         this.registerCallback(URI.ROS_NODES_CHANGED, this.updateRosNodes);
         this.registerCallback(URI.ROS_PATH_CHANGED, this.callbackChangedFile);
         this.registerCallback(URI.ROS_SCREEN_LIST, this.callbackScreensUpdate);
-        this.registerCallback(
-          URI.ROS_PROVIDER_WARNINGS,
-          this.callbackProviderWarnings,
-        );
-        this.registerCallback(
-          URI.ROS_PROVIDER_DIAGNOSTICS,
-          this.callbackDiagnosticsUpdate,
-        );
+        this.registerCallback(URI.ROS_PROVIDER_WARNINGS, this.callbackProviderWarnings);
+        this.registerCallback(URI.ROS_PROVIDER_DIAGNOSTICS, this.callbackDiagnosticsUpdate);
         return true;
       });
   };
@@ -2565,73 +2031,66 @@ export default class Provider {
    *
    * @param {string} uri URI to be called
    * @param {any} args call arguments
-   * @return {Promise<any>} Return promise of the call
+   * @return {Promise<JSONObject>} Return promise of the call
    */
-  private makeCall: (
-    uri: string,
-    args: any,
-    lockRequest: boolean,
-  ) => Promise<JSONObject> = async (uri, args, lockRequest = true) => {
+  private makeCall: (uri: string, args: any, lockRequest: boolean) => Promise<CallResult> = async (
+    uri,
+    args,
+    lockRequest = true
+  ) => {
     if (!this.isAvailable()) {
-      throw Error(
-        `[${this.name()}]: Ignoring request to: [${uri}], provider not yet connected!`,
-      );
+      return { result: false, message: `[${this.name()}]: Ignoring request to: [${uri}], provider not yet connected!` };
     }
 
     if (lockRequest && (await this.lockRequest(uri))) {
-      throw Error(
-        `[${this.name()}]: Ignoring request to: [${uri}] with ${JSON.stringify(
-          args,
-        )}, request already running!`,
-      );
+      return {
+        result: false,
+        message: `[${this.name()}]: Ignoring request to: [${uri}] with ${JSON.stringify(args)}, request already running!`,
+      };
     }
-    const callRequest: (
-      _uri: string,
-      _args: any,
-      currentAttempt?: number,
-    ) => Promise<JSONObject> = async (_uri, _args, currentAttempt = 0) => {
+    const callRequest: (_uri: string, _args: any, currentAttempt?: number) => Promise<CallResult> = async (
+      _uri,
+      _args,
+      currentAttempt = 0
+    ) => {
       try {
-        const r: JSONObject = await this.connection
-          .call(_uri, _args)
-          .catch((err) => {
-            // TODO
-            this.logger?.warn(
-              `failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`,
-              '',
-              false,
-            );
-            if (Object.keys(err).includes('result')) {
-              return err;
-            }
-            throw Error(err);
-          });
-        return r;
+        const r = await this.connection.call(_uri, _args).catch((err) => {
+          // TODO
+          // this.logger?.warn(`failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`, '', false);
+          if (Object.keys(err).includes('result')) {
+            return err;
+          }
+          return { result: false, message: err };
+        });
+        if (Object.keys(r).includes('result')) {
+          return r;
+        }
+        return { result: true, message: r as unknown};
       } catch (err) {
         if (`${err}`.includes('{')) {
           const errorObj = JSON.parse(`${err}`);
           if (errorObj.error?.includes('wamp.error.runtime_error')) {
             // do not re-try on runtime errors
             this.unlockRequest(uri);
-            throw Error(`[${this.name()}]: request to [${uri}] failed: ${err}`);
+            return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}` };
           }
         } else if (err === 'Connection is closed') {
           this.unlockRequest(uri);
-          throw Error(`[${this.name()}]: request to [${uri}] failed: ${err}`);
+          return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}` };
         }
         if (currentAttempt >= this.callAttempts) {
           this.unlockRequest(uri);
-          throw Error(
-            `[URI] (${uri}) [${this.name()}]: Max call attempts (${
-              this.callAttempts
-            }) reached!`,
-          );
+          return {
+            result: false,
+            message: `[URI] (${uri}) [${this.name()}]: Max call attempts (${this.callAttempts}) reached!`,
+          };
         }
 
         // didn't work, wait and repeat
         this.logger?.info(
           `[URI] (${uri}) [${this.name()}]`,
           `Waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
-          false,
+          false
         );
         await delay(this.delayCallAttempts);
         return callRequest(_uri, _args, currentAttempt + 1);
@@ -2649,10 +2108,7 @@ export default class Provider {
     this.setConnectionState(state, details);
     // clear all activities
     this.currentRequestList.clear();
-    emitCustomEvent(
-      EVENT_PROVIDER_ACTIVITY,
-      new EventProviderActivity(this, false, ''),
-    );
+    emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ''));
   };
 
   private onOpenConnection = () => {
@@ -2666,30 +2122,17 @@ export default class Provider {
   Prevents multiple calls to the same [request]
   Return true when [request has been already locked]
   */
-  private lockRequest: (request: string) => Promise<boolean> = async (
-    request,
-  ) => {
+  private lockRequest: (request: string) => Promise<boolean> = async (request) => {
     if (this.currentRequestList.has(request)) {
-      this.logger?.debug(
-        `[${this.name()}]: Wait 1 sec for release request to: [${request}]`,
-        '',
-        false,
-      );
+      this.logger?.debug(`[${this.name()}]: Wait 1 sec for release request to: [${request}]`, '', false);
       // TODO: wait until release?
       await delay(1000);
       if (this.currentRequestList.has(request)) {
-        this.logger?.debug(
-          `[${this.name()}]: Ignoring request to: [${request}]`,
-          '',
-          false,
-        );
+        this.logger?.debug(`[${this.name()}]: Ignoring request to: [${request}]`, '', false);
         return Promise.resolve(true);
       }
     }
-    emitCustomEvent(
-      EVENT_PROVIDER_ACTIVITY,
-      new EventProviderActivity(this, true, request),
-    );
+    emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, true, request));
     this.currentRequestList.add(request);
     return Promise.resolve(false);
   };
@@ -2700,10 +2143,7 @@ export default class Provider {
   private unlockRequest = (request: string) => {
     this.currentRequestList.delete(request);
     if (this.currentRequestList.size === 0) {
-      emitCustomEvent(
-        EVENT_PROVIDER_ACTIVITY,
-        new EventProviderActivity(this, false, ''),
-      );
+      emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ''));
     }
   };
 }

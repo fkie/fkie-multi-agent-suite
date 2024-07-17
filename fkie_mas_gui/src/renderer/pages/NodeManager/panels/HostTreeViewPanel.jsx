@@ -31,12 +31,7 @@ import {
 } from '@mui/material';
 import { useDebounceCallback } from '@react-hook/debounce';
 import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
-import {
-  ConfirmModal,
-  HostTreeView,
-  MapSelectionModal,
-  SearchBar,
-} from '../../../components';
+import { ConfirmModal, HostTreeView, MapSelectionModal, SearchBar } from '../../../components';
 import { LoggingContext } from '../../../context/LoggingContext';
 import { NavigationContext } from '../../../context/NavigationContext';
 import { RosContext } from '../../../context/RosContext';
@@ -72,9 +67,7 @@ function HostTreeViewPanel() {
   const navCtx = useContext(NavigationContext);
 
   // state variables
-  const [showRemoteNodes, setShowRemoteNodes] = useState(
-    settingsCtx.get('showRemoteNodes'),
-  );
+  const [showRemoteNodes, setShowRemoteNodes] = useState(settingsCtx.get('showRemoteNodes'));
   const [filterText, setFilterText] = useState('');
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
@@ -115,7 +108,7 @@ function HostTreeViewPanel() {
       });
       return nodeList;
     },
-    [rosCtx.nodeMap],
+    [rosCtx.nodeMap]
   );
 
   const getSelectedNodes = useCallback(() => {
@@ -123,9 +116,7 @@ function HostTreeViewPanel() {
   }, [getNodesFromIds, navCtx.selectedNodes]);
 
   const nameWithoutNamespace = (node) => {
-    return node.namespace && node.namespace !== '/'
-      ? node.name.replace(node.namespace, '')
-      : node.name;
+    return node.namespace && node.namespace !== '/' ? node.name.replace(node.namespace, '') : node.name;
   };
 
   // debounced search callback
@@ -145,11 +136,7 @@ function HostTreeViewPanel() {
         nodeItemMap.set(node.idGlobal, node);
         // filter nodes by user text
         if (searchTerm.length > 0) {
-          const isMatch = findIn(searchTerm, [
-            node.name,
-            node.group,
-            node.providerName,
-          ]);
+          const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName]);
           if (!isMatch) return;
         }
 
@@ -163,9 +150,7 @@ function HostTreeViewPanel() {
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const treePath = `${a
-                .slice(0, -1)
-                .join('/')}#${nameWithoutNamespace(node)}`;
+              const treePath = `${a.slice(0, -1).join('/')}#${nameWithoutNamespace(node)}`;
               r.nodeTree.push({
                 treePath,
                 children: r[name].nodeTree,
@@ -181,9 +166,7 @@ function HostTreeViewPanel() {
                 children: r[name].nodeTree,
                 node: null,
               });
-              nodeTreeList.push(
-                treePath ? `${providerId}#${treePath}` : providerId,
-              );
+              nodeTreeList.push(treePath ? `${providerId}#${treePath}` : providerId);
             }
           }
           return r[name];
@@ -242,7 +225,7 @@ function HostTreeViewPanel() {
       ]);
       // setSelectedTreeItems((prevValues) => [...prevValues]);
     },
-    [setProviderNodes],
+    [setProviderNodes]
   );
 
   // Register Callbacks ----------------------------------------------------------------------------------
@@ -261,7 +244,7 @@ function HostTreeViewPanel() {
       });
       navCtx.setSelectedNodes(selectedNoes);
     },
-    [navCtx, rosCtx.nodeMap],
+    [navCtx, rosCtx.nodeMap]
   );
 
   /**
@@ -280,7 +263,7 @@ function HostTreeViewPanel() {
       });
       navCtx.setSelectedProviders(selectedProvidersLocal);
     },
-    [navCtx, rosCtx],
+    [navCtx, rosCtx]
   );
 
   /**
@@ -297,8 +280,8 @@ function HostTreeViewPanel() {
         <NodeLoggerPanel node={node} />,
         true,
         LAYOUT_TAB_SETS.BORDER_RIGHT,
-        new LayoutTabConfig(false, 'node-logger', {}),
-      ),
+        new LayoutTabConfig(false, 'node-logger', {})
+      )
     );
   }, []);
 
@@ -312,7 +295,7 @@ function HostTreeViewPanel() {
         createLoggerPanel(nodeList[0]);
       }
     },
-    [getNodesFromIds, createLoggerPanel],
+    [getNodesFromIds, createLoggerPanel]
   );
 
   /**
@@ -323,53 +306,29 @@ function HostTreeViewPanel() {
       if (external && window.CommandExecutor) {
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);
-        const terminalCmd = await provider.cmdForType(
-          type,
-          node.name,
-          '',
-          screen,
-          '',
-        );
+        const terminalCmd = await provider.cmdForType(type, node.name, '', screen, '');
         // open screen in a new terminal
         try {
           const result = await window.CommandExecutor?.execTerminal(
-            provider.isLocalHost
-              ? null
-              : SSHCtx.getCredentialHost(provider.host()),
+            provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
             `"${type.toLocaleUpperCase()} ${node.name}@${provider.host()}"`,
-            terminalCmd.cmd,
+            terminalCmd.cmd
           );
           if (!result.result) {
-            logCtx.error(
-              `Can't open external terminal on ${provider.host()}`,
-              result.message,
-              true,
-            );
+            logCtx.error(`Can't open external terminal on ${provider.host()}`, result.message, true);
           }
         } catch (error) {
-          logCtx.error(
-            `Can't open external terminal on ${provider.host()}`,
-            error,
-            true,
-          );
+          logCtx.error(`Can't open external terminal on ${provider.host()}`, error, true);
         }
       } else {
         const id = `${type}-${screen}-${node.name}@${node.providerName}`;
-        const title = node.name
-          ? `${node.name}@${node.providerName}`
-          : node.providerName;
+        const title = node.name ? `${node.name}@${node.providerName}` : node.providerName;
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             id,
             title,
-            <SingleTerminalPanel
-              id={id}
-              type={type}
-              providerId={node.providerId}
-              node={node}
-              screen={screen}
-            />,
+            <SingleTerminalPanel id={id} type={type} providerId={node.providerId} node={node} screen={screen} />,
             true,
             LAYOUT_TAB_SETS.BORDER_BOTTOM,
             new LayoutTabConfig(true, type, {
@@ -377,12 +336,12 @@ function HostTreeViewPanel() {
               providerId: node.providerId,
               nodeName: node.name,
               screen,
-            }),
-          ),
+            })
+          )
         );
       }
     },
-    [rosCtx, SSHCtx, logCtx],
+    [rosCtx, SSHCtx, logCtx]
   );
 
   /**
@@ -392,10 +351,7 @@ function HostTreeViewPanel() {
     const openIds = [];
     nodes.forEach((node) => {
       if (!node.launchInfo) {
-        logCtx.error(
-          `Could not find launch file for node: [${node.name}]`,
-          `Node Info: ${JSON.stringify(node)}`,
-        );
+        logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
         return;
       }
       const rootLaunch = [...node.launchPaths][0];
@@ -407,11 +363,7 @@ function HostTreeViewPanel() {
       if (!openIds.includes(id)) {
         emitCustomEvent(
           EVENT_EDITOR_SELECT_RANGE,
-          eventEditorSelectRange(
-            id,
-            node.launchInfo.file_name,
-            node.launchInfo.file_range,
-          ),
+          eventEditorSelectRange(id, node.launchInfo.file_name, node.launchInfo.file_range)
         );
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
@@ -427,8 +379,8 @@ function HostTreeViewPanel() {
             />,
             true,
             LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
-            new LayoutTabConfig(false, 'editor'),
-          ),
+            new LayoutTabConfig(false, 'editor')
+          )
         );
         openIds.push(id);
       }
@@ -448,8 +400,8 @@ function HostTreeViewPanel() {
           <ParameterPanel nodes={[node]} providers={null} />,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, 'parameter'),
-        ),
+          new LayoutTabConfig(false, 'parameter')
+        )
       );
     });
     providers?.forEach((provider) => {
@@ -461,8 +413,8 @@ function HostTreeViewPanel() {
           <ParameterPanel nodes={null} providers={[provider]} />,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, 'parameter'),
-        ),
+          new LayoutTabConfig(false, 'parameter')
+        )
       );
     });
   }, []);
@@ -473,22 +425,12 @@ function HostTreeViewPanel() {
       const provider = rosCtx.getProviderById(node.providerId);
       logCtx.debug(`start: ${node.name}`, '');
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain(
-          'START',
-          node.name,
-          false,
-          `Provider ${node.providerName} not available`,
-        );
+        addStatusQueueMain('START', node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result to inform the user after queue is finished
         const resultStartNode = await provider.startNode(node);
         if (!resultStartNode.success) {
-          addStatusQueueMain(
-            'START',
-            node.name,
-            false,
-            `${resultStartNode.details}`,
-          );
+          addStatusQueueMain('START', node.name, false, `${resultStartNode.details}`);
         } else {
           addStatusQueueMain('START', node.name, true, 'started');
         }
@@ -505,9 +447,7 @@ function HostTreeViewPanel() {
           const provider = rosCtx.getProviderById(node.providerId);
           if (provider) {
             node.associations.forEach((asNodeName) => {
-              const asNodes = provider.rosNodes.filter(
-                (n) => n.name === asNodeName,
-              );
+              const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
               const asNodesRec = updateWithAssociations(asNodes, depth + 1);
               asNodesRec.forEach((asNode) => {
                 if (!newNodeList.find((n) => n.name === asNode.name)) {
@@ -523,7 +463,7 @@ function HostTreeViewPanel() {
       });
       return newNodeList;
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   const startNodesWithLaunchCheck = useCallback(
@@ -557,19 +497,13 @@ function HostTreeViewPanel() {
         }
       });
       if (skippedNodes.size > 0) {
-        logCtx.debug(
-          `Skipped ${skippedNodes.size} nodes`,
-          Object.fromEntries(skippedNodes),
-        );
+        logCtx.debug(`Skipped ${skippedNodes.size} nodes`, Object.fromEntries(skippedNodes));
       }
       if (withNoLaunch.length > 0) {
         withNoLaunch.forEach((nodeName) => {
           skippedNodes.set(nodeName, 'no launch file');
         });
-        logCtx.debug(
-          `No launch file for ${withNoLaunch.length} nodes found`,
-          JSON.stringify(node2Start),
-        );
+        logCtx.debug(`No launch file for ${withNoLaunch.length} nodes found`, JSON.stringify(node2Start));
       }
       if (withMultiLaunch.length > 0) {
         // let the user select the launch files.
@@ -579,7 +513,7 @@ function HostTreeViewPanel() {
         setNodesToStart(node2Start);
       }
     },
-    [queueItemsQueueMain, logCtx, updateWithAssociations],
+    [queueItemsQueueMain, logCtx, updateWithAssociations]
   );
 
   /**
@@ -597,7 +531,7 @@ function HostTreeViewPanel() {
       const nodeList = getNodesFromIds(itemIds);
       startNodesWithLaunchCheck(nodeList);
     },
-    [getNodesFromIds, startNodesWithLaunchCheck],
+    [getNodesFromIds, startNodesWithLaunchCheck]
   );
 
   /** Stop node from queue and trigger the next one. */
@@ -606,12 +540,7 @@ function HostTreeViewPanel() {
       logCtx.debug(`stop: ${node.name}`, '');
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain(
-          'STOP',
-          node.name,
-          false,
-          `Provider ${node.providerName} not available`,
-        );
+        addStatusQueueMain('STOP', node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
         const resultStopNode = await provider.stopNode(node.id);
@@ -656,22 +585,19 @@ function HostTreeViewPanel() {
         }
       });
       if (skippedNodes.size > 0) {
-        logCtx.debug(
-          `Skipped ${skippedNodes.size} nodes`,
-          Object.fromEntries(skippedNodes),
-        );
+        logCtx.debug(`Skipped ${skippedNodes.size} nodes`, Object.fromEntries(skippedNodes));
       }
       updateQueueMain(
         nodes2stop.map((node) => {
           return { node, action: 'STOP' };
-        }),
+        })
       );
       if (restart) {
         startNodesWithLaunchCheck(nodeList, true);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [queueItemsQueueMain, startNodesWithLaunchCheck],
+    [queueItemsQueueMain, startNodesWithLaunchCheck]
   );
 
   /**
@@ -689,7 +615,7 @@ function HostTreeViewPanel() {
       const nodeList = getNodesFromIds(itemIds);
       stopNodes(nodeList);
     },
-    [getNodesFromIds, stopNodes],
+    [getNodesFromIds, stopNodes]
   );
 
   /**
@@ -700,7 +626,7 @@ function HostTreeViewPanel() {
       stopNodes(nodeList, onlyWithLaunch, true); // => true, for restart
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stopNodes],
+    [stopNodes]
   );
 
   /**
@@ -718,7 +644,7 @@ function HostTreeViewPanel() {
       const nodeList = getNodesFromIds(itemIds);
       restartNodes(nodeList);
     },
-    [getNodesFromIds, restartNodes],
+    [getNodesFromIds, restartNodes]
   );
 
   /**
@@ -743,26 +669,16 @@ function HostTreeViewPanel() {
     updateQueueMain(
       nodes2kill.map((node) => {
         return { node, action: 'KILL' };
-      }),
+      })
     );
-  }, [
-    getSelectedNodes,
-    navCtx.selectedNodes.length,
-    queueItemsQueueMain,
-    updateQueueMain,
-  ]);
+  }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
 
   /** Kill node in the queue and trigger the next one. */
   const killNodeQueued = async (node) => {
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain(
-          'KILL',
-          node.name,
-          false,
-          `Provider ${node.providerName} not available`,
-        );
+        addStatusQueueMain('KILL', node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
         const resultKillNode = await provider.screenKillNode(node.id);
@@ -799,36 +715,21 @@ function HostTreeViewPanel() {
     updateQueueMain(
       nodes2unregister.map((node) => {
         return { node, action: 'UNREGISTER' };
-      }),
+      })
     );
-  }, [
-    getSelectedNodes,
-    navCtx.selectedNodes.length,
-    queueItemsQueueMain,
-    updateQueueMain,
-  ]);
+  }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
 
   /** Unregister node in the queue and trigger the next one. */
   const unregisterNodeQueued = async (node) => {
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain(
-          'UNREGISTER',
-          node.name,
-          false,
-          `Provider ${node.providerName} not available`,
-        );
+        addStatusQueueMain('UNREGISTER', node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
         const resultUnregisterNode = await provider.unregisterNode(node.id);
         if (!resultUnregisterNode.result) {
-          addStatusQueueMain(
-            'UNREGISTER',
-            node.name,
-            false,
-            resultUnregisterNode.message,
-          );
+          addStatusQueueMain('UNREGISTER', node.name, false, resultUnregisterNode.message);
         } else {
           addStatusQueueMain('UNREGISTER', node.name, true, 'unregistered');
         }
@@ -850,22 +751,19 @@ function HostTreeViewPanel() {
 
             const result = await provider.rosCleanPurge();
 
-            if (
-              result.length > 0 &&
-              result.indexOf('Purging ROS node logs.') === -1
-            ) {
+            if (result.length > 0 && result.indexOf('Purging ROS node logs.') === -1) {
               // should not happen, probably error
               logCtx.error('Could not delete logs', result);
             } else {
               logCtx.success('Logs removed successfully', '');
             }
-          }),
+          })
         ).catch((error) => {
           logCtx.error(`Could not clear logs for providers`, error);
         });
       }
     },
-    [rosCtx, logCtx],
+    [rosCtx, logCtx]
   );
 
   /**
@@ -891,10 +789,10 @@ function HostTreeViewPanel() {
       updateQueueMain(
         nodes2clear.map((node) => {
           return { node, action: 'CLEAR_LOG' };
-        }),
+        })
       );
     },
-    [queueItemsQueueMain, updateQueueMain],
+    [queueItemsQueueMain, updateQueueMain]
   );
 
   /** Delete log file for node in the queue and trigger the next one. */
@@ -902,33 +800,17 @@ function HostTreeViewPanel() {
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain(
-          'CLEAR_LOG',
-          node.name,
-          false,
-          `Provider ${node.providerName} not available`,
-        );
+        addStatusQueueMain('CLEAR_LOG', node.name, false, `Provider ${node.providerName} not available`);
       } else {
         const result = await provider.clearLogPaths([node.name]);
         if (result.length === 0) {
-          logCtx.error(
-            `Could not delete log files for node: [${node.name}]`,
-            result,
-          );
+          logCtx.error(`Could not delete log files for node: [${node.name}]`, result);
           addStatusQueueMain('CLEAR_LOG', node.name, false, result);
         } else if (!result[0].result) {
-          logCtx.error(
-            `Could not delete log files for node: [${node.name}]`,
-            result[0].message,
-          );
+          logCtx.error(`Could not delete log files for node: [${node.name}]`, result[0].message);
           addStatusQueueMain('CLEAR_LOG', node.name, false, result[0].message);
         } else {
-          addStatusQueueMain(
-            'CLEAR_LOG',
-            node.name,
-            true,
-            `Removed log files for node: [${node.name}]`,
-          );
+          addStatusQueueMain('CLEAR_LOG', node.name, true, `Removed log files for node: [${node.name}]`);
         }
       }
     }
@@ -936,8 +818,10 @@ function HostTreeViewPanel() {
 
   const refreshAllProvider = useCallback(() => {
     rosCtx.providersConnected.forEach((p) => {
-      p.updateRosNodes();
-      p.updateTimeDiff();
+      if (p.isReady()) {
+        p.updateRosNodes();
+        p.updateTimeDiff();
+      }
     });
   }, [rosCtx.providersConnected]);
 
@@ -958,10 +842,7 @@ function HostTreeViewPanel() {
     let removed = false;
     const newNodeMap = [];
     providerNodes.forEach((item) => {
-      if (
-        rosCtx.providers.filter((prov) => prov.id === item.providerId).length >
-        0
-      ) {
+      if (rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0) {
         newNodeMap.push(item);
       } else {
         removed = true;
@@ -997,7 +878,7 @@ function HostTreeViewPanel() {
       updateQueueMain(
         nodesToStart.map((node) => {
           return { node, action: 'START' };
-        }),
+        })
       );
       setNodesToStart(null);
     }
@@ -1042,32 +923,20 @@ function HostTreeViewPanel() {
             success.forEach((item) => {
               infoDict[item.itemName] = item.message;
             });
-            logCtx.success(
-              `${success.length} nodes ${action[1]}`,
-              infoDict,
-              true,
-            );
+            logCtx.success(`${success.length} nodes ${action[1]}`, infoDict, true);
           }
         });
         // queue is finished, print failed results
-        ['STOP', 'START', 'KILL', 'UNREGISTER', 'CLEAR_LOG'].forEach(
-          (action) => {
-            const failed = failedQueueMain(action);
-            if (failed.length > 0) {
-              const infoDict = {};
-              failed.forEach((item) => {
-                infoDict[item.itemName] = item.message;
-              });
-              logCtx.warn(
-                `Failed to ${action.toLocaleLowerCase()} ${
-                  failed.length
-                } nodes`,
-                infoDict,
-                true,
-              );
-            }
-          },
-        );
+        ['STOP', 'START', 'KILL', 'UNREGISTER', 'CLEAR_LOG'].forEach((action) => {
+          const failed = failedQueueMain(action);
+          if (failed.length > 0) {
+            const infoDict = {};
+            failed.forEach((item) => {
+              infoDict[item.itemName] = item.message;
+            });
+            logCtx.warn(`Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`, infoDict, true);
+          }
+        });
         // clear queue and results
         clearQueueMain();
       }
@@ -1081,7 +950,7 @@ function HostTreeViewPanel() {
         p.showRemoteNodes = state;
       });
     },
-    [rosCtx.providersConnected],
+    [rosCtx.providersConnected]
   );
 
   useEffect(() => {
@@ -1165,11 +1034,7 @@ function HostTreeViewPanel() {
           </Tooltip>
         )}
         {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip
-            title="Unregister ROS1 nodes"
-            placement="left"
-            disableInteractive
-          >
+          <Tooltip title="Unregister ROS1 nodes" placement="left" disableInteractive>
             <IconButton
               size="medium"
               aria-label="Unregister"
@@ -1201,12 +1066,7 @@ function HostTreeViewPanel() {
                   emptyNode.name = '';
                   emptyNode.providerId = providerId;
                   emptyNode.providerName = prov?.name();
-                  createSingleTerminalPanel(
-                    CmdType.TERMINAL,
-                    emptyNode,
-                    '',
-                    event.nativeEvent.shiftKey,
-                  );
+                  createSingleTerminalPanel(CmdType.TERMINAL, emptyNode, '', event.nativeEvent.shiftKey);
                 });
               }}
             >
@@ -1234,18 +1094,13 @@ function HostTreeViewPanel() {
                   emptyNode.providerName = prov?.name();
                   emptyNode.screens = [];
                   prov?.screens.forEach((screen) => {
-                    emptyNode.screens = [
-                      ...emptyNode.screens,
-                      ...screen.screens,
-                    ];
+                    emptyNode.screens = [...emptyNode.screens, ...screen.screens];
                   });
                   const sl = {
                     node: emptyNode,
                     external: event.nativeEvent.shiftKey,
                   };
-                  setNodeScreens((prevNodes) =>
-                    prevNodes ? [...prevNodes, sl] : [sl],
-                  );
+                  setNodeScreens((prevNodes) => (prevNodes ? [...prevNodes, sl] : [sl]));
                 });
               }}
             >
@@ -1291,166 +1146,129 @@ function HostTreeViewPanel() {
             </IconButton>
           </Tooltip>
         )}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && (
-            <Tooltip
-              title="Edit"
-              placement="left"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
+          <Tooltip
+            title="Edit"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <IconButton
+              size="medium"
+              aria-label="Edit"
+              onClick={() => {
+                createFileEditorPanel(getSelectedNodes());
+              }}
             >
-              <IconButton
-                size="medium"
-                aria-label="Edit"
-                onClick={() => {
-                  createFileEditorPanel(getSelectedNodes());
-                }}
-              >
-                <BorderColorIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && (
-            <Tooltip
-              title="Parameters"
-              placement="left"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
+              <BorderColorIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
+          <Tooltip
+            title="Parameters"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <IconButton
+              size="medium"
+              aria-label="Parameters"
+              onClick={() => {
+                createParameterPanel(getSelectedNodes(), null);
+              }}
             >
-              <IconButton
-                size="medium"
-                aria-label="Parameters"
-                onClick={() => {
-                  createParameterPanel(getSelectedNodes(), null);
-                }}
-              >
-                <TuneIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && <Divider />}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && (
-            <Tooltip
-              title="Screen (external terminal with shift+click)"
-              placement="left"
-              disableInteractive
-            >
-              <IconButton
-                size="medium"
-                aria-label="Screen"
-                onClick={(event) => {
-                  getSelectedNodes().forEach((node) => {
-                    if (node.screens.length === 1) {
-                      // 1 screen available
-                      node.screens.forEach((screen) => {
-                        createSingleTerminalPanel(
-                          CmdType.SCREEN,
-                          node,
-                          screen,
-                          event.nativeEvent.shiftKey,
-                        );
-                      });
-                    } else if (node.screens.length > 1) {
-                      // Multiple screens available
-                      setNodeScreens((prevNodes) =>
-                        prevNodes
-                          ? [
-                              ...prevNodes,
-                              {
-                                node,
-                                external: event.nativeEvent.shiftKey,
-                              },
-                            ]
-                          : [
-                              {
-                                node,
-                                external: event.nativeEvent.shiftKey,
-                              },
-                            ],
-                      );
-                    } else {
-                      // no screens, try to find by node name instead
-                      createSingleTerminalPanel(
-                        CmdType.SCREEN,
-                        node,
-                        undefined,
-                        event.nativeEvent.shiftKey,
-                      );
-                    }
-                  });
-                }}
-              >
-                <WysiwygIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && (
-            <Tooltip
-              title="Change log level"
-              placement="left"
-              disableInteractive
-            >
-              <IconButton
-                size="medium"
-                aria-label="Log Level"
-                onClick={(event) => {
-                  getSelectedNodes().forEach((node) => {
-                    createLoggerPanel(node);
-                  });
-                }}
-              >
-                <SettingsInputCompositeOutlinedIcon
-                  fontSize="inherit"
-                  sx={{ rotate: '90deg' }}
-                />
-              </IconButton>
-            </Tooltip>
-          )}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && (
-            <Tooltip
-              title="Log (external terminal with shift+click)"
-              placement="left"
-              disableInteractive
-            >
-              <IconButton
-                size="medium"
-                aria-label="Log"
-                onClick={(event) => {
-                  getSelectedNodes().forEach((node) => {
-                    createSingleTerminalPanel(
-                      CmdType.LOG,
-                      node,
-                      undefined,
-                      event.nativeEvent.shiftKey,
+              <TuneIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && <Divider />}
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
+          <Tooltip title="Screen (external terminal with shift+click)" placement="left" disableInteractive>
+            <IconButton
+              size="medium"
+              aria-label="Screen"
+              onClick={(event) => {
+                getSelectedNodes().forEach((node) => {
+                  if (node.screens.length === 1) {
+                    // 1 screen available
+                    node.screens.forEach((screen) => {
+                      createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
+                    });
+                  } else if (node.screens.length > 1) {
+                    // Multiple screens available
+                    setNodeScreens((prevNodes) =>
+                      prevNodes
+                        ? [
+                            ...prevNodes,
+                            {
+                              node,
+                              external: event.nativeEvent.shiftKey,
+                            },
+                          ]
+                        : [
+                            {
+                              node,
+                              external: event.nativeEvent.shiftKey,
+                            },
+                          ]
                     );
-                  });
-                }}
-              >
-                <SubjectIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-        {navCtx.selectedNodes?.length > 0 &&
-          navCtx.selectedProviders?.length === 0 && (
-            <Tooltip title="Clear Logs" placement="left" disableInteractive>
-              <IconButton
-                size="medium"
-                aria-label="Clear Logs"
-                onClick={() => {
-                  clearLogs(getSelectedNodes(), null);
-                }}
-              >
-                <DeleteSweepIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
+                  } else {
+                    // no screens, try to find by node name instead
+                    createSingleTerminalPanel(CmdType.SCREEN, node, undefined, event.nativeEvent.shiftKey);
+                  }
+                });
+              }}
+            >
+              <WysiwygIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
+          <Tooltip title="Change log level" placement="left" disableInteractive>
+            <IconButton
+              size="medium"
+              aria-label="Log Level"
+              onClick={(event) => {
+                getSelectedNodes().forEach((node) => {
+                  createLoggerPanel(node);
+                });
+              }}
+            >
+              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: '90deg' }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
+          <Tooltip title="Log (external terminal with shift+click)" placement="left" disableInteractive>
+            <IconButton
+              size="medium"
+              aria-label="Log"
+              onClick={(event) => {
+                getSelectedNodes().forEach((node) => {
+                  createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+                });
+              }}
+            >
+              <SubjectIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
+          <Tooltip title="Clear Logs" placement="left" disableInteractive>
+            <IconButton
+              size="medium"
+              aria-label="Clear Logs"
+              onClick={() => {
+                clearLogs(getSelectedNodes(), null);
+              }}
+            >
+              <DeleteSweepIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
       </ButtonGroup>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1511,18 +1329,8 @@ function HostTreeViewPanel() {
         )}
         {sizeQueueMain > 0 && (
           <Paper elevation={2}>
-            <Stack
-              alignItems="center"
-              justifyItems="center"
-              direction="row"
-              spacing={0.5}
-              sx={{ marginRight: 2 }}
-            >
-              <LinearProgress
-                sx={{ width: '100%' }}
-                variant="determinate"
-                value={progressQueueMain}
-              />
+            <Stack alignItems="center" justifyItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
+              <LinearProgress sx={{ width: '100%' }} variant="determinate" value={progressQueueMain} />
               <FormLabel>
                 {indexQueueMain}/{sizeQueueMain}
               </FormLabel>
@@ -1537,8 +1345,7 @@ function HostTreeViewPanel() {
             </Stack>
           </Paper>
         )}
-        {(!rosCtx.providersConnected ||
-          rosCtx.providersConnected.length === 0) && (
+        {(!rosCtx.providersConnected || rosCtx.providersConnected.length === 0) && (
           <Alert severity="info">
             <AlertTitle>No providers available</AlertTitle>
             Please connect to a ROS provider
@@ -1592,15 +1399,8 @@ function HostTreeViewPanel() {
           onConfirmCallback={(items) => {
             items.forEach((item) => {
               item.list.forEach((screen) => {
-                const nodeWithOpt = nodeScreens.find((nodeMultiple) =>
-                  nodeMultiple.node.screens.includes(screen),
-                );
-                createSingleTerminalPanel(
-                  CmdType.SCREEN,
-                  nodeWithOpt.node,
-                  screen,
-                  nodeWithOpt.external,
-                );
+                const nodeWithOpt = nodeScreens.find((nodeMultiple) => nodeMultiple.node.screens.includes(screen));
+                createSingleTerminalPanel(CmdType.SCREEN, nodeWithOpt.node, screen, nodeWithOpt.external);
               });
             });
             setNodeScreens(null);
@@ -1620,9 +1420,7 @@ function HostTreeViewPanel() {
           onConfirmCallback={(items) => {
             items.forEach((item) => {
               item.list.forEach((launch) => {
-                const node = nodesAwaitModal.find((n) =>
-                  n.name.includes(item.title),
-                );
+                const node = nodesAwaitModal.find((n) => n.name.includes(item.title));
                 node.launchPath = launch;
               });
             });
