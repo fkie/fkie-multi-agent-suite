@@ -41,6 +41,7 @@ import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
 import LaunchFileModal from '../LaunchFileModal/LaunchFileModal';
 import TreeDirectory from './TreeDirectory';
+import LoggingContext from '../../context/LoggingContext';
 
 /**
  * Sorting function used for comparing two package objects
@@ -69,6 +70,7 @@ const comparePackageItems = (a, b) => {
 };
 
 function PackageExplorer({ packageList, selectedProvider }) {
+  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -399,6 +401,9 @@ function PackageExplorer({ packageList, selectedProvider }) {
             name: callbackFile.package,
             path: packages[0].path,
           });
+          return;
+        } else {
+          logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`)
           return;
         }
       }

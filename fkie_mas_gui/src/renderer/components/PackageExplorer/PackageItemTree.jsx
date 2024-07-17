@@ -81,7 +81,7 @@ function PackageItemTree({
           onClick={() => {
             if (onClick) onClick(labelText, itemId);
           }}
-          onDoubleClick={(event, ok) => {
+          onDoubleClick={(event) => {
             if (onDoubleClick)
               onDoubleClick(
                 labelText,
