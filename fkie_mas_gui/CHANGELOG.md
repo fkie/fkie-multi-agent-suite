@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.2 - 17.07.2024
+
+Autohide menu bar
+Moved copy button to menu in package explorer
+Print error message if package was not found on shift+double click
+Fixed: application icon for appImage
+Fixed: get package list on connect
+
 ## 2.1.1 - 17.07.2024
 
 Fixed: recursive search if some file models are not found
