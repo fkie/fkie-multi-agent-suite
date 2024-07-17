@@ -1,42 +1,16 @@
-import {
-  Autocomplete,
-  Box,
-  ButtonGroup,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-} from '@mui/material';
+import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from '@mui/material';
 import PropTypes from 'prop-types';
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useReducer,
-  useState,
-} from 'react';
-
+import { useCallback, useContext, useEffect, useReducer, useState } from 'react';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import InputIcon from '@mui/icons-material/Input';
 import { emitCustomEvent } from 'react-custom-events';
-
 import useLocalStorage from '../../hooks/useLocalStorage';
 import Tag from '../UI/Tag';
-
 import { RosContext } from '../../context/RosContext';
-import {
-  LAUNCH_FILE_EXTENSIONS,
-  SettingsContext,
-} from '../../context/SettingsContext';
-
-import {
-  LAYOUT_TABS,
-  LAYOUT_TAB_SETS,
-  LayoutTabConfig,
-} from '../../pages/NodeManager/layout';
-
+import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from '../../context/SettingsContext';
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../../pages/NodeManager/layout';
 import { getBaseName, getFileExtension, getFileName } from '../../models';
-
 import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
 import LaunchFileModal from '../LaunchFileModal/LaunchFileModal';
@@ -76,10 +50,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
-  const [launchFileHistory, setLaunchFileHistory] = useLocalStorage(
-    'PackageExplorer:launchFileHistory',
-    [],
-  );
+  const [launchFileHistory, setLaunchFileHistory] = useLocalStorage('PackageExplorer:launchFileHistory', []);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedLaunchFile, setSelectedLaunchFile] = useState(null);
@@ -89,8 +60,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
   const [packageItemsTree, setPackageItemsTree] = useState({});
 
   const [packageItemList, setPackageItemList] = useState([]);
-  const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] =
-    useState(false);
+  const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] = useState(false);
 
   /**
    * Keep history of latest launched files.
@@ -104,16 +74,10 @@ function PackageExplorer({ packageList, selectedProvider }) {
       const launchFile = selectedLaunchFile;
       if (launchFile) {
         // Separate the history of the selected host from the rest.
-        const hostHistory = prevHistory.filter(
-          (file) => file.host === provider.host(),
-        );
-        const otherHistory = prevHistory.filter(
-          (file) => file.host !== provider.host(),
-        );
+        const hostHistory = prevHistory.filter((file) => file.host === provider.host());
+        const otherHistory = prevHistory.filter((file) => file.host !== provider.host());
         // Find if the launch file was already in the host history.
-        const foundIdx = hostHistory.findIndex(
-          (file) => file.path === launchFile.path,
-        );
+        const foundIdx = hostHistory.findIndex((file) => file.path === launchFile.path);
         if (foundIdx > -1) {
           // Delete the old history entry.
           hostHistory.splice(foundIdx, 1);
@@ -122,25 +86,13 @@ function PackageExplorer({ packageList, selectedProvider }) {
         hostHistory.unshift(launchFile);
         // Cap host history length and return the merged histories.
         // TODO: Make the history length a parameter.
-        return [
-          ...hostHistory.slice(0, settingsCtx.get('launchHistoryLength')),
-          ...otherHistory,
-        ];
+        return [...hostHistory.slice(0, settingsCtx.get('launchHistoryLength')), ...otherHistory];
       }
       return prevHistory;
     });
     // inform host panel tab about loaded launch file
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(LAYOUT_TABS.NODES, 'default', {}),
-    );
-  }, [
-    rosCtx,
-    selectedProvider,
-    setLaunchFileHistory,
-    selectedLaunchFile,
-    settingsCtx,
-  ]);
+    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODES, 'default', {}));
+  }, [rosCtx, selectedProvider, setLaunchFileHistory, selectedLaunchFile, settingsCtx]);
 
   /**
    * Reset all states considering launch file history.
@@ -149,9 +101,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
     const provider = rosCtx.getProviderById(selectedProvider);
     let hostLaunchFileHistory = [];
     if (provider) {
-      hostLaunchFileHistory = launchFileHistory.filter(
-        (file) => file.host === provider.host(),
-      );
+      hostLaunchFileHistory = launchFileHistory.filter((file) => file.host === provider.host());
     }
     if (selectedPackage) return;
     const pit = hostLaunchFileHistory.reduce((prev, curr) => {
@@ -169,13 +119,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
     const sortedPackages = packageList.sort(comparePackages);
     setPackageListFiltered(sortedPackages);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    packageList,
-    rosCtx,
-    selectedProvider,
-    selectedPackage,
-    launchFileHistory,
-  ]);
+  }, [packageList, rosCtx, selectedProvider, selectedPackage, launchFileHistory]);
 
   // Reset states upon packageList or history modification.
   useEffect(() => {
@@ -223,21 +167,9 @@ function PackageExplorer({ packageList, selectedProvider }) {
         fl = fl.filter((f) => {
           // check file extension for "interesting" files
           const fileExtension = getFileExtension(f.path);
-          return [
-            'launch',
-            'yaml',
-            'md',
-            'h',
-            'hpp',
-            'c',
-            'cpp',
-            'py',
-            'xml',
-            'txt',
-            'sdf',
-            'config',
-            'cfg',
-          ].includes(fileExtension);
+          return ['launch', 'yaml', 'md', 'h', 'hpp', 'c', 'cpp', 'py', 'xml', 'txt', 'sdf', 'config', 'cfg'].includes(
+            fileExtension
+          );
         });
       } else {
         setIgnoringNonRelevantPackageFiles(false);
@@ -251,9 +183,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         f.package = packageName;
         // remove the package path from the file path
         // replace the file name by file id, to prevent name collisions in subfolders
-        f.relativePath = f.path
-          .replace(`${packagePath}/`, '/')
-          .replace(f.name, f.id);
+        f.relativePath = f.path.replace(`${packagePath}/`, '/').replace(f.name, f.id);
         pathItemMap.set(f.id, f);
         return f;
       });
@@ -303,7 +233,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
       setPackageItemList(itemList);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.getProviderById, selectedProvider, setSelectedPackage],
+    [rosCtx.getProviderById, selectedProvider, setSelectedPackage]
   );
 
   /**
@@ -332,7 +262,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
       const sortedPackages = searchResult.sort(comparePackages);
       setPackageListFiltered(sortedPackages);
     },
-    [packageList],
+    [packageList]
   );
 
   /**
@@ -347,7 +277,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         setSelectedFile(null);
       }
     },
-    [packageItemList],
+    [packageItemList]
   );
 
   const onEditFile = useCallback(
@@ -367,11 +297,11 @@ function PackageExplorer({ packageList, selectedProvider }) {
           />,
           true,
           LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
-          new LayoutTabConfig(false, 'editor'),
-        ),
+          new LayoutTabConfig(false, 'editor')
+        )
       );
     },
-    [selectedProvider],
+    [selectedProvider]
   );
 
   /**
@@ -383,13 +313,9 @@ function PackageExplorer({ packageList, selectedProvider }) {
       if (!callbackFile) return;
 
       // check if file is a launch
-      const isFileLaunch = LAUNCH_FILE_EXTENSIONS.find(
-        (fe) => callbackFile.path.indexOf(fe) !== -1,
-      );
+      const isFileLaunch = LAUNCH_FILE_EXTENSIONS.find((fe) => callbackFile.path.indexOf(fe) !== -1);
       if (isFileLaunch && shiftKey) {
-        const packages = packageList.filter(
-          (item) => item.name === callbackFile.package,
-        );
+        const packages = packageList.filter((item) => item.name === callbackFile.package);
         if (packages.length > 0) {
           // select package containing history file
           setPackageListFiltered(packageList);
@@ -403,7 +329,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
           });
           return;
         } else {
-          logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`)
+          logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`);
           return;
         }
       }
@@ -416,7 +342,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
       // edit file using monaco editor panel
       onEditFile(callbackFile);
     },
-    [packageItemList, onEditFile, packageList, handleOnSelectPackage],
+    [packageItemList, onEditFile, packageList, handleOnSelectPackage]
   );
 
   return (
@@ -465,15 +391,13 @@ function PackageExplorer({ packageList, selectedProvider }) {
             //   );
             // }}
           />
-          <ButtonGroup
-            orientation="horizontal"
-            aria-label="launch file control group"
-          >
+          <ButtonGroup orientation="horizontal" aria-label="launch file control group">
             <Tooltip
               title="Edit File"
-              placement="left"
+              placement="bottom"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <span>
                 <IconButton
@@ -490,19 +414,15 @@ function PackageExplorer({ packageList, selectedProvider }) {
             </Tooltip>
             <Tooltip
               title="Load"
-              placement="left"
+              placement="bottom"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
+              disableInteractive
             >
               <span>
                 <IconButton
                   disabled={
-                    !(
-                      selectedFile &&
-                      LAUNCH_FILE_EXTENSIONS.find(
-                        (fe) => selectedFile.path.indexOf(fe) !== -1,
-                      )
-                    )
+                    !(selectedFile && LAUNCH_FILE_EXTENSIONS.find((fe) => selectedFile.path.indexOf(fe) !== -1))
                   }
                   size="small"
                   aria-label="load"
@@ -514,6 +434,29 @@ function PackageExplorer({ packageList, selectedProvider }) {
                 </IconButton>
               </span>
             </Tooltip>
+            <Tooltip
+              title="Copy absolute path"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <span>
+                <IconButton
+                  disabled={!(selectedFile && selectedFile.path)}
+                  size="small"
+                  aria-label="copy"
+                  onClick={() => {
+                    if (selectedFile.path) {
+                      navigator.clipboard.writeText(selectedFile.path);
+                      logCtx.success(`${selectedFile.path} copied!`);
+                    }
+                  }}
+                >
+                  <ContentCopyIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>{' '}
           </ButtonGroup>
         </Stack>
 
@@ -537,9 +480,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
               // remove launch file from history
               setLaunchFileHistory((prevHistory) => {
                 if (selectedFile) {
-                  return prevHistory.filter(
-                    (file) => file.id !== selectedFile.id,
-                  );
+                  return prevHistory.filter((file) => file.id !== selectedFile.id);
                 }
                 return prevHistory;
               });

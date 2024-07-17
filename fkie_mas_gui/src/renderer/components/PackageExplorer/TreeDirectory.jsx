@@ -133,7 +133,8 @@ function TreeDirectory({
             itemId={`${file.id}`}
             labelText={file.name.replace('/', '')}
             tooltip={isLaunchFile ? file.path : ''}
-            enableCopy={!!isLaunchFile}
+            // enableCopy={!!isLaunchFile}
+            enableCopy={false}
             labelIconComponent={
               <FileIcon
                 extension={fileExtension}
@@ -210,7 +211,7 @@ function TreeDirectory({
                   />
                 }
                 tooltip={file.path}
-                enableCopy
+                enableCopy={false}
                 iconColor={blue[700]}
                 color={blue[700]}
                 bgColor={blue[200]}
@@ -225,7 +226,8 @@ function TreeDirectory({
               itemId={packageName}
               labelText={packageName}
               tooltip={selectedPackage?.path}
-              enableCopy={!!selectedPackage}
+              // enableCopy={!!selectedPackage}
+              enableCopy={false}
               iconColor={itemTree ? blue[700] : red[700]}
               color={itemTree ? blue[700] : red[700]}
               bgColor={itemTree ? blue[200] : red[200]}
