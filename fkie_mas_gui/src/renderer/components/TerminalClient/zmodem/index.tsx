@@ -26,10 +26,7 @@ interface Props {
   control: FlowControl;
 }
 
-export class ZmodemAddon
-  extends React.Component<Props>
-  implements ITerminalAddon
-{
+export class ZmodemAddon extends React.Component<Props> implements ITerminalAddon {
   private terminal: Terminal | undefined;
 
   private keyDispose: IDisposable | undefined;
@@ -47,14 +44,14 @@ export class ZmodemAddon
   constructor(props: Props) {
     super(props);
 
-    this.handleError = this.handleError.bind(this)
-    this.zmodemInit = this.zmodemInit.bind(this)
-    this.zmodemReset = this.zmodemReset.bind(this)
-    this.zmodemWrite = this.zmodemWrite.bind(this)
-    this.zmodemSend = this.zmodemSend.bind(this)
-    this.zmodemDetect = this.zmodemDetect.bind(this)
-    this.receiveFile = this.receiveFile.bind(this)
-    this.writeProgress = this.writeProgress.bind(this)
+    this.handleError = this.handleError.bind(this);
+    this.zmodemInit = this.zmodemInit.bind(this);
+    this.zmodemReset = this.zmodemReset.bind(this);
+    this.zmodemWrite = this.zmodemWrite.bind(this);
+    this.zmodemSend = this.zmodemSend.bind(this);
+    this.zmodemDetect = this.zmodemDetect.bind(this);
+    this.receiveFile = this.receiveFile.bind(this);
+    this.writeProgress = this.writeProgress.bind(this);
 
     this.zmodemInit();
   }
@@ -106,6 +103,12 @@ export class ZmodemAddon
     const { limit, highWater, lowWater, pause, resume } = control;
     const { terminal } = this;
     const rawData = new Uint8Array(data);
+    if (terminal) {
+      if (this.written == 0) {
+        // workaround to focus textarea
+        terminal.focus();
+      }
+    }
 
     this.written += rawData.length;
     if (this.written > limit) {
@@ -124,7 +127,9 @@ export class ZmodemAddon
       }
     }
 
-    if (terminal) terminal.write(rawData);
+    if (terminal) {
+      terminal.write(rawData);
+    }
   }
 
   private zmodemSend(data: ArrayLike<number>): void {
@@ -197,17 +202,12 @@ export class ZmodemAddon
     const offset = offer.get_offset();
     const percent = ((100 * offset) / size).toFixed(2);
 
-    if (terminal)
-      terminal.write(
-        `${name} ${percent}% ${bytesHuman(offset, 2)}/${bytesHuman(size, 2)}\r`,
-      );
+    if (terminal) terminal.write(`${name} ${percent}% ${bytesHuman(offset, 2)}/${bytesHuman(size, 2)}\r`);
   }
 
   private bytesHuman(bytes: number, precision: number): string {
     let mPrecision = precision;
-    if (
-      !/^([-+])?|(\.\d+)(\d+(\.\d+)?|(\d+\.)|Infinity)$/.test(bytes.toString())
-    ) {
+    if (!/^([-+])?|(\.\d+)(\d+(\.\d+)?|(\d+\.)|Infinity)$/.test(bytes.toString())) {
       return '-';
     }
     if (bytes === 0) return '0';
