@@ -92,6 +92,8 @@ function HostTreeViewPanel() {
     failed: failedQueueMain,
     addStatus: addStatusQueueMain,
   } = useQueue(setProgressQueueMain);
+  const [selectedNodesCount, setSelectedNodesCount] = useState(0);
+  const [selectedProvidersCount, setSelectedProvidersCount] = useState(0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   /**
@@ -959,105 +961,294 @@ function HostTreeViewPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRemoteNodes]);
 
+  useEffect(() => {
+    if (navCtx.selectedNodes?.length > 0) {
+      setSelectedNodesCount(navCtx.selectedNodes?.length);
+    } else {
+      setSelectedNodesCount(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navCtx.selectedNodes]);
+
+  useEffect(() => {
+    if (navCtx.selectedProviders?.length > 0) {
+      setSelectedProvidersCount(navCtx.selectedProviders?.length);
+    } else {
+      setSelectedProvidersCount(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navCtx.selectedProviders]);
+
   const createButtonBox = useMemo(() => {
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
-        {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip
-            title="Start"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
+        <Tooltip
+          title="Start"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
             <IconButton
               size="medium"
               aria-label="Start"
               onClick={() => {
                 startSelectedNodes();
               }}
+              disabled={selectedNodesCount === 0}
             >
               <PlayArrowIcon fontSize="inherit" />
             </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip
-            title="Stop"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
+          </span>
+        </Tooltip>
+        <Tooltip
+          title="Stop"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
             <IconButton
               size="medium"
               aria-label="Stop"
               onClick={() => {
                 stopSelectedNodes();
               }}
+              disabled={selectedNodesCount === 0}
             >
               <StopIcon fontSize="inherit" />
             </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && <Divider />}
-        {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip
-            title="Restart"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
+          </span>
+        </Tooltip>
+        <Divider />
+        <Tooltip
+          title="Restart"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
             <IconButton
               size="medium"
               aria-label="Restart"
               onClick={() => {
                 restartSelectedNodes();
               }}
+              disabled={selectedNodesCount === 0}
             >
               <RestartAltIcon fontSize="inherit" />
             </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip title="Kill" placement="left" disableInteractive>
+          </span>
+        </Tooltip>
+        <Tooltip title="Kill" placement="left" disableInteractive>
+          <span>
             <IconButton
               size="medium"
               aria-label="Kill"
               onClick={() => {
                 killSelectedNodes();
               }}
+              disabled={selectedNodesCount === 0}
             >
               <CancelPresentationIcon fontSize="inherit" />
             </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && (
-          <Tooltip title="Unregister ROS1 nodes" placement="left" disableInteractive>
+          </span>
+        </Tooltip>
+        <Tooltip title="Unregister ROS1 nodes" placement="left" disableInteractive>
+          <span>
             <IconButton
               size="medium"
               aria-label="Unregister"
               onClick={() => {
                 unregisterSelectedNodes();
               }}
+              disabled={selectedNodesCount === 0}
             >
               <DeleteForeverIcon fontSize="inherit" />
             </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedProviders?.length > 0 && <Divider />}
-        {navCtx.selectedProviders?.length > 0 && (
-          <Tooltip
-            title="Open Terminal (external terminal with shift+click)"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
+          </span>
+        </Tooltip>
+        <Divider />
+        <Tooltip
+          title="Edit"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
             <IconButton
               size="medium"
-              aria-label="Open Terminal"
+              aria-label="Edit"
+              onClick={() => {
+                createFileEditorPanel(getSelectedNodes());
+              }}
+              disabled={selectedNodesCount === 0}
+            >
+              <BorderColorIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title="Parameters"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Parameters"
+              onClick={() => {
+                if (selectedProvidersCount > 0) {
+                  createParameterPanel(null, navCtx.selectedProviders);
+                } else {
+                  createParameterPanel(getSelectedNodes(), null);
+                }
+              }}
+              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+            >
+              <TuneIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Divider />
+        <Tooltip title="Screen (external terminal with shift+click)" placement="left" disableInteractive>
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Screen"
+              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              onClick={(event) => {
+                if (selectedProvidersCount > 0) {
+                  navCtx.selectedProviders?.forEach((providerId) => {
+                    const prov = rosCtx.getProviderById(providerId);
+                    const emptyNode = new RosNode();
+                    emptyNode.name = prov?.name();
+                    emptyNode.providerId = providerId;
+                    emptyNode.providerName = prov?.name();
+                    emptyNode.screens = [];
+                    prov?.screens.forEach((screen) => {
+                      emptyNode.screens = [...emptyNode.screens, ...screen.screens];
+                    });
+                    const sl = {
+                      node: emptyNode,
+                      external: event.nativeEvent.shiftKey,
+                    };
+                    setNodeScreens((prevNodes) => (prevNodes ? [...prevNodes, sl] : [sl]));
+                  });
+                } else {
+                  getSelectedNodes().forEach((node) => {
+                    if (node.screens.length === 1) {
+                      // 1 screen available
+                      node.screens.forEach((screen) => {
+                        createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
+                      });
+                    } else if (node.screens.length > 1) {
+                      // Multiple screens available
+                      setNodeScreens((prevNodes) =>
+                        prevNodes
+                          ? [
+                              ...prevNodes,
+                              {
+                                node,
+                                external: event.nativeEvent.shiftKey,
+                              },
+                            ]
+                          : [
+                              {
+                                node,
+                                external: event.nativeEvent.shiftKey,
+                              },
+                            ]
+                      );
+                    } else {
+                      // no screens, try to find by node name instead
+                      createSingleTerminalPanel(CmdType.SCREEN, node, undefined, event.nativeEvent.shiftKey);
+                    }
+                  });
+                }
+              }}
+            >
+              {selectedProvidersCount > 0 ? (
+                <DynamicFeedOutlinedIcon fontSize="inherit" />
+              ) : (
+                <WysiwygIcon fontSize="inherit" />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Change log level" placement="left" disableInteractive>
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Log Level"
+              disabled={selectedNodesCount === 0}
+              onClick={(event) => {
+                getSelectedNodes().forEach((node) => {
+                  createLoggerPanel(node);
+                });
+              }}
+            >
+              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: '90deg' }} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Log (external terminal with shift+click)" placement="left" disableInteractive>
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Log"
+              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              onClick={(event) => {
+                getSelectedNodes().forEach((node) => {
+                  createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+                });
+              }}
+            >
+              <SubjectIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title={selectedProvidersCount > 0 ? 'ros clean purge' : 'Clear Logs'}
+          placement="left"
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Clear Logs"
+              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              onClick={() => {
+                if (selectedProvidersCount > 0) {
+                  setRosCleanPurge(true);
+                } else {
+                  clearLogs(getSelectedNodes(), null);
+                }
+              }}
+            >
+              <DeleteSweepIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Divider />
+        <Tooltip
+          title="Open Terminal on selected host (external terminal with shift+click)"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Open Terminal on selected host"
+              disabled={selectedProvidersCount === 0}
               onClick={(event) => {
                 // open a new terminal for each selected provider
                 navCtx.selectedProviders.forEach((providerId) => {
@@ -1072,207 +1263,12 @@ function HostTreeViewPanel() {
             >
               <TerminalIcon fontSize="inherit" />
             </IconButton>
-          </Tooltip>
-        )}{' '}
-        {navCtx.selectedProviders?.length > 0 && (
-          <Tooltip
-            title="Select screens (external terminal with shift+click)"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
-            <IconButton
-              size="medium"
-              aria-label="Select screens"
-              onClick={(event) => {
-                navCtx.selectedProviders.forEach((providerId) => {
-                  const prov = rosCtx.getProviderById(providerId);
-                  const emptyNode = new RosNode();
-                  emptyNode.name = prov?.name();
-                  emptyNode.providerId = providerId;
-                  emptyNode.providerName = prov?.name();
-                  emptyNode.screens = [];
-                  prov?.screens.forEach((screen) => {
-                    emptyNode.screens = [...emptyNode.screens, ...screen.screens];
-                  });
-                  const sl = {
-                    node: emptyNode,
-                    external: event.nativeEvent.shiftKey,
-                  };
-                  setNodeScreens((prevNodes) => (prevNodes ? [...prevNodes, sl] : [sl]));
-                });
-              }}
-            >
-              <DynamicFeedOutlinedIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedProviders?.length > 0 && (
-          <Tooltip
-            title="Parameters"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
-            <IconButton
-              size="medium"
-              aria-label="Parameters"
-              onClick={() => {
-                createParameterPanel(null, navCtx.selectedProviders);
-              }}
-            >
-              <TuneIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}{' '}
-        {navCtx.selectedProviders?.length > 0 && (
-          <Tooltip
-            title="ros clean purge"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
-            <IconButton
-              size="medium"
-              aria-label="ros clean purge"
-              onClick={() => {
-                setRosCleanPurge(true);
-              }}
-            >
-              <DeleteSweepIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
-          <Tooltip
-            title="Edit"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
-            <IconButton
-              size="medium"
-              aria-label="Edit"
-              onClick={() => {
-                createFileEditorPanel(getSelectedNodes());
-              }}
-            >
-              <BorderColorIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
-          <Tooltip
-            title="Parameters"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
-            <IconButton
-              size="medium"
-              aria-label="Parameters"
-              onClick={() => {
-                createParameterPanel(getSelectedNodes(), null);
-              }}
-            >
-              <TuneIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && <Divider />}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
-          <Tooltip title="Screen (external terminal with shift+click)" placement="left" disableInteractive>
-            <IconButton
-              size="medium"
-              aria-label="Screen"
-              onClick={(event) => {
-                getSelectedNodes().forEach((node) => {
-                  if (node.screens.length === 1) {
-                    // 1 screen available
-                    node.screens.forEach((screen) => {
-                      createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
-                    });
-                  } else if (node.screens.length > 1) {
-                    // Multiple screens available
-                    setNodeScreens((prevNodes) =>
-                      prevNodes
-                        ? [
-                            ...prevNodes,
-                            {
-                              node,
-                              external: event.nativeEvent.shiftKey,
-                            },
-                          ]
-                        : [
-                            {
-                              node,
-                              external: event.nativeEvent.shiftKey,
-                            },
-                          ]
-                    );
-                  } else {
-                    // no screens, try to find by node name instead
-                    createSingleTerminalPanel(CmdType.SCREEN, node, undefined, event.nativeEvent.shiftKey);
-                  }
-                });
-              }}
-            >
-              <WysiwygIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
-          <Tooltip title="Change log level" placement="left" disableInteractive>
-            <IconButton
-              size="medium"
-              aria-label="Log Level"
-              onClick={(event) => {
-                getSelectedNodes().forEach((node) => {
-                  createLoggerPanel(node);
-                });
-              }}
-            >
-              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: '90deg' }} />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
-          <Tooltip title="Log (external terminal with shift+click)" placement="left" disableInteractive>
-            <IconButton
-              size="medium"
-              aria-label="Log"
-              onClick={(event) => {
-                getSelectedNodes().forEach((node) => {
-                  createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
-                });
-              }}
-            >
-              <SubjectIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        {navCtx.selectedNodes?.length > 0 && navCtx.selectedProviders?.length === 0 && (
-          <Tooltip title="Clear Logs" placement="left" disableInteractive>
-            <IconButton
-              size="medium"
-              aria-label="Clear Logs"
-              onClick={() => {
-                clearLogs(getSelectedNodes(), null);
-              }}
-            >
-              <DeleteSweepIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
+          </span>
+        </Tooltip>
       </ButtonGroup>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navCtx.selectedNodes, navCtx.selectedProviders]);
+  }, [selectedNodesCount, selectedProvidersCount]);
 
   return (
     <Box
@@ -1301,14 +1297,6 @@ function HostTreeViewPanel() {
                 <LocalPlayOutlinedIcon sx={{ fontSize: 'inherit' }} />
               </ToggleButton>
             </Tooltip>
-            <SearchBar
-              onSearch={(value) => {
-                setFilterText(value);
-              }}
-              placeholder="Search nodes (<space> for OR, + for AND)"
-              defaultValue={filterText}
-              fullWidth
-            />
             <Tooltip
               title="Reload node list"
               placement="left"
@@ -1325,6 +1313,14 @@ function HostTreeViewPanel() {
                 <RefreshIcon sx={{ fontSize: 'inherit' }} />
               </IconButton>
             </Tooltip>
+            <SearchBar
+              onSearch={(value) => {
+                setFilterText(value);
+              }}
+              placeholder="Search nodes (<space> for OR, + for AND)"
+              defaultValue={filterText}
+              fullWidth
+            />
           </Stack>
         )}
         {sizeQueueMain > 0 && (
@@ -1345,15 +1341,19 @@ function HostTreeViewPanel() {
             </Stack>
           </Paper>
         )}
-        {(!rosCtx.providersConnected || rosCtx.providersConnected.length === 0) && (
-          <Alert severity="info">
-            <AlertTitle>No providers available</AlertTitle>
-            Please connect to a ROS provider
-          </Alert>
-        )}
-
         <Stack direction="row" height="100%" overflow="auto">
+          <Box height="100%">
+            {/* <Paper elevation={2} sx={{ border: 0 }} height="100%"> */}
+            {createButtonBox}
+            {/* </Paper> */}
+          </Box>
           <Box width="100%" height="100%" overflow="auto">
+            {(!rosCtx.providersConnected || rosCtx.providersConnected.length === 0) && (
+              <Alert severity="info">
+                <AlertTitle>No providers available</AlertTitle>
+                Please connect to a ROS provider
+              </Alert>
+            )}
             <HostTreeView
               providerNodeTree={providerNodeTree}
               onNodeSelect={handleNodesSelect}
@@ -1363,11 +1363,6 @@ function HostTreeViewPanel() {
               stopNodes={stopNodesFromId}
               restartNodes={restartNodesFromId}
             />
-          </Box>
-          <Box>
-            <Paper elevation={2} sx={{ border: 0 }}>
-              {createButtonBox}
-            </Paper>
           </Box>
         </Stack>
       </Stack>
