@@ -1,17 +1,18 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 // mui imports
+import AddToQueueIcon from '@mui/icons-material/AddToQueue';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import CancelPresentationIcon from '@mui/icons-material/CancelPresentation';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
 import LocalPlayOutlinedIcon from '@mui/icons-material/LocalPlayOutlined';
+import MonitorIcon from '@mui/icons-material/Monitor';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
 import StopIcon from '@mui/icons-material/Stop';
-import SubjectIcon from '@mui/icons-material/Subject';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import TuneIcon from '@mui/icons-material/Tune';
 import WysiwygIcon from '@mui/icons-material/Wysiwyg';
@@ -92,8 +93,6 @@ function HostTreeViewPanel() {
     failed: failedQueueMain,
     addStatus: addStatusQueueMain,
   } = useQueue(setProgressQueueMain);
-  const [selectedNodesCount, setSelectedNodesCount] = useState(0);
-  const [selectedProvidersCount, setSelectedProvidersCount] = useState(0);
   const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
 
   /**
@@ -961,24 +960,6 @@ function HostTreeViewPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRemoteNodes]);
 
-  useEffect(() => {
-    if (navCtx.selectedNodes?.length > 0) {
-      setSelectedNodesCount(navCtx.selectedNodes?.length);
-    } else {
-      setSelectedNodesCount(0);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navCtx.selectedNodes]);
-
-  useEffect(() => {
-    if (navCtx.selectedProviders?.length > 0) {
-      setSelectedProvidersCount(navCtx.selectedProviders?.length);
-    } else {
-      setSelectedProvidersCount(0);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navCtx.selectedProviders]);
-
   const createButtonBox = useMemo(() => {
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
@@ -996,7 +977,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 startSelectedNodes();
               }}
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
             >
               <PlayArrowIcon fontSize="inherit" />
             </IconButton>
@@ -1016,7 +997,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 stopSelectedNodes();
               }}
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
             >
               <StopIcon fontSize="inherit" />
             </IconButton>
@@ -1037,7 +1018,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 restartSelectedNodes();
               }}
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
             >
               <RestartAltIcon fontSize="inherit" />
             </IconButton>
@@ -1051,7 +1032,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 killSelectedNodes();
               }}
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
             >
               <CancelPresentationIcon fontSize="inherit" />
             </IconButton>
@@ -1065,7 +1046,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 unregisterSelectedNodes();
               }}
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
             >
               <DeleteForeverIcon fontSize="inherit" />
             </IconButton>
@@ -1086,7 +1067,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 createFileEditorPanel(getSelectedNodes());
               }}
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
             >
               <BorderColorIcon fontSize="inherit" />
             </IconButton>
@@ -1104,13 +1085,13 @@ function HostTreeViewPanel() {
               size="medium"
               aria-label="Parameters"
               onClick={() => {
-                if (selectedProvidersCount > 0) {
+                if (navCtx.selectedProviders?.length > 0) {
                   createParameterPanel(null, navCtx.selectedProviders);
                 } else {
                   createParameterPanel(getSelectedNodes(), null);
                 }
               }}
-              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
             >
               <TuneIcon fontSize="inherit" />
             </IconButton>
@@ -1122,9 +1103,9 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Screen"
-              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
-                if (selectedProvidersCount > 0) {
+                if (navCtx.selectedProviders?.length > 0) {
                   navCtx.selectedProviders?.forEach((providerId) => {
                     const prov = rosCtx.getProviderById(providerId);
                     const emptyNode = new RosNode();
@@ -1174,11 +1155,7 @@ function HostTreeViewPanel() {
                 }
               }}
             >
-              {selectedProvidersCount > 0 ? (
-                <DynamicFeedOutlinedIcon fontSize="inherit" />
-              ) : (
-                <WysiwygIcon fontSize="inherit" />
-              )}
+              {navCtx.selectedProviders?.length > 0 ? <AddToQueueIcon fontSize="inherit" /> : <MonitorIcon fontSize="inherit" />}
             </IconButton>
           </span>
         </Tooltip>
@@ -1187,7 +1164,7 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Log Level"
-              disabled={selectedNodesCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0}
               onClick={(event) => {
                 getSelectedNodes().forEach((node) => {
                   createLoggerPanel(node);
@@ -1203,19 +1180,19 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Log"
-              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 getSelectedNodes().forEach((node) => {
                   createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
                 });
               }}
             >
-              <SubjectIcon fontSize="inherit" />
+              <WysiwygIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>
         <Tooltip
-          title={selectedProvidersCount > 0 ? 'ros clean purge' : 'Clear Logs'}
+          title={navCtx.selectedProviders?.length > 0 ? 'ros clean purge' : 'Clear Logs'}
           placement="left"
           disableInteractive
         >
@@ -1223,9 +1200,9 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Clear Logs"
-              disabled={selectedNodesCount === 0 && selectedProvidersCount === 0}
+              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={() => {
-                if (selectedProvidersCount > 0) {
+                if (navCtx.selectedProviders?.length > 0) {
                   setRosCleanPurge(true);
                 } else {
                   clearLogs(getSelectedNodes(), null);
@@ -1248,7 +1225,7 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Open Terminal on selected host"
-              disabled={selectedProvidersCount === 0}
+              disabled={navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 // open a new terminal for each selected provider
                 navCtx.selectedProviders.forEach((providerId) => {
@@ -1268,7 +1245,7 @@ function HostTreeViewPanel() {
       </ButtonGroup>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNodesCount, selectedProvidersCount]);
+  }, [navCtx.selectedNodes, navCtx.selectedProviders]);
 
   return (
     <Box
