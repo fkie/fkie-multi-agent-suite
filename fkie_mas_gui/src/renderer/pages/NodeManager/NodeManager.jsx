@@ -590,9 +590,7 @@ function NodeManager() {
           <TuneIcon sx={{ fontSize: "inherit" }} />
         );
         if (window.CommandExecutor) {
-          renderValues.buttons.push(
-            <ExternalAppsModal key="external-apps-dialog" />
-          );
+          renderValues.stickyButtons.push(<ExternalAppsModal key="external-apps-dialog" />);
         }
       }
       if (child.getId() === LAYOUT_TABS.HOSTS) {
