@@ -86,7 +86,7 @@ function NodesDetailsPanel() {
 
   useEffect(() => {
     // TODO: Make a parameter or config for [maxNodes]
-    const maxNodes = 3;
+    const maxNodes = 1;
     const idsToShow = navCtx.selectedNodes.slice(
       0,
       navCtx.selectedNodes.length > maxNodes
@@ -389,7 +389,7 @@ function NodesDetailsPanel() {
                   {node.subscribers.size > 0 && (
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
-                        <TableHead>
+                        {/* <TableHead>
                           <TableRow>
                             <TableCell sx={{ fontWeight: 'bold' }}>
                               <Stack
@@ -423,7 +423,7 @@ function NodesDetailsPanel() {
                               </Stack>
                             </TableCell>
                           </TableRow>
-                        </TableHead>
+                        </TableHead> */}
                         <TableBody>
                           {Array.from(node.subscribers.values())
                             .sort(compareTopics)
@@ -509,7 +509,7 @@ function NodesDetailsPanel() {
                     // useZebraStyles={false}>
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
-                        <TableHead>
+                        {/* <TableHead>
                           <TableRow>
                             <TableCell sx={{ fontWeight: 'bold' }}>
                               <Stack
@@ -544,7 +544,7 @@ function NodesDetailsPanel() {
                               </Stack>
                             </TableCell>
                           </TableRow>
-                        </TableHead>
+                        </TableHead> */}
                         <TableBody>
                           {Array.from(node.publishers.values())
                             .sort(compareTopics)
