@@ -565,7 +565,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
 
 PackageExplorer.propTypes = {
   packageList: PropTypes.arrayOf(PropTypes.any).isRequired,
-  selectedProvider: PropTypes.string.isRequired,
+  selectedProvider: PropTypes.string,
 };
 
 export default PackageExplorer;
