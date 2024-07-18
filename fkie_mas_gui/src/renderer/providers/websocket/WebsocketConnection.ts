@@ -135,15 +135,16 @@ export default class WebsocketConnection extends ProviderConnection {
         result: false,
         message: err,
       };
+    }).then((value) => {
+      return {
+        result: value,
+        message: "",
+      };
     });
-    if (!result) {
+    if (!result.result) {
       delete this.subscriptions[uri];
     }
-    const rval: IResult = {
-      result: result as boolean,
-      message: "",
-    };
-    return Promise.resolve(rval);
+    return Promise.resolve(result as unknown as IResult);
   };
 
   /**

@@ -567,7 +567,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
         const port = config.port
           ? config.port
-          : getDefaultPortFromRos(Provider.type, config.rosVersion) + config.networkId;
+          : getDefaultPortFromRos(Provider.defaultType, config.rosVersion) + config.networkId;
         // check and add provider if new
         let provider = getProviderByHosts([config.host], port, null) as Provider;
         if (!provider) {
@@ -604,7 +604,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
         if (config.forceRestart && systemNodes?.length > 0) {
           // stop all requested system nodes, daemon as last node
-          let nodesToStop = [];
+          let nodesToStop: RosNode[] = [];
           let syncNode;
           let daemonNode;
           let discoveryNode;

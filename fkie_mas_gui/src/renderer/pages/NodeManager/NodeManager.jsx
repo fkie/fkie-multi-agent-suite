@@ -332,7 +332,7 @@ function NodeManager() {
   function onRenderTab(node /* TabNode */, renderValues /* ITabRenderValues */) {
     // add tooltip to the abbreviations
     if (
-      !["Hosts", "Node Details", "Packages", "Nodes", "Topics", "Services", "Parameter"].includes(renderValues.name)
+      !["Hosts", "Node Details", "Packages", "Nodes", "Topics", "Services", "Parameter", "Logging"].includes(renderValues.name)
     ) {
       renderValues.content = (
         <Tooltip title={renderValues.name} placement="bottom" disableInteractive>

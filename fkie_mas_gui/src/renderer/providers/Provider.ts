@@ -99,7 +99,9 @@ interface CallResult {
  * Provider base class to connect with a MAS daemon
  */
 export default class Provider {
-  type: string = "websocket";
+  static defaultType: string = "websocket";
+
+  type: string = Provider.defaultType;
 
   IGNORED_NODES: string[] = [];
 
