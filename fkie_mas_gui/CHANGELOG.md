@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.3 - 18.07.2024
+
+Changed position of node control buttons to left side
+Changed search bars to case insensetive
+Changed position of external apps button
+Removed table header for publisher and subscriber in node details panel
+Fixed: warning in package manager
+Fixed: security alerts of dependencies
+Fixed: start of daemon with different daemon id in ros2
+
 ## 2.1.2 - 17.07.2024
 
 Autohide menu bar
