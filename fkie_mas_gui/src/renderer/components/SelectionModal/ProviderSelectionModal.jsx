@@ -1,7 +1,3 @@
-import LinearProgress from '@mui/material/LinearProgress';
-import PropTypes from 'prop-types';
-import { useCallback, useEffect, useRef, useState } from 'react';
-
 import {
   Button,
   Checkbox,
@@ -16,12 +12,15 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-} from '@mui/material';
-import { delay } from '../../utils';
-import DraggablePaper from '../UI/DraggablePaper';
+} from "@mui/material";
+import LinearProgress from "@mui/material/LinearProgress";
+import PropTypes from "prop-types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { delay } from "../../utils";
+import DraggablePaper from "../UI/DraggablePaper";
 
 function ListSelectionModal({
-  title = 'Select providers',
+  title = "Select providers",
   providers,
   onCloseCallback,
   onConfirmCallback,
@@ -34,15 +33,11 @@ function ListSelectionModal({
   const [onShutdown, setOnShutdown] = useState(false);
 
   const handleToggle = (value) => () => {
-    const currentIndex = selectedProviders.findIndex(
-      (prov) => prov.id === value,
-    );
+    const currentIndex = selectedProviders.findIndex((prov) => prov.id === value);
     const newSelectedProviders = [...selectedProviders];
 
     if (currentIndex === -1) {
-      newSelectedProviders.push(
-        providers.find((provider) => provider.id === value),
-      );
+      newSelectedProviders.push(providers.find((provider) => provider.id === value));
     } else {
       newSelectedProviders.splice(currentIndex, 1);
     }
@@ -56,7 +51,7 @@ function ListSelectionModal({
   };
 
   const handleClose = (event, reason) => {
-    if (reason && reason === 'backdropClick') return;
+    if (reason && reason === "backdropClick") return;
     if (closeInterval.current) {
       clearInterval(closeInterval.current);
       closeInterval.current = null;
@@ -80,7 +75,7 @@ function ListSelectionModal({
         setProgress(oldProgress - 20);
       }
     },
-    [onConfirmCallback, showProgress],
+    [onConfirmCallback, showProgress]
   );
 
   useEffect(() => {
@@ -100,17 +95,17 @@ function ListSelectionModal({
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
         {title}
       </DialogTitle>
 
       <DialogContent scroll="paper" aria-label="list">
         <List
           sx={{
-            width: '100%',
+            width: "100%",
             maxHeight: 400,
-            overflow: 'auto',
-            bgcolor: 'background.paper',
+            overflow: "auto",
+            bgcolor: "background.paper",
           }}
         >
           {providers &&
@@ -119,22 +114,14 @@ function ListSelectionModal({
 
               return (
                 <ListItem key={prov.id} disablePadding>
-                  <ListItemButton
-                    role={undefined}
-                    onClick={handleToggle(prov.id)}
-                    dense
-                  >
+                  <ListItemButton role={undefined} onClick={handleToggle(prov.id)} dense>
                     <ListItemIcon>
                       <Checkbox
                         edge="start"
-                        checked={
-                          selectedProviders.findIndex(
-                            (selProv) => selProv.id === prov.id,
-                          ) !== -1
-                        }
+                        checked={selectedProviders.findIndex((selProv) => selProv.id === prov.id) !== -1}
                         tabIndex={-1}
                         disableRipple
-                        inputProps={{ 'aria-labelledby': labelId }}
+                        inputProps={{ "aria-labelledby": labelId }}
                       />
                     </ListItemIcon>
                     <ListItemText id={labelId} primary={prov.name()} />
@@ -143,9 +130,7 @@ function ListSelectionModal({
               );
             })}
         </List>
-        {showProgress && (
-          <LinearProgress variant="determinate" value={progress} />
-        )}
+        {showProgress && <LinearProgress variant="determinate" value={progress} />}
       </DialogContent>
       {!onShutdown && (
         <DialogActions>
@@ -153,12 +138,7 @@ function ListSelectionModal({
             Cancel
           </Button>
 
-          <Button
-            autoFocus
-            color="success"
-            variant="contained"
-            onClick={onConfirm}
-          >
+          <Button autoFocus color="success" variant="contained" onClick={onConfirm}>
             Confirm
           </Button>
         </DialogActions>
@@ -168,12 +148,7 @@ function ListSelectionModal({
           <Typography>Shutting down</Typography>
           <CircularProgress size="1em" />
 
-          <Button
-            autoFocus
-            color="warning"
-            variant="contained"
-            onClick={onForceCloseCallback}
-          >
+          <Button autoFocus color="warning" variant="contained" onClick={onForceCloseCallback}>
             close app
           </Button>
         </DialogActions>

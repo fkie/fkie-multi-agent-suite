@@ -1,5 +1,5 @@
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
   Alert,
   AlertTitle,
@@ -17,39 +17,36 @@ import {
   TextField,
   Tooltip,
   Typography,
-} from '@mui/material';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useState } from "react";
+import SearchBar from "../../../components/UI/SearchBar";
+import { LoggingContext } from "../../../context/LoggingContext";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import useLocalStorage from "../../../hooks/useLocalStorage";
+import { LaunchPublishMessage } from "../../../models";
+import InputElements from "./MessageDialogPanel/InputElements";
 
-import SearchBar from '../../../components/UI/SearchBar';
-import { LoggingContext } from '../../../context/LoggingContext';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import useLocalStorage from '../../../hooks/useLocalStorage';
-import { LaunchPublishMessage } from '../../../models';
-import InputElements from './MessageDialogPanel/InputElements';
-
-function TopicPublishPanel({ topicName = null, providerId = '' }) {
+function TopicPublishPanel({ topicName = null, providerId = "" }) {
   const [history, setHistory] = useLocalStorage(`MessageStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [substituteKeywords, setSubstituteKeywords] = useState(true);
-  const [messageType, setMessageType] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [messageType, setMessageType] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [messageStruct, setMessageStruct] = useState(null);
   const [messageStructOrg, setMessageStructOrg] = useState(null);
-  const [publishRate, setPublishRate] = useState('once');
+  const [publishRate, setPublishRate] = useState("once");
   const [provider, setProvider] = useState(null);
   const [inputElements, setInputElements] = useState(null);
 
-  const [startPublisherStatus, setStartPublisherStatus] = useState('');
-  const [startPublisherDescription, setStartPublisherDescription] =
-    useState('');
-  const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] =
-    useState(false);
+  const [startPublisherStatus, setStartPublisherStatus] = useState("");
+  const [startPublisherDescription, setStartPublisherDescription] = useState("");
+  const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
 
   // Removes " from keys
   function dictToString(dict) {
@@ -57,37 +54,32 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
     return json.replace(
       /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
       (match) => {
-        let cls = 'number';
+        let cls = "number";
         if (/^"/.test(match)) {
           if (/:$/.test(match)) {
-            cls = 'key';
+            cls = "key";
           } else {
-            cls = 'string';
+            cls = "string";
           }
         } else if (/true|false/.test(match)) {
-          cls = 'boolean';
+          cls = "boolean";
         } else if (/null/.test(match)) {
-          cls = 'null';
+          cls = "null";
         }
-        return cls === 'key' || cls === 'number' || cls === 'boolean'
-          ? match.replaceAll('"', '')
-          : match;
-      },
+        return cls === "key" || cls === "number" || cls === "boolean" ? match.replaceAll('"', "") : match;
+      }
     );
   }
 
   function str2typedValue(value, valueType) {
     let result = value;
-    if (valueType.search('int') !== -1) {
+    if (valueType.search("int") !== -1) {
       result = Number(value);
-    } else if (
-      valueType.search('float') !== -1 ||
-      valueType.search('double') !== -1
-    ) {
+    } else if (valueType.search("float") !== -1 || valueType.search("double") !== -1) {
       result = Number(value);
-    } else if (valueType.startsWith('bool')) {
-      if (typeof value === 'string') {
-        result = ('yes', 'true', 't', 'y', '1').includes(value.toLoverCase());
+    } else if (valueType.startsWith("bool")) {
+      if (typeof value === "string") {
+        result = ("yes", "true", "t", "y", "1").includes(value.toLoverCase());
       } else if (!value) {
         result = false;
       }
@@ -96,81 +88,63 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
   }
 
   // The message struct is converted into a human-readable string.
-  const messageStructToString = useCallback(
-    (msgStruct, asDict, withEmptyFields) => {
-      if (!msgStruct) return '{}';
-      const result = {};
-      let struct = msgStruct;
-      if (msgStruct.def) {
-        struct = msgStruct.def;
-      }
-      struct.forEach((field) => {
-        if (field.def.length === 0) {
-          // simple types
-          if (field.value || withEmptyFields) {
-            if (
-              field.value ||
-              typeof field.value === 'boolean' ||
-              field.type.startsWith('bool')
-            ) {
-              if (field.is_array) {
-                const values = field.value.split(/\s*,\s*/);
-                // TODO: add check for arrays with constant length
-                result[field.name] = values.map((element) => {
-                  return str2typedValue(element, field.type);
-                });
-              } else {
-                result[field.name] = str2typedValue(field.value, field.type);
-              }
-            } else if (field.default_value) {
-              result[field.name] = field.default_value;
+  const messageStructToString = useCallback((msgStruct, asDict, withEmptyFields) => {
+    if (!msgStruct) return "{}";
+    const result = {};
+    let struct = msgStruct;
+    if (msgStruct.def) {
+      struct = msgStruct.def;
+    }
+    struct.forEach((field) => {
+      if (field.def.length === 0) {
+        // simple types
+        if (field.value || withEmptyFields) {
+          if (field.value || typeof field.value === "boolean" || field.type.startsWith("bool")) {
+            if (field.is_array) {
+              const values = field.value.split(/\s*,\s*/);
+              // TODO: add check for arrays with constant length
+              result[field.name] = values.map((element) => {
+                return str2typedValue(element, field.type);
+              });
             } else {
-              result[field.name] = '';
+              result[field.name] = str2typedValue(field.value, field.type);
             }
-          }
-        } else if (field.is_array) {
-          const resultArray = [];
-          // it is a complex field type
-          const val = field?.value ? field?.value : field.def;
-          val.forEach((arrayElement) => {
-            resultArray.push(
-              messageStructToString(arrayElement, true, withEmptyFields),
-            );
-          });
-          // append created array
-          if (resultArray.length > 0) {
-            result[field.name] = resultArray;
-          } else if (withEmptyFields) {
-            // create a new array from definition
-            result[field.name] = [
-              messageStructToString(field.def, true, withEmptyFields),
-            ];
-          }
-        } else {
-          // it is a complex type, call subroutine
-          const subResult = messageStructToString(
-            field.def,
-            true,
-            withEmptyFields,
-          );
-          if (Object.keys(subResult).length > 0) {
-            result[field.name] = subResult;
+          } else if (field.default_value) {
+            result[field.name] = field.default_value;
+          } else {
+            result[field.name] = "";
           }
         }
-      });
-      return asDict ? result : dictToString(result);
-    },
-    [],
-  );
+      } else if (field.is_array) {
+        const resultArray = [];
+        // it is a complex field type
+        const val = field?.value ? field?.value : field.def;
+        val.forEach((arrayElement) => {
+          resultArray.push(messageStructToString(arrayElement, true, withEmptyFields));
+        });
+        // append created array
+        if (resultArray.length > 0) {
+          result[field.name] = resultArray;
+        } else if (withEmptyFields) {
+          // create a new array from definition
+          result[field.name] = [messageStructToString(field.def, true, withEmptyFields)];
+        }
+      } else {
+        // it is a complex type, call subroutine
+        const subResult = messageStructToString(field.def, true, withEmptyFields);
+        if (Object.keys(subResult).length > 0) {
+          result[field.name] = subResult;
+        }
+      }
+    });
+    return asDict ? result : dictToString(result);
+  }, []);
 
   // get item history after the history was loaded
   const fromHistory = useDebounceCallback((index) => {
     const historyInStruct = history[messageType];
     if (historyInStruct) {
-      const historyItem =
-        index && index < historyInStruct.length
-          ? historyInStruct[index]
-          : historyInStruct[0];
+      const historyItem = index && index < historyInStruct.length ? historyInStruct[index] : historyInStruct[0];
       setPublishRate(historyItem.rate);
       setSubstituteKeywords(historyItem.skw);
       setMessageStruct(JSON.parse(JSON.stringify(historyItem.msg)));
@@ -226,18 +200,18 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
       const newProvider = rosCtx.getProviderById(providerId);
       if (newProvider) {
         setProvider(newProvider);
-        let msgType = '';
+        let msgType = "";
         // Get messageType from node list of the provider
         newProvider.rosNodes.forEach((node) => {
           if (node.providerId === providerId) {
             node.subscribers.forEach((topic) => {
-              if (msgType === '' && topicName === topic.name) {
+              if (msgType === "" && topicName === topic.name) {
                 msgType = topic.msgtype;
               }
             });
-            if (msgType === '') {
+            if (msgType === "") {
               node.publishers.forEach((topic) => {
-                if (msgType === '' && topicName === topic.name) {
+                if (msgType === "" && topicName === topic.name) {
                   msgType = topic.msgtype;
                 }
               });
@@ -254,12 +228,10 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
               <InputElements
                 key={msgStruct.type}
                 messageStruct={msgStruct}
-                parentName={
-                  msgStruct.type ? msgStruct.type : `${topicName}[${msgType}]`
-                }
+                parentName={msgStruct.type ? msgStruct.type : `${topicName}[${msgType}]`}
                 filterText={searchTerm}
                 onCopyToClipboard={onCopyToClipboard}
-              />,
+              />
             );
           }
         }
@@ -275,14 +247,10 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
       <InputElements
         key={messageStruct.type}
         messageStruct={messageStruct}
-        parentName={
-          messageStruct.type
-            ? messageStruct.type
-            : `${topicName}[${messageType}]`
-        }
+        parentName={messageStruct.type ? messageStruct.type : `${topicName}[${messageType}]`}
         filterText={searchText}
         onCopyToClipboard={onCopyToClipboard}
-      />,
+      />
     );
   }, 300);
 
@@ -317,34 +285,25 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
   }, [searchTerm]);
 
   const handleStartPublisher = async () => {
-    setStartPublisherStatus('active');
-    setStartPublisherDescription('Starting publisher...');
+    setStartPublisherStatus("active");
+    setStartPublisherDescription("Starting publisher...");
     setStartPublisherIsSubmitting(true);
 
     // store struct to history if new message
     const messageStr = messageStructToString(messageStruct, false, false);
     const historyInStruct = history[messageType];
-    if (
-      messageStr !== '{}' &&
-      (!historyInStruct || historyInStruct?.length === 0)
-    ) {
+    if (messageStr !== "{}" && (!historyInStruct || historyInStruct?.length === 0)) {
       updateHistory();
     } else if (historyInStruct) {
-      if (
-        historyInStruct.length === 0 ||
-        messageStr !==
-          messageStructToString(historyInStruct[0].msg, false, false)
-      ) {
+      if (historyInStruct.length === 0 || messageStr !== messageStructToString(historyInStruct[0].msg, false, false)) {
         updateHistory();
       }
     }
 
-    console.log(
-      `Start publisher with rate '${publishRate}' and message: ${messageStr}`,
-    );
+    console.log(`Start publisher with rate '${publishRate}' and message: ${messageStr}`);
 
-    const once = publishRate === 'once';
-    const latched = publishRate === 'latched';
+    const once = publishRate === "once";
+    const latched = publishRate === "latched";
     let rate = 0.0;
     if (!once && !latched) {
       rate = parseFloat(publishRate);
@@ -359,18 +318,18 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
         latched,
         false,
         false,
-        substituteKeywords,
-      ),
+        substituteKeywords
+      )
     );
     // close modal
     setTimeout(() => {
       setStartPublisherIsSubmitting(false);
-      setStartPublisherDescription('');
-      setStartPublisherStatus('inactive');
+      setStartPublisherDescription("");
+      setStartPublisherStatus("inactive");
     }, 5000);
   };
 
-  const publishRateSelections = ['once', 'latched', '1'];
+  const publishRateSelections = ["once", "latched", "1"];
 
   // create input mask for an element of the array
   function createHistoryButton(index) {
@@ -390,11 +349,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
   }
 
   return (
-    <Box
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-    >
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       <Stack spacing={1} margin={0.5}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography fontWeight="bold">{topicName}</Typography>
@@ -408,7 +363,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
               onSearch={(value) => {
                 try {
                   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  const re = new RegExp(value, 'i');
+                  const re = new RegExp(value, "i");
                   setSearchTerm(value);
                 } catch (error) {
                   // TODO: visualize error
@@ -427,11 +382,9 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
             options={publishRateSelections}
             size="small"
             sx={{ width: 150 }}
-            renderInput={(params) => (
-              <TextField {...params} label="Publish rate" />
-            )}
+            renderInput={(params) => <TextField {...params} label="Publish rate" />}
             defaultValue={publishRateSelections[0]}
-            inputValue={publishRate || ''}
+            inputValue={publishRate || ""}
             onInputChange={(event, newValue) => {
               setPublishRate(newValue);
             }}
@@ -443,7 +396,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
             <FormControlLabel
               control={
                 <Checkbox
-                  id={`${topicName.replace('/', '-')}-substitute-keywords`}
+                  id={`${topicName.replace("/", "-")}-substitute-keywords`}
                   checked={substituteKeywords}
                   onChange={(event) => {
                     setSubstituteKeywords(event.target.checked);
@@ -456,14 +409,14 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
           {historyLength > 0 && (
             <Stack direction="column" spacing={1} alignItems="left">
               <FormLabel size="small">Publish history</FormLabel>
-              <ButtonGroup sx={{ maxHeight: '24px' }}>
+              <ButtonGroup sx={{ maxHeight: "24px" }}>
                 {historyLength > 0 && (
                   <Tooltip title="clear history entries" enterDelay={500}>
                     <Button
                       color="success"
                       onClick={(event) => {
                         setMessageStruct(messageStructOrg);
-                        setPublishRate('once');
+                        setPublishRate("once");
                         setSubstituteKeywords(true);
                         event.stopPropagation();
                       }}
@@ -475,9 +428,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
                   </Tooltip>
                 )}
                 {historyLength > 0 &&
-                  Array.from(Array(historyLength).keys()).map((index) =>
-                    createHistoryButton(index),
-                  )}
+                  Array.from(Array(historyLength).keys()).map((index) => createHistoryButton(index))}
                 {historyLength > 0 && (
                   <Tooltip title="remove oldest history entry" enterDelay={500}>
                     <Button
@@ -499,11 +450,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
           {startPublisherIsSubmitting ? (
             <Stack direction="row" spacing={1}>
               <CircularProgress size="1em" />
-              <div>{`${startPublisherDescription} ${messageStructToString(
-                messageStruct,
-                false,
-                false,
-              )}`}</div>
+              <div>{`${startPublisherDescription} ${messageStructToString(messageStruct, false, false)}`}</div>
             </Stack>
           ) : (
             <Button
@@ -533,9 +480,7 @@ function TopicPublishPanel({ topicName = null, providerId = '' }) {
         {inputElements}
         {!messageStruct && (
           <Alert severity="error" style={{ minWidth: 0 }}>
-            <AlertTitle>
-              {`Message definition for ${topicName}[${messageType}] not found!`}
-            </AlertTitle>
+            <AlertTitle>{`Message definition for ${topicName}[${messageType}] not found!`}</AlertTitle>
           </Alert>
         )}
       </Stack>

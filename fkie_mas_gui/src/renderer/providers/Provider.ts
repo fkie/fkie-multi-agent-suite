@@ -1,5 +1,8 @@
 /* eslint-disable max-classes-per-file */
-import { emitCustomEvent } from 'react-custom-events';
+import { emitCustomEvent } from "react-custom-events";
+import { TagColors } from "../components/UI/Colors";
+import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
+import { ISettingsContext } from "../context/SettingsContext";
 import {
   DaemonVersion,
   DiagnosticArray,
@@ -34,16 +37,20 @@ import {
   SubscriberNode,
   SystemWarningGroup,
   URI,
-} from '../models';
-import JSONObject, { JSONValue } from '../models/JsonObject';
-
-import { TagColors } from '../components/UI/Colors';
-
-import { DEFAULT_BUG_TEXT, ILoggingContext } from '../context/LoggingContext';
-import { ISettingsContext } from '../context/SettingsContext';
-import { delay, generateUniqueId } from '../utils';
-import { ConnectionState } from './ConnectionState';
-import { RosProviderState } from './RosProviderState';
+} from "../models";
+import JSONObject, { JSONValue } from "../models/JsonObject";
+import { delay, generateUniqueId } from "../utils";
+import CmdTerminal from "./CmdTerminal";
+import CmdType from "./CmdType";
+import { ConnectionState } from "./ConnectionState";
+import ProviderConnection, {
+  IProviderTimestamp,
+  IResult,
+  IResultClearPath,
+  IResultStartNode,
+} from "./ProviderConnection";
+import { RosProviderState } from "./RosProviderState";
+import CrossbarIOConnection from "./crossbar_io/CrossbarIOConnection";
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
@@ -57,7 +64,7 @@ import {
   EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX,
   EVENT_PROVIDER_TIME_DIFF,
   EVENT_PROVIDER_WARNINGS,
-} from './eventTypes';
+} from "./eventTypes";
 import {
   EventProviderActivity,
   EventProviderDelay,
@@ -71,18 +78,8 @@ import {
   EventProviderSubscriberEvent,
   EventProviderTimeDiff,
   EventProviderWarnings,
-} from './events';
-
-import CmdTerminal from './CmdTerminal';
-import CmdType from './CmdType';
-import ProviderConnection, {
-  IProviderTimestamp,
-  IResult,
-  IResultClearPath,
-  IResultStartNode,
-} from './ProviderConnection';
-import CrossbarIOConnection from './crossbar_io/CrossbarIOConnection';
-import WebsocketConnection from './websocket/WebsocketConnection';
+} from "./events";
+import WebsocketConnection from "./websocket/WebsocketConnection";
 
 interface ProviderDaemonReady {
   status: boolean;
@@ -102,7 +99,7 @@ interface CallResult {
  * Provider base class to connect with a MAS daemon
  */
 export default class Provider {
-  type: string = 'websocket';
+  type: string = "websocket";
 
   IGNORED_NODES: string[] = [];
 
@@ -112,7 +109,7 @@ export default class Provider {
   id: string;
 
   /** Name of the provider applied by the user. */
-  userName: string = '';
+  userName: string = "";
 
   /** ROS version running on the host provided by this provider. */
   rosVersion: string;
@@ -134,7 +131,7 @@ export default class Provider {
   /** State provided from ROS provider */
   rosState: RosProviderState = new RosProviderState();
 
-  daemonVersion: DaemonVersion = new DaemonVersion('', '');
+  daemonVersion: DaemonVersion = new DaemonVersion("", "");
 
   /**
    * True if the provider has access to a node manager's daemon
@@ -192,7 +189,7 @@ export default class Provider {
 
   delayCallAttempts: number = 1000;
 
-  errorDetails: string = '';
+  errorDetails: string = "";
 
   startConfiguration: ProviderLaunchConfiguration | null = null;
 
@@ -278,7 +275,7 @@ export default class Provider {
     topicName: string,
     screenName: string,
     cmd: string
-  ) => Promise<CmdTerminal> = async (type, nodeName = '', topicName = '', screenName = '', cmd = '') => {
+  ) => Promise<CmdTerminal> = async (type, nodeName = "", topicName = "", screenName = "", cmd = "") => {
     const result = new CmdTerminal();
     switch (type) {
       case CmdType.CMD:
@@ -290,11 +287,11 @@ export default class Provider {
           result.screen = screenName;
         } else {
           // search screen with node name
-          let createdScreenName = '';
-          if (this.rosState.ros_version === '1') {
-            createdScreenName = nodeName.substring(1).replaceAll('_', '__').replaceAll('/', '_');
-          } else if (this.rosState.ros_version === '2') {
-            createdScreenName = nodeName.substring(1).replaceAll('/', '.');
+          let createdScreenName = "";
+          if (this.rosState.ros_version === "1") {
+            createdScreenName = nodeName.substring(1).replaceAll("_", "__").replaceAll("/", "_");
+          } else if (this.rosState.ros_version === "2") {
+            createdScreenName = nodeName.substring(1).replaceAll("/", ".");
           }
           result.cmd = `screen -d -r $(ps aux | grep "/usr/bin/SCREEN" | grep "${createdScreenName}" | awk '{print $2}')`;
           result.screen = createdScreenName;
@@ -310,9 +307,9 @@ export default class Provider {
         }
         break;
       case CmdType.ECHO:
-        if (this.rosState.ros_version === '1') {
+        if (this.rosState.ros_version === "1") {
           result.cmd = `rostopic echo ${topicName}`;
-        } else if (this.rosState.ros_version === '2') {
+        } else if (this.rosState.ros_version === "2") {
           result.cmd = `ros2 topic echo ${topicName}`;
         }
         break;
@@ -339,7 +336,7 @@ export default class Provider {
           // this.getPackageList();  <- this request is done by package explorer
           this.updateScreens(null);
           // this.launchGetList();
-          this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
+          this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.updateProviderList();
           return true;
         }
@@ -353,7 +350,7 @@ export default class Provider {
 
   public setConnectionState: (state: ConnectionState, details: string) => void = async (
     state: ConnectionState,
-    details: string = ''
+    details: string = ""
   ) => {
     // ignore call with no state changes
     if (this.connectionState === state) return;
@@ -372,7 +369,7 @@ export default class Provider {
       this.registerCallbacks()
         .then(() => {
           if (this.isAvailable()) {
-            this.setConnectionState(ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED, '');
+            this.setConnectionState(ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED, "");
             return true;
           }
           return false;
@@ -397,7 +394,7 @@ export default class Provider {
   public init: () => Promise<boolean> = () => {
     if (this.connection.connected()) return Promise.resolve(true);
 
-    this.setConnectionState(ConnectionState.STATES.CONNECTING, '');
+    this.setConnectionState(ConnectionState.STATES.CONNECTING, "");
 
     const result = this.connection.open();
     return Promise.resolve(result);
@@ -407,14 +404,14 @@ export default class Provider {
    * Close the connection to the WAMP Router
    */
   public close: () => void = async () => {
-    let closeError = '';
+    let closeError = "";
     await this.connection.close().catch((error) => {
       console.error(`Provider: error when close:`, error);
       closeError = error;
     });
     this.setConnectionState(
       ConnectionState.STATES.CLOSED,
-      closeError ? `closed with error: ${JSON.stringify(closeError)}` : 'closed'
+      closeError ? `closed with error: ${JSON.stringify(closeError)}` : "closed"
     );
   };
 
@@ -424,7 +421,7 @@ export default class Provider {
   public reconnect: () => void = async () => {
     if (this.connection.connected()) return Promise.resolve(true);
 
-    this.setConnectionState(ConnectionState.STATES.CONNECTING, 'reconnect');
+    this.setConnectionState(ConnectionState.STATES.CONNECTING, "reconnect");
 
     return this.connection.open();
   };
@@ -453,7 +450,7 @@ export default class Provider {
 
   /** return cleaned version string or empty string if no version is available. */
   public getDaemonReleaseVersion: () => string = () => {
-    return this.daemonVersion.version.split('-')[0].replace('v', '');
+    return this.daemonVersion.version.split("-")[0].replace("v", "");
   };
 
   /**
@@ -489,7 +486,7 @@ export default class Provider {
           this.rosState = p;
           // TODO: visualize warning if hosts are not equal
           if (
-            this.connection.host !== 'localhost' &&
+            this.connection.host !== "localhost" &&
             this.connection.host !== p.host &&
             !p.hostnames.includes(this.connection.host)
           ) {
@@ -508,7 +505,7 @@ export default class Provider {
           const np = new Provider(
             this.settings,
             p.host,
-            p.ros_version ? p.ros_version : '2',
+            p.ros_version ? p.ros_version : "2",
             p.port,
             false, // TODO get useSSL from settings
             this.logger
@@ -525,7 +522,7 @@ export default class Provider {
       oldRemoteProviders.forEach((p) => {
         emitCustomEvent(EVENT_PROVIDER_REMOVED, new EventProviderRemoved(p, this));
       });
-      this.setConnectionState(ConnectionState.STATES.CONNECTED, '');
+      this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
@@ -537,7 +534,7 @@ export default class Provider {
    * @return {Promise<{ file: FileItem; error: string }>}
    */
   public getFileContent: (path: string) => Promise<{ file: FileItem; error: string }> = async (path) => {
-    let error: string = '';
+    let error: string = "";
     const fileItem: FileItem | null = await this.makeCall(URI.ROS_FILE_GET, [path], false).then((value: CallResult) => {
       if (value.result) {
         const result = value.message as FileItem;
@@ -548,7 +545,7 @@ export default class Provider {
       return null;
     });
     if (fileItem) {
-      return Promise.resolve({ file: fileItem, error: '' });
+      return Promise.resolve({ file: fileItem, error: "" });
     }
     return Promise.resolve({
       file: new FileItem(this.connection.host, path),
@@ -562,7 +559,7 @@ export default class Provider {
    * @return {Promise<{ bytesWritten: number; error: string }>}
    */
   public saveFileContent: (file: FileItem) => Promise<{ bytesWritten: number; error: string }> = async (file) => {
-    let error: string = '';
+    let error: string = "";
     const bitesWritten: number = await this.makeCall(URI.ROS_FILE_SAVE, [file], false).then((value: CallResult) => {
       if (value.result) {
         return value.message as number;
@@ -574,7 +571,7 @@ export default class Provider {
     if (bitesWritten) {
       return Promise.resolve({
         bytesWritten: bitesWritten,
-        error: '',
+        error: "",
       });
     }
     return Promise.resolve({
@@ -589,7 +586,7 @@ export default class Provider {
    * @return {Promise<DaemonVersion>}
    */
   public getDaemonVersion: () => Promise<DaemonVersion> = async () => {
-    let error: string = '';
+    let error: string = "";
     const daemonVersion: DaemonVersion | null = await this.makeCall(URI.ROS_DAEMON_VERSION, [], true).then(
       (value: CallResult) => {
         if (value.result) {
@@ -715,7 +712,7 @@ export default class Provider {
       if (value.result) {
         return value.message as unknown as IRosNode[];
       }
-      if (`${value.message}`.includes('wamp.error.no_such_procedure')) {
+      if (`${value.message}`.includes("wamp.error.no_such_procedure")) {
         this.discovery = false;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getNodeList()`, `${value.message}`);
@@ -729,10 +726,10 @@ export default class Provider {
         if (rawNodeList) {
           rawNodeList.forEach((n: IRosNode) => {
             let status = RosNodeStatus.UNKNOWN;
-            if (n.status && n.status === 'running') status = RosNodeStatus.RUNNING;
-            else if (n.status && n.status === 'inactive') status = RosNodeStatus.INACTIVE;
-            else if (n.status && n.status === 'not_monitored') status = RosNodeStatus.NOT_MONITORED;
-            else if (n.status && n.status === 'dead') status = RosNodeStatus.DEAD;
+            if (n.status && n.status === "running") status = RosNodeStatus.RUNNING;
+            else if (n.status && n.status === "inactive") status = RosNodeStatus.INACTIVE;
+            else if (n.status && n.status === "not_monitored") status = RosNodeStatus.NOT_MONITORED;
+            else if (n.status && n.status === "dead") status = RosNodeStatus.DEAD;
             else status = RosNodeStatus.UNKNOWN;
 
             const rn = new RosNode(
@@ -795,7 +792,7 @@ export default class Provider {
         return value.message as string;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getSystemUri()`, `${value.message}`);
-      return '';
+      return "";
     });
     return result;
   };
@@ -818,7 +815,7 @@ export default class Provider {
       return 0;
     };
     this.packages = [];
-    const result = await this.makeCall('ros.packages.get_list', [], true).then((value: CallResult) => {
+    const result = await this.makeCall("ros.packages.get_list", [], true).then((value: CallResult) => {
       if (value.result) {
         const rosPackageList: RosPackage[] = value.message as RosPackage[];
         const packageList: RosPackage[] = [];
@@ -838,11 +835,11 @@ export default class Provider {
   public getPackageName: (path: string) => string = (path) => {
     if (this.packages) {
       const packages = this.packages.filter((rosPackage) => {
-        return path.startsWith(rosPackage.path.endsWith('/') ? rosPackage.path : `${rosPackage.path}/`);
+        return path.startsWith(rosPackage.path.endsWith("/") ? rosPackage.path : `${rosPackage.path}/`);
       });
-      return packages.length > 0 ? `${packages[0]?.name}` : '';
+      return packages.length > 0 ? `${packages[0]?.name}` : "";
     }
-    return '';
+    return "";
   };
 
   /**
@@ -1116,12 +1113,12 @@ export default class Provider {
           launchFile.nodes.forEach((launchNode) => {
             const nodeParameters = new Map();
 
-            const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : '';
+            const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
             if (uniqueNodeName) {
               // update parameters
               launchFile.parameters.forEach((p) => {
                 if (p.name.indexOf(uniqueNodeName) !== -1) {
-                  nodeParameters.set(p.name.replace(uniqueNodeName, ''), p.value);
+                  nodeParameters.set(p.name.replace(uniqueNodeName, ""), p.value);
                 }
               });
 
@@ -1150,15 +1147,15 @@ export default class Provider {
                 const n = new RosNode(
                   uniqueNodeName,
                   uniqueNodeName,
-                  launchNode.node_namespace ? launchNode.node_namespace : '',
-                  '',
+                  launchNode.node_namespace ? launchNode.node_namespace : "",
+                  "",
                   RosNodeStatus.INACTIVE
                 );
                 n.launchPaths.add(launchFile.path);
                 n.parameters = nodeParameters;
                 n.launchInfo = launchNode;
                 // idGlobal should be the same for life of the node on remote host
-                n.idGlobal = `${this.id}${n.id.replaceAll('/', '.')}`;
+                n.idGlobal = `${this.id}${n.id.replaceAll("/", ".")}`;
                 n.providerName = this.name();
                 n.providerId = this.id;
                 n.associations = associations;
@@ -1174,14 +1171,14 @@ export default class Provider {
           // Check if this is a nodelet/composable and assign tags accordingly.
           let composableParent = n?.parent_id || n.launchInfo?.composable_container;
           if (composableParent) {
-            composableParent = composableParent.split('|').slice(-1).at(0);
+            composableParent = composableParent.split("|").slice(-1).at(0);
             if (composableParent) {
               if (!composableManagers.includes(composableParent)) {
                 composableManagers.push(composableParent);
               }
               n.tags = [
                 {
-                  text: 'Nodelet',
+                  text: "Nodelet",
                   color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
                 },
               ];
@@ -1194,7 +1191,7 @@ export default class Provider {
           if (node) {
             node.tags = [
               {
-                text: 'Manager',
+                text: "Manager",
                 color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
               },
             ];
@@ -1209,7 +1206,7 @@ export default class Provider {
         return true;
       }
 
-      if (`${value.message}`.includes('wamp.error.no_such_procedure')) {
+      if (`${value.message}`.includes("wamp.error.no_such_procedure")) {
         this.daemon = false;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at updateLaunchContent()`, `${value.message}`);
@@ -1358,7 +1355,7 @@ export default class Provider {
   };
 
   private generateSubscriberUri: (topic: string) => string = (topic) => {
-    return `${URI.ROS_SUBSCRIBER_EVENT_PREFIX}.${topic.replaceAll('/', '_')}`;
+    return `${URI.ROS_SUBSCRIBER_EVENT_PREFIX}.${topic.replaceAll("/", "_")}`;
   };
 
   /**
@@ -1366,7 +1363,7 @@ export default class Provider {
    * First closes all existing providers and then create new ones.
    */
   private callbackNewSubscribedMessage: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugInterface(URI.ROS_SUBSCRIBER_EVENT_PREFIX, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_SUBSCRIBER_EVENT_PREFIX, msg, "", this.id);
 
     // ignore empty and duplicated messages
     if (msg.length === 0) {
@@ -1409,7 +1406,7 @@ export default class Provider {
       this.registerCallback(cbTopic, this.callbackNewSubscribedMessage);
       this.logger?.debug(
         `Started subscriber node for '${request.topic} [${request.message_type}]' on '${this.name()}'`,
-        ''
+        ""
       );
     }
     return Promise.resolve(result);
@@ -1433,7 +1430,7 @@ export default class Provider {
     const result = await this.makeCall(URI.ROS_SUBSCRIBER_STOP, [topic], true).then((value: CallResult) => {
       if (value.result) {
         const res = value.message as boolean;
-        return { result: res, message: '' };
+        return { result: res, message: "" };
       }
       this.logger?.error(`Provider [${this.name()}]: Error at stopSubscriber()`, `${value.message}`);
       return { result: false, message: value.message as string };
@@ -1448,8 +1445,8 @@ export default class Provider {
     topicName,
     msg
   ) => {
-    const cbTopic = `${URI.ROS_SUBSCRIBER_FILTER_PREFIX}.${topicName.replaceAll('/', '_')}`;
-    this.logger?.debug(`Provider: (${this.name()}) Publish to: [${cbTopic}]`, '');
+    const cbTopic = `${URI.ROS_SUBSCRIBER_FILTER_PREFIX}.${topicName.replaceAll("/", "_")}`;
+    this.logger?.debug(`Provider: (${this.name()}) Publish to: [${cbTopic}]`, "");
     const result = await this.connection.publish(cbTopic, JSON.parse(JSON.stringify(msg)));
     return result;
   };
@@ -1470,13 +1467,13 @@ export default class Provider {
     // TODO: Add log level and format?
     const request = new LaunchNode(
       node.name, // name
-      '', // opt_binary
+      "", // opt_binary
       `${node.launchPath}`, // opt_launch
-      '', // log level
-      '', // log format
+      "", // log level
+      "", // log format
       node.masteruri?.length > 0 ? node.masteruri : `${this.rosState.masteruri}`, // masteruri
       true, // reload global parameters
-      '' // cmd
+      "" // cmd
     );
 
     const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: CallResult) => {
@@ -1493,16 +1490,16 @@ export default class Provider {
           };
         }
 
-        if (response.status.code === 'OK') {
+        if (response.status.code === "OK") {
           return {
             success: true,
             message: `Node started: [${node.id}]`,
-            details: '',
+            details: "",
             response,
           };
         }
 
-        if (response.status.code === 'NODE_NOT_FOUND') {
+        if (response.status.code === "NODE_NOT_FOUND") {
           return {
             success: false,
             message: `Could not start node [${node.name}]: Node not found`,
@@ -1511,7 +1508,7 @@ export default class Provider {
           };
         }
 
-        if (response.status.code === 'MULTIPLE_LAUNCHES') {
+        if (response.status.code === "MULTIPLE_LAUNCHES") {
           return {
             success: false,
             message: `Could not start node [${node.name}]: Multiple launches found`,
@@ -1520,7 +1517,7 @@ export default class Provider {
           };
         }
 
-        if (response.status.code === 'MULTIPLE_BINARIES') {
+        if (response.status.code === "MULTIPLE_BINARIES") {
           return {
             success: false,
             message: `Could not start node [${node.name}]: Multiple binaries found`,
@@ -1529,7 +1526,7 @@ export default class Provider {
           };
         }
 
-        if (response.status.code === 'CONNECTION_ERROR') {
+        if (response.status.code === "CONNECTION_ERROR") {
           return {
             success: false,
             message: `Could not start node [${node.name}]: Connection error`,
@@ -1538,7 +1535,7 @@ export default class Provider {
           };
         }
 
-        if (response.status.code === 'ERROR') {
+        if (response.status.code === "ERROR") {
           return {
             success: false,
             message: `Could not start node: ${node.name}`,
@@ -1555,7 +1552,7 @@ export default class Provider {
       }
       return {
         success: false,
-        message: 'Invalid message from [ros.launch.start_node]',
+        message: "Invalid message from [ros.launch.start_node]",
         details: value.message as string,
         response: null,
       };
@@ -1736,7 +1733,7 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public getParameterList: () => Promise<RosParameter[]> = async () => {
-    const result = await this.makeCall('ros.parameters.get_list', [], true).then((value: CallResult) => {
+    const result = await this.makeCall("ros.parameters.get_list", [], true).then((value: CallResult) => {
       if (value.result) {
         const paramList: RosParameter[] = [];
         const parsed = value.message as RosParameter[];
@@ -1855,7 +1852,7 @@ export default class Provider {
    * Callback of master discovery ready status (true/false)
    */
   private callbackDiscoveryReady: (msg: JSONObject) => void = (msg) => {
-    this.logger?.debugInterface(URI.ROS_DISCOVERY_READY, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_DISCOVERY_READY, msg, "", this.id);
     const msgObj = msg as unknown as ProviderDiscoveryReady;
     this.discovery = msgObj.status;
   };
@@ -1864,8 +1861,8 @@ export default class Provider {
    * Callback when any launch file or ROS nodes changes  in provider
    */
   public updateRosNodes: () => void = async () => {
-    this.logger?.debug(`Trigger update ros nodes for ${this.id}`, '');
-    if (await this.lockRequest('updateRosNodes')) {
+    this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
+    if (await this.lockRequest("updateRosNodes")) {
       return;
     }
 
@@ -1878,9 +1875,9 @@ export default class Provider {
       if (!this.showRemoteNodes) {
         if (
           (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
-          (n.location instanceof String && n.location === 'remote') ||
+          (n.location instanceof String && n.location === "remote") ||
           (n.location instanceof Array &&
-            !n.location.some((loc) => loc.startsWith('SHM') || loc.startsWith('UDPv4:[127.0.0.1]')))
+            !n.location.some((loc) => loc.startsWith("SHM") || loc.startsWith("UDPv4:[127.0.0.1]")))
         ) {
           ignored = true;
         }
@@ -1896,7 +1893,7 @@ export default class Provider {
     // check if nodes are not available or run in other host (not monitoring)
     nl.forEach((n) => {
       // idGlobal should be the same for life of the node on remote host
-      n.idGlobal = `${this.id}${n.id.replaceAll('/', '.')}`;
+      n.idGlobal = `${this.id}${n.id.replaceAll("/", ".")}`;
       n.providerName = this.name();
       n.providerId = this.id;
 
@@ -1904,8 +1901,8 @@ export default class Provider {
       if (!n.masteruri || n.masteruri.length === 0) return;
 
       if (!n.pid || n.pid <= 0) {
-        const hostApiUir = n.node_API_URI.split(':')[0];
-        const hostMasterUri = n.masteruri.split(':')[0];
+        const hostApiUir = n.node_API_URI.split(":")[0];
+        const hostMasterUri = n.masteruri.split(":")[0];
 
         if (hostApiUir === hostMasterUri) {
           // node runs on the same host, but it is not available
@@ -1939,24 +1936,24 @@ export default class Provider {
     //   new EventProviderRosNodes(this, nl),
     // );
     this.updateLaunchContent();
-    this.unlockRequest('updateRosNodes');
+    this.unlockRequest("updateRosNodes");
   };
 
   private callbackChangedFile: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugInterface(URI.ROS_PATH_CHANGED, msg, '', this.id);
-    if (!msg || (await this.lockRequest('callbackChangedFile'))) {
+    this.logger?.debugInterface(URI.ROS_PATH_CHANGED, msg, "", this.id);
+    if (!msg || (await this.lockRequest("callbackChangedFile"))) {
       return;
     }
 
     emitCustomEvent(EVENT_PROVIDER_PATH_EVENT, new EventProviderPathEvent(this, msg as unknown as PathEvent));
-    this.unlockRequest('callbackChangedFile');
+    this.unlockRequest("callbackChangedFile");
   };
 
   /**
    * Update the screen state of each node reported in the list of ScreensMapping.
    */
   private callbackScreensUpdate: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugInterface(URI.ROS_SCREEN_LIST, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_SCREEN_LIST, msg, "", this.id);
     if (!msg) {
       return;
     }
@@ -1968,7 +1965,7 @@ export default class Provider {
    * Update diagnostics of each node reported in the list of DiagnosticsArray.
    */
   private callbackDiagnosticsUpdate: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugInterface(URI.ROS_PROVIDER_DIAGNOSTICS, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_PROVIDER_DIAGNOSTICS, msg, "", this.id);
     if (!msg) {
       return;
     }
@@ -1979,7 +1976,7 @@ export default class Provider {
    * Update the provider warnings reported in the list of SystemWarningGroup.
    */
   private callbackProviderWarnings: (msg: JSONObject) => void = async (msg) => {
-    this.logger?.debugInterface(URI.ROS_PROVIDER_WARNINGS, msg, '', this.id);
+    this.logger?.debugInterface(URI.ROS_PROVIDER_WARNINGS, msg, "", this.id);
     if (!msg) {
       return;
     }
@@ -1990,10 +1987,10 @@ export default class Provider {
   };
 
   private registerCallback: (uri: string, callback: (msg: JSONObject) => void) => void = async (uri, callback) => {
-    this.logger?.debug(`Provider: (${this.name()}) Subscribing to: [${uri}]`, '', false);
+    this.logger?.debug(`Provider: (${this.name()}) Subscribing to: [${uri}]`, "", false);
     const result = await this.connection.subscribe(uri, callback);
     if (!result.result) {
-      this.logger?.error(`Provider: (${this.name()}) Subscribing to: [${uri}] failed: ${result.message}`, '', false);
+      this.logger?.error(`Provider: (${this.name()}) Subscribing to: [${uri}] failed: ${result.message}`, "", false);
     }
   };
 
@@ -2009,7 +2006,7 @@ export default class Provider {
       })
       .then(() => {
         // await this.connection.connection.closeRegistrations();
-        this.logger?.info(`register callbacks for ${this.id}`, '', false);
+        this.logger?.info(`register callbacks for ${this.id}`, "", false);
 
         this.registerCallback(URI.ROS_PROVIDER_LIST, this.updateProviderList);
         this.registerCallback(URI.ROS_DAEMON_READY, this.callbackDaemonReady);
@@ -2057,24 +2054,24 @@ export default class Provider {
         const r = await this.connection.call(_uri, _args).catch((err) => {
           // TODO
           // this.logger?.warn(`failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`, '', false);
-          if (Object.keys(err).includes('result')) {
+          if (Object.keys(err).includes("result")) {
             return err;
           }
           return { result: false, message: err };
         });
-        if (Object.keys(r).includes('result')) {
+        if (Object.keys(r).includes("result")) {
           return r;
         }
-        return { result: true, message: r as unknown};
+        return { result: true, message: r as unknown };
       } catch (err) {
-        if (`${err}`.includes('{')) {
+        if (`${err}`.includes("{")) {
           const errorObj = JSON.parse(`${err}`);
-          if (errorObj.error?.includes('wamp.error.runtime_error')) {
+          if (errorObj.error?.includes("wamp.error.runtime_error")) {
             // do not re-try on runtime errors
             this.unlockRequest(uri);
             return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}` };
           }
-        } else if (err === 'Connection is closed') {
+        } else if (err === "Connection is closed") {
           this.unlockRequest(uri);
           return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}` };
         }
@@ -2100,7 +2097,7 @@ export default class Provider {
     const result = await callRequest(uri, args);
     // const result = await this.connection.call(uri, args);
     this.unlockRequest(uri);
-    this.logger?.debugInterface(uri, result, '', this.name());
+    this.logger?.debugInterface(uri, result, "", this.name());
     return result;
   };
 
@@ -2108,14 +2105,14 @@ export default class Provider {
     this.setConnectionState(state, details);
     // clear all activities
     this.currentRequestList.clear();
-    emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ''));
+    emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));
   };
 
   private onOpenConnection = () => {
     // connected state is set after all remote connections are registered
     this.daemon = false;
     this.discovery = false;
-    this.setConnectionState(ConnectionState.STATES.SERVER_CONNECTED, '');
+    this.setConnectionState(ConnectionState.STATES.SERVER_CONNECTED, "");
   };
 
   /*
@@ -2124,11 +2121,11 @@ export default class Provider {
   */
   private lockRequest: (request: string) => Promise<boolean> = async (request) => {
     if (this.currentRequestList.has(request)) {
-      this.logger?.debug(`[${this.name()}]: Wait 1 sec for release request to: [${request}]`, '', false);
+      this.logger?.debug(`[${this.name()}]: Wait 1 sec for release request to: [${request}]`, "", false);
       // TODO: wait until release?
       await delay(1000);
       if (this.currentRequestList.has(request)) {
-        this.logger?.debug(`[${this.name()}]: Ignoring request to: [${request}]`, '', false);
+        this.logger?.debug(`[${this.name()}]: Ignoring request to: [${request}]`, "", false);
         return Promise.resolve(true);
       }
     }
@@ -2143,7 +2140,7 @@ export default class Provider {
   private unlockRequest = (request: string) => {
     this.currentRequestList.delete(request);
     if (this.currentRequestList.size === 0) {
-      emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ''));
+      emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));
     }
   };
 }

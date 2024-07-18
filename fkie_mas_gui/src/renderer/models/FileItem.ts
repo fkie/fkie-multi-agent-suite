@@ -1,4 +1,4 @@
-import { generateUniqueId } from '../utils';
+import { generateUniqueId } from "../utils";
 
 /**
  * Return the filename from a given path
@@ -7,7 +7,7 @@ import { generateUniqueId } from '../utils';
  */
 const getFileName = (path: string) => {
   if (!path) return path;
-  return path.replace(/^.*[\\/]/, '');
+  return path.replace(/^.*[\\/]/, "");
 };
 
 /**
@@ -19,8 +19,8 @@ const getBaseName = (path: string) => {
   let fileName = getFileName(path);
   if (fileName) {
     const base = fileName
-      .replace(/^.*[\\/]/, '')
-      .split('.')
+      .replace(/^.*[\\/]/, "")
+      .split(".")
       .shift();
     if (base) {
       return base;
@@ -36,7 +36,7 @@ const getBaseName = (path: string) => {
  */
 const getFileAbb = (path: string) => {
   if (!path) return path;
-  const baseSplits = path.replace(/^.*[\\/]/, '').split('.');
+  const baseSplits = path.replace(/^.*[\\/]/, "").split(".");
   let base = baseSplits.shift();
   if (!base) base = baseSplits.shift();
   if (base) {
@@ -51,7 +51,7 @@ const getFileAbb = (path: string) => {
  * @param {string} path - File path
  */
 const getFileExtension = (path: string) => {
-  return `${path.split('.').pop()}`;
+  return `${path.split(".").pop()}`;
 };
 
 /**
@@ -99,7 +99,7 @@ class FileItem {
   host: string;
 
   /** Encoding ov the value */
-  encoding: string = 'utf-8';
+  encoding: string = "utf-8";
 
   /**
    * Class Constructor
@@ -114,10 +114,10 @@ class FileItem {
   constructor(
     host: string,
     path: string,
-    extension: string = '',
-    language: string = '',
-    value: string = '',
-    mTime: number = 0,
+    extension: string = "",
+    language: string = "",
+    value: string = "",
+    mTime: number = 0
   ) {
     this.id = generateUniqueId();
     this.host = host;
@@ -165,42 +165,35 @@ export default FileItem;
 //   Objective-C
 
 const FileLanguageAssociations: Record<string, string> = {
-  xml: 'xml',
-  world: 'xml',
-  launch: 'xml',
-  urdf: 'xml',
-  srdf: 'xml',
-  xacro: 'xml',
-  json: 'json',
-  perspective: 'json',
-  js: 'javascript',
-  jsx: 'javascript',
-  ts: 'typescript',
-  tsx: 'typescript',
-  cpp: 'cpp',
-  h: 'cpp',
-  hpp: 'cpp',
-  py: 'python',
-  lua: 'lua',
-  md: 'markdown',
-  html: 'html',
-  htm: 'html',
-  css: 'css',
-  yaml: 'yaml',
-  rviz: 'yaml',
-  iface: 'yaml',
-  ini: 'ini',
-  protobuf: 'protobuf',
-  bash: 'shell',
-  sh: 'shell',
-  sql: 'sql',
+  xml: "xml",
+  world: "xml",
+  launch: "xml",
+  urdf: "xml",
+  srdf: "xml",
+  xacro: "xml",
+  json: "json",
+  perspective: "json",
+  js: "javascript",
+  jsx: "javascript",
+  ts: "typescript",
+  tsx: "typescript",
+  cpp: "cpp",
+  h: "cpp",
+  hpp: "cpp",
+  py: "python",
+  lua: "lua",
+  md: "markdown",
+  html: "html",
+  htm: "html",
+  css: "css",
+  yaml: "yaml",
+  rviz: "yaml",
+  iface: "yaml",
+  ini: "ini",
+  protobuf: "protobuf",
+  bash: "shell",
+  sh: "shell",
+  sql: "sql",
 };
 
-export {
-  FileItem,
-  FileLanguageAssociations,
-  getBaseName,
-  getFileAbb,
-  getFileExtension,
-  getFileName,
-};
+export { FileItem, FileLanguageAssociations, getBaseName, getFileAbb, getFileExtension, getFileName };

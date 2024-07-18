@@ -1,37 +1,23 @@
-import Fade from '@mui/material/Fade';
-import { VariantType, useSnackbar } from 'notistack';
-import React, { createContext, useContext, useMemo, useState } from 'react';
-
-import { emitCustomEvent } from 'react-custom-events';
-import {
-  LAYOUT_TABS,
-  LAYOUT_TAB_SETS,
-} from '../pages/NodeManager/layout/LayoutDefines';
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../utils/events';
-
-import { LogEvent, LoggingLevel } from '../models';
-import LoggingDetailsComponent from './LoggingDetailsComponent';
-import { SettingsContext } from './SettingsContext';
+import Fade from "@mui/material/Fade";
+import { VariantType, useSnackbar } from "notistack";
+import React, { createContext, useContext, useMemo, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import { LogEvent, LoggingLevel } from "../models";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "../pages/NodeManager/layout/LayoutDefines";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../utils/events";
+import LoggingDetailsComponent from "./LoggingDetailsComponent";
+import { SettingsContext } from "./SettingsContext";
 
 export interface ILoggingContext {
   logs: LogEvent[];
   countErrors: number;
   debug: (description: string, details: string, showSnackbar?: boolean) => void;
   info: (description: string, details: string, showSnackbar?: boolean) => void;
-  success: (
-    description: string,
-    details: string,
-    showSnackbar?: boolean,
-  ) => void;
+  success: (description: string, details: string, showSnackbar?: boolean) => void;
   warn: (description: string, details: string, showSnackbar?: boolean) => void;
   error: (description: string, details: string, showSnackbar?: boolean) => void;
   clearLogs?: () => void;
-  debugInterface: (
-    uri: string,
-    result: any,
-    details?: any,
-    providerName?: string,
-  ) => void;
+  debugInterface: (uri: string, result: any, details?: any, providerName?: string) => void;
 }
 
 export interface ILoggingProvider {
@@ -51,14 +37,11 @@ export const DEFAULT_LOGGING = {
 // TODO Add valid github issue repository
 
 // This text should appear every time a "bug" is found (Things that the user can not control/configure)
-export const DEFAULT_BUG_TEXT =
-  'A bug occurred, please consider report it as an issue on our github repository';
+export const DEFAULT_BUG_TEXT = "A bug occurred, please consider report it as an issue on our github repository";
 
 export const LoggingContext = createContext<ILoggingContext>(DEFAULT_LOGGING);
 
-export function LoggingProvider({
-  children,
-}: ILoggingProvider): ReturnType<React.FC<ILoggingProvider>> {
+export function LoggingProvider({ children }: ILoggingProvider): ReturnType<React.FC<ILoggingProvider>> {
   const settingsCtx = useContext(SettingsContext);
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [countErrors, setCountErrors] = useState<number>(0);
@@ -69,21 +52,17 @@ export function LoggingProvider({
     description: string,
     details: string,
     showSnackbar: boolean,
-    snackbarVariant: VariantType,
+    snackbarVariant: VariantType
   ) => {
     // add new log event
-    setLogs((prevLogs) => [
-      new LogEvent(level, description, details),
-      ...prevLogs,
-    ]);
+    setLogs((prevLogs) => [new LogEvent(level, description, details), ...prevLogs]);
     // check settings logger level
-    if (!settingsCtx.get('guiLogLevel')?.includes(level)) return;
+    if (!settingsCtx.get("guiLogLevel")?.includes(level)) return;
 
     if (level === LoggingLevel.ERROR) {
       console.error(level, description, details);
       setCountErrors(countErrors + 1);
-    } else if (level === LoggingLevel.WARN)
-      console.warn(level, description, details);
+    } else if (level === LoggingLevel.WARN) console.warn(level, description, details);
     else console.info(level, description, details);
 
     if (showSnackbar) {
@@ -99,13 +78,7 @@ export function LoggingProvider({
               onDetailsClick={() => {
                 emitCustomEvent(
                   EVENT_OPEN_COMPONENT,
-                  eventOpenComponent(
-                    LAYOUT_TABS.LOGGING,
-                    'Logging Panel',
-                    <></>,
-                    false,
-                    LAYOUT_TAB_SETS.BORDER_BOTTOM,
-                  ),
+                  eventOpenComponent(LAYOUT_TABS.LOGGING, "Logging Panel", <></>, false, LAYOUT_TAB_SETS.BORDER_BOTTOM)
                 );
               }}
             />
@@ -121,63 +94,45 @@ export function LoggingProvider({
     }
   };
 
-  const debug = (description: string, details = '', showSnackbar = false) => {
-    createLog(
-      LoggingLevel.DEBUG,
-      description,
-      details,
-      showSnackbar,
-      'default',
-    );
+  const debug = (description: string, details = "", showSnackbar = false) => {
+    createLog(LoggingLevel.DEBUG, description, details, showSnackbar, "default");
   };
 
-  const info = (description: string, details = '', showSnackbar = true) => {
-    createLog(LoggingLevel.INFO, description, details, showSnackbar, 'info');
+  const info = (description: string, details = "", showSnackbar = true) => {
+    createLog(LoggingLevel.INFO, description, details, showSnackbar, "info");
   };
 
-  const success = (description: string, details = '', showSnackbar = true) => {
-    createLog(
-      LoggingLevel.SUCCESS,
-      description,
-      details,
-      showSnackbar,
-      'success',
-    );
+  const success = (description: string, details = "", showSnackbar = true) => {
+    createLog(LoggingLevel.SUCCESS, description, details, showSnackbar, "success");
   };
 
-  const warn = (description: string, details = '', showSnackbar = true) => {
-    createLog(LoggingLevel.WARN, description, details, showSnackbar, 'warning');
+  const warn = (description: string, details = "", showSnackbar = true) => {
+    createLog(LoggingLevel.WARN, description, details, showSnackbar, "warning");
   };
 
-  const error = (description: string, details = '', showSnackbar = true) => {
-    createLog(LoggingLevel.ERROR, description, details, showSnackbar, 'error');
+  const error = (description: string, details = "", showSnackbar = true) => {
+    createLog(LoggingLevel.ERROR, description, details, showSnackbar, "error");
   };
 
   const clearLogs = () => {
     setLogs(() => []);
   };
 
-  const debugInterface = (
-    uri: string,
-    msg: any,
-    details?: any,
-    providerName?: string,
-  ) => {
+  const debugInterface = (uri: string, msg: any, details?: any, providerName?: string) => {
     // check settings to debug by uri
 
     let parsedMsg = null;
     try {
-      if (msg && typeof msg === 'string' && msg.length > 0)
-        parsedMsg = JSON.parse(msg);
+      if (msg && typeof msg === "string" && msg.length > 0) parsedMsg = JSON.parse(msg);
       else parsedMsg = msg;
     } catch (errorParse) {
       parsedMsg = msg;
     }
 
-    let parseDetails = '';
+    let parseDetails = "";
     if (details) {
       try {
-        if (typeof details === 'string' && details.length > 0) {
+        if (typeof details === "string" && details.length > 0) {
           parseDetails = JSON.parse(details);
         } else parseDetails = details;
       } catch (errorParse) {
@@ -185,11 +140,8 @@ export function LoggingProvider({
       }
     }
 
-    if (settingsCtx.get('debugByUri').includes(uri)) {
-      debug(
-        `[URI] ${providerName} (${uri}): ${parseDetails}}`,
-        JSON.stringify(parsedMsg),
-      );
+    if (settingsCtx.get("debugByUri").includes(uri)) {
+      debug(`[URI] ${providerName} (${uri}): ${parseDetails}}`, JSON.stringify(parsedMsg));
     }
   };
 
@@ -206,14 +158,10 @@ export function LoggingProvider({
       debugInterface,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [logs, countErrors],
+    [logs, countErrors]
   );
 
-  return (
-    <LoggingContext.Provider value={attributesMemo}>
-      {children}
-    </LoggingContext.Provider>
-  );
+  return <LoggingContext.Provider value={attributesMemo}>{children}</LoggingContext.Provider>;
 }
 
 export default LoggingContext;

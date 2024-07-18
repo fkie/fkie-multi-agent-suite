@@ -1,42 +1,28 @@
-import {
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
-  FormLabel,
-  Stack,
-  TextField,
-} from '@mui/material';
-import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { Checkbox, FormControlLabel, FormGroup, FormLabel, Stack, TextField } from "@mui/material";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
 
-function BoolInput({ id = '', messageStruct = null, filterText = '' }) {
-  const [value, setValue] = useState(messageStruct.is_array ? '' : false);
-  const [isVisible, setVisible] = useState('');
+function BoolInput({ id = "", messageStruct = null, filterText = "" }) {
+  const [value, setValue] = useState(messageStruct.is_array ? "" : false);
+  const [isVisible, setVisible] = useState("");
 
   useEffect(() => {
     if (messageStruct?.value !== undefined) {
       setValue(messageStruct.value);
     } else if (messageStruct.default_value !== undefined) {
       setValue(Boolean(messageStruct.default_value));
-    } else if (
-      messageStruct.is_array !== undefined &&
-      !messageStruct.is_array
-    ) {
+    } else if (messageStruct.is_array !== undefined && !messageStruct.is_array) {
       setValue(false);
     }
-  }, [
-    messageStruct.value,
-    messageStruct.default_value,
-    messageStruct.is_array,
-  ]);
+  }, [messageStruct.value, messageStruct.default_value, messageStruct.is_array]);
 
   // check if this item pass the filter
   useEffect(() => {
-    let vis = '';
+    let vis = "";
     if (filterText.length > 1) {
-      const re = new RegExp(filterText, 'i');
+      const re = new RegExp(filterText, "i");
       const pos = messageStruct.name.search(re);
-      vis = pos !== -1 ? '' : 'none';
+      vis = pos !== -1 ? "" : "none";
     }
     setVisible(vis);
   }, [filterText, messageStruct.name]);
@@ -61,7 +47,7 @@ function BoolInput({ id = '', messageStruct = null, filterText = '' }) {
               <Stack direction="row" spacing={1}>
                 <FormLabel
                   sx={{
-                    color: '#808080',
+                    color: "#808080",
                   }}
                 >
                   {messageStruct.name && `${messageStruct.name}`}
@@ -82,7 +68,7 @@ function BoolInput({ id = '', messageStruct = null, filterText = '' }) {
             <Stack direction="row" spacing={1}>
               <FormLabel
                 sx={{
-                  color: '#808080',
+                  color: "#808080",
                   // fontSize: 'small',
                 }}
               >
@@ -91,14 +77,12 @@ function BoolInput({ id = '', messageStruct = null, filterText = '' }) {
               </FormLabel>
               <FormLabel
                 sx={{
-                  fontSize: 'small',
-                  paddingTop: '4px',
-                  color: '#808B96',
+                  fontSize: "small",
+                  paddingTop: "4px",
+                  color: "#808B96",
                 }}
               >
-                {messageStruct.name &&
-                  messageStruct.type &&
-                  `${messageStruct.type}`}
+                {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
               </FormLabel>
             </Stack>
           }

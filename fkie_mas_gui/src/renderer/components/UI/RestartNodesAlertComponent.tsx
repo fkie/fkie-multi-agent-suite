@@ -1,6 +1,6 @@
-import { forwardRef, useCallback, useEffect, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useState } from "react";
 
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Button,
   Card,
@@ -16,14 +16,9 @@ import {
   Paper,
   Stack,
   Typography,
-} from '@mui/material';
-import {
-  SnackbarContent,
-  SnackbarKey,
-  SnackbarMessage,
-  useSnackbar,
-} from 'notistack';
-import Provider from '../../providers/Provider';
+} from "@mui/material";
+import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
+import Provider from "../../providers/Provider";
 
 interface RestartNodesComponentProps {
   id: SnackbarKey | undefined;
@@ -33,10 +28,7 @@ interface RestartNodesComponentProps {
   onReload: (providerId: string, nodeList: string[]) => void;
 }
 
-const RestartNodesAlertComponent = forwardRef<
-  HTMLDivElement,
-  RestartNodesComponentProps
->((props, ref) => {
+const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesComponentProps>((props, ref) => {
   const { id, message, provider, nodeList, onReload } = props;
 
   const [checked, setChecked] = useState<string[]>([]);
@@ -72,23 +64,17 @@ const RestartNodesAlertComponent = forwardRef<
 
   return (
     <SnackbarContent ref={ref}>
-      <Card sx={{ marginTop: 4, backgroundColor: '#fddc6c' }}>
+      <Card sx={{ marginTop: 4, backgroundColor: "#fddc6c" }}>
         <CardActions>
-          <Stack
-            sx={{ width: '100%' }}
-            direction="row"
-            spacing={0.5}
-            justifyContent="space-around"
-            alignItems="center"
-          >
+          <Stack sx={{ width: "100%" }} direction="row" spacing={0.5} justifyContent="space-around" alignItems="center">
             <IconButton
               aria-label="Show more"
               sx={{
-                padding: '8px 8px',
-                transform: 'rotate(0deg)',
-                transition: 'all .2s',
+                padding: "8px 8px",
+                transform: "rotate(0deg)",
+                transition: "all .2s",
               }}
-              style={expanded ? { transform: 'rotate(180deg)' } : undefined}
+              style={expanded ? { transform: "rotate(180deg)" } : undefined}
               onClick={handleExpandClick}
             >
               <ExpandMoreIcon />
@@ -118,10 +104,10 @@ const RestartNodesAlertComponent = forwardRef<
           <Paper>
             <List
               sx={{
-                width: '100%',
+                width: "100%",
                 maxHeight: 400,
-                overflow: 'auto',
-                bgcolor: 'background.paper',
+                overflow: "auto",
+                bgcolor: "background.paper",
               }}
             >
               {nodeList &&
@@ -130,18 +116,14 @@ const RestartNodesAlertComponent = forwardRef<
 
                   return (
                     <ListItem key={node} disablePadding>
-                      <ListItemButton
-                        role={undefined}
-                        onClick={handleToggle(node)}
-                        dense
-                      >
+                      <ListItemButton role={undefined} onClick={handleToggle(node)} dense>
                         <ListItemIcon>
                           <Checkbox
                             edge="start"
                             checked={checked.indexOf(node) !== -1}
                             tabIndex={-1}
                             disableRipple
-                            inputProps={{ 'aria-labelledby': labelId }}
+                            inputProps={{ "aria-labelledby": labelId }}
                           />
                         </ListItemIcon>
                         <ListItemText id={labelId} primary={node} />

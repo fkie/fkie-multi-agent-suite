@@ -5,41 +5,35 @@ MIT License
 Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
-import React from 'react';
-
-import { FitAddon } from '@xterm/addon-fit';
-import { ISearchOptions, SearchAddon } from '@xterm/addon-search';
-import { WebLinksAddon } from '@xterm/addon-web-links';
-import { WebglAddon } from '@xterm/addon-webgl';
-import { ITerminalOptions, Terminal } from '@xterm/xterm';
-
-import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from '@mui/material';
-
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
-
-import SearchBar from '../../UI/SearchBar';
-
-import { FlowControl, ZmodemAddon } from '../zmodem';
-import OverlayAddon from './overlay';
-
-import '@xterm/xterm/css/xterm.css';
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from "@mui/material";
+import { FitAddon } from "@xterm/addon-fit";
+import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import { WebglAddon } from "@xterm/addon-webgl";
+import { ITerminalOptions, Terminal } from "@xterm/xterm";
+import "@xterm/xterm/css/xterm.css";
+import React from "react";
+import SearchBar from "../../UI/SearchBar";
+import { FlowControl, ZmodemAddon } from "../zmodem";
+import OverlayAddon from "./overlay";
 
 const enum Command {
   // server side
-  OUTPUT = '0',
-  SET_WINDOW_TITLE = '1',
-  SET_PREFERENCES = '2',
+  OUTPUT = "0",
+  SET_WINDOW_TITLE = "1",
+  SET_PREFERENCES = "2",
 
   // client side
-  INPUT = '0',
-  RESIZE_TERMINAL = '1',
-  PAUSE = '2',
-  RESUME = '3',
+  INPUT = "0",
+  RESIZE_TERMINAL = "1",
+  PAUSE = "2",
+  RESUME = "3",
 }
 
 export interface ClientOptions {
-  rendererType: 'dom' | 'canvas' | 'webgl';
+  rendererType: "dom" | "canvas" | "webgl";
   disableLeaveAlert: boolean;
   disableResizeOverlay: boolean;
   titleFixed: string;
@@ -89,15 +83,15 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   private token: string | null = null;
 
-  private title: string = 'Terminal';
+  private title: string = "Terminal";
 
-  private searchText: string = '';
+  private searchText: string = "";
 
   private fontSize: number;
 
   private resizeObserver: ResizeObserver | null = null;
 
-  private id: string = '';
+  private id: string = "";
 
   private lastContainerSize: { width: number; height: number } = {
     width: 0,
@@ -124,11 +118,11 @@ export class Xterm extends React.Component<Props, XtermState> {
 
       // TODO: Check why decorations does not work
       decorations: {
-        matchBackground: '#797D7F',
-        activeMatchBackground: '#d81e00',
-        matchBorder: '#d81e00',
-        matchOverviewRuler: '#d81e00',
-        activeMatchColorOverviewRuler: '#d81e00',
+        matchBackground: "#797D7F",
+        activeMatchBackground: "#d81e00",
+        matchBorder: "#d81e00",
+        matchOverviewRuler: "#d81e00",
+        activeMatchColorOverviewRuler: "#d81e00",
       },
     };
 
@@ -157,7 +151,7 @@ export class Xterm extends React.Component<Props, XtermState> {
     // show the name of the node during 300 ms at launch time
     const { overlayAddon } = this;
     const { name } = this.props;
-    overlayAddon?.showOverlay(name ? name : 'empty name', 300);
+    overlayAddon?.showOverlay(name ? name : "empty name", 300);
     if (this.container) {
       this.resizeObserver = new ResizeObserver(() => {
         this.componentDidUpdate();
@@ -181,7 +175,7 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   componentWillUnmount() {
     // send SIGINT on terminal close
-    this.socket?.close(1000, 'Component closed');
+    this.socket?.close(1000, "Component closed");
 
     if (this.terminal) this.terminal.dispose();
     if (this.resizeObserver) {
@@ -202,12 +196,12 @@ export class Xterm extends React.Component<Props, XtermState> {
   private onWindowUnload(event: BeforeUnloadEvent): string {
     const { socket } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
-      const message = 'Close terminal? this will also terminate the command.';
+      const message = "Close terminal? this will also terminate the command.";
       event.returnValue = message;
       return message;
     }
     event.preventDefault();
-    return '';
+    return "";
   }
 
   private onSocketOpen() {
@@ -231,7 +225,7 @@ export class Xterm extends React.Component<Props, XtermState> {
       if (state.opened && terminal) {
         terminal.reset();
         terminal.resize(dims.cols, dims.rows);
-        overlayAddon?.showOverlay('Reconnected', 300);
+        overlayAddon?.showOverlay("Reconnected", 300);
       }
     }
 
@@ -308,7 +302,7 @@ export class Xterm extends React.Component<Props, XtermState> {
     }
   }
 
-  private setRendererType(value: 'webgl') {
+  private setRendererType(value: "webgl") {
     const { terminal } = this;
 
     const disposeWebglRenderer = () => {
@@ -321,10 +315,10 @@ export class Xterm extends React.Component<Props, XtermState> {
     };
 
     switch (value) {
-      case 'webgl':
+      case "webgl":
         if (this.webglAddon) return;
         try {
-          if (window.WebGL2RenderingContext && document.createElement('canvas').getContext('webgl2')) {
+          if (window.WebGL2RenderingContext && document.createElement("canvas").getContext("webgl2")) {
             this.webglAddon = new WebglAddon();
             this.webglAddon.onContextLoss(() => {
               disposeWebglRenderer();
@@ -383,7 +377,7 @@ export class Xterm extends React.Component<Props, XtermState> {
             this.container = c;
             return this.container;
           }}
-          style={{ visibility: 'hidden', height: 0 }}
+          style={{ visibility: "hidden", height: 0 }}
         >
           <ZmodemAddon
             key={`zmodem-${this.id}`}
@@ -462,7 +456,7 @@ export class Xterm extends React.Component<Props, XtermState> {
               <TextField
                 type="number"
                 id="ni_font_size"
-                size="small"    
+                size="small"
                 variant="standard"
                 defaultValue={this.fontSize}
                 placeholder="Font size"
@@ -470,7 +464,7 @@ export class Xterm extends React.Component<Props, XtermState> {
                   inputProps: {
                     min: 8,
                     max: 18,
-                    style: { textAlign: 'center' },
+                    style: { textAlign: "center" },
                   },
                 }}
                 fullWidth
@@ -505,8 +499,8 @@ export class Xterm extends React.Component<Props, XtermState> {
             return this.container;
           }}
           width="100%"
-          height={state.opened ? '100%' : 0}
-          visibility={state.opened ? 'visible' : 'hidden'}
+          height={state.opened ? "100%" : 0}
+          visibility={state.opened ? "visible" : "hidden"}
           overflow="auto"
         >
           <ZmodemAddon
@@ -541,9 +535,9 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   private connect() {
     const { wsUrl } = this.props;
-    this.socket = new WebSocket(wsUrl, ['tty']);
+    this.socket = new WebSocket(wsUrl, ["tty"]);
 
-    this.socket.binaryType = 'arraybuffer';
+    this.socket.binaryType = "arraybuffer";
     this.socket.onopen = this.onSocketOpen;
     this.socket.onmessage = this.onSocketData;
     // this.socket.onclose = this.onSocketClose;
@@ -562,20 +556,20 @@ export class Xterm extends React.Component<Props, XtermState> {
     Object.keys(options).forEach((key) => {
       const value = options[key];
       switch (key) {
-        case 'rendererType':
+        case "rendererType":
           this.setRendererType(value);
           break;
-        case 'disableLeaveAlert':
+        case "disableLeaveAlert":
           if (value) {
-            window.removeEventListener('beforeunload', this.onWindowUnload);
+            window.removeEventListener("beforeunload", this.onWindowUnload);
           }
           break;
-        case 'disableResizeOverlay':
+        case "disableResizeOverlay":
           if (value) {
             console.debug(`[ttyd] Resize overlay disabled`);
           }
           break;
-        case 'disableReconnect':
+        case "disableReconnect":
           if (value) {
             console.debug(`[ttyd] Reconnect disabled`);
           }
@@ -601,7 +595,7 @@ export class Xterm extends React.Component<Props, XtermState> {
           //   terminal.options[key] = value;
           // }
 
-          if (key.indexOf('font') === 0) fitAddon.fit();
+          if (key.indexOf("font") === 0) fitAddon.fit();
 
           break;
       }

@@ -1,26 +1,19 @@
-import { useDebounceCallback } from "@react-hook/debounce";
-import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
-
-import { SimpleTreeView } from "@mui/x-tree-view";
-
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ComputerIcon from "@mui/icons-material/Computer";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HideSourceIcon from "@mui/icons-material/HideSource";
 import Label from "@mui/icons-material/Label";
+import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { SimpleTreeView } from "@mui/x-tree-view";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import RefreshIcon from "@mui/icons-material/Refresh";
-
 import { ParameterTreeItem } from "../../../components";
 import SearchBar from "../../../components/UI/SearchBar";
-import {
-  DEFAULT_BUG_TEXT,
-  LoggingContext,
-} from "../../../context/LoggingContext";
+import { DEFAULT_BUG_TEXT, LoggingContext } from "../../../context/LoggingContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { findIn } from "../../../utils/index";
@@ -54,13 +47,9 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         filteredData.set(
           rootName,
           paramList.filter((p) => {
-            const isMatch = findIn(searchTerm, [
-              p.name,
-              JSON.stringify(p.value),
-              p.type,
-            ]);
+            const isMatch = findIn(searchTerm, [p.name, JSON.stringify(p.value), p.type]);
             return isMatch;
-          }),
+          })
         );
       });
     }
@@ -82,10 +71,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         if (!provider || !provider.isAvailable()) return;
         // check if provider supports [getNodeParameters]
         if (!provider.getNodeParameters) {
-          logCtx.error(
-            `Provider ${provider.name()} does not support [getNodeParameters] method`,
-            DEFAULT_BUG_TEXT,
-          );
+          logCtx.error(`Provider ${provider.name()} does not support [getNodeParameters] method`, DEFAULT_BUG_TEXT);
           return;
         }
         const paramList = await provider.getNodeParameters([rootObj.name]);
@@ -105,10 +91,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
         // check if provider supports [getParameterList]
         if (!rootObj.getParameterList) {
-          logCtx.error(
-            `Provider ${rootObj.name} does not support [getParameterList] method`,
-            DEFAULT_BUG_TEXT,
-          );
+          logCtx.error(`Provider ${rootObj.name} does not support [getParameterList] method`, DEFAULT_BUG_TEXT);
           return;
         }
         const paramList = await rootObj.getParameterList();
@@ -127,41 +110,30 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   }, [rosCtx.initialized, rosCtx.providers, nodes, roots]);
 
   // debounced callback when updating a parameter
-  const updateParameter = useDebounceCallback(
-    async (parameter, newValue, newType) => {
-      const provider = rosCtx.getProviderById(parameter.providerId);
-      if (!provider || !provider.isAvailable()) return;
+  const updateParameter = useDebounceCallback(async (parameter, newValue, newType) => {
+    const provider = rosCtx.getProviderById(parameter.providerId);
+    if (!provider || !provider.isAvailable()) return;
 
-      if (!provider.setParameter) {
-        logCtx.error(
-          `Provider ${rosCtx.getProviderName(
-            parameter.providerId,
-          )} does not support [setParameter] method`,
-          DEFAULT_BUG_TEXT,
-        );
-        return;
-      }
+    if (!provider.setParameter) {
+      logCtx.error(
+        `Provider ${rosCtx.getProviderName(parameter.providerId)} does not support [setParameter] method`,
+        DEFAULT_BUG_TEXT
+      );
+      return;
+    }
 
-      parameter.value = newValue;
-      if (newType) {
-        parameter.type = newType;
-      }
-      const result = await provider.setParameter(parameter);
+    parameter.value = newValue;
+    if (newType) {
+      parameter.type = newType;
+    }
+    const result = await provider.setParameter(parameter);
 
-      if (result) {
-        logCtx.success(
-          "Parameter updated successfully",
-          `Parameter: ${parameter.name}, value: ${parameter.value}`,
-        );
-      } else {
-        logCtx.error(
-          `Could not update parameter [${parameter.name}]`,
-          DEFAULT_BUG_TEXT,
-        );
-      }
-    },
-    300,
-  );
+    if (result) {
+      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
+    } else {
+      logCtx.error(`Could not update parameter [${parameter.name}]`, DEFAULT_BUG_TEXT);
+    }
+  }, 300);
 
   const deleteParameters = useCallback(
     (paramsMap) => {
@@ -171,10 +143,8 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
         if (!provider.deleteParameters) {
           logCtx.error(
-            `Provider ${rosCtx.getProviderName(
-              providerId,
-            )} does not support [deleteParameters] method`,
-            DEFAULT_BUG_TEXT,
+            `Provider ${rosCtx.getProviderName(providerId)} does not support [deleteParameters] method`,
+            DEFAULT_BUG_TEXT
           );
           return;
         }
@@ -182,21 +152,15 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         const result = await provider.deleteParameters(params);
 
         if (result) {
-          logCtx.success(
-            `Parameter deleted successfully from ${provider.name()}`,
-            `${JSON.stringify(params)}`,
-          );
+          logCtx.success(`Parameter deleted successfully from ${provider.name()}`, `${JSON.stringify(params)}`);
         } else {
-          logCtx.error(
-            `Could not delete parameters from ${provider.name()}`,
-            DEFAULT_BUG_TEXT,
-          );
+          logCtx.error(`Could not delete parameters from ${provider.name()}`, DEFAULT_BUG_TEXT);
         }
         // TODO: update only involved provider / nodes
         getParameterList();
       });
     },
-    [getParameterList, logCtx, rosCtx],
+    [getParameterList, logCtx, rosCtx]
   );
 
   // callback when deleting parameters
@@ -254,10 +218,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     if (id.endsWith("#")) {
       const trimmed = id.slice(0, -1);
       return {
-        groupName: trimmed.substr(
-          trimmed.lastIndexOf("/") + 1,
-          trimmed.length - 1,
-        ),
+        groupName: trimmed.substr(trimmed.lastIndexOf("/") + 1, trimmed.length - 1),
         fullPrefix: trimmed.substr(0, id.lastIndexOf("/")),
       };
     }
@@ -320,11 +281,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   useEffect(() => {
     const tree = new Map("", []);
     Array.from(roots).map(([rootName, rootObj]) => {
-      const subtree = fillTree(
-        rootName,
-        nodeFilter ? `${rootName}` : "",
-        rootDataFiltered.get(rootName),
-      );
+      const subtree = fillTree(rootName, nodeFilter ? `${rootName}` : "", rootDataFiltered.get(rootName));
       tree.set(rootName, subtree);
       return null;
     });
@@ -416,20 +373,13 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
             <ParameterTreeItem
               key={`${rootId}`}
               itemId={`${rootId}`}
-              labelText={`${
-                Object.hasOwn(rootObj, "system_node")
-                  ? rootId
-                  : rosCtx.getProviderName(rootId)
-              }`}
+              labelText={`${Object.hasOwn(rootObj, "system_node") ? rootId : rosCtx.getProviderName(rootId)}`}
               labelIcon={getIcon(rootObj)}
               labelCount={filteredItems ? filteredItems.length : null}
               requestData={!rootData.has(rootId)}
               providerName={rosCtx.getProviderName(rootId)}
             >
-              {paramTreeToStyledItems(
-                nodeFilter ? `${rootId}` : "",
-                rootDataTree.get(rootId),
-              )}
+              {paramTreeToStyledItems(nodeFilter ? `${rootId}` : "", rootDataTree.get(rootId))}
             </ParameterTreeItem>
           );
         })}
@@ -438,11 +388,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   }, [roots, rootDataTree, nodeFilter, rootDataFiltered]);
 
   return (
-    <Box
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get("backgroundColor")}
-    >
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       <Stack
         spacing={1}
         height="100%"
@@ -484,11 +430,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           </Tooltip>
           {searched && (
             <Tooltip title="Delete filtered parameters" placement="bottom">
-              <IconButton
-                size="small"
-                onClick={onDeleteParameters}
-                color="warning"
-              >
+              <IconButton size="small" onClick={onDeleteParameters} color="warning">
                 <DeleteIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>

@@ -1,4 +1,4 @@
-import JSONObject from '../models/JsonObject';
+import JSONObject from "../models/JsonObject";
 
 export interface IProviderTimestamp {
   timestamp: number;
@@ -35,11 +35,11 @@ export interface IResultStartNode {
 }
 
 export default class ProviderConnection {
-  host: string = '';
+  host: string = "";
 
   port: number = -1;
 
-  uri: string = '';
+  uri: string = "";
 
   useSSL: boolean = false;
 
@@ -64,11 +64,8 @@ export default class ProviderConnection {
    * @param {string} uri - URI to subscribe for. (ex. 'ros.system.pong')
    * @param {function} callback - Callback to be executed when new messages arrives.
    */
-  subscribe: (
-    uri: string,
-    callback: (msg: JSONObject) => void,
-  ) => Promise<IResult> = async () => {
-    throw Error('not implemented');
+  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async () => {
+    throw Error("not implemented");
   };
 
   /**
@@ -78,7 +75,7 @@ export default class ProviderConnection {
    * @param {Object} param - Arguments passed to the call
    */
   call: (uri: string, param: any[]) => Promise<JSONObject> = async () => {
-    throw Error('not implemented');
+    throw Error("not implemented");
   };
 
   /**
@@ -87,22 +84,21 @@ export default class ProviderConnection {
    * @param {string} uri - URI to publish. (ex. 'ros.remote.ping')
    * @param {object} payload - payload to be sent with request
    */
-  publish: (uri: string, payload: JSONObject) => Promise<IResult> =
-    async () => {
-      throw Error('not implemented');
-    };
+  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async () => {
+    throw Error("not implemented");
+  };
 
   /**
    * Close all subscriptions
    */
   closeSubscriptions: () => Promise<void> = async () => {
-    throw Error('not implemented');
+    throw Error("not implemented");
   };
 
   /**
    * Close given subscription
    */
   closeSubscription: (uri: string) => Promise<void> = async () => {
-    throw Error('not implemented');
+    throw Error("not implemented");
   };
 }

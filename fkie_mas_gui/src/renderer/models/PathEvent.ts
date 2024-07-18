@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { generateUniqueId } from '../utils';
+import { generateUniqueId } from "../utils";
 
 /**
  * PathEvent models path events
@@ -7,10 +7,10 @@ import { generateUniqueId } from '../utils';
 
 export class PATH_EVENT_TYPE extends String {
   static TYPES = {
-    MOVED: 'moved',
-    DELETED: 'deleted',
-    CREATED: 'created',
-    MODIFIED: 'modified',
+    MOVED: "moved",
+    DELETED: "deleted",
+    CREATED: "created",
+    MODIFIED: "modified",
   };
 }
 

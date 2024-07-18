@@ -1,4 +1,4 @@
-import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteIcon from "@mui/icons-material/Delete";
 import {
   Alert,
   AlertTitle,
@@ -16,29 +16,28 @@ import {
   TableHead,
   TableRow,
   TextField,
-} from '@mui/material';
-import React, { useCallback, useContext, useState } from 'react';
-
-import { LoggingContext } from '../../context/LoggingContext';
-import { SSHContext } from '../../context/SSHContext';
-import SearchBar from '../UI/SearchBar';
+} from "@mui/material";
+import React, { useCallback, useContext, useState } from "react";
+import { LoggingContext } from "../../context/LoggingContext";
+import { SSHContext } from "../../context/SSHContext";
+import SearchBar from "../UI/SearchBar";
 
 const headers = [
   {
-    key: 'username',
-    header: 'User Name',
+    key: "username",
+    header: "User Name",
   },
   {
-    key: 'host',
-    header: 'Host',
+    key: "host",
+    header: "Host",
   },
   {
-    key: 'port',
-    header: 'Port',
+    key: "port",
+    header: "Port",
   },
   {
-    key: 'delete',
-    header: 'Delete',
+    key: "delete",
+    header: "Delete",
   },
 ];
 
@@ -47,28 +46,25 @@ function SSHCredentialsPanel() {
   const logCtx = useContext(LoggingContext);
 
   const [addingCredential, setAddingCredential] = useState(false);
-  const [username, setUsername] = useState('');
-  const [host, setHost] = useState('');
+  const [username, setUsername] = useState("");
+  const [host, setHost] = useState("");
   const [port, setPort] = useState(22);
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
 
   const [openInfoPwd, setOpenInfoPwd] = React.useState(true);
   const [openInfoCred, setOpenInfoCred] = React.useState(true);
 
-  const [errorMessage, setErrorMessage] = useState('');
-  const [filter, setFilter] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [filter, setFilter] = useState("");
 
   const onDeleteCredential = (credentialId) => {
     if (credentialId.length === 0) {
-      logCtx.error('Invalid credential ID', `credential: ${credentialId}`);
+      logCtx.error("Invalid credential ID", `credential: ${credentialId}`);
       return;
     }
 
     if (SSHCtx.deleteCredential(credentialId)) {
-      logCtx.success(
-        'Credential removed successfully',
-        'Both credential and password on keychain removed',
-      );
+      logCtx.success("Credential removed successfully", "Both credential and password on keychain removed");
     }
   };
 
@@ -76,17 +72,12 @@ function SSHCredentialsPanel() {
     if (addingCredential) {
       return;
     }
-    if (
-      username.length === 0 ||
-      host.length === 0 ||
-      port.length === 0 ||
-      password.length === 0
-    ) {
-      setErrorMessage(() => 'Could not add new credential, Invalid input data');
+    if (username.length === 0 || host.length === 0 || port.length === 0 || password.length === 0) {
+      setErrorMessage(() => "Could not add new credential, Invalid input data");
       return;
     }
     setAddingCredential(true);
-    logCtx.debug(`Try to add credential for host ${host}`, '');
+    logCtx.debug(`Try to add credential for host ${host}`, "");
     const res = await SSHCtx.addCredential({
       username,
       host,
@@ -94,32 +85,28 @@ function SSHCredentialsPanel() {
       password,
     });
     if (!res.result) {
-      logCtx.error('Could not add new credential', res.message);
+      logCtx.error("Could not add new credential", res.message);
 
       setErrorMessage(() => `Could not add new credential: ${res.message}`);
     } else {
-      setUsername('');
-      setHost('');
+      setUsername("");
+      setHost("");
       setPort(22);
-      setPassword('');
-      setErrorMessage(() => '');
+      setPassword("");
+      setErrorMessage(() => "");
     }
     setAddingCredential(false);
   }, [addingCredential, username, host, port, password, logCtx, SSHCtx]);
 
   return (
     <Stack spacing={2} sx={{ minHeight: 400 }}>
-      <SearchBar
-        onSearch={setFilter}
-        placeholder="Filter Credentials"
-        defaultValue=""
-      />
+      <SearchBar onSearch={setFilter} placeholder="Filter Credentials" defaultValue="" />
       <TableContainer component={Paper}>
         <Table stickyHeader size="small" aria-label="ssh credential table">
           <TableHead>
             <TableRow>
               {headers.map((header) => (
-                <TableCell key={header.key} sx={{ fontWeight: 'bold' }}>
+                <TableCell key={header.key} sx={{ fontWeight: "bold" }}>
                   {header.header}
                 </TableCell>
               ))}
@@ -135,12 +122,9 @@ function SSHCredentialsPanel() {
                 );
               })
               .map((row) => (
-                <TableRow
-                  key={row.id}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
+                <TableRow key={row.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                   {headers.map((header) => {
-                    if (header.key.includes('delete')) {
+                    if (header.key.includes("delete")) {
                       return (
                         <TableCell key={`${row.id}_${header.key}`}>
                           <IconButton
@@ -148,17 +132,13 @@ function SSHCredentialsPanel() {
                               onDeleteCredential(row.id);
                             }}
                           >
-                            <DeleteIcon sx={{ fontSize: 'inherit' }} />
+                            <DeleteIcon sx={{ fontSize: "inherit" }} />
                           </IconButton>
                         </TableCell>
                       );
                     }
 
-                    return (
-                      <TableCell key={`${row.id}_${header.key}`}>
-                        {row[header.key]}
-                      </TableCell>
-                    );
+                    return <TableCell key={`${row.id}_${header.key}`}>{row[header.key]}</TableCell>;
                   })}
                 </TableRow>
               ))}
@@ -173,10 +153,7 @@ function SSHCredentialsPanel() {
             setOpenInfoCred(false);
           }}
         >
-          <AlertTitle>
-            We might configure SSH credentials to edit and load remote files
-            using a SFTP client.
-          </AlertTitle>
+          <AlertTitle>We might configure SSH credentials to edit and load remote files using a SFTP client.</AlertTitle>
           {`The host field must coincide with the provider's host to be able to use
           these credentials.`}
         </Alert>
@@ -185,12 +162,7 @@ function SSHCredentialsPanel() {
       <FormControl component="fieldset" variant="standard">
         <FormLabel component="legend">Add a new SSH credential:</FormLabel>
         <FormGroup>
-          <Stack
-            direction="row"
-            spacing={1}
-            alignContent="center"
-            alignItems="center"
-          >
+          <Stack direction="row" spacing={1} alignContent="center" alignItems="center">
             <TextField
               id="input-username"
               type="text"
@@ -236,7 +208,7 @@ function SSHCredentialsPanel() {
                 setPassword(event.target.value);
               }}
               onKeyDown={(ev) => {
-                if (ev.key === 'Enter') {
+                if (ev.key === "Enter") {
                   ev.preventDefault();
                   onAddCredential();
                 }

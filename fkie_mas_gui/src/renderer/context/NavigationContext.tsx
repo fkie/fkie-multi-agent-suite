@@ -1,4 +1,4 @@
-import React, { createContext, useMemo, useState } from 'react';
+import React, { createContext, useMemo, useState } from "react";
 
 export interface INavigationContext {
   selectedNodes: any[];
@@ -19,15 +19,9 @@ interface INavigationProvider {
 
 export const NavigationContext = createContext<INavigationContext>(DEFAULT);
 
-export function NavigationProvider({
-  children,
-}: INavigationProvider): ReturnType<React.FC<INavigationProvider>> {
-  const [selectedNodes, setSelectedNodes] = useState<any[]>(
-    DEFAULT.selectedNodes,
-  );
-  const [selectedProviders, setSelectedProviders] = useState<any[]>(
-    DEFAULT.selectedProviders,
-  );
+export function NavigationProvider({ children }: INavigationProvider): ReturnType<React.FC<INavigationProvider>> {
+  const [selectedNodes, setSelectedNodes] = useState<any[]>(DEFAULT.selectedNodes);
+  const [selectedProviders, setSelectedProviders] = useState<any[]>(DEFAULT.selectedProviders);
 
   const attributesMemo = useMemo(
     () => ({
@@ -36,14 +30,10 @@ export function NavigationProvider({
       selectedProviders,
       setSelectedProviders,
     }),
-    [selectedNodes, selectedProviders],
+    [selectedNodes, selectedProviders]
   );
 
-  return (
-    <NavigationContext.Provider value={attributesMemo}>
-      {children}
-    </NavigationContext.Provider>
-  );
+  return <NavigationContext.Provider value={attributesMemo}>{children}</NavigationContext.Provider>;
 }
 
 export default NavigationContext;

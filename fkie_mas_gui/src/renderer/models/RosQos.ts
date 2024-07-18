@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import RosDuration from './RosDuration';
+import RosDuration from "./RosDuration";
 
 const RELIABILITY = {
   // Implementation specific default
@@ -109,7 +109,7 @@ class RosQos {
     reliability: number = RELIABILITY.RELIABLE,
     deadline: RosDuration = new RosDuration(),
     lease_duration: RosDuration = new RosDuration(),
-    lifespan: RosDuration = new RosDuration(),
+    lifespan: RosDuration = new RosDuration()
   ) {
     this.durability = durability;
     this.history = history;

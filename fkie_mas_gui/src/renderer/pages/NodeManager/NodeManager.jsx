@@ -31,8 +31,6 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { Actions, DockLocation, Layout, Model } from "flexlayout-react";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-
-import { getBaseName } from "../../models";
 import ExternalAppsModal from "../../components/ExternalAppsModal/ExternalAppsModal";
 import ProviderSelectionModal from "../../components/SelectionModal/ProviderSelectionModal";
 import SettingsModal from "../../components/SettingsModal/SettingsModal";
@@ -45,6 +43,7 @@ import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { SSHContext } from "../../context/SSHContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
+import { getBaseName } from "../../models";
 import { CmdType } from "../../providers";
 import { getRosNameAbb } from "../../utils";
 import {
@@ -55,12 +54,7 @@ import {
   eventOpenSettings,
   SETTING,
 } from "../../utils/events";
-import {
-  DEFAULT_LAYOUT,
-  LAYOUT_TAB_LIST,
-  LAYOUT_TAB_SETS,
-  LAYOUT_TABS,
-} from "./layout";
+import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import "./NodeManager.css";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
@@ -138,24 +132,13 @@ function NodeManager() {
   }, [layoutJson, setLayoutJson, setModel, updateFloatButton]);
 
   useEffect(() => {
-    if (
-      settingsCtx.get("resetLayout") ||
-      !hasTab(layoutJson.layout, LAYOUT_TABS.NODES)
-    ) {
+    if (settingsCtx.get("resetLayout") || !hasTab(layoutJson.layout, LAYOUT_TABS.NODES)) {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set("resetLayout", false);
       logCtx.success(`Layout reset!`);
     }
-  }, [
-    settingsCtx.changed,
-    layoutJson,
-    setLayoutJson,
-    setModel,
-    settingsCtx,
-    hasTab,
-    logCtx,
-  ]);
+  }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel, settingsCtx, hasTab, logCtx]);
 
   /** Hide bottom panel on close of last terminal */
   const deleteTab = useCallback(
@@ -178,8 +161,7 @@ function NodeManager() {
       ) {
         // on close of last bottom tab hide the border if it currently visible
         const shouldSelectNewTab =
-          nodeBId.getParent().getChildren().length === 2 &&
-          nodeBId.getParent().getSelectedNode()?.isVisible();
+          nodeBId.getParent().getChildren().length === 2 && nodeBId.getParent().getSelectedNode()?.isVisible();
         if (shouldSelectNewTab) {
           model.doAction(Actions.selectTab(tabId));
         }
@@ -197,9 +179,7 @@ function NodeManager() {
         if (node.getParent().getType() === "border") {
           if (node.getParent().getSelectedNode()?.getId() === node.getId()) {
             // it is border and current tab is selected => nothing to do
-          } else if (
-            node.getParent().getSelectedNode()?.getId() === LAYOUT_TABS.HOSTS
-          ) {
+          } else if (node.getParent().getSelectedNode()?.getId() === LAYOUT_TABS.HOSTS) {
             // it is border and current tab is HOSTS => nothing to do
           } else if (node.getId() === LAYOUT_TABS.LOGGING) {
             if (!node.getParent().getSelectedNode()?.isVisible()) {
@@ -349,28 +329,13 @@ function NodeManager() {
     }
   };
 
-  function onRenderTab(
-    node /* TabNode */,
-    renderValues /* ITabRenderValues */
-  ) {
+  function onRenderTab(node /* TabNode */, renderValues /* ITabRenderValues */) {
     // add tooltip to the abbreviations
     if (
-      ![
-        "Hosts",
-        "Node Details",
-        "Packages",
-        "Nodes",
-        "Topics",
-        "Services",
-        "Parameter",
-      ].includes(renderValues.name)
+      !["Hosts", "Node Details", "Packages", "Nodes", "Topics", "Services", "Parameter"].includes(renderValues.name)
     ) {
       renderValues.content = (
-        <Tooltip
-          title={renderValues.name}
-          placement="bottom"
-          disableInteractive
-        >
+        <Tooltip title={renderValues.name} placement="bottom" disableInteractive>
           <Typography>{getRosNameAbb(renderValues.name)}</Typography>
         </Tooltip>
       );
@@ -379,12 +344,7 @@ function NodeManager() {
       case LAYOUT_TABS.LOGGING:
         renderValues.content = "";
         renderValues.leading = (
-          <Tooltip
-            title="Logging (mas gui)"
-            placement="top"
-            enterDelay={tooltipDelay}
-            disableInteractive
-          >
+          <Tooltip title="Logging (mas gui)" placement="top" enterDelay={tooltipDelay} disableInteractive>
             <Badge
               color="info"
               badgeContent={`${logCtx.countErrors}`}
@@ -406,9 +366,7 @@ function NodeManager() {
         renderValues.name = "Option";
         break;
       case LAYOUT_TABS.NODE_DETAILS:
-        renderValues.buttons.push(
-          <OverflowMenuNodeDetails key="overflow-node-details" />
-        );
+        renderValues.buttons.push(<OverflowMenuNodeDetails key="overflow-node-details" />);
         break;
       default:
         // add leading icons to the tabs
@@ -420,45 +378,29 @@ function NodeManager() {
             renderValues.leading = <WysiwygIcon sx={{ fontSize: "inherit" }} />;
             break;
           case CmdType.TERMINAL:
-            renderValues.leading = (
-              <TerminalIcon sx={{ fontSize: "inherit" }} />
-            );
+            renderValues.leading = <TerminalIcon sx={{ fontSize: "inherit" }} />;
             break;
           case "echo":
           case CmdType.ECHO:
-            renderValues.leading = (
-              <ChatBubbleOutlineIcon sx={{ fontSize: "inherit" }} />
-            );
+            renderValues.leading = <ChatBubbleOutlineIcon sx={{ fontSize: "inherit" }} />;
             break;
           case "publish":
-            renderValues.leading = (
-              <PlayCircleOutlineIcon sx={{ fontSize: "inherit" }} />
-            );
+            renderValues.leading = <PlayCircleOutlineIcon sx={{ fontSize: "inherit" }} />;
             break;
           case LAYOUT_TABS.SERVICES:
-            renderValues.leading = (
-              <SyncAltOutlinedIcon sx={{ fontSize: "inherit" }} />
-            );
+            renderValues.leading = <SyncAltOutlinedIcon sx={{ fontSize: "inherit" }} />;
             break;
           case "info":
-            renderValues.leading = (
-              <InfoOutlinedIcon sx={{ fontSize: "inherit" }} />
-            );
+            renderValues.leading = <InfoOutlinedIcon sx={{ fontSize: "inherit" }} />;
             break;
           case "parameter":
             renderValues.leading = <TuneIcon sx={{ fontSize: "inherit" }} />;
             break;
           case "editor":
-            renderValues.leading = (
-              <BorderColorIcon sx={{ fontSize: "inherit" }} />
-            );
+            renderValues.leading = <BorderColorIcon sx={{ fontSize: "inherit" }} />;
             break;
           case "node-logger":
-            renderValues.leading = (
-              <SettingsInputCompositeOutlinedIcon
-                sx={{ fontSize: "inherit", rotate: "90deg" }}
-              />
-            );
+            renderValues.leading = <SettingsInputCompositeOutlinedIcon sx={{ fontSize: "inherit", rotate: "90deg" }} />;
             break;
           default:
             break;
@@ -477,9 +419,7 @@ function NodeManager() {
                   if (node.getConfig().terminalConfig) {
                     const openExternalTerminal = async (config, tabNodeId) => {
                       // create a terminal command
-                      const provider = rosCtx.getProviderById(
-                        config.providerId
-                      );
+                      const provider = rosCtx.getProviderById(config.providerId);
                       const terminalCmd = await provider.cmdForType(
                         config.type,
                         config.nodeName,
@@ -490,27 +430,16 @@ function NodeManager() {
                       // open screen in a new terminal
                       try {
                         window.CommandExecutor?.execTerminal(
-                          provider.isLocalHost
-                            ? null
-                            : SSHCtx.getCredentialHost(provider.host()),
-                          `"${config.type.toLocaleUpperCase()} ${
-                            config.nodeName
-                          }@${provider.host()}"`,
+                          provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
+                          `"${config.type.toLocaleUpperCase()} ${config.nodeName}@${provider.host()}"`,
                           terminalCmd.cmd
                         );
                         deleteTab(tabNodeId);
                       } catch (error) {
-                        logCtx.error(
-                          `Can't open external terminal for ${config.nodeName}`,
-                          error,
-                          true
-                        );
+                        logCtx.error(`Can't open external terminal for ${config.nodeName}`, error, true);
                       }
                     };
-                    openExternalTerminal(
-                      node.getConfig().terminalConfig,
-                      node.getId()
-                    );
+                    openExternalTerminal(node.getConfig().terminalConfig, node.getId());
                   }
                   event.stopPropagation();
                 }}
@@ -544,10 +473,7 @@ function NodeManager() {
           <span>
             <IconButton
               onClick={() =>
-                emitCustomEvent(
-                  EVENT_OPEN_COMPONENT,
-                  eventOpenComponent(id, title, component, true, setId)
-                )
+                emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(id, title, component, true, setId))
               }
             >
               {icon}
@@ -558,10 +484,7 @@ function NodeManager() {
     }
   }
 
-  function onRenderTabSet(
-    node /* TabSetNode */,
-    renderValues /* ITabSetRenderValues */
-  ) {
+  function onRenderTabSet(node /* TabSetNode */, renderValues /* ITabSetRenderValues */) {
     const children = node.getChildren();
     children.forEach((child) => {
       if (child.getId() === LAYOUT_TABS.NODES) {
@@ -601,17 +524,11 @@ function NodeManager() {
       // add update button in the bottom border
       if (electronCtx.updateAvailable) {
         renderValues.buttons.push(
-          <Tooltip
-            title={`new version ${electronCtx.updateAvailable} available`}
-            placement="top"
-          >
+          <Tooltip title={`new version ${electronCtx.updateAvailable} available`} placement="top">
             <Button
               style={{ textTransform: "none" }}
               onClick={() => {
-                emitCustomEvent(
-                  EVENT_OPEN_SETTINGS,
-                  eventOpenSettings(SETTING.IDS.ABOUT)
-                );
+                emitCustomEvent(EVENT_OPEN_SETTINGS, eventOpenSettings(SETTING.IDS.ABOUT));
               }}
               variant="text"
               color="info"
@@ -669,16 +586,10 @@ function NodeManager() {
   useEffect(() => {
     if (navCtx.selectedNodes.length > 0) {
       // inform details panel tab about selected nodes by user
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {})
-      );
+      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {}));
     } else {
       // select package explorer if no nodes are selected
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(LAYOUT_TABS.PACKAGES, "default", {})
-      );
+      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.PACKAGES, "default", {}));
     }
   }, [navCtx.selectedNodes]);
 
@@ -712,9 +623,7 @@ function NodeManager() {
           providers.map(async (prov) => {
             console.log(`shutdown ${prov.id}`);
             const result = await prov.shutdown();
-            console.log(
-              `finished shutdown ${prov.id} ${JSON.stringify(result)}`
-            );
+            console.log(`finished shutdown ${prov.id} ${JSON.stringify(result)}`);
           })
         );
       }
@@ -759,15 +668,9 @@ function NodeManager() {
           }
         }}
         onRenderTab={(node, renderValues) => onRenderTab(node, renderValues)}
-        onRenderTabSet={(node, renderValues) =>
-          onRenderTabSet(node, renderValues)
-        }
+        onRenderTabSet={(node, renderValues) => onRenderTabSet(node, renderValues)}
         onModelChange={(_model, _action) => {
-          if (
-            ![Actions.SELECT_TAB, Actions.SET_ACTIVE_TABSET].includes(
-              _action.type
-            )
-          ) {
+          if (![Actions.SELECT_TAB, Actions.SET_ACTIVE_TABSET].includes(_action.type)) {
             cleanAndSaveLayout(_model);
           }
         }}
@@ -775,18 +678,16 @@ function NodeManager() {
           console.log(`NO context for ${node.getId()}`);
         }}
       />
-      {electronCtx.terminateSubprocesses &&
-        monacoCtx.getModifiedTabs().length === 0 &&
-        rosCtx.providers.length > 0 && (
-          // check for unsaved files before quit gui
-          <ProviderSelectionModal
-            title="Select providers to shut down"
-            providers={rosCtx.providers}
-            onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
-            onConfirmCallback={(providers) => shutdownProviders(providers)}
-            onForceCloseCallback={() => electronCtx.shutdownInterface.quitGui()}
-          />
-        )}
+      {electronCtx.terminateSubprocesses && monacoCtx.getModifiedTabs().length === 0 && rosCtx.providers.length > 0 && (
+        // check for unsaved files before quit gui
+        <ProviderSelectionModal
+          title="Select providers to shut down"
+          providers={rosCtx.providers}
+          onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
+          onConfirmCallback={(providers) => shutdownProviders(providers)}
+          onForceCloseCallback={() => electronCtx.shutdownInterface.quitGui()}
+        />
+      )}
       {modifiedEditorTabs.length > 0 && (
         <Dialog
           open={modifiedEditorTabs.length > 0}
@@ -803,10 +704,7 @@ function NodeManager() {
           <DialogContent scroll="paper" aria-label="list">
             {modifiedEditorTabs.map((tab) => {
               return (
-                <DialogContentText
-                  key={tab.tabId}
-                  id="alert-dialog-description"
-                >
+                <DialogContentText key={tab.tabId} id="alert-dialog-description">
                   {`There are ${tab.uriPaths.length} unsaved files in "${getBaseName(tab.tabId)}" tab.`}
                 </DialogContentText>
               );
@@ -842,9 +740,7 @@ function NodeManager() {
                 // save all files
                 const result = await Promise.all(
                   modifiedEditorTabs.map(async (tab) => {
-                    const tabResult = await monacoCtx.saveModifiedFilesOfTabId(
-                      tab.tabId
-                    );
+                    const tabResult = await monacoCtx.saveModifiedFilesOfTabId(tab.tabId);
                     return tabResult;
                   })
                 );

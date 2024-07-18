@@ -1,10 +1,10 @@
-import CheckIcon from '@mui/icons-material/Check';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import JoinFullIcon from '@mui/icons-material/JoinFull';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import UpgradeIcon from '@mui/icons-material/Upgrade';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import CheckIcon from "@mui/icons-material/Check";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import HighlightOffIcon from "@mui/icons-material/HighlightOff";
+import JoinFullIcon from "@mui/icons-material/JoinFull";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import UpgradeIcon from "@mui/icons-material/Upgrade";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Button,
   CircularProgress,
@@ -16,40 +16,40 @@ import {
   TableRow,
   Tooltip,
   Typography,
-} from '@mui/material';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useMemo, useReducer, useState } from 'react';
-import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
-import semver from 'semver';
-import { colorFromHostname } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { RosNode } from '../../../models';
-import { CmdType, ConnectionState } from '../../../providers';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useMemo, useReducer, useState } from "react";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import semver from "semver";
+import { colorFromHostname } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { RosNode } from "../../../models";
+import { CmdType, ConnectionState } from "../../../providers";
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
-} from '../../../providers/eventTypes';
+} from "../../../providers/eventTypes";
 import {
   EVENT_OPEN_COMPONENT,
   EVENT_OPEN_SETTINGS,
   SETTING,
   eventOpenComponent,
   eventOpenSettings,
-} from '../../../utils/events';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-import SingleTerminalPanel from './SingleTerminalPanel';
-import SystemInformationPanel from './SystemInformationPanel';
+} from "../../../utils/events";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import SingleTerminalPanel from "./SingleTerminalPanel";
+import SystemInformationPanel from "./SystemInformationPanel";
 
 function ProviderPanelRow({ provider }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [providersActivity, setProvidersActivity] = useState(false);
   const [updated, forceUpdate] = useReducer((x) => x + 1, 0);
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const closeProviderHandler = useCallback(
     async (providerId) => {
@@ -58,21 +58,21 @@ function ProviderPanelRow({ provider }) {
         provider.close();
       }
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   const handleJoinProvider = useCallback(
     async (provider) => {
       await rosCtx.connectToProvider(provider);
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   const handleStartProvider = useCallback(
     async (provider) => {
       await rosCtx.startProvider(provider, true);
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   const debouncedCallbackUpdateDelay = useDebounceCallback(() => {
@@ -104,7 +104,7 @@ function ProviderPanelRow({ provider }) {
   });
 
   const onProviderMenuClick = async (actionType, providerId, providerName) => {
-    if (actionType === 'INFO') {
+    if (actionType === "INFO") {
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
@@ -113,12 +113,12 @@ function ProviderPanelRow({ provider }) {
           <SystemInformationPanel providerId={providerId} />,
           true,
           LAYOUT_TABS.HOSTS,
-          new LayoutTabConfig(false, 'info'),
-        ),
+          new LayoutTabConfig(false, "info")
+        )
       );
       return;
     }
-    if (actionType === 'DELETE') {
+    if (actionType === "DELETE") {
       // rosCtx.removeProvider(providerId);
     }
   };
@@ -130,14 +130,9 @@ function ProviderPanelRow({ provider }) {
         case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
         case ConnectionState.STATES.CONNECTING:
           return (
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing="0.5em"
-              paddingRight="0.5em"
-            >
+            <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
               <Tooltip title="Connecting" placement="bottom" disableInteractive>
-                <span style={{ color: 'blue' }}>connecting</span>
+                <span style={{ color: "blue" }}>connecting</span>
               </Tooltip>
 
               <CircularProgress size="1em" />
@@ -155,13 +150,8 @@ function ProviderPanelRow({ provider }) {
           );
         case ConnectionState.STATES.STARTING:
           return (
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing="0.5em"
-              paddingRight="0.5em"
-            >
-              <div style={{ color: 'blue' }}>{provider.connectionState}</div>
+            <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
+              <div style={{ color: "blue" }}>{provider.connectionState}</div>
               <CircularProgress size="1em" />
             </Stack>
           );
@@ -169,7 +159,7 @@ function ProviderPanelRow({ provider }) {
           return (
             <Stack direction="row" alignItems="center">
               {/* <div style={{ color: 'green' }}>{provider.connectionState}</div> */}
-              <CheckIcon style={{ color: 'green' }} fontSize="0.6em" />
+              <CheckIcon style={{ color: "green" }} fontSize="0.6em" />
 
               <Tooltip title="Disconnect" placement="bottom" disableInteractive>
                 <IconButton
@@ -192,12 +182,9 @@ function ProviderPanelRow({ provider }) {
                 disableInteractive
               >
                 <Button
-                  style={{ textTransform: 'none' }}
+                  style={{ textTransform: "none" }}
                   onClick={() => {
-                    emitCustomEvent(
-                      EVENT_OPEN_SETTINGS,
-                      eventOpenSettings(SETTING.IDS.SSH),
-                    );
+                    emitCustomEvent(EVENT_OPEN_SETTINGS, eventOpenSettings(SETTING.IDS.SSH));
                   }}
                   variant="text"
                   color="error"
@@ -208,11 +195,7 @@ function ProviderPanelRow({ provider }) {
                   </Typography>
                 </Button>
               </Tooltip>
-              <Tooltip
-                title="Start daemon"
-                placement="bottom"
-                disableInteractive
-              >
+              <Tooltip title="Start daemon" placement="bottom" disableInteractive>
                 <IconButton
                   color="default"
                   onClick={() => {
@@ -232,18 +215,16 @@ function ProviderPanelRow({ provider }) {
           let state = provider.connectionState;
           if (provider.connectionState === ConnectionState.STATES.ERRORED) {
             if (!provider.daemon) {
-              state = 'no daemon';
+              state = "no daemon";
             } else if (!provider.discovery) {
-              state = 'no discovery';
+              state = "no discovery";
             }
           }
           return (
             <Stack direction="row" alignItems="center" justifyContent="center">
               <Tooltip
                 title={`Click to start provider! ${
-                  provider.errorDetails
-                    ? `${state}: ${JSON.stringify(provider.errorDetails)}`
-                    : ''
+                  provider.errorDetails ? `${state}: ${JSON.stringify(provider.errorDetails)}` : ""
                 }`}
                 placement="bottom"
                 disableInteractive
@@ -252,7 +233,7 @@ function ProviderPanelRow({ provider }) {
                   {window.CommandExecutor && (
                     <Button
                       style={{
-                        textTransform: 'none',
+                        textTransform: "none",
                       }}
                       onClick={() => {
                         handleStartProvider(provider);
@@ -262,24 +243,14 @@ function ProviderPanelRow({ provider }) {
                       size="small"
                       endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
                     >
-                      <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
-                        {state}
-                      </div>
+                      <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>
                     </Button>
                   )}
-                  {!window.CommandExecutor && (
-                    <div style={{ color: 'red', whiteSpace: 'nowrap' }}>
-                      {state}
-                    </div>
-                  )}
+                  {!window.CommandExecutor && <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>}
                 </span>
               </Tooltip>
 
-              <Tooltip
-                title="Join to running daemon"
-                placement="bottom"
-                disableInteractive
-              >
+              <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
                 <IconButton
                   color="default"
                   onClick={() => {
@@ -294,13 +265,9 @@ function ProviderPanelRow({ provider }) {
         default:
           return (
             <Stack direction="row" alignItems="center">
-              <div style={{ color: 'grey' }}>{provider.connectionState}</div>
+              <div style={{ color: "grey" }}>{provider.connectionState}</div>
               {window.CommandExecutor && (
-                <Tooltip
-                  title="Start daemon"
-                  placement="bottom"
-                  disableInteractive
-                >
+                <Tooltip title="Start daemon" placement="bottom" disableInteractive>
                   <IconButton
                     color="default"
                     onClick={() => {
@@ -311,11 +278,7 @@ function ProviderPanelRow({ provider }) {
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip
-                title="Join to running daemon"
-                placement="bottom"
-                disableInteractive
-              >
+              <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
                 <IconButton
                   color="default"
                   onClick={() => {
@@ -329,27 +292,23 @@ function ProviderPanelRow({ provider }) {
           );
       }
     },
-    [closeProviderHandler, handleJoinProvider, handleStartProvider],
+    [closeProviderHandler, handleJoinProvider, handleStartProvider]
   );
 
   const generateWarningsView = useCallback((provider) => {
     if (!provider.warnings) return <></>;
-    const warnings = provider.warnings.filter(
-      (group) => group.warnings.length > 0,
-    );
+    const warnings = provider.warnings.filter((group) => group.warnings.length > 0);
     if (warnings.length > 0) {
       return (
         <Tooltip
-          title={`Provider reports warning for ${warnings.map(
-            (item) => item.id,
-          )}`}
+          title={`Provider reports warning for ${warnings.map((item) => item.id)}`}
           placement="bottom"
           disableInteractive
         >
           <IconButton
             color="default"
             onClick={() => {
-              onProviderMenuClick('INFO', provider.id, provider.name());
+              onProviderMenuClick("INFO", provider.id, provider.name());
             }}
           >
             <WarningAmberIcon color="warning" fontSize="inherit" />
@@ -363,46 +322,43 @@ function ProviderPanelRow({ provider }) {
 
   const getHostStyle = useCallback(
     (provider) => {
-      if (settingsCtx.get('colorizeHosts')) {
+      if (settingsCtx.get("colorizeHosts")) {
         // borderLeft: `3px dashed`,
         // borderColor: colorFromHostname(provider.name()),
         return {
-          borderLeftStyle: 'solid',
+          borderLeftStyle: "solid",
           borderLeftColor: colorFromHostname(provider.name()),
-          borderLeftWidth: '0.6em',
+          borderLeftWidth: "0.6em",
         };
       }
       return {};
     },
-    [settingsCtx],
+    [settingsCtx]
   );
 
   const isOlderVersion = useCallback(
     (provider) => {
       try {
-        if (provider.getDaemonReleaseVersion().indexOf('unknown') > -1) {
+        if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
           return true;
         }
-        return semver.gt(
-          settingsCtx.MIN_VERSION_DAEMON,
-          provider.getDaemonReleaseVersion(),
-        );
+        return semver.gt(settingsCtx.MIN_VERSION_DAEMON, provider.getDaemonReleaseVersion());
       } catch {
         // no output on version errors
       }
       return false;
     },
-    [settingsCtx.MIN_VERSION_DAEMON],
+    [settingsCtx.MIN_VERSION_DAEMON]
   );
 
   const getDelayColor = useCallback((delay) => {
     if (delay < 0.1) {
-      return 'green';
+      return "green";
     }
     if (delay < 0.5) {
-      return 'orange';
+      return "orange";
     }
-    return 'red';
+    return "red";
   }, []);
 
   const formatDelay = useCallback((delay) => {
@@ -415,18 +371,16 @@ function ProviderPanelRow({ provider }) {
     }
     return `${dp.toFixed(0)}s`;
     {
-      provider.currentDelay < 0.1
-        ? provider.currentDelay.toFixed(3)
-        : provider.currentDelay.toFixed(2);
+      provider.currentDelay < 0.1 ? provider.currentDelay.toFixed(3) : provider.currentDelay.toFixed(2);
     }
 
     if (delay < 0.1) {
-      return 'green';
+      return "green";
     }
     if (delay < 0.5) {
-      return 'orange';
+      return "orange";
     }
-    return 'red';
+    return "red";
   }, []);
 
   const createTableRow = useMemo(() => {
@@ -434,7 +388,7 @@ function ProviderPanelRow({ provider }) {
       <TableRow
         key={provider.id}
         style={{
-          display: 'block',
+          display: "block",
           padding: 0,
         }}
       >
@@ -442,7 +396,7 @@ function ProviderPanelRow({ provider }) {
           style={{
             padding: 2,
             flexGrow: 1,
-            width: '100%',
+            width: "100%",
           }}
           sx={getHostStyle(provider)}
         >
@@ -453,7 +407,7 @@ function ProviderPanelRow({ provider }) {
               underline="none"
               color="inherit"
               onClick={() => {
-                onProviderMenuClick('INFO', provider.id, provider.name());
+                onProviderMenuClick("INFO", provider.id, provider.name());
               }}
             >
               <Typography variant="body2">{provider.name()}</Typography>
@@ -463,26 +417,16 @@ function ProviderPanelRow({ provider }) {
                 (localhost)
               </Typography>
             )}
-            {provider.rosState.ros_domain_id !== undefined &&
-              provider.rosState.ros_domain_id > 0 && (
-                <Tooltip
-                  title={
-                    provider.rosVersion === '2' ? 'ROS_DOMAIN_ID' : 'Network ID'
-                  }
-                  placement="right"
-                >
-                  <Typography color="grey" variant="body2">
-                    [{provider.rosState.ros_domain_id}]
-                  </Typography>
-                </Tooltip>
-              )}
+            {provider.rosState.ros_domain_id !== undefined && provider.rosState.ros_domain_id > 0 && (
+              <Tooltip title={provider.rosVersion === "2" ? "ROS_DOMAIN_ID" : "Network ID"} placement="right">
+                <Typography color="grey" variant="body2">
+                  [{provider.rosState.ros_domain_id}]
+                </Typography>
+              </Tooltip>
+            )}
             {providersActivity && (
               <Stack minWidth="2em">
-                <LinearProgress
-                  sx={{ marginTop: '0.5em' }}
-                  variant="query"
-                  color="inherit"
-                />
+                <LinearProgress sx={{ marginTop: "0.5em" }} variant="query" color="inherit" />
               </Stack>
             )}
           </Stack>
@@ -499,7 +443,7 @@ function ProviderPanelRow({ provider }) {
               <Typography
                 variant="body2"
                 fontSize="0.8em"
-                sx={{ paddingLeft: '0.5em', paddingRight: '0.5em' }}
+                sx={{ paddingLeft: "0.5em", paddingRight: "0.5em" }}
                 color={getDelayColor(provider.currentDelay)}
               >
                 {formatDelay(provider.currentDelay)}
@@ -521,7 +465,7 @@ function ProviderPanelRow({ provider }) {
                 onClick={() => {
                   // open terminal for update
                   const emptyNode = new RosNode();
-                  emptyNode.name = '';
+                  emptyNode.name = "";
                   emptyNode.providerId = provider.id;
                   emptyNode.providerName = provider.name();
                   const type = CmdType.TERMINAL;
@@ -544,23 +488,19 @@ function ProviderPanelRow({ provider }) {
                         type,
                         providerId: emptyNode.providerId,
                         nodeName: emptyNode.name,
-                        cmd: '',
-                      }),
-                    ),
+                        cmd: "",
+                      })
+                    )
                   );
                 }}
               >
-                <UpgradeIcon sx={{ fontSize: 'inherit', color: 'orange' }} />
+                <UpgradeIcon sx={{ fontSize: "inherit", color: "orange" }} />
               </IconButton>
             </Tooltip>
           )}
         </TableCell>
-        <TableCell style={{ padding: 0 }}>
-          {generateWarningsView(provider)}
-        </TableCell>
-        <TableCell style={{ padding: 0 }}>
-          {generateStatusView(provider)}
-        </TableCell>
+        <TableCell style={{ padding: 0 }}>{generateWarningsView(provider)}</TableCell>
+        <TableCell style={{ padding: 0 }}>{generateStatusView(provider)}</TableCell>
         <TableCell style={{ padding: 0 }}>
           {![
             ConnectionState.STATES.SERVER_CONNECTED,

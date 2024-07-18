@@ -1,36 +1,22 @@
-import { Chip } from '@mui/material';
-import PropTypes from 'prop-types';
-import CopyButton from './CopyButton';
+import { Chip } from "@mui/material";
+import PropTypes from "prop-types";
+import CopyButton from "./CopyButton";
 
-const chipDefaultColors = [
-  'default',
-  'primary',
-  'secondary',
-  'error',
-  'info',
-  'success',
-  'warning',
-];
+const chipDefaultColors = ["default", "primary", "secondary", "error", "info", "success", "warning"];
 
-function Tag({
-  title = '',
-  text = '',
-  color = 'info',
-  copyButton = '',
-  wrap = true,
-}) {
+function Tag({ title = "", text = "", color = "info", copyButton = "", wrap = true }) {
   const isDefaultColor = chipDefaultColors.includes(color);
 
   const chipSX = {
     // fontSize: SettingsCtx.fontSize,
-    height: 'auto',
+    height: "auto",
   };
 
   if (wrap) {
-    chipSX['& .MuiChip-label'] = {
-      display: 'block',
-      whiteSpace: 'normal',
-      wordWrap: 'break-word',
+    chipSX["& .MuiChip-label"] = {
+      display: "block",
+      whiteSpace: "normal",
+      wordWrap: "break-word",
     };
   }
 
@@ -42,7 +28,7 @@ function Tag({
   return (
     <Chip
       size="small"
-      color={isDefaultColor ? color : 'default'}
+      color={isDefaultColor ? color : "default"}
       style={isDefaultColor ? {} : { backgroundColor: color }}
       label={
         <>

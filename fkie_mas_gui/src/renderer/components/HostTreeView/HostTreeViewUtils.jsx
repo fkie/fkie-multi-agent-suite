@@ -1,18 +1,11 @@
-import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import { styled } from '@mui/material/styles';
-
-import CircleIcon from '@mui/icons-material/Circle';
-import MuiContrastIcon from '@mui/icons-material/Contrast';
-import ReportIcon from '@mui/icons-material/Report';
-import WarningIcon from '@mui/icons-material/Warning';
-import { blue, green, grey, orange, red, yellow } from '@mui/material/colors';
-
-import {
-  DiagnosticLevel,
-  RosNodeStatus,
-  compareRosNodes,
-  getMaxDiagnosticLevel,
-} from '../../models';
+import CircleIcon from "@mui/icons-material/Circle";
+import MuiContrastIcon from "@mui/icons-material/Contrast";
+import ReportIcon from "@mui/icons-material/Report";
+import WarningIcon from "@mui/icons-material/Warning";
+import BottomNavigationAction from "@mui/material/BottomNavigationAction";
+import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
+import { styled } from "@mui/material/styles";
+import { DiagnosticLevel, RosNodeStatus, compareRosNodes, getMaxDiagnosticLevel } from "../../models";
 
 const StyledBottomNavigationAction = styled(BottomNavigationAction)(() => ({
   padding: 0,
@@ -23,7 +16,7 @@ const StyledBottomNavigationAction = styled(BottomNavigationAction)(() => ({
 }));
 
 const ContrastIcon = styled((props) => <MuiContrastIcon {...props} />)(() => ({
-  transform: 'rotate(-90deg)',
+  transform: "rotate(-90deg)",
 }));
 
 const GroupStatus = {
@@ -32,7 +25,7 @@ const GroupStatus = {
   ALL_RUNNING: 2,
 };
 
-const namespaceSystemNodes = '/{SYSTEM}';
+const namespaceSystemNodes = "/{SYSTEM}";
 
 const getNodeIcon = (status) => {
   switch (status) {
@@ -115,10 +108,7 @@ const getGroupDiagnosticLevel = (treeItems) => {
       groupLevel = getMaxDiagnosticLevel(groupLevel, childrenLevel);
     }
     if (treeItem.node) {
-      groupLevel = getMaxDiagnosticLevel(
-        groupLevel,
-        treeItem.node.diagnosticLevel,
-      );
+      groupLevel = getMaxDiagnosticLevel(groupLevel, treeItem.node.diagnosticLevel);
     }
   });
   return groupLevel;
@@ -172,9 +162,9 @@ const getGroupIconColor = (treeItems, isDarkMode = false) => {
 const deleteFiles = async (logCtx, SSHCtx, host, files) => {
   // search the SSH credentials based on host
   const credentialHost = SSHCtx.getCredentialHost(host);
-  if (!credentialHost) return 'Host does not have valid SSH credentials';
+  if (!credentialHost) return "Host does not have valid SSH credentials";
 
-  let command = '';
+  let command = "";
   files.forEach((f, index) => {
     if (f.length === 0) return;
 
@@ -193,11 +183,11 @@ const deleteFiles = async (logCtx, SSHCtx, host, files) => {
 const rosCleanPurge = async (logCtx, SSHCtx, host) => {
   // search the SSH credentials based on host
   const credentialHost = SSHCtx.getCredentialHost(host);
-  if (!credentialHost) return 'Host does not have valid SSH credentials';
+  if (!credentialHost) return "Host does not have valid SSH credentials";
 
   // purge logs
   // TODO: Make command configurable (perhaps logs are saved in a different folder)
-  const strResult = await SSHCtx.exec(credentialHost, 'rosclean purge -y');
+  const strResult = await SSHCtx.exec(credentialHost, "rosclean purge -y");
   return strResult.message;
 };
 
@@ -210,5 +200,6 @@ export {
   getGroupStatus,
   getNodeIcon,
   getNodeIconColor,
-  namespaceSystemNodes,
+  namespaceSystemNodes
 };
+

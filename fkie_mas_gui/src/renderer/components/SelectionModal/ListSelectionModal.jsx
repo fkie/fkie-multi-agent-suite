@@ -1,6 +1,3 @@
-import PropTypes from 'prop-types';
-import { useState } from 'react';
-
 import {
   Button,
   Checkbox,
@@ -13,8 +10,10 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-} from '@mui/material';
-import DraggablePaper from '../UI/DraggablePaper';
+} from "@mui/material";
+import PropTypes from "prop-types";
+import { useState } from "react";
+import DraggablePaper from "../UI/DraggablePaper";
 
 function ListSelectionModal({ list, setList, onConfirmCallback }) {
   const [open, setOpen] = useState(true);
@@ -34,7 +33,7 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
   };
 
   const handleClose = (event, reason) => {
-    if (reason && reason === 'backdropClick') return;
+    if (reason && reason === "backdropClick") return;
     setList(null);
     setSelectedItems(null);
     setOpen(false);
@@ -54,7 +53,7 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
         Confirm Selection
       </DialogTitle>
 
@@ -62,10 +61,10 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
         <DialogContent scroll="paper" aria-label="list">
           <List
             sx={{
-              width: '100%',
+              width: "100%",
               maxHeight: 400,
-              overflow: 'auto',
-              bgcolor: 'background.paper',
+              overflow: "auto",
+              bgcolor: "background.paper",
             }}
           >
             {list &&
@@ -74,18 +73,14 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
 
                 return (
                   <ListItem key={node} disablePadding>
-                    <ListItemButton
-                      role={undefined}
-                      onClick={handleToggle(node)}
-                      dense
-                    >
+                    <ListItemButton role={undefined} onClick={handleToggle(node)} dense>
                       <ListItemIcon>
                         <Checkbox
                           edge="start"
                           checked={selectedItems.indexOf(node) !== -1}
                           tabIndex={-1}
                           disableRipple
-                          inputProps={{ 'aria-labelledby': labelId }}
+                          inputProps={{ "aria-labelledby": labelId }}
                         />
                       </ListItemIcon>
                       <ListItemText id={labelId} primary={node} />
@@ -102,12 +97,7 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
           Cancel
         </Button>
 
-        <Button
-          autoFocus
-          color="success"
-          variant="contained"
-          onClick={onConfirm}
-        >
+        <Button autoFocus color="success" variant="contained" onClick={onConfirm}>
           Confirm
         </Button>
       </DialogActions>

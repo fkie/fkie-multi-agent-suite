@@ -63,7 +63,7 @@ class LaunchNode {
     logformat: string,
     masteruri: string,
     reload_global_param: boolean,
-    cmd_prefix: string,
+    cmd_prefix: string
   ) {
     this.name = name;
     this.opt_binary = opt_binary;

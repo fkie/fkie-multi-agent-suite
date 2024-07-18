@@ -1,9 +1,9 @@
 export default class CmdTerminal {
-  cmd: string = '';
+  cmd: string = "";
 
-  screen: string = '';
+  screen: string = "";
 
-  log: string = '';
+  log: string = "";
 
   external: boolean = true;
 }

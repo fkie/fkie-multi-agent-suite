@@ -7,7 +7,7 @@ export class RosProviderState {
   origin: boolean | undefined = undefined;
   name: string | undefined = undefined;
   port: number = 0;
-  host: string = '';
+  host: string = "";
   hostnames: string[] = [];
 }
 

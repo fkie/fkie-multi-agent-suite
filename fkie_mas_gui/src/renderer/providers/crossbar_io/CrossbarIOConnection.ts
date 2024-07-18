@@ -1,17 +1,15 @@
 /* eslint-disable max-classes-per-file */
-import { ILoggingContext } from '../../context/LoggingContext';
-import CrossbarIO from './crossbar_io';
-
-import { getDefaultPortFromRos } from '../../context/SettingsContext';
-
-import JSONObject from '../../models/JsonObject';
-import ProviderConnection, { IResult } from '../ProviderConnection';
+import { ILoggingContext } from "../../context/LoggingContext";
+import { getDefaultPortFromRos } from "../../context/SettingsContext";
+import JSONObject from "../../models/JsonObject";
+import ProviderConnection, { IResult } from "../ProviderConnection";
+import CrossbarIO from "./crossbar_io";
 
 /**
  * CrossbarIOConnection class to connect with a running WAMP Router
  */
 export default class CrossbarIOConnection extends ProviderConnection {
-  static type = 'crossbar-wamp';
+  static type = "crossbar-wamp";
 
   crossbar: CrossbarIO;
 
@@ -27,14 +25,11 @@ export default class CrossbarIOConnection extends ProviderConnection {
     useSSL: boolean = false,
     onClose: (reason: string, details: string) => void = () => {},
     onOpen: () => void = () => {},
-    logger: ILoggingContext | null = null,
+    logger: ILoggingContext | null = null
   ) {
     super();
     this.logger = logger;
-    const providerPort =
-      port !== 0
-        ? port
-        : getDefaultPortFromRos(CrossbarIOConnection.type, rosVersion);
+    const providerPort = port !== 0 ? port : getDefaultPortFromRos(CrossbarIOConnection.type, rosVersion);
     this.crossbar = new CrossbarIO(host, providerPort, onClose, onOpen, useSSL);
     this.uri = this.crossbar.wsURI;
     this.port = this.crossbar.port;
@@ -59,20 +54,14 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to subscribe for. (ex. 'ros.system.pong')
    * @param {function} callback - Callback to be executed when new messages arrives.
    */
-  subscribe: (
-    uri: string,
-    callback: (msg: JSONObject) => void,
-  ) => Promise<IResult> = async (uri, callback) => {
+  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async (uri, callback) => {
     const result = await this.crossbar.subscribe(uri, (msg: string[]) => {
-      if (typeof msg[0] === 'string') {
+      if (typeof msg[0] === "string") {
         try {
           const msgObj = JSON.parse(msg[0]);
           callback(msgObj);
         } catch (error) {
-          this.logger?.error(
-            `Could not parse subscribed crossbar message ${msg}`,
-            `Error: ${error}`,
-          );
+          this.logger?.error(`Could not parse subscribed crossbar message ${msg}`, `Error: ${error}`);
         }
       } else {
         callback(msg[0]);
@@ -91,10 +80,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
    * @param {Object} args - Arguments passed to the call
    */
-  call: (uri: string, params: any[]) => Promise<JSONObject> = async (
-    uri,
-    params,
-  ) => {
+  call: (uri: string, params: any[]) => Promise<JSONObject> = async (uri, params) => {
     const r = await this.crossbar.call(uri, params);
     if (r[0]) {
       return Promise.resolve(JSON.parse(r[1]));
@@ -108,10 +94,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to publish. (ex. 'ros.remote.ping')
    * @param {object} payload - payload to be sent with request
    */
-  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async (
-    uri,
-    payload,
-  ) => {
+  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async (uri, payload) => {
     const result = await this.crossbar.publish(uri, [payload]);
     const rval: IResult = {
       result: result[0],

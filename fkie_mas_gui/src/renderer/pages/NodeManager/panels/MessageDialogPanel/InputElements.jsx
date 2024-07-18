@@ -1,29 +1,18 @@
-import ArrowForwardIosSharpIcon from '@mui/icons-material/ArrowForwardIosSharp';
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import {
-  Alert,
-  AlertTitle,
-  Button,
-  ButtonGroup,
-  Divider,
-  FormLabel,
-  IconButton,
-  Stack,
-} from '@mui/material';
-import MuiAccordion from '@mui/material/Accordion';
-import MuiAccordionDetails from '@mui/material/AccordionDetails';
-import MuiAccordionSummary from '@mui/material/AccordionSummary';
-import { styled } from '@mui/material/styles';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useState } from 'react';
+import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import { Alert, AlertTitle, Button, ButtonGroup, Divider, FormLabel, IconButton, Stack } from "@mui/material";
+import MuiAccordion from "@mui/material/Accordion";
+import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import MuiAccordionSummary from "@mui/material/AccordionSummary";
+import { styled } from "@mui/material/styles";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import React, { useCallback, useEffect, useState } from "react";
 
-import BoolInput from './BoolInput';
-import StringInput from './StringInput';
+import BoolInput from "./BoolInput";
+import StringInput from "./StringInput";
 
-const Accordion = styled((props) => (
-  <MuiAccordion disableGutters elevation={0} {...props} />
-))(({ theme }) => ({
+const Accordion = styled((props) => <MuiAccordion disableGutters elevation={0} {...props} />)(({ theme }) => ({
   border: 0,
   borderLeft: `1px solid ${theme.palette.divider}`,
   // '&:not(:last-child)': {
@@ -34,26 +23,21 @@ const Accordion = styled((props) => (
   // },
 }));
 
-const AccordionSummary = styled((props) => <MuiAccordionSummary {...props} />)(
-  ({ theme }) => ({
-    backgroundColor:
-      theme.palette.mode === 'dark'
-        ? 'rgba(255, 255, 255, .05)'
-        : 'rgba(0, 0, 0, .03)',
-    flexDirection: 'row-reverse',
-    '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
-      transform: 'rotate(90deg)',
-    },
-    '& .MuiAccordionSummary-content': {
-      width: '1em',
-      margin: 0,
-      marginLeft: theme.spacing(1),
-      padding: 0,
-    },
-    minHeight: 1,
-    padding: '6px',
-  }),
-);
+const AccordionSummary = styled((props) => <MuiAccordionSummary {...props} />)(({ theme }) => ({
+  backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 255, 255, .05)" : "rgba(0, 0, 0, .03)",
+  flexDirection: "row-reverse",
+  "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
+    transform: "rotate(90deg)",
+  },
+  "& .MuiAccordionSummary-content": {
+    width: "1em",
+    margin: 0,
+    marginLeft: theme.spacing(1),
+    padding: 0,
+  },
+  minHeight: 1,
+  padding: "6px",
+}));
 
 const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
   padding: theme.spacing(1),
@@ -79,17 +63,10 @@ const Components = {
   time: StringInput,
 };
 
-function InputElements({
-  messageStruct = null,
-  parentName = 'undefined',
-  filterText = '',
-  onCopyToClipboard = null,
-}) {
+function InputElements({ messageStruct = null, parentName = "undefined", filterText = "", onCopyToClipboard = null }) {
   const [arrayCount, setArrayCount] = useState(0);
   const [idSuffix] = useState(`${parentName}-${messageStruct.name}`);
-  const [expandedElement, setExpanded] = useState(
-    messageStruct.type !== 'std_msgs/Header',
-  );
+  const [expandedElement, setExpanded] = useState(messageStruct.type !== "std_msgs/Header");
 
   useEffect(() => {
     if (messageStruct?.value !== undefined) {
@@ -109,14 +86,14 @@ function InputElements({
   }, [messageStruct.value]);
 
   // component visibility based on filter input text
-  const [isVisible, setVisible] = useState('');
+  const [isVisible, setVisible] = useState("");
   useEffect(() => {
-    let vis = '';
+    let vis = "";
     if (filterText.length > 1) {
       // TODO: improve struct search by ignoring non-visible fields
-      const re = new RegExp(filterText, 'i');
+      const re = new RegExp(filterText, "i");
       const pos = JSON.stringify(messageStruct).search(re);
-      vis = pos !== -1 ? '' : 'none';
+      vis = pos !== -1 ? "" : "none";
     }
     setVisible(vis);
   }, [filterText, messageStruct]);
@@ -143,9 +120,9 @@ function InputElements({
     );
   }
 
-  const fieldType = messageStruct.type.replace(/\[\d*\]/, '');
+  const fieldType = messageStruct.type.replace(/\[\d*\]/, "");
   if (messageStruct.is_array && !messageStruct?.value) {
-    messageStruct.value = '';
+    messageStruct.value = "";
   }
 
   // const toggleAccordion = () => {
@@ -153,7 +130,7 @@ function InputElements({
   // };
 
   // create element depending on the base type defined in Components
-  if (typeof Components[fieldType] !== 'undefined') {
+  if (typeof Components[fieldType] !== "undefined") {
     return React.createElement(Components[fieldType], {
       id: idSuffix,
       messageStruct,
@@ -163,15 +140,8 @@ function InputElements({
   // create input mask for an element of the array
   function createListEntry(element, index) {
     return (
-      <Stack
-        direction="column"
-        spacing={1}
-        key={`liststack-${messageStruct.name}-${index}`}
-      >
-        <Divider
-          size="sm"
-          textAlign="left"
-        >{`${messageStruct.name}[${index}]`}</Divider>
+      <Stack direction="column" spacing={1} key={`liststack-${messageStruct.name}-${index}`}>
+        <Divider size="sm" textAlign="left">{`${messageStruct.name}[${index}]`}</Divider>
         {element.map((struct) => (
           <InputElements
             key={`input-elements-${messageStruct.name}-${struct.name}-${index}`}
@@ -203,7 +173,7 @@ function InputElements({
           sx={{ pl: 0 }}
           expandIcon={
             <ArrowForwardIosSharpIcon
-              sx={{ fontSize: '0.9rem' }}
+              sx={{ fontSize: "0.9rem" }}
               // use this onclick action to collapse by click on the arrow
               // onClick={() => {
               //   toggleAccordion();
@@ -211,20 +181,15 @@ function InputElements({
             />
           }
         >
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ width: '100%' }}
-            alignItems="center"
-          >
+          <Stack direction="row" spacing={1} sx={{ width: "100%" }} alignItems="center">
             <FormLabel
               sx={{
-                typography: 'body1',
-                color: '#000080',
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                minWidth: '5em',
+                typography: "body1",
+                color: "#000080",
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                minWidth: "5em",
               }}
             >
               {messageStruct.name && `${messageStruct.name}`}
@@ -232,30 +197,27 @@ function InputElements({
             </FormLabel>
             <FormLabel
               sx={{
-                fontSize: '0.8em',
-                fontWeight: 'bold',
-                color: '#3cb371',
+                fontSize: "0.8em",
+                fontWeight: "bold",
+                color: "#3cb371",
               }}
             >
-              {messageStruct.is_array &&
-                `[${arrayCount > 0 ? arrayCount : ''}]`}
+              {messageStruct.is_array && `[${arrayCount > 0 ? arrayCount : ""}]`}
             </FormLabel>
             <FormLabel
               sx={{
-                typography: 'body1',
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                fontSize: '0.8em',
-                minWidth: '2em',
+                typography: "body1",
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                fontSize: "0.8em",
+                minWidth: "2em",
               }}
             >
-              {messageStruct.name &&
-                messageStruct.type &&
-                `${messageStruct.type}`}
+              {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
             </FormLabel>
             {!messageStruct.name && (
-              <ButtonGroup sx={{ maxHeight: '24px' }}>
+              <ButtonGroup sx={{ maxHeight: "24px" }}>
                 <IconButton
                   aria-label="ContentCopyOutlined"
                   size="small"
@@ -269,7 +231,7 @@ function InputElements({
               </ButtonGroup>
             )}
             {messageStruct.is_array && (
-              <ButtonGroup sx={{ maxHeight: '24px' }}>
+              <ButtonGroup sx={{ maxHeight: "24px" }}>
                 <Button
                   onClick={(event) => {
                     addArrayElement();
@@ -309,9 +271,7 @@ function InputElements({
             {messageStruct.is_array &&
               messageStruct.value &&
               arrayCount > 0 &&
-              messageStruct.value.map((item, index) =>
-                createListEntry(item, index),
-              )}
+              messageStruct.value.map((item, index) => createListEntry(item, index))}
           </Stack>
         </AccordionDetails>
       </Accordion>

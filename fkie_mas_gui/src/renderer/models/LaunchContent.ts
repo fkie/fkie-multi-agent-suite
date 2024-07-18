@@ -1,7 +1,7 @@
-import LaunchArgument from './LaunchArgument';
-import LaunchAssociations from './LaunchAssociations';
-import LaunchNodeInfo from './LaunchNodeInfo';
-import RosParameter from './RosParameter';
+import LaunchArgument from "./LaunchArgument";
+import LaunchAssociations from "./LaunchAssociations";
+import LaunchNodeInfo from "./LaunchNodeInfo";
+import RosParameter from "./RosParameter";
 
 /**
  * LaunchContent models the launch file with all content with nodes or associations.
@@ -61,7 +61,7 @@ class LaunchContent {
     host: string,
     nodes: LaunchNodeInfo[],
     parameters: RosParameter[],
-    associations: LaunchAssociations[],
+    associations: LaunchAssociations[]
   ) {
     this.path = path;
     this.args = args;

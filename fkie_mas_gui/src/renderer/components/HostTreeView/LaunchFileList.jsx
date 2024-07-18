@@ -1,30 +1,24 @@
-import PropTypes from 'prop-types';
-import { useCallback, useContext } from 'react';
-
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-
-import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { blue } from '@mui/material/colors';
-
-import { emitCustomEvent } from 'react-custom-events';
-import { RosContext } from '../../context/RosContext';
-import { SettingsContext } from '../../context/SettingsContext';
-import { getBaseName, getFileName } from '../../models';
-import {
-  LAYOUT_TAB_SETS,
-  LayoutTabConfig,
-} from '../../pages/NodeManager/layout';
-import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
-import LaunchFilePanel from '../../pages/NodeManager/panels/LaunchFilePanel';
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
+import CloseIcon from "@mui/icons-material/Close";
+import EditIcon from "@mui/icons-material/Edit";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { blue } from "@mui/material/colors";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Stack from "@mui/material/Stack";
+import Tooltip from "@mui/material/Tooltip";
+import PropTypes from "prop-types";
+import { useCallback, useContext } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import { RosContext } from "../../context/RosContext";
+import { SettingsContext } from "../../context/SettingsContext";
+import { getBaseName, getFileName } from "../../models";
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
+import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
+import LaunchFilePanel from "../../pages/NodeManager/panels/LaunchFilePanel";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
 
 const compareLaunchFiles = (a, b) => {
   if (getFileName(a.path) < getFileName(b.path)) {
@@ -75,12 +69,12 @@ function LaunchFileList({
             rootFilePath={launchContent.path}
           />,
           true,
-          LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
-          new LayoutTabConfig(false, 'editor'),
-        ),
+          LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+          new LayoutTabConfig(false, "editor")
+        )
       );
     },
-    [settingsCtx],
+    [settingsCtx]
   );
 
   /**
@@ -98,11 +92,11 @@ function LaunchFileList({
           <LaunchFilePanel launchContent={launchContent} />,
           true,
           LAYOUT_TAB_SETS.BORDER_TOP,
-          new LayoutTabConfig(false, 'info'),
-        ),
+          new LayoutTabConfig(false, "info")
+        )
       );
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   return (
@@ -142,7 +136,7 @@ function LaunchFileList({
                         event.stopPropagation();
                       }}
                     >
-                      <RefreshIcon sx={{ fontSize: 'inherit' }} />
+                      <RefreshIcon sx={{ fontSize: "inherit" }} />
                     </IconButton>
                   </Tooltip>
 
@@ -155,7 +149,7 @@ function LaunchFileList({
                         event.stopPropagation();
                       }}
                     >
-                      <EditIcon sx={{ fontSize: 'inherit' }} />
+                      <EditIcon sx={{ fontSize: "inherit" }} />
                     </IconButton>
                   </Tooltip>
 
@@ -168,7 +162,7 @@ function LaunchFileList({
                         event.stopPropagation();
                       }}
                     >
-                      <CloseIcon sx={{ fontSize: 'inherit' }} />
+                      <CloseIcon sx={{ fontSize: "inherit" }} />
                     </IconButton>
                   </Tooltip>
                 </Stack>
@@ -178,9 +172,7 @@ function LaunchFileList({
                 <ListItemText
                   primary={`${launchName} [${lc.nodes.length}]`}
                   sx={{
-                    color: settingsCtx.get('useDarkMode')
-                      ? blue[300]
-                      : blue[800],
+                    color: settingsCtx.get("useDarkMode") ? blue[300] : blue[800],
                   }}
                 />
               </ListItemButton>

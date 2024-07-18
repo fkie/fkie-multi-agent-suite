@@ -47,9 +47,9 @@ class RosService {
     name: string,
     srvtype: string,
     service_API_URI: string,
-    masteruri = '',
+    masteruri = "",
     provider: string[] = [],
-    location = 'local',
+    location = "local"
   ) {
     this.name = name;
     this.srvtype = srvtype;

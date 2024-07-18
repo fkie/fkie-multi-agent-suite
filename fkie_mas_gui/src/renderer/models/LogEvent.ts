@@ -1,11 +1,11 @@
-import { generateUniqueId } from '../utils';
+import { generateUniqueId } from "../utils";
 
 export enum LoggingLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  SUCCESS = 'SUCCESS',
-  ERROR = 'ERROR',
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  SUCCESS = "SUCCESS",
+  ERROR = "ERROR",
 }
 
 /**
@@ -45,12 +45,7 @@ class LogEvent {
    * @param {string} details - Detailed log info
    * @param {string} datum - Datum of the log event
    */
-  constructor(
-    level: LoggingLevel,
-    description: string,
-    details = '',
-    datum = new Date().toLocaleString(),
-  ) {
+  constructor(level: LoggingLevel, description: string, details = "", datum = new Date().toLocaleString()) {
     this.id = generateUniqueId();
     this.level = level;
     this.datum = datum;

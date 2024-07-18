@@ -1,7 +1,5 @@
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
-
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   Alert,
   AlertTitle,
@@ -15,40 +13,36 @@ import {
   TableHead,
   TableRow,
   Tooltip,
-} from '@mui/material';
-
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import RefreshIcon from '@mui/icons-material/Refresh';
-
-import { emitCustomEvent } from 'react-custom-events';
-import SearchBar from '../../../components/UI/SearchBar';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { findIn, generateUniqueId } from '../../../utils';
-import {
-  EVENT_OPEN_COMPONENT,
-  eventOpenComponent,
-} from '../../../utils/events';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-import OverflowMenuProviderSelector from './OverflowMenuProviderSelector';
-import ServiceCallerPanel from './ServiceCallerPanel';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import SearchBar from "../../../components/UI/SearchBar";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { findIn, generateUniqueId } from "../../../utils";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import OverflowMenuProviderSelector from "./OverflowMenuProviderSelector";
+import ServiceCallerPanel from "./ServiceCallerPanel";
 
 const headers = [
   {
-    key: 'actions',
-    header: 'Actions',
+    key: "actions",
+    header: "Actions",
   },
   {
-    key: 'name',
-    header: 'Name',
+    key: "name",
+    header: "Name",
   },
   {
-    key: 'srvtype',
-    header: 'Message Type',
+    key: "srvtype",
+    header: "Message Type",
   },
 ];
 
-function ServicesPanel({ initialSearchTerm = '' }) {
+function ServicesPanel({ initialSearchTerm = "" }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [services, setServices] = useState([]);
@@ -109,27 +103,21 @@ function ServicesPanel({ initialSearchTerm = '' }) {
     setFilteredServices(newFilteredServices);
   }, 300);
 
-  const onCallActionClick = useCallback(
-    (actionType, providerId, providerName, service) => {
-      if (actionType === 'CALL') {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `call-service-${generateUniqueId()}`,
-            `Call Service - ${service.name}`,
-            <ServiceCallerPanel
-              serviceName={service.name}
-              providerId={providerId}
-            />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(false, LAYOUT_TABS.SERVICES),
-          ),
-        );
-      }
-    },
-    [],
-  );
+  const onCallActionClick = useCallback((actionType, providerId, providerName, service) => {
+    if (actionType === "CALL") {
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          `call-service-${generateUniqueId()}`,
+          `Call Service - ${service.name}`,
+          <ServiceCallerPanel serviceName={service.name} providerId={providerId} />,
+          true,
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
+          new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
+        )
+      );
+    }
+  }, []);
 
   // Get topic list when mounting the component
   useEffect(() => {
@@ -144,17 +132,13 @@ function ServicesPanel({ initialSearchTerm = '' }) {
   }, [services]);
 
   return (
-    <Box
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-    >
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       {filteredServices && (
         <Stack
           spacing={1}
           sx={{
-            height: '100%',
-            display: 'flex',
+            height: "100%",
+            display: "flex",
           }}
         >
           <Stack direction="row" spacing={1} alignItems="center">
@@ -164,18 +148,14 @@ function ServicesPanel({ initialSearchTerm = '' }) {
               defaultValue={initialSearchTerm}
               fullWidth
             />
-            <Tooltip
-              title="Reload service list"
-              placement="left"
-              disableInteractive
-            >
+            <Tooltip title="Reload service list" placement="left" disableInteractive>
               <IconButton
                 size="small"
                 onClick={() => {
                   getServiceList();
                 }}
               >
-                <RefreshIcon sx={{ fontSize: 'inherit' }} />
+                <RefreshIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
           </Stack>
@@ -191,18 +171,15 @@ function ServicesPanel({ initialSearchTerm = '' }) {
                 <TableHead>
                   <TableRow key="header-service">
                     {headers.map((header) => {
-                      if (header.key === 'name') {
+                      if (header.key === "name") {
                         return (
-                          <TableCell
-                            key={header.key}
-                            sx={{ fontWeight: 'bold' }}
-                          >
+                          <TableCell key={header.key} sx={{ fontWeight: "bold" }}>
                             {header.header} [{filteredServices.length}]
                           </TableCell>
                         );
                       }
                       return (
-                        <TableCell key={header.key} sx={{ fontWeight: 'bold' }}>
+                        <TableCell key={header.key} sx={{ fontWeight: "bold" }}>
                           {header.header}
                         </TableCell>
                       );
@@ -215,11 +192,7 @@ function ServicesPanel({ initialSearchTerm = '' }) {
                     return (
                       <TableRow key={rowId}>
                         <TableCell key={`${rowId}-actions`}>
-                          <Tooltip
-                            title="Call service"
-                            enterDelay={1000}
-                            disableInteractive
-                          >
+                          <Tooltip title="Call service" enterDelay={1000} disableInteractive>
                             <div>
                               <OverflowMenuProviderSelector
                                 onClick={onCallActionClick}

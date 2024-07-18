@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import LaunchReturnStatus from './LaunchReturnStatus';
+import LaunchReturnStatus from "./LaunchReturnStatus";
 
 /**
  * LaunchNodeReply models the response for start of a node.
@@ -33,12 +33,7 @@ class LaunchNodeReply {
    * @param {string[]} paths - A list of paths with binaries for a node, only if MULTIPLE_BINARIES is returned.
    * @param {string[]} launch_files - A list with names launch files, only if MULTIPLE_LAUNCHES is returned.
    */
-  constructor(
-    name: string,
-    status: LaunchReturnStatus,
-    paths: string[],
-    launch_files: string[],
-  ) {
+  constructor(name: string, status: LaunchReturnStatus, paths: string[], launch_files: string[]) {
     this.name = name;
     this.status = status;
     this.paths = paths;

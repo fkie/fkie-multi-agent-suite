@@ -1,4 +1,4 @@
-import CmdType from '../../../providers/CmdType';
+import CmdType from "../../../providers/CmdType";
 
 export default class LayoutTabConfig {
   openExternal: boolean;
@@ -16,7 +16,7 @@ export default class LayoutTabConfig {
 
   constructor(
     openExternal: boolean = false,
-    tabType: string = '',
+    tabType: string = "",
     terminalConfig: {
       type: CmdType | undefined;
       providerId: string;
@@ -26,12 +26,12 @@ export default class LayoutTabConfig {
       cmd: string;
     } = {
       type: undefined,
-      providerId: '',
-      nodeName: '',
-      topicName: '',
-      screen: '',
-      cmd: '',
-    },
+      providerId: "",
+      nodeName: "",
+      topicName: "",
+      screen: "",
+      cmd: "",
+    }
   ) {
     this.openExternal = openExternal;
     this.tabType = tabType;

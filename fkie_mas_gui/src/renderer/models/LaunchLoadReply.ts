@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
-import LaunchArgument from './LaunchArgument';
-import LaunchReturnStatus from './LaunchReturnStatus';
+import LaunchArgument from "./LaunchArgument";
+import LaunchReturnStatus from "./LaunchReturnStatus";
 
 /**
  * LaunchLoadReply models the reply for load of the launch file.
@@ -34,12 +34,7 @@ class LaunchLoadReply {
    * @param {LaunchArgument[]} args - The list of arguments used or required for a load of the launch file.
    * @param {string[]} changed_nodes - The list of nodes with changed configuration after reload the launch file.
    */
-  constructor(
-    status: LaunchReturnStatus,
-    paths: string[],
-    args: LaunchArgument[],
-    changed_nodes: string[],
-  ) {
+  constructor(status: LaunchReturnStatus, paths: string[], args: LaunchArgument[], changed_nodes: string[]) {
     this.status = status;
     this.paths = paths;
     this.args = args;

@@ -7,7 +7,7 @@
   }
 
   &.emptyCell {
-    width: "auto"
+    width: "auto";
   }
 }
 
@@ -20,14 +20,14 @@
   cursor: col-resize;
 
   &:hover {
-    background-color: #0AA1DD;
+    background-color: #0aa1dd;
   }
 
   &:active {
-    background-color: #0AA1DD;
+    background-color: #0aa1dd;
   }
 
   & {
-    background-color: #E5E4E2;
+    background-color: #e5e4e2;
   }
 }

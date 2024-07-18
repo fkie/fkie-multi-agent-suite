@@ -81,7 +81,7 @@ class SubscriberEvent {
     delay_max: number,
     size: number,
     size_min: number,
-    size_max: number,
+    size_max: number
   ) {
     this.topic = topic;
     this.message_type = message_type;

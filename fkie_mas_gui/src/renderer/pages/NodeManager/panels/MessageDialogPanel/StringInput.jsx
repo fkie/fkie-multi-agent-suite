@@ -1,26 +1,19 @@
-import { Autocomplete, FormLabel, Stack, TextField } from '@mui/material';
-import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
-import useLocalStorage from '../../../../hooks/useLocalStorage';
+import { Autocomplete, FormLabel, Stack, TextField } from "@mui/material";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
+import useLocalStorage from "../../../../hooks/useLocalStorage";
 
-function StringInput({ id = '', messageStruct = null, filterText = '' }) {
-  const [historyStruct, setHistoryStruct] = useLocalStorage(
-    `MessageStruct:history`,
-    {},
-  );
+function StringInput({ id = "", messageStruct = null, filterText = "" }) {
+  const [historyStruct, setHistoryStruct] = useLocalStorage(`MessageStruct:history`, {});
   const [history, setHistory] = useState([]);
-  const [value, setValue] = useState(
-    messageStruct?.value ? messageStruct.value : '',
-  );
-  const [isVisible, setVisible] = useState('');
+  const [value, setValue] = useState(messageStruct?.value ? messageStruct.value : "");
+  const [isVisible, setVisible] = useState("");
   const [isError, setIsError] = useState(false);
-  const [helperText, setHelperText] = useState('');
-  const [checkForValidNumber] = useState(
-    messageStruct?.type.search('str') === -1 || false,
-  );
+  const [helperText, setHelperText] = useState("");
+  const [checkForValidNumber] = useState(messageStruct?.type.search("str") === -1 || false);
 
   useEffect(() => {
-    setValue(messageStruct?.value ? messageStruct.value : '');
+    setValue(messageStruct?.value ? messageStruct.value : "");
     if (messageStruct.default_value !== undefined) {
       setHistory([messageStruct.default_value]);
     }
@@ -47,11 +40,11 @@ function StringInput({ id = '', messageStruct = null, filterText = '' }) {
 
   // check if this item pass the filter
   useEffect(() => {
-    let vis = '';
+    let vis = "";
     if (filterText.length > 1) {
-      const re = new RegExp(filterText, 'i');
+      const re = new RegExp(filterText, "i");
       const pos = messageStruct.name.search(re);
-      vis = pos !== -1 ? '' : 'none';
+      vis = pos !== -1 ? "" : "none";
     }
     setVisible(vis);
   }, [filterText, messageStruct.name]);
@@ -63,24 +56,21 @@ function StringInput({ id = '', messageStruct = null, filterText = '' }) {
       return;
     }
     if (!checkForValidNumber) return;
-    let msg = '';
+    let msg = "";
     if (newValue.length > 0) {
-      let cleanedValue = newValue.replace(' ', '');
-      if (newValue.search('[.]') !== -1) {
-        cleanedValue = newValue.replace(/[0,]*$/, '');
-        cleanedValue = cleanedValue.replace(/[.]*$/, '');
+      let cleanedValue = newValue.replace(" ", "");
+      if (newValue.search("[.]") !== -1) {
+        cleanedValue = newValue.replace(/[0,]*$/, "");
+        cleanedValue = cleanedValue.replace(/[.]*$/, "");
       }
       const parsed = Number.parseFloat(newValue);
       if (`${parsed}` !== cleanedValue) {
-        msg = 'it is not a number';
-      } else if (
-        messageStruct.type.search('int') !== -1 &&
-        newValue.search(/[. ,]/) !== -1
-      ) {
+        msg = "it is not a number";
+      } else if (messageStruct.type.search("int") !== -1 && newValue.search(/[. ,]/) !== -1) {
         msg = `nvalid literal for int() with base 10: '${newValue}'`;
-      } else if (messageStruct.type.startsWith('u')) {
+      } else if (messageStruct.type.startsWith("u")) {
         if (parsed < 0) {
-          msg = 'accepts only positive values';
+          msg = "accepts only positive values";
         }
       }
     }
@@ -97,7 +87,7 @@ function StringInput({ id = '', messageStruct = null, filterText = '' }) {
       options={history}
       size="small"
       // sx={{ width: 150 }}
-      inputValue={value || ''}
+      inputValue={value || ""}
       onInputChange={(event, newValue) => {
         messageStruct.value = newValue;
         setValue(newValue);
@@ -113,7 +103,7 @@ function StringInput({ id = '', messageStruct = null, filterText = '' }) {
             <Stack direction="row" spacing={1}>
               <FormLabel
                 sx={{
-                  color: '#808080',
+                  color: "#808080",
                   // fontSize: 'small',
                 }}
               >
@@ -122,14 +112,12 @@ function StringInput({ id = '', messageStruct = null, filterText = '' }) {
               </FormLabel>
               <FormLabel
                 sx={{
-                  fontSize: 'small',
-                  paddingTop: '4px',
-                  color: '#808B96',
+                  fontSize: "small",
+                  paddingTop: "4px",
+                  color: "#808B96",
                 }}
               >
-                {messageStruct.name &&
-                  messageStruct.type &&
-                  `${messageStruct.type}`}
+                {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
               </FormLabel>
             </Stack>
           }

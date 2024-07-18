@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import LaunchArgument from './LaunchArgument';
+import LaunchArgument from "./LaunchArgument";
 
 /**
  * LaunchLoadRequest models load request of the launch file.
@@ -69,7 +69,7 @@ class LaunchLoadRequest {
     force_first_file: boolean,
     request_args: boolean,
     masteruri: string,
-    host: string,
+    host: string
   ) {
     this.ros_package = ros_package;
     this.launch = launch;

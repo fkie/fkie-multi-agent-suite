@@ -3,36 +3,34 @@
 // import 'core-js/modules/es.object.values';
 // import 'core-js/modules/es.string.includes';
 // import 'core-js/modules/es.string.trim';
-
 // Add polyfills for backward compatibility with older browsers
-import 'react-app-polyfill/ie11'
-import 'react-app-polyfill/stable'
+import "react-app-polyfill/ie11";
+import "react-app-polyfill/stable";
 
-import { SnackbarProvider } from 'notistack'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import App from './App'
+import { SnackbarProvider } from "notistack";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import { ElectronProvider } from "./context/ElectronContext";
+import { LoggingProvider } from "./context/LoggingContext";
+import { MonacoProvider } from "./context/MonacoContext";
+import { NavigationProvider } from "./context/NavigationContext";
+import { RosProviderReact } from "./context/RosContext";
+import { SSHProvider } from "./context/SSHContext";
+import { SettingsProvider } from "./context/SettingsContext";
 
-import { ElectronProvider } from './context/ElectronContext'
-import { LoggingProvider } from './context/LoggingContext'
-import { MonacoProvider } from './context/MonacoContext'
-import { NavigationProvider } from './context/NavigationContext'
-import { RosProviderReact } from './context/RosContext'
-import { SSHProvider } from './context/SSHContext'
-import { SettingsProvider } from './context/SettingsContext'
-import React from 'react'
-
-const container = document.getElementById('root')
+const container = document.getElementById("root");
 if (container) {
-  const root = createRoot(container)
+  const root = createRoot(container);
   root.render(
     <SettingsProvider>
       <SnackbarProvider
         maxSnack={4}
         autoHideDuration={4000}
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right'
+          vertical: "bottom",
+          horizontal: "right",
         }}
         dense
         preventDuplicate
@@ -55,5 +53,5 @@ if (container) {
         </LoggingProvider>
       </SnackbarProvider>
     </SettingsProvider>
-  )
+  );
 }

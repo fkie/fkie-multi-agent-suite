@@ -1,4 +1,4 @@
-import { generateUniqueId } from '../utils';
+import { generateUniqueId } from "../utils";
 
 /**
  * RosTopic models topics in a ROS system
@@ -37,12 +37,7 @@ class RosTopic {
    * @param {string[]} publisher - List of ROS nodes publish to this topic.
    * @param {string[]} subscriber - List of ROS nodes subscribe to this topic.
    */
-  constructor(
-    name: string,
-    msgtype: string,
-    publisher: string[] = [],
-    subscriber: string[] = [],
-  ) {
+  constructor(name: string, msgtype: string, publisher: string[] = [], subscriber: string[] = []) {
     this.id = generateUniqueId();
     this.name = name;
     this.msgtype = msgtype;

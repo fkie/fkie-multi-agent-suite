@@ -1,7 +1,7 @@
 .dock-panel-close-btn {
   height: 15px;
   width: 15px;
-  font-family: 'Fredoka One', sans-serif;
+  font-family: "Fredoka One", sans-serif;
   margin: 1px 2px 2px 0;
   padding: 0px 4px 4px 2px;
   cursor: pointer;
@@ -101,7 +101,7 @@
     }
 
     &.emptyCell {
-      width: "auto"
+      width: "auto";
     }
   }
 
@@ -114,16 +114,14 @@
     cursor: col-resize;
 
     &:hover {
-      background-color: #0AA1DD;
+      background-color: #0aa1dd;
     }
 
     &:active {
-      background-color: #0AA1DD;
-
+      background-color: #0aa1dd;
     }
     & {
-      background-color: #E5E4E2;
+      background-color: #e5e4e2;
     }
   }
-
 }

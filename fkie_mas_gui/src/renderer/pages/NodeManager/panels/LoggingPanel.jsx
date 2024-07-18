@@ -1,3 +1,6 @@
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import SubtitlesOutlinedIcon from "@mui/icons-material/SubtitlesOutlined";
 import {
   Box,
   IconButton,
@@ -14,52 +17,33 @@ import {
   ToggleButton,
   Tooltip,
   Typography,
-} from '@mui/material';
-import React, {
-  createRef,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import { TableVirtuoso } from 'react-virtuoso';
-import './TableResizable.css';
-
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import SubtitlesOutlinedIcon from '@mui/icons-material/SubtitlesOutlined';
-
-import { levelColors, SearchBar } from '../../../components';
-import { LoggingLevel } from '../../../models';
-
-import { LoggingContext } from '../../../context/LoggingContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import useLocalStorage from '../../../hooks/useLocalStorage';
+} from "@mui/material";
+import React, { createRef, useContext, useEffect, useRef, useState } from "react";
+import { TableVirtuoso } from "react-virtuoso";
+import { levelColors, SearchBar } from "../../../components";
+import { LoggingContext } from "../../../context/LoggingContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import useLocalStorage from "../../../hooks/useLocalStorage";
+import { LoggingLevel } from "../../../models";
+import "./TableResizable.css";
 
 const VirtuosoTableComponents = {
-  Scroller: React.forwardRef((props, ref) => (
-    <TableContainer component={Paper} {...props} ref={ref} />
-  )),
-  Table: (props) => <Table {...props} sx={{ borderCollapse: 'separate' }} />,
+  Scroller: React.forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />),
+  Table: (props) => <Table {...props} sx={{ borderCollapse: "separate" }} />,
   TableHead,
   TableRow: ({ item: _item, ...props }) => <TableRow {...props} />,
-  TableBody: React.forwardRef((props, ref) => (
-    <TableBody {...props} ref={ref} />
-  )),
+  TableBody: React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />),
 };
 
 const exportLogs = (logs) => {
-  const filename = 'logs.json';
+  const filename = "logs.json";
   const jsonStr = JSON.stringify(logs, null, 2);
 
-  const element = document.createElement('a');
-  element.setAttribute(
-    'href',
-    `data:text/plain;charset=utf-8,${encodeURIComponent(jsonStr)}`,
-  );
-  element.setAttribute('download', filename);
+  const element = document.createElement("a");
+  element.setAttribute("href", `data:text/plain;charset=utf-8,${encodeURIComponent(jsonStr)}`);
+  element.setAttribute("download", filename);
 
-  element.style.display = 'none';
+  element.style.display = "none";
   document.body.appendChild(element);
   element.click();
   document.body.removeChild(element);
@@ -71,40 +55,34 @@ const DEFAULT_MAX_WIDTH_CELL = 2048;
 function LoggingPanel() {
   const [headers] = useState([
     {
-      key: 'datum',
-      header: 'Datum',
+      key: "datum",
+      header: "Datum",
       width: 200,
       ref: createRef(),
     },
     {
-      key: 'level',
-      header: 'Level',
+      key: "level",
+      header: "Level",
       width: 100,
       ref: createRef(),
     },
     {
-      key: 'description',
-      header: 'Description',
-      width: 'auto',
+      key: "description",
+      header: "Description",
+      width: "auto",
       ref: createRef(),
     },
   ]);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
-  const [logLevel, setLogLevel] = useLocalStorage(
-    'LoggingPanel:level',
-    LoggingLevel.INFO,
-  );
+  const [logLevel, setLogLevel] = useLocalStorage("LoggingPanel:level", LoggingLevel.INFO);
   const [showDetails, setShowDetails] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loggerColumnWidths, setLoggerColumnWidths] = useLocalStorage(
-    'LoggingPanel:columnWidths',
-    [
-      { index: 0, width: 200 },
-      { index: 1, width: 100 },
-      { index: 2, width: 'auto' },
-    ],
-  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loggerColumnWidths, setLoggerColumnWidths] = useLocalStorage("LoggingPanel:columnWidths", [
+    { index: 0, width: 200 },
+    { index: 1, width: 100 },
+    { index: 2, width: "auto" },
+  ]);
 
   const isResizing = useRef(-1);
 
@@ -116,11 +94,7 @@ function LoggingPanel() {
       return [LoggingLevel.DEBUG, LoggingLevel.INFO].includes(logLevel);
     }
     if (level === LoggingLevel.WARN) {
-      return [
-        LoggingLevel.DEBUG,
-        LoggingLevel.INFO,
-        LoggingLevel.WARN,
-      ].includes(logLevel);
+      return [LoggingLevel.DEBUG, LoggingLevel.INFO, LoggingLevel.WARN].includes(logLevel);
     }
     return true;
   };
@@ -145,20 +119,16 @@ function LoggingPanel() {
     } else if (width < minWidth) {
       newWidth = minWidth;
     }
-    if (headers[index].ref.current)
-      headers[index].ref.current.parentElement.style.width = `${newWidth}px`;
+    if (headers[index].ref.current) headers[index].ref.current.parentElement.style.width = `${newWidth}px`;
   };
 
   const setCursorDocument = (isColResizing) => {
-    document.body.style.cursor = isColResizing ? 'col-resize' : 'auto';
+    document.body.style.cursor = isColResizing ? "col-resize" : "auto";
   };
 
   const handleOnMouseMove = (e) => {
     if (isResizing.current >= 0) {
-      const left =
-        headers[
-          isResizing.current
-        ].ref.current?.parentElement?.getBoundingClientRect().left;
+      const left = headers[isResizing.current].ref.current?.parentElement?.getBoundingClientRect().left;
       const newWidth = e.clientX - left;
       adjustWidthColumn(isResizing.current, newWidth);
     }
@@ -188,7 +158,7 @@ function LoggingPanel() {
               key={column.key}
               variant="head"
               sx={{
-                backgroundColor: 'background.paper',
+                backgroundColor: "background.paper",
               }}
               style={{ width: column.width }}
             >
@@ -196,26 +166,26 @@ function LoggingPanel() {
                 direction="row"
                 spacing={1}
                 sx={{
-                  backgroundColor: 'background.paper',
+                  backgroundColor: "background.paper",
                 }}
               >
                 <Typography>{column.header}</Typography>
-                {column.key === 'description' && (
+                {column.key === "description" && (
                   <Tooltip
-                    title={showDetails ? 'Hide Details' : 'Show Details'}
+                    title={showDetails ? "Hide Details" : "Show Details"}
                     placement="bottom"
                     sx={{ paddingRight: 1 }}
                   >
                     <ToggleButton
                       size="small"
                       value="showDetails"
-                      sx={{ height: '1.8em', padding: 0, width: '1.8em' }}
+                      sx={{ height: "1.8em", padding: 0, width: "1.8em" }}
                       selected={showDetails}
                       onChange={() => {
                         setShowDetails(!showDetails);
                       }}
                     >
-                      <SubtitlesOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                      <SubtitlesOutlinedIcon sx={{ fontSize: "inherit" }} />
                     </ToggleButton>
                   </Tooltip>
                 )}
@@ -234,9 +204,9 @@ function LoggingPanel() {
           key="empty"
           variant="head"
           sx={{
-            backgroundColor: 'background.paper',
+            backgroundColor: "background.paper",
           }}
-          style={{ width: 'auto' }}
+          style={{ width: "auto" }}
         />
       </TableRow>
     );
@@ -274,18 +244,12 @@ function LoggingPanel() {
   useEffect(() => {
     loggerColumnWidths.forEach((item) => {
       headers[item.index].width = item.width;
-      if (headers[item.index].ref.current)
-        headers[item.index].ref.current.parentElement.style.width = item.width;
+      if (headers[item.index].ref.current) headers[item.index].ref.current.parentElement.style.width = item.width;
     });
   }, [headers, loggerColumnWidths]);
 
   return (
-    <Stack
-      direction="column"
-      spacing={1}
-      height="100%"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-    >
+    <Stack direction="column" spacing={1} height="100%" backgroundColor={settingsCtx.get("backgroundColor")}>
       <Stack direction="row" spacing={0.5}>
         <SearchBar
           onSearch={(value) => {
@@ -307,44 +271,30 @@ function LoggingPanel() {
             setLogLevel(event.target.value);
           }}
         >
-          {[
-            LoggingLevel.DEBUG,
-            LoggingLevel.INFO,
-            LoggingLevel.WARN,
-            LoggingLevel.SUCCESS,
-            LoggingLevel.ERROR,
-          ].map((lvl) => {
-            return (
-              <MenuItem key={lvl} value={lvl}>
-                {lvl}
-              </MenuItem>
-            );
-          })}
+          {[LoggingLevel.DEBUG, LoggingLevel.INFO, LoggingLevel.WARN, LoggingLevel.SUCCESS, LoggingLevel.ERROR].map(
+            (lvl) => {
+              return (
+                <MenuItem key={lvl} value={lvl}>
+                  {lvl}
+                </MenuItem>
+              );
+            }
+          )}
         </Select>
         <Tooltip title="Export to JSON" placement="bottom">
           <IconButton
             edge="start"
             aria-label="Export to JSON"
             onClick={() =>
-              exportLogs(
-                logCtx.logs.filter(
-                  (log) =>
-                    showLogLevel(log.level) &&
-                    log.description.includes(searchTerm),
-                ),
-              )
+              exportLogs(logCtx.logs.filter((log) => showLogLevel(log.level) && log.description.includes(searchTerm)))
             }
           >
-            <FileDownloadOutlinedIcon sx={{ fontSize: 'inherit' }} />
+            <FileDownloadOutlinedIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
         <Tooltip title="Delete All" placement="bottom">
-          <IconButton
-            edge="start"
-            aria-label="Delete All"
-            onClick={() => logCtx.clearLogs()}
-          >
-            <DeleteForeverIcon sx={{ fontSize: 'inherit' }} />
+          <IconButton edge="start" aria-label="Delete All" onClick={() => logCtx.clearLogs()}>
+            <DeleteForeverIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
       </Stack>
@@ -352,12 +302,9 @@ function LoggingPanel() {
         key="logging-panel"
         // useWindowScroll
         sx={{
-          backgroundColor: settingsCtx.get('backgroundColor'),
+          backgroundColor: settingsCtx.get("backgroundColor"),
         }}
-        data={logCtx.logs.filter(
-          (log) =>
-            showLogLevel(log.level) && log.description.includes(searchTerm),
-        )}
+        data={logCtx.logs.filter((log) => showLogLevel(log.level) && log.description.includes(searchTerm))}
         components={VirtuosoTableComponents}
         fixedHeaderContent={() => fixedHeaderContent()}
         itemContent={(index, row) => rowContent(index, row)}

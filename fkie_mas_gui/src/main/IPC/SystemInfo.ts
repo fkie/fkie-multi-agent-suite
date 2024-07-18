@@ -1,46 +1,44 @@
-import log from 'electron-log'
-import hostile from 'hostile'
-import si from 'systeminformation'
+import log from "electron-log";
+import hostile from "hostile";
+import si from "systeminformation";
 
 interface ISystemInfo {
-  time?: si.Systeminformation.TimeData
-  cpu?: si.Systeminformation.CpuData
-  cpuCurrentSpeed?: si.Systeminformation.CpuCurrentSpeedData
-  cpuTemperature?: si.Systeminformation.CpuTemperatureData
-  mem?: si.Systeminformation.MemData
-  battery?: si.Systeminformation.BatteryData
-  graphics?: si.Systeminformation.GraphicsData
-  osInfo?: si.Systeminformation.OsData
-  networkInterfaces?: si.Systeminformation.NetworkInterfacesData[]
+  time?: si.Systeminformation.TimeData;
+  cpu?: si.Systeminformation.CpuData;
+  cpuCurrentSpeed?: si.Systeminformation.CpuCurrentSpeedData;
+  cpuTemperature?: si.Systeminformation.CpuTemperatureData;
+  mem?: si.Systeminformation.MemData;
+  battery?: si.Systeminformation.BatteryData;
+  graphics?: si.Systeminformation.GraphicsData;
+  osInfo?: si.Systeminformation.OsData;
+  networkInterfaces?: si.Systeminformation.NetworkInterfacesData[];
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
-  hosts?: hostile.Lines
+  hosts?: hostile.Lines;
 }
 
 /**
  * Read general local system information
  */
 class SystemInfo {
-  time?: si.Systeminformation.TimeData
+  time?: si.Systeminformation.TimeData;
 
-  cpu?: si.Systeminformation.CpuData
+  cpu?: si.Systeminformation.CpuData;
 
-  cpuCurrentSpeed?: si.Systeminformation.CpuCurrentSpeedData
+  cpuCurrentSpeed?: si.Systeminformation.CpuCurrentSpeedData;
 
-  cpuTemperature?: si.Systeminformation.CpuTemperatureData
+  cpuTemperature?: si.Systeminformation.CpuTemperatureData;
 
-  mem?: si.Systeminformation.MemData
+  mem?: si.Systeminformation.MemData;
 
-  battery?: si.Systeminformation.BatteryData
+  battery?: si.Systeminformation.BatteryData;
 
-  graphics?: si.Systeminformation.GraphicsData
+  graphics?: si.Systeminformation.GraphicsData;
 
-  osInfo?: si.Systeminformation.OsData
+  osInfo?: si.Systeminformation.OsData;
 
-  networkInterfaces?:
-    | si.Systeminformation.NetworkInterfacesData
-    | si.Systeminformation.NetworkInterfacesData[]
+  networkInterfaces?: si.Systeminformation.NetworkInterfacesData | si.Systeminformation.NetworkInterfacesData[];
 
-  hosts?: hostile.Lines
+  hosts?: hostile.Lines;
 
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
 
@@ -48,25 +46,25 @@ class SystemInfo {
     return new Promise((resolve, reject) => {
       const fetchInfo = async (): Promise<void> => {
         try {
-          this.time = await si.time()
-          this.cpu = await si.cpu()
-          this.cpuCurrentSpeed = await si.cpuCurrentSpeed()
-          this.cpuTemperature = await si.cpuTemperature()
-          this.mem = await si.mem()
-          this.battery = await si.battery()
-          this.graphics = await si.graphics()
-          this.osInfo = await si.osInfo()
-          this.networkInterfaces = await si.networkInterfaces()
+          this.time = await si.time();
+          this.cpu = await si.cpu();
+          this.cpuCurrentSpeed = await si.cpuCurrentSpeed();
+          this.cpuTemperature = await si.cpuTemperature();
+          this.mem = await si.mem();
+          this.battery = await si.battery();
+          this.graphics = await si.graphics();
+          this.osInfo = await si.osInfo();
+          this.networkInterfaces = await si.networkInterfaces();
           if (!Array.isArray(this.networkInterfaces)) {
-            this.networkInterfaces = [this.networkInterfaces]
+            this.networkInterfaces = [this.networkInterfaces];
           }
           // this.networkConnections = await si.networkConnections();
 
           // get available hosts
           // If `preserveFormatting` is true, then include comments, blank lines and other
           // non-host entries in the result
-          const preserveFormatting = false
-          this.hosts = hostile.get(preserveFormatting)
+          const preserveFormatting = false;
+          this.hosts = hostile.get(preserveFormatting);
 
           resolve({
             time: this.time,
@@ -79,26 +77,27 @@ class SystemInfo {
             osInfo: this.osInfo,
             networkInterfaces: this.networkInterfaces,
             // networkConnections: this.networkConnections,
-            hosts: this.hosts
-          })
+            hosts: this.hosts,
+          });
         } catch (error) {
-          log.error(`SystemInfo: getInfo error: ${error}`)
-          reject(error)
+          log.error(`SystemInfo: getInfo error: ${error}`);
+          reject(error);
         }
-      }
+      };
 
-      fetchInfo()
-    })
-  }
+      fetchInfo();
+    });
+  };
 
   /**
    * Get a string representation of this object
    *
    */
   public toString: () => string = () => {
-    return JSON.stringify(this.getInfo())
-  }
+    return JSON.stringify(this.getInfo());
+  };
 }
 
-export { SystemInfo }
-export type { ISystemInfo }
+export { SystemInfo };
+export type { ISystemInfo };
+

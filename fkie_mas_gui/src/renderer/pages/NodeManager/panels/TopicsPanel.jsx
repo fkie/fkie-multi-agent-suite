@@ -1,41 +1,34 @@
-import { SimpleTreeView } from '@mui/x-tree-view';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
-import { Box, IconButton, Stack, Tooltip } from '@mui/material';
-
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-
-import RefreshIcon from '@mui/icons-material/Refresh';
-
-import { emitCustomEvent } from 'react-custom-events';
-import { SearchBar, TopicTreeItem } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { CmdType } from '../../../providers';
-import {
-  EVENT_OPEN_COMPONENT,
-  eventOpenComponent,
-} from '../../../utils/events';
-import { findIn } from '../../../utils/index';
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-import TopicEchoPanel from './TopicEchoPanel';
-import TopicPublishPanel from './TopicPublishPanel';
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { SimpleTreeView } from "@mui/x-tree-view";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import { SearchBar, TopicTreeItem } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { CmdType } from "../../../providers";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
+import { findIn } from "../../../utils/index";
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import TopicEchoPanel from "./TopicEchoPanel";
+import TopicPublishPanel from "./TopicPublishPanel";
 
 class TopicExtendedInfo {
   id;
 
   name;
 
-  msgtype = '';
+  msgtype = "";
 
-  providerId = '';
+  providerId = "";
 
-  providerName = '';
+  providerName = "";
 
   publishers = [];
 
@@ -76,7 +69,7 @@ class TopicExtendedInfo {
   }
 }
 
-function TopicsPanel({ initialSearchTerm = '' }) {
+function TopicsPanel({ initialSearchTerm = "" }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [topics, setTopics] = useState([]); // [topicInfo: TopicExtendedInfo]
@@ -85,12 +78,12 @@ function TopicsPanel({ initialSearchTerm = '' }) {
   const [rootDataList, setRootDataList] = useState([]);
   const [expanded, setExpanded] = useState([]);
   const [topicForSelected, setTopicForSelected] = useState(null);
-  const [selectedItems, setSelectedItems] = useState('');
+  const [selectedItems, setSelectedItems] = useState("");
 
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   function genKey(items) {
-    return `${items.join('#')}`;
+    return `${items.join("#")}`;
     //  return `${name}#${type}#${providerId}`;
   }
 
@@ -109,19 +102,13 @@ function TopicsPanel({ initialSearchTerm = '' }) {
           newProviderKeyName[node.providerId] = node.providerName;
 
           const addTopic = (rosTopic, rosNode) => {
-            const topicInfo = newTopicsMap.get(
-              genKey([rosTopic.name, rosTopic.msgtype, providerId]),
-            );
+            const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msgtype, providerId]));
             if (topicInfo) {
               topicInfo.add(rosTopic);
             } else {
               newTopicsMap.set(
                 genKey([rosTopic.name, rosTopic.msgtype, rosNode.providerId]),
-                new TopicExtendedInfo(
-                  rosTopic,
-                  rosNode.providerId,
-                  rosNode.providerName,
-                ),
+                new TopicExtendedInfo(rosTopic, rosNode.providerId, rosNode.providerName)
               );
             }
           };
@@ -179,14 +166,11 @@ function TopicsPanel({ initialSearchTerm = '' }) {
 
   // get group name from id of group tree item
   const fromGroupId = (id) => {
-    if (id.endsWith('#')) {
+    if (id.endsWith("#")) {
       const trimmed = id.slice(0, -1);
       return {
-        groupName: trimmed.substr(
-          trimmed.lastIndexOf('/') + 1,
-          trimmed.length - 1,
-        ),
-        fullPrefix: trimmed.substr(0, id.lastIndexOf('/')),
+        groupName: trimmed.substr(trimmed.lastIndexOf("/") + 1, trimmed.length - 1),
+        fullPrefix: trimmed.substr(0, id.lastIndexOf("/")),
       };
     }
     return { groupName: id, fullPrefix: id };
@@ -200,15 +184,15 @@ function TopicsPanel({ initialSearchTerm = '' }) {
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
   const fillTree = (fullPrefix, topicsGroup) => {
-    const byPrefixP1 = new Map('', []);
+    const byPrefixP1 = new Map("", []);
     // create a map with simulated tree for the namespaces of the topic list
     // for (const [key, topicInfo] of Object.entries(topics)) {
     Object.entries(topicsGroup).forEach(([key, topicInfo]) => {
       const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
-      const [firstName, ...restName] = nameSuffix.split('/');
+      const [firstName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {
         const groupName = firstName;
-        const restNameSuffix = restName.join('/');
+        const restNameSuffix = restName.join("/");
         const groupId = toGroupId(groupName, fullPrefix);
         if (byPrefixP1.has(groupId)) {
           byPrefixP1.get(groupId).push({ restNameSuffix, topicInfo });
@@ -258,7 +242,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
 
   // create topics tree from filtered topic list
   useEffect(() => {
-    const tree = fillTree('', filteredTopics);
+    const tree = fillTree("", filteredTopics);
     setRootDataList(tree.topics);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTopics]);
@@ -281,8 +265,8 @@ function TopicsPanel({ initialSearchTerm = '' }) {
           type: CmdType.ECHO,
           providerId: topic.providerId,
           topicName: topic.name,
-        }),
-      ),
+        })
+      )
     );
   }, []);
 
@@ -292,14 +276,11 @@ function TopicsPanel({ initialSearchTerm = '' }) {
       eventOpenComponent(
         `publish-${topic.name}-${topic.providerId}`,
         topic.name,
-        <TopicPublishPanel
-          topicName={topic.name}
-          providerId={topic.providerId}
-        />,
+        <TopicPublishPanel topicName={topic.name} providerId={topic.providerId} />,
         true,
         LAYOUT_TAB_SETS.BORDER_RIGHT,
-        new LayoutTabConfig(true, 'publish'),
-      ),
+        new LayoutTabConfig(true, "publish")
+      )
     );
   }, []);
 
@@ -341,9 +322,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
 
   useEffect(() => {
     const selectedTopics = filteredTopics.filter((item) => {
-      return (
-        genKey([item.name, item.msgtype, item.providerId]) === selectedItems
-      );
+      return genKey([item.name, item.msgtype, item.providerId]) === selectedItems;
     });
     if (selectedTopics?.length >= 0) {
       setTopicForSelected(selectedTopics[0]);
@@ -372,7 +351,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
         }}
       >
         {rootDataList.map((item) => {
-          return topicTreeToStyledItems('', item);
+          return topicTreeToStyledItems("", item);
         })}
       </SimpleTreeView>
     );
@@ -380,11 +359,7 @@ function TopicsPanel({ initialSearchTerm = '' }) {
 
   const createPanel = useMemo(() => {
     return (
-      <Box
-        height="100%"
-        overflow="auto"
-        backgroundColor={settingsCtx.get('backgroundColor')}
-      >
+      <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
         <Stack
           spacing={1}
           height="100%"
@@ -443,18 +418,14 @@ function TopicsPanel({ initialSearchTerm = '' }) {
               defaultValue={initialSearchTerm}
               fullWidth
             />
-            <Tooltip
-              title="Reload topic list"
-              placement="left"
-              disableInteractive
-            >
+            <Tooltip title="Reload topic list" placement="left" disableInteractive>
               <IconButton
                 size="small"
                 onClick={() => {
                   getTopicList();
                 }}
               >
-                <RefreshIcon sx={{ fontSize: 'inherit' }} />
+                <RefreshIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
           </Stack>

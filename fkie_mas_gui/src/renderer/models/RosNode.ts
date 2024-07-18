@@ -1,33 +1,31 @@
 /* eslint-disable camelcase */
-import { DiagnosticLevel, DiagnosticStatus } from './Diagnostics';
-import LaunchNodeInfo from './LaunchNodeInfo';
-import RosService from './RosService';
-import RosTopic from './RosTopic';
+import { DiagnosticLevel, DiagnosticStatus } from "./Diagnostics";
+import LaunchNodeInfo from "./LaunchNodeInfo";
+import RosService from "./RosService";
+import RosTopic from "./RosTopic";
 
 /**
  * RosNodeStatus Valid state of a ROS node:
  */
 export enum RosNodeStatus {
-  INACTIVE = 'Inactive', // The node was loaded (in a launch file), but it has not been started yet
-  RUNNING = 'Running', // The node is running in the given host
-  NOT_MONITORED = 'Not Monitored', // The node runs on a different host and will be not monitored
-  DEAD = 'Dead', // The node was registered in ROS_MASTER, but it does not respond (probably was killed or it is over-loaded)
-  UNKNOWN = 'Unknown', // Unknown status
+  INACTIVE = "Inactive", // The node was loaded (in a launch file), but it has not been started yet
+  RUNNING = "Running", // The node is running in the given host
+  NOT_MONITORED = "Not Monitored", // The node runs on a different host and will be not monitored
+  DEAD = "Dead", // The node was registered in ROS_MASTER, but it does not respond (probably was killed or it is over-loaded)
+  UNKNOWN = "Unknown", // Unknown status
 }
 
 export const RosNodeStatusInfo = {
-  [RosNodeStatus.INACTIVE]:
-    "The node was loaded (in a launch file), but it hasn't been started",
+  [RosNodeStatus.INACTIVE]: "The node was loaded (in a launch file), but it hasn't been started",
 
-  [RosNodeStatus.RUNNING]: 'The node is running in the given host',
+  [RosNodeStatus.RUNNING]: "The node is running in the given host",
 
-  [RosNodeStatus.NOT_MONITORED]:
-    'The node runs in a different host and its status will be not monitored',
+  [RosNodeStatus.NOT_MONITORED]: "The node runs in a different host and its status will be not monitored",
 
   [RosNodeStatus.DEAD]:
-    'The node was registered in ROS CORE, but it does not respond (probably was killed or it is over-loaded)',
+    "The node was registered in ROS CORE, but it does not respond (probably was killed or it is over-loaded)",
 
-  [RosNodeStatus.UNKNOWN]: 'Unknown status',
+  [RosNodeStatus.UNKNOWN]: "Unknown status",
 };
 
 /**
@@ -35,7 +33,7 @@ export const RosNodeStatusInfo = {
  */
 class RosNode {
   /** ID used on the UI side across all provider. idGlobal should be the same for life of the node on remote host */
-  idGlobal: string = '';
+  idGlobal: string = "";
 
   tags: any[] = []; // used on gui side
 
@@ -124,7 +122,7 @@ class RosNode {
 
   diagnosticLevel: DiagnosticLevel = DiagnosticLevel.OK;
 
-  diagnosticMessage: string = '';
+  diagnosticMessage: string = "";
 
   /**
    * Flag to signal system node
@@ -179,21 +177,21 @@ class RosNode {
    *
    */
   constructor(
-    id = '',
-    name = '',
-    namespace = '',
-    node_API_URI = '',
+    id = "",
+    name = "",
+    namespace = "",
+    node_API_URI = "",
     status = RosNodeStatus.UNKNOWN,
     pid = -1,
-    masteruri = '',
-    location = 'local',
+    masteruri = "",
+    location = "local",
     system_node = false,
     subscribers = new Map<string, RosTopic>(),
     publishers = new Map<string, RosTopic>(),
     services = new Map<string, RosService>(),
     screens = [],
     launchPaths = new Set<string>(),
-    launchPath = '',
+    launchPath = ""
   ) {
     this.id = id;
     this.name = name;
@@ -227,8 +225,8 @@ class RosNode {
 }
 
 export const compareRosNodes = (a: RosNode, b: RosNode) => {
-  const aValue = a.group + a.name.replace(a.namespace, '');
-  const bValue = b.group + b.name.replace(a.namespace, '');
+  const aValue = a.group + a.name.replace(a.namespace, "");
+  const bValue = b.group + b.name.replace(a.namespace, "");
   if (aValue < bValue) {
     return -1;
   }

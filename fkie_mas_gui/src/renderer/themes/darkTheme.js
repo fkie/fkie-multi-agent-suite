@@ -1,6 +1,6 @@
-import darkScrollbar from '@mui/material/darkScrollbar';
+import darkScrollbar from "@mui/material/darkScrollbar";
 
-const background = '#282828';
+const background = "#282828";
 
 export const darkThemeJson = {
   scheme: "dark",
@@ -25,11 +25,11 @@ export const darkThemeJson = {
 const darkThemeDef = {
   backgroundColor: background,
   palette: {
-    mode: 'dark',
+    mode: "dark",
   },
   typography: {
     fontSize: 12,
-    fontFamily: 'IBM Plex, sans',
+    fontFamily: "IBM Plex, sans",
   },
   components: {
     MuiCssBaseline: {
@@ -37,24 +37,24 @@ const darkThemeDef = {
         html: {
           ...darkScrollbar(undefined),
           // scrollbarWidth for Firefox
-          scrollbarWidth: 'thin',
+          scrollbarWidth: "thin",
         },
         body: {
           // flexlayout-react theme changes
-          '& .flexlayout__layout': {
-            '--color-text': '#eeeeee',
-            '--color-background': 'black',
-            '--color-base': 'black',
-            '--color-1': '#121212',
-            '--color-2': '#1a1a1a',
-            '--color-3': '#262626',
-            '--color-4': '#333333',
-            '--color-5': '#404040',
-            '--color-6': '#4d4d4d',
-            '--color-drag1': 'rgb(207, 232, 255)',
-            '--color-drag2': 'rgb(183, 209, 181)',
-            '--color-drag1-background': 'rgba(128, 128, 128, 0.15)',
-            '--color-drag2-background': 'rgba(128, 128, 128, 0.15)',
+          "& .flexlayout__layout": {
+            "--color-text": "#eeeeee",
+            "--color-background": "black",
+            "--color-base": "black",
+            "--color-1": "#121212",
+            "--color-2": "#1a1a1a",
+            "--color-3": "#262626",
+            "--color-4": "#333333",
+            "--color-5": "#404040",
+            "--color-6": "#4d4d4d",
+            "--color-drag1": "rgb(207, 232, 255)",
+            "--color-drag2": "rgb(183, 209, 181)",
+            "--color-drag1-background": "rgba(128, 128, 128, 0.15)",
+            "--color-drag2-background": "rgba(128, 128, 128, 0.15)",
             // '--color-tabset-background': 'var(--color-background)',
             // '--color-tabset-header-background': 'var(--color-background)',
             // '--color-border-background': 'var(--color-background)',
@@ -64,29 +64,28 @@ const darkThemeDef = {
             // '--color-drag-rect-background': 'var(--color-4)',
             // '--color-popup-unselected-background': 'white',
             // '--color-popup-selected-background': 'var(--color-3)',
-            '--color-edge-marker': 'gray',
-            '--color-edge-icon': '#eee',
+            "--color-edge-marker": "gray",
+            "--color-edge-icon": "#eee",
           },
-          '& .flexlayout__tabset_header': {
-            boxShadow: 'inset 0 0 3px 0 rgba(136, 136, 136, 0.54)',
+          "& .flexlayout__tabset_header": {
+            boxShadow: "inset 0 0 3px 0 rgba(136, 136, 136, 0.54)",
           },
-          '& .flexlayout__tabset-selected': {
-            backgroundImage:
-              'linear-gradient(var(--color-background), var(--color-4))',
+          "& .flexlayout__tabset-selected": {
+            backgroundImage: "linear-gradient(var(--color-background), var(--color-4))",
           },
-          '& .flexlayout__tab_button_top': {
-            boxShadow: 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
-            borderTopLeftRadius: '1px',
-            borderBottomRightRadius: '1px',
+          "& .flexlayout__tab_button_top": {
+            boxShadow: "inset -2px 0px 5px rgba(0, 0, 0, 0.1)",
+            borderTopLeftRadius: "1px",
+            borderBottomRightRadius: "1px",
           },
-          '& .flexlayout__tab_button_bottom': {
-            boxShadow: 'inset -2px 0px 5px rgba(0, 0, 0, 0.1)',
-            borderTopLeftRadius: '1px',
-            borderBottomRightRadius: '1px',
+          "& .flexlayout__tab_button_bottom": {
+            boxShadow: "inset -2px 0px 5px rgba(0, 0, 0, 0.1)",
+            borderTopLeftRadius: "1px",
+            borderBottomRightRadius: "1px",
           },
-          '& .flexlayout__border_button': {
-            boxShadow: 'inset 0 0 5px rgba(0, 0, 0, 0.15)',
-            borderRadius: '1px',
+          "& .flexlayout__border_button": {
+            boxShadow: "inset 0 0 5px rgba(0, 0, 0, 0.15)",
+            borderRadius: "1px",
           },
         },
       },
@@ -96,46 +95,46 @@ const darkThemeDef = {
         // Name of the slot
         root: {
           // Some CSS
-          paddingLeft: '4px',
-          paddingRight: '4px',
-          paddingTop: '1px',
-          paddingBottom: '1px',
+          paddingLeft: "4px",
+          paddingRight: "4px",
+          paddingTop: "1px",
+          paddingBottom: "1px",
         },
       },
     },
     MuiButton: {
       defaultProps: {
-        size: 'small',
+        size: "small",
       },
     },
     MuiFilledInput: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiFormControl: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiFormHelperText: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiIconButton: {
       defaultProps: {
-        size: 'small',
+        size: "small",
       },
     },
     MuiInputBase: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiInputLabel: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiListItem: {
@@ -145,27 +144,27 @@ const darkThemeDef = {
     },
     MuiOutlinedInput: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiFab: {
       defaultProps: {
-        size: 'small',
+        size: "small",
       },
     },
     MuiTable: {
       defaultProps: {
-        size: 'small',
+        size: "small",
       },
     },
     MuiTextField: {
       defaultProps: {
-        margin: 'dense',
+        margin: "dense",
       },
     },
     MuiToolbar: {
       defaultProps: {
-        variant: 'dense',
+        variant: "dense",
       },
     },
   },

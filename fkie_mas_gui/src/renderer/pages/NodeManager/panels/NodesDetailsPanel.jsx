@@ -13,35 +13,28 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from '@mui/material';
-import { grey } from '@mui/material/colors';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { emitCustomEvent } from 'react-custom-events';
-import { CopyButton, Tag, getDiagnosticStyle } from '../../../components';
-import { LoggingContext } from '../../../context/LoggingContext';
-import { NavigationContext } from '../../../context/NavigationContext';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import useLocalStorage from '../../../hooks/useLocalStorage';
-import {
-  RosNodeStatus,
-  getDiagnosticLevelName,
-  getFileName,
-} from '../../../models';
-import { CmdType } from '../../../providers';
-import { generateUniqueId } from '../../../utils';
-import {
-  EVENT_OPEN_COMPONENT,
-  eventOpenComponent,
-} from '../../../utils/events';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-import OverflowMenuService from './OverflowMenuService';
-import OverflowMenuTopic from './OverflowMenuTopic';
-import ServiceCallerPanel from './ServiceCallerPanel';
-import ServicesPanel from './ServicesPanel';
-import TopicEchoPanel from './TopicEchoPanel';
-import TopicPublishPanel from './TopicPublishPanel';
-import TopicsPanel from './TopicsPanel';
+} from "@mui/material";
+import { grey } from "@mui/material/colors";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import { CopyButton, Tag, getDiagnosticStyle } from "../../../components";
+import { LoggingContext } from "../../../context/LoggingContext";
+import { NavigationContext } from "../../../context/NavigationContext";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import useLocalStorage from "../../../hooks/useLocalStorage";
+import { RosNodeStatus, getDiagnosticLevelName, getFileName } from "../../../models";
+import { CmdType } from "../../../providers";
+import { generateUniqueId } from "../../../utils";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import OverflowMenuService from "./OverflowMenuService";
+import OverflowMenuTopic from "./OverflowMenuTopic";
+import ServiceCallerPanel from "./ServiceCallerPanel";
+import ServicesPanel from "./ServicesPanel";
+import TopicEchoPanel from "./TopicEchoPanel";
+import TopicPublishPanel from "./TopicPublishPanel";
+import TopicsPanel from "./TopicsPanel";
 
 const compareTopics = (a, b) => {
   if (a.name < b.name) {
@@ -62,36 +55,19 @@ function NodesDetailsPanel() {
   const [nodesShow, setNodesShow] = useState([]);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
 
-  const [showNodeInfo] = useLocalStorage(
-    'NodesDetailsPanel:showNodeInfo',
-    false,
-  );
-  const [showPublishers] = useLocalStorage(
-    'NodesDetailsPanel:showPublishers',
-    true,
-  );
-  const [showSubscribers] = useLocalStorage(
-    'NodesDetailsPanel:showSubscribers',
-    true,
-  );
-  const [showServices] = useLocalStorage(
-    'NodesDetailsPanel:showServices',
-    false,
-  );
-  const [showConnections] = useLocalStorage(
-    'NodesDetailsPanel:showConnections',
-    true,
-  );
-  const [showPaths] = useLocalStorage('NodesDetailsPanel:showPaths', true);
+  const [showNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);
+  const [showPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
+  const [showSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
+  const [showServices] = useLocalStorage("NodesDetailsPanel:showServices", false);
+  const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
+  const [showPaths] = useLocalStorage("NodesDetailsPanel:showPaths", true);
 
   useEffect(() => {
     // TODO: Make a parameter or config for [maxNodes]
     const maxNodes = 1;
     const idsToShow = navCtx.selectedNodes.slice(
       0,
-      navCtx.selectedNodes.length > maxNodes
-        ? maxNodes
-        : navCtx.selectedNodes.length,
+      navCtx.selectedNodes.length > maxNodes ? maxNodes : navCtx.selectedNodes.length
     );
     const nodes = [];
     idsToShow.forEach((id) => {
@@ -105,14 +81,14 @@ function NodesDetailsPanel() {
 
   const onTopicClick = useCallback(
     async (rosTopicType, topic, providerId, external = false) => {
-      if (rosTopicType === 'clipboard') {
+      if (rosTopicType === "clipboard") {
         if (navigator && navigator.clipboard) {
           navigator.clipboard.writeText(topic);
           logCtx.success(`${topic} copied!`);
         }
         return;
       }
-      if (rosTopicType === 'INFO') {
+      if (rosTopicType === "INFO") {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
@@ -121,13 +97,13 @@ function NodesDetailsPanel() {
             <TopicsPanel initialSearchTerm={topic} />,
             true,
             LAYOUT_TABS.NODES,
-            new LayoutTabConfig(false, 'info'),
-          ),
+            new LayoutTabConfig(false, "info")
+          )
         );
         return;
       }
 
-      if (rosTopicType === 'PUBLISH') {
+      if (rosTopicType === "PUBLISH") {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
@@ -136,42 +112,30 @@ function NodesDetailsPanel() {
             <TopicPublishPanel topicName={topic} providerId={providerId} />,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(false, 'publish'),
-          ),
+            new LayoutTabConfig(false, "publish")
+          )
         );
         return;
       }
 
       let defaultNoData = true;
-      if (rosTopicType === 'ECHO') {
+      if (rosTopicType === "ECHO") {
         defaultNoData = false;
       }
       const provider = rosCtx.getProviderById(providerId);
       if (external && window.CommandExecutor) {
         try {
-          const terminalCmd = await provider.cmdForType(
-            CmdType.ECHO,
-            '',
-            topic,
-          );
+          const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic);
           const result = await window.CommandExecutor?.execTerminal(
             null, // we start the publish always local
             `"echo ${topic}"`,
-            terminalCmd.cmd,
+            terminalCmd.cmd
           );
           if (!result.result) {
-            logCtx.error(
-              `Can't open subscriber in external terminal for ${topic}`,
-              result.message,
-              true,
-            );
+            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, result.message, true);
           }
         } catch (error) {
-          logCtx.error(
-            `Can't open subscriber in external terminal for ${topic}`,
-            error,
-            true,
-          );
+          logCtx.error(`Can't open subscriber in external terminal for ${topic}`, error, true);
         }
       } else {
         emitCustomEvent(
@@ -192,41 +156,38 @@ function NodesDetailsPanel() {
               type: CmdType.ECHO,
               providerId,
               topicName: topic,
-            }),
-          ),
+            })
+          )
         );
       }
     },
-    [logCtx, rosCtx],
+    [logCtx, rosCtx]
   );
 
   const onServiceClick = useCallback(
     (rosServiceType, service, providerId) => {
-      if (rosServiceType === 'clipboard') {
+      if (rosServiceType === "clipboard") {
         if (navigator && navigator.clipboard) {
           navigator.clipboard.writeText(service);
           logCtx.success(`${service} copied!`);
         }
         return;
       }
-      if (rosServiceType === 'SERVICE_CALL') {
+      if (rosServiceType === "SERVICE_CALL") {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
             `call-service-${generateUniqueId()}`,
             service,
-            <ServiceCallerPanel
-              serviceName={service}
-              providerId={providerId}
-            />,
+            <ServiceCallerPanel serviceName={service} providerId={providerId} />,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(false, LAYOUT_TABS.SERVICES),
-          ),
+            new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
+          )
         );
         return;
       }
-      if (rosServiceType === 'INFO') {
+      if (rosServiceType === "INFO") {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
@@ -235,12 +196,12 @@ function NodesDetailsPanel() {
             <ServicesPanel initialSearchTerm={service} />,
             true,
             LAYOUT_TABS.NODES,
-            new LayoutTabConfig(false, 'info'),
-          ),
+            new LayoutTabConfig(false, "info")
+          )
         );
       }
     },
-    [logCtx],
+    [logCtx]
   );
 
   const createNodeDetailsView = useMemo(() => {
@@ -255,40 +216,27 @@ function NodesDetailsPanel() {
             <Typography
               variant="subtitle1"
               style={{
-                color: '#fff',
-                backgroundColor: '#2196f3',
+                color: "#fff",
+                backgroundColor: "#2196f3",
               }}
               align="center"
             >
-              <Box sx={{ fontWeight: 'bold', m: 0.5 }}>
-                {node.name.replace(node.namespace, '').replace('/', '')}
+              <Box sx={{ fontWeight: "bold", m: 0.5 }}>
+                {node.name.replace(node.namespace, "").replace("/", "")}
                 <CopyButton value={node.name} />
               </Box>
             </Typography>
-            <Typography
-              variant="subtitle2"
-              style={{ color: grey[700] }}
-              align="center"
-            >
+            <Typography variant="subtitle2" style={{ color: grey[700] }} align="center">
               Namespace: {node?.namespace}
             </Typography>
-            <Typography
-              variant="subtitle2"
-              style={{ color: grey[700] }}
-              align="center"
-            >
-              <Box sx={{ fontWeight: 'bold', m: 1 }}>{node.providerName}</Box>
+            <Typography variant="subtitle2" style={{ color: grey[700] }} align="center">
+              <Box sx={{ fontWeight: "bold", m: 1 }}>{node.providerName}</Box>
             </Typography>
           </Stack>
 
           {node && node.diagnosticLevel > 0 && (
-            <Typography
-              variant="body1"
-              style={getDiagnosticStyle(node.diagnosticLevel)}
-              marginBottom={1}
-            >
-              {getDiagnosticLevelName(node.diagnosticLevel)}:{' '}
-              {node.diagnosticMessage}
+            <Typography variant="body1" style={getDiagnosticStyle(node.diagnosticLevel)} marginBottom={1}>
+              {getDiagnosticLevelName(node.diagnosticLevel)}: {node.diagnosticMessage}
             </Typography>
           )}
 
@@ -296,50 +244,29 @@ function NodesDetailsPanel() {
             <Stack spacing={0.5}>
               <Stack direction="row" spacing={0.5}>
                 <Tag
-                  color={
-                    node.status === RosNodeStatus.RUNNING
-                      ? 'success'
-                      : 'default'
-                  }
+                  color={node.status === RosNodeStatus.RUNNING ? "success" : "default"}
                   title="Status:"
                   // title={`${RosNodeStatusInfo[node.status]}`}
                   text={node.status}
                   wrap
                 />
 
-                {node.pid && Math.round(node.pid) > 0 && (
-                  <Tag color="info" title="PID:" text={`${node.pid}`} wrap />
-                )}
+                {node.pid && Math.round(node.pid) > 0 && <Tag color="info" title="PID:" text={`${node.pid}`} wrap />}
 
                 {node.node_API_URI && node.node_API_URI.length > 0 && (
-                  <Tag
-                    color="default"
-                    title="URI:"
-                    text={node.node_API_URI}
-                    wrap
-                  />
+                  <Tag color="default" title="URI:" text={node.node_API_URI} wrap />
                 )}
               </Stack>
 
               {node.masteruri && node.masteruri.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
-                  <Tag
-                    color="primary"
-                    title="MASTERURI:"
-                    text={node.masteruri}
-                    wrap
-                  />
+                  <Tag color="primary" title="MASTERURI:" text={node.masteruri} wrap />
                 </Stack>
               )}
 
               {node.location && (
                 <Stack direction="row" spacing={0.5}>
-                  <Tag
-                    color="primary"
-                    title="Location:"
-                    text={JSON.stringify(node.location)}
-                    wrap
-                  />
+                  <Tag color="primary" title="Location:" text={JSON.stringify(node.location)} wrap />
                 </Stack>
               )}
 
@@ -365,7 +292,7 @@ function NodesDetailsPanel() {
                       <Tag
                         key={launchPath}
                         color="info"
-                        title={`${launchPath === node.launchPath ? '*' : ''}Launch:`}
+                        title={`${launchPath === node.launchPath ? "*" : ""}Launch:`}
                         text={getFileName(launchPath)}
                         wrap
                         copyButton={launchPath}
@@ -381,7 +308,7 @@ function NodesDetailsPanel() {
               {showSubscribers && (
                 <>
                   <Typography variant="caption">
-                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
                       Subscribed Topics:
                       {` [${node.subscribers.size}]`}
                     </Box>
@@ -430,11 +357,7 @@ function NodesDetailsPanel() {
                             .map((topic) => (
                               <TableRow key={topic.name}>
                                 <TableCell style={{ padding: 0 }}>
-                                  <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    spacing={0}
-                                  >
+                                  <Stack direction="row" alignItems="center" spacing={0}>
                                     <OverflowMenuTopic
                                       onClick={onTopicClick}
                                       topicName={topic.name}
@@ -447,9 +370,8 @@ function NodesDetailsPanel() {
                                           title="publishers"
                                           // showZero={true}
                                           color={(() => {
-                                            if (topic.publisher.length === 0)
-                                              return 'warning';
-                                            return 'default';
+                                            if (topic.publisher.length === 0) return "warning";
+                                            return "default";
                                           })()}
                                           label={topic.publisher.length}
                                         />
@@ -457,11 +379,7 @@ function NodesDetailsPanel() {
                                           size="small"
                                           title="subscribers"
                                           // showZero={true}
-                                          color={
-                                            topic.subscriber.length > 0
-                                              ? 'default'
-                                              : 'warning'
-                                          }
+                                          color={topic.subscriber.length > 0 ? "default" : "warning"}
                                           label={topic.subscriber.length}
                                         />
                                       </Stack>
@@ -470,17 +388,15 @@ function NodesDetailsPanel() {
                                       size="small"
                                       style={{
                                         marginLeft: 1,
-                                        textTransform: 'none',
-                                        justifyContent: 'left',
+                                        textTransform: "none",
+                                        justifyContent: "left",
                                       }}
                                       onClick={(event) =>
                                         onTopicClick(
-                                          event.nativeEvent.ctrlKey
-                                            ? 'PUBLISH'
-                                            : 'ECHO',
+                                          event.nativeEvent.ctrlKey ? "PUBLISH" : "ECHO",
                                           topic.name,
                                           node.providerId,
-                                          event.nativeEvent.shiftKey,
+                                          event.nativeEvent.shiftKey
                                         )
                                       }
                                     >
@@ -500,7 +416,7 @@ function NodesDetailsPanel() {
               {showPublishers && (
                 <>
                   <Typography variant="caption">
-                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
                       Published topics:
                       {` [${node.publishers.size}]`}
                     </Box>
@@ -551,11 +467,7 @@ function NodesDetailsPanel() {
                             .map((topic) => (
                               <TableRow key={topic.name}>
                                 <TableCell style={{ padding: 0 }}>
-                                  <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    spacing={0}
-                                  >
+                                  <Stack direction="row" alignItems="center" spacing={0}>
                                     <OverflowMenuTopic
                                       onClick={onTopicClick}
                                       topicName={topic.name}
@@ -569,7 +481,7 @@ function NodesDetailsPanel() {
                                           title="publishers"
                                           // showZero={true}
                                           color={(() => {
-                                            return 'default';
+                                            return "default";
                                           })()}
                                           label={topic.publisher.length}
                                         />
@@ -578,11 +490,7 @@ function NodesDetailsPanel() {
                                           size="small"
                                           title="subscribers"
                                           // showZero={true}
-                                          color={
-                                            topic.subscriber.length > 0
-                                              ? 'default'
-                                              : 'warning'
-                                          }
+                                          color={topic.subscriber.length > 0 ? "default" : "warning"}
                                           label={topic.subscriber.length}
                                         />
                                       </Stack>
@@ -591,17 +499,15 @@ function NodesDetailsPanel() {
                                       size="small"
                                       style={{
                                         marginLeft: 1,
-                                        textTransform: 'none',
-                                        justifyContent: 'left',
+                                        textTransform: "none",
+                                        justifyContent: "left",
                                       }}
                                       onClick={(event) => {
                                         onTopicClick(
-                                          event.nativeEvent.ctrlKey
-                                            ? 'PUBLISH'
-                                            : 'ECHO',
+                                          event.nativeEvent.ctrlKey ? "PUBLISH" : "ECHO",
                                           topic.name,
                                           node.providerId,
-                                          event.nativeEvent.shiftKey,
+                                          event.nativeEvent.shiftKey
                                         );
                                       }}
                                     >
@@ -621,7 +527,7 @@ function NodesDetailsPanel() {
               {showServices && (
                 <>
                   <Typography variant="caption">
-                    <Box sx={{ fontWeight: 'bold', marginTop: 1 }}>
+                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
                       Available Services:
                       {` [${Array.from(node.services.values()).length}]`}
                     </Box>
@@ -645,16 +551,10 @@ function NodesDetailsPanel() {
                                     size="small"
                                     style={{
                                       padding: 0,
-                                      textTransform: 'none',
-                                      justifyContent: 'left',
+                                      textTransform: "none",
+                                      justifyContent: "left",
                                     }}
-                                    onClick={() =>
-                                      onServiceClick(
-                                        'SERVICE_CALL',
-                                        service.name,
-                                        node.providerId,
-                                      )
-                                    }
+                                    onClick={() => onServiceClick("SERVICE_CALL", service.name, node.providerId)}
                                   >
                                     {`${service.name}`}
                                   </Button>
@@ -672,11 +572,7 @@ function NodesDetailsPanel() {
               {showPaths && (
                 <Stack direction="column" spacing={0.5}>
                   {[...node.launchPaths].map((launchPath) => (
-                    <Stack
-                      key={`launch-${launchPath}`}
-                      direction="row"
-                      spacing={0.5}
-                    >
+                    <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
                       <Tag
                         key={launchPath}
                         color="white"
@@ -721,13 +617,11 @@ function NodesDetailsPanel() {
                         size="small"
                         color="warning"
                         onClick={async () => {
-                          const logs = await rosCtx
-                            .getProviderById(node.providerId)
-                            ?.getLogPaths([node.name]);
+                          const logs = await rosCtx.getProviderById(node.providerId)?.getLogPaths([node.name]);
                           logPaths[node.idGlobal] = logs;
                           setLogPaths({ ...logPaths });
                         }}
-                        style={{ textAlign: 'center' }}
+                        style={{ textAlign: "center" }}
                       >
                         get log paths
                       </Button>
@@ -756,17 +650,11 @@ function NodesDetailsPanel() {
   ]);
 
   return (
-    <Box
-      width="100%"
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
-    >
+    <Box width="100%" height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       {navCtx.selectedNodes.length > 1 && (
         <Stack direction="row" justifyContent="center">
           <Typography color="grey" variant="body2">
-            selected: {navCtx.selectedNodes.length}, displayed:{' '}
-            {nodesShow?.length}
+            selected: {navCtx.selectedNodes.length}, displayed: {nodesShow?.length}
           </Typography>
         </Stack>
       )}

@@ -1,7 +1,7 @@
-import { ILoggingContext } from '../../context/LoggingContext';
-import { getDefaultPortFromRos } from '../../context/SettingsContext';
-import JSONObject from '../../models/JsonObject';
-import ProviderConnection, { IResult } from '../ProviderConnection';
+import { ILoggingContext } from "../../context/LoggingContext";
+import { getDefaultPortFromRos } from "../../context/SettingsContext";
+import JSONObject from "../../models/JsonObject";
+import ProviderConnection, { IResult } from "../ProviderConnection";
 
 interface IQueueItem {
   promise: [
@@ -23,7 +23,7 @@ interface ISubscriptions {
  * WebsocketConnection class to connect with a running daemon with websocket
  */
 export default class WebsocketConnection extends ProviderConnection {
-  static type = 'websocket';
+  static type = "websocket";
 
   websocket: WebSocket | null = null;
 
@@ -74,21 +74,21 @@ export default class WebsocketConnection extends ProviderConnection {
   open: () => Promise<any> = () => {
     if (this.websocket !== null) return Promise.resolve(true);
     this.websocket = new WebSocket(this.uri);
-    this.websocket.addEventListener('open', () => {
-      this.logger?.info(`websocket connected to ${this.websocket?.url}`, '');
+    this.websocket.addEventListener("open", () => {
+      this.logger?.info(`websocket connected to ${this.websocket?.url}`, "");
       this.onOpen();
     });
-    this.websocket.addEventListener('close', (event: CloseEvent) => {
-      this.logger?.info(`websocket disconnected from ${this.websocket?.url}`, '');
+    this.websocket.addEventListener("close", (event: CloseEvent) => {
+      this.logger?.info(`websocket disconnected from ${this.websocket?.url}`, "");
       this.websocket = null;
       this.onClose(event.reason, `${event.code}`);
     });
-    this.websocket.addEventListener('error', (event) => {
+    this.websocket.addEventListener("error", (event) => {
       this.logger?.error(`error on connected to ${this.websocket?.url}`, `event.type: ${JSON.stringify(event.type)}`);
       this.websocket = null;
       return Promise.resolve(false);
     });
-    this.websocket.addEventListener('message', (event: MessageEvent) => {
+    this.websocket.addEventListener("message", (event: MessageEvent) => {
       this.handleMessage(event.data);
     });
     const start = Date.now();
@@ -130,7 +130,7 @@ export default class WebsocketConnection extends ProviderConnection {
    */
   subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async (uri, callback) => {
     this.subscriptions[uri] = callback;
-    const result = await this.call('sub', [uri]).catch((err) => {
+    const result = await this.call("sub", [uri]).catch((err) => {
       return {
         result: false,
         message: err,
@@ -141,7 +141,7 @@ export default class WebsocketConnection extends ProviderConnection {
     }
     const rval: IResult = {
       result: result as boolean,
-      message: '',
+      message: "",
     };
     return Promise.resolve(rval);
   };
@@ -183,7 +183,7 @@ export default class WebsocketConnection extends ProviderConnection {
     if (!this.connected()) {
       return Promise.reject({
         result: false,
-        message: 'websocket not connected',
+        message: "websocket not connected",
       });
     }
 
@@ -194,7 +194,7 @@ export default class WebsocketConnection extends ProviderConnection {
     this.websocket?.send(JSON.stringify(message));
     return Promise.resolve({
       result: true,
-      message: '',
+      message: "",
     });
   };
 
@@ -203,7 +203,7 @@ export default class WebsocketConnection extends ProviderConnection {
    */
   closeSubscriptions: () => Promise<void> = async () => {
     Object.keys(this.subscriptions).every(async (key) => {
-      await this.call('unsub', [key]).catch((error) => {
+      await this.call("unsub", [key]).catch((error) => {
         this.logger?.warn(`failed unregister ${key}`, `${error}`, false);
       });
     });
@@ -215,21 +215,21 @@ export default class WebsocketConnection extends ProviderConnection {
    * Close given subscription
    */
   closeSubscription: (uri: string) => Promise<void> = async (uri) => {
-    await this.call('unsub', [uri]);
+    await this.call("unsub", [uri]);
     delete this.subscriptions[uri];
   };
 
   handleMessage: (msg: string) => void = (msg) => {
     try {
       const message = JSON.parse(msg);
-      if ('id' in message) {
+      if ("id" in message) {
         // object with "id" means the response for an rpc request
         if (!this.queue[message.id]) {
           // timeouted or wrong id
           return;
         }
         // reject early since server's response is invalid
-        if ('error' in message === 'result' in message)
+        if ("error" in message === "result" in message)
           this.queue[message.id].promise[1]({
             result: false,
             message: 'Server response malformed. Response must include either "result"' + ' or "error", but not both.',

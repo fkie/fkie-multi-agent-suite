@@ -1,45 +1,35 @@
-import RefreshIcon from '@mui/icons-material/Refresh';
-import {
-  IconButton,
-  Stack,
-  Table,
-  TableBody,
-  TableContainer,
-  Tooltip,
-} from '@mui/material';
-import { useDebounceCallback } from '@react-hook/debounce';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
-import { ConnectToProviderModal, SearchBar } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { EVENT_PROVIDER_STATE } from '../../../providers/eventTypes';
-import { EVENT_OPEN_CONNECT } from '../../../utils/events';
-import ProviderPanelRow from './ProviderPanelRow';
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import { useContext, useEffect, useMemo, useState } from "react";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { ConnectToProviderModal, SearchBar } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
+import { EVENT_OPEN_CONNECT } from "../../../utils/events";
+import ProviderPanelRow from "./ProviderPanelRow";
 
 function ProviderPanel() {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [providerRowsFiltered, setProviderRowsFiltered] = useState([]);
-  const [filterText, setFilterText] = useState('');
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const [filterText, setFilterText] = useState("");
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
-  const debouncedCallbackFilterText = useDebounceCallback(
-    (providers, searchTerm) => {
-      if (searchTerm.length > 1) {
-        const re = new RegExp(searchTerm, 'i');
-        setProviderRowsFiltered(
-          providers.filter((provider) => {
-            const pos = provider.name().search(re);
-            return pos !== -1;
-          }),
-        );
-      } else {
-        setProviderRowsFiltered(providers);
-      }
-    },
-    300,
-  );
+  const debouncedCallbackFilterText = useDebounceCallback((providers, searchTerm) => {
+    if (searchTerm.length > 1) {
+      const re = new RegExp(searchTerm, "i");
+      setProviderRowsFiltered(
+        providers.filter((provider) => {
+          const pos = provider.name().search(re);
+          return pos !== -1;
+        })
+      );
+    } else {
+      setProviderRowsFiltered(providers);
+    }
+  }, 300);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
@@ -79,7 +69,7 @@ function ProviderPanel() {
       height="100%"
       // width="100%"
       // overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack direction="row" spacing={0.5}>
         <SearchBar
@@ -98,12 +88,8 @@ function ProviderPanel() {
           enterNextDelay={tooltipDelay}
           disableInteractive
         >
-          <IconButton
-            edge="start"
-            aria-label="refresh hosts list"
-            onClick={() => rosCtx.refreshProviderList()}
-          >
-            <RefreshIcon sx={{ fontSize: 'inherit' }} />
+          <IconButton edge="start" aria-label="refresh hosts list" onClick={() => rosCtx.refreshProviderList()}>
+            <RefreshIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
       </Stack>

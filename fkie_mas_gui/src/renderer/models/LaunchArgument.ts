@@ -32,8 +32,8 @@ class LaunchArgument {
     name: string,
     value: string,
     default_value: any = undefined,
-    description: string = '',
-    choices: string[] = [],
+    description: string = "",
+    choices: string[] = []
   ) {
     this.name = name;
     this.value = value;

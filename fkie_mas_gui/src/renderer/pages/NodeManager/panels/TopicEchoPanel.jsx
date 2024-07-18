@@ -28,9 +28,6 @@ import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { JSONTree } from "react-json-tree";
-import { darkThemeJson } from "../../../themes/darkTheme";
-import { lightThemeJson } from "../../../themes/lightTheme";
-
 import { v4 as uuid } from "uuid";
 import { ProviderSelector } from "../../../components";
 import { LoggingContext } from "../../../context/LoggingContext";
@@ -38,6 +35,8 @@ import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { SubscriberFilter } from "../../../models";
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "../../../providers/eventTypes";
+import { darkThemeJson } from "../../../themes/darkTheme";
+import { lightThemeJson } from "../../../themes/lightTheme";
 
 function TopicEchoPanel({
   showOptions = true,
@@ -114,13 +113,7 @@ function TopicEchoPanel({
   useEffect(() => {
     const provider = rosCtx.getProviderById(selectedProvider);
     if (!provider) return;
-    const filterMsg = new SubscriberFilter(
-      noData,
-      noArr,
-      noStr,
-      hz,
-      windowSize
-    );
+    const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize);
     rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noData, noArr, noStr, hz, windowSize]);
@@ -161,30 +154,12 @@ function TopicEchoPanel({
     });
     if (msgType) {
       logCtx.debug(`register subscriber to topic ${topicName}`);
-      const filterMsg = new SubscriberFilter(
-        noData,
-        noArr,
-        noStr,
-        hz,
-        windowSize
-      );
-      rosCtx.registerSubscriber(
-        selectedProvider,
-        topicName,
-        msgType,
-        filterMsg
-      );
+      const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize);
+      rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg);
       setSubscribed(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    topicName,
-    rosCtx.mapProviderRosNodes,
-    rosCtx.registerSubscriber,
-    pause,
-    subscribed,
-    setSubscribed,
-  ]);
+  }, [topicName, rosCtx.mapProviderRosNodes, rosCtx.registerSubscriber, pause, subscribed, setSubscribed]);
 
   // initialize provider
   useEffect(() => {
@@ -243,9 +218,7 @@ function TopicEchoPanel({
               key={`${event.key}`}
               data={event?.data}
               sortObjectKeys={true}
-              theme={
-                settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
-              }
+              theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
               invertTheme={false}
               hideRoot={true}
               shouldExpandNodeInitially={([key]) => {
@@ -259,12 +232,7 @@ function TopicEchoPanel({
   }, [history, settingsCtx]);
 
   return (
-    <Box
-      width="100%"
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get("backgroundColor")}
-    >
+    <Box width="100%" height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       <Paper
         width="100%"
         elevation={1}
@@ -291,42 +259,17 @@ function TopicEchoPanel({
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
               >
-                <ToggleButton
-                  size="small"
-                  value="noData"
-                  selected={!noData}
-                  onChange={() => setNoData(!noData)}
-                >
+                <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
                   <DataObjectIcon />
                 </ToggleButton>
               </Tooltip>
-              <Tooltip
-                title="show arrays"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-              >
-                <ToggleButton
-                  size="small"
-                  value="noArr"
-                  selected={!noArr}
-                  onChange={() => setNoArr(!noArr)}
-                >
+              <Tooltip title="show arrays" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
+                <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
                   <DataArrayIcon />
                 </ToggleButton>
               </Tooltip>
-              <Tooltip
-                title="show strings"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-              >
-                <ToggleButton
-                  size="small"
-                  value="noStr"
-                  selected={!noStr}
-                  onChange={() => setNoStr(!noStr)}
-                >
+              <Tooltip title="show strings" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
+                <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
                   <AbcIcon />
                 </ToggleButton>
               </Tooltip>
@@ -487,13 +430,11 @@ function TopicEchoPanel({
             </Stack>
             <Stack spacing={1} direction="row" fontSize="0.8em">
               <Box>
-                bw: {normalizePrint(content.bw, 2, "/s")} [min:{" "}
-                {normalizePrint(content.bw_min, 0, "/s")}, max:{" "}
+                bw: {normalizePrint(content.bw, 2, "/s")} [min: {normalizePrint(content.bw_min, 0, "/s")}, max:{" "}
                 {normalizePrint(content.bw_max, 0, "/s")}]
               </Box>
               <Box>
-                size: {normalizePrint(content.size, 2)} [min:{" "}
-                {normalizePrint(content.size_min, 0)}, max:{" "}
+                size: {normalizePrint(content.size, 2)} [min: {normalizePrint(content.size_min, 0)}, max:{" "}
                 {normalizePrint(content.size_max, 0)}]
               </Box>
             </Stack>

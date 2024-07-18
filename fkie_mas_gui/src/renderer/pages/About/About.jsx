@@ -1,4 +1,4 @@
-import About from '../../components/SettingsModal/About';
+import About from "../../components/SettingsModal/About";
 
 function AboutPage() {
   return <About />;

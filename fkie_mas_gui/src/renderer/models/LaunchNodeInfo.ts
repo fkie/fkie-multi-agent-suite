@@ -88,7 +88,7 @@ class LaunchNodeInfo {
     file_range: any | null = null,
     launch_context_arg: any[] | null = null,
     launch_name: string | null = null,
-    composable_container: string | null,
+    composable_container: string | null
   ) {
     this.unique_name = unique_name;
     this.node_name = node_name;

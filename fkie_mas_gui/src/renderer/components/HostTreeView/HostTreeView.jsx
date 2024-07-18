@@ -1,40 +1,38 @@
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import ChangeCircleOutlinedIcon from '@mui/icons-material/ChangeCircleOutlined';
-import ComputerIcon from '@mui/icons-material/Computer';
-import HideSourceIcon from '@mui/icons-material/HideSource';
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
+import ComputerIcon from "@mui/icons-material/Computer";
+import HideSourceIcon from "@mui/icons-material/HideSource";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import { blue, green, grey, red } from '@mui/material/colors';
-import { SimpleTreeView } from '@mui/x-tree-view';
-import { emitCustomEvent } from 'react-custom-events';
-import { LoggingContext } from '../../context/LoggingContext';
-import { RosContext } from '../../context/RosContext';
-import { SettingsContext } from '../../context/SettingsContext';
-import { LAYOUT_TAB_SETS } from '../../pages/NodeManager/layout';
-import SingleTerminalPanel from '../../pages/NodeManager/panels/SingleTerminalPanel';
-import { CmdType } from '../../providers';
-import { generateUniqueId, removeDDSuid } from '../../utils';
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
-import { colorFromHostname } from '../UI/Colors';
-import HostTreeViewItem from './HostTreeViewItem';
+import { blue, green, grey, red } from "@mui/material/colors";
+import { SimpleTreeView } from "@mui/x-tree-view";
+import { emitCustomEvent } from "react-custom-events";
+import { LoggingContext } from "../../context/LoggingContext";
+import { RosContext } from "../../context/RosContext";
+import { SettingsContext } from "../../context/SettingsContext";
+import { LaunchFile, RosNodeStatus, getFileName } from "../../models";
+import { LAYOUT_TAB_SETS } from "../../pages/NodeManager/layout";
+import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
+import { CmdType } from "../../providers";
+import { generateUniqueId, removeDDSuid } from "../../utils";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
+import { colorFromHostname } from "../UI/Colors";
+import HostTreeViewItem from "./HostTreeViewItem";
 import {
   getGroupIcon,
   getGroupIconColor,
   getNodeIcon,
   getNodeIconColor,
   namespaceSystemNodes,
-} from './HostTreeViewUtils';
-import LaunchFileList from './LaunchFileList';
-
-import { LaunchFile, RosNodeStatus, getFileName } from '../../models';
+} from "./HostTreeViewUtils";
+import LaunchFileList from "./LaunchFileList";
 
 const compareTreeItems = (a, b) => {
   // place system groups are at the end
-  const aSystem = a.treePath.includes('{');
-  const bSystem = b.treePath.includes('{');
+  const aSystem = a.treePath.includes("{");
+  const bSystem = b.treePath.includes("{");
   if (aSystem && !bSystem) {
     return 1;
   }
@@ -95,7 +93,7 @@ function HostTreeView({
       // finally, just add item to expanded array
       setExpanded((prev) => [...prev, id]);
     },
-    [expanded, providerNodeTree],
+    [expanded, providerNodeTree]
   );
 
   /**
@@ -105,13 +103,11 @@ function HostTreeView({
     (parentIds) => {
       let allIds = parentIds;
       parentIds.forEach((id) => {
-        const parsedId = id.split('#');
+        const parsedId = id.split("#");
         // a group (with children) must have 2 substrings separated by #
         if (parsedId.length === 2) {
           // get the children IDs
-          const childrenIds = keyNodeList
-            .filter((node) => node.key.startsWith(id))
-            .map((node) => node.key);
+          const childrenIds = keyNodeList.filter((node) => node.key.startsWith(id)).map((node) => node.key);
           if (childrenIds) {
             allIds = [...allIds, ...childrenIds];
           }
@@ -120,7 +116,7 @@ function HostTreeView({
       // remove multiple copies of a selected item
       return [...new Set(allIds)];
     },
-    [keyNodeList],
+    [keyNodeList]
   );
 
   /**
@@ -144,7 +140,7 @@ function HostTreeView({
       // filter duplicate entries
       return [...new Set(nodeList)];
     },
-    [keyNodeList],
+    [keyNodeList]
   );
 
   /**
@@ -153,7 +149,7 @@ function HostTreeView({
   const getProvidersFromIds = useCallback((itemIds) => {
     const provList = [];
     itemIds.forEach((item) => {
-      if (!item.includes('#')) {
+      if (!item.includes("#")) {
         provList.push(item);
       }
     });
@@ -168,15 +164,13 @@ function HostTreeView({
       // update selected state
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
-        let selectedIds = prevSelected.filter((prevId) =>
-          itemIds.includes(prevId),
-        );
+        let selectedIds = prevSelected.filter((prevId) => itemIds.includes(prevId));
         selectedIds = [...new Set([...selectedIds, ...itemIds])];
         // in the case of multiple selection (CTRL or SHIFT modifiers):
         if (selectedIds.length > 1) {
           // if a group was previously selected but not anymore, deselect all its children
           prevSelected.forEach((prevId) => {
-            const prevParsedId = prevId.split('#');
+            const prevParsedId = prevId.split("#");
             if (prevParsedId.length === 2 && !selectedIds.includes(prevId)) {
               selectedIds = selectedIds.filter((e) => !e.startsWith(prevId));
             }
@@ -196,7 +190,7 @@ function HostTreeView({
         return getParentAndChildrenIds(selectedIds);
       });
     },
-    [getParentAndChildrenIds],
+    [getParentAndChildrenIds]
   );
 
   /**
@@ -207,7 +201,7 @@ function HostTreeView({
     setSelectedItems((prevItems) => [
       ...getParentAndChildrenIds(
         prevItems.map((item) => {
-          const itemIds = item.split('#');
+          const itemIds = item.split("#");
           const itemProvider = itemIds[0];
           const itemId = itemIds.slice(-1)[0];
           const itemName = removeDDSuid(itemId);
@@ -220,8 +214,8 @@ function HostTreeView({
             }
           });
           // create the item id with new/old node id
-          return `${itemIds.slice(0, -1).join('#')}#${present}`;
-        }),
+          return `${itemIds.slice(0, -1).join("#")}#${present}`;
+        })
       ),
     ]);
   }, [getParentAndChildrenIds, rosCtx.mapProviderRosNodes]);
@@ -259,7 +253,7 @@ function HostTreeView({
       showLoggers(getNodeIdsFromTreeIds([itemId]));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList],
+    [selectedItems, keyNodeList]
   );
 
   /**
@@ -274,7 +268,7 @@ function HostTreeView({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList],
+    [selectedItems, keyNodeList]
   );
 
   /**
@@ -289,7 +283,7 @@ function HostTreeView({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList],
+    [selectedItems, keyNodeList]
   );
 
   /**
@@ -304,7 +298,7 @@ function HostTreeView({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList],
+    [selectedItems, keyNodeList]
   );
 
   /**
@@ -324,31 +318,19 @@ function HostTreeView({
         // rosCtx.updateLaunchList(provider.id);
 
         // parse remove result output
-        if (resultLaunchUnloadFile.status.code === 'OK') {
-          logCtx.success(
-            `Launch file [${getFileName(path)}] removed`,
-            `Path: ${path}`,
-          );
-        } else if (resultLaunchUnloadFile.status.code === 'FILE_NOT_FOUND') {
-          logCtx.error(
-            'Could not remove launch file',
-            `File not found: ${path}`,
-          );
+        if (resultLaunchUnloadFile.status.code === "OK") {
+          logCtx.success(`Launch file [${getFileName(path)}] removed`, `Path: ${path}`);
+        } else if (resultLaunchUnloadFile.status.code === "FILE_NOT_FOUND") {
+          logCtx.error("Could not remove launch file", `File not found: ${path}`);
         } else {
-          logCtx.error(
-            'Could not remove launch file',
-            `Error: ${resultLaunchUnloadFile.status.msg}`,
-          );
+          logCtx.error("Could not remove launch file", `Error: ${resultLaunchUnloadFile.status.msg}`);
         }
       } else {
-        logCtx.error(
-          'Invalid reply from [launchUnloadFile]',
-          `This is probably a bug, please report it as issue.`,
-        );
+        logCtx.error("Invalid reply from [launchUnloadFile]", `This is probably a bug, please report it as issue.`);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [logCtx, rosCtx.providers],
+    [logCtx, rosCtx.providers]
   );
 
   /**
@@ -359,7 +341,7 @@ function HostTreeView({
       await rosCtx.reloadLaunchFile(providerId, path);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.reloadLaunchFile],
+    [rosCtx.reloadLaunchFile]
   );
 
   /**
@@ -388,7 +370,7 @@ function HostTreeView({
         .map((kNode) => kNode.key);
       setSelectedItems(newSelItems);
     },
-    [keyNodeList, rosCtx.mapProviderRosNodes],
+    [keyNodeList, rosCtx.mapProviderRosNodes]
   );
 
   /**
@@ -403,18 +385,13 @@ function HostTreeView({
         eventOpenComponent(
           id,
           `${provider?.name()}`,
-          <SingleTerminalPanel
-            id={id}
-            type={CmdType.CMD}
-            providerId={providerId}
-            cmd={cmd}
-          />,
+          <SingleTerminalPanel id={id} type={CmdType.CMD} providerId={providerId} cmd={cmd} />,
           true,
-          LAYOUT_TAB_SETS.BORDER_BOTTOM,
-        ),
+          LAYOUT_TAB_SETS.BORDER_BOTTOM
+        )
       );
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   /**
@@ -423,10 +400,10 @@ function HostTreeView({
   const getProviderTags = useCallback((provider) => {
     const tags = [];
     if (!provider?.daemon) {
-      tags.push({ text: 'No Daemon', color: 'red' });
+      tags.push({ text: "No Daemon", color: "red" });
     }
     if (!provider?.discovery) {
-      tags.push({ text: 'No Discovery', color: 'red' });
+      tags.push({ text: "No Discovery", color: "red" });
     }
     return tags;
   }, []);
@@ -436,14 +413,12 @@ function HostTreeView({
    */
   const getMasterSyncNode = useCallback(
     (providerId) => {
-      const foundSyncNode = rosCtx.mapProviderRosNodes
-        .get(providerId)
-        ?.find((node) => {
-          return node.id.includes(`/mas_sync`);
-        });
+      const foundSyncNode = rosCtx.mapProviderRosNodes.get(providerId)?.find((node) => {
+        return node.id.includes(`/mas_sync`);
+      });
       return foundSyncNode;
     },
-    [rosCtx.mapProviderRosNodes],
+    [rosCtx.mapProviderRosNodes]
   );
 
   const toggleMasterSync = useCallback(
@@ -455,7 +430,7 @@ function HostTreeView({
         rosCtx.startMasterSync(provider.connection.host, provider.rosVersion);
       }
     },
-    [getMasterSyncNode, rosCtx, stopNodes],
+    [getMasterSyncNode, rosCtx, stopNodes]
   );
 
   /** Returns count of nodes for given group */
@@ -478,15 +453,15 @@ function HostTreeView({
   const buildHostTreeViewItem = useCallback(
     (providerId, treeItem, newKeyNodeList) => {
       if (!treeItem) {
-        console.error('Invalid item ', providerId, treeItem);
+        console.error("Invalid item ", providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
       }
       const { children, treePath, node } = treeItem;
       const itemId = `${providerId}#${treePath}`;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
-        let label = node.name.replace(node.namespace, '');
-        label = label[0] === '/' ? label.slice(1) : label;
+        let label = node.name.replace(node.namespace, "");
+        label = label[0] === "/" ? label.slice(1) : label;
         newKeyNodeList.push({
           key: `${itemId}#${node.id}`,
           idGlobal: node.idGlobal,
@@ -497,49 +472,27 @@ function HostTreeView({
             itemId={`${itemId}#${node.id}`}
             labelText={label}
             labelIcon={getNodeIcon(node.status)}
-            iconColor={getNodeIconColor(node, settingsCtx.get('useDarkMode'))}
+            iconColor={getNodeIconColor(node, settingsCtx.get("useDarkMode"))}
             color={blue[700]}
             bgColor={blue[200]}
             paddingLeft={0.0}
-            showMultipleScreen={
-              node.status === RosNodeStatus.RUNNING && node.screens?.length > 1
-            }
+            showMultipleScreen={node.status === RosNodeStatus.RUNNING && node.screens?.length > 1}
             showLoggers={node?.getRosLoggersCount() > 0}
-            showNoScreen={
-              node.status === RosNodeStatus.RUNNING && node.screens?.length < 1
-            }
-            showGhostScreen={
-              node.status !== RosNodeStatus.RUNNING && node.screens?.length > 0
-            }
+            showNoScreen={node.status === RosNodeStatus.RUNNING && node.screens?.length < 1}
+            showGhostScreen={node.status !== RosNodeStatus.RUNNING && node.screens?.length > 0}
             onShowLoggersClick={onShowLoggersClick}
-            onStartClick={
-              node.status !== RosNodeStatus.RUNNING ? onStartClick : null
-            }
-            onStopClick={
-              node.status !== RosNodeStatus.INACTIVE ? onStopClick : null
-            }
+            onStartClick={node.status !== RosNodeStatus.RUNNING ? onStartClick : null}
+            onStopClick={node.status !== RosNodeStatus.INACTIVE ? onStopClick : null}
             onRestartClick={node.launchInfo ? onRestartClick : null}
-            startTooltipText={
-              selectedItems.includes(itemId)
-                ? 'Start selected nodes'
-                : 'Start this node'
-            }
-            stopTooltipText={
-              selectedItems.includes(itemId)
-                ? 'Stop selected nodes'
-                : 'Stop this node'
-            }
-            restartTooltipText={
-              selectedItems.includes(itemId)
-                ? 'Restart selected nodes'
-                : 'Restart this node'
-            }
+            startTooltipText={selectedItems.includes(itemId) ? "Start selected nodes" : "Start this node"}
+            stopTooltipText={selectedItems.includes(itemId) ? "Stop selected nodes" : "Stop this node"}
+            restartTooltipText={selectedItems.includes(itemId) ? "Restart selected nodes" : "Restart this node"}
             tags={node.tags}
           />
         );
       }
       // valid children means that item is a group
-      const groupName = treePath.split('/').pop();
+      const groupName = treePath.split("/").pop();
       newKeyNodeList.push({ key: itemId });
       return (
         <HostTreeViewItem
@@ -549,15 +502,13 @@ function HostTreeView({
           labelIcon={node ? getNodeIcon(node.status) : getGroupIcon(children)}
           iconColor={
             node
-              ? getNodeIconColor(node, settingsCtx.get('useDarkMode'))
-              : getGroupIconColor(children, settingsCtx.get('useDarkMode'))
+              ? getNodeIconColor(node, settingsCtx.get("useDarkMode"))
+              : getGroupIconColor(children, settingsCtx.get("useDarkMode"))
           }
           color={blue[700]}
           bgColor={blue[200]}
           paddingLeft={0.5}
-          showMultipleScreen={
-            node ? node.screens && node.screens.length > 1 : false
-          }
+          showMultipleScreen={node ? node.screens && node.screens.length > 1 : false}
           showLoggers={node?.getRosLoggersCount() > 0}
           showNoScreen={node ? node.screens && node.screens.length < 1 : false}
           onDoubleClick={handleDoubleClick}
@@ -577,28 +528,14 @@ function HostTreeView({
             //   : null
           }
           onRestartClick={
-            (node &&
-              node.launchInfo &&
-              node.status !== RosNodeStatus.INACTIVE) ||
-            groupName !== namespaceSystemNodes.replace('/', '')
+            (node && node.launchInfo && node.status !== RosNodeStatus.INACTIVE) ||
+            groupName !== namespaceSystemNodes.replace("/", "")
               ? onRestartClick
               : null
           }
-          startTooltipText={
-            selectedItems.includes(itemId)
-              ? 'Start selected nodes'
-              : 'Start this group'
-          }
-          stopTooltipText={
-            selectedItems.includes(itemId)
-              ? 'Stop selected nodes'
-              : 'Stop this group'
-          }
-          restartTooltipText={
-            selectedItems.includes(itemId)
-              ? 'Restart selected nodes'
-              : 'Restart this group'
-          }
+          startTooltipText={selectedItems.includes(itemId) ? "Start selected nodes" : "Start this group"}
+          stopTooltipText={selectedItems.includes(itemId) ? "Stop selected nodes" : "Stop this group"}
+          restartTooltipText={selectedItems.includes(itemId) ? "Restart selected nodes" : "Restart this group"}
           countChildren={node ? 0 : getNodesCount(children)}
         >
           {children.sort(compareTreeItems).map((tItem) => {
@@ -617,17 +554,17 @@ function HostTreeView({
       onRestartClick,
       selectedItems,
       getNodesCount,
-    ],
+    ]
   );
 
   const getHostStyle = (provider) => {
-    if (settingsCtx.get('colorizeHosts')) {
+    if (settingsCtx.get("colorizeHosts")) {
       // borderLeft: `3px dashed`,
       // borderColor: colorFromHostname(provider.name()),
       return {
-        borderLeftStyle: 'solid',
+        borderLeftStyle: "solid",
         borderLeftColor: colorFromHostname(provider.name()),
-        borderLeftWidth: '0.6em',
+        borderLeftWidth: "0.6em",
       };
     }
     return {};
@@ -650,11 +587,7 @@ function HostTreeView({
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         multiSelect
         // use either the expanded state or the key of the node tree (expand the first layer)
-        expandedItems={
-          expanded.length > 0
-            ? expanded
-            : providerNodeTree?.map((item) => item.providerId)
-        }
+        expandedItems={expanded.length > 0 ? expanded : providerNodeTree?.map((item) => item.providerId)}
         // sx={{ height: '100%' }}
         selectedItems={selectedItems}
         onExpandedItemsChange={handleToggle}
@@ -672,7 +605,7 @@ function HostTreeView({
             providerIsReady = true;
           }
           if (!p) {
-            return '';
+            return "";
           }
           // loop through available hosts
           return (
@@ -680,24 +613,14 @@ function HostTreeView({
               key={providerId}
               itemId={providerId}
               sx={getHostStyle(p)}
-              buttonIcon={
-                p?.rosState.ros_version === '1'
-                  ? ChangeCircleOutlinedIcon
-                  : null
-              }
-              buttonIconColor={
-                getMasterSyncNode(providerId) ? green[500] : grey[700]
-              }
+              buttonIcon={p?.rosState.ros_version === "1" ? ChangeCircleOutlinedIcon : null}
+              buttonIconColor={getMasterSyncNode(providerId) ? green[500] : grey[700]}
               buttonIconText="Toggle Master Sync"
               onButtonIconClick={() => {
                 toggleMasterSync(p);
               }}
-              timeSyncActive={
-                Math.abs(p.timeDiff) > settingsCtx.get('timeDiffThreshold')
-              }
-              timeSyncText={`Time not in sync for approx. ${formatTime(
-                p.timeDiff,
-              )}`}
+              timeSyncActive={Math.abs(p.timeDiff) > settingsCtx.get("timeDiffThreshold")}
+              timeSyncText={`Time not in sync for approx. ${formatTime(p.timeDiff)}`}
               onTimeSync={(cmd) => {
                 createSingleTerminalCmdPanel(p.id, cmd);
               }}
@@ -734,11 +657,7 @@ function HostTreeView({
 
               {nodeTree &&
                 nodeTree.children.sort(compareTreeItems).map((sortItem) => {
-                  return buildHostTreeViewItem(
-                    providerId,
-                    sortItem,
-                    newKeyNodeList,
-                  );
+                  return buildHostTreeViewItem(providerId, sortItem, newKeyNodeList);
                 })}
             </HostTreeViewItem>
           );

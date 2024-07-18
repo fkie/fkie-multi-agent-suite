@@ -70,7 +70,7 @@ class LaunchPublishMessage {
     latched: boolean,
     verbose: boolean,
     use_rostime: boolean,
-    substitute_keywords: boolean,
+    substitute_keywords: boolean
   ) {
     this.topic_name = topic_name;
     this.msg_type = msg_type;

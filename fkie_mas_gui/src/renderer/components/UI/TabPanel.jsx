@@ -1,5 +1,5 @@
-import { Stack } from '@mui/material';
-import PropTypes from 'prop-types';
+import { Stack } from "@mui/material";
+import PropTypes from "prop-types";
 
 function TabPanel({ children, value, index, ...other }) {
   return (

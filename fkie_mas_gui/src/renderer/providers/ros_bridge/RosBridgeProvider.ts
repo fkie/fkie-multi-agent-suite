@@ -1,7 +1,7 @@
-import ROSLIB from 'roslib';
-import { IRosProvider, RosNode, RosTopic } from '../../models';
-import { generateUniqueId } from '../../utils';
-import { ILoggingContext } from '../../context/LoggingContext';
+import ROSLIB from "roslib";
+import { ILoggingContext } from "../../context/LoggingContext";
+import { IRosProvider, RosNode, RosTopic } from "../../models";
+import { generateUniqueId } from "../../utils";
 
 /**
  * RosBridgeProvider class implements a IRosProvider to connect with ROS using ROSLIB
@@ -34,7 +34,7 @@ class RosBridgeProvider implements IRosProvider {
   /**
    * Type of provider
    */
-  type: string = 'ros-bridge';
+  type: string = "ros-bridge";
 
   /**
    * Host name
@@ -56,12 +56,7 @@ class RosBridgeProvider implements IRosProvider {
    *
    * @param {string} url - Web bridge URI
    */
-  constructor(
-    name = 'ros-bridge-provider',
-    host = 'localhost',
-    port = 9090,
-    logger: ILoggingContext | null = null
-  ) {
+  constructor(name = "ros-bridge-provider", host = "localhost", port = 9090, logger: ILoggingContext | null = null) {
     this.name = name;
     this.initialized = false;
     this.connected = false;
@@ -82,36 +77,33 @@ class RosBridgeProvider implements IRosProvider {
       try {
         const rosClient = new ROSLIB.Ros({
           url: this.url,
-          transportLibrary: 'websocket',
+          transportLibrary: "websocket",
         });
 
-        rosClient.on('connection', () => {
+        rosClient.on("connection", () => {
           this.rosClient = rosClient;
           this.initialized = true;
           this.connected = true;
           resolve(true);
         });
 
-        rosClient.on('error', (error: Error) => {
+        rosClient.on("error", (error: Error) => {
           this.initialized = false;
           this.connected = false;
           if (this.logger) {
-            this.logger.error(
-              'RosBridge error (init on error)',
-              JSON.stringify(error)
-            );
+            this.logger.error("RosBridge error (init on error)", JSON.stringify(error));
           }
           reject(error);
         });
 
-        rosClient.on('close', () => {
+        rosClient.on("close", () => {
           rosClient.close(); // ensure the underlying worker is cleaned up
           delete this.rosClient;
           this.initialized = false;
           this.connected = false;
 
           if (this.logger) {
-            this.logger.error(`Provider [${this.name}]: connection closed`, '');
+            this.logger.error(`Provider [${this.name}]: connection closed`, "");
           }
 
           resolve(false);
@@ -121,10 +113,7 @@ class RosBridgeProvider implements IRosProvider {
         this.connected = false;
 
         if (this.logger) {
-          this.logger.error(
-            `Provider [${this.name}]: catch error`,
-            JSON.stringify(error)
-          );
+          this.logger.error(`Provider [${this.name}]: catch error`, JSON.stringify(error));
         }
 
         reject(error);
@@ -156,9 +145,7 @@ class RosBridgeProvider implements IRosProvider {
         topics: string[];
         types: string[];
         typedefs_full_text: string[];
-      }>((resolve, reject) =>
-        this.rosClient?.getTopicsAndRawTypes(resolve, reject)
-      );
+      }>((resolve, reject) => this.rosClient?.getTopicsAndRawTypes(resolve, reject));
 
       for (let i = 0; i < topicsTypesRaw.topics.length; i += 1) {
         const topic = topicsTypesRaw.topics[i];
@@ -167,10 +154,7 @@ class RosBridgeProvider implements IRosProvider {
       }
     } catch (error) {
       if (this.logger) {
-        this.logger.error(
-          `Provider [${this.name}]: error on getNodeList()`,
-          JSON.stringify(error)
-        );
+        this.logger.error(`Provider [${this.name}]: error on getNodeList()`, JSON.stringify(error));
       }
       return Promise.resolve([]);
     }
@@ -185,45 +169,25 @@ class RosBridgeProvider implements IRosProvider {
             await new Promise((innerResolve, innerReject) => {
               this.rosClient?.getNodeDetails(
                 node,
-                (
-                  subscriptions: string[],
-                  publications: string[],
-                  services: string[]
-                ) => {
+                (subscriptions: string[], publications: string[], services: string[]) => {
                   const ns = this.getNamespace(node);
                   const nodeName = node; // node.replace(ns, '').replace('/', '');
 
-                  if (!nodeList.has(node))
-                    nodeList.set(node, new RosNode(node, nodeName, ns));
+                  if (!nodeList.has(node)) nodeList.set(node, new RosNode(node, nodeName, ns));
 
                   publications.forEach((pub) => {
                     if (!nodeList.get(node)?.publishers.has(pub)) {
-                      nodeList
-                        .get(node)
-                        ?.publishers.set(
-                          pub,
-                          new RosTopic(pub, [topicTypes.get(pub) ?? ''])
-                        );
+                      nodeList.get(node)?.publishers.set(pub, new RosTopic(pub, [topicTypes.get(pub) ?? ""]));
                     }
                   });
                   subscriptions.forEach((sub) => {
                     if (!nodeList.get(node)?.subscribers.has(sub)) {
-                      nodeList
-                        .get(node)
-                        ?.subscribers.set(
-                          sub,
-                          new RosTopic(sub, [topicTypes.get(sub) ?? ''])
-                        );
+                      nodeList.get(node)?.subscribers.set(sub, new RosTopic(sub, [topicTypes.get(sub) ?? ""]));
                     }
                   });
                   services.forEach((srv) => {
                     if (!nodeList.get(node)?.services.has(srv)) {
-                      nodeList
-                        .get(node)
-                        ?.services.set(
-                          srv,
-                          new RosTopic(srv, [topicTypes.get(srv) ?? ''])
-                        );
+                      nodeList.get(node)?.services.set(srv, new RosTopic(srv, [topicTypes.get(srv) ?? ""]));
                     }
                   });
 
@@ -241,10 +205,7 @@ class RosBridgeProvider implements IRosProvider {
         },
         (error) => {
           if (this.logger) {
-            this.logger.error(
-              `Provider [${this.name}]: error on getNodeList()`,
-              JSON.stringify(error)
-            );
+            this.logger.error(`Provider [${this.name}]: error on getNodeList()`, JSON.stringify(error));
           }
           outerReject(error);
         }
@@ -258,7 +219,7 @@ class RosBridgeProvider implements IRosProvider {
    * @return {Promise} Returns a list of ROS nodes
    */
   public getSystemUri = async () => {
-    return Promise.resolve(`${this.url.replaceAll('ws://', '')}`);
+    return Promise.resolve(`${this.url.replaceAll("ws://", "")}`);
   };
 
   /**
@@ -268,11 +229,11 @@ class RosBridgeProvider implements IRosProvider {
    * @return {string} Namespace
    */
   public getNamespace = (name: string): string => {
-    const arr = name.split('/');
+    const arr = name.split("/");
     if (arr.length > 2) {
       return `/${arr[1]}`;
     }
-    return '/';
+    return "/";
   };
 
   /**

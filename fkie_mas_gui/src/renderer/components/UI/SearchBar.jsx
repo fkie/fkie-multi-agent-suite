@@ -1,16 +1,10 @@
-import CloseIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
-import { IconButton, TextField } from '@mui/material';
-import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
+import { IconButton, TextField } from "@mui/material";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
 
-function SearchBar({
-  onSearch,
-  placeholder = 'Filter',
-  defaultValue = '',
-  fullWidth = true,
-  searchIcon = true,
-}) {
+function SearchBar({ onSearch, placeholder = "Filter", defaultValue = "", fullWidth = true, searchIcon = true }) {
   const [searched, setSearched] = useState(defaultValue);
 
   useEffect(() => {
@@ -24,7 +18,7 @@ function SearchBar({
       }}
       onKeyUp={(e) => {
         // resend search value on Enter
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
           onSearch(searched);
         }
       }}
@@ -39,8 +33,8 @@ function SearchBar({
             disabled
             sx={{
               marginRight: 1,
-              color: 'gray',
-              fontSize: 'inherit',
+              color: "gray",
+              fontSize: "inherit",
             }}
           />
         ) : (
@@ -49,20 +43,20 @@ function SearchBar({
         endAdornment: (
           <IconButton
             sx={{
-              visibility: searched ? 'visible' : 'hidden',
-              fontSize: 'inherit',
+              visibility: searched ? "visible" : "hidden",
+              fontSize: "inherit",
             }}
-            onClick={() => setSearched('')}
+            onClick={() => setSearched("")}
           >
-            <CloseIcon sx={{ fontSize: 'inherit' }} />
+            <CloseIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         ),
-        style: { fontSize: '0.9em' },
+        style: { fontSize: "0.9em" },
       }}
       sx={{
         m: 0,
         ml: 0.5,
-        '& .Mui-focused .MuiIconButton-root': { color: 'primary.main' },
+        "& .Mui-focused .MuiIconButton-root": { color: "primary.main" },
       }}
     />
   );

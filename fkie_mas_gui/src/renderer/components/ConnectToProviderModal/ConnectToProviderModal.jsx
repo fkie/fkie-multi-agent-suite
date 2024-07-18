@@ -1,14 +1,14 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import JoinFullIcon from '@mui/icons-material/JoinFull';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import JoinFullIcon from "@mui/icons-material/JoinFull";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import {
   AccordionSummary,
   // AccordionDetails,
@@ -39,35 +39,27 @@ import {
   TextField,
   Tooltip,
   Typography,
-} from '@mui/material';
-import MuiAccordion from '@mui/material/Accordion';
-import MuiAccordionDetails from '@mui/material/AccordionDetails';
-import { grey } from '@mui/material/colors';
-import { styled } from '@mui/material/styles';
-import { useCustomEventListener } from 'react-custom-events';
-import { LoggingContext } from '../../context/LoggingContext';
-import { RosContext } from '../../context/RosContext';
-import {
-  SettingsContext,
-  getDefaultPortFromRos,
-} from '../../context/SettingsContext';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import ProviderLaunchConfiguration from '../../models/ProviderLaunchConfiguration';
-import Provider from '../../providers/Provider';
-import { EVENT_PROVIDER_ROS_NODES } from '../../providers/eventTypes';
-import { generateUniqueId } from '../../utils';
-import { EVENT_OPEN_CONNECT } from '../../utils/events';
-import CopyButton from '../UI/CopyButton';
-import DraggablePaper from '../UI/DraggablePaper';
+} from "@mui/material";
+import MuiAccordion from "@mui/material/Accordion";
+import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import { grey } from "@mui/material/colors";
+import { styled } from "@mui/material/styles";
+import { useCustomEventListener } from "react-custom-events";
+import { LoggingContext } from "../../context/LoggingContext";
+import { RosContext } from "../../context/RosContext";
+import { SettingsContext, getDefaultPortFromRos } from "../../context/SettingsContext";
+import useLocalStorage from "../../hooks/useLocalStorage";
+import ProviderLaunchConfiguration from "../../models/ProviderLaunchConfiguration";
+import Provider from "../../providers/Provider";
+import { EVENT_PROVIDER_ROS_NODES } from "../../providers/eventTypes";
+import { generateUniqueId } from "../../utils";
+import { EVENT_OPEN_CONNECT } from "../../utils/events";
+import CopyButton from "../UI/CopyButton";
+import DraggablePaper from "../UI/DraggablePaper";
 
-const Accordion = styled((props) => (
-  <MuiAccordion disableGutters elevation={0} square {...props} />
-))(({ theme }) => ({
-  border: 'none',
-  backgroundColor:
-    theme.palette.mode === 'dark'
-      ? 'rgba(0, 0, 0, .00)'
-      : 'rgba(255, 255, 255, .00)',
+const Accordion = styled((props) => <MuiAccordion disableGutters elevation={0} square {...props} />)(({ theme }) => ({
+  border: "none",
+  backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
 }));
 
 const AccordionDetails = styled(MuiAccordionDetails)(() => ({
@@ -106,38 +98,37 @@ function ConnectToProviderModal() {
 
   const [hostList, setHostList] = useState([]);
   const [hostValues, setHostValues] = useState([]);
-  const [hostInputValue, setHostInputValue] = useState('');
-  const [robotHostInputValue, setRobotHostInputValue] = useState('');
+  const [hostInputValue, setHostInputValue] = useState("");
+  const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
-  DEFAULT_PARAMETER.rosVersion = settingsCtx.get('rosVersion');
-  const [startParameterDefault, setStartConfigurationsDefault] =
-    useLocalStorage('ConnectToProviderModal:startParameter', DEFAULT_PARAMETER);
+  DEFAULT_PARAMETER.rosVersion = settingsCtx.get("rosVersion");
+  const [startParameterDefault, setStartConfigurationsDefault] = useLocalStorage(
+    "ConnectToProviderModal:startParameter",
+    DEFAULT_PARAMETER
+  );
   const [startParameter, setStartParameter] = useState(startParameterDefault);
   const [startConfigurations, setStartConfigurations] = useLocalStorage(
-    'ConnectToProviderModal:startConfigurations',
-    [],
+    "ConnectToProviderModal:startConfigurations",
+    []
   );
-  const [selectedHistory, setSelectedHistory] = useState('');
+  const [selectedHistory, setSelectedHistory] = useState("");
   const [forceRestart, setForceRestart] = useState(true);
   const [saveDefaultParameter, setSaveDefaultParameter] = useState(false);
   const [enableDaemonNode, setEnableDaemonNode] = useState(true);
   const [enableDiscoveryNode, setEnableDiscoveryNode] = useState(true);
-  const [enableSyncNode, setEnableSyncNode] = useState(
-    startParameter.sync.enable,
-  );
+  const [enableSyncNode, setEnableSyncNode] = useState(startParameter.sync.enable);
   const [enableTerminalManager, setEnableTerminalManager] = useState(true);
 
   const [tsList, setTSList] = useState([]);
   const [topicList, setTopicList] = useState([]);
 
-  const [startProviderStatus, setStartProviderStatus] = useState('');
-  const [startProviderDescription, setStartProviderDescription] = useState('');
-  const [startProviderIsSubmitting, setStartProviderIsSubmitting] =
-    useState(false);
+  const [startProviderStatus, setStartProviderStatus] = useState("");
+  const [startProviderDescription, setStartProviderDescription] = useState("");
+  const [startProviderIsSubmitting, setStartProviderIsSubmitting] = useState(false);
 
   const handleOpen = () => setOpen(true);
   const handleClose = (event, reason) => {
-    if (reason && reason === 'backdropClick') return;
+    if (reason && reason === "backdropClick") return;
     setOpen(false);
     setOpenTerminalTooltip(false);
     setStartProviderIsSubmitting(false);
@@ -156,13 +147,13 @@ function ConnectToProviderModal() {
     hostSystem.forEach((h) => {
       const ip = h[0];
       if (ip.match(ipv4format)) {
-        const lastName = h[1].split(' ').pop();
+        const lastName = h[1].split(" ").pop();
         hostListLocal.push({ ip, host: lastName });
       }
     });
     hostListLocal.sort((a, b) => -b.host.localeCompare(a.host));
     setHostList(hostListLocal);
-    setHostValues(['localhost']);
+    setHostValues(["localhost"]);
   }, [rosCtx.systemInfo]);
 
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data) => {
@@ -199,7 +190,7 @@ function ConnectToProviderModal() {
 
   const getHosts = () => {
     const hosts = hostValues;
-    if (hostInputValue !== '' && !hosts.includes(hostInputValue)) {
+    if (hostInputValue !== "" && !hosts.includes(hostInputValue)) {
       hosts.push(hostInputValue);
     }
     return hosts.map((h) => (h.host ? h.ip : h));
@@ -209,7 +200,7 @@ function ConnectToProviderModal() {
     const robotHosts = [];
     startParameter.discovery.robotHosts.forEach((h) => {
       if (h.host) robotHosts.push(h.host);
-      else if (typeof h === 'string') robotHosts.push(h);
+      else if (typeof h === "string") robotHosts.push(h);
     });
     // add temporal values to the list as well
     if (robotHostInputValue.length > 0) robotHosts.push(robotHostInputValue);
@@ -221,7 +212,7 @@ function ConnectToProviderModal() {
       startParameter.rosVersion = rosVersion;
       setStartParameter(JSON.parse(JSON.stringify(startParameter)));
     },
-    [startParameter],
+    [startParameter]
   );
 
   const setNetworkId = (networkId) => {
@@ -251,31 +242,27 @@ function ConnectToProviderModal() {
 
   const stringifyStartConfig = (cfg) => {
     let result = `${cfg.hosts.join()}; ros${cfg.params.rosVersion}`;
-    if (cfg.params.rosVersion === '1') {
+    if (cfg.params.rosVersion === "1") {
       result = `${result}; network id: ${cfg.params.networkId}`;
     } else {
       result = `${result}; domain id: ${cfg.params.networkId}`;
     }
-    const robotHosts = cfg.params.discovery.robotHosts.join(',');
+    const robotHosts = cfg.params.discovery.robotHosts.join(",");
     if (robotHosts.length > 0) {
       result = `${result}; robotHosts: [${robotHosts}]`;
     }
     if (cfg.params.sync.enable) {
-      result = `${result}; +sync: doNotSync[${cfg.params.sync.doNotSync.join(',')}], syncTopics[${cfg.params.sync.syncTopics.join(',')}]`;
+      result = `${result}; +sync: doNotSync[${cfg.params.sync.doNotSync.join(",")}], syncTopics[${cfg.params.sync.syncTopics.join(",")}]`;
     }
     result = `${result}; ttyd port: ${cfg.params.ttyd.port}`;
     return result;
   };
 
   const createLaunchConfigFor = (host) => {
-    const launchCfg = new ProviderLaunchConfiguration(
-      host,
-      startParameter.rosVersion,
-    );
+    const launchCfg = new ProviderLaunchConfiguration(host, startParameter.rosVersion);
     launchCfg.daemon.enable = enableDaemonNode;
     launchCfg.discovery.enable = enableDiscoveryNode;
-    if (startParameter.networkId)
-      launchCfg.networkId = startParameter.networkId;
+    if (startParameter.networkId) launchCfg.networkId = startParameter.networkId;
     if (startParameter.discovery.robotHosts.length > 0)
       launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
     launchCfg.sync.enable = startParameter.sync.enable;
@@ -292,8 +279,8 @@ function ConnectToProviderModal() {
   const handleStartProvider = async () => {
     if (!rosCtx.multimasterManager) return;
 
-    setStartProviderStatus('active');
-    setStartProviderDescription('Starting nodes on selected hosts');
+    setStartProviderStatus("active");
+    setStartProviderDescription("Starting nodes on selected hosts");
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
       setStartConfigurationsDefault(startParameter);
@@ -309,7 +296,7 @@ function ConnectToProviderModal() {
       params: startParameter,
     };
     const oldStartConfigurations = startConfigurations.filter(
-      (cfg) => stringifyStartConfig(cfg) !== stringifyStartConfig(startCfg),
+      (cfg) => stringifyStartConfig(cfg) !== stringifyStartConfig(startCfg)
     );
     if (startCfg.hosts.length > 0) {
       setStartConfigurations([startCfg, ...oldStartConfigurations]);
@@ -328,38 +315,37 @@ function ConnectToProviderModal() {
         if (!(await rosCtx.startConfig(launchCfg))) {
           successStart = false;
         }
-      }),
+      })
     );
     if (successStart) {
-      setStartProviderStatus('finished');
-      setStartProviderDescription('');
+      setStartProviderStatus("finished");
+      setStartProviderDescription("");
     } else {
-      setStartProviderStatus('error');
+      setStartProviderStatus("error");
     }
 
     // remove loading message
     setTimeout(() => {
       setStartProviderIsSubmitting(false);
-      setStartProviderDescription('');
-      setStartProviderStatus('inactive');
+      setStartProviderDescription("");
+      setStartProviderStatus("inactive");
       handleClose();
     }, 500);
   };
 
   const handleJoinProvider = async () => {
-    setStartProviderStatus('active');
+    setStartProviderStatus("active");
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
       setStartConfigurationsDefault(startParameter);
     }
     const hosts = hostValues;
-    if (hostInputValue !== '' && !hosts.includes(hostInputValue)) {
+    if (hostInputValue !== "" && !hosts.includes(hostInputValue)) {
       hosts.push(hostInputValue);
     }
     const port = startParameter.port
       ? startParameter.port
-      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion) +
-        startParameter.networkId;
+      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion) + startParameter.networkId;
     // join each host separately
     await Promise.all(
       hosts.map(async (remoteHost) => {
@@ -367,24 +353,17 @@ function ConnectToProviderModal() {
         if (remoteHost.ip) host = remoteHost.ip;
         setStartProviderDescription(`Connecting to ${host} ...`);
         console.log(`connecting to ${host}:${port}`);
-        const newProvider = new Provider(
-          settingsCtx,
-          host,
-          startParameter.rosVersion,
-          port,
-          undefined,
-          logCtx,
-        );
+        const newProvider = new Provider(settingsCtx, host, startParameter.rosVersion, port, undefined, logCtx);
         const launchCfg = createLaunchConfigFor(host);
         newProvider.startConfiguration = launchCfg;
         await rosCtx.connectToProvider(newProvider);
-      }),
+      })
     );
     // remove loading message and close dialog
     setTimeout(() => {
       setStartProviderIsSubmitting(false);
-      setStartProviderDescription('');
-      setStartProviderStatus('inactive');
+      setStartProviderDescription("");
+      setStartProviderStatus("inactive");
       handleClose();
     }, 500);
   };
@@ -414,10 +393,10 @@ function ConnectToProviderModal() {
         </Typography>
         <Paper
           sx={{
-            maxHeight: '13em',
-            width: '100%',
-            overflow: 'auto',
-            backgroundColor: settingsCtx.get('backgroundColor'),
+            maxHeight: "13em",
+            width: "100%",
+            overflow: "auto",
+            backgroundColor: settingsCtx.get("backgroundColor"),
           }}
         >
           <TableContainer>
@@ -430,7 +409,7 @@ function ConnectToProviderModal() {
                     onClick={() => {
                       setStartParameter(cfg.params);
                       setHostValues(cfg.hosts);
-                      setHostInputValue('');
+                      setHostInputValue("");
                       setSelectedHistory(cfg.id);
                     }}
                   >
@@ -438,24 +417,20 @@ function ConnectToProviderModal() {
                       <Typography
                         noWrap
                         variant="body2"
-                        fontWeight={
-                          selectedHistory === cfg.id ? 'bold' : 'normal'
-                        }
+                        fontWeight={selectedHistory === cfg.id ? "bold" : "normal"}
                         style={{
-                          cursor: 'pointer',
+                          cursor: "pointer",
                         }}
                       >
                         {stringifyStartConfig(cfg)}
                       </Typography>
                     </TableCell>
-                    <TableCell style={{ padding: 0, width: '2em' }}>
+                    <TableCell style={{ padding: 0, width: "2em" }}>
                       <Tooltip title="Delete entry" placement="bottom">
                         <IconButton
                           color="error"
                           onClick={() => {
-                            setStartConfigurations((prev) =>
-                              prev.filter((pCfg) => pCfg.id !== cfg.id),
-                            );
+                            setStartConfigurations((prev) => prev.filter((pCfg) => pCfg.id !== cfg.id));
                           }}
                           size="small"
                         >
@@ -471,12 +446,7 @@ function ConnectToProviderModal() {
         </Paper>
       </Stack>
     );
-  }, [
-    startConfigurations,
-    settingsCtx,
-    selectedHistory,
-    setStartConfigurations,
-  ]);
+  }, [startConfigurations, settingsCtx, selectedHistory, setStartConfigurations]);
 
   return (
     <>
@@ -492,7 +462,7 @@ function ConnectToProviderModal() {
         onClose={handleClose}
         // disableEscapeKeyDown
       >
-        <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+        <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
           Connect To ROS
         </DialogTitle>
         <DialogContent>
@@ -501,10 +471,9 @@ function ConnectToProviderModal() {
               <Box>
                 {startConfigurations.length === 0 && (
                   <Typography paddingBottom="1em" color="green">
-                    No saved start configurations found. Select hosts that you
-                    want to join or on which you want to start the required MAS
-                    system nodes. Use <RocketLaunchIcon fontSize="inherit" /> to
-                    open this dialog.
+                    No saved start configurations found. Select hosts that you want to join or on which you want to
+                    start the required MAS system nodes. Use <RocketLaunchIcon fontSize="inherit" /> to open this
+                    dialog.
                   </Typography>
                 )}
                 {generateHistoryView}
@@ -517,16 +486,9 @@ function ConnectToProviderModal() {
                   freeSolo
                   ListboxProps={{ style: { maxHeight: 150 } }}
                   sx={{ margin: 0 }}
-                  getOptionLabel={(option) =>
-                    option.host ? `${option.host} [${option.ip}]` : option
-                  }
+                  getOptionLabel={(option) => (option.host ? `${option.host} [${option.ip}]` : option)}
                   renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      variant="standard"
-                      label="Add Hosts"
-                      placeholder=" add "
-                    />
+                    <TextField {...params} variant="standard" label="Add Hosts" placeholder=" add " />
                   )}
                   value={hostValues}
                   onChange={(event, newValue) => {
@@ -538,7 +500,7 @@ function ConnectToProviderModal() {
                   }}
                   disableCloseOnSelect
                   renderOption={(props, option, { selected }) => (
-                    <li {...props} style={{ height: '1.5em' }}>
+                    <li {...props} style={{ height: "1.5em" }}>
                       <Checkbox
                         icon={icon}
                         checkedIcon={checkedIcon}
@@ -563,16 +525,8 @@ function ConnectToProviderModal() {
                     setRosVersion(event.target.value);
                   }}
                 >
-                  <FormControlLabel
-                    value="1"
-                    control={<Radio />}
-                    label="ROS1"
-                  />
-                  <FormControlLabel
-                    value="2"
-                    control={<Radio />}
-                    label="ROS2"
-                  />
+                  <FormControlLabel value="1" control={<Radio />} label="ROS1" />
+                  <FormControlLabel value="2" control={<Radio />} label="ROS2" />
                 </RadioGroup>
                 {/* </FormControl> */}
                 <TextField
@@ -583,7 +537,7 @@ function ConnectToProviderModal() {
                   label="Network/Domain ID"
                   size="small"
                   variant="outlined"
-                  style={{ minWidth: '9em' }}
+                  style={{ minWidth: "9em" }}
                   InputProps={{ inputProps: { min: 0, max: 99 } }}
                   // fullWidth
                   onChange={(e) => setNetworkId(Number(`${e.target.value}`))}
@@ -607,11 +561,10 @@ function ConnectToProviderModal() {
                         handleStartProvider();
                       }}
                       disabled={
-                        !window.CommandExecutor ||
-                        (hostValues.length === 0 && hostInputValue === '')
+                        !window.CommandExecutor || (hostValues.length === 0 && hostInputValue === "")
                         // hostValues.length === 0 && hostInputValue === ''
                       }
-                      style={{ height: '3em', textAlign: 'center' }}
+                      style={{ height: "3em", textAlign: "center" }}
                       endIcon={<RocketLaunchIcon />}
                     >
                       Start
@@ -625,10 +578,10 @@ function ConnectToProviderModal() {
                         handleJoinProvider();
                       }}
                       disabled={
-                        hostValues.length === 0 && hostInputValue === ''
+                        hostValues.length === 0 && hostInputValue === ""
                         // hostValues.length === 0 && hostInputValue === ''
                       }
-                      style={{ height: '3em', textAlign: 'center' }}
+                      style={{ height: "3em", textAlign: "center" }}
                       endIcon={<JoinFullIcon />}
                     >
                       Join
@@ -641,8 +594,8 @@ function ConnectToProviderModal() {
                 disableGutters
                 elevation={0}
                 sx={{
-                  '&:before': {
-                    display: 'none',
+                  "&:before": {
+                    display: "none",
                   },
                 }}
               >
@@ -655,9 +608,7 @@ function ConnectToProviderModal() {
                 >
                   <Stack direction="row" alignItems="center" spacing="0.3em">
                     <SettingsOutlinedIcon fontSize="inherit" />
-                    <Typography variant="subtitle1">
-                      Advanced parameters:
-                    </Typography>
+                    <Typography variant="subtitle1">Advanced parameters:</Typography>
                     {/* <Tooltip
                       title="Reset advanced parameters to default"
                       placement="right"
@@ -697,7 +648,7 @@ function ConnectToProviderModal() {
                         labelPlacement="end"
                       />
                     </FormGroup>
-                    {startParameter.rosVersion === '2' && (
+                    {startParameter.rosVersion === "2" && (
                       <FormGroup aria-label="position" row>
                         <FormControlLabel
                           control={
@@ -714,13 +665,13 @@ function ConnectToProviderModal() {
                       </FormGroup>
                     )}
 
-                    {startParameter.rosVersion === '1' && (
+                    {startParameter.rosVersion === "1" && (
                       <Accordion
                         disableGutters
                         elevation={0}
                         sx={{
-                          '&:before': {
-                            display: 'none',
+                          "&:before": {
+                            display: "none",
                           },
                         }}
                       >
@@ -744,9 +695,7 @@ function ConnectToProviderModal() {
                                     <Checkbox
                                       checked={enableDiscoveryNode}
                                       onChange={(event) => {
-                                        setEnableDiscoveryNode(
-                                          event.target.checked,
-                                        );
+                                        setEnableDiscoveryNode(event.target.checked);
                                       }}
                                     />
                                   }
@@ -755,32 +704,26 @@ function ConnectToProviderModal() {
                                 />
                               </FormGroup>
                             </Grid>
-                            <Grid item sx={{ alignSelf: 'center' }}>
-                              <Stack
-                                direction="column"
-                                sx={{ display: 'grid' }}
-                              >
+                            <Grid item sx={{ alignSelf: "center" }}>
+                              <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
                                   variant="body2"
                                   sx={{
                                     color: grey[700],
-                                    fontWeight: 'inherit',
+                                    fontWeight: "inherit",
                                     flexGrow: 1,
                                     ml: 0.5,
                                   }}
                                 >
-                                  {`Robot Hosts: [${getRobotHosts().join(',')}]`}
+                                  {`Robot Hosts: [${getRobotHosts().join(",")}]`}
                                 </Typography>
                               </Stack>
                             </Grid>
                           </Grid>
                         </AccordionSummary>
                         <AccordionDetails>
-                          <Stack
-                            direction="column"
-                            divider={<Divider orientation="vertical" />}
-                          >
+                          <Stack direction="column" divider={<Divider orientation="vertical" />}>
                             <Box>
                               <Autocomplete
                                 disabled={!enableDiscoveryNode}
@@ -792,11 +735,7 @@ function ConnectToProviderModal() {
                                 freeSolo
                                 sx={{ margin: 0 }}
                                 ListboxProps={{ style: { maxHeight: 150 } }}
-                                getOptionLabel={(option) =>
-                                  option.host
-                                    ? `${option.host} [${option.ip}]`
-                                    : option
-                                }
+                                getOptionLabel={(option) => (option.host ? `${option.host} [${option.ip}]` : option)}
                                 renderInput={(params) => (
                                   <TextField
                                     {...params}
@@ -816,7 +755,7 @@ function ConnectToProviderModal() {
                                 }}
                                 disableCloseOnSelect
                                 renderOption={(props, option, { selected }) => (
-                                  <li {...props} style={{ height: '1.5em' }}>
+                                  <li {...props} style={{ height: "1.5em" }}>
                                     <Checkbox
                                       icon={icon}
                                       checkedIcon={checkedIcon}
@@ -833,13 +772,13 @@ function ConnectToProviderModal() {
                         </AccordionDetails>
                       </Accordion>
                     )}
-                    {startParameter.rosVersion === '1' && (
+                    {startParameter.rosVersion === "1" && (
                       <Accordion
                         disableGutters
                         elevation={0}
                         sx={{
-                          '&:before': {
-                            display: 'none',
+                          "&:before": {
+                            display: "none",
                           },
                         }}
                       >
@@ -874,17 +813,14 @@ function ConnectToProviderModal() {
                                 />
                               </FormGroup>
                             </Grid>
-                            <Grid item sx={{ alignSelf: 'center' }}>
-                              <Stack
-                                direction="column"
-                                sx={{ display: 'grid' }}
-                              >
+                            <Grid item sx={{ alignSelf: "center" }}>
+                              <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
                                   variant="body2"
                                   sx={{
                                     color: grey[700],
-                                    fontWeight: 'inherit',
+                                    fontWeight: "inherit",
                                     flexGrow: 1,
                                     ml: 0.5,
                                   }}
@@ -896,7 +832,7 @@ function ConnectToProviderModal() {
                                   variant="body2"
                                   sx={{
                                     color: grey[700],
-                                    fontWeight: 'inherit',
+                                    fontWeight: "inherit",
                                     flexGrow: 1,
                                     ml: 0.5,
                                   }}
@@ -908,10 +844,7 @@ function ConnectToProviderModal() {
                           </Grid>
                         </AccordionSummary>
                         <AccordionDetails>
-                          <Stack
-                            direction="column"
-                            divider={<Divider orientation="vertical" />}
-                          >
+                          <Stack direction="column" divider={<Divider orientation="vertical" />}>
                             <Autocomplete
                               disablePortal
                               multiple
@@ -920,13 +853,7 @@ function ConnectToProviderModal() {
                               options={tsList}
                               freeSolo
                               sx={{ margin: 0 }}
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  variant="outlined"
-                                  label="do not sync"
-                                />
-                              )}
+                              renderInput={(params) => <TextField {...params} variant="outlined" label="do not sync" />}
                               value={startParameter.sync.doNotSync}
                               onChange={(event, newValue) => {
                                 setDoNotSync(newValue);
@@ -941,13 +868,7 @@ function ConnectToProviderModal() {
                               options={topicList}
                               freeSolo
                               sx={{ margin: 0 }}
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  variant="outlined"
-                                  label="sync topics"
-                                />
-                              )}
+                              renderInput={(params) => <TextField {...params} variant="outlined" label="sync topics" />}
                               value={startParameter.sync.syncTopics}
                               onChange={(event, newValue) => {
                                 setSyncTopics(newValue);
@@ -962,8 +883,8 @@ function ConnectToProviderModal() {
                       disableGutters
                       elevation={0}
                       sx={{
-                        '&:before': {
-                          display: 'none',
+                        "&:before": {
+                          display: "none",
                         },
                       }}
                     >
@@ -974,7 +895,7 @@ function ConnectToProviderModal() {
                         sx={{ pl: 0, margin: 0 }}
                         style={{
                           content: {
-                            display: 'flex',
+                            display: "flex",
                             flexGrow: 1,
                             margin: 0,
                           },
@@ -995,9 +916,7 @@ function ConnectToProviderModal() {
                                   <Checkbox
                                     checked={enableTerminalManager}
                                     onChange={(event) => {
-                                      setEnableTerminalManager(
-                                        event.target.checked,
-                                      );
+                                      setEnableTerminalManager(event.target.checked);
                                     }}
                                   />
                                 }
@@ -1007,17 +926,9 @@ function ConnectToProviderModal() {
                                     <Tooltip
                                       title={
                                         <>
-                                          <Typography color="h2">
-                                            Install TTYD in the host using:
-                                          </Typography>
-                                          <Stack
-                                            mt={1}
-                                            direction="row"
-                                            justifyContent="center"
-                                          >
-                                            <Typography color="body2">
-                                              sudo snap install ttyd --classic
-                                            </Typography>
+                                          <Typography color="h2">Install TTYD in the host using:</Typography>
+                                          <Stack mt={1} direction="row" justifyContent="center">
+                                            <Typography color="body2">sudo snap install ttyd --classic</Typography>
                                             <CopyButton value="sudo snap install ttyd --classic" />
                                           </Stack>
                                           <Link
@@ -1045,15 +956,13 @@ function ConnectToProviderModal() {
                                         edge="start"
                                         aria-label="additional terminal information"
                                         onClick={() => {
-                                          setOpenTerminalTooltip(
-                                            !openTerminalTooltip,
-                                          );
+                                          setOpenTerminalTooltip(!openTerminalTooltip);
                                         }}
                                       >
                                         <InfoOutlinedIcon
                                           sx={{
-                                            fontSize: 'inherit',
-                                            color: 'DodgerBlue',
+                                            fontSize: "inherit",
+                                            color: "DodgerBlue",
                                           }}
                                         />
                                       </IconButton>
@@ -1064,13 +973,13 @@ function ConnectToProviderModal() {
                               />
                             </FormGroup>
                           </Grid>
-                          <Grid item sx={{ alignSelf: 'center' }}>
-                            <Stack direction="column" sx={{ display: 'grid' }}>
+                          <Grid item sx={{ alignSelf: "center" }}>
+                            <Stack direction="column" sx={{ display: "grid" }}>
                               <Typography
                                 variant="body2"
                                 sx={{
                                   color: grey[700],
-                                  fontWeight: 'inherit',
+                                  fontWeight: "inherit",
                                   flexGrow: 1,
                                   ml: 0.5,
                                 }}
@@ -1089,9 +998,7 @@ function ConnectToProviderModal() {
                           size="small"
                           variant="outlined"
                           fullWidth
-                          onChange={(e) =>
-                            setTtydPort(Number(`${e.target.value}`))
-                          }
+                          onChange={(e) => setTtydPort(Number(`${e.target.value}`))}
                           value={startParameter.ttyd.port}
                           disabled={!enableTerminalManager}
                         />
@@ -1115,21 +1022,12 @@ function ConnectToProviderModal() {
                     </FormGroup>
                     <FormGroup aria-label="position" row>
                       <FormControlLabel
-                        disabled={
-                          !(
-                            enableDaemonNode &&
-                            enableDiscoveryNode &&
-                            enableTerminalManager
-                          )
-                        }
+                        disabled={!(enableDaemonNode && enableDiscoveryNode && enableTerminalManager)}
                         control={
                           <Checkbox
                             size="small"
                             checked={
-                              enableDaemonNode &&
-                              enableDiscoveryNode &&
-                              enableTerminalManager &&
-                              saveDefaultParameter
+                              enableDaemonNode && enableDiscoveryNode && enableTerminalManager && saveDefaultParameter
                             }
                             onChange={(event) => {
                               setSaveDefaultParameter(event.target.checked);
@@ -1151,12 +1049,12 @@ function ConnectToProviderModal() {
                           setStartParameter(DEFAULT_PARAMETER);
                           setForceRestart(true);
                           setSaveDefaultParameter(false);
-                          setSelectedHistory('');
+                          setSelectedHistory("");
                           event.stopPropagation();
                         }}
                         style={{
-                          height: '1.5em',
-                          textTransform: 'none',
+                          height: "1.5em",
+                          textTransform: "none",
                         }}
                         endIcon={<RestartAltIcon />}
                       >

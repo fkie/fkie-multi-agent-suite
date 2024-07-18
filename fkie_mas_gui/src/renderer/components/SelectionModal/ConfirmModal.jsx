@@ -1,15 +1,7 @@
-import PropTypes from 'prop-types';
-import { useState } from 'react';
-
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material';
-import DraggablePaper from '../UI/DraggablePaper';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import PropTypes from "prop-types";
+import { useState } from "react";
+import DraggablePaper from "../UI/DraggablePaper";
 
 function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
   const [open, setOpen] = useState(true);
@@ -17,14 +9,14 @@ function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
   const handleClose = (event, reason) => {
     // if (reason && reason === 'backdropClick') return;
     setOpen(false);
-    if (reason !== 'confirmed' && onCancelCallback) {
+    if (reason !== "confirmed" && onCancelCallback) {
       onCancelCallback();
     }
   };
 
   const onConfirm = () => {
     onConfirmCallback();
-    handleClose(null, 'confirmed');
+    handleClose(null, "confirmed");
   };
 
   return (
@@ -36,14 +28,12 @@ function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
         {title}
       </DialogTitle>
 
       <DialogContent scroll="paper" aria-label="list">
-        <DialogContentText id="alert-dialog-description">
-          {message}
-        </DialogContentText>
+        <DialogContentText id="alert-dialog-description">{message}</DialogContentText>
       </DialogContent>
 
       <DialogActions>

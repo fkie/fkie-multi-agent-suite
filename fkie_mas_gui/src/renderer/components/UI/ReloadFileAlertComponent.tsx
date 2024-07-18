@@ -1,12 +1,4 @@
-import {
-  forwardRef,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
-
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Button,
   Card,
@@ -18,16 +10,12 @@ import {
   Paper,
   Stack,
   Typography,
-} from '@mui/material';
-import {
-  SnackbarContent,
-  SnackbarKey,
-  SnackbarMessage,
-  useSnackbar,
-} from 'notistack';
-import { SettingsContext } from '../../context/SettingsContext';
-import { PATH_EVENT_TYPE } from '../../models';
-import Provider from '../../providers/Provider';
+} from "@mui/material";
+import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
+import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { SettingsContext } from "../../context/SettingsContext";
+import { PATH_EVENT_TYPE } from "../../models";
+import Provider from "../../providers/Provider";
 
 interface ReloadFileComponentProps {
   id: SnackbarKey | undefined;
@@ -39,19 +27,8 @@ interface ReloadFileComponentProps {
   onReload: (providerId: string, launchFile: string) => void;
 }
 
-const ReloadFileAlertComponent = forwardRef<
-  HTMLDivElement,
-  ReloadFileComponentProps
->((props, ref) => {
-  const {
-    id,
-    message,
-    provider,
-    modifiedFile,
-    modification,
-    launchFile,
-    onReload,
-  } = props;
+const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentProps>((props, ref) => {
+  const { id, message, provider, modifiedFile, modification, launchFile, onReload } = props;
 
   const settingsCtx = useContext(SettingsContext);
   const { closeSnackbar } = useSnackbar();
@@ -64,33 +41,25 @@ const ReloadFileAlertComponent = forwardRef<
 
   const handleReload = useCallback(() => {
     if (rememberChange) {
-      settingsCtx.set('actionOnChangeLaunch', 'RELOAD');
+      settingsCtx.set("actionOnChangeLaunch", "RELOAD");
     }
     if (onReload) onReload(provider.id, launchFile);
     closeSnackbar(id);
-  }, [
-    rememberChange,
-    onReload,
-    provider.id,
-    launchFile,
-    closeSnackbar,
-    id,
-    settingsCtx,
-  ]);
+  }, [rememberChange, onReload, provider.id, launchFile, closeSnackbar, id, settingsCtx]);
 
   const handleDismiss = useCallback(() => {
     if (rememberChange) {
-      settingsCtx.set('actionOnChangeLaunch', 'DISMISS');
+      settingsCtx.set("actionOnChangeLaunch", "DISMISS");
     }
     closeSnackbar(id);
   }, [rememberChange, closeSnackbar, id, settingsCtx]);
 
   useEffect(() => {
-    switch (settingsCtx.get('actionOnChangeLaunch')) {
-      case 'RELOAD':
+    switch (settingsCtx.get("actionOnChangeLaunch")) {
+      case "RELOAD":
         handleReload();
         break;
-      case 'DISMISS':
+      case "DISMISS":
         handleDismiss();
         break;
       default:
@@ -100,18 +69,12 @@ const ReloadFileAlertComponent = forwardRef<
 
   return (
     <SnackbarContent ref={ref}>
-      <Card sx={{ marginTop: 4, backgroundColor: '#fddc6c' }}>
+      <Card sx={{ marginTop: 4, backgroundColor: "#fddc6c" }}>
         <CardActions>
-          <Stack
-            sx={{ width: '100%' }}
-            direction="row"
-            spacing={0.5}
-            justifyContent="space-around"
-            alignItems="center"
-          >
+          <Stack sx={{ width: "100%" }} direction="row" spacing={0.5} justifyContent="space-around" alignItems="center">
             <IconButton
               aria-label="Show more"
-              style={expanded ? { transform: 'rotate(180deg)' } : undefined}
+              style={expanded ? { transform: "rotate(180deg)" } : undefined}
               onClick={handleExpandClick}
             >
               <ExpandMoreIcon />
@@ -126,7 +89,7 @@ const ReloadFileAlertComponent = forwardRef<
                     onChange={(event) => {
                       setRememberChange(event.target.checked);
                     }}
-                    sx={{ '& .MuiSvgIcon-root': { fontSize: 'inherit' } }}
+                    sx={{ "& .MuiSvgIcon-root": { fontSize: "inherit" } }}
                   />
                 }
                 label="remember the decision"

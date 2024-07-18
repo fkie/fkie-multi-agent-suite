@@ -17,13 +17,13 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { JSONTree } from "react-json-tree";
-import { darkThemeJson } from "../../../themes/darkTheme";
-import { lightThemeJson } from "../../../themes/lightTheme";
 import { SearchBar } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { LaunchCallService } from "../../../models";
+import { darkThemeJson } from "../../../themes/darkTheme";
+import { lightThemeJson } from "../../../themes/lightTheme";
 import InputElements from "./MessageDialogPanel/InputElements";
 
 function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
@@ -63,9 +63,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
         } else if (/null/.test(match)) {
           cls = "null";
         }
-        return cls === "key" || cls === "number" || cls === "boolean"
-          ? match.replaceAll('"', "")
-          : match;
+        return cls === "key" || cls === "number" || cls === "boolean" ? match.replaceAll('"', "") : match;
       }
     );
   }
@@ -74,10 +72,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
     let result = value;
     if (valueType.search("int") !== -1) {
       result = Number(value);
-    } else if (
-      valueType.search("float") !== -1 ||
-      valueType.search("double") !== -1
-    ) {
+    } else if (valueType.search("float") !== -1 || valueType.search("double") !== -1) {
       result = Number(value);
     } else if (valueType.startsWith("bool")) {
       try {
@@ -90,77 +85,63 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
   }
 
   // The message struct is converted into a human-readable string.
-  const messageStructToString = useCallback(
-    (msgStruct, asDict, withEmptyFields) => {
-      if (!msgStruct) return "{}";
-      const result = {};
-      let struct = msgStruct;
-      if (msgStruct.def) {
-        struct = msgStruct.def;
-      }
-      struct.forEach((field) => {
-        if (field.def.length === 0) {
-          // simple types
-          if (field.value || withEmptyFields) {
-            if (field.value) {
-              if (field.is_array) {
-                const values = field.value.split(/\s*,\s*/);
-                // TODO: add check for arrays with constant length
-                result[field.name] = values.map((element) => {
-                  return str2typedValue(element, field.type);
-                });
-              } else {
-                result[field.name] = str2typedValue(field.value, field.type);
-              }
-            } else if (field.default_value) {
-              result[field.name] = field.default_value;
+  const messageStructToString = useCallback((msgStruct, asDict, withEmptyFields) => {
+    if (!msgStruct) return "{}";
+    const result = {};
+    let struct = msgStruct;
+    if (msgStruct.def) {
+      struct = msgStruct.def;
+    }
+    struct.forEach((field) => {
+      if (field.def.length === 0) {
+        // simple types
+        if (field.value || withEmptyFields) {
+          if (field.value) {
+            if (field.is_array) {
+              const values = field.value.split(/\s*,\s*/);
+              // TODO: add check for arrays with constant length
+              result[field.name] = values.map((element) => {
+                return str2typedValue(element, field.type);
+              });
             } else {
-              result[field.name] = "";
+              result[field.name] = str2typedValue(field.value, field.type);
             }
-          }
-        } else if (field.is_array) {
-          const resultArray = [];
-          // it is a complex field type
-          const val = field?.value ? field?.value : field.def;
-          val.forEach((arrayElement) => {
-            resultArray.push(
-              messageStructToString(arrayElement, true, withEmptyFields)
-            );
-          });
-          // append created array
-          if (resultArray.length > 0) {
-            result[field.name] = resultArray;
-          } else if (withEmptyFields) {
-            // create a new array from definition
-            result[field.name] = [
-              messageStructToString(field.def, true, withEmptyFields),
-            ];
-          }
-        } else {
-          // it is a complex type, call subroutine
-          const subResult = messageStructToString(
-            field.def,
-            true,
-            withEmptyFields
-          );
-          if (Object.keys(subResult).length > 0) {
-            result[field.name] = subResult;
+          } else if (field.default_value) {
+            result[field.name] = field.default_value;
+          } else {
+            result[field.name] = "";
           }
         }
-      });
-      return asDict ? result : dictToString(result);
-    },
-    []
-  );
+      } else if (field.is_array) {
+        const resultArray = [];
+        // it is a complex field type
+        const val = field?.value ? field?.value : field.def;
+        val.forEach((arrayElement) => {
+          resultArray.push(messageStructToString(arrayElement, true, withEmptyFields));
+        });
+        // append created array
+        if (resultArray.length > 0) {
+          result[field.name] = resultArray;
+        } else if (withEmptyFields) {
+          // create a new array from definition
+          result[field.name] = [messageStructToString(field.def, true, withEmptyFields)];
+        }
+      } else {
+        // it is a complex type, call subroutine
+        const subResult = messageStructToString(field.def, true, withEmptyFields);
+        if (Object.keys(subResult).length > 0) {
+          result[field.name] = subResult;
+        }
+      }
+    });
+    return asDict ? result : dictToString(result);
+  }, []);
 
   // get item history after the history was loaded
   const fromHistory = useDebounceCallback((index) => {
     const historyInStruct = history[serviceType];
     if (historyInStruct) {
-      const historyItem =
-        index && index < historyInStruct.length
-          ? historyInStruct[index]
-          : historyInStruct[0];
+      const historyItem = index && index < historyInStruct.length ? historyInStruct[index] : historyInStruct[0];
       setServiceStruct(JSON.parse(JSON.stringify(historyItem.msg)));
     }
   }, 100);
@@ -231,9 +212,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
               <InputElements
                 key={srvStruct.type}
                 messageStruct={srvStruct}
-                parentName={
-                  srvStruct.type ? srvStruct.type : `${serviceName}[${srvType}]`
-                }
+                parentName={srvStruct.type ? srvStruct.type : `${serviceName}[${srvType}]`}
                 filterText={searchTerm}
                 onCopyToClipboard={onCopyToClipboard}
               />
@@ -252,11 +231,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
       <InputElements
         key={serviceStruct.type}
         messageStruct={serviceStruct}
-        parentName={
-          serviceStruct.type
-            ? serviceStruct.type
-            : `${serviceName}[${serviceType}]`
-        }
+        parentName={serviceStruct.type ? serviceStruct.type : `${serviceName}[${serviceType}]`}
         filterText={searchText}
         onCopyToClipboard={onCopyToClipboard}
       />
@@ -273,17 +248,10 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
     // store struct to history if new message
     const messageStr = messageStructToString(serviceStruct, false, false);
     const historyInStruct = history[serviceType];
-    if (
-      messageStr !== "{}" &&
-      (!historyInStruct || historyInStruct?.length === 0)
-    ) {
+    if (messageStr !== "{}" && (!historyInStruct || historyInStruct?.length === 0)) {
       updateHistory();
     } else if (historyInStruct) {
-      if (
-        historyInStruct.length === 0 ||
-        messageStr !==
-          messageStructToString(historyInStruct[0].msg, false, false)
-      ) {
+      if (historyInStruct.length === 0 || messageStr !== messageStructToString(historyInStruct[0].msg, false, false)) {
         updateHistory();
       }
     }
@@ -291,11 +259,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
     console.log(`Call service with: ${messageStr}`);
 
     const srvResult = await provider.callService(
-      new LaunchCallService(
-        serviceName,
-        serviceType,
-        JSON.stringify(serviceStruct)
-      )
+      new LaunchCallService(serviceName, serviceType, JSON.stringify(serviceStruct))
     );
     if (srvResult) {
       if (srvResult.error_msg) {
@@ -392,11 +356,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
   }, [resultMessage, settingsCtx.changed]);
 
   return (
-    <Box
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get("backgroundColor")}
-    >
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       <Stack spacing={1} margin={1}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography fontWeight="bold">{serviceName}</Typography>
@@ -442,9 +402,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
                   </Tooltip>
                 )}
                 {historyLength > 0 &&
-                  Array.from(Array(historyLength).keys()).map((index) =>
-                    createHistoryButton(index)
-                  )}
+                  Array.from(Array(historyLength).keys()).map((index) => createHistoryButton(index))}
                 {historyLength > 0 && (
                   <Tooltip title="remove oldest history entry" enterDelay={500}>
                     <Button
@@ -501,16 +459,12 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
         <>---</>
         {!serviceStruct && (
           <Alert severity="error" style={{ minWidth: 0 }}>
-            <AlertTitle>
-              {`Service definition for ${serviceName}[${serviceType}] not found!`}
-            </AlertTitle>
+            <AlertTitle>{`Service definition for ${serviceName}[${serviceType}] not found!`}</AlertTitle>
           </Alert>
         )}
         {resultError && (
           <Alert severity="error" style={{ minWidth: 0 }}>
-            <AlertTitle>
-              {`Service call failed with ${resultError}!`}
-            </AlertTitle>
+            <AlertTitle>{`Service call failed with ${resultError}!`}</AlertTitle>
           </Alert>
         )}
         {resultMessage && createJsonView}

@@ -1,17 +1,14 @@
-import { alpha, styled } from '@mui/material/styles';
-import PropTypes from 'prop-types';
-import React, { useContext, useEffect, useState } from 'react';
-
-import { Box, Chip, Stack, Typography } from '@mui/material';
-
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
-
-import { LoggingContext } from '../../context/LoggingContext';
-import { NavigationContext } from '../../context/NavigationContext';
-import { SettingsContext } from '../../context/SettingsContext';
-import { removeDDSuid } from '../../utils/index';
-import { colorFromHostname } from '../UI/Colors';
-import CopyButton from '../UI/CopyButton';
+import { Box, Chip, Stack, Typography } from "@mui/material";
+import { alpha, styled } from "@mui/material/styles";
+import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
+import PropTypes from "prop-types";
+import React, { useContext, useEffect, useState } from "react";
+import { LoggingContext } from "../../context/LoggingContext";
+import { NavigationContext } from "../../context/NavigationContext";
+import { SettingsContext } from "../../context/SettingsContext";
+import { removeDDSuid } from "../../utils/index";
+import { colorFromHostname } from "../UI/Colors";
+import CopyButton from "../UI/CopyButton";
 
 const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -21,19 +18,19 @@ const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
     borderBottomRightRadius: theme.spacing(2),
     paddingRight: theme.spacing(1),
     fontWeight: theme.typography.fontWeightMedium,
-    '&.Mui-expanded': {
+    "&.Mui-expanded": {
       fontWeight: theme.typography.fontWeightRegular,
     },
-    '&:hover': {
+    "&:hover": {
       backgroundColor: theme.palette.action.hover,
     },
-    '&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused': {
+    "&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused": {
       backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      color: 'var(--tree-view-color)',
+      color: "var(--tree-view-color)",
     },
     [`& .${treeItemClasses.label}`]: {
-      fontWeight: 'inherit',
-      color: 'inherit',
+      fontWeight: "inherit",
+      color: "inherit",
       padding: theme.spacing(0),
     },
     [`& .${treeItemClasses.iconContainer}`]: {
@@ -56,21 +53,21 @@ const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 
 const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   {
-    color = '#1a73e8',
-    bgColor = '#e8f0fe',
-    colorForDarkMode = '#B8E7FB',
-    bgColorForDarkMode = '#071318',
-    labelRoot = '',
+    color = "#1a73e8",
+    bgColor = "#e8f0fe",
+    colorForDarkMode = "#B8E7FB",
+    bgColorForDarkMode = "#071318",
+    labelRoot = "",
     labelIcon = null,
-    labelInfo = '',
+    labelInfo = "",
     labelCount = null,
-    labelText = '',
+    labelText = "",
     requestData = false,
     topicInfo = null,
-    providerName = '',
+    providerName = "",
     ...other
   },
-  ref,
+  ref
 ) {
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
@@ -78,25 +75,21 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   const [label, setLabel] = useState(labelText);
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
   const styleProps = {
-    '--tree-view-color': settingsCtx.get('useDarkMode')
-      ? colorForDarkMode
-      : color,
-    '--tree-view-bg-color': settingsCtx.get('useDarkMode')
-      ? bgColorForDarkMode
-      : bgColor,
+    "--tree-view-color": settingsCtx.get("useDarkMode") ? colorForDarkMode : color,
+    "--tree-view-bg-color": settingsCtx.get("useDarkMode") ? bgColorForDarkMode : bgColor,
   };
 
   const getHostStyle = () => {
-    if (topicInfo?.providerName && settingsCtx.get('colorizeHosts')) {
+    if (topicInfo?.providerName && settingsCtx.get("colorizeHosts")) {
       return {
         flexGrow: 1,
-        alignItems: 'center',
-        borderLeftStyle: 'solid',
+        alignItems: "center",
+        borderLeftStyle: "solid",
         borderLeftColor: colorFromHostname(topicInfo?.providerName),
-        borderLeftWidth: '0.6em',
+        borderLeftWidth: "0.6em",
       };
     }
-    return { flexGrow: 1, alignItems: 'center' };
+    return { flexGrow: 1, alignItems: "center" };
   };
 
   useEffect(() => {
@@ -116,19 +109,17 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
         <Stack direction="column">
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               // p: 0.3,
               pr: 0,
             }}
           >
-            {labelIcon && (
-              <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />
-            )}
+            {labelIcon && <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />}
             <Stack spacing={1} direction="row" sx={getHostStyle()}>
               <Typography
                 variant="body2"
-                sx={{ fontWeight: 'inherit' }}
+                sx={{ fontWeight: "inherit" }}
                 onClick={(e) => {
                   if (e.detail === 2) {
                     navigator.clipboard.writeText(labelText);
@@ -144,7 +135,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
               direction="row"
               spacing={1}
               sx={{
-                alignItems: 'center',
+                alignItems: "center",
               }}
             >
               {labelInfo && (
@@ -174,9 +165,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     size="small"
                     title="publishers"
                     // showZero={true}
-                    color={
-                      topicInfo.publishers.length > 0 ? 'default' : 'warning'
-                    }
+                    color={topicInfo.publishers.length > 0 ? "default" : "warning"}
                     label={topicInfo.publishers.length}
                     onClick={(event) => {
                       setShowExtendedInfo(!showExtendedInfo);
@@ -188,9 +177,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     size="small"
                     title="subscribers"
                     // showZero={true}
-                    color={
-                      topicInfo.subscribers.length > 0 ? 'default' : 'warning'
-                    }
+                    color={topicInfo.subscribers.length > 0 ? "default" : "warning"}
                     label={topicInfo.subscribers.length}
                     onClick={(event) => {
                       setShowExtendedInfo(!showExtendedInfo);
@@ -213,9 +200,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([
-                          `${topicInfo.providerId}${item.replaceAll('/', '.')}`,
-                        ]);
+                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", ".")}`]);
                       }}
                     >
                       {pubNodeName}
@@ -234,9 +219,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([
-                          `${topicInfo.providerId}${item.replaceAll('/', '.')}`,
-                        ]);
+                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", ".")}`]);
                       }}
                     >
                       {subNodeName}

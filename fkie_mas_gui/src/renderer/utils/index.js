@@ -3,7 +3,7 @@ const generateUniqueId = () => {
 };
 
 const extractSubstring = (data, s1, s2) => {
-  if (!data || data.length === 0) return '';
+  if (!data || data.length === 0) return "";
 
   let indexS1 = 0;
   let indexS2 = data.length;
@@ -17,7 +17,7 @@ const extractSubstring = (data, s1, s2) => {
 const delay = (ms) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve('');
+      resolve("");
     }, ms);
   });
 };
@@ -26,23 +26,23 @@ const pathJoin = (pathArr) => {
   return pathArr
     .map((path) => {
       let result = path;
-      if (result[0] === '/') {
+      if (result[0] === "/") {
         result = result.slice(1);
       }
-      if (result[result.length - 1] === '/') {
+      if (result[result.length - 1] === "/") {
         result = result.slice(0, result.length - 1);
       }
       return result;
     })
-    .join('/');
+    .join("/");
 };
 
 const splitOrSearchTerm = (searchTerm) => {
-  return searchTerm.split(' ').filter((item) => item.length > 0);
+  return searchTerm.split(" ").filter((item) => item.length > 0);
 };
 
 const splitAndSearchTerm = (searchTerm) => {
-  return searchTerm.split('+').filter((item) => item.length > 0);
+  return searchTerm.split("+").filter((item) => item.length > 0);
 };
 
 /** Search for a given search term in given word without split the term.
@@ -76,7 +76,7 @@ const findIn = (searchTerms, words) => {
   for (const sO of searchOrTerms) {
     const searchAndTerms = splitAndSearchTerm(sO);
     if (searchAndTerms.length === 1) {
-      invert = searchAndTerms[0].startsWith('!');
+      invert = searchAndTerms[0].startsWith("!");
       const searchFor = invert ? searchAndTerms[0].slice(1) : searchAndTerms[0];
       const found = findTerm(searchFor, words);
       if (invert && found) {
@@ -90,7 +90,7 @@ const findIn = (searchTerms, words) => {
       let foundAnd = true;
       // eslint-disable-next-line no-restricted-syntax
       for (const sA of searchAndTerms) {
-        const sInvert = sA.startsWith('!');
+        const sInvert = sA.startsWith("!");
         const searchFor = sInvert ? sA.slice(1) : sA;
         const found = findTerm(searchFor, words);
         if (sInvert && found) {
@@ -110,7 +110,7 @@ const findIn = (searchTerms, words) => {
 };
 
 const removeDDSuid = (item) => {
-  const lastIndex = item.lastIndexOf('-');
+  const lastIndex = item.lastIndexOf("-");
   return lastIndex === -1 ? item : item.substring(0, lastIndex);
 };
 
@@ -121,19 +121,11 @@ const removeDDSuid = (item) => {
  */
 const getRosNameAbb = (name) => {
   if (!name) return name;
-  const base = name.replace(/^.*[\\/]/, '').replace(/@.*/, '');
+  const base = name.replace(/^.*[\\/]/, "").replace(/@.*/, "");
   if (base) {
     return `${base[0]}${base[base.length - 1]}`;
   }
   return name;
 };
 
-export {
-  delay,
-  extractSubstring,
-  findIn,
-  generateUniqueId,
-  getRosNameAbb,
-  pathJoin,
-  removeDDSuid,
-};
+export { delay, extractSubstring, findIn, generateUniqueId, getRosNameAbb, pathJoin, removeDDSuid };

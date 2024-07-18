@@ -7,10 +7,7 @@ export enum DiagnosticLevel {
   STALE = 3,
 }
 
-export const getMaxDiagnosticLevel = (
-  lvl1: DiagnosticLevel,
-  lvl2: DiagnosticLevel,
-) => {
+export const getMaxDiagnosticLevel = (lvl1: DiagnosticLevel, lvl2: DiagnosticLevel) => {
   const maxLvl = Math.max(lvl1, lvl2);
   if (maxLvl === DiagnosticLevel.STALE) {
     const minLvl = Math.min(lvl1, lvl2);
@@ -63,7 +60,7 @@ export class DiagnosticStatus {
     name: string,
     message: string,
     hardware_id: string,
-    values: DiagnosticKeyValue[] = [],
+    values: DiagnosticKeyValue[] = []
   ) {
     this.level = level;
     this.name = name;

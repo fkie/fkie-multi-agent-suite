@@ -1,11 +1,11 @@
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { IconButton } from '@mui/material';
-import { grey } from '@mui/material/colors';
-import PropTypes from 'prop-types';
-import { useContext } from 'react';
-import { LoggingContext } from '../../context/LoggingContext';
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { IconButton } from "@mui/material";
+import { grey } from "@mui/material/colors";
+import PropTypes from "prop-types";
+import { useContext } from "react";
+import { LoggingContext } from "../../context/LoggingContext";
 
-function CopyButton({ value, fontSize = 'inherit' }) {
+function CopyButton({ value, fontSize = "inherit" }) {
   const logCtx = useContext(LoggingContext);
 
   return (

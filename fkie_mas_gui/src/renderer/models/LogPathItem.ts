@@ -27,13 +27,7 @@ class LogPathItem {
    * @param {string} ros_log - the absolute path to the ros log file.
    * @param {boolean} ros_log_exists - False if the file does not exists.
    */
-  constructor(
-    node: string,
-    screen_log: string,
-    screen_log_exists: boolean,
-    ros_log: string,
-    ros_log_exists: boolean,
-  ) {
+  constructor(node: string, screen_log: string, screen_log_exists: boolean, ros_log: string, ros_log_exists: boolean) {
     this.id = this.guidGenerator();
     this.node = node;
     this.screen_log = screen_log;

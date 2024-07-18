@@ -1,21 +1,21 @@
-import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from '@mui/material';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useReducer, useState } from 'react';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import BorderColorIcon from '@mui/icons-material/BorderColor';
-import InputIcon from '@mui/icons-material/Input';
-import { emitCustomEvent } from 'react-custom-events';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import Tag from '../UI/Tag';
-import { RosContext } from '../../context/RosContext';
-import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from '../../context/SettingsContext';
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from '../../pages/NodeManager/layout';
-import { getBaseName, getFileExtension, getFileName } from '../../models';
-import FileEditorPanel from '../../pages/NodeManager/panels/FileEditorPanel';
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from '../../utils/events';
-import LaunchFileModal from '../LaunchFileModal/LaunchFileModal';
-import TreeDirectory from './TreeDirectory';
-import LoggingContext from '../../context/LoggingContext';
+import BorderColorIcon from "@mui/icons-material/BorderColor";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import InputIcon from "@mui/icons-material/Input";
+import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from "@mui/material";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useReducer, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import LoggingContext from "../../context/LoggingContext";
+import { RosContext } from "../../context/RosContext";
+import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "../../context/SettingsContext";
+import useLocalStorage from "../../hooks/useLocalStorage";
+import { getBaseName, getFileExtension, getFileName } from "../../models";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
+import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
+import LaunchFileModal from "../LaunchFileModal/LaunchFileModal";
+import Tag from "../UI/Tag";
+import TreeDirectory from "./TreeDirectory";
 
 /**
  * Sorting function used for comparing two package objects
@@ -48,9 +48,9 @@ function PackageExplorer({ packageList, selectedProvider }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
-  const [launchFileHistory, setLaunchFileHistory] = useLocalStorage('PackageExplorer:launchFileHistory', []);
+  const [launchFileHistory, setLaunchFileHistory] = useLocalStorage("PackageExplorer:launchFileHistory", []);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedLaunchFile, setSelectedLaunchFile] = useState(null);
@@ -86,12 +86,12 @@ function PackageExplorer({ packageList, selectedProvider }) {
         hostHistory.unshift(launchFile);
         // Cap host history length and return the merged histories.
         // TODO: Make the history length a parameter.
-        return [...hostHistory.slice(0, settingsCtx.get('launchHistoryLength')), ...otherHistory];
+        return [...hostHistory.slice(0, settingsCtx.get("launchHistoryLength")), ...otherHistory];
       }
       return prevHistory;
     });
     // inform host panel tab about loaded launch file
-    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODES, 'default', {}));
+    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODES, "default", {}));
   }, [rosCtx, selectedProvider, setLaunchFileHistory, selectedLaunchFile, settingsCtx]);
 
   /**
@@ -152,9 +152,9 @@ function PackageExplorer({ packageList, selectedProvider }) {
       fl = fl.filter((f) => {
         // ignore temporal directories
         // TODO: Make a setting parameter for this
-        if (f.path.includes('/node_modules/')) return false;
-        if (f.path.includes('/build/')) return false;
-        if (f.path.includes('/__pycache__/')) return false;
+        if (f.path.includes("/node_modules/")) return false;
+        if (f.path.includes("/build/")) return false;
+        if (f.path.includes("/__pycache__/")) return false;
         return true;
       });
 
@@ -167,7 +167,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         fl = fl.filter((f) => {
           // check file extension for "interesting" files
           const fileExtension = getFileExtension(f.path);
-          return ['launch', 'yaml', 'md', 'h', 'hpp', 'c', 'cpp', 'py', 'xml', 'txt', 'sdf', 'config', 'cfg'].includes(
+          return ["launch", "yaml", "md", "h", "hpp", "c", "cpp", "py", "xml", "txt", "sdf", "config", "cfg"].includes(
             fileExtension
           );
         });
@@ -175,7 +175,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         setIgnoringNonRelevantPackageFiles(false);
       }
 
-      const pathItemMap = new Map('', '');
+      const pathItemMap = new Map("", "");
 
       // Add extra properties to file object.
       const itemList = fl.map((f) => {
@@ -183,7 +183,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         f.package = packageName;
         // remove the package path from the file path
         // replace the file name by file id, to prevent name collisions in subfolders
-        f.relativePath = f.path.replace(`${packagePath}/`, '/').replace(f.name, f.id);
+        f.relativePath = f.path.replace(`${packagePath}/`, "/").replace(f.name, f.id);
         pathItemMap.set(f.id, f);
         return f;
       });
@@ -196,7 +196,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
       // create a tree structure
       // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
       itemList.forEach((item) => {
-        item.relativePath.split('/').reduce((r, name, i, a) => {
+        item.relativePath.split("/").reduce((r, name, i, a) => {
           if (!r[name]) {
             r[name] = { treeFile: [] };
 
@@ -296,8 +296,8 @@ function PackageExplorer({ packageList, selectedProvider }) {
             rootFilePath={fileObj.path}
           />,
           true,
-          LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
-          new LayoutTabConfig(false, 'editor')
+          LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+          new LayoutTabConfig(false, "editor")
         )
       );
     },
@@ -372,7 +372,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                 margin="dense"
                 size="small"
                 // autoFocus
-                sx={{ fontSize: 'inherit' }}
+                sx={{ fontSize: "inherit" }}
               />
             )}
             onChange={(event, newSelectedPackage) => {
@@ -456,7 +456,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   <ContentCopyIcon fontSize="inherit" />
                 </IconButton>
               </span>
-            </Tooltip>{' '}
+            </Tooltip>{" "}
           </ButtonGroup>
         </Stack>
 
@@ -476,7 +476,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
           // height="100%"
           overflow="auto"
           onKeyUp={(e) => {
-            if (e.key === 'Delete') {
+            if (e.key === "Delete") {
               // remove launch file from history
               setLaunchFileHistory((prevHistory) => {
                 if (selectedFile) {

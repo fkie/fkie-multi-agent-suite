@@ -1,4 +1,4 @@
-import { generateUniqueId } from '../utils';
+import { generateUniqueId } from "../utils";
 
 /**
  * RosPackage models packages in a ROS system

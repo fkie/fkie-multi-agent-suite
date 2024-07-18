@@ -1,13 +1,13 @@
-import MoreVertSharpIcon from '@mui/icons-material/MoreVert';
-import { IconButton } from '@mui/material';
-import PropTypes from 'prop-types';
-import { useMemo } from 'react';
-import OverflowMenu from '../../../components/UI/OverflowMenu';
+import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
+import { IconButton } from "@mui/material";
+import PropTypes from "prop-types";
+import { useMemo } from "react";
+import OverflowMenu from "../../../components/UI/OverflowMenu";
 
 function OverflowMenuProviderSelector({
   onClick,
   providerMap,
-  actionType = '',
+  actionType = "",
   args = {},
   icon: MyIcon = MoreVertSharpIcon,
 }) {
@@ -27,7 +27,7 @@ function OverflowMenuProviderSelector({
     if (providerMap?.size > 1) {
       return (
         <OverflowMenu
-          icon={<MyIcon sx={{ fontSize: 'inherit' }} />}
+          icon={<MyIcon sx={{ fontSize: "inherit" }} />}
           options={providerOptions}
           id="provider-options"
           showBadge
@@ -40,21 +40,16 @@ function OverflowMenuProviderSelector({
         <IconButton
           size="small"
           onClick={() => {
-            onClick(
-              actionType,
-              providerOptions[0].providerId,
-              providerOptions[0].name,
-              args,
-            );
+            onClick(actionType, providerOptions[0].providerId, providerOptions[0].name, args);
           }}
         >
-          <MyIcon sx={{ fontSize: 'inherit' }} />
+          <MyIcon sx={{ fontSize: "inherit" }} />
         </IconButton>
       );
     }
     return (
       <IconButton size="small" disabled>
-        <MyIcon sx={{ fontSize: 'inherit' }} />
+        <MyIcon sx={{ fontSize: "inherit" }} />
       </IconButton>
     );
   }, [providerMap, actionType, args]);

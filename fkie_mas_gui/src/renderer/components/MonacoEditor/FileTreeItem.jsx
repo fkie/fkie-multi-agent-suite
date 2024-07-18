@@ -1,11 +1,9 @@
-import PropTypes from 'prop-types';
-import React from 'react';
-
-import TurnSlightLeftIcon from '@mui/icons-material/TurnSlightLeft';
-import { Box, Stack, Typography } from '@mui/material';
-import { alpha, styled } from '@mui/material/styles';
-
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
+import TurnSlightLeftIcon from "@mui/icons-material/TurnSlightLeft";
+import { Box, Stack, Typography } from "@mui/material";
+import { alpha, styled } from "@mui/material/styles";
+import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
+import PropTypes from "prop-types";
+import React from "react";
 
 const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -15,19 +13,19 @@ const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({
     borderBottomRightRadius: theme.spacing(2),
     paddingRight: theme.spacing(1),
     fontWeight: theme.typography.fontWeightMedium,
-    '&.Mui-expanded': {
+    "&.Mui-expanded": {
       fontWeight: theme.typography.fontWeightRegular,
     },
-    '&:hover': {
+    "&:hover": {
       backgroundColor: theme.palette.action.hover,
     },
-    '&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused': {
+    "&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused": {
       backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      color: 'var(--tree-view-color)',
+      color: "var(--tree-view-color)",
     },
     [`& .${treeItemClasses.label}`]: {
-      fontWeight: 'inherit',
-      color: 'inherit',
+      fontWeight: "inherit",
+      color: "inherit",
       padding: theme.spacing(0),
     },
     [`& .${treeItemClasses.iconContainer}`]: {
@@ -51,9 +49,9 @@ const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 const FileTreeItem = React.forwardRef(function FileTreeItem(
   {
     labelIcon = null,
-    textColor = '',
-    labelText = '',
-    labelInfo = '',
+    textColor = "",
+    labelText = "",
+    labelInfo = "",
     labelLine = -1,
     modified = false,
     selected = false,
@@ -63,24 +61,24 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
     onLinenumberClick = null,
     ...other
   },
-  ref,
+  ref
 ) {
   const getLabelSx = () => {
     if (selected && modified) {
       return {
-        textDecoration: 'underline',
+        textDecoration: "underline",
         fontWeight: 600,
-        fontSize: '0.9em',
+        fontSize: "0.9em",
       };
     }
     if (modified) {
-      return { fontWeight: 600, fontStyle: 'italic' };
+      return { fontWeight: 600, fontStyle: "italic" };
     }
     if (selected) {
       return {
-        textDecoration: 'underline',
+        textDecoration: "underline",
         fontWeight: 600,
-        fontSize: '0.9em',
+        fontSize: "0.9em",
       };
     }
     return {};
@@ -91,9 +89,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
       label={
         <Stack direction="column">
           <Stack spacing={1} direction="row" alignItems="center" marginLeft={1}>
-            {labelIcon && (
-              <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />
-            )}
+            {labelIcon && <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />}
 
             <Typography
               flexGrow={1}
@@ -112,7 +108,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
               }}
               color={textColor}
             >
-              {modified && '* '}
+              {modified && "* "}
               {labelText}
             </Typography>
 

@@ -1,14 +1,7 @@
 /* eslint-disable max-classes-per-file */
-import { ConnectionState } from '.';
-import {
-  LaunchContent,
-  PathEvent,
-  RosNode,
-  ScreensMapping,
-  SubscriberEvent,
-  SystemWarningGroup,
-} from '../models';
-import Provider from './Provider';
+import { ConnectionState } from ".";
+import { LaunchContent, PathEvent, RosNode, ScreensMapping, SubscriberEvent, SystemWarningGroup } from "../models";
+import Provider from "./Provider";
 
 export { ConnectionState };
 
@@ -19,7 +12,7 @@ export class EventProviderActivity {
 
   type: string;
 
-  constructor(provider: Provider, active: boolean, type: string = '') {
+  constructor(provider: Provider, active: boolean, type: string = "") {
     this.provider = provider;
     this.active = active;
     this.type = type;
@@ -100,12 +93,7 @@ export class EventProviderState {
 
   details: string;
 
-  constructor(
-    provider: Provider,
-    newState: ConnectionState,
-    oldState: ConnectionState,
-    details: string = '',
-  ) {
+  constructor(provider: Provider, newState: ConnectionState, oldState: ConnectionState, details: string = "") {
     this.provider = provider;
     this.newState = newState;
     this.oldState = oldState;

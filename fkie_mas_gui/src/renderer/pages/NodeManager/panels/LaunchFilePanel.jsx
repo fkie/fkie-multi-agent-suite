@@ -1,27 +1,12 @@
-import PropTypes from 'prop-types';
-import { useContext } from 'react';
-
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Chip,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Stack,
-  Typography,
-} from '@mui/material';
-
-import { TreeItem, SimpleTreeView } from '@mui/x-tree-view';
-
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
-import { VariableSizeList } from 'react-window';
-
-import { SettingsContext } from '../../../context/SettingsContext';
-import { LaunchContent } from '../../../models';
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Alert, AlertTitle, Box, Chip, ListItem, ListItemButton, ListItemText, Stack, Typography } from "@mui/material";
+import { SimpleTreeView, TreeItem } from "@mui/x-tree-view";
+import PropTypes from "prop-types";
+import { useContext } from "react";
+import { VariableSizeList } from "react-window";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { LaunchContent } from "../../../models";
 
 function LaunchFilePanel({ launchContent }) {
   const settingsCtx = useContext(SettingsContext);
@@ -29,9 +14,7 @@ function LaunchFilePanel({ launchContent }) {
   const nodelets = launchContent.nodes
     .filter((e) => e.composable_container)
     .reduce((tree, nodelet) => {
-      const manager = tree.find(
-        (n) => n.manager && n.manager === nodelet.composable_container,
-      );
+      const manager = tree.find((n) => n.manager && n.manager === nodelet.composable_container);
       if (manager) {
         manager.nodes.push(nodelet.node_name);
       } else {
@@ -45,14 +28,7 @@ function LaunchFilePanel({ launchContent }) {
 
   const renderNodeRow = ({ index, style }) => {
     return (
-      <ListItem
-        style={style}
-        key={index}
-        component="div"
-        disablePadding
-        dense
-        disableGutters
-      >
+      <ListItem style={style} key={index} component="div" disablePadding dense disableGutters>
         <ListItemButton dense disableGutters>
           <ListItemText primary={`${nodes[index].node_name}`} />
         </ListItemButton>
@@ -86,10 +62,10 @@ function LaunchFilePanel({ launchContent }) {
   // };
   const chipSX = {
     // fontSize: SettingsCtx.fontSize,
-    height: 'auto',
-    '& .MuiChip-label': {
-      display: 'block',
-      whiteSpace: 'normal',
+    height: "auto",
+    "& .MuiChip-label": {
+      display: "block",
+      whiteSpace: "normal",
     },
   };
 
@@ -98,7 +74,7 @@ function LaunchFilePanel({ launchContent }) {
       // width="100%"
       height="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack spacing={1}>
         <Stack direction="row" spacing={1}>
@@ -138,45 +114,31 @@ function LaunchFilePanel({ launchContent }) {
 
         {/* TODO: Fix and add arguments of the launch file */}
 
-        <Typography variant="body">
-          Arguments {`[${launchContent.args.length}]`}
-        </Typography>
+        <Typography variant="body">Arguments {`[${launchContent.args.length}]`}</Typography>
 
-        {launchContent &&
-          launchContent.args &&
-          launchContent.args.length > 0 && (
-            <SimpleTreeView
-              aria-label="file system navigator"
-              slots={{ collapseIcon: ExpandMoreIcon, expandIcon: ChevronRightIcon }}
-            >
-              {launchContent.args.map((arg) => {
-                return (
-                  <TreeItem
-                    key={`${arg.name}_${arg.name}`}
-                    itemId={arg.name}
-                    label={`${arg.name}: [${arg.value}]`}
-                  />
-                );
-              })}
-            </SimpleTreeView>
-          )}
+        {launchContent && launchContent.args && launchContent.args.length > 0 && (
+          <SimpleTreeView
+            aria-label="file system navigator"
+            slots={{ collapseIcon: ExpandMoreIcon, expandIcon: ChevronRightIcon }}
+          >
+            {launchContent.args.map((arg) => {
+              return (
+                <TreeItem key={`${arg.name}_${arg.name}`} itemId={arg.name} label={`${arg.name}: [${arg.value}]`} />
+              );
+            })}
+          </SimpleTreeView>
+        )}
 
         {launchContent && nodelets.length > 0 && (
           <>
-            <Typography variant="body">
-              Nodelets {`[${nodelets.length}]`}
-            </Typography>
+            <Typography variant="body">Nodelets {`[${nodelets.length}]`}</Typography>
             <SimpleTreeView
               aria-label="file system navigator"
               slots={{ collapseIcon: ExpandMoreIcon, expandIcon: ChevronRightIcon }}
             >
               {nodelets.map((nodelet) => {
                 return (
-                  <TreeItem
-                    itemId={nodelet.manager}
-                    label={nodelet.manager}
-                    key={nodelet.manager}
-                  >
+                  <TreeItem itemId={nodelet.manager} label={nodelet.manager} key={nodelet.manager}>
                     {nodelet.nodes.map((node) => {
                       return <TreeItem itemId={node} label={node} key={node} />;
                     })}
@@ -192,25 +154,18 @@ function LaunchFilePanel({ launchContent }) {
             <Typography variant="body">Nodes {`[${nodes.length}]`}</Typography>
             <Box
               sx={{
-                width: '100%',
+                width: "100%",
                 height: 150,
               }}
             >
-              <VariableSizeList
-                height={150}
-                width="100%"
-                itemSize={(index) => 30}
-                itemCount={nodes.length}
-              >
+              <VariableSizeList height={150} width="100%" itemSize={(index) => 30} itemCount={nodes.length}>
                 {renderNodeRow}
               </VariableSizeList>
             </Box>
           </>
         )}
 
-        <Typography variant="body">
-          Parameters {`[${launchContent.parameters.length}]`}
-        </Typography>
+        <Typography variant="body">Parameters {`[${launchContent.parameters.length}]`}</Typography>
 
         {/* TODO: Do we want to show parameters? */}
         {/* {launchContent &&

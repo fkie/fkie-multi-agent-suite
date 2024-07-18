@@ -1,19 +1,16 @@
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import { SimpleTreeView } from '@mui/x-tree-view';
-import PropTypes from 'prop-types';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-
-import { FileIcon } from 'react-file-icon';
-
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import { blue, red } from '@mui/material/colors';
-
-import { LAUNCH_FILE_EXTENSIONS } from '../../context/SettingsContext';
-import { getFileExtension } from '../../models';
-import { generateUniqueId } from '../../utils';
-import defaultFileIconStyles from './FileIconDefaultStyles';
-import PackageItemTree from './PackageItemTree';
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
+import { blue, red } from "@mui/material/colors";
+import { SimpleTreeView } from "@mui/x-tree-view";
+import PropTypes from "prop-types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FileIcon } from "react-file-icon";
+import { LAUNCH_FILE_EXTENSIONS } from "../../context/SettingsContext";
+import { getFileExtension } from "../../models";
+import { generateUniqueId } from "../../utils";
+import defaultFileIconStyles from "./FileIconDefaultStyles";
+import PackageItemTree from "./PackageItemTree";
 
 function TreeDirectory({
   packageItemsTree,
@@ -53,7 +50,7 @@ function TreeDirectory({
         onNodeSelect(event, itemId);
       }
     },
-    [onNodeSelect],
+    [onNodeSelect]
   );
 
   /**
@@ -74,7 +71,7 @@ function TreeDirectory({
         setExpanded((prev) => [...prev, id]);
       }
     },
-    [expanded],
+    [expanded]
   );
 
   /**
@@ -95,7 +92,7 @@ function TreeDirectory({
         setExpanded((prev) => [...prev, id]);
       }
     },
-    [expanded],
+    [expanded]
   );
 
   /**
@@ -104,10 +101,9 @@ function TreeDirectory({
   const handleFileDoubleClick = useCallback(
     (label, id, ctrlKey, shiftKey, altKey) => {
       if (!label || !id) return;
-      if (onFileDoubleClick)
-        onFileDoubleClick(label, id, ctrlKey, shiftKey, altKey);
+      if (onFileDoubleClick) onFileDoubleClick(label, id, ctrlKey, shiftKey, altKey);
     },
-    [onFileDoubleClick],
+    [onFileDoubleClick]
   );
 
   /**
@@ -116,7 +112,7 @@ function TreeDirectory({
   const buildTreePackageItems = useCallback(
     (packageName, treeItem) => {
       if (!treeItem) {
-        console.error('Invalid item ', packageName, treeItem);
+        console.error("Invalid item ", packageName, treeItem);
         return <div key={`${packageName}#${generateUniqueId()}`} />;
       }
       const { directoryName, children, file } = treeItem;
@@ -124,23 +120,17 @@ function TreeDirectory({
       if (file && children && children.length === 0) {
         // no children means that [item.value] is a file
         const fileExtension = getFileExtension(file.name);
-        const isLaunchFile = LAUNCH_FILE_EXTENSIONS.find((fe) =>
-          file.path.endsWith(fe),
-        );
+        const isLaunchFile = LAUNCH_FILE_EXTENSIONS.find((fe) => file.path.endsWith(fe));
         return (
           <PackageItemTree
             key={`${packageName}#${file.id}`}
             itemId={`${file.id}`}
-            labelText={file.name.replace('/', '')}
-            tooltip={isLaunchFile ? file.path : ''}
+            labelText={file.name.replace("/", "")}
+            tooltip={isLaunchFile ? file.path : ""}
             // enableCopy={!!isLaunchFile}
             enableCopy={false}
             labelIconComponent={
-              <FileIcon
-                extension={fileExtension}
-                radius={10}
-                {...defaultFileIconStyles[fileExtension]}
-              />
+              <FileIcon extension={fileExtension} radius={10} {...defaultFileIconStyles[fileExtension]} />
             }
             iconColor={blue[700]}
             color={blue[700]}
@@ -156,7 +146,7 @@ function TreeDirectory({
         <PackageItemTree
           key={`${packageName}#${directoryName}`}
           itemId={`${packageName}#${directoryName}`}
-          labelText={directoryName.replace('/', '')}
+          labelText={directoryName.replace("/", "")}
           labelIcon={FolderOutlinedIcon}
           enableCopy={false}
           iconColor={blue[700]}
@@ -172,7 +162,7 @@ function TreeDirectory({
         </PackageItemTree>
       );
     },
-    [handleFolderDoubleClick, handleFileDoubleClick, handleFolderClick],
+    [handleFolderDoubleClick, handleFileDoubleClick, handleFolderClick]
   );
 
   /**
@@ -185,9 +175,7 @@ function TreeDirectory({
         aria-label="package list"
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // use either the expanded state or the key of the file directory (expand the first layer)
-        expandedItems={
-          expanded.length > 0 ? expanded : Object.keys(packageItemsTree)
-        }
+        expandedItems={expanded.length > 0 ? expanded : Object.keys(packageItemsTree)}
         selectedItems={selectedItems}
         onExpandedItemsChange={handleToggle}
         onSelectedItemsChange={handleSelect}
@@ -202,13 +190,9 @@ function TreeDirectory({
               <PackageItemTree
                 key={`${packageName}#${file.id}`}
                 itemId={`${file.id}`}
-                labelText={`${file.name.replace('/', '')} [${file.package}]`}
+                labelText={`${file.name.replace("/", "")} [${file.package}]`}
                 labelIconComponent={
-                  <FileIcon
-                    extension={fileExtension}
-                    radius={10}
-                    {...defaultFileIconStyles[fileExtension]}
-                  />
+                  <FileIcon extension={fileExtension} radius={10} {...defaultFileIconStyles[fileExtension]} />
                 }
                 tooltip={file.path}
                 enableCopy={false}

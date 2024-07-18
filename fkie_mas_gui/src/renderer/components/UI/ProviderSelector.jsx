@@ -1,22 +1,19 @@
-import { MenuItem, Select } from '@mui/material';
-import PropTypes from 'prop-types';
-import { useContext, useEffect, useState } from 'react';
+import { MenuItem, Select } from "@mui/material";
+import PropTypes from "prop-types";
+import { useContext, useEffect, useState } from "react";
+import { RosContext } from "../../context/RosContext";
 
-import { RosContext } from '../../context/RosContext';
-
-function ProviderSelector({ defaultProvider = '', setSelectedProvider }) {
+function ProviderSelector({ defaultProvider = "", setSelectedProvider }) {
   const rosCtx = useContext(RosContext);
   const [currentProvider, setCurrentProvider] = useState(defaultProvider);
   const [providerNames, setProviderNames] = useState(
-    defaultProvider
-      ? [{ name: rosCtx.getProviderName(defaultProvider), id: defaultProvider }]
-      : [],
+    defaultProvider ? [{ name: rosCtx.getProviderName(defaultProvider), id: defaultProvider }] : []
   );
 
   useEffect(() => {
     const provNames = [];
     let hasLocal = false;
-    let newSelectedProvider = '';
+    let newSelectedProvider = "";
     if (rosCtx.providersConnected.length === 1) {
       // select the first host if only one is available
       const currProv = rosCtx.providersConnected[0];
@@ -28,7 +25,7 @@ function ProviderSelector({ defaultProvider = '', setSelectedProvider }) {
     } else {
       // get all connected hosts and select the first local host
       rosCtx.providersConnected.forEach((prov) => {
-        if (currentProvider === '') {
+        if (currentProvider === "") {
           if (prov && prov.isLocalHost && !hasLocal) {
             hasLocal = true;
             newSelectedProvider = prov.id;

@@ -1,21 +1,21 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 // mui imports
-import AddToQueueIcon from '@mui/icons-material/AddToQueue';
-import BorderColorIcon from '@mui/icons-material/BorderColor';
-import CancelPresentationIcon from '@mui/icons-material/CancelPresentation';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
-import LocalPlayOutlinedIcon from '@mui/icons-material/LocalPlayOutlined';
-import DvrIcon from '@mui/icons-material/Dvr';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
-import StopIcon from '@mui/icons-material/Stop';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import TuneIcon from '@mui/icons-material/Tune';
-import WysiwygIcon from '@mui/icons-material/Wysiwyg';
+import AddToQueueIcon from "@mui/icons-material/AddToQueue";
+import BorderColorIcon from "@mui/icons-material/BorderColor";
+import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import DvrIcon from "@mui/icons-material/Dvr";
+import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
+import LocalPlayOutlinedIcon from "@mui/icons-material/LocalPlayOutlined";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
+import StopIcon from "@mui/icons-material/Stop";
+import TerminalIcon from "@mui/icons-material/Terminal";
+import TuneIcon from "@mui/icons-material/Tune";
+import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 import {
   Alert,
   AlertTitle,
@@ -29,31 +29,31 @@ import {
   Stack,
   ToggleButton,
   Tooltip,
-} from '@mui/material';
-import { useDebounceCallback } from '@react-hook/debounce';
-import { emitCustomEvent, useCustomEventListener } from 'react-custom-events';
-import { ConfirmModal, HostTreeView, MapSelectionModal, SearchBar } from '../../../components';
-import { LoggingContext } from '../../../context/LoggingContext';
-import { NavigationContext } from '../../../context/NavigationContext';
-import { RosContext } from '../../../context/RosContext';
-import { SSHContext } from '../../../context/SSHContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import useQueue from '../../../hooks/useQueue';
-import { RosNode, RosNodeStatus, getBaseName } from '../../../models';
-import { CmdType } from '../../../providers';
-import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/eventTypes';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { ConfirmModal, HostTreeView, MapSelectionModal, SearchBar } from "../../../components";
+import { LoggingContext } from "../../../context/LoggingContext";
+import { NavigationContext } from "../../../context/NavigationContext";
+import { RosContext } from "../../../context/RosContext";
+import { SSHContext } from "../../../context/SSHContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import useQueue from "../../../hooks/useQueue";
+import { RosNode, RosNodeStatus, getBaseName } from "../../../models";
+import { CmdType } from "../../../providers";
+import { EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
 import {
   EVENT_EDITOR_SELECT_RANGE,
   EVENT_OPEN_COMPONENT,
   eventEditorSelectRange,
   eventOpenComponent,
-} from '../../../utils/events';
-import { findIn } from '../../../utils/index';
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from '../layout';
-import FileEditorPanel from './FileEditorPanel';
-import NodeLoggerPanel from './NodeLoggerPanel';
-import ParameterPanel from './ParameterPanel';
-import SingleTerminalPanel from './SingleTerminalPanel';
+} from "../../../utils/events";
+import { findIn } from "../../../utils/index";
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import FileEditorPanel from "./FileEditorPanel";
+import NodeLoggerPanel from "./NodeLoggerPanel";
+import ParameterPanel from "./ParameterPanel";
+import SingleTerminalPanel from "./SingleTerminalPanel";
 
 // TODO: Add settings for this
 // const IGNORED_NODES = ['rostopic_'];
@@ -68,8 +68,8 @@ function HostTreeViewPanel() {
   const navCtx = useContext(NavigationContext);
 
   // state variables
-  const [showRemoteNodes, setShowRemoteNodes] = useState(settingsCtx.get('showRemoteNodes'));
-  const [filterText, setFilterText] = useState('');
+  const [showRemoteNodes, setShowRemoteNodes] = useState(settingsCtx.get("showRemoteNodes"));
+  const [filterText, setFilterText] = useState("");
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
   // updated and filtered node tree
@@ -93,7 +93,7 @@ function HostTreeViewPanel() {
     failed: failedQueueMain,
     addStatus: addStatusQueueMain,
   } = useQueue(setProgressQueueMain);
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   /**
    * Get list of nodes from a list of node.idGlobal
@@ -117,7 +117,7 @@ function HostTreeViewPanel() {
   }, [getNodesFromIds, navCtx.selectedNodes]);
 
   const nameWithoutNamespace = (node) => {
-    return node.namespace && node.namespace !== '/' ? node.name.replace(node.namespace, '') : node.name;
+    return node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
   };
 
   // debounced search callback
@@ -142,7 +142,7 @@ function HostTreeViewPanel() {
         }
 
         const nodePath = `${node.group}/${node.idGlobal}`;
-        nodePath.split('/').reduce((r, name, i, a) => {
+        nodePath.split("/").reduce((r, name, i, a) => {
           if (!r[name]) {
             r[name] = { nodeTree: [] };
 
@@ -151,7 +151,7 @@ function HostTreeViewPanel() {
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const treePath = `${a.slice(0, -1).join('/')}#${nameWithoutNamespace(node)}`;
+              const treePath = `${a.slice(0, -1).join("/")}#${nameWithoutNamespace(node)}`;
               r.nodeTree.push({
                 treePath,
                 children: r[name].nodeTree,
@@ -161,7 +161,7 @@ function HostTreeViewPanel() {
             } else {
               // create a (sub)group
 
-              const treePath = name ? a.slice(0, i + 1).join('/') : '';
+              const treePath = name ? a.slice(0, i + 1).join("/") : "";
               r.nodeTree.push({
                 treePath,
                 children: r[name].nodeTree,
@@ -191,17 +191,17 @@ function HostTreeViewPanel() {
       // create new node list with updated group labels
       const newNodes = [];
       nodes.forEach((node) => {
-        node.group = '';
+        node.group = "";
         // If the node is flagged as system node, set a group with the highest priority
         if (node.system_node) {
-          node.group += settingsCtx.get('namespaceSystemNodes');
+          node.group += settingsCtx.get("namespaceSystemNodes");
         }
         // If node has namespace, add it to the group with the second highest priority
-        if (node.namespace && node.namespace !== '/') {
+        if (node.namespace && node.namespace !== "/") {
           node.group += `${node.namespace}`;
         }
         // group using parameters
-        settingsCtx.get('groupParameters')?.forEach((parameter) => {
+        settingsCtx.get("groupParameters")?.forEach((parameter) => {
           if (node.parameters && node.parameters.has(parameter)) {
             const parameterValue = `${node.parameters.get(parameter)}`;
             // TODO: Add parameter name to group?
@@ -281,7 +281,7 @@ function HostTreeViewPanel() {
         <NodeLoggerPanel node={node} />,
         true,
         LAYOUT_TAB_SETS.BORDER_RIGHT,
-        new LayoutTabConfig(false, 'node-logger', {})
+        new LayoutTabConfig(false, "node-logger", {})
       )
     );
   }, []);
@@ -307,7 +307,7 @@ function HostTreeViewPanel() {
       if (external && window.CommandExecutor) {
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);
-        const terminalCmd = await provider.cmdForType(type, node.name, '', screen, '');
+        const terminalCmd = await provider.cmdForType(type, node.name, "", screen, "");
         // open screen in a new terminal
         try {
           const result = await window.CommandExecutor?.execTerminal(
@@ -379,8 +379,8 @@ function HostTreeViewPanel() {
               rootFilePath={rootLaunch}
             />,
             true,
-            LAYOUT_TAB_SETS[settingsCtx.get('editorOpenLocation')],
-            new LayoutTabConfig(false, 'editor')
+            LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+            new LayoutTabConfig(false, "editor")
           )
         );
         openIds.push(id);
@@ -401,7 +401,7 @@ function HostTreeViewPanel() {
           <ParameterPanel nodes={[node]} providers={null} />,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, 'parameter')
+          new LayoutTabConfig(false, "parameter")
         )
       );
     });
@@ -414,7 +414,7 @@ function HostTreeViewPanel() {
           <ParameterPanel nodes={null} providers={[provider]} />,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, 'parameter')
+          new LayoutTabConfig(false, "parameter")
         )
       );
     });
@@ -424,16 +424,16 @@ function HostTreeViewPanel() {
     // let node = getQueueMain();
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
-      logCtx.debug(`start: ${node.name}`, '');
+      logCtx.debug(`start: ${node.name}`, "");
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain('START', node.name, false, `Provider ${node.providerName} not available`);
+        addStatusQueueMain("START", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result to inform the user after queue is finished
         const resultStartNode = await provider.startNode(node);
         if (!resultStartNode.success) {
-          addStatusQueueMain('START', node.name, false, `${resultStartNode.details}`);
+          addStatusQueueMain("START", node.name, false, `${resultStartNode.details}`);
         } else {
-          addStatusQueueMain('START', node.name, true, 'started');
+          addStatusQueueMain("START", node.name, true, "started");
         }
       }
     }
@@ -478,14 +478,14 @@ function HostTreeViewPanel() {
       nodeList.forEach((node) => {
         // ignore running and nodes already in the queue
         if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
-          skippedNodes.set(node.name, 'already running');
+          skippedNodes.set(node.name, "already running");
         } else if (
           queueItemsQueueMain &&
           queueItemsQueueMain.find((elem) => {
-            return elem.action === 'START' && elem.node.name === node.name;
+            return elem.action === "START" && elem.node.name === node.name;
           })
         ) {
-          skippedNodes.set(node.name, 'already in the start queue');
+          skippedNodes.set(node.name, "already in the start queue");
         } else if (node.launchPaths.size === 1) {
           node2Start.push(node);
         } else if (node.launchPaths.size > 1) {
@@ -502,7 +502,7 @@ function HostTreeViewPanel() {
       }
       if (withNoLaunch.length > 0) {
         withNoLaunch.forEach((nodeName) => {
-          skippedNodes.set(nodeName, 'no launch file');
+          skippedNodes.set(nodeName, "no launch file");
         });
         logCtx.debug(`No launch file for ${withNoLaunch.length} nodes found`, JSON.stringify(node2Start));
       }
@@ -538,17 +538,17 @@ function HostTreeViewPanel() {
   /** Stop node from queue and trigger the next one. */
   const stopNodeQueued = async (node) => {
     if (node !== null) {
-      logCtx.debug(`stop: ${node.name}`, '');
+      logCtx.debug(`stop: ${node.name}`, "");
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain('STOP', node.name, false, `Provider ${node.providerName} not available`);
+        addStatusQueueMain("STOP", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
         const resultStopNode = await provider.stopNode(node.id);
         if (!resultStopNode.result) {
-          addStatusQueueMain('STOP', node.name, false, resultStopNode.message);
+          addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
         } else {
-          addStatusQueueMain('STOP', node.name, true, 'stopped');
+          addStatusQueueMain("STOP", node.name, true, "stopped");
         }
       }
     }
@@ -566,23 +566,23 @@ function HostTreeViewPanel() {
         // we stop system nodes only when they are individually selected
         if (node.system_node && nodeList.length > 1) {
           // skip system nodes
-          skippedNodes.set(node.name, 'system node');
+          skippedNodes.set(node.name, "system node");
         } else if (onlyWithLaunch && node.launchPaths.length === 0) {
-          skippedNodes.set(node.name, 'stop only with launch files');
+          skippedNodes.set(node.name, "stop only with launch files");
         } else if (
           queueItemsQueueMain &&
           queueItemsQueueMain.find((elem) => {
-            return elem.action === 'STOP' && elem.node.name === node.name;
+            return elem.action === "STOP" && elem.node.name === node.name;
           })
         ) {
-          skippedNodes.set(node.name, 'already in queue');
+          skippedNodes.set(node.name, "already in queue");
         } else if (node.status === RosNodeStatus.RUNNING) {
           // const isRunning = node.status === RosNodeStatus.RUNNING;
           // const isRunning = true;
           // if (!skip) {
           nodes2stop.push(node);
         } else {
-          skippedNodes.set(node.name, 'not running');
+          skippedNodes.set(node.name, "not running");
         }
       });
       if (skippedNodes.size > 0) {
@@ -590,7 +590,7 @@ function HostTreeViewPanel() {
       }
       updateQueueMain(
         nodes2stop.map((node) => {
-          return { node, action: 'STOP' };
+          return { node, action: "STOP" };
         })
       );
       if (restart) {
@@ -659,7 +659,7 @@ function HostTreeViewPanel() {
       if (
         queueItemsQueueMain &&
         queueItemsQueueMain.find((elem) => {
-          return elem.action === 'KILL' && elem.node.name === node.name;
+          return elem.action === "KILL" && elem.node.name === node.name;
         })
       ) {
         // TODO: skippedNodes.set(node.name, 'already in queue');
@@ -669,7 +669,7 @@ function HostTreeViewPanel() {
     });
     updateQueueMain(
       nodes2kill.map((node) => {
-        return { node, action: 'KILL' };
+        return { node, action: "KILL" };
       })
     );
   }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
@@ -679,14 +679,14 @@ function HostTreeViewPanel() {
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain('KILL', node.name, false, `Provider ${node.providerName} not available`);
+        addStatusQueueMain("KILL", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
         const resultKillNode = await provider.screenKillNode(node.id);
         if (!resultKillNode.result) {
-          addStatusQueueMain('KILL', node.name, false, resultKillNode.message);
+          addStatusQueueMain("KILL", node.name, false, resultKillNode.message);
         } else {
-          addStatusQueueMain('UNREGISTER', node.name, true, 'killed');
+          addStatusQueueMain("UNREGISTER", node.name, true, "killed");
         }
       }
     }
@@ -705,7 +705,7 @@ function HostTreeViewPanel() {
       if (
         queueItemsQueueMain &&
         queueItemsQueueMain.find((elem) => {
-          return elem.action === 'UNREGISTER' && elem.node.name === node.name;
+          return elem.action === "UNREGISTER" && elem.node.name === node.name;
         })
       ) {
         // TODO: skippedNodes.set(node.name, 'already in queue');
@@ -715,7 +715,7 @@ function HostTreeViewPanel() {
     });
     updateQueueMain(
       nodes2unregister.map((node) => {
-        return { node, action: 'UNREGISTER' };
+        return { node, action: "UNREGISTER" };
       })
     );
   }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
@@ -725,14 +725,14 @@ function HostTreeViewPanel() {
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain('UNREGISTER', node.name, false, `Provider ${node.providerName} not available`);
+        addStatusQueueMain("UNREGISTER", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
         const resultUnregisterNode = await provider.unregisterNode(node.id);
         if (!resultUnregisterNode.result) {
-          addStatusQueueMain('UNREGISTER', node.name, false, resultUnregisterNode.message);
+          addStatusQueueMain("UNREGISTER", node.name, false, resultUnregisterNode.message);
         } else {
-          addStatusQueueMain('UNREGISTER', node.name, true, 'unregistered');
+          addStatusQueueMain("UNREGISTER", node.name, true, "unregistered");
         }
       }
     }
@@ -752,11 +752,11 @@ function HostTreeViewPanel() {
 
             const result = await provider.rosCleanPurge();
 
-            if (result.length > 0 && result.indexOf('Purging ROS node logs.') === -1) {
+            if (result.length > 0 && result.indexOf("Purging ROS node logs.") === -1) {
               // should not happen, probably error
-              logCtx.error('Could not delete logs', result);
+              logCtx.error("Could not delete logs", result);
             } else {
-              logCtx.success('Logs removed successfully', '');
+              logCtx.success("Logs removed successfully", "");
             }
           })
         ).catch((error) => {
@@ -779,7 +779,7 @@ function HostTreeViewPanel() {
         if (
           queueItemsQueueMain &&
           queueItemsQueueMain.find((elem) => {
-            return elem.action === 'CLEAR_LOG' && elem.node.name === node.name;
+            return elem.action === "CLEAR_LOG" && elem.node.name === node.name;
           })
         ) {
           // TODO: skippedNodes.set(node.name, 'already in queue');
@@ -789,7 +789,7 @@ function HostTreeViewPanel() {
       });
       updateQueueMain(
         nodes2clear.map((node) => {
-          return { node, action: 'CLEAR_LOG' };
+          return { node, action: "CLEAR_LOG" };
         })
       );
     },
@@ -801,17 +801,17 @@ function HostTreeViewPanel() {
     if (node !== null) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain('CLEAR_LOG', node.name, false, `Provider ${node.providerName} not available`);
+        addStatusQueueMain("CLEAR_LOG", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         const result = await provider.clearLogPaths([node.name]);
         if (result.length === 0) {
           logCtx.error(`Could not delete log files for node: [${node.name}]`, result);
-          addStatusQueueMain('CLEAR_LOG', node.name, false, result);
+          addStatusQueueMain("CLEAR_LOG", node.name, false, result);
         } else if (!result[0].result) {
           logCtx.error(`Could not delete log files for node: [${node.name}]`, result[0].message);
-          addStatusQueueMain('CLEAR_LOG', node.name, false, result[0].message);
+          addStatusQueueMain("CLEAR_LOG", node.name, false, result[0].message);
         } else {
-          addStatusQueueMain('CLEAR_LOG', node.name, true, `Removed log files for node: [${node.name}]`);
+          addStatusQueueMain("CLEAR_LOG", node.name, true, `Removed log files for node: [${node.name}]`);
         }
       }
     }
@@ -878,7 +878,7 @@ function HostTreeViewPanel() {
       // put all selected nodes to the start queue
       updateQueueMain(
         nodesToStart.map((node) => {
-          return { node, action: 'START' };
+          return { node, action: "START" };
         })
       );
       setNodesToStart(null);
@@ -898,25 +898,25 @@ function HostTreeViewPanel() {
       // The index will be increased after the task was executed (by the callback).
       const queueItem = getQueueMain();
       if (queueItem) {
-        if (queueItem.action === 'START') {
+        if (queueItem.action === "START") {
           startNodeQueued(queueItem.node);
-        } else if (queueItem.action === 'STOP') {
+        } else if (queueItem.action === "STOP") {
           stopNodeQueued(queueItem.node);
-        } else if (queueItem.action === 'UNREGISTER') {
+        } else if (queueItem.action === "UNREGISTER") {
           unregisterNodeQueued(queueItem.node);
-        } else if (queueItem.action === 'KILL') {
+        } else if (queueItem.action === "KILL") {
           killNodeQueued(queueItem.node);
-        } else if (queueItem.action === 'CLEAR_LOG') {
+        } else if (queueItem.action === "CLEAR_LOG") {
           clearNodeLogQueued(queueItem.node);
         }
       } else {
         // queue is finished, print success results
         [
-          ['STOP', 'stopped'],
-          ['START', 'started'],
-          ['KILL', 'killed'],
-          ['UNREGISTER', 'unregistered'],
-          ['CLEAR_LOG', 'logs cleared'],
+          ["STOP", "stopped"],
+          ["START", "started"],
+          ["KILL", "killed"],
+          ["UNREGISTER", "unregistered"],
+          ["CLEAR_LOG", "logs cleared"],
         ].forEach((action) => {
           const success = successQueueMain(action[0]);
           if (success.length > 0) {
@@ -928,7 +928,7 @@ function HostTreeViewPanel() {
           }
         });
         // queue is finished, print failed results
-        ['STOP', 'START', 'KILL', 'UNREGISTER', 'CLEAR_LOG'].forEach((action) => {
+        ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG"].forEach((action) => {
           const failed = failedQueueMain(action);
           if (failed.length > 0) {
             const infoDict = {};
@@ -1155,7 +1155,11 @@ function HostTreeViewPanel() {
                 }
               }}
             >
-              {navCtx.selectedProviders?.length > 0 ? <AddToQueueIcon fontSize="inherit" /> : <DvrIcon fontSize="inherit" />}
+              {navCtx.selectedProviders?.length > 0 ? (
+                <AddToQueueIcon fontSize="inherit" />
+              ) : (
+                <DvrIcon fontSize="inherit" />
+              )}
             </IconButton>
           </span>
         </Tooltip>
@@ -1171,7 +1175,7 @@ function HostTreeViewPanel() {
                 });
               }}
             >
-              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: '90deg' }} />
+              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: "90deg" }} />
             </IconButton>
           </span>
         </Tooltip>
@@ -1192,7 +1196,7 @@ function HostTreeViewPanel() {
           </span>
         </Tooltip>
         <Tooltip
-          title={navCtx.selectedProviders?.length > 0 ? 'ros clean purge' : 'Clear Logs'}
+          title={navCtx.selectedProviders?.length > 0 ? "ros clean purge" : "Clear Logs"}
           placement="left"
           disableInteractive
         >
@@ -1231,10 +1235,10 @@ function HostTreeViewPanel() {
                 navCtx.selectedProviders.forEach((providerId) => {
                   const prov = rosCtx.getProviderById(providerId);
                   const emptyNode = new RosNode();
-                  emptyNode.name = '';
+                  emptyNode.name = "";
                   emptyNode.providerId = providerId;
                   emptyNode.providerName = prov?.name();
-                  createSingleTerminalPanel(CmdType.TERMINAL, emptyNode, '', event.nativeEvent.shiftKey);
+                  createSingleTerminalPanel(CmdType.TERMINAL, emptyNode, "", event.nativeEvent.shiftKey);
                 });
               }}
             >
@@ -1253,7 +1257,7 @@ function HostTreeViewPanel() {
       width="100%"
       height="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
         {sizeQueueMain === 0 && (
@@ -1271,7 +1275,7 @@ function HostTreeViewPanel() {
                 selected={showRemoteNodes}
                 onChange={() => setShowRemoteNodes(!showRemoteNodes)}
               >
-                <LocalPlayOutlinedIcon sx={{ fontSize: 'inherit' }} />
+                <LocalPlayOutlinedIcon sx={{ fontSize: "inherit" }} />
               </ToggleButton>
             </Tooltip>
             <Tooltip
@@ -1287,7 +1291,7 @@ function HostTreeViewPanel() {
                   refreshAllProvider();
                 }}
               >
-                <RefreshIcon sx={{ fontSize: 'inherit' }} />
+                <RefreshIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
             <SearchBar
@@ -1303,7 +1307,7 @@ function HostTreeViewPanel() {
         {sizeQueueMain > 0 && (
           <Paper elevation={2}>
             <Stack alignItems="center" justifyItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
-              <LinearProgress sx={{ width: '100%' }} variant="determinate" value={progressQueueMain} />
+              <LinearProgress sx={{ width: "100%" }} variant="determinate" value={progressQueueMain} />
               <FormLabel>
                 {indexQueueMain}/{sizeQueueMain}
               </FormLabel>
@@ -1313,7 +1317,7 @@ function HostTreeViewPanel() {
                 }}
                 size="small"
               >
-                <StopIcon sx={{ fontSize: 'inherit' }} />
+                <StopIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Stack>
           </Paper>

@@ -1,15 +1,10 @@
-import { alpha, styled } from '@mui/material/styles';
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
-import PropTypes from 'prop-types';
-import { useContext, useEffect, useRef, useState } from 'react';
-
-import DesktopAccessDisabledOutlinedIcon from '@mui/icons-material/DesktopAccessDisabledOutlined';
-import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import SettingsInputCompositeOutlinedIcon from '@mui/icons-material/SettingsInputCompositeOutlined';
-import StopIcon from '@mui/icons-material/Stop';
-import WatchLaterIcon from '@mui/icons-material/WatchLater';
+import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
+import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
+import StopIcon from "@mui/icons-material/Stop";
+import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
   Box,
   ClickAwayListener,
@@ -23,13 +18,17 @@ import {
   Stack,
   Tooltip,
   Typography,
-} from '@mui/material';
-import { blue, grey, orange } from '@mui/material/colors';
-import { SettingsContext } from '../../context/SettingsContext';
-import ContentComponentItemTree from '../ContentComponentItemTree/ContentComponentItemTree';
-import OverflowMenu from '../UI/OverflowMenu';
-import Tag from '../UI/Tag';
-import SetNTPDateDialog from './SetNTPDateDialog';
+} from "@mui/material";
+import { blue, grey, orange } from "@mui/material/colors";
+import { alpha, styled } from "@mui/material/styles";
+import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
+import PropTypes from "prop-types";
+import { useContext, useEffect, useRef, useState } from "react";
+import { SettingsContext } from "../../context/SettingsContext";
+import ContentComponentItemTree from "../ContentComponentItemTree/ContentComponentItemTree";
+import OverflowMenu from "../UI/OverflowMenu";
+import Tag from "../UI/Tag";
+import SetNTPDateDialog from "./SetNTPDateDialog";
 
 const StyledTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -39,19 +38,19 @@ const StyledTreeItemRoot = styled(TreeItem)(({ theme }) => ({
     borderRadius: theme.spacing(0.9),
     paddingRight: theme.spacing(1),
     fontWeight: theme.typography.fontWeightMedium,
-    '&.Mui-expanded': {
+    "&.Mui-expanded": {
       fontWeight: theme.typography.fontWeightRegular,
     },
-    '&:hover': {
+    "&:hover": {
       backgroundColor: theme.palette.action.hover,
     },
-    '&.Mui-selected': {
+    "&.Mui-selected": {
       // backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
       // color: 'var(--tree-view-color)',
     },
     [`& .${treeItemClasses.label}`]: {
-      fontWeight: 'inherit',
-      color: 'inherit',
+      fontWeight: "inherit",
+      color: "inherit",
       padding: theme.spacing(0),
     },
     [`& .${treeItemClasses.iconContainer}`]: {
@@ -77,17 +76,17 @@ function HostTreeViewItem({
   color,
   labelText,
   paddingLeft,
-  itemId = '',
-  iconColor = '',
+  itemId = "",
+  iconColor = "",
   onClick = () => {},
   onDoubleClick = () => {},
   menuItems = [],
   buttonIcon: ButtonIcon = null,
-  buttonIconColor = '',
-  buttonIconText = '',
+  buttonIconColor = "",
+  buttonIconText = "",
   onButtonIconClick = () => {},
   timeSyncActive = false,
-  timeSyncText = '',
+  timeSyncText = "",
   onTimeSync = () => {},
   labelIcon: LabelIcon = null,
   showMultipleScreen = false,
@@ -98,9 +97,9 @@ function HostTreeViewItem({
   onStartClick = null,
   onStopClick = null,
   onRestartClick = null,
-  startTooltipText = '',
-  stopTooltipText = '',
-  restartTooltipText = '',
+  startTooltipText = "",
+  stopTooltipText = "",
+  restartTooltipText = "",
   tags = [],
   provider = null,
   countChildren = 0,
@@ -108,14 +107,12 @@ function HostTreeViewItem({
 }) {
   const settingsCtx = useContext(SettingsContext);
 
-  const optionsTimeButton = ['ntpdate', 'set date'];
+  const optionsTimeButton = ["ntpdate", "set date"];
   const [focus, setFocus] = useState(false);
   const [openTimeButton, setOpenTimeButton] = useState(false);
   const anchorRef = useRef(null);
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState(false);
-  const [showFloatingButtons, setShowFloatingButtons] = useState(
-    settingsCtx.get('showFloatingButtons'),
-  );
+  const [showFloatingButtons, setShowFloatingButtons] = useState(settingsCtx.get("showFloatingButtons"));
 
   const onHover = (event) => {
     setFocus(true);
@@ -125,7 +122,7 @@ function HostTreeViewItem({
     setFocus(false);
   };
 
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const handleMenuTimeItemClick = (event, index) => {
     if (index === 0) {
@@ -147,7 +144,7 @@ function HostTreeViewItem({
   };
 
   useEffect(() => {
-    setShowFloatingButtons(settingsCtx.get('showFloatingButtons'));
+    setShowFloatingButtons(settingsCtx.get("showFloatingButtons"));
   }, [settingsCtx, settingsCtx.changed]);
 
   return (
@@ -160,14 +157,12 @@ function HostTreeViewItem({
       label={
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             paddingLeft,
           }}
         >
-          {menuItems && menuItems.length > 0 && (
-            <OverflowMenu options={menuItems} id={`${itemId}-options"`} />
-          )}
+          {menuItems && menuItems.length > 0 && <OverflowMenu options={menuItems} id={`${itemId}-options"`} />}
 
           {ButtonIcon && (
             <Tooltip
@@ -183,9 +178,7 @@ function HostTreeViewItem({
                   onButtonIconClick();
                 }}
               >
-                <ButtonIcon
-                  sx={{ color: buttonIconColor, fontSize: "inherit" }}
-                />
+                <ButtonIcon sx={{ color: buttonIconColor, fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
           )}
@@ -217,10 +210,7 @@ function HostTreeViewItem({
                     <Grow
                       {...TransitionProps}
                       style={{
-                        transformOrigin:
-                          placement === 'bottom'
-                            ? 'center top'
-                            : 'center bottom',
+                        transformOrigin: placement === "bottom" ? "center top" : "center bottom",
                       }}
                     >
                       <Paper>
@@ -231,9 +221,7 @@ function HostTreeViewItem({
                                 key={option}
                                 // disabled={index === 2}
                                 // selected={index === X}
-                                onClick={(event) =>
-                                  handleMenuTimeItemClick(event, index)
-                                }
+                                onClick={(event) => handleMenuTimeItemClick(event, index)}
                               >
                                 {option}
                               </MenuItem>
@@ -260,9 +248,7 @@ function HostTreeViewItem({
             </Tooltip>
           )}
 
-          {LabelIcon && (
-            <LabelIcon sx={{ mr: 0.5, width: 20, color: iconColor }} />
-          )}
+          {LabelIcon && <LabelIcon sx={{ mr: 0.5, width: 20, color: iconColor }} />}
 
           <ListItem
             disablePadding
@@ -273,10 +259,8 @@ function HostTreeViewItem({
               (onStartClick || onStopClick || onRestartClick) && (
                 <Stack
                   sx={{
-                    backgroundColor: settingsCtx.get('useDarkMode')
-                      ? grey[600]
-                      : blue[100],
-                    borderRadius: '20px',
+                    backgroundColor: settingsCtx.get("useDarkMode") ? grey[600] : blue[100],
+                    borderRadius: "20px",
                   }}
                   direction="row"
                   spacing={0.1}
@@ -284,11 +268,7 @@ function HostTreeViewItem({
                     event.stopPropagation();
                   }}
                 >
-                  <Tooltip
-                    title={startTooltipText}
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
+                  <Tooltip title={startTooltipText} enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
                     <Box>
                       <IconButton
                         edge="end"
@@ -300,19 +280,15 @@ function HostTreeViewItem({
                       >
                         <PlayArrowIcon
                           style={{
-                            fontSize: 'inherit',
-                            pointerEvents: 'none',
+                            fontSize: "inherit",
+                            pointerEvents: "none",
                           }}
                         />
                       </IconButton>
                     </Box>
                   </Tooltip>
 
-                  <Tooltip
-                    title={stopTooltipText}
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
+                  <Tooltip title={stopTooltipText} enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
                     <Box>
                       <IconButton
                         edge="end"
@@ -324,19 +300,15 @@ function HostTreeViewItem({
                       >
                         <StopIcon
                           style={{
-                            fontSize: 'inherit',
-                            pointerEvents: 'none',
+                            fontSize: "inherit",
+                            pointerEvents: "none",
                           }}
                         />
                       </IconButton>
                     </Box>
                   </Tooltip>
 
-                  <Tooltip
-                    title={restartTooltipText}
-                    enterDelay={tooltipDelay}
-                    enterNextDelay={tooltipDelay}
-                  >
+                  <Tooltip title={restartTooltipText} enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
                     <Box>
                       <IconButton
                         edge="end"
@@ -348,8 +320,8 @@ function HostTreeViewItem({
                       >
                         <RestartAltIcon
                           style={{
-                            fontSize: 'inherit',
-                            pointerEvents: 'none',
+                            fontSize: "inherit",
+                            pointerEvents: "none",
                           }}
                         />
                       </IconButton>
@@ -365,25 +337,18 @@ function HostTreeViewItem({
                 if (onDoubleClick) onDoubleClick(labelText, itemId);
               }}
               variant="body2"
-              sx={{ fontWeight: 'inherit', flexGrow: 1 }}
+              sx={{ fontWeight: "inherit", flexGrow: 1 }}
             >
               {labelText}
             </Typography>
-            {(!focus ||
-              !showFloatingButtons ||
-              (!onStartClick && !onStopClick && !onRestartClick)) &&
+            {(!focus || !showFloatingButtons || (!onStartClick && !onStopClick && !onRestartClick)) &&
               tags.map((tag) => (
-                <Tag
-                  key={tag.text}
-                  text={tag.text}
-                  color={tag.color}
-                  style={{ pointerEvents: 'none' }}
-                />
+                <Tag key={tag.text} text={tag.text} color={tag.color} style={{ pointerEvents: "none" }} />
               ))}
           </ListItem>
 
           {countChildren > 0 && (
-            <Typography variant="body2" sx={{ fontWeight: 'inherit' }}>
+            <Typography variant="body2" sx={{ fontWeight: "inherit" }}>
               [{countChildren}]
             </Typography>
           )}
@@ -397,40 +362,30 @@ function HostTreeViewItem({
                   }
                 }}
               >
-                <SettingsInputCompositeOutlinedIcon
-                  style={{ fontSize: 'inherit', rotate: '90deg' }}
-                />
+                <SettingsInputCompositeOutlinedIcon style={{ fontSize: "inherit", rotate: "90deg" }} />
               </IconButton>
             </Tooltip>
           )}
           {showMultipleScreen && (
             <Tooltip title="Multiple Screens" placement="left">
-              <DynamicFeedOutlinedIcon
-                color="warning"
-                style={{ fontSize: 'inherit' }}
-              />
+              <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
           {showNoScreen && (
             <Tooltip title="No Screens" placement="left">
-              <DesktopAccessDisabledOutlinedIcon
-                style={{ fontSize: 'inherit' }}
-              />
+              <DesktopAccessDisabledOutlinedIcon style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
           {showGhostScreen && (
             <Tooltip title="Ghost Screens" placement="left">
-              <DynamicFeedOutlinedIcon
-                color="warning"
-                style={{ fontSize: 'inherit' }}
-              />
+              <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
         </Box>
       }
       style={{
-        '--tree-view-color': color,
-        '--tree-view-bg-color': bgColor,
+        "--tree-view-color": color,
+        "--tree-view-bg-color": bgColor,
       }}
       {...other}
     />

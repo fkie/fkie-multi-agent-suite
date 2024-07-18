@@ -1,13 +1,13 @@
+import { Box, Stack, Typography } from "@mui/material";
 import PropTypes from "prop-types";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { JSONTree } from "react-json-tree";
-import { Box, Stack, Typography } from "@mui/material";
 import { CopyButton, SearchBar } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { generateUniqueId } from "../../../utils";
 import { darkThemeJson } from "../../../themes/darkTheme";
 import { lightThemeJson } from "../../../themes/lightTheme";
+import { generateUniqueId } from "../../../utils";
 
 function SystemInformationPanel({ providerId = "" }) {
   const rosCtx = useContext(RosContext);
@@ -92,11 +92,8 @@ function SystemInformationPanel({ providerId = "" }) {
       if (provider.errorDetails) {
         infoContent["Last error"] = provider.errorDetails;
       }
-      const versionDate = provider.daemonVersion.date
-        ? ` (${provider.daemonVersion.date})`
-        : "";
-      infoContent["Daemon version"] =
-        `${provider.daemonVersion.version}${versionDate}`;
+      const versionDate = provider.daemonVersion.date ? ` (${provider.daemonVersion.date})` : "";
+      infoContent["Daemon version"] = `${provider.daemonVersion.version}${versionDate}`;
       setProviderDetails(filterNestObject(infoContent));
       // join warnings to one list
       let warnings = [];
@@ -119,9 +116,7 @@ function SystemInformationPanel({ providerId = "" }) {
         <JSONTree
           data={providerDetails}
           sortObjectKeys={true}
-          theme={
-            settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
-          }
+          theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
           invertTheme={false}
           hideRoot={true}
         />
@@ -136,9 +131,7 @@ function SystemInformationPanel({ providerId = "" }) {
         <JSONTree
           data={systemInfoContent}
           sortObjectKeys={true}
-          theme={
-            settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
-          }
+          theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
           invertTheme={false}
           hideRoot={true}
         />
@@ -147,17 +140,9 @@ function SystemInformationPanel({ providerId = "" }) {
   }, [systemInfoContent, settingsCtx.changed]);
 
   return (
-    <Box
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get("backgroundColor")}
-    >
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
       <Stack direction="column" margin="0.5em" spacing="0.5em">
-        <SearchBar
-          onSearch={(value) => setFilter(value.toLocaleLowerCase())}
-          placeholder="filter"
-          defaultValue=""
-        />
+        <SearchBar onSearch={(value) => setFilter(value.toLocaleLowerCase())} placeholder="filter" defaultValue="" />
         <Stack spacing={1} direction="row">
           <Typography variant="h5" sx={{ fontWeight: "bold" }}>
             Name:
@@ -178,11 +163,7 @@ function SystemInformationPanel({ providerId = "" }) {
                     {item.details}
                   </Typography>
                   {item.hint && (
-                    <Typography
-                      paddingLeft={1}
-                      variant="body1"
-                      fontStyle="italic"
-                    >
+                    <Typography paddingLeft={1} variant="body1" fontStyle="italic">
                       Hint: {item.hint}
                     </Typography>
                   )}

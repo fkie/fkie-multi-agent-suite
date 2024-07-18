@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import LaunchArgument from './LaunchArgument';
+import LaunchArgument from "./LaunchArgument";
 
 /**
  * Request to parse the given file for included files.
@@ -46,12 +46,12 @@ class LaunchIncludedFilesRequest {
    * @param {LaunchArgument[]} args - Arguments used to load the launch file.
    */
   constructor(
-    path = '',
+    path = "",
     recursive = true,
     unique = false,
     pattern: string[] = [],
     search_in_ext: string[] = [],
-    args: LaunchArgument[] = [],
+    args: LaunchArgument[] = []
   ) {
     this.path = path;
     this.recursive = recursive;

@@ -1,4 +1,4 @@
-import SystemWarning from './SystemWarning';
+import SystemWarning from "./SystemWarning";
 
 /**
  * SystemWarningGroup models warning with same ID.

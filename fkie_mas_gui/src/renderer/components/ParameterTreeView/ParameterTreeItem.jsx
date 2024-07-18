@@ -1,22 +1,12 @@
-import { alpha, styled } from '@mui/material/styles';
-import PropTypes from 'prop-types';
-import React, { useContext, useState } from 'react';
-
-import {
-  Box,
-  CircularProgress,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
-} from '@mui/material';
-
-import { TreeItem, treeItemClasses } from '@mui/x-tree-view';
-
-import { LoggingContext } from '../../context/LoggingContext';
-import { SettingsContext } from '../../context/SettingsContext';
-import { colorFromHostname } from '../UI/Colors';
-import OverflowMenu from '../UI/OverflowMenu';
+import { Box, CircularProgress, Stack, Switch, TextField, Typography } from "@mui/material";
+import { alpha, styled } from "@mui/material/styles";
+import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
+import PropTypes from "prop-types";
+import React, { useContext, useState } from "react";
+import { LoggingContext } from "../../context/LoggingContext";
+import { SettingsContext } from "../../context/SettingsContext";
+import { colorFromHostname } from "../UI/Colors";
+import OverflowMenu from "../UI/OverflowMenu";
 
 const ParameterTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -26,19 +16,19 @@ const ParameterTreeItemRoot = styled(TreeItem)(({ theme }) => ({
     borderBottomRightRadius: theme.spacing(2),
     paddingRight: theme.spacing(1),
     fontWeight: theme.typography.fontWeightMedium,
-    '&.Mui-expanded': {
+    "&.Mui-expanded": {
       fontWeight: theme.typography.fontWeightRegular,
     },
-    '&:hover': {
+    "&:hover": {
       backgroundColor: theme.palette.action.hover,
     },
-    '&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused': {
+    "&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused": {
       backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      color: 'var(--tree-view-color)',
+      color: "var(--tree-view-color)",
     },
     [`& .${treeItemClasses.label}`]: {
-      fontWeight: 'inherit',
-      color: 'inherit',
+      fontWeight: "inherit",
+      color: "inherit",
       padding: theme.spacing(0),
     },
     [`& .${treeItemClasses.iconContainer}`]: {
@@ -61,76 +51,70 @@ const ParameterTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 
 const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
   {
-    color = '#1a73e8',
-    bgColor = '#e8f0fe',
-    colorForDarkMode = '#B8E7FB',
-    bgColorForDarkMode = '#071318',
-    labelRoot = '',
+    color = "#1a73e8",
+    bgColor = "#e8f0fe",
+    colorForDarkMode = "#B8E7FB",
+    bgColorForDarkMode = "#071318",
+    labelRoot = "",
     labelIcon = null,
-    labelInfo = '',
+    labelInfo = "",
     labelCount = null,
-    labelText = '',
+    labelText = "",
     requestData = false,
     param = null,
-    providerName = '',
+    providerName = "",
     updateParameter = () => {},
 
     ...other
   },
-  ref,
+  ref
 ) {
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
-  const [parameterType, setParameterType] = useState(
-    param ? param.type : labelInfo,
-  );
+  const [parameterType, setParameterType] = useState(param ? param.type : labelInfo);
 
   const typeOptions = [
     {
-      name: 'int',
-      key: 'int',
+      name: "int",
+      key: "int",
       onClick: () => {
-        setParameterType('int');
-        updateParameter(param, param.value, 'int');
+        setParameterType("int");
+        updateParameter(param, param.value, "int");
       },
     },
     {
-      name: 'float',
-      key: 'float',
+      name: "float",
+      key: "float",
       onClick: () => {
-        setParameterType('float');
-        updateParameter(param, param.value, 'float');
+        setParameterType("float");
+        updateParameter(param, param.value, "float");
       },
     },
     {
-      name: 'str',
-      key: 'str',
+      name: "str",
+      key: "str",
       onClick: () => {
-        setParameterType('str');
-        updateParameter(param, param.value, 'str');
+        setParameterType("str");
+        updateParameter(param, param.value, "str");
       },
     },
     {
-      name: 'bool',
-      key: 'bool',
+      name: "bool",
+      key: "bool",
       onClick: () => {
-        setParameterType('bool');
-        updateParameter(param, param.value, 'bool');
+        setParameterType("bool");
+        updateParameter(param, param.value, "bool");
       },
     },
   ];
 
   const styleProps = {
-    '--tree-view-color': settingsCtx.get('useDarkMode')
-      ? colorForDarkMode
-      : color,
-    '--tree-view-bg-color': settingsCtx.get('useDarkMode')
-      ? bgColorForDarkMode
-      : bgColor,
+    "--tree-view-color": settingsCtx.get("useDarkMode") ? colorForDarkMode : color,
+    "--tree-view-bg-color": settingsCtx.get("useDarkMode") ? bgColorForDarkMode : bgColor,
   };
 
   const renderInput = () => {
-    if (['int', 'float'].includes(parameterType)) {
+    if (["int", "float"].includes(parameterType)) {
       return (
         <TextField
           type="number"
@@ -147,11 +131,11 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
         />
       );
     }
-    if (['list'].includes(parameterType)) {
+    if (["list"].includes(parameterType)) {
       // TODO: show proper list/arrays
       return (
         <TextField
-        id={`input-${param.id}`}
+          id={`input-${param.id}`}
           defaultValue={`${JSON.stringify(param.value)}`}
           placeholder={`${JSON.stringify(param.value)}`}
           variant="standard"
@@ -163,10 +147,10 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
         />
       );
     }
-    if (['bool'].includes(parameterType)) {
+    if (["bool"].includes(parameterType)) {
       return (
         <Switch
-        id={`input-${param.id}`}
+          id={`input-${param.id}`}
           checked={param.value ? true : false}
           onChange={(event) => {
             updateParameter(param, event.target.checked);
@@ -193,11 +177,11 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
   };
 
   const getHostStyle = () => {
-    if (providerName && settingsCtx.get('colorizeHosts')) {
+    if (providerName && settingsCtx.get("colorizeHosts")) {
       return {
-        borderLeftStyle: 'solid',
+        borderLeftStyle: "solid",
         borderLeftColor: colorFromHostname(providerName),
-        borderLeftWidth: '0.6em',
+        borderLeftWidth: "0.6em",
       };
     }
     return {};
@@ -209,27 +193,25 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
       label={
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             // p: 0.3,
             padding: 0,
             pr: 0,
           }}
         >
-          {labelIcon && (
-            <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />
-          )}
+          {labelIcon && <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />}
           <Stack
             spacing={1}
             direction="row"
             sx={{
               flexGrow: 1,
-              alignItems: 'center',
+              alignItems: "center",
             }}
           >
             <Typography
               variant="body2"
-              sx={{ fontWeight: 'inherit' }}
+              sx={{ fontWeight: "inherit" }}
               onClick={(e) => {
                 if (e.detail === 2) {
                   navigator.clipboard.writeText(labelText);
@@ -237,9 +219,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
                 }
               }}
             >
-              {labelRoot && param
-                ? labelText.slice(labelRoot.length + 1)
-                : labelText}
+              {labelRoot && param ? labelText.slice(labelRoot.length + 1) : labelText}
             </Typography>
             {requestData && <CircularProgress size="1em" />}
           </Stack>
@@ -247,7 +227,7 @@ const ParameterTreeItem = React.forwardRef(function ParameterTreeItem(
             direction="row"
             spacing={1}
             sx={{
-              alignItems: 'end',
+              alignItems: "end",
             }}
           >
             {parameterType && (

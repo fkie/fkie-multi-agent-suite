@@ -1,16 +1,16 @@
-import * as Monaco from '@monaco-editor/react';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import { SimpleTreeView } from '@mui/x-tree-view';
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
-import { emitCustomEvent } from 'react-custom-events';
-import { getFileName } from '../../models';
-import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from '../../utils/events';
-import { SearchFileTreeItem, SearchResultTreeItem } from './SearchTreeItem';
+import * as Monaco from "@monaco-editor/react";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import { SimpleTreeView } from "@mui/x-tree-view";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
+import { getFileName } from "../../models";
+import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../utils/events";
+import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
 
-function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
+function SearchTree({ tabId, searchTerm = "", ownUriPaths = [] }) {
   const monaco = Monaco.useMonaco();
   const [expandedSearchResults, setExpandedSearchResults] = useState([]);
   const [globalSearchTree, setGlobalSearchTree] = useState({});
@@ -25,7 +25,7 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
     if (searchText.length < 3) return [];
 
     const searchResult = [];
-    const includedText = new Set('');
+    const includedText = new Set("");
 
     if (searchText) {
       // search only in own models
@@ -94,7 +94,7 @@ function SearchTree({ tabId, searchTerm = '', ownUriPaths = [] }) {
         }
         setExpandedSearchResults(copyExpanded);
       }}
-      sx={{ flexGrow: 1, overflow: 'auto' }}
+      sx={{ flexGrow: 1, overflow: "auto" }}
     >
       {Object.keys(globalSearchTree).map((fileName) => {
         const entries = globalSearchTree[fileName];

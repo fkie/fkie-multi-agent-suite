@@ -1,27 +1,26 @@
-import MoreVertSharpIcon from '@mui/icons-material/MoreVert';
-import PropTypes from 'prop-types';
-import { useMemo } from 'react';
-import OverflowMenu from '../../../components/UI/OverflowMenu';
+import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
+import PropTypes from "prop-types";
+import { useMemo } from "react";
+import OverflowMenu from "../../../components/UI/OverflowMenu";
 
 function OverflowMenuProvider({ onClick, providerId, providerName }) {
-
   const createMenu = useMemo(() => {
     return (
       <OverflowMenu
-        icon={<MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />}
+        icon={<MoreVertSharpIcon sx={{ fontSize: "inherit" }} />}
         options={[
           {
-            name: 'Info',
+            name: "Info",
             key: `info-${providerId}`,
             onClick: () => {
-              onClick('INFO', providerId, providerName);
+              onClick("INFO", providerId, providerName);
             },
           },
           {
-            name: 'Delete',
+            name: "Delete",
             key: `delete-${providerId}`,
             onClick: () => {
-              onClick('DELETE', providerId, providerName);
+              onClick("DELETE", providerId, providerName);
             },
           },
         ]}

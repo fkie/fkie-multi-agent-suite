@@ -1,5 +1,5 @@
-import DeleteIcon from '@mui/icons-material/Delete';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import DeleteIcon from "@mui/icons-material/Delete";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import {
   Alert,
   AlertTitle,
@@ -13,33 +13,24 @@ import {
   Stack,
   TextField,
   Typography,
-} from '@mui/material';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
+} from "@mui/material";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { LoggingContext } from "../../context/LoggingContext";
+import { RosContext } from "../../context/RosContext";
+import useLocalStorage from "../../hooks/useLocalStorage";
+import { LaunchArgument, LaunchLoadRequest, getFileName } from "../../models";
+import DraggablePaper from "../UI/DraggablePaper";
+import Tag from "../UI/Tag";
 
-import { LoggingContext } from '../../context/LoggingContext';
-import { RosContext } from '../../context/RosContext';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import { LaunchArgument, LaunchLoadRequest, getFileName } from '../../models';
-import DraggablePaper from '../UI/DraggablePaper';
-import Tag from '../UI/Tag';
-
-function LaunchFileModal({
-  selectedProvider,
-  selectedLaunchFile,
-  setSelectedLaunchFile,
-  onLaunchCallback = () => {},
-}) {
+function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = () => {} }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const [open, setOpen] = useState(false);
   const [selectedLaunch, setSelectedLaunch] = useState(null);
-  const [messageLaunchLoaded, setMessageLaunchLoaded] = useState('');
-  const [argHistory, setArgHistory] = useLocalStorage(
-    'history:loadLaunchArgs',
-    {},
-  );
-  const [lastOpenPath, setLastOpenPath] = useLocalStorage('lastOpenPath', '');
+  const [messageLaunchLoaded, setMessageLaunchLoaded] = useState("");
+  const [argHistory, setArgHistory] = useLocalStorage("history:loadLaunchArgs", {});
+  const [lastOpenPath, setLastOpenPath] = useLocalStorage("lastOpenPath", "");
   const [currentArgs, setCurrentArgs] = useState([]);
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
@@ -59,14 +50,14 @@ function LaunchFileModal({
          * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
          * host - Start nodes of this file on specified host.
          * */
-        const rosPackage = ''; // ROS package name.
-        const launch = ''; // Launch file in the package path.
+        const rosPackage = ""; // ROS package name.
+        const launch = ""; // Launch file in the package path.
         const path = file;
         const args = [];
         const forceFirstFile = true;
         const requestArgs = true;
-        const masteruri = '';
-        const host = '';
+        const masteruri = "";
+        const host = "";
         const request = new LaunchLoadRequest(
           rosPackage,
           launch,
@@ -75,23 +66,20 @@ function LaunchFileModal({
           forceFirstFile,
           requestArgs,
           masteruri,
-          host,
+          host
         );
         const result = await provider.launchLoadFile(request);
         if (!result) return;
-        if (result.status.code === 'ALREADY_OPEN') {
-          logCtx.warn(
-            `Launch file [${getFileName(path)}] was already loaded`,
-            `File: ${path}`,
-          );
-          setMessageLaunchLoaded('Launch file was already loaded');
+        if (result.status.code === "ALREADY_OPEN") {
+          logCtx.warn(`Launch file [${getFileName(path)}] was already loaded`, `File: ${path}`);
+          setMessageLaunchLoaded("Launch file was already loaded");
 
           // nothing else to do return
           onLaunchCallback();
           return;
         }
 
-        if (result.status.code === 'PARAMS_REQUIRED') {
+        if (result.status.code === "PARAMS_REQUIRED") {
           setSelectedLaunch(() => result);
 
           // set default values to arguments in form
@@ -114,42 +102,36 @@ function LaunchFileModal({
           });
           setCurrentArgs(argList);
 
-          setMessageLaunchLoaded('');
+          setMessageLaunchLoaded("");
         }
 
-        if (result.status.code === 'OK') {
+        if (result.status.code === "OK") {
           // launch file does not have required arguments and will be loaded automatically
           // we need to trigger a launch update and close the modal
 
-          setMessageLaunchLoaded('Launch file loaded successfully');
+          setMessageLaunchLoaded("Launch file loaded successfully");
           setSelectedLaunch(null);
 
           // update node and launch list
           // rosCtx.updateNodeList(provider(.name()));
           // rosCtx.updateLaunchList(provider.name());
-          logCtx.success(
-            `Launch file [${getFileName(path)}] loaded`,
-            `File: ${path}`,
-          );
+          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
 
           // nothing else to do return
           onLaunchCallback();
           return;
         }
 
-        if (result.status.code === 'ERROR') {
+        if (result.status.code === "ERROR") {
           setMessageLaunchLoaded(result.status.msg);
-          logCtx.error(
-            `Error on load "${getFileName(path)}"`,
-            `Error message: ${result.status.msg}`,
-          );
+          logCtx.error(`Error on load "${getFileName(path)}"`, `Error message: ${result.status.msg}`);
         }
 
         setOpen(true);
       } else {
         logCtx.error(
           `The provider [${selectedProvider}] does not support [launchLoadFile]`,
-          'Please check your provider configuration',
+          "Please check your provider configuration"
         );
       }
     },
@@ -161,7 +143,7 @@ function LaunchFileModal({
       rosCtx.providers,
       selectedProvider,
       // rosCtx.updateLaunchList,
-    ],
+    ]
   );
 
   // The user clicked on launch, fill arguments a make a request to provider
@@ -182,8 +164,8 @@ function LaunchFileModal({
        * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
        * host - Start nodes of this file on specified host.
        * */
-      const rosPackage = ''; // ROS package name.
-      const launch = ''; // Launch file in the package path.
+      const rosPackage = ""; // ROS package name.
+      const launch = ""; // Launch file in the package path.
       const path = selectedLaunch.paths[0];
       const forceFirstFile = true;
       const requestArgs = false;
@@ -214,7 +196,7 @@ function LaunchFileModal({
         forceFirstFile,
         requestArgs,
         provider.rosState.masteruri,
-        provider.host(),
+        provider.host()
       );
 
       const resultLaunchLoadFile = await provider.launchLoadFile(request);
@@ -222,29 +204,21 @@ function LaunchFileModal({
       if (!resultLaunchLoadFile) {
         logCtx.error(
           `Invalid response for [launchLoadFile], check DAEMON screen output`,
-          'Please check your provider configuration',
+          "Please check your provider configuration"
         );
-      } else if (resultLaunchLoadFile.status.code === 'OK') {
+      } else if (resultLaunchLoadFile.status.code === "OK") {
         setOpen(false);
-        logCtx.success(
-          `Launch file [${getFileName(path)}] loaded`,
-          `File: ${path}`,
-        );
-      } else if (resultLaunchLoadFile.status.code === 'PARAMS_REQUIRED') {
-        setMessageLaunchLoaded('Please fill all arguments');
+        logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+      } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
+        setMessageLaunchLoaded("Please fill all arguments");
       } else {
-        setMessageLaunchLoaded(
-          `Could not load file: ${resultLaunchLoadFile.status.msg}`,
-        );
-        logCtx.error(
-          `Could not load file: "${path}"`,
-          `Error message: ${resultLaunchLoadFile.status.msg}`,
-        );
+        setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
+        logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`);
       }
     } else {
       logCtx.error(
         `The provider [${selectedProvider}] does not support [launchLoadFile]`,
-        'Please check your provider configuration',
+        "Please check your provider configuration"
       );
     }
 
@@ -258,14 +232,7 @@ function LaunchFileModal({
     // rosCtx.updateNodeList(provider.name());
     // rosCtx.updateLaunchList(provider.name());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    currentArgs,
-    argHistory,
-    selectedLaunch,
-    selectedProvider,
-    setSelectedLaunchFile,
-    setArgHistory,
-  ]);
+  }, [currentArgs, argHistory, selectedLaunch, selectedProvider, setSelectedLaunchFile, setArgHistory]);
 
   // Request file and load arguments
   useEffect(() => {
@@ -274,7 +241,7 @@ function LaunchFileModal({
   }, [selectedLaunchFile]);
 
   const handleClose = (event, reason) => {
-    if (reason && reason === 'backdropClick') return;
+    if (reason && reason === "backdropClick") return;
     setOpen(false);
   };
 
@@ -286,7 +253,7 @@ function LaunchFileModal({
             arg.history = arg.history.filter((value) => value !== option);
           }
           return arg;
-        }),
+        })
       );
       const newHistory = {};
       // eslint-disable-next-line no-restricted-syntax
@@ -299,13 +266,13 @@ function LaunchFileModal({
       }
       setArgHistory(newHistory);
     },
-    [argHistory, currentArgs, setArgHistory, setCurrentArgs],
+    [argHistory, currentArgs, setArgHistory, setCurrentArgs]
   );
 
   const openFileDialog = useCallback(
     async (argName) => {
       let defaultPath = lastOpenPath;
-      if (argName.startsWith('/')) {
+      if (argName.startsWith("/")) {
         defaultPath = argName;
       }
       const filePath = await window.electronAPI.openFile(defaultPath);
@@ -317,11 +284,11 @@ function LaunchFileModal({
               arg.value = filePath;
             }
             return arg;
-          }),
+          })
         );
       }
     },
-    [currentArgs, lastOpenPath, setLastOpenPath],
+    [currentArgs, lastOpenPath, setLastOpenPath]
   );
 
   const isPathParam = (name, value) => {
@@ -330,14 +297,14 @@ function LaunchFileModal({
       return true;
     }
     const lValue = value.toLocaleLowerCase();
-    if (['true', 'false'].includes(lValue)) {
+    if (["true", "false"].includes(lValue)) {
       return false;
     }
     const lName = name.toLocaleLowerCase();
-    if (lName.includes('frame')) {
+    if (lName.includes("frame")) {
       return false;
     }
-    if (lName.includes('[')) {
+    if (lName.includes("[")) {
       return false;
     }
     return Number.isNaN(Number(value));
@@ -351,7 +318,7 @@ function LaunchFileModal({
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
         Launch file
       </DialogTitle>
       <DialogContent>
@@ -390,10 +357,7 @@ function LaunchFileModal({
                         )}
                         renderOption={(props, option) => (
                           <Stack {...props} direction="row">
-                            <Typography
-                              style={{ overflowWrap: 'anywhere' }}
-                              width="stretch"
-                            >
+                            <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
                               {option}
                             </Typography>
                             <IconButton
@@ -414,7 +378,7 @@ function LaunchFileModal({
                                 item.value = newArgValue;
                               }
                               return item;
-                            }),
+                            })
                           );
                         }}
                         onInputChange={(event, newInputValue) => {
@@ -424,21 +388,15 @@ function LaunchFileModal({
                                 item.value = newInputValue;
                               }
                               return item;
-                            }),
+                            })
                           );
                         }}
                         isOptionEqualToValue={(option, value) => {
-                          return (
-                            value === undefined ||
-                            value === '' ||
-                            option.path === value.path
-                          );
+                          return value === undefined || value === "" || option.path === value.path;
                         }}
                         onWheel={(event) => {
                           // scroll through the options using mouse wheel
-                          const options = arg.choices
-                            ? arg.choices
-                            : arg.history;
+                          const options = arg.choices ? arg.choices : arg.history;
                           let newIndex = -1;
                           options.forEach((value, index) => {
                             if (value === event.target.value) {
@@ -457,7 +415,7 @@ function LaunchFileModal({
                                 item.value = options[newIndex];
                               }
                               return item;
-                            }),
+                            })
                           );
                         }}
                       />
@@ -478,7 +436,7 @@ function LaunchFileModal({
                                 item.value = event.target.value;
                               }
                               return item;
-                            }),
+                            })
                           );
                         }}
                       />
@@ -507,9 +465,7 @@ function LaunchFileModal({
         {messageLaunchLoaded && messageLaunchLoaded.length > 0 && (
           // Prevent display issues when long path files are returned
           <Alert severity="warning" style={{ minWidth: 0 }}>
-            <AlertTitle>
-              {messageLaunchLoaded.replaceAll('/', ' / ')}
-            </AlertTitle>
+            <AlertTitle>{messageLaunchLoaded.replaceAll("/", " / ")}</AlertTitle>
           </Alert>
         )}
       </DialogContent>
@@ -523,11 +479,7 @@ function LaunchFileModal({
         >
           Cancel
         </Button>
-        <Button
-          color="success"
-          variant="contained"
-          onClick={launchSelectedFile}
-        >
+        <Button color="success" variant="contained" onClick={launchSelectedFile}>
           Load
         </Button>
       </DialogActions>

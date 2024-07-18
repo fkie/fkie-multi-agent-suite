@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-
-import useLocalStorage from '../hooks/useLocalStorage';
-import { DEFAULT_BUG_TEXT, LoggingContext } from './LoggingContext';
+import React, { createContext, useContext, useMemo, useState } from "react";
+import useLocalStorage from "../hooks/useLocalStorage";
+import { DEFAULT_BUG_TEXT, LoggingContext } from "./LoggingContext";
 // import FileManagerWrapper from '../../main/IPC/FileManagerWrapper';
-import CommandExecutor from '../../main/IPC/CommandExecutor';
-import PasswordManager from '../../main/IPC/PasswordManager';
-import { ISystemInfo } from '../../main/IPC/SystemInfo';
-import { ICredential } from '../../main/models/ICredential';
-import { generateUniqueId } from '../utils';
+import CommandExecutor from "../../main/IPC/CommandExecutor";
+import PasswordManager from "../../main/IPC/PasswordManager";
+import { ISystemInfo } from "../../main/IPC/SystemInfo";
+import { ICredential } from "../../main/models/ICredential";
+import { generateUniqueId } from "../utils";
 
 declare global {
   interface Window {
@@ -41,10 +40,7 @@ export interface IRosProviderContext {
   //   content: string,
   //   path: string
   // ) => Promise<string | null>;
-  exec: (
-    credential: ICredential | null,
-    command: string,
-  ) => Promise<{ result: boolean; message: string }>;
+  exec: (credential: ICredential | null, command: string) => Promise<{ result: boolean; message: string }>;
 }
 
 export const DEFAULT = {
@@ -71,7 +67,7 @@ export const DEFAULT = {
   //   return Promise.resolve(null);
   // },
   exec: () => {
-    return Promise.resolve({ result: false, message: '' });
+    return Promise.resolve({ result: false, message: "" });
   },
 };
 
@@ -83,9 +79,7 @@ const DEFAULT_CREDENTIALS: ICredential[] = [];
 
 export const SSHContext = createContext<IRosProviderContext>(DEFAULT);
 
-export function SSHProvider({
-  children,
-}: IRosProviderComponent): ReturnType<React.FC<IRosProviderComponent>> {
+export function SSHProvider({ children }: IRosProviderComponent): ReturnType<React.FC<IRosProviderComponent>> {
   const logCtx = useContext(LoggingContext);
 
   // uses system info to get the /etc/hosts entries
@@ -100,10 +94,7 @@ export function SSHProvider({
     getSystemInfo();
   }
 
-  const [credentials, setCredentials] = useLocalStorage(
-    'SSHContext:credentials',
-    DEFAULT_CREDENTIALS,
-  );
+  const [credentials, setCredentials] = useLocalStorage("SSHContext:credentials", DEFAULT_CREDENTIALS);
 
   // // FileManagerWrapper methods
   // const exist = async (credential: ICredential, path: string) => {
@@ -175,62 +166,42 @@ export function SSHProvider({
   // PasswordManager methods
   const setPassword = async (credential: ICredential) => {
     if (!window.PasswordManager) {
-      logCtx.error(
-        'setPassword: Invalid [PasswordManager]',
-        'Please check Electron App (IPC handlers)',
-      );
+      logCtx.error("setPassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return null;
     }
 
-    credential.service = 'RosNodeManager';
+    credential.service = "RosNodeManager";
     credential.account = `${credential.username}:${credential.host}`;
 
-    const res = await window.PasswordManager.setPassword(
-      credential.service,
-      credential.account,
-      credential.password,
-    );
+    const res = await window.PasswordManager.setPassword(credential.service, credential.account, credential.password);
     return res;
   };
 
   const deletePassword = async (credential: ICredential) => {
     if (!window.PasswordManager) {
-      logCtx.error(
-        'deletePassword: Invalid [PasswordManager]',
-        'Please check Electron App (IPC handlers)',
-      );
+      logCtx.error("deletePassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return;
     }
 
-    await window.PasswordManager.deletePassword(
-      credential.service,
-      credential.account,
-    );
+    await window.PasswordManager.deletePassword(credential.service, credential.account);
   };
 
   const checkPassword = (credential: ICredential) => {
     if (!window.CommandExecutor) {
-      logCtx.error(
-        'checkPassword: Invalid [CommandExecutor]',
-        'Please check Electron App (IPC handlers)',
-      );
+      logCtx.error("checkPassword: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return Promise.resolve({
         result: false,
-        message:
-          'checkPassword: Invalid [CommandExecutor]; Please check Electron App (IPC handlers)',
+        message: "checkPassword: Invalid [CommandExecutor]; Please check Electron App (IPC handlers)",
       });
     }
-    return window.CommandExecutor.exec(credential, 'pwd');
+    return window.CommandExecutor.exec(credential, "pwd");
   };
 
   // credentials methods
   const addCredential = async (credential: ICredential) => {
     if (!credential.host || !credential.username || !credential.password) {
-      logCtx.error(
-        'Try to add an invalid credential',
-        'Please check credential settings',
-      );
-      return { result: false, message: 'Try to add an invalid credential' };
+      logCtx.error("Try to add an invalid credential", "Please check credential settings");
+      return { result: false, message: "Try to add an invalid credential" };
     }
 
     // check unique host
@@ -242,10 +213,7 @@ export function SSHProvider({
     });
 
     if (foundHost) {
-      logCtx.error(
-        `Host [${credential.host}] have been already configured`,
-        'Only one entry per host is allowed',
-      );
+      logCtx.error(`Host [${credential.host}] have been already configured`, "Only one entry per host is allowed");
       return {
         result: false,
         message: `Host [${credential.host}] have been already configured`,
@@ -263,7 +231,7 @@ export function SSHProvider({
       const valid = await checkPassword(credential);
 
       // remove explicit the password after saving it on system
-      credential.password = '';
+      credential.password = "";
 
       // return false if the password wasn't valid
       if (!valid.result) {
@@ -278,11 +246,11 @@ export function SSHProvider({
       return { result: false, message: error.message };
     }
 
-    return { result: true, message: '' };
+    return { result: true, message: "" };
   };
 
   const deleteCredential = (credentialId: string) => {
-    if (typeof credentialId !== 'string') {
+    if (typeof credentialId !== "string") {
       return false;
     }
 
@@ -308,7 +276,7 @@ export function SSHProvider({
   };
 
   const getCredentialHost = (host: string) => {
-    if (typeof host !== 'string') {
+    if (typeof host !== "string") {
       return null;
     }
 
@@ -329,18 +297,15 @@ export function SSHProvider({
           const ipv4format =
             /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
           if (ip.match(ipv4format)) {
-            const lastName = h[1].split(' ').pop();
-            let alternativeHost: string | undefined = '';
+            const lastName = h[1].split(" ").pop();
+            let alternativeHost: string | undefined = "";
             if (ip === host) {
               alternativeHost = lastName;
             } else if (lastName === host) {
               alternativeHost = ip;
             }
             if (alternativeHost) {
-              logCtx.debug(
-                `Use host ${alternativeHost} instead of ${host} for credentials!`,
-                '',
-              );
+              logCtx.debug(`Use host ${alternativeHost} instead of ${host} for credentials!`, "");
               credentials.forEach((credential) => {
                 if (credential.host === alternativeHost) {
                   credentialHost = credential;
@@ -354,10 +319,8 @@ export function SSHProvider({
 
     if (!credentialHost) {
       logCtx.error(
-        `No SSH credentials have been configured for host: [${JSON.stringify(
-          host,
-        )}]`,
-        'Please check the SSH credential settings',
+        `No SSH credentials have been configured for host: [${JSON.stringify(host)}]`,
+        "Please check the SSH credential settings"
       );
       return null;
     }
@@ -368,22 +331,19 @@ export function SSHProvider({
   // CommandExecutor
   const exec = async (credential: ICredential | null, command: string) => {
     if (!window.CommandExecutor) {
-      logCtx.error(
-        'exec: Invalid [CommandExecutor]',
-        'Please check Electron App (IPC handlers)',
-      );
+      logCtx.error("exec: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return {
         result: false,
-        message: 'exec: Invalid [CommandExecutor]',
+        message: "exec: Invalid [CommandExecutor]",
         DEFAULT_BUG_TEXT,
       };
     }
 
     if (command.length === 0) {
-      logCtx.error('exec: Invalid empty content', DEFAULT_BUG_TEXT);
+      logCtx.error("exec: Invalid empty content", DEFAULT_BUG_TEXT);
       return {
         result: false,
-        message: 'exec: Invalid empty content',
+        message: "exec: Invalid empty content",
         DEFAULT_BUG_TEXT,
       };
     }
@@ -410,12 +370,10 @@ export function SSHProvider({
       exec,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [credentials, systemInfo],
+    [credentials, systemInfo]
   );
 
-  return (
-    <SSHContext.Provider value={attributesMemo}>{children}</SSHContext.Provider>
-  );
+  return <SSHContext.Provider value={attributesMemo}>{children}</SSHContext.Provider>;
 }
 
 export default SSHContext;

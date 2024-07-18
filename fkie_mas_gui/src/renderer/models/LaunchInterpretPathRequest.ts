@@ -1,4 +1,4 @@
-import LaunchArgument from './LaunchArgument';
+import LaunchArgument from "./LaunchArgument";
 
 /**
  * Request to parse the text for included paths.

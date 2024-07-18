@@ -1,7 +1,5 @@
-import { useDebounceCallback } from '@react-hook/debounce';
-import PropTypes from 'prop-types';
-import { useCallback, useContext, useEffect, useState } from 'react';
-
+import ClearIcon from "@mui/icons-material/Clear";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   CircularProgress,
   IconButton,
@@ -15,27 +13,27 @@ import {
   TableRow,
   Tooltip,
   Typography,
-} from '@mui/material';
-
-import ClearIcon from '@mui/icons-material/Clear';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { useCustomEventListener } from 'react-custom-events';
-import { SearchBar, colorFromHostname } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
-import { RosNode } from '../../../models';
-import { EVENT_PROVIDER_ROS_NODES } from '../../../providers/eventTypes';
-import { findIn } from '../../../utils/index';
+} from "@mui/material";
+import { useDebounceCallback } from "@react-hook/debounce";
+import PropTypes from "prop-types";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
+import { SearchBar, colorFromHostname } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { RosNode } from "../../../models";
+import { EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
+import { findIn } from "../../../utils/index";
 
 function NodeLoggerPanel(node) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [filterText, setFilterText] = useState('');
+  const [filterText, setFilterText] = useState("");
   const [currentNode, setCurrentNode] = useState(node.node);
   const [isRequesting, setIsRequesting] = useState(false);
   const [loggers, setLoggers] = useState([]);
   const [loggersFiltered, setLoggersFiltered] = useState([]);
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const setLoggersOnProvider = useCallback(
     async (rosNode, newLoggers) => {
@@ -47,7 +45,7 @@ function NodeLoggerPanel(node) {
         setIsRequesting(false);
       }
     },
-    [rosCtx],
+    [rosCtx]
   );
 
   /**
@@ -70,8 +68,8 @@ function NodeLoggerPanel(node) {
           setIsRequesting(false);
         }
       }
-      if (ownLoggers?.length > 0 && ownLoggers[0].name !== 'all') {
-        ownLoggers = [{ name: 'all', level: '' }, ...ownLoggers];
+      if (ownLoggers?.length > 0 && ownLoggers[0].name !== "all") {
+        ownLoggers = [{ name: "all", level: "" }, ...ownLoggers];
       }
       setLoggers(ownLoggers);
       // compare new loggers and update to set by user
@@ -92,7 +90,7 @@ function NodeLoggerPanel(node) {
         setLoggersOnProvider(rosNode, forceUpdateLevels);
       }
     },
-    [rosCtx, setLoggersOnProvider],
+    [rosCtx, setLoggersOnProvider]
   );
 
   useEffect(() => {
@@ -115,7 +113,7 @@ function NodeLoggerPanel(node) {
       }
     },
     [loggers],
-    300,
+    300
   );
 
   useEffect(() => {
@@ -130,7 +128,7 @@ function NodeLoggerPanel(node) {
   const updateLoggerLevel = useCallback(
     async (loggerName, level) => {
       let changedLoggers = [];
-      if (loggerName === 'all') {
+      if (loggerName === "all") {
         // change all logger levels to new level
         changedLoggers = loggers.map((logger) => {
           logger.level = level;
@@ -146,33 +144,33 @@ function NodeLoggerPanel(node) {
               logger.level = level;
             }
             return logger;
-          }),
+          })
         );
       }
       // store changed loggers by user
       changedLoggers.forEach((l) => {
-        if (l.name !== 'all') {
+        if (l.name !== "all") {
           currentNode.rosLoggers[l.name] = l.level;
         }
       });
       // set loggers on ros node
       setLoggersOnProvider(
         currentNode,
-        changedLoggers.filter((logger) => logger.name !== 'all'),
-        true,
+        changedLoggers.filter((logger) => logger.name !== "all"),
+        true
       );
     },
-    [loggers, currentNode, setLoggersOnProvider],
+    [loggers, currentNode, setLoggersOnProvider]
   );
 
   const getHostStyle = (providerName) => {
-    if (settingsCtx.get('colorizeHosts')) {
+    if (settingsCtx.get("colorizeHosts")) {
       // borderLeft: `3px dashed`,
       // borderColor: colorFromHostname(provider.name()),
       return {
-        borderLeftStyle: 'solid',
+        borderLeftStyle: "solid",
         borderLeftColor: colorFromHostname(providerName),
-        borderLeftWidth: '0.6em',
+        borderLeftWidth: "0.6em",
       };
     }
     return {};
@@ -187,7 +185,7 @@ function NodeLoggerPanel(node) {
     };
   }, []);
 
-  const radioSize = { width: '2em', height: '2em' };
+  const radioSize = { width: "2em", height: "2em" };
 
   return (
     <Stack
@@ -195,12 +193,10 @@ function NodeLoggerPanel(node) {
       height="100%"
       // width="100%"
       overflow="auto"
-      backgroundColor={settingsCtx.get('backgroundColor')}
+      backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack direction="row" spacing="1em" justifyItems="center">
-        <Typography sx={getHostStyle(currentNode?.providerName)}>
-          {currentNode?.name}
-        </Typography>
+        <Typography sx={getHostStyle(currentNode?.providerName)}>{currentNode?.name}</Typography>
         {isRequesting && <CircularProgress size="1em" />}
       </Stack>
       <Stack direction="row" spacing={0.5} justifyItems="center">
@@ -230,19 +226,14 @@ function NodeLoggerPanel(node) {
           defaultValue={filterText}
           // fullWidth={true}
         />
-        <Tooltip
-          title="Refresh logger list"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-        >
+        <Tooltip title="Refresh logger list" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
           <IconButton
             size="small"
             edge="start"
             aria-label="refresh logger list"
             onClick={() => getLoggers(currentNode)}
           >
-            <RefreshIcon sx={{ fontSize: 'inherit' }} />
+            <RefreshIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
       </Stack>
@@ -255,7 +246,7 @@ function NodeLoggerPanel(node) {
                   <TableRow
                     key={logger.name}
                     style={{
-                      display: 'block',
+                      display: "block",
                       padding: 0,
                     }}
                   >
@@ -270,17 +261,17 @@ function NodeLoggerPanel(node) {
                           // width: 'auto',
                           // height: 'auto',
                           // display: 'flex',
-                          flexWrap: 'nowrap',
-                          flexDirection: 'row',
+                          flexWrap: "nowrap",
+                          flexDirection: "row",
                         }}
                       >
                         <Radio
                           value="FATAL"
                           size="small"
                           sx={{
-                            color: '#C0392B',
-                            '&.Mui-checked': {
-                              color: '#C0392B',
+                            color: "#C0392B",
+                            "&.Mui-checked": {
+                              color: "#C0392B",
                             },
                             ...radioSize,
                           }}
@@ -289,9 +280,9 @@ function NodeLoggerPanel(node) {
                           value="ERROR"
                           size="small"
                           sx={{
-                            color: '#D35400',
-                            '&.Mui-checked': {
-                              color: '#D35400',
+                            color: "#D35400",
+                            "&.Mui-checked": {
+                              color: "#D35400",
                             },
                             ...radioSize,
                           }}
@@ -300,9 +291,9 @@ function NodeLoggerPanel(node) {
                           value="WARN"
                           size="small"
                           sx={{
-                            color: '#F39C12',
-                            '&.Mui-checked': {
-                              color: '#F39C12cd',
+                            color: "#F39C12",
+                            "&.Mui-checked": {
+                              color: "#F39C12cd",
                             },
                             ...radioSize,
                           }}
@@ -311,9 +302,9 @@ function NodeLoggerPanel(node) {
                           value="INFO"
                           size="small"
                           sx={{
-                            color: '#2980B9',
-                            '&.Mui-checked': {
-                              color: '#2980B9',
+                            color: "#2980B9",
+                            "&.Mui-checked": {
+                              color: "#2980B9",
                             },
                             ...radioSize,
                           }}
@@ -332,7 +323,7 @@ function NodeLoggerPanel(node) {
                       style={{
                         padding: 2,
                         flexGrow: 1,
-                        width: '100%',
+                        width: "100%",
                       }}
                     >
                       {logger.name}

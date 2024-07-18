@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
-import RosQos from './RosQos';
-import SubscriberFilter from './SubscriberFilter';
+import RosQos from "./RosQos";
+import SubscriberFilter from "./SubscriberFilter";
 
 /**
  * SubscriberNode creates a subscriber node which subscribes a given topic.
@@ -52,7 +52,7 @@ class SubscriberNode {
     tcp_no_delay = false,
     use_sim_time = false,
     filter = new SubscriberFilter(),
-    qos: RosQos = new RosQos(),
+    qos: RosQos = new RosQos()
   ) {
     this.topic = topic;
     this.message_type = message_type;

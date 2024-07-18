@@ -1,28 +1,27 @@
-import PropTypes from 'prop-types';
-import { useContext, useState } from 'react';
-
-import MoreVertSharpIcon from '@mui/icons-material/MoreVert';
-import { Badge, Fade, IconButton, Menu, MenuItem } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { SettingsContext } from '../../context/SettingsContext';
-import { colorFromHostname } from './Colors';
+import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
+import { Badge, Fade, IconButton, Menu, MenuItem } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import PropTypes from "prop-types";
+import { useContext, useState } from "react";
+import { SettingsContext } from "../../context/SettingsContext";
+import { colorFromHostname } from "./Colors";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
-  '& .MuiBadge-badge': {
+  "& .MuiBadge-badge": {
     right: 0,
     top: 22,
     // border: `2px solid ${theme.palette.background.paper}`,
     // padding: '2px 4px',
-    fontSize: 'inherit',
+    fontSize: "inherit",
     height: 12,
     minWidth: 10,
   },
 }));
 
 function OverflowMenu({
-  icon = <MoreVertSharpIcon sx={{ fontSize: 'inherit' }} />,
+  icon = <MoreVertSharpIcon sx={{ fontSize: "inherit" }} />,
   options = [],
-  id = 'overflow-menu',
+  id = "overflow-menu",
   showBadge = false,
   colorizeItems = false,
 }) {
@@ -41,11 +40,11 @@ function OverflowMenu({
 
   /** create style to colorize the menu item depends on the provider name */
   const getSxPropByName = (name) => {
-    if (colorizeItems && settingsCtx.get('colorizeHosts')) {
+    if (colorizeItems && settingsCtx.get("colorizeHosts")) {
       return {
-        borderLeftStyle: 'solid',
+        borderLeftStyle: "solid",
         borderLeftColor: colorFromHostname(name),
-        borderLeftWidth: '0.6em',
+        borderLeftWidth: "0.6em",
       };
     }
     return {};
@@ -68,8 +67,8 @@ function OverflowMenu({
         aria-label={`${id}-icon`}
         id={`${id}-icon`}
         size="small"
-        aria-controls={open ? 'long-menu' : undefined}
-        aria-expanded={open ? 'true' : undefined}
+        aria-controls={open ? "long-menu" : undefined}
+        aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
         onClick={handleClick}
         onMouseDown={handleClick}
@@ -80,7 +79,7 @@ function OverflowMenu({
         id={`${id}-menu`}
         size="small"
         MenuListProps={{
-          'aria-labelledby': 'long-button',
+          "aria-labelledby": "long-button",
         }}
         anchorEl={anchorEl}
         open={open}

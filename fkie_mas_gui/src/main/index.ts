@@ -6,19 +6,19 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { electronApp, is, optimizer } from '@electron-toolkit/utils';
-import { BrowserWindow, app, ipcMain, shell } from 'electron';
-import path, { join } from 'path';
-import { registerArguments } from './CommandLineInterface';
-import { AutoUpdateManager, DialogManager, ShutdownInterface, registerHandlers } from './IPC';
-import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
-import windowStateKeeper from './windowStateKeeper';
+import { electronApp, is, optimizer } from "@electron-toolkit/utils";
+import { BrowserWindow, app, ipcMain, shell } from "electron";
+import path, { join } from "path";
+import { registerArguments } from "./CommandLineInterface";
+import { AutoUpdateManager, DialogManager, ShutdownInterface, registerHandlers } from "./IPC";
+import MenuBuilder from "./menu";
+import { resolveHtmlPath } from "./util";
+import windowStateKeeper from "./windowStateKeeper";
 // import installer from 'electron-devtools-installer'
 // import electrondebug from 'electron-debug'
 
 // Disable security warnings and set react app path on dev env
-process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
 
 let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
@@ -27,8 +27,8 @@ let shutdownInterface: ShutdownInterface | null = null;
 
 console.log(`process.env.NODE_ENV: ${process.env.NODE_ENV}`);
 
-if (process.env.NODE_ENV === 'production') {
-  const sourceMapSupport = require('source-map-support');
+if (process.env.NODE_ENV === "production") {
+  const sourceMapSupport = require("source-map-support");
   sourceMapSupport.install();
 }
 
@@ -54,7 +54,7 @@ const createWindow = async (): Promise<void> => {
   //   await installExtensions()
   // }
 
-  const mainWindowStateKeeper = await windowStateKeeper('main');
+  const mainWindowStateKeeper = await windowStateKeeper("main");
 
   mainWindow = new BrowserWindow({
     autoHideMenuBar: true,
@@ -64,19 +64,19 @@ const createWindow = async (): Promise<void> => {
     y: mainWindowStateKeeper.y,
     width: mainWindowStateKeeper.width,
     height: mainWindowStateKeeper.height,
-    icon: path.join(__dirname, '../../icon/crystal_clear_app_clicknrun_256x256.png'),
+    icon: path.join(__dirname, "../../icon/crystal_clear_app_clicknrun_256x256.png"),
     webPreferences: {
       sandbox: false,
       nodeIntegration: true,
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: path.join(__dirname, "../preload/index.js"),
     },
   });
   // Track window state
   mainWindowStateKeeper.track(mainWindow);
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow.loadURL(resolveHtmlPath("index.html"));
 
-  mainWindow.on('ready-to-show', () => {
+  mainWindow.on("ready-to-show", () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
@@ -88,12 +88,12 @@ const createWindow = async (): Promise<void> => {
     }
   });
 
-  mainWindow.on('close', (e) => {
+  mainWindow.on("close", (e) => {
     e.preventDefault();
-    mainWindow?.webContents.send('ShutdownInterface:terminateSubprocesses');
+    mainWindow?.webContents.send("ShutdownInterface:terminateSubprocesses");
   });
 
-  mainWindow.on('closed', () => {
+  mainWindow.on("closed", () => {
     mainWindow = null;
   });
 
@@ -102,21 +102,21 @@ const createWindow = async (): Promise<void> => {
 
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((data) => {
-    if (data.url === 'about:blank') {
+    if (data.url === "about:blank") {
       return {
-        action: 'allow',
+        action: "allow",
         overrideBrowserWindowOptions: {
           frame: false,
           fullscreenable: true,
-          backgroundColor: 'black',
+          backgroundColor: "black",
           webPreferences: {
-            preload: path.join(__dirname, '../preload/index.js'),
+            preload: path.join(__dirname, "../preload/index.js"),
           },
         },
       };
     }
     shell.openExternal(data.url);
-    return { action: 'deny' };
+    return { action: "deny" };
   });
 
   dialogManager = new DialogManager(mainWindow);
@@ -127,7 +127,7 @@ const createWindow = async (): Promise<void> => {
   // Handle app shutdown.
   shutdownInterface = new ShutdownInterface(mainWindow);
   // ShutdownInterface
-  ipcMain.handle('ShutdownInterface:quitGui', () => {
+  ipcMain.handle("ShutdownInterface:quitGui", () => {
     return shutdownInterface?.quitGui();
   });
 
@@ -136,7 +136,7 @@ const createWindow = async (): Promise<void> => {
   if (is.dev && process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
 };
 
@@ -144,10 +144,10 @@ const createWindow = async (): Promise<void> => {
  * Event listeners
  */
 
-app.on('window-all-closed', () => {
+app.on("window-all-closed", () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     autoUpdateManager?.quit();
     dialogManager?.quit();
     app.quit();
@@ -162,12 +162,12 @@ app
   .whenReady()
   .then(() => {
     // Set app user model id for windows
-    electronApp.setAppUserModelId('fkie.cms');
+    electronApp.setAppUserModelId("fkie.cms");
 
     // Default open or close DevTools by F12 in development
     // and ignore CommandOrControl + R in production.
     // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-    app.on('browser-window-created', (_, window) => {
+    app.on("browser-window-created", (_, window) => {
       optimizer.watchWindowShortcuts(window);
     });
 
@@ -175,7 +175,7 @@ app
     registerHandlers();
 
     createWindow();
-    app.on('activate', () => {
+    app.on("activate", () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();

@@ -1,6 +1,3 @@
-import PropTypes from 'prop-types';
-import { useState } from 'react';
-
 import {
   Button,
   Checkbox,
@@ -17,20 +14,17 @@ import {
   ListSubheader,
   Radio,
   RadioGroup,
-} from '@mui/material';
-import DraggablePaper from '../UI/DraggablePaper';
+} from "@mui/material";
+import PropTypes from "prop-types";
+import { useState } from "react";
+import DraggablePaper from "../UI/DraggablePaper";
 
-function MapSelectionModal({
-  list,
-  onConfirmCallback,
-  onCancelCallback = null,
-  useRadioGroup = false,
-}) {
+function MapSelectionModal({ list, onConfirmCallback, onCancelCallback = null, useRadioGroup = false }) {
   const [open, setOpen] = useState(true);
   const [selectedItems, setSelectedItems] = useState(
     list.map((o) => {
       return { title: o.title, list: o.list.length <= 3 ? o.list : [] };
-    }),
+    })
   );
 
   const initRadioMap = (initList) => {
@@ -42,15 +36,11 @@ function MapSelectionModal({
     return result;
   };
 
-  const [selectedRadioItems, setSelectedRadioItems] = useState(
-    initRadioMap(list),
-  );
+  const [selectedRadioItems, setSelectedRadioItems] = useState(initRadioMap(list));
 
   const handleToggle = (title, value) => {
     const newSelectedItems = structuredClone(selectedItems);
-    const item = newSelectedItems.find(
-      (o) => title.localeCompare(o.title) === 0,
-    );
+    const item = newSelectedItems.find((o) => title.localeCompare(o.title) === 0);
     if (item) {
       const currentIndex = item.list.indexOf(value);
       if (currentIndex === -1) {
@@ -69,10 +59,10 @@ function MapSelectionModal({
   };
 
   const handleClose = (event, reason) => {
-    if (reason && reason === 'backdropClick') return;
+    if (reason && reason === "backdropClick") return;
     setSelectedItems([]);
     setOpen(false);
-    if (reason !== 'confirmed' && onCancelCallback) {
+    if (reason !== "confirmed" && onCancelCallback) {
       onCancelCallback();
     }
   };
@@ -87,7 +77,7 @@ function MapSelectionModal({
     } else {
       onConfirmCallback(selectedItems);
     }
-    handleClose(null, 'confirmed');
+    handleClose(null, "confirmed");
   };
 
   return (
@@ -100,7 +90,7 @@ function MapSelectionModal({
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
         Confirm Selection
       </DialogTitle>
 
@@ -108,10 +98,10 @@ function MapSelectionModal({
         <DialogContent scroll="paper" aria-label="list">
           <List
             sx={{
-              width: '100%',
-              overflow: 'auto',
+              width: "100%",
+              overflow: "auto",
               // bgcolor: 'background.paper',
-              '& ul': { padding: 0, margin: 0 },
+              "& ul": { padding: 0, margin: 0 },
             }}
           >
             {list.map((node) => {
@@ -119,9 +109,7 @@ function MapSelectionModal({
               return (
                 <li key={`section-${labelId}`}>
                   <ul style={{ padding: 0, marginBottom: 0 }}>
-                    <ListSubheader sx={{ padding: 0 }}>
-                      {node.title}
-                    </ListSubheader>
+                    <ListSubheader sx={{ padding: 0 }}>{node.title}</ListSubheader>
                     {useRadioGroup && (
                       <RadioGroup
                         key={`radio-group-${node.title}`}
@@ -147,26 +135,20 @@ function MapSelectionModal({
                       node.list.map((item) => {
                         return (
                           <ListItem key={item} disablePadding>
-                            <ListItemButton
-                              role={undefined}
-                              onClick={() => handleToggle(node.title, item)}
-                              dense
-                            >
+                            <ListItemButton role={undefined} onClick={() => handleToggle(node.title, item)} dense>
                               <ListItemIcon>
                                 <Checkbox
                                   size="small"
                                   edge="start"
                                   checked={
                                     selectedItems.find(
-                                      (o) =>
-                                        node.title.localeCompare(o.title) ===
-                                          0 && o.list.indexOf(item) !== -1,
+                                      (o) => node.title.localeCompare(o.title) === 0 && o.list.indexOf(item) !== -1
                                     ) !== undefined
                                   }
                                   tabIndex={-1}
                                   disableRipple
                                   inputProps={{
-                                    'aria-labelledby': labelId,
+                                    "aria-labelledby": labelId,
                                   }}
                                 />
                               </ListItemIcon>
@@ -188,12 +170,7 @@ function MapSelectionModal({
           Cancel
         </Button>
 
-        <Button
-          autoFocus
-          color="success"
-          variant="contained"
-          onClick={onConfirm}
-        >
+        <Button autoFocus color="success" variant="contained" onClick={onConfirm}>
           Confirm
         </Button>
       </DialogActions>

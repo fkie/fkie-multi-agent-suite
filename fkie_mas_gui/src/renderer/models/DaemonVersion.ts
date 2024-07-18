@@ -1,4 +1,4 @@
-import { generateUniqueId } from '../utils';
+import { generateUniqueId } from "../utils";
 
 /**
  * DaemonVersion models version of the daemon node

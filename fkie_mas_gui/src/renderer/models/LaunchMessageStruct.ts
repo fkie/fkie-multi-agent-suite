@@ -31,12 +31,7 @@ class LaunchMessageStruct {
    * @param {boolean} valid - True if the data for the message type was loaded successfully.
    * @param {string} error_msg - Error message if valid is False.
    */
-  constructor(
-    msg_type: string,
-    data: any | null,
-    valid: boolean,
-    error_msg: string,
-  ) {
+  constructor(msg_type: string, data: any | null, valid: boolean, error_msg: string) {
     this.msg_type = msg_type;
     this.data = data;
     this.valid = valid;

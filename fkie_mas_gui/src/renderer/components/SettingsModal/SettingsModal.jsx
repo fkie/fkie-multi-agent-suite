@@ -1,5 +1,4 @@
-import { useContext, useState } from 'react';
-
+import SettingsIcon from "@mui/icons-material/Settings";
 import {
   Box,
   Button,
@@ -11,37 +10,32 @@ import {
   Tab,
   Tabs,
   Tooltip,
-} from '@mui/material';
-
-import SettingsIcon from '@mui/icons-material/Settings';
-import { useCustomEventListener } from 'react-custom-events';
-import { EVENT_OPEN_SETTINGS, SETTING } from '../../utils/events';
-
-import { SettingsContext } from '../../context/SettingsContext';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import DraggablePaper from '../UI/DraggablePaper';
-import TabPanel from '../UI/TabPanel';
-import About from './About';
-import GuiPanel from './GuiPanel';
-import SSHCredentialsPanel from './SSHCredentialsPanel';
+} from "@mui/material";
+import { useContext, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
+import { SettingsContext } from "../../context/SettingsContext";
+import useLocalStorage from "../../hooks/useLocalStorage";
+import { EVENT_OPEN_SETTINGS, SETTING } from "../../utils/events";
+import DraggablePaper from "../UI/DraggablePaper";
+import TabPanel from "../UI/TabPanel";
+import About from "./About";
+import GuiPanel from "./GuiPanel";
+import SSHCredentialsPanel from "./SSHCredentialsPanel";
 
 function SettingsModal() {
   const settingsCtx = useContext(SettingsContext);
-  const [selectedTabIndex, setSelectedTabIndex] = useLocalStorage(
-    'SettingsModal:selectedTabIndex',
-    1,
-  );
+  const [selectedTabIndex, setSelectedTabIndex] = useLocalStorage("SettingsModal:selectedTabIndex", 1);
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = (event, reason) => {
-    if (reason && reason === 'backdropClick') return;
+    if (reason && reason === "backdropClick") return;
     setOpen(false);
   };
 
   function a11yProps(index) {
     return {
       id: `simple-tab-${index}`,
-      'aria-controls': `simple-tabpanel-${index}`,
+      "aria-controls": `simple-tabpanel-${index}`,
     };
   }
 
@@ -74,12 +68,12 @@ function SettingsModal() {
         onClose={handleClose}
         // disableEscapeKeyDown
       >
-        <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+        <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
           Settings editor
         </DialogTitle>
 
         <DialogContent>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
             <Tabs
               value={selectedTabIndex}
               onChange={(event, newValue) => {
@@ -100,7 +94,7 @@ function SettingsModal() {
           </TabPanel>
           <TabPanel value={selectedTabIndex} index={2}>
             <About />
-          </TabPanel>{' '}
+          </TabPanel>{" "}
         </DialogContent>
         <DialogActions>
           <Button
@@ -113,21 +107,15 @@ function SettingsModal() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Tooltip
-        title="Settings"
-        placement="right"
-        enterDelay={settingsCtx.get('tooltipEnterDelay')}
-      >
+      <Tooltip title="Settings" placement="right" enterDelay={settingsCtx.get("tooltipEnterDelay")}>
         <IconButton
           sx={{
-            padding: '0.8em',
-            color: settingsCtx.get('useDarkMode')
-              ? '#fff'
-              : 'rgba(0, 0, 0, 0.54)',
+            padding: "0.8em",
+            color: settingsCtx.get("useDarkMode") ? "#fff" : "rgba(0, 0, 0, 0.54)",
           }}
           onClick={handleOpen}
         >
-          <SettingsIcon sx={{ fontSize: 'inherit' }} />
+          <SettingsIcon sx={{ fontSize: "inherit" }} />
         </IconButton>
       </Tooltip>
     </div>

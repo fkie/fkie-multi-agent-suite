@@ -1,25 +1,25 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import { ICredential } from '../main/models/ICredential'
-import { electronAPI } from '@electron-toolkit/preload'
+import { electronAPI } from "@electron-toolkit/preload";
+import { contextBridge, ipcRenderer } from "electron";
+import { ICredential } from "../main/models/ICredential";
 
 // Custom APIs for renderer
-const api = {}
+const api = {};
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld("electron", electronAPI);
+    contextBridge.exposeInMainWorld("api", api);
     // Register Password Manager
-    contextBridge.exposeInMainWorld('PasswordManager', {
+    contextBridge.exposeInMainWorld("PasswordManager", {
       setPassword: (service: string, account: string, password: string) =>
-        ipcRenderer.invoke('PasswordManager:setPassword', service, account, password),
+        ipcRenderer.invoke("PasswordManager:setPassword", service, account, password),
 
       deletePassword: (service: string, account: string) =>
-        ipcRenderer.invoke('PasswordManager:deletePassword', service, account)
-    })
+        ipcRenderer.invoke("PasswordManager:deletePassword", service, account),
+    });
 
     // TODO remove SFTP if websocket ros.file.get and ros.file.save works
     // Register SFTP Manager
@@ -41,44 +41,33 @@ if (process.contextIsolated) {
     // });
 
     // Register Command Executor
-    contextBridge.exposeInMainWorld('CommandExecutor', {
+    contextBridge.exposeInMainWorld("CommandExecutor", {
       exec: (credential: ICredential, command: string) =>
-        ipcRenderer.invoke('CommandExecutor:exec', credential, command),
+        ipcRenderer.invoke("CommandExecutor:exec", credential, command),
 
       execTerminal: (credential: ICredential, title: string, command: string) =>
-        ipcRenderer.invoke('CommandExecutor:execTerminal', credential, title, command)
-    })
+        ipcRenderer.invoke("CommandExecutor:execTerminal", credential, title, command),
+    });
 
     // Register ROS Info
-    contextBridge.exposeInMainWorld('ROSInfo', {
-      getInfo: () => ipcRenderer.invoke('ROSInfo:getInfo')
-    })
+    contextBridge.exposeInMainWorld("ROSInfo", {
+      getInfo: () => ipcRenderer.invoke("ROSInfo:getInfo"),
+    });
 
     // Register System Info
-    contextBridge.exposeInMainWorld('SystemInfo', {
-      getInfo: () => ipcRenderer.invoke('SystemInfo:getInfo')
-    })
+    contextBridge.exposeInMainWorld("SystemInfo", {
+      getInfo: () => ipcRenderer.invoke("SystemInfo:getInfo"),
+    });
 
     // Register Multimaster Manager
     //    Validate first if ROS is available
     // if (['1', '2'].includes(`${sMultimasterManagerPreload.rosInfo.version}`)) {
-    contextBridge.exposeInMainWorld('MultimasterManager', {
+    contextBridge.exposeInMainWorld("MultimasterManager", {
       startTerminalManager: (rosVersion: string, credential: ICredential, port?: number) =>
-        ipcRenderer.invoke('MultimasterManager:startTerminalManager', rosVersion, credential, port),
+        ipcRenderer.invoke("MultimasterManager:startTerminalManager", rosVersion, credential, port),
 
-      startMultimasterDaemon: (
-        rosVersion: string,
-        credential: ICredential,
-        name?: string,
-        networkId?: number
-      ) =>
-        ipcRenderer.invoke(
-          'MultimasterManager:startMultimasterDaemon',
-          rosVersion,
-          credential,
-          name,
-          networkId
-        ),
+      startMultimasterDaemon: (rosVersion: string, credential: ICredential, name?: string, networkId?: number) =>
+        ipcRenderer.invoke("MultimasterManager:startMultimasterDaemon", rosVersion, credential, name, networkId),
 
       startMasterDiscovery: (
         rosVersion: string,
@@ -90,7 +79,7 @@ if (process.contextIsolated) {
         robotHosts?: string[]
       ) =>
         ipcRenderer.invoke(
-          'MultimasterManager:startMasterDiscovery',
+          "MultimasterManager:startMasterDiscovery",
           rosVersion,
           credential,
           name,
@@ -107,61 +96,54 @@ if (process.contextIsolated) {
         doNotSync?: string[],
         syncTopics?: string[]
       ) =>
-        ipcRenderer.invoke(
-          'MultimasterManager:startMasterSync',
-          rosVersion,
-          credential,
-          name,
-          doNotSync,
-          syncTopics
-        )
-    })
+        ipcRenderer.invoke("MultimasterManager:startMasterSync", rosVersion, credential, name, doNotSync, syncTopics),
+    });
 
     // Expose protected methods that allow the renderer process to use
     // the ipcRenderer without exposing the entire object
-    contextBridge.exposeInMainWorld('autoUpdate', {
+    contextBridge.exposeInMainWorld("autoUpdate", {
       send: (channel: string, data: unknown) => {
         // whitelist channels
-        const validChannels = ['check-for-updates', 'quit-and-install']
+        const validChannels = ["check-for-updates", "quit-and-install"];
         if (validChannels.includes(channel)) {
-          ipcRenderer.send(channel, data)
+          ipcRenderer.send(channel, data);
         }
       },
       receive: (channel: string, func) => {
         const validChannels = [
-          'checking-for-update',
-          'update-available',
-          'update-not-available',
-          'download-progress',
-          'update-downloaded',
-          'update-error'
-        ]
+          "checking-for-update",
+          "update-available",
+          "update-not-available",
+          "download-progress",
+          "update-downloaded",
+          "update-error",
+        ];
         if (validChannels.includes(channel)) {
           // Deliberately strip event as it includes `sender`
           ipcRenderer.on(channel, (_event, ...args) => {
-            func(...args)
-          })
+            func(...args);
+          });
         }
-      }
-    })
+      },
+    });
 
-    contextBridge.exposeInMainWorld('ShutdownInterface', {
+    contextBridge.exposeInMainWorld("ShutdownInterface", {
       onTerminateSubprocesses: (callback: Function) =>
-        ipcRenderer.on('ShutdownInterface:terminateSubprocesses', () => callback()),
-      quitGui: () => ipcRenderer.invoke('ShutdownInterface:quitGui')
-    })
+        ipcRenderer.on("ShutdownInterface:terminateSubprocesses", () => callback()),
+      quitGui: () => ipcRenderer.invoke("ShutdownInterface:quitGui"),
+    });
 
-    contextBridge.exposeInMainWorld('electronAPI', {
+    contextBridge.exposeInMainWorld("electronAPI", {
       openFile: (path: string) => {
-        return ipcRenderer.invoke('dialog:openFile', path)
-      }
-    })
+        return ipcRenderer.invoke("dialog:openFile", path);
+      },
+    });
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
 } else {
   // @ts-ignore (define in dts)
-  window.electron = electronAPI
+  window.electron = electronAPI;
   // @ts-ignore (define in dts)
-  window.api = api
+  window.api = api;
 }

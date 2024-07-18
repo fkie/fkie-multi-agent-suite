@@ -1,421 +1,421 @@
 export default {
-  '3dm': {
-    labelColor: '#8D1A11',
-    type: '3d',
+  "3dm": {
+    labelColor: "#8D1A11",
+    type: "3d",
   },
-  '3ds': {
-    labelColor: '#5FB9AD',
-    type: '3d',
+  "3ds": {
+    labelColor: "#5FB9AD",
+    type: "3d",
   },
-  '3g2': {
-    type: 'video',
+  "3g2": {
+    type: "video",
   },
-  '3gp': {
-    type: 'video',
+  "3gp": {
+    type: "video",
   },
-  '7zip': {
-    type: 'compressed',
+  "7zip": {
+    type: "compressed",
   },
   aac: {
-    type: 'audio',
+    type: "audio",
   },
   aep: {
-    type: 'video',
+    type: "video",
   },
   ai: {
-    color: '#423325',
+    color: "#423325",
     gradientOpacity: 0,
-    labelColor: '#423325',
-    labelTextColor: '#FF7F18',
+    labelColor: "#423325",
+    labelTextColor: "#FF7F18",
     labelUppercase: true,
-    foldColor: '#FF7F18',
+    foldColor: "#FF7F18",
     radius: 2,
   },
   aif: {
-    type: 'audio',
+    type: "audio",
   },
   aiff: {
-    type: 'audio',
+    type: "audio",
   },
   asf: {
-    type: 'video',
+    type: "video",
   },
   asp: {
-    type: 'code',
+    type: "code",
   },
   aspx: {
-    type: 'code',
+    type: "code",
   },
   avi: {
-    type: 'video',
+    type: "video",
   },
   bash: {
-    labelColor: '#C16A98',
-    type: 'code',
+    labelColor: "#C16A98",
+    type: "code",
   },
   bin: {
-    type: 'binary',
+    type: "binary",
   },
   bmp: {
-    type: 'image',
+    type: "image",
   },
   c: {
-    labelColor: '#5FB9AD',
-    type: 'code',
+    labelColor: "#5FB9AD",
+    type: "code",
   },
   cpp: {
-    labelColor: '#5FB9AD',
-    type: 'code',
+    labelColor: "#5FB9AD",
+    type: "code",
   },
   cs: {
-    type: 'code',
+    type: "code",
   },
   css: {
-    type: 'code',
+    type: "code",
   },
   csv: {
-    type: 'spreadsheet',
+    type: "spreadsheet",
   },
   cue: {
-    type: 'document',
+    type: "document",
   },
   dll: {
-    type: 'settings',
+    type: "settings",
   },
   dmg: {
-    type: 'drive',
+    type: "drive",
   },
   doc: {
-    color: '#2C5898',
-    foldColor: '#254A80',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#2C5898',
+    color: "#2C5898",
+    foldColor: "#254A80",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#2C5898",
     labelUppercase: true,
-    type: 'document',
+    type: "document",
   },
   docx: {
-    color: '#2C5898',
-    foldColor: '#254A80',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#2C5898',
+    color: "#2C5898",
+    foldColor: "#254A80",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#2C5898",
     labelUppercase: true,
-    type: 'document',
+    type: "document",
   },
   dwg: {
-    type: 'vector',
+    type: "vector",
   },
   dxf: {
-    type: 'vector',
+    type: "vector",
   },
   eot: {
-    type: 'font',
+    type: "font",
   },
   eps: {
-    type: 'vector',
+    type: "vector",
   },
   exe: {
-    type: 'settings',
+    type: "settings",
   },
   flac: {
-    type: 'audio',
+    type: "audio",
   },
   flv: {
-    type: 'video',
+    type: "video",
   },
   fnt: {
-    type: 'font',
+    type: "font",
   },
   fodp: {
-    type: 'presentation',
+    type: "presentation",
   },
   fods: {
-    type: 'spreadsheet',
+    type: "spreadsheet",
   },
   fodt: {
-    type: 'document',
+    type: "document",
   },
   fon: {
-    type: 'font',
+    type: "font",
   },
   gif: {
-    type: 'image',
+    type: "image",
   },
   gz: {
-    type: 'compressed',
+    type: "compressed",
   },
   h: {
-    labelColor: '#5FB9AD',
-    type: 'code',
+    labelColor: "#5FB9AD",
+    type: "code",
   },
   htm: {
-    type: 'code',
+    type: "code",
   },
   html: {
-    type: 'code',
+    type: "code",
   },
   hpp: {
-    labelColor: '#5FB9AD',
-    type: 'code',
+    labelColor: "#5FB9AD",
+    type: "code",
   },
   indd: {
-    color: '#4B2B36',
+    color: "#4B2B36",
     gradientOpacity: 0,
-    labelColor: '#4B2B36',
-    labelTextColor: '#FF408C',
+    labelColor: "#4B2B36",
+    labelTextColor: "#FF408C",
     labelUppercase: true,
-    foldColor: '#FF408C',
+    foldColor: "#FF408C",
     radius: 2,
   },
   ini: {
-    type: 'settings',
+    type: "settings",
   },
   java: {
-    type: 'code',
+    type: "code",
   },
   jpeg: {
-    type: 'image',
+    type: "image",
   },
   jpg: {
-    type: 'image',
+    type: "image",
   },
   js: {
-    labelColor: '#F7DF1E',
-    type: 'code',
+    labelColor: "#F7DF1E",
+    type: "code",
   },
   json: {
-    type: 'code',
+    type: "code",
   },
   jsx: {
-    labelColor: '#00D8FF',
-    type: 'code',
+    labelColor: "#00D8FF",
+    type: "code",
   },
   launch: {
-    color: '#2C5898',
-    foldColor: '#254A80',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#2C5898',
-    type: 'vector',
+    color: "#2C5898",
+    foldColor: "#254A80",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#2C5898",
+    type: "vector",
   },
   m4a: {
-    type: 'audio',
+    type: "audio",
   },
   m4v: {
-    type: 'video',
+    type: "video",
   },
   max: {
-    labelColor: '#5FB9AD',
-    type: '3d',
+    labelColor: "#5FB9AD",
+    type: "3d",
   },
   md: {
-    type: 'document',
+    type: "document",
   },
   mid: {
-    type: 'audio',
+    type: "audio",
   },
   mkv: {
-    type: 'video',
+    type: "video",
   },
   mov: {
-    type: 'video',
+    type: "video",
   },
   mp3: {
-    type: 'audio',
+    type: "audio",
   },
   mp4: {
-    type: 'video',
+    type: "video",
   },
   mpeg: {
-    type: 'video',
+    type: "video",
   },
   mpg: {
-    type: 'video',
+    type: "video",
   },
   obj: {
-    type: '3d',
+    type: "3d",
   },
   odp: {
-    type: 'presentation',
+    type: "presentation",
   },
   ods: {
-    type: 'spreadsheet',
+    type: "spreadsheet",
   },
   odt: {
-    type: 'document',
+    type: "document",
   },
   ogg: {
-    type: 'audio',
+    type: "audio",
   },
   ogv: {
-    type: 'video',
+    type: "video",
   },
   otf: {
-    type: 'font',
+    type: "font",
   },
   pdf: {
-    labelColor: '#D93831',
-    type: 'acrobat',
+    labelColor: "#D93831",
+    type: "acrobat",
   },
   php: {
-    labelColor: '#8892BE',
-    type: 'code',
+    labelColor: "#8892BE",
+    type: "code",
   },
   pkg: {
-    type: '3d',
+    type: "3d",
   },
   plist: {
-    type: 'settings',
+    type: "settings",
   },
   png: {
-    type: 'image',
+    type: "image",
   },
   ppt: {
-    color: '#D14423',
-    foldColor: '#AB381D',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#D14423',
+    color: "#D14423",
+    foldColor: "#AB381D",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#D14423",
     labelUppercase: true,
-    type: 'presentation',
+    type: "presentation",
   },
   pptx: {
-    color: '#D14423',
-    foldColor: '#AB381D',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#D14423',
+    color: "#D14423",
+    foldColor: "#AB381D",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#D14423",
     labelUppercase: true,
-    type: 'presentation',
+    type: "presentation",
   },
   pr: {
-    type: 'video',
+    type: "video",
   },
   ps: {
-    type: 'vector',
+    type: "vector",
   },
   psd: {
-    color: '#34364E',
+    color: "#34364E",
     gradientOpacity: 0,
-    labelColor: '#34364E',
-    labelTextColor: '#31C5F0',
+    labelColor: "#34364E",
+    labelTextColor: "#31C5F0",
     labelUppercase: true,
-    foldColor: '#31C5F0',
+    foldColor: "#31C5F0",
     radius: 2,
   },
   py: {
-    labelColor: '#3478C7',
-    type: 'code',
+    labelColor: "#3478C7",
+    type: "code",
   },
   rar: {
-    type: 'compressed',
+    type: "compressed",
   },
   rb: {
-    labelColor: '#BB271A',
-    type: 'code',
+    labelColor: "#BB271A",
+    type: "code",
   },
   rm: {
-    type: 'video',
+    type: "video",
   },
   rtf: {
-    type: 'document',
+    type: "document",
   },
   scss: {
-    labelColor: '#C16A98',
-    type: 'code',
+    labelColor: "#C16A98",
+    type: "code",
   },
   sitx: {
-    type: 'compressed',
+    type: "compressed",
   },
   sh: {
-    labelColor: '#C16A98',
-    type: 'code',
+    labelColor: "#C16A98",
+    type: "code",
   },
   svg: {
-    type: 'vector',
+    type: "vector",
   },
   swf: {
-    type: 'video',
+    type: "video",
   },
   sys: {
-    type: 'settings',
+    type: "settings",
   },
   tar: {
-    type: 'compressed',
+    type: "compressed",
   },
   tex: {
-    type: 'document',
+    type: "document",
   },
   tif: {
-    type: 'image',
+    type: "image",
   },
   tiff: {
-    type: 'image',
+    type: "image",
   },
   ts: {
-    labelColor: '#3478C7',
-    type: 'code',
+    labelColor: "#3478C7",
+    type: "code",
   },
   ttf: {
-    type: 'font',
+    type: "font",
   },
   txt: {
-    type: 'document',
+    type: "document",
   },
   wav: {
-    type: 'audio',
+    type: "audio",
   },
   webm: {
-    type: 'video',
+    type: "video",
   },
   wmv: {
-    type: 'video',
+    type: "video",
   },
   woff: {
-    type: 'font',
+    type: "font",
   },
   wpd: {
-    type: 'document',
+    type: "document",
   },
   wps: {
-    type: 'document',
+    type: "document",
   },
   xlr: {
-    type: 'spreadsheet',
+    type: "spreadsheet",
   },
   xls: {
-    color: '#1A754C',
-    foldColor: '#16613F',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#1A754C',
+    color: "#1A754C",
+    foldColor: "#16613F",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#1A754C",
     labelUppercase: true,
-    type: 'spreadsheet',
+    type: "spreadsheet",
   },
   xlsx: {
-    color: '#1A754C',
-    foldColor: '#16613F',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#1A754C',
+    color: "#1A754C",
+    foldColor: "#16613F",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#1A754C",
     labelUppercase: true,
-    type: 'spreadsheet',
+    type: "spreadsheet",
   },
   xml: {
-    type: 'code',
+    type: "code",
   },
   yml: {
-    color: '#1A754C',
-    foldColor: '#16613F',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#1A754C',
-    type: 'code',
+    color: "#1A754C",
+    foldColor: "#16613F",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#1A754C",
+    type: "code",
   },
   yaml: {
-    color: '#1A754C',
-    foldColor: '#16613F',
-    glyphColor: 'rgba(255,255,255,0.4)',
-    labelColor: '#1A754C',
-    type: 'code',
+    color: "#1A754C",
+    foldColor: "#16613F",
+    glyphColor: "rgba(255,255,255,0.4)",
+    labelColor: "#1A754C",
+    type: "code",
   },
   zip: {
-    type: 'compressed',
+    type: "compressed",
   },
   zipx: {
-    type: 'compressed',
+    type: "compressed",
   },
 };

@@ -1,27 +1,11 @@
-import React, { forwardRef, useCallback, useContext, useState } from "react";
-
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import {
-  Box,
-  Button,
-  Card,
-  CardActions,
-  Collapse,
-  IconButton,
-  Stack,
-  Typography,
-} from "@mui/material";
-import {
-  SnackbarContent,
-  SnackbarKey,
-  SnackbarMessage,
-  VariantType,
-  useSnackbar,
-} from "notistack";
+import { Box, Button, Card, CardActions, Collapse, IconButton, Stack, Typography } from "@mui/material";
+import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
+import React, { forwardRef, useCallback, useContext, useState } from "react";
 import { JSONTree } from "react-json-tree";
+import { levelColorsWbg } from "../components/UI/Colors";
 import { darkThemeJson } from "../themes/darkTheme";
 import { lightThemeJson } from "../themes/lightTheme";
-import { levelColorsWbg } from "../components/UI/Colors";
 import { SettingsContext } from "./SettingsContext";
 
 interface LoggingDetailsComponentProps {
@@ -32,10 +16,7 @@ interface LoggingDetailsComponentProps {
   onDetailsClick: Function;
 }
 
-const LoggingDetailsComponent = forwardRef<
-  HTMLDivElement,
-  LoggingDetailsComponentProps
->((props, ref) => {
+const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsComponentProps>((props, ref) => {
   const settingsCtx = useContext(SettingsContext);
   const { id, message, details, variant, onDetailsClick } = props;
 
@@ -93,9 +74,7 @@ const LoggingDetailsComponent = forwardRef<
             <JSONTree
               data={details}
               sortObjectKeys={true}
-              theme={
-                settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson
-              }
+              theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
               invertTheme={false}
               hideRoot={true}
               shouldExpandNodeInitially={() => {
@@ -104,12 +83,7 @@ const LoggingDetailsComponent = forwardRef<
             />
           )}
           {(typeof details === "string" || details instanceof String) && (
-            <Typography
-              overflow="auto"
-              noWrap={false}
-              maxHeight="10em"
-              fontSize="0.9em"
-            >
+            <Typography overflow="auto" noWrap={false} maxHeight="10em" fontSize="0.9em">
               {JSON.stringify(details)}
             </Typography>
           )}

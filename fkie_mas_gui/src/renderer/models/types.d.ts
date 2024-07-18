@@ -2,7 +2,7 @@
 // https://blog.atomist.com/declaration-file-fix/
 
 // TODO: Replace this module definitions when available
-declare module 'zmodem.js/src/zmodem_browser' {
+declare module "zmodem.js/src/zmodem_browser" {
   type Offer = any;
   // type Sentry = any;
   type Session = any;

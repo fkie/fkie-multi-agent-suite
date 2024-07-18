@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState } from "react";
 
 interface StatusItem {
   action: string;
@@ -26,7 +26,7 @@ const useQueue = (onProgress: (progress: number) => void) => {
         if (list.length > 0) setCurrentIndex(0);
       }
     },
-    [onProgress, queue, setCurrentIndex],
+    [onProgress, queue, setCurrentIndex]
   );
 
   /** Clear queue and all result states */
@@ -60,31 +60,24 @@ const useQueue = (onProgress: (progress: number) => void) => {
 
   const addStatus = useCallback(
     (action: string, itemName: string, success: boolean, message: string) => {
-      setResultStatus([
-        ...resultStatus,
-        { action, itemName, success, message },
-      ]);
+      setResultStatus([...resultStatus, { action, itemName, success, message }]);
       next();
     },
-    [resultStatus, setResultStatus, next],
+    [resultStatus, setResultStatus, next]
   );
 
   const success = useCallback(
     (action: string) => {
-      return resultStatus.filter(
-        (item) => item.success && action === item.action,
-      );
+      return resultStatus.filter((item) => item.success && action === item.action);
     },
-    [resultStatus],
+    [resultStatus]
   );
 
   const failed = useCallback(
     (action: string) => {
-      return resultStatus.filter(
-        (item) => !item.success && action === item.action,
-      );
+      return resultStatus.filter((item) => !item.success && action === item.action);
     },
-    [resultStatus],
+    [resultStatus]
   );
 
   return {

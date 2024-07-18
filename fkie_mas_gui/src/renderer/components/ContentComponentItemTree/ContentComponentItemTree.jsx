@@ -1,76 +1,63 @@
-import Typography from '@mui/material/Typography';
-import { useTreeItemState } from '@mui/x-tree-view';
-import clsx from 'clsx';
-import PropTypes from 'prop-types';
-import * as React from 'react';
+import Typography from "@mui/material/Typography";
+import { useTreeItemState } from "@mui/x-tree-view";
+import clsx from "clsx";
+import PropTypes from "prop-types";
+import * as React from "react";
 
-const ContentComponentItemTree = React.forwardRef(
-  function ContentComponentItemTree(props, ref) {
-    const {
-      classes = null,
-      className = '',
-      label = null,
-      itemId = '',
-      icon: iconProp = null,
-      expansionIcon = null,
-      displayIcon = null,
-    } = props;
+const ContentComponentItemTree = React.forwardRef(function ContentComponentItemTree(props, ref) {
+  const {
+    classes = null,
+    className = "",
+    label = null,
+    itemId = "",
+    icon: iconProp = null,
+    expansionIcon = null,
+    displayIcon = null,
+  } = props;
 
-    const {
-      disabled,
-      expanded,
-      selected,
-      focused,
-      handleExpansion,
-      handleSelection,
-      preventSelection,
-    } = useTreeItemState(itemId);
+  const { disabled, expanded, selected, focused, handleExpansion, handleSelection, preventSelection } =
+    useTreeItemState(itemId);
 
-    const icon = iconProp || expansionIcon || displayIcon;
+  const icon = iconProp || expansionIcon || displayIcon;
 
-    const handleMouseDown = (event) => {
-      preventSelection(event);
-    };
+  const handleMouseDown = (event) => {
+    preventSelection(event);
+  };
 
-    const handleExpansionClick = (event) => {
-      handleExpansion(event);
-    };
+  const handleExpansionClick = (event) => {
+    handleExpansion(event);
+  };
 
-    const handleSelectionClick = (event) => {
-      handleSelection(event);
-    };
+  const handleSelectionClick = (event) => {
+    handleSelection(event);
+  };
 
-    if (!classes) {
-      return <div>Invalid classes for ContentComponentItemTree </div>;
-    }
+  if (!classes) {
+    return <div>Invalid classes for ContentComponentItemTree </div>;
+  }
 
-    return (
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-      <div
-        className={clsx(className, classes.root, {
-          [classes.expanded]: expanded,
-          [classes.selected]: selected,
-          [classes.focused]: focused,
-          [classes.disabled]: disabled,
-        })}
-        onMouseDown={handleMouseDown}
-        ref={ref}
-      >
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-static-element-interactions */}
-        <div onClick={handleExpansionClick} className={classes.iconContainer}>
-          {icon}
-        </div>
-        <Typography
-          onClick={handleSelectionClick}
-          component="div"
-          className={classes.label}
-        >
-          {label}
-        </Typography>
+  return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div
+      className={clsx(className, classes.root, {
+        [classes.expanded]: expanded,
+        [classes.selected]: selected,
+        [classes.focused]: focused,
+        [classes.disabled]: disabled,
+      })}
+      onMouseDown={handleMouseDown}
+      ref={ref}
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-static-element-interactions */}
+      <div onClick={handleExpansionClick} className={classes.iconContainer}>
+        {icon}
       </div>
-    );
-  },
-);
+      <Typography onClick={handleSelectionClick} component="div" className={classes.label}>
+        {label}
+      </Typography>
+    </div>
+  );
+});
 
 ContentComponentItemTree.propTypes = {
   /**

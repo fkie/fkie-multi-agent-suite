@@ -23,13 +23,7 @@ class PathItem {
    * @param {string} type - One of types {file, dir, symlink, package}
    * @param {string} host - host IP of the owner
    */
-  constructor(
-    path: string,
-    mtime: number,
-    size: number,
-    type: string,
-    host: string,
-  ) {
+  constructor(path: string, mtime: number, size: number, type: string, host: string) {
     this.id = this.guidGenerator();
     this.path = path;
     this.mtime = mtime;

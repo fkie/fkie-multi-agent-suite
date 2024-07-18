@@ -13,7 +13,7 @@ class ProviderLaunchConfiguration {
   port: number = 0;
 
   /** Currently support websocket and 'crossbar-wamp' */
-  type: string = 'websocket';
+  type: string = "websocket";
 
   /** Use secure connection */
   useSSL: boolean = false;

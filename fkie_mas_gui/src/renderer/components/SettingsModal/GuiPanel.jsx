@@ -1,5 +1,5 @@
-import { useContext } from 'react';
-
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import {
   Autocomplete,
   Button,
@@ -13,12 +13,9 @@ import {
   Stack,
   Switch,
   TextField,
-} from '@mui/material';
-
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-
-import { SettingsContext } from '../../context/SettingsContext';
+} from "@mui/material";
+import { useContext } from "react";
+import { SettingsContext } from "../../context/SettingsContext";
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -30,7 +27,7 @@ function GuiPanel() {
     <Stack spacing={1.5} sx={{ minHeight: 400 }} overflow="auto">
       {settingsCtx.getParamList().map(({ name, param }) => {
         if (Array.isArray(param.options)) {
-          if (param.type.endsWith('[]')) {
+          if (param.type.endsWith("[]")) {
             // multiple values can be selected
             return (
               <Autocomplete
@@ -49,7 +46,7 @@ function GuiPanel() {
                     variant="outlined"
                     size="small"
                     label={param.label}
-                    placeholder={param.placeholder ? param.placeholder : '...'}
+                    placeholder={param.placeholder ? param.placeholder : "..."}
                     helperText={param.description}
                   />
                 )}
@@ -59,13 +56,8 @@ function GuiPanel() {
                 }}
                 disableCloseOnSelect
                 renderOption={(props, option, { selected }) => (
-                  <li {...props} style={{ height: '1.5em' }}>
-                    <Checkbox
-                      icon={icon}
-                      checkedIcon={checkedIcon}
-                      checked={selected}
-                      size="small"
-                    />
+                  <li {...props} style={{ height: "1.5em" }}>
+                    <Checkbox icon={icon} checkedIcon={checkedIcon} checked={selected} size="small" />
                     {`${option}`}
                   </li>
                 )}
@@ -99,13 +91,11 @@ function GuiPanel() {
                   );
                 })}
               </Select>
-              {param.description && (
-                <FormHelperText>{param.description}</FormHelperText>
-              )}
+              {param.description && <FormHelperText>{param.description}</FormHelperText>}
             </FormControl>
           );
         }
-        if (param.type === 'boolean') {
+        if (param.type === "boolean") {
           return (
             <FormControl key={name} component="fieldset" variant="standard">
               <FormControlLabel
@@ -126,7 +116,7 @@ function GuiPanel() {
             </FormControl>
           );
         }
-        if (param.type === 'number') {
+        if (param.type === "number") {
           return (
             <TextField
               type="number"
@@ -138,15 +128,13 @@ function GuiPanel() {
               variant="outlined"
               InputProps={{ inputProps: { min: param.min, max: param.max } }}
               fullWidth
-              onChange={(e) =>
-                settingsCtx.set(name, Number(`${e.target.value}`))
-              }
+              onChange={(e) => settingsCtx.set(name, Number(`${e.target.value}`))}
               value={settingsCtx.get(name)}
               helperText={param.description}
             />
           );
         }
-        if (param.type === 'button') {
+        if (param.type === "button") {
           return (
             <Button
               key={`button-${param.label}`}
@@ -160,7 +148,7 @@ function GuiPanel() {
           );
         }
         // console.log(`Ignored PARAMETER: ${JSON.stringify(name)} of type ${param.type}`);
-        return '';
+        return "";
       })}
     </Stack>
   );

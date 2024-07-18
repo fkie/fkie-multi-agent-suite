@@ -1,11 +1,11 @@
-import { Alert, AlertTitle, Box, FormControl, IconButton, Stack, Tooltip } from '@mui/material';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useCustomEventListener } from 'react-custom-events';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import { EVENT_PROVIDER_STATE } from '../../../providers/eventTypes';
-import { PackageExplorer, ProviderSelector, colorFromHostname } from '../../../components';
-import { RosContext } from '../../../context/RosContext';
-import { SettingsContext } from '../../../context/SettingsContext';
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { Alert, AlertTitle, Box, FormControl, IconButton, Stack, Tooltip } from "@mui/material";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
+import { PackageExplorer, ProviderSelector, colorFromHostname } from "../../../components";
+import { RosContext } from "../../../context/RosContext";
+import { SettingsContext } from "../../../context/SettingsContext";
+import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
 
 function PackageExplorerPanel() {
   const rosCtx = useContext(RosContext);
@@ -17,7 +17,7 @@ function PackageExplorerPanel() {
   //   settingsCtx.get('backgroundColor'),
   // );
   const [hostStyle, setHostStyle] = useState({});
-  const tooltipDelay = settingsCtx.get('tooltipEnterDelay');
+  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const updatePackageList = useCallback(
     async (providerId, force = false) => {
@@ -58,16 +58,16 @@ function PackageExplorerPanel() {
     // } else {
     //   setHostColor(settingsCtx.get('backgroundColor'));
     // }
-    if (settingsCtx.get('colorizeHosts')) {
+    if (settingsCtx.get("colorizeHosts")) {
       const provider = rosCtx.getProviderById(selectedProvider);
       const hColor = colorFromHostname(provider.name());
       setHostStyle({
-        borderLeftStyle: 'solid',
+        borderLeftStyle: "solid",
         borderLeftColor: hColor,
-        borderLeftWidth: '0.6em',
-        borderBottomStyle: 'solid',
+        borderLeftWidth: "0.6em",
+        borderBottomStyle: "solid",
         borderBottomColor: hColor,
-        borderBottomWidth: '0.6em',
+        borderBottomWidth: "0.6em",
       });
     } else {
       setHostStyle({});
@@ -91,14 +91,14 @@ function PackageExplorerPanel() {
       width="100%"
       height="100%"
       style={{
-        background: settingsCtx.get('backgroundColor'),
+        background: settingsCtx.get("backgroundColor"),
       }}
       // paddingLeft="10px"
     >
       <Stack direction="column" height="100%" width="100% ">
         {rosCtx.providers && rosCtx.providers.length > 0 && (
           <Stack spacing={1} direction="row" width="100%" sx={hostStyle}>
-            <FormControl sx={{ m: 1, width: '100%' }} variant="standard">
+            <FormControl sx={{ m: 1, width: "100%" }} variant="standard">
               <ProviderSelector
                 defaultProvider={selectedProvider}
                 setSelectedProvider={(provId) => setSelectedProvider(provId)}
