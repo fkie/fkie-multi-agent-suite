@@ -54,12 +54,12 @@ const findTerm = (searchTerm, words) => {
     if (Array.isArray(w)) {
       // eslint-disable-next-line no-restricted-syntax
       for (const sw of w) {
-        if (sw.indexOf(searchTerm) !== -1) {
+        if (sw.toLowerCase().includes(searchTerm.toLowerCase())) {
           return true;
         }
       }
     } else if (w) {
-      if (w.indexOf(searchTerm) !== -1) {
+      if (w.toLowerCase().includes(searchTerm.toLowerCase())) {
         return true;
       }
     }
