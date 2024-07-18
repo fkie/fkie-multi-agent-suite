@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.4 - 18.07.2024
+
+Changed screen and log icons
+Scroll to the end on log open
+
 ## 2.1.3 - 18.07.2024
 
 Changed position of node control buttons to left side
