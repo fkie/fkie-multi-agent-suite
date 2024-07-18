@@ -305,7 +305,7 @@ export default class Provider {
         const logPaths = await this.getLogPaths([nodeName]);
         if (logPaths.length > 0) {
           // `tail -f ${logPaths[0].screen_log} \r`,
-          result.cmd = `/usr/bin/less -fKLnQrSU ${logPaths[0].screen_log}`;
+          result.cmd = `/usr/bin/less -fKLnQrSU +G ${logPaths[0].screen_log}`;
           result.log = logPaths[0].screen_log;
         }
         break;
