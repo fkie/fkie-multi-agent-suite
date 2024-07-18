@@ -4,7 +4,14 @@ import { IconButton, TextField } from "@mui/material";
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 
-function SearchBar({ onSearch, placeholder = "Filter", defaultValue = "", fullWidth = true, searchIcon = true }) {
+function SearchBar({
+  onSearch,
+  placeholder = "Filter",
+  defaultValue = "",
+  fullWidth = true,
+  searchIcon = true,
+  autoFocus = true,
+}) {
   const [searched, setSearched] = useState(defaultValue);
 
   useEffect(() => {
@@ -13,6 +20,7 @@ function SearchBar({ onSearch, placeholder = "Filter", defaultValue = "", fullWi
 
   return (
     <TextField
+      autoFocus={autoFocus}
       onChange={(newValue) => {
         setSearched(newValue.target.value);
       }}
@@ -68,6 +76,7 @@ SearchBar.propTypes = {
   defaultValue: PropTypes.string,
   fullWidth: PropTypes.bool,
   searchIcon: PropTypes.bool,
+  autoFocus: PropTypes.bool,
 };
 
 export default SearchBar;
