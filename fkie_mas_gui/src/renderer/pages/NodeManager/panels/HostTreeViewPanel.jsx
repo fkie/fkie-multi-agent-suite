@@ -7,7 +7,7 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import DynamicFeedOutlinedIcon from '@mui/icons-material/DynamicFeedOutlined';
 import LocalPlayOutlinedIcon from '@mui/icons-material/LocalPlayOutlined';
-import MonitorIcon from '@mui/icons-material/Monitor';
+import DvrIcon from '@mui/icons-material/Dvr';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -1155,7 +1155,7 @@ function HostTreeViewPanel() {
                 }
               }}
             >
-              {navCtx.selectedProviders?.length > 0 ? <AddToQueueIcon fontSize="inherit" /> : <MonitorIcon fontSize="inherit" />}
+              {navCtx.selectedProviders?.length > 0 ? <AddToQueueIcon fontSize="inherit" /> : <DvrIcon fontSize="inherit" />}
             </IconButton>
           </span>
         </Tooltip>
