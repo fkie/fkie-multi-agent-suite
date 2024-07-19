@@ -378,6 +378,7 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
         <Stack direction="row" spacing={2} display="flex" alignItems="center">
           <Autocomplete
             id={`publish-rate-${topicName}`}
+            handleHomeEndKeys={false}
             freeSolo
             options={publishRateSelections}
             size="small"

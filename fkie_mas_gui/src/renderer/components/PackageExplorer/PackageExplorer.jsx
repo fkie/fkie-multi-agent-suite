@@ -356,6 +356,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
             autoHighlight
             clearOnEscape
             disableListWrap
+            handleHomeEndKeys={false}
             noOptionsText="Package not found"
             options={packageListFiltered}
             getOptionLabel={(option) => option.name}

@@ -36,6 +36,7 @@ function SetNTPDateDialog({ onClose, value: valueProp, open, ...other }) {
         <Box>
           <div>{`${value}`}</div>
           <Autocomplete
+            handleHomeEndKeys={false}
             disablePortal
             id="auto-complete-donotsync"
             size="small"

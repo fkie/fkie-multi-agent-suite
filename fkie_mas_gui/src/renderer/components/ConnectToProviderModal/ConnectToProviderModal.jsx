@@ -484,6 +484,7 @@ function ConnectToProviderModal() {
                 )}
                 {generateHistoryView}
                 <Autocomplete
+                  handleHomeEndKeys={false}
                   disablePortal
                   multiple
                   id="auto-complete-hosts"
@@ -732,6 +733,7 @@ function ConnectToProviderModal() {
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>
                             <Box>
                               <Autocomplete
+                                handleHomeEndKeys={false}
                                 disabled={!enableDiscoveryNode}
                                 disablePortal
                                 multiple
@@ -852,6 +854,7 @@ function ConnectToProviderModal() {
                         <AccordionDetails>
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>
                             <Autocomplete
+                              handleHomeEndKeys={false}
                               disablePortal
                               multiple
                               id="auto-complete-donotsync"
@@ -867,6 +870,7 @@ function ConnectToProviderModal() {
                               // disableCloseOnSelect
                             />
                             <Autocomplete
+                              handleHomeEndKeys={false}
                               disablePortal
                               multiple
                               id="auto-complete-synctopics"

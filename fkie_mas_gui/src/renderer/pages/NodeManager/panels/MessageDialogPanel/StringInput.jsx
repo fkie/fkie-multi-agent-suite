@@ -83,6 +83,7 @@ function StringInput({ id = "", messageStruct = null, filterText = "" }) {
       sx={{ display: `${isVisible}` }}
       id={`string-input-${id}`}
       key={`string-input-${id}`}
+      handleHomeEndKeys={false}
       freeSolo
       options={history}
       size="small"

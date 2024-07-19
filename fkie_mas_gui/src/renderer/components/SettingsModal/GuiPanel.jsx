@@ -33,6 +33,7 @@ function GuiPanel() {
               <Autocomplete
                 key={name}
                 disablePortal={false}
+                handleHomeEndKeys={false}
                 multiple
                 id="auto-complete-debug"
                 size="small"

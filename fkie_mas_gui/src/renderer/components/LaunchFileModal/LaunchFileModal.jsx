@@ -345,6 +345,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                         autoHighlight
                         clearOnEscape
                         disableListWrap
+                        handleHomeEndKeys={false}
                         // noOptionsText="Package not found"
                         options={arg.choices ? arg.choices : arg.history}
                         getOptionLabel={(option) => option}
