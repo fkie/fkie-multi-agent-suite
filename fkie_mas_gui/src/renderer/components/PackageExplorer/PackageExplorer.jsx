@@ -424,13 +424,14 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   disabled={
                     !(selectedFile && LAUNCH_FILE_EXTENSIONS.find((fe) => selectedFile.path.indexOf(fe) !== -1))
                   }
+                  color="primary"
                   size="small"
                   aria-label="load"
                   onClick={() => {
                     setSelectedLaunchFile({ ...selectedFile });
                   }}
                 >
-                  <InputIcon fontSize="inherit" />
+                  <InputIcon fontSize="inherit"/>
                 </IconButton>
               </span>
             </Tooltip>
