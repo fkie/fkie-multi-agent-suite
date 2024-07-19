@@ -1343,6 +1343,7 @@ function HostTreeViewPanel() {
               startNodes={startNodesFromId}
               stopNodes={stopNodesFromId}
               restartNodes={restartNodesFromId}
+              createSingleTerminalPanel={createSingleTerminalPanel}
             />
           </Box>
         </Stack>

@@ -151,7 +151,7 @@ function HostTreeViewItem({
     <StyledTreeItemRoot
       ContentComponent={ContentComponentItemTree}
       itemId={itemId}
-      onDoubleClick={onDoubleClick}
+      // onDoubleClick={(event) => onDoubleClick(event, labelText, itemId)}
       onMouseOver={onHover}
       onMouseOut={onHoverOut}
       label={
@@ -333,11 +333,14 @@ function HostTreeViewItem({
           >
             <Typography
               onClick={onClick}
-              onDoubleClick={() => {
-                if (onDoubleClick) onDoubleClick(labelText, itemId);
+              onDoubleClick={(event) => {
+                if (onDoubleClick) {
+                  onDoubleClick(event, labelText, itemId);
+                  event.stopPropagation();
+                }
               }}
               variant="body2"
-              sx={{ fontWeight: "inherit", flexGrow: 1 }}
+              sx={{ fontWeight: "inherit", flexGrow: 1, userSelect: 'none'}}
             >
               {labelText}
             </Typography>

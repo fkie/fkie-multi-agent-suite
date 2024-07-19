@@ -54,6 +54,7 @@ function HostTreeView({
   startNodes = () => {},
   stopNodes = () => {},
   restartNodes = () => {},
+  createSingleTerminalPanel = () => {},
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -74,8 +75,10 @@ function HostTreeView({
    * Callback when items on the tree are double clicked
    */
   const handleDoubleClick = useCallback(
-    (label, id) => {
-      if (!expanded || !id) return;
+    (event, label, id) => {
+      if (!expanded || !id) {
+        return;
+      }
 
       // check if providers exists on expanded items
       if (expanded.length === 0) {
@@ -94,6 +97,28 @@ function HostTreeView({
       setExpanded((prev) => [...prev, id]);
     },
     [expanded, providerNodeTree]
+  );
+
+  /**
+   * Callback when items on the tree are double clicked
+   */
+  const handleDoubleClickOnNode = useCallback(
+    (event, label, id) => {
+      const nodeIds = getNodeIdsFromTreeIds([id]);
+      nodeIds.map((nodeId) => {
+        const node = rosCtx.nodeMap.get(nodeId);
+        if (node) {
+          if (node.pid && node.screens.length > 0) {
+            node.screens.forEach((screen) => {
+              createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
+            });
+          } else {
+            createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+          }
+        }
+      });
+    },
+    [rosCtx.nodeMap]
   );
 
   /**
@@ -480,6 +505,7 @@ function HostTreeView({
             showLoggers={node?.getRosLoggersCount() > 0}
             showNoScreen={node.status === RosNodeStatus.RUNNING && node.screens?.length < 1}
             showGhostScreen={node.status !== RosNodeStatus.RUNNING && node.screens?.length > 0}
+            onDoubleClick={handleDoubleClickOnNode}
             onShowLoggersClick={onShowLoggersClick}
             onStartClick={node.status !== RosNodeStatus.RUNNING ? onStartClick : null}
             onStopClick={node.status !== RosNodeStatus.INACTIVE ? onStopClick : null}
@@ -701,6 +727,7 @@ HostTreeView.propTypes = {
   startNodes: PropTypes.func,
   stopNodes: PropTypes.func,
   restartNodes: PropTypes.func,
+  createSingleTerminalPanel: PropTypes.func,
 };
 
 export default HostTreeView;
