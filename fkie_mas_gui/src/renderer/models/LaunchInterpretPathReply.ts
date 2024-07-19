@@ -1,5 +1,5 @@
-import LaunchArgument from './LaunchArgument';
-import LaunchReturnStatus from './LaunchReturnStatus';
+import LaunchArgument from "./LaunchArgument";
+import LaunchReturnStatus from "./LaunchReturnStatus";
 
 /**
  * Response for a request to parse the text for included paths.
@@ -39,13 +39,7 @@ class LaunchInterpretPathReply {
    * @param {boolean} exists - True if detected include path exists.
    * @param {LaunchArgument[]} args - Arguments used to load the launch file.
    */
-  constructor(
-    text: string,
-    status: LaunchReturnStatus,
-    path: string,
-    exists: boolean,
-    args: LaunchArgument[],
-  ) {
+  constructor(text: string, status: LaunchReturnStatus, path: string, exists: boolean, args: LaunchArgument[]) {
     this.text = text;
     this.status = status;
     this.path = path;

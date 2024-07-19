@@ -1,5 +1,5 @@
-import React, { createContext, useEffect, useMemo, useState } from 'react';
-import ShutdownInterface from '../../main/IPC/ShutdownInterface';
+import React, { createContext, useEffect, useMemo, useState } from "react";
+import ShutdownInterface from "../../main/IPC/ShutdownInterface";
 
 declare global {
   interface Window {
@@ -24,7 +24,7 @@ export const DEFAULT = {
   terminateSubprocesses: false,
   setTerminateSubprocesses: () => {},
   requestedInstallUpdate: false,
-  updateAvailable: '',
+  updateAvailable: "",
   checkedForUpdates: false,
 };
 
@@ -36,16 +36,11 @@ export const ElectronContext = createContext<IElectronContext>(DEFAULT);
 
 export function ElectronProvider({
   children,
-}: IElectronProviderComponent): ReturnType<
-  React.FC<IElectronProviderComponent>
-> {
-  const [shutdownInterface, setShutdownInterface] =
-    useState<ShutdownInterface | null>(null);
-  const [terminateSubprocesses, setTerminateSubprocesses] =
-    useState<boolean>(false);
-  const [requestedInstallUpdate, setRequestedInstallUpdate] =
-    useState<boolean>(false);
-  const [updateAvailable, setUpdateAvailable] = useState<string>('');
+}: IElectronProviderComponent): ReturnType<React.FC<IElectronProviderComponent>> {
+  const [shutdownInterface, setShutdownInterface] = useState<ShutdownInterface | null>(null);
+  const [terminateSubprocesses, setTerminateSubprocesses] = useState<boolean>(false);
+  const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
+  const [updateAvailable, setUpdateAvailable] = useState<string>("");
   const [checkedForUpdates, setCheckedForUpdates] = useState<boolean>(false);
 
   // Effect to initialize the shutdownInterface
@@ -77,18 +72,8 @@ export function ElectronProvider({
       setCheckedForUpdates,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      requestedInstallUpdate,
-      shutdownInterface,
-      terminateSubprocesses,
-      updateAvailable,
-      checkedForUpdates,
-    ],
+    [requestedInstallUpdate, shutdownInterface, terminateSubprocesses, updateAvailable, checkedForUpdates]
   );
 
-  return (
-    <ElectronContext.Provider value={attributesMemo}>
-      {children}
-    </ElectronContext.Provider>
-  );
+  return <ElectronContext.Provider value={attributesMemo}>{children}</ElectronContext.Provider>;
 }

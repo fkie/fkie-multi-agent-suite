@@ -1,11 +1,11 @@
 export default class CmdType extends String {
-  static CMD = new CmdType('cmd');
+  static CMD = new CmdType("cmd");
 
-  static SCREEN = new CmdType('screen');
+  static SCREEN = new CmdType("screen");
 
-  static LOG = new CmdType('log');
+  static LOG = new CmdType("log");
 
-  static TERMINAL = new CmdType('terminal');
+  static TERMINAL = new CmdType("terminal");
 
-  static ECHO = new CmdType('echo');
+  static ECHO = new CmdType("echo");
 }

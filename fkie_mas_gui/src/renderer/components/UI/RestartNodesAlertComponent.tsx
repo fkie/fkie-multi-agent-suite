@@ -1,5 +1,3 @@
-import { forwardRef, useCallback, useEffect, useState } from "react";
-
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Button,
@@ -18,6 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
+import React, { forwardRef, useCallback, useEffect, useState } from "react";
 import Provider from "../../providers/Provider";
 
 interface RestartNodesComponentProps {
