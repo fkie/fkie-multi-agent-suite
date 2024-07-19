@@ -43,7 +43,7 @@ export function eventOpenSettings(id: SETTING): { id: SETTING } {
   return { id };
 }
 
-export function eventCloseComponent(id: string): { id: SETTING } {
+export function eventCloseComponent(id: string): { id: string } {
   return { id };
 }
 
