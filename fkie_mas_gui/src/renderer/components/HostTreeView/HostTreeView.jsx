@@ -109,11 +109,21 @@ function HostTreeView({
         const node = rosCtx.nodeMap.get(nodeId);
         if (node) {
           if (node.pid && node.screens.length > 0) {
-            node.screens.forEach((screen) => {
-              createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
-            });
+            if (event.nativeEvent.ctrlKey) {
+              // stop node
+              stopNodes([node.idGlobal]);
+            } else {
+              node.screens.forEach((screen) => {
+                createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
+              });
+            }
           } else {
-            createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+            if (event.nativeEvent.ctrlKey) {
+              // stop node
+              startNodes([node.idGlobal]);
+            } else {
+              createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+            }
           }
         }
       });
