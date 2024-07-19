@@ -17,7 +17,10 @@ import {
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
 import React, { forwardRef, useCallback, useEffect, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
 import Provider from "../../providers/Provider";
+import { EVENT_PROVIDER_NODE_STARTED } from "../../providers/eventTypes";
+import { EventProviderNodeStarted } from "../../providers/events";
 
 interface RestartNodesComponentProps {
   id: SnackbarKey | undefined;
@@ -31,6 +34,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
   const { id, message, provider, nodeList, onReload } = props;
 
   const [checked, setChecked] = useState<string[]>([]);
+  const [currentNodeList, setCurrentNodeList] = useState<string[]>(nodeList);
 
   // set all items checked as default
   useEffect(() => {
@@ -60,6 +64,25 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
 
     setChecked(newChecked);
   };
+
+  // remove nodes started from this list to close this alert if the list is empty
+  useCustomEventListener(
+    EVENT_PROVIDER_NODE_STARTED,
+    (data: EventProviderNodeStarted) => {
+      if (data.provider.id === provider.id) {
+        // remote node from checked and currentNodeList
+        setChecked(checked.filter((value) => value !== data.node.id));
+        const newNodeList = currentNodeList.filter((value) => value !== data.node.id);
+        if (newNodeList.length > 0) {
+          setCurrentNodeList(currentNodeList.filter((value) => value !== data.node.id));
+        } else {
+          // close this alert if all nodes are started on another way, e.g. restart button.
+          handleDismiss();
+        }
+      }
+    },
+    [checked, currentNodeList]
+  );
 
   return (
     <SnackbarContent ref={ref}>
@@ -109,8 +132,8 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                 bgcolor: "background.paper",
               }}
             >
-              {nodeList &&
-                nodeList.map((node) => {
+              {currentNodeList &&
+                currentNodeList.map((node) => {
                   const labelId = `checkbox-list-label-${node}`;
 
                   return (

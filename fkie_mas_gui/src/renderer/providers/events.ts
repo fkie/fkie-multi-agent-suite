@@ -144,3 +144,15 @@ export class EventProviderDelay {
     this.delay = delay;
   }
 }
+
+
+export class EventProviderNodeStarted {
+  provider: Provider;
+
+  node: RosNode;
+
+  constructor(provider: Provider, node: RosNode) {
+    this.provider = provider;
+    this.node = node;
+  }
+}

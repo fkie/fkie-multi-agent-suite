@@ -56,6 +56,7 @@ import {
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_LAUNCH_LIST,
+  EVENT_PROVIDER_NODE_STARTED,
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_ROS_NODES,
@@ -70,6 +71,7 @@ import {
   EventProviderDelay,
   EventProviderDiscovered,
   EventProviderLaunchList,
+  EventProviderNodeStarted,
   EventProviderPathEvent,
   EventProviderRemoved,
   EventProviderRosNodes,
@@ -1479,6 +1481,7 @@ export default class Provider {
     );
 
     const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: CallResult) => {
+      emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, node));
       if (value.result) {
         const parsed = value.message as LaunchNodeReply;
         const response = new LaunchNodeReply(parsed.name, parsed.status, parsed.paths, parsed.launch_files);
