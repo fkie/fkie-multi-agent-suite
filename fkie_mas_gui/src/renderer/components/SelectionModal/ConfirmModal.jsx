@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 
 function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {

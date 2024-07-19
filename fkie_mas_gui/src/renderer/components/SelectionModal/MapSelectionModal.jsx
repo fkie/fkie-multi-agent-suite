@@ -16,7 +16,7 @@ import {
   RadioGroup,
 } from "@mui/material";
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 
 function MapSelectionModal({ list, onConfirmCallback, onCancelCallback = null, useRadioGroup = false }) {

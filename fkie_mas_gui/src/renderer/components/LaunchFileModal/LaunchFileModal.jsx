@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
