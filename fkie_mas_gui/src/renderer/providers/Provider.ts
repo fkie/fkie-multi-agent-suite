@@ -337,7 +337,7 @@ export default class Provider {
           this.updateTimeDiff();
           this.getProviderSystemInfo();
           this.getProviderSystemEnv();
-          this.updateRosNodes();
+          this.updateRosNodes({});
           this.updateDiagnostics(null);
           // this.getPackageList();  <- this request is done by package explorer
           this.updateScreens(null);

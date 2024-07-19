@@ -281,7 +281,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     }
 
     // search the SSH credentials based on host
-    let credentialHost = null;
+    let credentialHost: ICredential | null = null;
     credentials.forEach((credential) => {
       if (credential.host === host) {
         credentialHost = credential;

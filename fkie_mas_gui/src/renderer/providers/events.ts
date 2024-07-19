@@ -156,7 +156,7 @@ export class EventProviderNodeStarted {
   }
 }
 
-export class EventProviderLaunchLoaded{
+export class EventProviderLaunchLoaded {
   provider: Provider;
 
   launchFile: string;

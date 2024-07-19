@@ -55,12 +55,14 @@ function GuiPanel() {
                   settingsCtx.set(name, newValue);
                 }}
                 disableCloseOnSelect
-                renderOption={(props, option, { selected }) => (
-                  <li {...props} style={{ height: "1.5em" }}>
-                    <Checkbox icon={icon} checkedIcon={checkedIcon} checked={selected} size="small" />
-                    {`${option}`}
-                  </li>
-                )}
+                renderOption={(props, option, { selected }) => {
+                  return (
+                    <li {...props} key={option} style={{ height: "1.5em" }}>
+                      <Checkbox icon={icon} checkedIcon={checkedIcon} checked={selected} size="small" />
+                      {`${option}`}
+                    </li>
+                  );
+                }}
               />
             );
           }

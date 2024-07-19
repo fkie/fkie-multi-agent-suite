@@ -177,7 +177,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     if (host === "localhost" || host === systemInfo?.osInfo?.hostname) {
       return true;
     }
-    const localIps = [];
+    const localIps: string[] = [];
     systemInfo?.networkInterfaces?.forEach((ni) => {
       if (host === ni.ip4) {
         localIps.push(ni.ip4);
@@ -274,7 +274,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     async (providerId: string) => {
       logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "", false);
       const provider = getProviderById(providerId);
-      await provider?.updateRosNodes();
+      await provider?.updateRosNodes({});
     },
     [getProviderById, logCtx]
   );
