@@ -11,7 +11,7 @@ import {
   Tabs,
   Tooltip,
 } from "@mui/material";
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { SettingsContext } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
@@ -54,13 +54,19 @@ function SettingsModal() {
     }
   });
 
+  const dialogRef = useRef(null);
+
   return (
     <div>
       <Dialog
         keepMounted
         id="settings-dialog"
         scroll="paper"
-        PaperComponent={DraggablePaper}
+        ref={dialogRef}
+        PaperProps={{
+          component: DraggablePaper,
+          dialogRef: dialogRef,
+        }}
         aria-labelledby="draggable-dialog-title"
         fullWidth
         maxWidth="md"

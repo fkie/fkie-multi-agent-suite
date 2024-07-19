@@ -1,14 +1,18 @@
 import { Paper } from "@mui/material";
+import PropTypes from "prop-types";
+import React from "react";
 import Draggable from "react-draggable";
 
-function DraggablePaper(props) {
+function DraggablePaper({ dialogRef=null, ...props }) {
   return (
-    <Draggable handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
+    <Draggable nodeRef={dialogRef}>
       <Paper {...props} />
     </Draggable>
   );
 }
 
-DraggablePaper.propTypes = {};
+DraggablePaper.propTypes = {
+  dialogRef: PropTypes.any,
+};
 
 export default DraggablePaper;

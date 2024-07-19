@@ -332,7 +332,9 @@ function NodeManager() {
   function onRenderTab(node /* TabNode */, renderValues /* ITabRenderValues */) {
     // add tooltip to the abbreviations
     if (
-      !["Hosts", "Node Details", "Packages", "Nodes", "Topics", "Services", "Parameter", "Logging"].includes(renderValues.name)
+      !["Hosts", "Node Details", "Packages", "Nodes", "Topics", "Services", "Parameter", "Logging"].includes(
+        renderValues.name
+      )
     ) {
       renderValues.content = (
         <Tooltip title={renderValues.name} placement="bottom" disableInteractive>
@@ -642,6 +644,8 @@ function NodeManager() {
     }
   };
 
+  const dialogRef = useRef(null);
+
   return (
     <Stack
       onKeyDown={(event) => onKeyDown(event)}
@@ -694,7 +698,11 @@ function NodeManager() {
           onClose={() => setModifiedEditorTabs([])}
           fullWidth
           maxWidth="sm"
-          PaperComponent={DraggablePaper}
+          ref={dialogRef}
+          PaperProps={{
+            component: DraggablePaper,
+            dialogRef: dialogRef,
+          }}
           aria-labelledby="draggable-dialog-title"
         >
           <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">

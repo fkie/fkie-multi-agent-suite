@@ -19,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext, useRef, useState } from "react";
 import { RosContext } from "../../context/RosContext";
 import { SSHContext } from "../../context/SSHContext";
 import { SettingsContext } from "../../context/SettingsContext";
@@ -102,6 +102,8 @@ function ExternalAppsModal() {
     [sshCtx]
   );
 
+  const dialogRef = useRef(null);
+
   return (
     <Stack padding={0}>
       <Dialog
@@ -109,7 +111,11 @@ function ExternalAppsModal() {
         onClose={handleClose}
         fullWidth
         maxWidth="md"
-        PaperComponent={DraggablePaper}
+        ref={dialogRef}
+        PaperProps={{
+          component: DraggablePaper,
+          dialogRef: dialogRef,
+        }}
         aria-labelledby="draggable-dialog-title"
       >
         <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">

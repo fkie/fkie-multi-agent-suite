@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
@@ -448,13 +448,19 @@ function ConnectToProviderModal() {
     );
   }, [startConfigurations, settingsCtx, selectedHistory, setStartConfigurations]);
 
+  const dialogRef = useRef(null);
+
   return (
     <>
       <Dialog
         keepMounted
         id="connect-to-ros-modal"
         scroll="paper"
-        PaperComponent={DraggablePaper}
+        ref={dialogRef}
+        PaperProps={{
+          component: DraggablePaper,
+          dialogRef: dialogRef,
+        }}
         aria-labelledby="draggable-dialog-title"
         fullWidth
         maxWidth="md"

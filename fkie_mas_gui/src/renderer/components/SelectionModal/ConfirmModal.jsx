@@ -19,13 +19,19 @@ function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
     handleClose(null, "confirmed");
   };
 
+  const dialogRef = useRef(null);
+
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
-      PaperComponent={DraggablePaper}
+      ref={dialogRef}
+      PaperProps={{
+        component: DraggablePaper,
+        dialogRef: dialogRef,
+      }}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">

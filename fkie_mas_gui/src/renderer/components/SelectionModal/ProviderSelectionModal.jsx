@@ -86,13 +86,19 @@ function ListSelectionModal({
     }
   }, [performCloseProgress, progress]);
 
+  const dialogRef = useRef(null);
+
   return (
     <Dialog
       open
       onClose={handleClose}
       fullWidth
       maxWidth="md"
-      PaperComponent={DraggablePaper}
+      ref={dialogRef}
+      PaperProps={{
+        component: DraggablePaper,
+        dialogRef: dialogRef,
+      }}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">

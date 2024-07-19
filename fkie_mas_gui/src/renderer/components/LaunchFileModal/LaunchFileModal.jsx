@@ -310,12 +310,18 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
     return Number.isNaN(Number(value));
   };
 
+  const dialogRef = useRef(null);
+
   return (
     <Dialog
       open={open}
       onClose={handleClose}
       scroll="paper"
-      PaperComponent={DraggablePaper}
+      ref={dialogRef}
+      PaperProps={{
+        component: DraggablePaper,
+        dialogRef: dialogRef,
+      }}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
