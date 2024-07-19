@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.7 - 19.07.2024
+
+Changed load button to primary color
+Fixed navigation with shift+{home, end} in autocomplete inputs
+Fixed issue with not imported class in package explorer
+
 ## 2.1.6 - 19.07.2024
 
 fixed broken dialogs
