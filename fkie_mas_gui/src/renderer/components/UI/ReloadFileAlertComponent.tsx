@@ -12,10 +12,13 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import React, { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
 import { SettingsContext } from "../../context/SettingsContext";
 import { PATH_EVENT_TYPE } from "../../models";
 import Provider from "../../providers/Provider";
+import { EVENT_PROVIDER_LAUNCH_LOADED } from "../../providers/eventTypes";
+import { EventProviderLaunchLoaded } from "../../providers/events";
 
 interface ReloadFileComponentProps {
   id: SnackbarKey | undefined;
@@ -66,6 +69,19 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
         break;
     }
   }, [handleDismiss, handleReload, settingsCtx]);
+
+  // close this alert if launch file was loaded
+  useCustomEventListener(
+    EVENT_PROVIDER_LAUNCH_LOADED,
+    (data: EventProviderLaunchLoaded) => {
+      if (data.provider.id === provider.id) {
+        if (data.launchFile === launchFile) {
+          handleDismiss();
+        }
+      }
+    },
+    [launchFile, provider]
+  );
 
   return (
     <SnackbarContent ref={ref}>

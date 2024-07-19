@@ -530,7 +530,8 @@ class LaunchServicer(LoggingEventHandler):
             Log.debug("..load complete!")
 
             # notify GUI about changes
-            self.websocket.publish('ros.launch.changed', {})
+            self.websocket.publish('ros.launch.changed', {
+                                   'path': launchfile, 'action': 'loaded'})
             self._add_launch_to_observer(launchfile)
         except Exception as e:
             err_text = "%s loading failed!" % launchfile
@@ -632,7 +633,8 @@ class LaunchServicer(LoggingEventHandler):
                             result.changed_nodes.append(n)
 
                 # notify GUI about changes
-                self.websocket.publish('ros.launch.changed', {})
+                self.websocket.publish('ros.launch.changed', {
+                                       'path': request.path, 'action': 'reloaded'})
                 self._add_launch_to_observer(request.path)
             except Exception as e:
                 print(traceback.format_exc())
@@ -666,7 +668,8 @@ class LaunchServicer(LoggingEventHandler):
                 result.status.code = "OK"
 
                 # notify GUI about changes
-                self.websocket.publish('ros.launch.changed', {})
+                self.websocket.publish('ros.launch.changed', {
+                                       'path': request.path, 'action': 'unloaded'})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -1283,7 +1286,8 @@ class LaunchServicer(LoggingEventHandler):
         Log.debug("Request to [ros.subscriber.start]: %s" % str(topic))
         startcfg = StartConfig("fkie_mas_daemon", "mas-subscriber")
         startcfg.fullname = f"/mas_subscriber/{topic.strip('/')}"
-        startcfg.args = [f"__ns:={os.path.dirname(startcfg.fullname)}", f"__name:={os.path.basename(startcfg.fullname)}"]
+        startcfg.args = [
+            f"__ns:={os.path.dirname(startcfg.fullname)}", f"__name:={os.path.basename(startcfg.fullname)}"]
         startcfg.args.append(f"--ws_port={self.websocket.port}")
         startcfg.args.append(f"--topic={topic}")
         startcfg.args.append(f"--message_type={request.message_type}")

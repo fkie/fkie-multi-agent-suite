@@ -145,7 +145,6 @@ export class EventProviderDelay {
   }
 }
 
-
 export class EventProviderNodeStarted {
   provider: Provider;
 
@@ -154,5 +153,16 @@ export class EventProviderNodeStarted {
   constructor(provider: Provider, node: RosNode) {
     this.provider = provider;
     this.node = node;
+  }
+}
+
+export class EventProviderLaunchLoaded{
+  provider: Provider;
+
+  launchFile: string;
+
+  constructor(provider: Provider, launchFile: string) {
+    this.provider = provider;
+    this.launchFile = launchFile;
   }
 }

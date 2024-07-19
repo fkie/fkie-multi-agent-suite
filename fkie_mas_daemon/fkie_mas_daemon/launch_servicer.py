@@ -391,7 +391,8 @@ class LaunchServicer(LoggingEventHandler):
             # result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
             # notify GUI about changes
-            self.websocket.publish('ros.launch.changed', {})
+            self.websocket.publish('ros.launch.changed', {
+                                   'path': launchfile, 'action': 'loaded'})
             self._add_launch_to_observer(launch_config)
             Log.debug(f"{self.__class__.__name__}: ..load complete!")
         except Exception as e:
@@ -441,7 +442,8 @@ class LaunchServicer(LoggingEventHandler):
                 result.status.code = 'OK'
                 # TODO: added change detection for nodes parameters
                 # notify GUI about changes
-                self.websocket.publish('ros.launch.changed', {})
+                self.websocket.publish('ros.launch.changed', {
+                                       'path': request.path, 'action': 'reloaded'})
                 self._add_launch_to_observer(launch_config)
             except Exception as e:
                 old_launch.load()
@@ -480,7 +482,8 @@ class LaunchServicer(LoggingEventHandler):
                 result.status.code = 'OK'
 
                 # notify GUI about changes
-                self.websocket.publish('ros.launch.changed', {})
+                self.websocket.publish('ros.launch.changed', {
+                                       'path': request.path, 'action': 'unloaded'})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)

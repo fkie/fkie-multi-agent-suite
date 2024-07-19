@@ -56,6 +56,7 @@ import {
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_LAUNCH_LIST,
+  EVENT_PROVIDER_LAUNCH_LOADED,
   EVENT_PROVIDER_NODE_STARTED,
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
@@ -71,6 +72,7 @@ import {
   EventProviderDelay,
   EventProviderDiscovered,
   EventProviderLaunchList,
+  EventProviderLaunchLoaded,
   EventProviderNodeStarted,
   EventProviderPathEvent,
   EventProviderRemoved,
@@ -1865,8 +1867,12 @@ export default class Provider {
   /**
    * Callback when any launch file or ROS nodes changes  in provider
    */
-  public updateRosNodes: () => void = async () => {
+  public updateRosNodes: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
+    const msgObj = msg as unknown as { path: string, action: string };
+    if (msgObj?.path) {
+      emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path));
+    }
     if (await this.lockRequest("updateRosNodes")) {
       return;
     }
