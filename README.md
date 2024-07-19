@@ -63,7 +63,7 @@ chmod +x ./mas-gui.AppImage
 mv ./mas-gui.AppImage ~/.local/bin/.
 ```
 
->For more build and start option see [fkie_mas_gui](https://github.com/fkie/fkie-multi-agent-suite/tree/master/fkie_mas_gui#readme)
+>You can find further build and start options at [fkie_mas_gui](https://github.com/fkie/fkie-multi-agent-suite/tree/master/fkie_mas_gui#readme)
 
 ## Documentation
 
