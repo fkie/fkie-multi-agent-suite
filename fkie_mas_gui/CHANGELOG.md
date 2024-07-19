@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.5 - 19.07.2024
+
+Close reload launch file alert if file was reloaded
+Close "file changed" alert if the node was started manually
+Added autoFocus to searchBar
+Changed screen icon
+Focus Terminal and Log on open
+
 ## 2.1.4 - 18.07.2024
 
 Changed screen and log icons

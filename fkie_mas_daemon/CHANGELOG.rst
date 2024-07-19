@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.4 (2024-07-19)
+------------------
+* fkie_mas_daemon: changed return type of ros.launch.changed uri
+* Contributors: Alexander Tiderko
+
 3.0.2 (2024-07-15)
 ------------------
 * fkie_mas_daemon: fixed warning about invalid ros name in subscriber node
