@@ -96,8 +96,8 @@ function ConnectToProviderModal() {
   const [open, setOpen] = useState(false);
   const [openTerminalTooltip, setOpenTerminalTooltip] = useState(false);
 
-  const [hostList, setHostList] = useState([]);
-  const [hostValues, setHostValues] = useState([]);
+  const [hostList, setHostList] = useState([{ ip: "127.0.0.1", host: "localhost" }]);
+  const [hostValues, setHostValues] = useState(["localhost"]);
   const [hostInputValue, setHostInputValue] = useState("");
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
@@ -152,6 +152,9 @@ function ConnectToProviderModal() {
       }
     });
     hostListLocal.sort((a, b) => -b.host.localeCompare(a.host));
+    if (hostListLocal.length === 0) {
+      hostListLocal.push({ ip: "127.0.0.1", host: "localhost" })
+    }
     setHostList(hostListLocal);
     setHostValues(["localhost"]);
   }, [rosCtx.systemInfo]);
