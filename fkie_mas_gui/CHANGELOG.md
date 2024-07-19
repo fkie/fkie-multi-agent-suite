@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.6 - 19.07.2024
+
+fixed broken dialogs
+
 ## 2.1.5 - 19.07.2024
 
 Close reload launch file alert if file was reloaded
