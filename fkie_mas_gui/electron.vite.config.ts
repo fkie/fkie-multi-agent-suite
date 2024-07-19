@@ -1,24 +1,31 @@
-import { resolve } from 'path'
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
-import react from '@vitejs/plugin-react'
+import react from "@vitejs/plugin-react";
+import { defineConfig, externalizeDepsPlugin } from "electron-vite";
+import { resolve } from "path";
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
   },
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/')
-      }
+        "@renderer": resolve("src/renderer/"),
+      },
     },
-    plugins: [react()],
+    optimizeDeps: {
+      include: ["@emotion/react", "@emotion/styled"],
+    },
+    plugins: [
+      react({
+        jsxImportSource: "@emotion/react",
+      }),
+    ],
     server: {
       port: 6274,
-      host: true
-    }
-  }
-})
+      host: true,
+    },
+  },
+});
