@@ -109,7 +109,7 @@ function HostTreeView({
         const node = rosCtx.nodeMap.get(nodeId);
         if (node) {
           if (node.pid && node.screens.length > 0) {
-            if (event.nativeEvent.ctrlKey) {
+            if (event.nativeEvent.ctrlKey && !node.system_node) {
               // stop node
               stopNodes([node.idGlobal]);
             } else {
@@ -118,7 +118,7 @@ function HostTreeView({
               });
             }
           } else {
-            if (event.nativeEvent.ctrlKey) {
+            if (event.nativeEvent.ctrlKey && !node.system_node) {
               // stop node
               startNodes([node.idGlobal]);
             } else {
