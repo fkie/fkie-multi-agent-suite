@@ -63,6 +63,8 @@ chmod +x ./mas-gui.AppImage
 mv ./mas-gui.AppImage ~/.local/bin/.
 ```
 
+>For more build and start option see [fkie_mas_gui](https://github.com/fkie/fkie-multi-agent-suite/tree/master/fkie_mas_gui#readme)
+
 ## Documentation
 
 > We are working on the documentation for the new version. Until then you can still use the old one. Apart from the package names, all old functions should be supported.

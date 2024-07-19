@@ -24,12 +24,6 @@ You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log
 sudo snap install ttyd --classic
 ```
 
-#### Update yarn to latest version
-
-```bash
-sudo curl --compressed -o- -L https://yarnpkg.com/install.sh | bash
-```
-
 #### Update nodejs to v20
 
 ```bash
@@ -64,7 +58,7 @@ Only for developer mode: Download and install JavaScript module dependencies:
 
 ```bash
 cd fkie_mas_gui
-npm install --legacy-peer-deps
+npm install
 npm run build
 ```
 
@@ -156,7 +150,7 @@ Then open in browser <http://localhost:6274>
 
 ## Additional Tools
 
-- To package the client component into an AppImage and zip package, run:
+- To package the client component into an AppImage, run:
 
 ```bash
 cd fkie_mas_gui
