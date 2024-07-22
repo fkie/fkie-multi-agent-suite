@@ -108,7 +108,7 @@ function HostTreeView({
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
         if (node) {
-          if (node.pid && node.screens.length > 0) {
+          if (node.pid > 0 || node.screens.length > 0) {
             if (event.nativeEvent.ctrlKey && !node.system_node) {
               // stop node
               stopNodes([node.idGlobal]);
