@@ -5,6 +5,7 @@ import CallMadeIcon from "@mui/icons-material/CallMade";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
 import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
+import DvrIcon from "@mui/icons-material/Dvr";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
@@ -374,10 +375,10 @@ function NodeManager() {
         // add leading icons to the tabs
         switch (node.getConfig()?.tabType) {
           case CmdType.LOG:
-            renderValues.leading = <SubjectIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <WysiwygIcon sx={{ fontSize: "inherit" }} />;
             break;
           case CmdType.SCREEN:
-            renderValues.leading = <WysiwygIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <DvrIcon sx={{ fontSize: "inherit" }} />;
             break;
           case CmdType.TERMINAL:
             renderValues.leading = <TerminalIcon sx={{ fontSize: "inherit" }} />;
