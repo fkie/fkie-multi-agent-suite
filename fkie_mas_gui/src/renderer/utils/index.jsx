@@ -133,9 +133,10 @@ const getRosNameAbb = (name) => {
         name += midMatch[1];
         const index = base.indexOf(midMatch[1]);
         name += base[index + 1];
-      } else {
-        name += base[base.length - 1]
       }
+    }
+    if (name.length < 3) {
+      name += base[base.length - 1]
     }
     // check if ends with number
     const lastMatch = base.match(/^.*(\d+)$/);
