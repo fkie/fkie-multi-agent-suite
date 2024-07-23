@@ -713,6 +713,36 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         run: async (editorInstance) => {
           saveCurrentFile(editorInstance.getModel());
         },
+      }),
+      editorRef.current.addAction({
+        id: "command_palette",
+        label: "Command Palette",
+        keybindings: [
+          // eslint-disable-next-line no-bitwise
+          monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP,
+        ],
+        precondition: null,
+        keybindingContext: null,
+        // contextMenuGroupId: "none",
+        // contextMenuOrder: 1.0,
+        run: async (editorInstance) => {
+          editorInstance.trigger('open command palette', 'editor.action.quickCommand');
+        },
+      }),
+      editorRef.current.addAction({
+        id: "toggle line comment",
+        label: "Toggle line comment",
+        keybindings: [
+          // eslint-disable-next-line no-bitwise
+          monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit7,
+        ],
+        precondition: null,
+        keybindingContext: null,
+        // contextMenuGroupId: "none",
+        // contextMenuOrder: 1.0,
+        run: async (editorInstance) => {
+          editorInstance.trigger('toggle line comment', 'editor.action.commentLine');
+        },
       })
     );
   };
@@ -729,6 +759,10 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     configureMonacoEditor();
     setInitialized(true);
     loadFiles();
+    // uncomment to show supported actions
+    // editorRef.current.getSupportedActions().forEach((value) => {
+    //   console.log(value);
+    // });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialized, monaco, loadFiles]);
 
