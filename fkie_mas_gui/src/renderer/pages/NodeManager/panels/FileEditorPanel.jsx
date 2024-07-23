@@ -751,7 +751,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         // contextMenuGroupId: "none",
         // contextMenuOrder: 1.0,
         run: async (editorInstance) => {
-          editorInstance.trigger('open command palette', 'editor.action.quickCommand');
+          editorInstance.trigger("open command palette", "editor.action.quickCommand");
         },
       }),
       editorRef.current.addAction({
@@ -766,7 +766,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         // contextMenuGroupId: "none",
         // contextMenuOrder: 1.0,
         run: async (editorInstance) => {
-          editorInstance.trigger('toggle line comment', 'editor.action.commentLine');
+          editorInstance.trigger("toggle line comment", "editor.action.commentLine");
         },
       })
     );
