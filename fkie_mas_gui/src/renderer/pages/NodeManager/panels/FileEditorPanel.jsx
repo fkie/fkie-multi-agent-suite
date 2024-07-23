@@ -290,7 +290,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         editorRef.current.restoreViewState();
       }
       updateIncludeDecorations(model, includedFiles);
-      setActiveModel({ path: model.uri.path, modified: model.modified });
+      setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
 
       // update modified files for the user info in the info bar
       updateModifiedFiles();
@@ -355,7 +355,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           setActiveModel((prevModel) => {
             const model = getModelFromPath(prevModel.path);
             model.modified = false;
-            return { path: model.uri.path, modified: model.modified };
+            return { path: model.uri.path, modified: model.modified, model: model };
           });
           updateModifiedFiles();
         } else {
@@ -383,15 +383,40 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     }
   }, [debouncedWidthUpdate, sideBarWidth]);
 
+  const cleanUpXmlComment = (changes, model) => {
+    // replace all '--' by '- - ' in XML comments
+    if (!model) return;
+    if (changes.length != 2) return;
+    let addedComment = false;
+    if (
+      changes.filter((entry) => {
+        addedComment = entry.text.length > 0;
+        return !["", "<!-- ", " -->"].includes(entry.text);
+      }).length > 0
+    )
+      return;
+    // get range
+    const range = {
+      endColumn: changes[0].range.startColumn - (addedComment ? 3 : 0),
+      endLineNumber: changes[0].range.startLineNumber,
+      startColumn: changes[1].range.endColumn + (addedComment ? 4 : 0),
+      startLineNumber: changes[1].range.endLineNumber,
+    };
+    const matches = model.findMatches(addedComment ? "--" : "- - ", range);
+    matches.reverse().map((match) => {
+      model.applyEdits([{ forceMoveMarkers: false, range: match.range, text: addedComment ? "- - " : "--" }]);
+    }, true);
+  };
+
   const handleEditorChange = useCallback(
-    (value) => {
-      file.value = value;
+    (value, event) => {
       // update activeModel modified flag only once
+      cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
         if (!activeModel.modified) {
           const model = getModelFromPath(activeModel.path);
           model.modified = true;
-          setActiveModel({ path: model.uri.path, modified: model.modified });
+          setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
           updateModifiedFiles();
         }
       }
@@ -1016,6 +1041,10 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
               },
               definitionLinkOpensInPeek: false,
               // automaticLayout: true,
+              comments: {
+                ignoreEmptyLines: false,
+                insertSpace: true,
+              },
             }}
           />
           {/* // )} */}
