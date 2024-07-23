@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.8 - 23.07.2024
+
+Automatically switch to LOG if the screen fails
+Updated screen and log icons for tabs
+Changed calculation of the abbreviation of the tab name
+Disable Ctrl+C for log tab to be able to abort waiting log
+Added option Ctrl+Shift+I to format XML files
+Replace "--" in xml comments
+Fixed: open screen on double click for ros2 nodes
+Fixed: shortcuts for toggle comment and open command palette in editor
+
 ## 2.1.7 - 19.07.2024
 
 Changed load button to primary color
