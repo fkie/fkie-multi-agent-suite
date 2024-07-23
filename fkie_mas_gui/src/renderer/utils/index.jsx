@@ -123,7 +123,26 @@ const getRosNameAbb = (name) => {
   if (!name) return name;
   const base = name.replace(/^.*[\\/]/, "").replace(/@.*/, "");
   if (base) {
-    return `${base[0]}${base[base.length - 1]}`;
+    let name = base
+      .split("_")
+      .map((item) => item[0])
+      .join("");
+    if (name.length < 2) {
+      const midMatch = base.match(/^.*(\d+).*?/);
+      if (midMatch) {
+        name += midMatch[1];
+        const index = base.indexOf(midMatch[1]);
+        name += base[index + 1];
+      } else {
+        name += base[base.length - 1]
+      }
+    }
+    // check if ends with number
+    const lastMatch = base.match(/^.*(\d+)$/);
+    if (lastMatch) {
+      name += lastMatch[1];
+    }
+    return name;
   }
   return name;
 };
