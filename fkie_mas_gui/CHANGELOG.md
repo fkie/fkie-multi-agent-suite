@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.8 - 23.07.2024
+## 2.1.9 - 23.07.2024
 
 Automatically switch to LOG if the screen fails
 Updated screen and log icons for tabs
@@ -10,6 +10,22 @@ Added option Ctrl+Shift+I to format XML files
 Replace "--" in xml comments
 Fixed: open screen on double click for ros2 nodes
 Fixed: shortcuts for toggle comment and open command palette in editor
+
+## 2.1.8 - 19.07.2024
+
+Handle double click on a node:
+
+```text
+    - running: open screen
+        + shift: open screen in external terminal
+        + ctrl: stop the node
+
+    - not running: open log
+        + shift: open log in external terminal
+        + ctrl: start the node
+```
+
+Updated readme
 
 ## 2.1.7 - 19.07.2024
 
