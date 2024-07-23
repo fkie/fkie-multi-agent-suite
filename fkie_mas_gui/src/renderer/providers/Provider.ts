@@ -283,6 +283,9 @@ export default class Provider {
     cmd: string
   ) => Promise<CmdTerminal> = async (type, nodeName = "", topicName = "", screenName = "", cmd = "") => {
     const result = new CmdTerminal();
+    if (type === CmdType.SCREEN && screenName === "") {
+      type = CmdType.LOG;
+    }
     switch (type) {
       case CmdType.CMD:
         result.cmd = `${cmd}`;
@@ -1869,7 +1872,7 @@ export default class Provider {
    */
   public updateRosNodes: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
-    const msgObj = msg as unknown as { path: string, action: string };
+    const msgObj = msg as unknown as { path: string; action: string };
     if (msgObj?.path) {
       emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path));
     }

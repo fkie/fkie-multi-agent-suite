@@ -62,12 +62,14 @@ interface ITerminalClient {
   wsUrl: string;
   name: string;
   invisibleTerminal: boolean;
+  errorHighlighting: boolean;
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
 }
 
 function TerminalClient(props: ITerminalClient) {
-  const { initialCommands, tokenUrl, wsUrl, name, invisibleTerminal, onIncomingData, onCtrlD } = props;
+  const { initialCommands, tokenUrl, wsUrl, name, invisibleTerminal, errorHighlighting, onIncomingData, onCtrlD } =
+    props;
   const settingsCtx = useContext(SettingsContext);
 
   if (!tokenUrl || !initialCommands || !wsUrl) {
@@ -75,6 +77,27 @@ function TerminalClient(props: ITerminalClient) {
   }
 
   termOptions.fontSize = settingsCtx.get("fontSizeTerminal");
+  termOptions.theme = {
+    foreground: "#d2d2d2",
+    background: errorHighlighting ? "#4d0400" : "#2b2b2b",
+    cursor: "#adadad",
+    black: "#000000",
+    red: "#d81e00",
+    green: "#5ea702",
+    yellow: "#cfae00",
+    blue: "#427ab3",
+    magenta: "#89658e",
+    cyan: "#00a7aa",
+    white: "#dbded8",
+    brightBlack: "#686a66",
+    brightRed: "#f54235",
+    brightGreen: "#99e343",
+    brightYellow: "#fdeb61",
+    brightBlue: "#84b0d8",
+    brightMagenta: "#bc94b7",
+    brightCyan: "#37e6e8",
+    brightWhite: "#f1f1f0",
+  } as ITheme;
 
   return (
     <Xterm

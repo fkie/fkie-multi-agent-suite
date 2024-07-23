@@ -16,6 +16,7 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
   const [currentProvider, setCurrentProvider] = useState(null);
   const [lastScreenUsed, setLastScreenUsed] = useState("");
   const [tokenUrl, setTokenUrl] = useState(providerId);
+  const [errorHighlighting, setErrorHighlighting] = useState(false);
 
   const initializeTerminal = useCallback(
     async (newScreen = null) => {
@@ -48,12 +49,20 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
       rosCtx.mapProviderRosNodes.get(providerId)?.forEach((n) => {
         if (n.name === node.name) {
           // TODO: How to handle multiple screens? For now just do this for nodes with a single screen.
-          if (n.screens.length === 1) {
+          if (n.screens.length > 0) {
+            setErrorHighlighting(false);
             if (n.screens[0] !== screen && n.screens[0] !== lastScreenUsed) {
               // screen changed, reload the component
               // [lastScreenUsed] prevents unnecessary reloads
               setInitialCommands(() => []);
               initializeTerminal(n.screens[0]);
+            }
+          } else if (n.screens.length === 0) {
+            if (lastScreenUsed !== "") {
+              // Open Log if no screen is available
+              setInitialCommands(() => []);
+              initializeTerminal("");
+              setErrorHighlighting(true);
             }
           }
         }
@@ -85,6 +94,7 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
             width={width}
             name={`${node.name}`}
             invisibleTerminal={false}
+            errorHighlighting={errorHighlighting}
             onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
           />
         )}
@@ -97,6 +107,7 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
             width={width}
             name={`${cmd.replaceAll("/", " ")}`}
             invisibleTerminal={false}
+            errorHighlighting={errorHighlighting}
             onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
           />
         )}
