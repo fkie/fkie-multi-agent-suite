@@ -11,6 +11,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
+import XmlBeautify from "../../../components/MonacoEditor/XmlBeautify";
 import ExplorerTree from "../../../components/MonacoEditor/ExplorerTree";
 import { createDocumentSymbols, createXMLDependencyProposals } from "../../../components/MonacoEditor/MonacoTools";
 import SearchTree from "../../../components/MonacoEditor/SearchTree";
@@ -671,6 +672,11 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     });
   };
 
+  function formatXml(xml, tab = 2) {
+    const xmlResult = new XmlBeautify().beautify(xml, tab);
+    return xmlResult;
+  }
+
   const configureMonacoEditor = () => {
     // !=> the goto functionality is provided by clickRequest
 
@@ -718,6 +724,18 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           displayName: "ROS Symbols",
           provideDocumentSymbols: (model, token) => {
             return createDocumentSymbols(model, token);
+          },
+        })
+      );
+      addMonacoDisposable(
+        monaco.languages.registerDocumentFormattingEditProvider("xml", {
+          async provideDocumentFormattingEdits(model, options, token) {
+            return [
+              {
+                range: model.getFullModelRange(),
+                text: formatXml(model.getValue()),
+              },
+            ];
           },
         })
       );
