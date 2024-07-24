@@ -153,6 +153,16 @@ function NodeManager() {
           setModifiedEditorTabs([mTab]);
           return;
         }
+        // select nodes tab it is in the same set as close editor
+        const nodeBId = model.getNodeById(tabId);
+        nodeBId
+          ?.getParent()
+          .getChildren()
+          .filter((tab) => {
+            if (tab.getId() === LAYOUT_TABS.NODES) {
+              model.doAction(Actions.selectTab(tab.getId()));
+            }
+          });
       }
       // handle tabs in bottom border
       const nodeBId = model.getNodeById(tabId);
