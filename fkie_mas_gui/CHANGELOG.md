@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0 - 24.07.2024
+
+Added dynamic reconfigure for ROS1 nodes
+
 ## 2.1.9 - 23.07.2024
 
 Automatically switch to LOG if the screen fails
