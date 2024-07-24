@@ -99,6 +99,13 @@ export const registerHandlers = (): void => {
     }
   );
 
+  ipcMain.handle(
+    "MultimasterManager:startDynamicReconfigureClient",
+    (_event, name: string, rosMasterUri: string, credential?: ICredential | null) => {
+      return sMultimasterManager.startDynamicReconfigureClient(name, rosMasterUri, credential);
+    }
+  );
+
   async function handleFileOpen(_event: Electron.IpcMainInvokeEvent, path: string): Promise<string | null> {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       defaultPath: path,
@@ -118,7 +125,6 @@ export {
   PasswordManager,
   ROSInfo,
   ShutdownInterface,
-  TerminalManager
+  TerminalManager,
 };
 export type { IROSInfo, ISystemInfo };
-

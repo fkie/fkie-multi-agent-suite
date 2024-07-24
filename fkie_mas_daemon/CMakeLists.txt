@@ -36,6 +36,7 @@ elseif(CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
         PROGRAMS
         nodes/mas-daemon
         nodes/mas-subscriber
+        scripts/dynamic-reconfigure.py
         scripts/mas-remote-node.py
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )

@@ -792,6 +792,21 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     [SSHCtx, isLocalHost, logCtx, multimasterManager]
   );
 
+  const startDynamicReconfigureClient = useCallback(
+    async (node: RosNode) => {
+      if (!multimasterManager) return { result: false, message: "multimasterManager not available in Browser" };
+      logCtx.debug(`Starting Dynamic Reconfigure GUI for '${name}'`, "");
+      if (!node.masteruri) {
+        const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${node.name}`;
+        logCtx.error(msg, "");
+        return { result: false, message: msg };
+      }
+      const result = await multimasterManager.startDynamicReconfigureClient(node.name, node.masteruri, null);
+      return result;
+    },
+    [logCtx, multimasterManager]
+  );
+
   const getProviderName = (providerId: string) => {
     const name = providers.filter((item) => item.id === providerId)[0]?.name();
     return name || "";
@@ -1143,6 +1158,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       startProvider,
       startConfig,
       startMasterSync,
+      startDynamicReconfigureClient,
       removeProvider,
       refreshProviderList,
       closeProviders,

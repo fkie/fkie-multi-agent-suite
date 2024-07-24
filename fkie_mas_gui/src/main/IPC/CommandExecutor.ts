@@ -111,9 +111,15 @@ class CommandExecutor {
             child.stdout?.on("data", function (data) {
               if (parentOut) {
                 console.log(`${data}`);
-                if (data.includes("[rosrun] Couldn't find executable")) {
-                  errorString += data;
-                }
+                `${data}`.split("\n").forEach((item) => {
+                  if (
+                    item.includes("[rosrun] Couldn't find executable") ||
+                    item.includes("[ERROR]") ||
+                    item.includes("[error]")
+                  ) {
+                    errorString += item;
+                  }
+                });
               }
             });
             child.stderr?.on("data", function (data) {

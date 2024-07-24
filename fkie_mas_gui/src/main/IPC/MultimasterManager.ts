@@ -234,6 +234,31 @@ class MultimasterManager {
   };
 
   /**
+   * Try to start a Dynamic Reconfigure Node
+   *
+   * @param {ICredential} credential - Credential to be used
+   * @param {string} name - Node name
+   * @return {bool} execution result
+   */
+  public startDynamicReconfigureClient: (
+    name: string,
+    rosMasterUri: string,
+    credential?: ICredential | null
+  ) => Promise<{ result: boolean; message: string }> = async (name, rosMasterUri, credential = null) => {
+    const nameArg = `--name=/dynamic_reconfigure${name}`;
+    const envArg = `ROS_MASTER_URI=${rosMasterUri}`;
+    const cmd = `${envArg} rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${name}; `;
+
+    log.info(`Starting Dynamic Reconfigure: ${cmd}`);
+    try {
+      const result = await this.commandExecutor.exec(credential, cmd);
+      return result;
+    } catch (error) {
+      return Promise.resolve({ result: false, message: `${error}` });
+    }
+  };
+
+  /**
    * Start background processes required for using multimaster LOCALLY
    */
   public startBackgroundProcesses = async (): Promise<void> => {

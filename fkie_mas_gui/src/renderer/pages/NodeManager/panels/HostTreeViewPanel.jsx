@@ -12,6 +12,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
+import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import StopIcon from "@mui/icons-material/Stop";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import TuneIcon from "@mui/icons-material/Tune";
@@ -700,7 +701,7 @@ function HostTreeViewPanel() {
     getSelectedNodes().map(async (node) => {
       // we unregister system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
-      // not supported for ROS1
+      // not supported for ROS2
       if (!node.masteruri) return;
       if (
         queueItemsQueueMain &&
@@ -734,6 +735,62 @@ function HostTreeViewPanel() {
         } else {
           addStatusQueueMain("UNREGISTER", node.name, true, "unregistered");
         }
+      }
+    }
+  };
+
+  /**
+   * Check given node for dynamic reconfigure capabilities
+   */
+  const isDynamicReconfigureNode = (node) => {
+    if (!node.masteruri) return false;
+    if (
+      Array.from(node.services.keys()).filter((service) => {
+        return service.endsWith("/set_parameters");
+      }).length === 0
+    ) {
+      // no services for dynamic reconfigure found
+      return false;
+    }
+    return true;
+  };
+
+  /**
+   * Start dynamic reconfigure GUI for selected nodes
+   */
+  const startDynamicReconfigure = useCallback(() => {
+    const nodes2configure = [];
+    getSelectedNodes().map(async (node) => {
+      if (!isDynamicReconfigureNode(node)) {
+        return;
+      }
+      if (
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === "DYNAMIC_RECONFIGURE" && elem.node.name === node.name;
+        })
+      ) {
+        // TODO: skippedNodes.set(node.name, 'already in queue');
+      } else {
+        nodes2configure.push(node);
+      }
+    });
+    updateQueueMain(
+      nodes2configure.map((node) => {
+        return { node, action: "DYNAMIC_RECONFIGURE" };
+      })
+    );
+  }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
+
+  /** start dynamic reconfigure in the queue and trigger the next one. */
+  const dynamicReconfigureQueued = async (node) => {
+    if (node !== null) {
+      // store result for message
+      const result = await rosCtx.startDynamicReconfigureClient(node);
+      if (!result.result) {
+        addStatusQueueMain("DYNAMIC_RECONFIGURE", node.name, false, result.message);
+      } else {
+        addStatusQueueMain("DYNAMIC_RECONFIGURE", node.name, true, `dynamic reconfigure started`);
       }
     }
   };
@@ -908,6 +965,8 @@ function HostTreeViewPanel() {
           killNodeQueued(queueItem.node);
         } else if (queueItem.action === "CLEAR_LOG") {
           clearNodeLogQueued(queueItem.node);
+        } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
+          dynamicReconfigureQueued(queueItem.node);
         }
       } else {
         // queue is finished, print success results
@@ -917,6 +976,7 @@ function HostTreeViewPanel() {
           ["KILL", "killed"],
           ["UNREGISTER", "unregistered"],
           ["CLEAR_LOG", "logs cleared"],
+          ["DYNAMIC_RECONFIGURE", "dynamic reconfigure started"],
         ].forEach((action) => {
           const success = successQueueMain(action[0]);
           if (success.length > 0) {
@@ -928,7 +988,7 @@ function HostTreeViewPanel() {
           }
         });
         // queue is finished, print failed results
-        ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG"].forEach((action) => {
+        ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"].forEach((action) => {
           const failed = failedQueueMain(action);
           if (failed.length > 0) {
             const infoDict = {};
@@ -961,6 +1021,7 @@ function HostTreeViewPanel() {
   }, [showRemoteNodes]);
 
   const createButtonBox = useMemo(() => {
+    const selectedNodes = getSelectedNodes();
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
         <Tooltip
@@ -977,7 +1038,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 startSelectedNodes();
               }}
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.length === 0}
             >
               <PlayArrowIcon fontSize="inherit" />
             </IconButton>
@@ -997,7 +1058,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 stopSelectedNodes();
               }}
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.length === 0}
             >
               <StopIcon fontSize="inherit" />
             </IconButton>
@@ -1018,7 +1079,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 restartSelectedNodes();
               }}
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.length === 0}
             >
               <RestartAltIcon fontSize="inherit" />
             </IconButton>
@@ -1032,12 +1093,13 @@ function HostTreeViewPanel() {
               onClick={() => {
                 killSelectedNodes();
               }}
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.length === 0}
             >
               <CancelPresentationIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>
+        <Divider />
         <Tooltip title="Unregister ROS1 nodes" placement="left" disableInteractive>
           <span>
             <IconButton
@@ -1046,12 +1108,31 @@ function HostTreeViewPanel() {
               onClick={() => {
                 unregisterSelectedNodes();
               }}
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.filter((node) => node.masteruri?.length > 0).length === 0}
             >
               <DeleteForeverIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>
+        <Tooltip title="Dynamic reconfigure for ROS1 nodes" placement="left" disableInteractive>
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="dynamic reconfigure"
+              onClick={() => {
+                startDynamicReconfigure();
+              }}
+              disabled={
+                selectedNodes.filter((node) => {
+                  return isDynamicReconfigureNode(node);
+                }).length === 0
+              }
+            >
+              <SettingsSuggestIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         <Divider />
         <Tooltip
           title="Edit"
@@ -1067,7 +1148,7 @@ function HostTreeViewPanel() {
               onClick={() => {
                 createFileEditorPanel(getSelectedNodes());
               }}
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.filter((node) => node.launchPaths.size > 0).length === 0}
             >
               <BorderColorIcon fontSize="inherit" />
             </IconButton>
@@ -1091,7 +1172,7 @@ function HostTreeViewPanel() {
                   createParameterPanel(getSelectedNodes(), null);
                 }
               }}
-              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
             >
               <TuneIcon fontSize="inherit" />
             </IconButton>
@@ -1103,7 +1184,7 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Screen"
-              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 if (navCtx.selectedProviders?.length > 0) {
                   navCtx.selectedProviders?.forEach((providerId) => {
@@ -1168,7 +1249,7 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Log Level"
-              disabled={navCtx.selectedNodes?.length === 0}
+              disabled={selectedNodes.length === 0}
               onClick={(event) => {
                 getSelectedNodes().forEach((node) => {
                   createLoggerPanel(node);
@@ -1184,7 +1265,7 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Log"
-              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 getSelectedNodes().forEach((node) => {
                   createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
@@ -1204,7 +1285,7 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Clear Logs"
-              disabled={navCtx.selectedNodes?.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={() => {
                 if (navCtx.selectedProviders?.length > 0) {
                   setRosCleanPurge(true);

@@ -97,6 +97,9 @@ if (process.contextIsolated) {
         syncTopics?: string[]
       ) =>
         ipcRenderer.invoke("MultimasterManager:startMasterSync", rosVersion, credential, name, doNotSync, syncTopics),
+
+      startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: ICredential | null) =>
+        ipcRenderer.invoke("MultimasterManager:startDynamicReconfigureClient", name, rosMasterUri, credential),
     });
 
     // Expose protected methods that allow the renderer process to use
