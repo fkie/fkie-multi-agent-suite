@@ -385,6 +385,7 @@ function HostTreeViewPanel() {
           )
         );
         openIds.push(id);
+        window.electronAPI.openEditor(node.launchInfo.file_name);
       }
     });
   };

@@ -38,7 +38,7 @@ import {
   SystemWarningGroup,
   URI,
 } from "../models";
-import JSONObject, { JSONValue } from "../models/JsonObject";
+import JSONObject from "../models/JsonObject";
 import { delay, generateUniqueId } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";

@@ -27,5 +27,13 @@ export default defineConfig({
       port: 6274,
       host: true,
     },
+    build: {
+      rollupOptions: {
+        input: {
+          app: resolve(__dirname, "src/renderer/index.html"),
+          editor: resolve(__dirname, "src/renderer/editor.html"),
+        },
+      },
+    },
   },
 });

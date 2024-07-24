@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import React, { forwardRef, useCallback, useEffect, useState } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import Provider from "../../providers/Provider";
 import { EVENT_PROVIDER_NODE_STARTED } from "../../providers/eventTypes";

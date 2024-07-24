@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import React, { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { SettingsContext } from "../../context/SettingsContext";
 import { PATH_EVENT_TYPE } from "../../models";

@@ -1,7 +1,7 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Button, Card, CardActions, Collapse, IconButton, Stack, Typography } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
-import React, { forwardRef, useCallback, useContext, useState } from "react";
+import { forwardRef, useCallback, useContext, useState } from "react";
 import { JSONTree } from "react-json-tree";
 import { levelColorsWbg } from "../components/UI/Colors";
 import { darkThemeJson } from "../themes/darkTheme";

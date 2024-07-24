@@ -166,7 +166,7 @@ export default class WebsocketConnection extends ProviderConnection {
       };
 
       this.websocket?.send(JSON.stringify(message));
-      this.queue[rpcId] = { promise: [resolve, reject] };
+      this.queue[rpcId] = { promise: [resolve as never, reject] };
       this.queue[rpcId].timeout = setTimeout(() => {
         delete this.queue[rpcId];
         reject(new Error(`[${this.uri}] reply timeout`));

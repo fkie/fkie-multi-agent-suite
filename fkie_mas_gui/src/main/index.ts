@@ -12,7 +12,6 @@ import path, { join } from "path";
 import { registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownInterface, registerHandlers } from "./IPC";
 import MenuBuilder from "./menu";
-import { resolveHtmlPath } from "./util";
 import windowStateKeeper from "./windowStateKeeper";
 // import installer from 'electron-devtools-installer'
 // import electrondebug from 'electron-debug'
@@ -73,8 +72,6 @@ const createWindow = async (): Promise<void> => {
   });
   // Track window state
   mainWindowStateKeeper.track(mainWindow);
-
-  mainWindow.loadURL(resolveHtmlPath("index.html"));
 
   mainWindow.on("ready-to-show", () => {
     if (!mainWindow) {
@@ -182,3 +179,64 @@ app
     });
   })
   .catch(console.log);
+
+ipcMain.handle("main:openEditor", handleEditorOpen);
+
+async function handleEditorOpen(_event: Electron.IpcMainInvokeEvent, launchFile: string): Promise<string | null> {
+  // if (isDebug) {
+  //   await installExtensions()
+  // }
+
+  const mainWindowStateKeeper = await windowStateKeeper("editor");
+
+  const newWindow = new BrowserWindow({
+    autoHideMenuBar: true,
+    show: false,
+    frame: true,
+    x: mainWindowStateKeeper.x,
+    y: mainWindowStateKeeper.y,
+    width: mainWindowStateKeeper.width,
+    height: mainWindowStateKeeper.height,
+    icon: path.join(__dirname, "../../icon/crystal_clear_edit_launch.png"),
+    webPreferences: {
+      sandbox: false,
+      nodeIntegration: true,
+      preload: path.join(__dirname, "../preload/index.js"),
+    },
+  });
+  // Track window state
+  mainWindowStateKeeper.track(newWindow);
+
+  newWindow.on("ready-to-show", () => {
+    if (!newWindow) {
+      throw new Error('"mainWindow" is not defined');
+    }
+    if (process.env.START_MINIMIZED) {
+      newWindow.minimize();
+    } else {
+      if (mainWindowStateKeeper.isMaximized) newWindow.maximize();
+      newWindow.show();
+    }
+  });
+
+  newWindow.on("close", (_e) => {
+    // e.preventDefault();
+    // newWindow?.webContents.send("ShutdownInterface:terminateSubprocesses");
+  });
+
+  newWindow.on("closed", () => {
+    // newWindow = null;
+  });
+
+  dialogManager = new DialogManager(newWindow);
+
+  // HMR for renderer base on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
+  if (is.dev && process.env.ELECTRON_RENDERER_URL) {
+    newWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${launchFile}`);
+  } else {
+    newWindow.loadFile(join(__dirname, `../renderer/editor.html?id=${launchFile}`));
+  }
+
+  return Promise.resolve(null);
+}
