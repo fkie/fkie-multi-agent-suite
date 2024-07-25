@@ -31,7 +31,9 @@ function SetNTPDateDialog({ onClose, value: valueProp, open, ...other }) {
 
   return (
     <Dialog sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }} maxWidth="xs" open={open} {...other}>
-      <DialogTitle>Update system time</DialogTitle>
+      <DialogTitle className="handle" id="draggable-dialog-title">
+        Update system time
+      </DialogTitle>
       <DialogContent dividers>
         <Box>
           <div>{`${value}`}</div>

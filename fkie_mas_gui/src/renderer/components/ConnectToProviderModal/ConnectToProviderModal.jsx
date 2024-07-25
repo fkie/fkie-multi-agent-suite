@@ -153,7 +153,7 @@ function ConnectToProviderModal() {
     });
     hostListLocal.sort((a, b) => -b.host.localeCompare(a.host));
     if (hostListLocal.length === 0) {
-      hostListLocal.push({ ip: "127.0.0.1", host: "localhost" })
+      hostListLocal.push({ ip: "127.0.0.1", host: "localhost" });
     }
     setHostList(hostListLocal);
     setHostValues(["localhost"]);
@@ -471,7 +471,7 @@ function ConnectToProviderModal() {
         onClose={handleClose}
         // disableEscapeKeyDown
       >
-        <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
+        <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
           Connect To ROS
         </DialogTitle>
         <DialogContent>

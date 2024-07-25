@@ -59,7 +59,7 @@ function ListSelectionModal({ list, setList, onConfirmCallback }) {
       }}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
+      <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
         Confirm Selection
       </DialogTitle>
 

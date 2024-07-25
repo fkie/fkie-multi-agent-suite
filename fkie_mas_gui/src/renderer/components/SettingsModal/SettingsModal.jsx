@@ -74,7 +74,7 @@ function SettingsModal() {
         onClose={handleClose}
         // disableEscapeKeyDown
       >
-        <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
+        <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
           Settings editor
         </DialogTitle>
 

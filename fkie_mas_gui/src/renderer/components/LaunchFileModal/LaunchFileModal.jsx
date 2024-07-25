@@ -324,13 +324,13 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       }}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle style={{ cursor: "move" }} id="draggable-dialog-title">
+      <DialogTitle  className="handle" style={{ cursor: "move" }}  id="draggable-dialog-title">
         Launch file
       </DialogTitle>
       <DialogContent>
         {selectedLaunch && (
           <Stack>
-            <Tag color="info" text={selectedLaunch.paths[0]} wrap />
+            <Tag class="not-draggable" color="info" text={selectedLaunch.paths[0]} wrap />
             <Stack>
               {currentArgs.map((arg) => {
                 const options = arg.choices ? arg.choices : arg.history;

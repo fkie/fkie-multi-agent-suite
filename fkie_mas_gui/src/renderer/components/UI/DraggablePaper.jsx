@@ -5,7 +5,7 @@ import Draggable from "react-draggable";
 
 function DraggablePaper({ dialogRef=null, ...props }) {
   return (
-    <Draggable nodeRef={dialogRef}>
+    <Draggable nodeRef={dialogRef} handle=".handle">
       <Paper {...props} />
     </Draggable>
   );
