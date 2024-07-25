@@ -41,6 +41,8 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
 
   private pending = 0;
 
+  private gotFocus: boolean = false;
+
   constructor(props: Props) {
     super(props);
 
@@ -104,9 +106,10 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
     const { terminal } = this;
     const rawData = new Uint8Array(data);
     if (terminal) {
-      if (this.written == 0) {
+      if (!this.gotFocus) {
         // workaround to focus textarea
         terminal.focus();
+        this.gotFocus = true;
       }
     }
 
