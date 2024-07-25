@@ -5,11 +5,11 @@ MIT License
 Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
-import React from 'react';
+import React from "react";
 
-import { saveAs } from 'file-saver';
-import { IDisposable, ITerminalAddon, Terminal } from '@xterm/xterm';
-import * as Zmodem from 'zmodem.js/src/zmodem_browser';
+import { IDisposable, ITerminalAddon, Terminal } from "@xterm/xterm";
+import { saveAs } from "file-saver";
+import * as Zmodem from "zmodem.js/src/zmodem_browser";
 
 export interface FlowControl {
   limit: number;
@@ -72,7 +72,7 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
     try {
       if (sentry) sentry.consume(data);
     } catch (e: unknown) {
-      handleError(e as Error, 'consume');
+      handleError(e as Error, "consume");
     }
   }
 
@@ -148,15 +148,15 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
 
     this.keyDispose = terminal.onKey((e) => {
       const event = e.domEvent;
-      if (event.ctrlKey && event.key === 'c') {
+      if (event.ctrlKey && event.key === "c") {
         detection.deny();
       }
     });
 
     this.session = detection.confirm();
-    this.session.on('session_end', zmodemReset);
+    this.session.on("session_end", zmodemReset);
 
-    if (this.session.type !== 'send') {
+    if (this.session.type !== "send") {
       receiveFile();
     }
   }
@@ -176,9 +176,9 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
   private receiveFile() {
     const { session, writeProgress, handleError } = this;
 
-    session.on('offer', (offer: Zmodem.Offer) => {
+    session.on("offer", (offer: Zmodem.Offer) => {
       const fileBuffer: Uint8Array[] = [];
-      offer.on('input', (payload: any) => {
+      offer.on("input", (payload: any) => {
         writeProgress(offer);
         fileBuffer.push(new Uint8Array(payload));
       });
@@ -186,12 +186,12 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
         .accept()
         .then(() => {
           const blob = new Blob(fileBuffer, {
-            type: 'application/octet-stream',
+            type: "application/octet-stream",
           });
           saveAs(blob, offer.get_details().name);
           return true;
         })
-        .catch((e: Error) => handleError(e, 'receive'));
+        .catch((e: Error) => handleError(e, "receive"));
     });
 
     session.start();
@@ -211,11 +211,11 @@ export class ZmodemAddon extends React.Component<Props> implements ITerminalAddo
   private bytesHuman(bytes: number, precision: number): string {
     let mPrecision = precision;
     if (!/^([-+])?|(\.\d+)(\d+(\.\d+)?|(\d+\.)|Infinity)$/.test(bytes.toString())) {
-      return '-';
+      return "-";
     }
-    if (bytes === 0) return '0';
-    if (typeof mPrecision === 'undefined') mPrecision = 1;
-    const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    if (bytes === 0) return "0";
+    if (typeof mPrecision === "undefined") mPrecision = 1;
+    const units = ["bytes", "KB", "MB", "GB", "TB", "PB"];
     const num = Math.floor(Math.log(bytes) / Math.log(1024));
     const value = (bytes / 1024 ** Math.floor(num)).toFixed(precision);
     return `${value} ${units[num]}`;
