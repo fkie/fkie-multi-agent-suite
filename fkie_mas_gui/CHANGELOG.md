@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.0 - 25.07.2024
+
+Added: open editor in external window
+Select nodes tab if it is in the same set as the closed editor
+Fixed: focus problem if a screen with rosbag play is open
+Fixed: selection in draggable dialogs
+
 ## 2.2.0 - 24.07.2024
 
 Added dynamic reconfigure for ROS1 nodes
