@@ -351,7 +351,7 @@ function HostTreeViewPanel() {
    */
   const createFileEditorPanel = (nodes) => {
     const openIds = [];
-    nodes.forEach((node) => {
+    nodes.forEach(async(node) => {
       if (!node.launchInfo) {
         logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
         return;
@@ -360,9 +360,13 @@ function HostTreeViewPanel() {
       if (node.launchPaths.size > 1) {
         // TODO: select
       }
+      const provider = rosCtx.getProviderById(node.providerId);
       const launchName = getBaseName(rootLaunch);
       const id = `editor-${node.providerId}-${rootLaunch}`;
-      if (!openIds.includes(id)) {
+      const hasExtEditor = await window.electronAPI?.hasEditor(provider?.connection.host, provider?.connection.port, rootLaunch);
+      if (hasExtEditor) {
+        window.electronAPI?.emitEditorFileRange(node.launchInfo.file_name, provider?.connection.host, provider?.connection.port, rootLaunch, node.launchInfo.file_range);
+      } else if (!openIds.includes(id)) {
         emitCustomEvent(
           EVENT_EDITOR_SELECT_RANGE,
           eventEditorSelectRange(id, node.launchInfo.file_name, node.launchInfo.file_range)
@@ -381,11 +385,16 @@ function HostTreeViewPanel() {
             />,
             true,
             LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
-            new LayoutTabConfig(false, "editor")
+            new LayoutTabConfig(true, "editor", null, {
+              path: node.launchInfo.file_name,
+              host: provider?.connection.host,
+              port: provider?.connection.port,
+              rootLaunch: rootLaunch,
+              fileRange: node.launchInfo.file_range,
+            })
           )
         );
         openIds.push(id);
-        window.electronAPI.openEditor(node.launchInfo.file_name);
       }
     });
   };

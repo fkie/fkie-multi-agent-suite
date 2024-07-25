@@ -294,6 +294,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
             referenceFilePath={null}
             currentFilePath={fileObj.path}
             rootFilePath={fileObj.path}
+            fileRange={null}
           />,
           true,
           LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],

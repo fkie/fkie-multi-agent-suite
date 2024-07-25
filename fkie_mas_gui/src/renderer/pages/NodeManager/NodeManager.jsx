@@ -4,8 +4,8 @@ import BorderColorIcon from "@mui/icons-material/BorderColor";
 import CallMadeIcon from "@mui/icons-material/CallMade";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
-import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import DvrIcon from "@mui/icons-material/Dvr";
+import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
@@ -453,6 +453,11 @@ function NodeManager() {
                       }
                     };
                     openExternalTerminal(node.getConfig().terminalConfig, node.getId());
+                  }
+                  if (node.getConfig().editorConfig) {
+                    const cfg = node.getConfig().editorConfig;
+                    window.electronAPI.openEditor(cfg.path, cfg.host, cfg.port, cfg.rootLaunch, cfg.fileRange);
+                    deleteTab(node.getId());
                   }
                   event.stopPropagation();
                 }}

@@ -275,7 +275,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       if (argName.startsWith("/")) {
         defaultPath = argName;
       }
-      const filePath = await window.electronAPI.openFile(defaultPath);
+      const filePath = await window.electronAPI?.openFile(defaultPath);
       if (filePath) {
         setLastOpenPath(filePath);
         setCurrentArgs(

@@ -10,7 +10,6 @@ import "react-app-polyfill/stable";
 import { SnackbarProvider } from "notistack";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import EditorApp from "./EditorApp";
 import { ElectronProvider } from "../../context/ElectronContext";
 import { LoggingProvider } from "../../context/LoggingContext";
 import { MonacoProvider } from "../../context/MonacoContext";
@@ -18,12 +17,7 @@ import { NavigationProvider } from "../../context/NavigationContext";
 import { RosProviderReact } from "../../context/RosContext";
 import { SSHProvider } from "../../context/SSHContext";
 import { SettingsProvider } from "../../context/SettingsContext";
-
-const queryString = window.location.search;
-console.log(`queryString: ${queryString}`);
-const urlParams = new URLSearchParams(queryString);
-const id = urlParams.get('id')
-console.log(`id: ${id}`);
+import EditorApp from "../../sites/editor/App";
 
 const container = document.getElementById("root");
 if (container) {

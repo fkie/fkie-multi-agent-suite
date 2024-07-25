@@ -73,6 +73,7 @@ export interface IRosProviderContext {
   unregisterSubscriber: (providerId: string, topic: string) => void;
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
   isLocalHost: (host: string) => void;
+  addProvider: (provider: Provider) => void;
 }
 
 export const DEFAULT = {
@@ -100,6 +101,7 @@ export const DEFAULT = {
   unregisterSubscriber: () => null,
   updateFilterRosTopic: () => null,
   isLocalHost: () => null,
+  addProvider: () => null,
 };
 
 interface IRosProviderComponent {
@@ -184,6 +186,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
     });
     return localIps.length > 0;
+  }
+
+  function addProvider(provider: Provider) {
+    if (!getProviderById(provider.id)) {
+      setProviders([...providers, provider]);
+    }
   }
 
   /** Search and return a provider using its id */
@@ -1172,6 +1180,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       updateFilterRosTopic,
       getProviderName,
       isLocalHost,
+      addProvider,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

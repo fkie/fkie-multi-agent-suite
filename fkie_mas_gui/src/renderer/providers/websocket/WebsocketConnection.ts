@@ -75,7 +75,7 @@ export default class WebsocketConnection extends ProviderConnection {
     if (this.websocket !== null) return Promise.resolve(true);
     this.websocket = new WebSocket(this.uri);
     this.websocket.addEventListener("open", () => {
-      this.logger?.info(`websocket connected to ${this.websocket?.url}`, "");
+      this.logger?.info(`websocket connected to ${this.websocket?.url}`, "", false);
       this.onOpen();
     });
     this.websocket.addEventListener("close", (event: CloseEvent) => {

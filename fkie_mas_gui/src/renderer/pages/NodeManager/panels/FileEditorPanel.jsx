@@ -6,21 +6,20 @@ import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
 import { Alert, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
+import RosContext from "@renderer/context/RosContext";
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
-import XmlBeautify from "../../../components/MonacoEditor/XmlBeautify";
 import ExplorerTree from "../../../components/MonacoEditor/ExplorerTree";
 import { createDocumentSymbols, createXMLDependencyProposals } from "../../../components/MonacoEditor/MonacoTools";
 import SearchTree from "../../../components/MonacoEditor/SearchTree";
+import XmlBeautify from "../../../components/MonacoEditor/XmlBeautify";
 import { colorFromHostname } from "../../../components/UI/Colors";
 import SearchBar from "../../../components/UI/SearchBar";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { MonacoContext } from "../../../context/MonacoContext";
-import { RosContext } from "../../../context/RosContext";
-import { SSHContext } from "../../../context/SSHContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import {
@@ -30,6 +29,7 @@ import {
   getFileAbb,
   getFileName,
 } from "../../../models";
+import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
 import { EVENT_EDITOR_SELECT_RANGE } from "../../../utils/events";
 
 const layoutCSS = {
@@ -39,12 +39,11 @@ const layoutCSS = {
   justifyContent: "center",
 };
 
-function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fileRange = null }) {
+function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fileRange }) {
   const monaco = Monaco.useMonaco();
   const settingsCtx = useContext(SettingsContext);
-  const rosCtx = useContext(RosContext);
-  const SSHCtx = useContext(SSHContext);
   const logCtx = useContext(LoggingContext);
+  const rosCtx = useContext(RosContext);
   const monacoCtx = useContext(MonacoContext);
 
   // ----- size handling
@@ -131,6 +130,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     const model = monaco.editor.getModel(pathUri);
     if (model) {
       if (model.modified) {
+        // TODO: ask the user how to proceed
         return model;
       }
       model.dispose();
@@ -221,7 +221,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       });
     setModifiedFiles(newModifiedFiles);
     monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }, [monaco.editor, monacoCtx, ownUriPaths, providerId, tabId]);
+  }, [monacoCtx, ownUriPaths, providerId, tabId]);
 
   // update decorations for included files
   const updateIncludeDecorations = (model, includedFilesList) => {
@@ -288,7 +288,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       // restore view state for current file
       const viewState = monacoViewStates.get(model.uri.path);
       if (viewState) {
-        editorRef.current.restoreViewState();
+        editorRef.current.restoreViewState(viewState);
       }
       updateIncludeDecorations(model, includedFiles);
       setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
@@ -310,10 +310,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       monaco,
       monacoViewStates,
       includedFiles,
-      rosCtx,
       providerId,
       providerHost,
-      SSHCtx,
       setActiveModel,
       getModelFromPath,
       updateModifiedFiles,
@@ -326,6 +324,39 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       const model = getModelFromPath(data.filePath);
       if (model) {
         setEditorModel(data.filePath, data.fileRange);
+      }
+    }
+  });
+
+  /** Handle events caused by changed files. */
+  useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, async (data) => {
+    if (ownUriPaths.includes(createUriPath(data.path.srcPath))) {
+      const provider = rosCtx.getProviderById(providerId);
+      if (provider) {
+        const currentModel = editorRef.current.getModel();
+        const result = await provider.getFileContent(data.path.srcPath);
+        if (result.error) {
+          console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
+          setNotificationDescription(`Could not open file: [${result.file.fileName}]: ${result.error}`);
+          return;
+        }
+        if (currentModel) {
+          monacoViewStates.set(currentModel.uri.path, editorRef.current.saveViewState());
+        }
+        const model = createModel(result.file);
+        if (!model) {
+          console.error(`Could not create model for: [${result.file.fileName}]`);
+          setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
+          return;
+        }
+        if (currentModel.uri.path === model.uri.path) {
+          editorRef.current.setModel(model);
+          // restore view state for current file
+          const viewState = monacoViewStates.get(model.uri.path);
+          if (viewState) {
+            editorRef.current.restoreViewState(viewState);
+          }
+        }
       }
     }
   });
@@ -356,6 +387,13 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           setActiveModel((prevModel) => {
             const model = getModelFromPath(prevModel.path);
             model.modified = false;
+            window.electronAPI?.changedEditor(
+              providerObj.connection.host,
+              providerObj.connection.port,
+              rootFilePath,
+              path,
+              false
+            );
             return { path: model.uri.path, modified: model.modified, model: model };
           });
           updateModifiedFiles();
@@ -415,10 +453,18 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
         if (!activeModel.modified) {
+          const provider = rosCtx.getProviderById(providerId);
           const model = getModelFromPath(activeModel.path);
           model.modified = true;
           setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
           updateModifiedFiles();
+          window.electronAPI?.changedEditor(
+            provider?.connection.host,
+            provider?.connection.port,
+            rootFilePath,
+            activeModel.path,
+            true
+          );
         }
       }
     },
@@ -454,7 +500,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   useEffect(() => {
     // update ownUriPaths and package names (ownUriToPackageDict)
     const provider = rosCtx.getProviderById(providerId);
-    if (!provider.host()) return;
+    if (!provider?.host()) return;
     if (editorRef.current) {
       updateIncludeDecorations(editorRef.current.getModel(), includedFiles);
     }
@@ -648,7 +694,6 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     editorRef.current,
     currentFilePath,
     providerId,
-    rosCtx.providers,
     setEditorModel,
     createModel,
     getModelFromPath,
@@ -814,7 +859,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   };
 
   return (
-    <Stack direction="row" height="100%" onKeyDown={onKeyDown} ref={panelRef} overflow="auto">
+    <Stack direction="row" height="100%" width="100%" onKeyDown={onKeyDown} ref={panelRef} overflow="auto">
       <SplitPane
         // defaultSize={sideBarWidth}
         sizes={[sideBarWidth]}
@@ -976,7 +1021,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                   fontSize: "0.8em",
                 }}
               >
-                {activeModel?.modified ? "*s" : ""}
+                {activeModel?.modified ? "*" : ""}
                 {getFileName(activeModel?.path)}
               </Typography>
               <Stack direction="row" marginLeft={0.4} spacing={0.2}>
@@ -1077,7 +1122,7 @@ FileEditorPanel.propTypes = {
   providerId: PropTypes.string.isRequired,
   rootFilePath: PropTypes.string.isRequired,
   currentFilePath: PropTypes.string.isRequired,
-  fileRange: PropTypes.any,
+  fileRange: PropTypes.any.isRequired,
 };
 
 export default FileEditorPanel;

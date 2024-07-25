@@ -67,6 +67,7 @@ function LaunchFileList({
             providerId={provId}
             currentFilePath={launchContent.path}
             rootFilePath={launchContent.path}
+            fileRange={null}
           />,
           true,
           LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],

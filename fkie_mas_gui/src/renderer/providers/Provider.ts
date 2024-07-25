@@ -85,24 +85,34 @@ import {
 } from "./events";
 import WebsocketConnection from "./websocket/WebsocketConnection";
 
-interface ProviderDaemonReady {
+interface IProviderDaemonReady {
   status: boolean;
   timestamp: number;
 }
 
-interface ProviderDiscoveryReady {
+interface IProviderDiscoveryReady {
   status: boolean;
 }
 
-interface CallResult {
+export interface IConCallback {
+  uri: string;
+  callback: (msg: JSONObject) => void;
+}
+
+interface ICallResult {
   result: boolean;
   message: unknown | string;
+}
+
+interface IProvider {
+  getCallbacks: () => IConCallback[];
+  updateDaemonInit: () => void;
 }
 
 /**
  * Provider base class to connect with a MAS daemon
  */
-export default class Provider {
+export default class Provider implements IProvider {
   static defaultType: string = "websocket";
 
   type: string = Provider.defaultType;
@@ -254,6 +264,46 @@ export default class Provider {
     }
   }
 
+  public getCallbacks: () => IConCallback[] = () => {
+    return [
+      { uri: URI.ROS_PROVIDER_LIST, callback: this.updateProviderList },
+      { uri: URI.ROS_DAEMON_READY, callback: this.callbackDaemonReady },
+      { uri: URI.ROS_DISCOVERY_READY, callback: this.callbackDiscoveryReady },
+      { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateRosNodes },
+      { uri: URI.ROS_NODES_CHANGED, callback: this.updateRosNodes },
+      { uri: URI.ROS_PATH_CHANGED, callback: this.callbackChangedFile },
+      { uri: URI.ROS_SCREEN_LIST, callback: this.callbackScreensUpdate },
+      { uri: URI.ROS_PROVIDER_WARNINGS, callback: this.callbackProviderWarnings },
+      { uri: URI.ROS_PROVIDER_DIAGNOSTICS, callback: this.callbackDiagnosticsUpdate },
+    ];
+  };
+
+  public updateDaemonInit: () => void = async () => {
+    this.getDaemonVersion()
+      .then((dv) => {
+        if (this.isAvailable()) {
+          this.daemonVersion = dv;
+          this.updateSystemWarnings();
+          this.updateTimeDiff();
+          this.getProviderSystemInfo();
+          this.getProviderSystemEnv();
+          this.updateRosNodes({});
+          this.updateDiagnostics(null);
+          // this.getPackageList();  <- this request is done by package explorer
+          this.updateScreens(null);
+          // this.launchGetList();
+          this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
+          this.updateProviderList();
+          return true;
+        }
+        return false;
+      })
+      .catch((error) => {
+        this.setConnectionState(ConnectionState.STATES.ERRORED, `Daemon no reachable: ${error}`);
+        return false;
+      });
+  };
+
   public url: () => string = () => {
     return this.connection.uri;
   };
@@ -329,32 +379,6 @@ export default class Provider {
         break;
     }
     return Promise.resolve(result);
-  };
-
-  public updateDaemonInit: () => void = async () => {
-    this.getDaemonVersion()
-      .then((dv) => {
-        if (this.isAvailable()) {
-          this.daemonVersion = dv;
-          this.updateSystemWarnings();
-          this.updateTimeDiff();
-          this.getProviderSystemInfo();
-          this.getProviderSystemEnv();
-          this.updateRosNodes({});
-          this.updateDiagnostics(null);
-          // this.getPackageList();  <- this request is done by package explorer
-          this.updateScreens(null);
-          // this.launchGetList();
-          this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
-          this.updateProviderList();
-          return true;
-        }
-        return false;
-      })
-      .catch((error) => {
-        this.setConnectionState(ConnectionState.STATES.ERRORED, `Daemon no reachable: ${error}`);
-        return false;
-      });
   };
 
   public setConnectionState: (state: ConnectionState, details: string) => void = async (
@@ -469,7 +493,7 @@ export default class Provider {
    */
   public updateProviderList: () => Promise<boolean> = async () => {
     const rosProviders: RosProviderState[] = await this.makeCall(URI.ROS_PROVIDER_GET_LIST, [], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           return value.message as RosProviderState[];
         }
@@ -544,15 +568,17 @@ export default class Provider {
    */
   public getFileContent: (path: string) => Promise<{ file: FileItem; error: string }> = async (path) => {
     let error: string = "";
-    const fileItem: FileItem | null = await this.makeCall(URI.ROS_FILE_GET, [path], false).then((value: CallResult) => {
-      if (value.result) {
-        const result = value.message as FileItem;
-        result.host = this.host();
-        return result;
+    const fileItem: FileItem | null = await this.makeCall(URI.ROS_FILE_GET, [path], false).then(
+      (value: ICallResult) => {
+        if (value.result) {
+          const result = value.message as FileItem;
+          result.host = this.host();
+          return result;
+        }
+        this.logger?.error(`Provider [${this.name()}]: can not get content for ${path}: `, `${value.message}`, false);
+        return null;
       }
-      this.logger?.error(`Provider [${this.name()}]: can not get content for ${path}: `, `${value.message}`, false);
-      return null;
-    });
+    );
     if (fileItem) {
       return Promise.resolve({ file: fileItem, error: "" });
     }
@@ -569,7 +595,7 @@ export default class Provider {
    */
   public saveFileContent: (file: FileItem) => Promise<{ bytesWritten: number; error: string }> = async (file) => {
     let error: string = "";
-    const bitesWritten: number = await this.makeCall(URI.ROS_FILE_SAVE, [file], false).then((value: CallResult) => {
+    const bitesWritten: number = await this.makeCall(URI.ROS_FILE_SAVE, [file], false).then((value: ICallResult) => {
       if (value.result) {
         return value.message as number;
       }
@@ -597,7 +623,7 @@ export default class Provider {
   public getDaemonVersion: () => Promise<DaemonVersion> = async () => {
     let error: string = "";
     const daemonVersion: DaemonVersion | null = await this.makeCall(URI.ROS_DAEMON_VERSION, [], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           console.log(`value as DaemonVersion: ${JSON.stringify(value.message as unknown as DaemonVersion)}`);
           return value.message as unknown as DaemonVersion;
@@ -622,7 +648,7 @@ export default class Provider {
    * @return {Promise<any>}
    */
   public getProviderSystemInfo: () => Promise<any> = async () => {
-    const systemInfo = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_INFO, [], true).then((value: CallResult) => {
+    const systemInfo = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_INFO, [], true).then((value: ICallResult) => {
       if (value.result) {
         this.systemInfo = value.message as {};
         return this.systemInfo;
@@ -639,7 +665,7 @@ export default class Provider {
    * @return {Promise<any>}
    */
   public getProviderSystemEnv: () => Promise<any> = async () => {
-    const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: CallResult) => {
+    const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: ICallResult) => {
       if (value.result) {
         this.systemEnv = value.message as {};
         return this.systemEnv;
@@ -672,7 +698,7 @@ export default class Provider {
       URI.ROS_PROVIDER_GET_TIMESTAMP,
       [startTs],
       true
-    ).then((value: CallResult) => {
+    ).then((value: ICallResult) => {
       if (value.result) {
         return value.message as IProviderTimestamp;
       }
@@ -717,7 +743,7 @@ export default class Provider {
       system_node: boolean;
       parent_id: string | null;
     }
-    const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true).then((value: CallResult) => {
+    const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true).then((value: ICallResult) => {
       if (value.result) {
         return value.message as unknown as IRosNode[];
       }
@@ -796,7 +822,7 @@ export default class Provider {
    * Return the URI.ROS_SYSTEM_GET_URI
    */
   public getSystemUri: () => Promise<string> = async () => {
-    const result = await this.makeCall(URI.ROS_SYSTEM_GET_URI, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_SYSTEM_GET_URI, [], true).then((value: ICallResult) => {
       if (value.result) {
         return value.message as string;
       }
@@ -824,7 +850,7 @@ export default class Provider {
       return 0;
     };
     this.packages = [];
-    const result = await this.makeCall("ros.packages.get_list", [], true).then((value: CallResult) => {
+    const result = await this.makeCall("ros.packages.get_list", [], true).then((value: ICallResult) => {
       if (value.result) {
         const rosPackageList: RosPackage[] = value.message as RosPackage[];
         const packageList: RosPackage[] = [];
@@ -858,7 +884,7 @@ export default class Provider {
    * @return {Promise<PathItem[]>} Returns a list of [PathItem] elements
    */
   public getPathList: (path: string) => Promise<PathItem[]> = async (path) => {
-    const result = await this.makeCall(URI.ROS_PATH_GET_LIST_RECURSIVE, [path], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PATH_GET_LIST_RECURSIVE, [path], true).then((value: ICallResult) => {
       if (value.result) {
         const fileList: PathItem[] = [];
         const uniquePaths: string[] = [];
@@ -883,7 +909,7 @@ export default class Provider {
    * @return {Promise<LogPathItem>} Returns a list of [PathItem] elements
    */
   public getLogPaths: (nodes: string[]) => Promise<LogPathItem[]> = async (nodes) => {
-    const result = await this.makeCall(URI.ROS_PATH_GET_LOG_PATHS, [nodes], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PATH_GET_LOG_PATHS, [nodes], true).then((value: ICallResult) => {
       if (value.result) {
         const logPathList: LogPathItem[] = [];
         (value.message as LogPathItem[]).forEach((p: LogPathItem) => {
@@ -905,7 +931,7 @@ export default class Provider {
    * @return {Promise<IResultClearPath[]>} Returns a list of [PathItem] elements
    */
   public clearLogPaths: (nodes: string[]) => Promise<IResultClearPath[]> = async (nodes) => {
-    const result = await this.makeCall(URI.ROS_PATH_CLEAR_LOG_PATHS, [nodes], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PATH_CLEAR_LOG_PATHS, [nodes], true).then((value: ICallResult) => {
       if (value.result) {
         const logPathList: IResultClearPath[] = [];
         (value.message as IResultClearPath[]).forEach((p: IResultClearPath) => {
@@ -929,7 +955,7 @@ export default class Provider {
    * @return {Promise<IResult>} Returns a list of [PathItem] elements
    */
   public rosCleanPurge: () => Promise<IResult> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_ROS_CLEAN_PURGE, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_ROS_CLEAN_PURGE, [], true).then((value: ICallResult) => {
       if (value.result) {
         return value.message as IResult;
       }
@@ -948,7 +974,7 @@ export default class Provider {
    * @return {Promise<IResult>}
    */
   public shutdown: () => Promise<IResult> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [], true).then((value: ICallResult) => {
       if (value.result) {
         return value.message as IResult;
       }
@@ -976,7 +1002,7 @@ export default class Provider {
     let result: LaunchLoadReply | null = null;
 
     if (reload)
-      result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true).then((value: CallResult) => {
+      result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true).then((value: ICallResult) => {
         if (value.result) {
           const parsed = value.message as LaunchLoadReply;
           const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
@@ -986,7 +1012,7 @@ export default class Provider {
         return null;
       });
     else {
-      result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true).then((value: CallResult) => {
+      result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true).then((value: ICallResult) => {
         if (value.result) {
           const parsed = value.message as LaunchLoadReply;
           const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
@@ -1006,7 +1032,7 @@ export default class Provider {
    * @return {Promise<LaunchLoadReply>} Returns a LaunchLoadReply
    */
   public launchUnloadFile: (request: LaunchFile) => Promise<LaunchLoadReply | null> = async (request) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true).then((value: ICallResult) => {
       if (value.result) {
         const parsed = value.message as LaunchLoadReply;
         const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
@@ -1089,7 +1115,7 @@ export default class Provider {
    * @return {Promise<LaunchContent>} Returns a list of LaunchContent elements
    */
   public updateLaunchContent: () => Promise<boolean> = async () => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true).then((value: ICallResult) => {
       if (value.result) {
         const parsedList = value.message as LaunchContent[];
         const launchList: LaunchContent[] = [];
@@ -1234,47 +1260,49 @@ export default class Provider {
   public launchGetIncludedFiles: (request: LaunchIncludedFilesRequest) => Promise<LaunchIncludedFile[] | null> = async (
     request
   ) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_GET_INCLUDED_FILES, [request], true).then((value: CallResult) => {
-      if (value.result) {
-        const parsedList = value.message as unknown as LaunchIncludedFile[];
-        const launchList: LaunchIncludedFile[] = [];
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_INCLUDED_FILES, [request], true).then(
+      (value: ICallResult) => {
+        if (value.result) {
+          const parsedList = value.message as unknown as LaunchIncludedFile[];
+          const launchList: LaunchIncludedFile[] = [];
 
-        if (parsedList) {
-          parsedList.forEach(
-            (lf: {
-              path: string;
-              line_number: number;
-              inc_path: string;
-              exists: boolean;
-              raw_inc_path: string;
-              rec_depth: number;
-              args: LaunchArgument[];
-              default_inc_args: LaunchArgument[];
-              size: number;
-            }) => {
-              launchList.push(
-                new LaunchIncludedFile(
-                  this.connection.host,
-                  lf.path,
-                  lf.line_number,
-                  lf.inc_path,
-                  lf.exists,
-                  lf.raw_inc_path,
-                  lf.rec_depth,
-                  lf.args,
-                  lf.default_inc_args,
-                  lf.size
-                )
-              );
-            }
-          );
+          if (parsedList) {
+            parsedList.forEach(
+              (lf: {
+                path: string;
+                line_number: number;
+                inc_path: string;
+                exists: boolean;
+                raw_inc_path: string;
+                rec_depth: number;
+                args: LaunchArgument[];
+                default_inc_args: LaunchArgument[];
+                size: number;
+              }) => {
+                launchList.push(
+                  new LaunchIncludedFile(
+                    this.connection.host,
+                    lf.path,
+                    lf.line_number,
+                    lf.inc_path,
+                    lf.exists,
+                    lf.raw_inc_path,
+                    lf.rec_depth,
+                    lf.args,
+                    lf.default_inc_args,
+                    lf.size
+                  )
+                );
+              }
+            );
+          }
+          return launchList;
         }
-        return launchList;
-      }
 
-      this.logger?.error(`Provider [${this.name()}]: Error at launchGetIncludedFiles()`, `${value.message}`);
-      return null;
-    });
+        this.logger?.error(`Provider [${this.name()}]: Error at launchGetIncludedFiles()`, `${value.message}`);
+        return null;
+      }
+    );
     return Promise.resolve(result);
   };
 
@@ -1285,7 +1313,7 @@ export default class Provider {
    * @return {Promise<LaunchMessageStruct>} Returns a message struct
    */
   public getMessageStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_GET_MSG_STRUCT, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_MSG_STRUCT, [request], true).then((value: ICallResult) => {
       if (value.result) {
         const parsed = value.message as LaunchMessageStruct;
         const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
@@ -1308,7 +1336,7 @@ export default class Provider {
    * @return {Promise<LaunchMessageStruct>} Returns a message struct
    */
   public getServiceStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_GET_SRV_STRUCT, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_SRV_STRUCT, [request], true).then((value: ICallResult) => {
       if (value.result) {
         const parsed = value.message as LaunchMessageStruct;
         const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
@@ -1331,7 +1359,7 @@ export default class Provider {
    * @return {Promise<Boolean>} Returns true if success
    */
   public publishMessage: (request: LaunchPublishMessage) => Promise<boolean> = async (request) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_PUBLISH_MESSAGE, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_PUBLISH_MESSAGE, [request], true).then((value: ICallResult) => {
       if (value.result) {
         return value.message as boolean;
       }
@@ -1348,7 +1376,7 @@ export default class Provider {
    * @return {Promise<LaunchMessageStruct | null>} Returns true if success
    */
   public callService: (request: LaunchCallService) => Promise<LaunchMessageStruct | null> = async (request) => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_CALL_SERVICE, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_CALL_SERVICE, [request], true).then((value: ICallResult) => {
       if (value.result) {
         if (!value.message) {
           return null;
@@ -1402,7 +1430,7 @@ export default class Provider {
       return Promise.resolve(true);
     }
     this.echoTopics.push(request.topic);
-    const result = await this.makeCall(URI.ROS_SUBSCRIBER_START, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_SUBSCRIBER_START, [request], true).then((value: ICallResult) => {
       if (value.result) {
         const parsed: boolean = value.message as boolean;
         return parsed;
@@ -1436,7 +1464,7 @@ export default class Provider {
         this.logger?.error(`Provider [${this.name()}]: close subscription failed`, `${err}`);
       });
     }
-    const result = await this.makeCall(URI.ROS_SUBSCRIBER_STOP, [topic], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_SUBSCRIBER_STOP, [topic], true).then((value: ICallResult) => {
       if (value.result) {
         const res = value.message as boolean;
         return { result: res, message: "" };
@@ -1485,7 +1513,7 @@ export default class Provider {
       "" // cmd
     );
 
-    const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: ICallResult) => {
       emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, node));
       if (value.result) {
         const parsed = value.message as LaunchNodeReply;
@@ -1577,7 +1605,7 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public stopNode: (id: string) => Promise<Result> = async (id) => {
-    const result = await this.makeCall(URI.ROS_NODES_STOP_NODE, [id], false).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_NODES_STOP_NODE, [id], false).then((value: ICallResult) => {
       if (value.result) {
         const parsed = value.message as Result;
         if (parsed.result) {
@@ -1601,7 +1629,7 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public screenKillNode: (name: string) => Promise<Result> = async (name) => {
-    const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name], true).then((value: ICallResult) => {
       if (value.result) {
         const parsed = value.message as Result;
         if (!parsed.result) {
@@ -1621,7 +1649,7 @@ export default class Provider {
    * @return {Promise<ScreensMapping[]>} Returns a list of screens
    */
   private getScreenList: () => Promise<ScreensMapping[] | null> = async () => {
-    const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true).then((value: ICallResult) => {
       if (value.result) {
         const screenMappings = value.message as ScreensMapping[];
         const screenList: ScreensMapping[] = [];
@@ -1642,7 +1670,7 @@ export default class Provider {
    * @return {Promise<DiagnosticArray>}
    */
   private getDiagnostics: () => Promise<DiagnosticArray | null> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_GET_DIAGNOSTICS, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_GET_DIAGNOSTICS, [], true).then((value: ICallResult) => {
       if (value.result) {
         return value.message as DiagnosticArray;
       }
@@ -1658,7 +1686,7 @@ export default class Provider {
    * @return {Promise<SystemWarningGroup[]>}
    */
   private updateSystemWarnings: () => Promise<SystemWarningGroup[] | null> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: ICallResult) => {
       if (value.result) {
         const warnings = value.message as SystemWarningGroup[];
         this.warnings = warnings;
@@ -1677,7 +1705,7 @@ export default class Provider {
    * @return {Promise<LoggerConfig[]>} Returns a result
    */
   public getNodeLoggers: (node: string) => Promise<LoggerConfig[]> = async (node) => {
-    const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node], true).then((value: ICallResult) => {
       if (value.result) {
         // handle the result of type: {result: bool, message: str}
         if (!Array.isArray(value.message) && !value.result) {
@@ -1701,7 +1729,7 @@ export default class Provider {
    */
   public setNodeLoggers: (node: string, loggers: LoggerConfig[]) => Promise<Result> = async (node, loggers) => {
     const result = await this.makeCall(URI.ROS_NODES_SET_LOGGER_LEVEL, [node, loggers], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           return value.message as Result;
         }
@@ -1719,7 +1747,7 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public unregisterNode: (name: string) => Promise<Result> = async (name) => {
-    const result = await this.makeCall(URI.ROS_NODES_UNREGISTER, [name], true).then((value: CallResult) => {
+    const result = await this.makeCall(URI.ROS_NODES_UNREGISTER, [name], true).then((value: ICallResult) => {
       if (value.result) {
         const parsed = value.message as Result;
         if (parsed.result) {
@@ -1743,7 +1771,7 @@ export default class Provider {
    * @return {Promise<Result>} Returns a result
    */
   public getParameterList: () => Promise<RosParameter[]> = async () => {
-    const result = await this.makeCall("ros.parameters.get_list", [], true).then((value: CallResult) => {
+    const result = await this.makeCall("ros.parameters.get_list", [], true).then((value: ICallResult) => {
       if (value.result) {
         const paramList: RosParameter[] = [];
         const parsed = value.message as RosParameter[];
@@ -1766,7 +1794,7 @@ export default class Provider {
    */
   public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> = async (nodes) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           const paramList: RosParameter[] = [];
           const parsed = value.message as RosParameter[];
@@ -1790,7 +1818,7 @@ export default class Provider {
    */
   public setParameter: (parameter: RosParameter) => Promise<boolean> = async (parameter) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_SET_PARAMETER, [parameter], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           const parsed = value.message as boolean;
           return parsed;
@@ -1810,7 +1838,7 @@ export default class Provider {
    */
   public hasParameter: (parameterName: string) => Promise<boolean> = async (parameterName) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_HAS_PARAMETER, [parameterName], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           return value.message as boolean;
         }
@@ -1829,7 +1857,7 @@ export default class Provider {
    */
   public deleteParameters: (parameters: string[]) => Promise<boolean> = async (parameters) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_DELETE_PARAMETERS, [parameters], true).then(
-      (value: CallResult) => {
+      (value: ICallResult) => {
         if (value.result) {
           return value.message as boolean;
         }
@@ -1847,7 +1875,7 @@ export default class Provider {
    */
   private callbackDaemonReady: (msg: JSONObject) => void = (msg) => {
     // this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
-    const msgObj = msg as unknown as ProviderDaemonReady;
+    const msgObj = msg as unknown as IProviderDaemonReady;
     if (msgObj.status && !this.daemon) {
       this.updateDaemonInit();
     } else if (msgObj.timestamp) {
@@ -1863,7 +1891,7 @@ export default class Provider {
    */
   private callbackDiscoveryReady: (msg: JSONObject) => void = (msg) => {
     this.logger?.debugInterface(URI.ROS_DISCOVERY_READY, msg, "", this.id);
-    const msgObj = msg as unknown as ProviderDiscoveryReady;
+    const msgObj = msg as unknown as IProviderDiscoveryReady;
     this.discovery = msgObj.status;
   };
 
@@ -1953,7 +1981,7 @@ export default class Provider {
     this.unlockRequest("updateRosNodes");
   };
 
-  private callbackChangedFile: (msg: JSONObject) => void = async (msg) => {
+  public callbackChangedFile: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debugInterface(URI.ROS_PATH_CHANGED, msg, "", this.id);
     if (!msg || (await this.lockRequest("callbackChangedFile"))) {
       return;
@@ -2021,16 +2049,10 @@ export default class Provider {
       .then(() => {
         // await this.connection.connection.closeRegistrations();
         this.logger?.info(`register callbacks for ${this.id}`, "", false);
-
-        this.registerCallback(URI.ROS_PROVIDER_LIST, this.updateProviderList);
-        this.registerCallback(URI.ROS_DAEMON_READY, this.callbackDaemonReady);
-        this.registerCallback(URI.ROS_DISCOVERY_READY, this.callbackDiscoveryReady);
-        this.registerCallback(URI.ROS_LAUNCH_CHANGED, this.updateRosNodes);
-        this.registerCallback(URI.ROS_NODES_CHANGED, this.updateRosNodes);
-        this.registerCallback(URI.ROS_PATH_CHANGED, this.callbackChangedFile);
-        this.registerCallback(URI.ROS_SCREEN_LIST, this.callbackScreensUpdate);
-        this.registerCallback(URI.ROS_PROVIDER_WARNINGS, this.callbackProviderWarnings);
-        this.registerCallback(URI.ROS_PROVIDER_DIAGNOSTICS, this.callbackDiagnosticsUpdate);
+        this.getCallbacks().forEach((item: IConCallback) => {
+          this.logger?.info(`  register callback for ${item.uri}`, "", false);
+          this.registerCallback(item.uri, item.callback);
+        });
         return true;
       });
   };
@@ -2044,7 +2066,7 @@ export default class Provider {
    * @param {any} args call arguments
    * @return {Promise<JSONObject>} Return promise of the call
    */
-  private makeCall: (uri: string, args: any, lockRequest: boolean) => Promise<CallResult> = async (
+  private makeCall: (uri: string, args: any, lockRequest: boolean) => Promise<ICallResult> = async (
     uri,
     args,
     lockRequest = true
@@ -2059,7 +2081,7 @@ export default class Provider {
         message: `[${this.name()}]: Ignoring request to: [${uri}] with ${JSON.stringify(args)}, request already running!`,
       };
     }
-    const callRequest: (_uri: string, _args: any, currentAttempt?: number) => Promise<CallResult> = async (
+    const callRequest: (_uri: string, _args: any, currentAttempt?: number) => Promise<ICallResult> = async (
       _uri,
       _args,
       currentAttempt = 0
@@ -2115,7 +2137,7 @@ export default class Provider {
     return result;
   };
 
-  private onCloseConnection = (state: ConnectionState, details: string) => {
+  private onCloseConnection: (state: ConnectionState, details: string) => void = (state, details) => {
     this.setConnectionState(state, details);
     // clear all activities
     this.currentRequestList.clear();
