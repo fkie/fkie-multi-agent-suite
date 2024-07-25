@@ -339,13 +339,18 @@ async function handleEditorOpen(
       `${process.env.ELECTRON_RENDERER_URL}/editor.html?path=${launchFile}&host=${host}&port=${port}&root=${rootLaunch}&sl=${fileRange.startLineNumber}&el=${fileRange.endLineNumber}&sc=${fileRange.startColumn}&ec=${fileRange.endColumn}`
     );
   } else {
-    newWindow.loadFile(
-      join(
-        __dirname,
-        `../renderer/editor.html?path=${launchFile}&host=${host}&port=${port}&root=${rootLaunch}&sl=${fileRange.startLineNumber}&el=${fileRange.endLineNumber}&sc=${fileRange.startColumn}&ec=${fileRange.endColumn}`
-      )
-    );
+    newWindow.loadFile(join(__dirname, `../renderer/editor.html`), {
+      query: {
+        path: launchFile,
+        host: host,
+        port: `${port}`,
+        root: rootLaunch,
+        sl: `${fileRange.startLineNumber}`,
+        el: `${fileRange.endLineNumber}`,
+        sc: `${fileRange.startColumn}`,
+        ec: `${fileRange.endColumn}`,
+      },
+    });
   }
-
   return Promise.resolve(null);
 }
