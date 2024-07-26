@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.1 - 26.07.2024
+
+Add dialog to save changed file on close external editor
+Added shift as button modification to open editor in a new window
+Fixed: do not reload own saved files
+
 ## 2.3.0 - 25.07.2024
 
 Added: open editor in external window
