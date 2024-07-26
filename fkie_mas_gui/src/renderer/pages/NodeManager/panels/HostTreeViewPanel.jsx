@@ -349,9 +349,9 @@ function HostTreeViewPanel() {
   /**
    * Create and open a new panel with a [createFileEditorPanel] for selected nodes
    */
-  const createFileEditorPanel = (nodes) => {
+  const createFileEditorPanel = (nodes, external) => {
     const openIds = [];
-    nodes.forEach(async(node) => {
+    nodes.forEach(async (node) => {
       if (!node.launchInfo) {
         logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
         return;
@@ -361,16 +361,41 @@ function HostTreeViewPanel() {
         // TODO: select
       }
       const provider = rosCtx.getProviderById(node.providerId);
+      if (external && provider && window.electronAPI) {
+        // open in new window
+        window.electronAPI.openEditor(
+          node.launchInfo.file_name,
+          provider.connection.host,
+          provider.connection.port,
+          rootLaunch,
+          node.launchInfo.file_range
+        );
+        return;
+      }
+      // open in a tab
       const launchName = getBaseName(rootLaunch);
       const id = `editor-${node.providerId}-${rootLaunch}`;
-      const hasExtEditor = await window.electronAPI?.hasEditor(provider?.connection.host, provider?.connection.port, rootLaunch);
+      const hasExtEditor = await window.electronAPI?.hasEditor(
+        provider?.connection.host,
+        provider?.connection.port,
+        rootLaunch
+      );
       if (hasExtEditor) {
-        window.electronAPI?.emitEditorFileRange(node.launchInfo.file_name, provider?.connection.host, provider?.connection.port, rootLaunch, node.launchInfo.file_range);
+        // inform external window about new selected range
+        window.electronAPI?.emitEditorFileRange(
+          node.launchInfo.file_name,
+          provider?.connection.host,
+          provider?.connection.port,
+          rootLaunch,
+          node.launchInfo.file_range
+        );
       } else if (!openIds.includes(id)) {
+        // inform already open tab about new node selection
         emitCustomEvent(
           EVENT_EDITOR_SELECT_RANGE,
           eventEditorSelectRange(id, node.launchInfo.file_name, node.launchInfo.file_range)
         );
+        // open new editor in a tab. Checks for existing tabs are performed in NodeManager
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
           eventOpenComponent(
@@ -1145,7 +1170,7 @@ function HostTreeViewPanel() {
 
         <Divider />
         <Tooltip
-          title="Edit"
+          title="Edit (new window with shift+click)"
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1155,8 +1180,8 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Edit"
-              onClick={() => {
-                createFileEditorPanel(getSelectedNodes());
+              onClick={(event) => {
+                createFileEditorPanel(getSelectedNodes(), event.nativeEvent.shiftKey);
               }}
               disabled={selectedNodes.filter((node) => node.launchPaths.size > 0).length === 0}
             >
