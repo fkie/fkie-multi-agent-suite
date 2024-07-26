@@ -45,7 +45,7 @@ function LaunchFileList({
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host
    */
   const createFileEditorPanel = useCallback(
-    (provId, launchContent) => {
+    async (provId, launchContent, external) => {
       const launchName = getBaseName(launchContent.path);
       // const provider = rosCtx.getProviderById(provId);
       // const packages = provider?.packages?.filter((rosPackage) => {
@@ -56,24 +56,51 @@ function LaunchFileList({
       //   );
       // });
       //  [${packages.length > 0 ? packages[0].name : ''}]@${providerName}
-      const id = `editor-${provId}-${launchContent.path}`;
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          id,
-          launchName,
-          <FileEditorPanel
-            tabId={id}
-            providerId={provId}
-            currentFilePath={launchContent.path}
-            rootFilePath={launchContent.path}
-            fileRange={null}
-          />,
-          true,
-          LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
-          new LayoutTabConfig(false, "editor")
-        )
-      );
+      const provider = rosCtx.getProviderById(provId);
+      if (provider) {
+        const id = `editor-${provider.connection.host}-${provider.connection.port}-${launchContent.path}`;
+        const hasExtEditor = await window.electronAPI?.hasEditor(id);
+        if (hasExtEditor) {
+          // inform external window about new selected range
+          window.electronAPI?.emitEditorFileRange(id, launchContent.path, null);
+        } else if (external && window.electronAPI) {
+          // open in new window
+          window.electronAPI.openEditor(
+            id,
+            provider.connection.host,
+            provider.connection.port,
+            launchContent.path,
+            launchContent.path,
+            null
+          );
+          return;
+        } else {
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              id,
+              launchName,
+              <FileEditorPanel
+                tabId={id}
+                providerId={provId}
+                currentFilePath={launchContent.path}
+                rootFilePath={launchContent.path}
+                fileRange={null}
+              />,
+              true,
+              LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+              new LayoutTabConfig(true, "editor", null, {
+                id: id,
+                host: provider.connection.host,
+                port: provider.connection.port,
+                rootLaunch: launchContent.path,
+                path: launchContent.path,
+                fileRange: null,
+              })
+            )
+          );
+        }
+      }
     },
     [settingsCtx]
   );
@@ -146,7 +173,7 @@ function LaunchFileList({
                       edge="end"
                       aria-label="Edit launch file"
                       onClick={(event) => {
-                        createFileEditorPanel(providerId, lc);
+                        createFileEditorPanel(providerId, lc, event.nativeEvent.shiftKey);
                         event.stopPropagation();
                       }}
                     >

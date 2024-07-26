@@ -3,6 +3,7 @@ import { ICredential } from "../models/ICredential";
 import AutoUpdateManager from "./AutoUpdateManager";
 import CommandExecutor from "./CommandExecutor";
 import DialogManager from "./DialogManager";
+import EditorManager from "./EditorManager";
 import MultimasterManager from "./MultimasterManager";
 import PasswordManager from "./PasswordManager";
 import { IROSInfo, ROSInfo } from "./ROSInfo";
@@ -13,8 +14,11 @@ import TerminalManager from "./TerminalManager";
 const sPasswordManager = new PasswordManager();
 const sCommandExecutor = new CommandExecutor();
 const sMultimasterManager = new MultimasterManager();
+const editorManager = new EditorManager();
 
 export const registerHandlers = (): void => {
+  editorManager.registerHandlers();
+
   // Password Manager
   ipcMain.handle("PasswordManager:setPassword", (_event, service: string, account: string, password: string) => {
     return sPasswordManager.setPassword(service, account, password);
@@ -121,10 +125,12 @@ export const registerHandlers = (): void => {
 export {
   AutoUpdateManager,
   DialogManager,
+  EditorManager,
   MultimasterManager,
   PasswordManager,
   ROSInfo,
   ShutdownInterface,
-  TerminalManager,
+  TerminalManager
 };
 export type { IROSInfo, ISystemInfo };
+

@@ -403,13 +403,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           setActiveModel((prevModel) => {
             const model = getModelFromPath(prevModel.path);
             model.modified = false;
-            window.electronAPI?.changedEditor(
-              providerObj.connection.host,
-              providerObj.connection.port,
-              rootFilePath,
-              path,
-              false
-            );
+            const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
+            window.electronAPI?.changedEditor(id, path, false);
             if (!savedFiles.includes(model.uri.path)) {
               setSavedFiles([...savedFiles, model.uri.path]);
             }
@@ -472,18 +467,15 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
         if (!activeModel.modified) {
-          const provider = rosCtx.getProviderById(providerId);
           const model = getModelFromPath(activeModel.path);
           model.modified = true;
           setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
           updateModifiedFiles();
-          window.electronAPI?.changedEditor(
-            provider?.connection.host,
-            provider?.connection.port,
-            rootFilePath,
-            activeModel.path,
-            true
-          );
+          const provider = rosCtx.getProviderById(providerId);
+          if (provider) {
+            const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
+            window.electronAPI?.changedEditor(id, activeModel.path, true);
+          }
         }
       }
     },
@@ -1141,7 +1133,7 @@ FileEditorPanel.propTypes = {
   providerId: PropTypes.string.isRequired,
   rootFilePath: PropTypes.string.isRequired,
   currentFilePath: PropTypes.string.isRequired,
-  fileRange: PropTypes.any.isRequired,
+  fileRange: PropTypes.any,
 };
 
 export default FileEditorPanel;

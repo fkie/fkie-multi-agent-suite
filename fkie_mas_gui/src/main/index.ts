@@ -7,7 +7,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { BrowserWindow, app, dialog, ipcMain, shell } from "electron";
+import { BrowserWindow, app, ipcMain, shell } from "electron";
 import { join } from "path";
 import { registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownInterface, registerHandlers } from "./IPC";
@@ -23,8 +23,6 @@ let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
 let dialogManager: DialogManager | null = null;
 let shutdownInterface: ShutdownInterface | null = null;
-
-console.log(`process.env.NODE_ENV: ${process.env.NODE_ENV}`);
 
 if (process.env.NODE_ENV === "production") {
   const sourceMapSupport = require("source-map-support");
@@ -47,13 +45,6 @@ if (process.env.NODE_ENV === "production") {
 //     forceDownload
 //   ).catch(console.log)
 // }
-
-interface IEditor {
-  window: BrowserWindow;
-  changed: string[];
-}
-
-const editors = {};
 
 const createWindow = async (): Promise<void> => {
   // if (isDebug) {
@@ -130,6 +121,7 @@ const createWindow = async (): Promise<void> => {
 
   // Handle app shutdown.
   shutdownInterface = new ShutdownInterface(mainWindow);
+
   // ShutdownInterface
   ipcMain.handle("ShutdownInterface:quitGui", () => {
     return shutdownInterface?.quitGui();
@@ -187,170 +179,3 @@ app
   })
   .catch(console.log);
 
-ipcMain.handle("editor:has", handleHasEditor);
-ipcMain.handle("editor:open", handleEditorOpen);
-ipcMain.handle("editor:changed", handleEditorChanged);
-ipcMain.handle("editor:emitFileRange", handleEditorFileRange);
-
-async function handleHasEditor(
-  _event: Electron.IpcMainInvokeEvent,
-  host: string,
-  port: number,
-  rootLaunch: string
-): Promise<boolean> {
-  const id = `${host}-${port}-${rootLaunch}`;
-  if (editors[id]) {
-    return Promise.resolve(true);
-  }
-  return Promise.resolve(false);
-}
-
-async function handleEditorFileRange(
-  _event: Electron.IpcMainInvokeEvent,
-  launchFile: string,
-  host: string,
-  port: number,
-  rootLaunch: string,
-  fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
-): Promise<null> {
-  const id = `${host}-${port}-${rootLaunch}`;
-  if (editors[id]) {
-    editors[id].window.focus();
-    editors[id].window.webContents.send("editor-file-range", id, launchFile, fileRange);
-    return Promise.resolve(null);
-  }
-}
-
-async function handleEditorChanged(
-  _event: Electron.IpcMainInvokeEvent,
-  host: string,
-  port: number,
-  rootLaunch: string,
-  launchFile: string,
-  changed: boolean
-): Promise<boolean> {
-  const id = `${host}-${port}-${rootLaunch}`;
-  if (editors[id]) {
-    if (editors[id].changed.includes(launchFile)) {
-      if (!changed) {
-        editors[id].changed = editors[id].changed.filter((item) => item !== rootLaunch);
-      }
-    } else if (changed) {
-      editors[id].changed.push(rootLaunch);
-    }
-    return Promise.resolve(true);
-  }
-  return Promise.resolve(false);
-}
-
-async function handleEditorOpen(
-  _event: Electron.IpcMainInvokeEvent,
-  launchFile: string,
-  host: string,
-  port: number,
-  rootLaunch: string,
-  fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
-): Promise<string | null> {
-  // if (isDebug) {
-  //   await installExtensions()
-  // }
-  const id = `${host}-${port}-${rootLaunch}`;
-  if (editors[id]) {
-    editors[id].window.focus();
-    editors[id].window.webContents.send("editor-file-range", id, launchFile, fileRange);
-    return Promise.resolve(null);
-  }
-
-  const mainWindowStateKeeper = await windowStateKeeper("editor");
-
-  const newWindow = new BrowserWindow({
-    autoHideMenuBar: true,
-    show: false,
-    frame: true,
-    x: mainWindowStateKeeper.x,
-    y: mainWindowStateKeeper.y,
-    width: mainWindowStateKeeper.width,
-    height: mainWindowStateKeeper.height,
-    icon: join(__dirname, "../../icon/crystal_clear_edit_launch.png"),
-    webPreferences: {
-      sandbox: false,
-      nodeIntegration: true,
-      preload: join(__dirname, "../preload/index.js"),
-    },
-  });
-  editors[id] = { window: newWindow, changed: [] };
-  // Track window state
-  mainWindowStateKeeper.track(newWindow);
-
-  newWindow.on("ready-to-show", () => {
-    if (!newWindow) {
-      throw new Error('"mainWindow" is not defined');
-    }
-    if (process.env.START_MINIMIZED) {
-      newWindow.minimize();
-    } else {
-      if (mainWindowStateKeeper.isMaximized) newWindow.maximize();
-      newWindow.show();
-    }
-  });
-
-  newWindow.on("close", (e) => {
-    if (editors[id]?.changed?.length > 0) {
-      e.preventDefault();
-      const doFocus = dialog
-        .showMessageBox(mainWindow, {
-          type: "question",
-          title: "Save changes",
-          message: `Changed files: ${JSON.stringify(editors[id].changed)}`,
-          buttons: ["Don't save", "Cancel", "TODO: Save All"],
-        })
-        .then((result) => {
-          if (result.response === 0) {
-            editors[id].window.destroy();
-            delete editors[id];
-            return false;
-          } else if (result.response === 2) {
-            console.log(`todo: save`);
-          } else {
-          }
-          return true;
-        })
-        .catch((err) => {
-          console.log(err);
-          return false;
-        });
-      if (doFocus) {
-        editors[id].window.show();
-        editors[id].window.focus();
-      }
-    }
-  });
-
-  newWindow.on("closed", () => {
-    delete editors[id];
-  });
-
-  dialogManager = new DialogManager(newWindow);
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env.ELECTRON_RENDERER_URL) {
-    newWindow.loadURL(
-      `${process.env.ELECTRON_RENDERER_URL}/editor.html?path=${launchFile}&host=${host}&port=${port}&root=${rootLaunch}&sl=${fileRange.startLineNumber}&el=${fileRange.endLineNumber}&sc=${fileRange.startColumn}&ec=${fileRange.endColumn}`
-    );
-  } else {
-    newWindow.loadFile(join(__dirname, `../renderer/editor.html`), {
-      query: {
-        path: launchFile,
-        host: host,
-        port: `${port}`,
-        root: rootLaunch,
-        sl: `${fileRange.startLineNumber}`,
-        el: `${fileRange.endLineNumber}`,
-        sc: `${fileRange.startColumn}`,
-        ec: `${fileRange.endColumn}`,
-      },
-    });
-  }
-  return Promise.resolve(null);
-}

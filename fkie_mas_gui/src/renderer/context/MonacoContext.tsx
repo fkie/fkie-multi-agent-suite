@@ -79,6 +79,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       if (uriPaths.length > 0) {
         // add to the list
         const newFilesInfo: ModifiedTabsInfo = new ModifiedTabsInfo(tabId, providerId, uriPaths);
+        console.log(`MOD files..: ${JSON.stringify(newFilesInfo)}`);
         setModifiedFiles((prev) => {
           return [...prev.filter((item) => item.tabId !== tabId), newFilesInfo];
         });
@@ -98,6 +99,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
 
   const getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined = useCallback(
     (tabId) => {
+      console.log(`MOD files: ${tabId} ${JSON.stringify(modifiedFiles)}`);
       return modifiedFiles.filter((item) => item.tabId === tabId)[0];
     },
     [modifiedFiles]

@@ -10,10 +10,11 @@ interface ITerminalConfig {
 }
 
 interface IEditorConfig {
-  path: string;
+  id: string,
   host: string;
   port: number;
   rootLaunch: string;
+  path: string;
   fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number } | null;
 }
 
@@ -29,8 +30,8 @@ export default class LayoutTabConfig {
   constructor(
     openExternal: boolean = false,
     tabType: string = "",
-    terminalConfig: ITerminalConfig = null,
-    editorConfig: IEditorConfig = null
+    terminalConfig: ITerminalConfig | null = null,
+    editorConfig: IEditorConfig | null = null
   ) {
     this.openExternal = openExternal;
     this.tabType = tabType;

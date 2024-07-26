@@ -361,32 +361,27 @@ function HostTreeViewPanel() {
         // TODO: select
       }
       const provider = rosCtx.getProviderById(node.providerId);
+      const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`
       if (external && provider && window.electronAPI) {
         // open in new window
         window.electronAPI.openEditor(
-          node.launchInfo.file_name,
+          id,
           provider.connection.host,
           provider.connection.port,
           rootLaunch,
+          node.launchInfo.file_name,
           node.launchInfo.file_range
         );
         return;
       }
       // open in a tab
       const launchName = getBaseName(rootLaunch);
-      const id = `editor-${node.providerId}-${rootLaunch}`;
-      const hasExtEditor = await window.electronAPI?.hasEditor(
-        provider?.connection.host,
-        provider?.connection.port,
-        rootLaunch
-      );
+      const hasExtEditor = await window.electronAPI?.hasEditor(id);
       if (hasExtEditor) {
         // inform external window about new selected range
         window.electronAPI?.emitEditorFileRange(
+          id,
           node.launchInfo.file_name,
-          provider?.connection.host,
-          provider?.connection.port,
-          rootLaunch,
           node.launchInfo.file_range
         );
       } else if (!openIds.includes(id)) {
@@ -411,10 +406,11 @@ function HostTreeViewPanel() {
             true,
             LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
             new LayoutTabConfig(true, "editor", null, {
-              path: node.launchInfo.file_name,
+              id: id,
               host: provider?.connection.host,
               port: provider?.connection.port,
               rootLaunch: rootLaunch,
+              path: node.launchInfo.file_name,
               fileRange: node.launchInfo.file_range,
             })
           )

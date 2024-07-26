@@ -281,26 +281,53 @@ function PackageExplorer({ packageList, selectedProvider }) {
   );
 
   const onEditFile = useCallback(
-    (fileObj) => {
-      const id = `editor-${selectedProvider}-${fileObj.path}`;
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          id,
-          getBaseName(fileObj.name),
-          <FileEditorPanel
-            tabId={id}
-            providerId={selectedProvider}
-            referenceFilePath={null}
-            currentFilePath={fileObj.path}
-            rootFilePath={fileObj.path}
-            fileRange={null}
-          />,
-          true,
-          LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
-          new LayoutTabConfig(false, "editor")
-        )
-      );
+    async (fileObj, external) => {
+      const provider = rosCtx.getProviderById(selectedProvider);
+      if (provider) {
+        const id = `editor-${provider.connection.host}-${provider.connection.port}-${fileObj.path}`;
+        const hasExtEditor = await window.electronAPI?.hasEditor(id);
+        if (hasExtEditor) {
+          // inform external window about new selected range
+          window.electronAPI?.emitEditorFileRange(id, fileObj.path, null);
+        } else if (external && provider && window.electronAPI) {
+          // open in new window
+          window.electronAPI.openEditor(
+            id,
+            provider.connection.host,
+            provider.connection.port,
+            fileObj.path,
+            fileObj.path,
+            null
+          );
+          return;
+        } else {
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              id,
+              getBaseName(fileObj.name),
+              <FileEditorPanel
+                tabId={id}
+                providerId={selectedProvider}
+                referenceFilePath={null}
+                currentFilePath={fileObj.path}
+                rootFilePath={fileObj.path}
+                fileRange={null}
+              />,
+              true,
+              LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+              new LayoutTabConfig(true, "editor", null, {
+                id: id,
+                host: provider.connection.host,
+                port: provider.connection.port,
+                rootLaunch: fileObj.path,
+                path: fileObj.path,
+                fileRange: null,
+              })
+            )
+          );
+        }
+      }
     },
     [selectedProvider]
   );
@@ -341,7 +368,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
       }
 
       // edit file using monaco editor panel
-      onEditFile(callbackFile);
+      onEditFile(callbackFile, shiftKey);
     },
     [packageItemList, onEditFile, packageList, handleOnSelectPackage]
   );
@@ -406,8 +433,8 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   disabled={!selectedFile}
                   size="small"
                   aria-label="Edit File"
-                  onClick={() => {
-                    onEditFile(selectedFile);
+                  onClick={(event) => {
+                    onEditFile(selectedFile, event.nativeEvent.shiftKey);
                   }}
                 >
                   <BorderColorIcon fontSize="inherit" />
@@ -433,7 +460,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                     setSelectedLaunchFile({ ...selectedFile });
                   }}
                 >
-                  <InputIcon fontSize="inherit"/>
+                  <InputIcon fontSize="inherit" />
                 </IconButton>
               </span>
             </Tooltip>

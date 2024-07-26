@@ -141,42 +141,45 @@ if (process.contextIsolated) {
         return ipcRenderer.invoke("dialog:openFile", path);
       },
       openEditor: (
-        path: string,
+        id: string,
         host: string,
         port: number,
+        path: string,
         rootLaunch: string,
         fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
       ) => {
-        return ipcRenderer.invoke("editor:open", path, host, port, rootLaunch, fileRange);
+        return ipcRenderer.invoke("editor:open", id, host, port, rootLaunch, path, fileRange);
       },
-      changedEditor: (
-        host: string,
-        port: number,
-        rootLaunch: string,
-        path: string,
-        changed: boolean
-      ) => {
-        console.log(`changed: ${path}, changed: ${changed}`);
-        return ipcRenderer.invoke("editor:changed", host, port, rootLaunch, path, changed);
+      closeEditor: (id: string) => {
+        return ipcRenderer.invoke("editor:close", id);
+      },
+      changedEditor: (id: string, path: string, changed: boolean) => {
+        return ipcRenderer.invoke("editor:changed", id, path, changed);
       },
       emitEditorFileRange: (
+        id: string,
         path: string,
-        host: string,
-        port: number,
-        rootLaunch: string,
         fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
       ) => {
-        return ipcRenderer.invoke("editor:emitFileRange", path, host, port, rootLaunch, fileRange);
+        return ipcRenderer.invoke("editor:emitFileRange", id, path, fileRange);
       },
-      hasEditor: (
-        host: string,
-        port: number,
-        rootLaunch: string
-      ) => {
-        return ipcRenderer.invoke("editor:has", host, port, rootLaunch);
+      hasEditor: (id: string) => {
+        return ipcRenderer.invoke("editor:has", id);
       },
-      onEditorFileRange: (callback: (tabId: string, filePath: string, fileRange) => void) =>
-        ipcRenderer.on("editor-file-range", (_event, id, launchFile, fileRange) => callback(id, launchFile, fileRange)),
+      onEditorFileRange: (
+        callback: (
+          tabId: string,
+          filePath: string,
+          fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
+        ) => void
+      ) =>
+        ipcRenderer.on("editor:onFileRange", (_event, id, launchFile, fileRange) => {
+          callback(id, launchFile, fileRange);
+        }),
+      onEditorClose: (callback: (tabId: string) => Promise<boolean>) =>
+        ipcRenderer.on("editor:onClose", (_event, id) => {
+          return callback(id);
+        }),
     });
   } catch (error) {
     console.error(error);

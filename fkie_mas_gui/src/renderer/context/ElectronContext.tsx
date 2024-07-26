@@ -1,7 +1,12 @@
 import { createContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import ShutdownInterface from "../../main/IPC/ShutdownInterface";
-import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../utils/events";
+import {
+  EVENT_CLOSE_COMPONENT,
+  EVENT_EDITOR_SELECT_RANGE,
+  eventCloseComponent,
+  eventEditorSelectRange,
+} from "../utils/events";
 
 declare global {
   interface Window {
@@ -50,8 +55,19 @@ export function ElectronProvider({
     if (window.ShutdownInterface) {
       setShutdownInterface(window.ShutdownInterface);
     }
-    window.electronAPI?.onEditorFileRange((tabId: string, filePath: string, fileRange) => {
-      emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange));
+    window.electronAPI?.onEditorFileRange(
+      (
+        tabId: string,
+        filePath: string,
+        fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number } | null
+      ) => {
+        if (fileRange) {
+          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange));
+        }
+      }
+    );
+    window.electronAPI?.onEditorClose((tabId: string) => {
+      emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(tabId));
     });
   }, []);
 
