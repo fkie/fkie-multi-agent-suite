@@ -93,6 +93,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const [notificationDescription, setNotificationDescription] = useState("");
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
+  const [savedFiles, setSavedFiles] = useState([]);
+
   const createUriPath = useCallback(
     (path) => {
       return `/${tabId}:${path}`;
@@ -330,7 +332,21 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
 
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, async (data) => {
-    if (ownUriPaths.includes(createUriPath(data.path.srcPath))) {
+    if (data.provider.id !== providerId) {
+      // ignore event from other provider
+      return;
+    }
+    const changedUri = createUriPath(data.path.srcPath);
+    if (ownUriPaths.includes(changedUri)) {
+      // ignore if we saved the file
+      if (savedFiles.includes(changedUri)) {
+        setSavedFiles(
+          savedFiles.filter((uri) => {
+            uri !== changedUri;
+          })
+        );
+        return;
+      }
       const provider = rosCtx.getProviderById(providerId);
       if (provider) {
         const currentModel = editorRef.current.getModel();
@@ -394,6 +410,9 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
               path,
               false
             );
+            if (!savedFiles.includes(model.uri.path)) {
+              setSavedFiles([...savedFiles, model.uri.path]);
+            }
             return { path: model.uri.path, modified: model.modified, model: model };
           });
           updateModifiedFiles();
