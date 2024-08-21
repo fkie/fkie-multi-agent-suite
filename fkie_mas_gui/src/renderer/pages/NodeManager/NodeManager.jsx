@@ -697,6 +697,12 @@ function NodeManager() {
         onContextMenu={(node) => {
           console.log(`NO context for ${node.getId()}`);
         }}
+        onAuxMouseClick={(node, event) => {
+          // close tabs with middle mouse click
+          if (event?.button === 1 && node.getType() === "tab" && node.isEnableClose()) {
+            deleteTab(node.getId());
+          }
+        }}
       />
       {electronCtx.terminateSubprocesses && monacoCtx.getModifiedTabs().length === 0 && rosCtx.providers.length > 0 && (
         // check for unsaved files before quit gui
