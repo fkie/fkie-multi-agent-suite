@@ -111,7 +111,7 @@ function NodesDetailsPanel() {
             topic,
             <TopicPublishPanel topicName={topic} providerId={providerId} />,
             true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
+            LAYOUT_TAB_SETS[settingsCtx.get("topicOpenLocation")],
             new LayoutTabConfig(false, "publish")
           )
         );
@@ -151,7 +151,7 @@ function NodesDetailsPanel() {
               defaultNoData={defaultNoData}
             />,
             true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
+            LAYOUT_TAB_SETS[settingsCtx.get("topicOpenLocation")],
             new LayoutTabConfig(true, CmdType.ECHO, {
               type: CmdType.ECHO,
               providerId,

@@ -368,57 +368,9 @@ function HostTreeViewPanel() {
       if (node.launchPaths.size > 1) {
         // TODO: select
       }
-      const provider = rosCtx.getProviderById(node.providerId);
-      const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
-      if (external && provider && window.electronAPI) {
-        // open in new window
-        window.electronAPI.openEditor(
-          id,
-          provider.connection.host,
-          provider.connection.port,
-          rootLaunch,
-          node.launchInfo.file_name,
-          node.launchInfo.file_range
-        );
-        return;
-      }
-      // open in a tab
-      const launchName = getBaseName(rootLaunch);
-      const hasExtEditor = await window.electronAPI?.hasEditor(id);
-      if (hasExtEditor) {
-        // inform external window about new selected range
-        window.electronAPI?.emitEditorFileRange(id, node.launchInfo.file_name, node.launchInfo.file_range);
-      } else if (!openIds.includes(id)) {
-        // inform already open tab about new node selection
-        emitCustomEvent(
-          EVENT_EDITOR_SELECT_RANGE,
-          eventEditorSelectRange(id, node.launchInfo.file_name, node.launchInfo.file_range)
-        );
-        // open new editor in a tab. Checks for existing tabs are performed in NodeManager
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            id,
-            launchName,
-            <FileEditorPanel
-              tabId={id}
-              providerId={node.providerId}
-              fileRange={node.launchInfo.file_range}
-              currentFilePath={node.launchInfo.file_name}
-              rootFilePath={rootLaunch}
-            />,
-            true,
-            LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
-            new LayoutTabConfig(true, "editor", null, {
-              id: id,
-              host: provider?.connection.host,
-              port: provider?.connection.port,
-              rootLaunch: rootLaunch,
-              path: node.launchInfo.file_name,
-              fileRange: node.launchInfo.file_range,
-            })
-          )
-        );
+      const id = `${node.providerId}-${rootLaunch}`;
+      if (!openIds.includes(id)) {
+        rosCtx.openEditor(node.providerId, rootLaunch, node.launchInfo.file_name, node.launchInfo.file_range, external);
         openIds.push(id);
       }
     });
@@ -1191,7 +1143,7 @@ function HostTreeViewPanel() {
           </Stack>
         )}
         <Tooltip
-          title="Edit (new window with shift+click)"
+          title="Edit (shift+click for alternative)"
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}

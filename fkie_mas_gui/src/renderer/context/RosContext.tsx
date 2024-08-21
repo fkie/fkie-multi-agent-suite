@@ -6,6 +6,15 @@ import MultimasterManager from "../../main/IPC/MultimasterManager";
 import { IROSInfo, ROSInfo } from "../../main/IPC/ROSInfo";
 import { ISystemInfo, SystemInfo } from "../../main/IPC/SystemInfo";
 import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "../components/UI";
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
+import {
+  EVENT_OPEN_COMPONENT,
+  eventOpenComponent,
+  EVENT_EDITOR_SELECT_RANGE,
+  eventEditorSelectRange,
+} from "../utils/events";
+import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
+import { getBaseName } from "../models";
 import {
   LaunchArgument,
   LaunchLoadRequest,
@@ -39,6 +48,7 @@ import {
 import { LoggingContext } from "./LoggingContext";
 import { SSHContext } from "./SSHContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
+import { xor } from "../utils/index";
 
 declare global {
   interface Window {
@@ -198,6 +208,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const getProviderById = useCallback(
     (providerId: string, includeNotAvailable: boolean = true) => {
       return providers.find((provider) => {
+        console.log(`${provider.id} === ${providerId}`);
         return (provider.isAvailable() || includeNotAvailable) && provider.id === providerId;
       });
     },
@@ -892,6 +903,60 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     );
   }
 
+  const openEditor = useCallback(
+    async (providerId: string, rootLaunch: string, path: string, fileRange, externalKeyModifier: boolean) => {
+      const openExternal: boolean = xor(settingsCtx.get("editorOpenExternal"), externalKeyModifier);
+      const provider = getProviderById(providerId);
+      if (provider) {
+        const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
+        const hasExtEditor = await window.electronAPI?.hasEditor(id);
+        if (hasExtEditor) {
+          // inform external window about new selected range
+          window.electronAPI?.emitEditorFileRange(id, path, fileRange);
+        } else if (openExternal && provider && window.electronAPI) {
+          // open in new window
+          window.electronAPI.openEditor(
+            id,
+            provider.connection.host,
+            provider.connection.port,
+            rootLaunch,
+            path,
+            fileRange
+          );
+        } else {
+          // inform already open tab about new node selection
+          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(id, path, fileRange));
+          // open new editor in a tab. Checks for existing tabs are performed in NodeManager
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              id,
+              getBaseName(rootLaunch),
+              <FileEditorPanel
+                tabId={id}
+                providerId={providerId}
+                currentFilePath={path}
+                rootFilePath={rootLaunch}
+                fileRange={fileRange}
+              />,
+              true,
+              LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+              new LayoutTabConfig(true, "editor", null, {
+                id: id,
+                host: provider.connection.host,
+                port: provider.connection.port,
+                rootLaunch: rootLaunch,
+                path: path,
+                fileRange: fileRange,
+              })
+            )
+          );
+        }
+      }
+    },
+    [getProviderById, emitCustomEvent]
+  );
+
   // initialize ROS and system Info
   const init = async () => {
     setInitialized(() => false);
@@ -1181,6 +1246,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       getProviderName,
       isLocalHost,
       addProvider,
+      openEditor,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

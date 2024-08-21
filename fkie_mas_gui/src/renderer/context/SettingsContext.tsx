@@ -190,6 +190,13 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: ["BORDER_TOP", "CENTER", "BORDER_BOTTOM"],
     description: "",
   },
+  topicOpenLocation: {
+    label: "Location to open topic echo/publisher window",
+    type: "string",
+    default: "BORDER_RIGHT",
+    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
+    description: "",
+  },
   showRemoteNodes: {
     label: "Show remote nodes",
     default: false,
@@ -201,6 +208,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: false,
     type: "boolean",
     description: "Display buttons for additional functions that are otherwise accessible via key modifiers",
+  },
+  editorOpenExternal: {
+    label: "Open editor in external window by default",
+    default: false,
+    type: "boolean",
+    description: "",
   },
 };
 

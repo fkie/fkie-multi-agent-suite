@@ -46,63 +46,9 @@ function LaunchFileList({
    */
   const createFileEditorPanel = useCallback(
     async (provId, launchContent, external) => {
-      const launchName = getBaseName(launchContent.path);
-      // const provider = rosCtx.getProviderById(provId);
-      // const packages = provider?.packages?.filter((rosPackage) => {
-      //   return launchContent.path.startsWith(
-      //     rosPackage.path.endsWith('/')
-      //       ? rosPackage.path
-      //       : `${rosPackage.path}/`,
-      //   );
-      // });
-      //  [${packages.length > 0 ? packages[0].name : ''}]@${providerName}
-      const provider = rosCtx.getProviderById(provId);
-      if (provider) {
-        const id = `editor-${provider.connection.host}-${provider.connection.port}-${launchContent.path}`;
-        const hasExtEditor = await window.electronAPI?.hasEditor(id);
-        if (hasExtEditor) {
-          // inform external window about new selected range
-          window.electronAPI?.emitEditorFileRange(id, launchContent.path, null);
-        } else if (external && window.electronAPI) {
-          // open in new window
-          window.electronAPI.openEditor(
-            id,
-            provider.connection.host,
-            provider.connection.port,
-            launchContent.path,
-            launchContent.path,
-            null
-          );
-          return;
-        } else {
-          emitCustomEvent(
-            EVENT_OPEN_COMPONENT,
-            eventOpenComponent(
-              id,
-              launchName,
-              <FileEditorPanel
-                tabId={id}
-                providerId={provId}
-                currentFilePath={launchContent.path}
-                rootFilePath={launchContent.path}
-                fileRange={null}
-              />,
-              true,
-              LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
-              new LayoutTabConfig(true, "editor", null, {
-                id: id,
-                host: provider.connection.host,
-                port: provider.connection.port,
-                rootLaunch: launchContent.path,
-                path: launchContent.path,
-                fileRange: null,
-              })
-            )
-          );
-        }
-      }
+      rosCtx.openEditor(provId, launchContent.path, launchContent.path, null, external);
     },
-    [settingsCtx]
+    [rosCtx]
   );
 
   /**

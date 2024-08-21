@@ -282,54 +282,9 @@ function PackageExplorer({ packageList, selectedProvider }) {
 
   const onEditFile = useCallback(
     async (fileObj, external) => {
-      const provider = rosCtx.getProviderById(selectedProvider);
-      if (provider) {
-        const id = `editor-${provider.connection.host}-${provider.connection.port}-${fileObj.path}`;
-        const hasExtEditor = await window.electronAPI?.hasEditor(id);
-        if (hasExtEditor) {
-          // inform external window about new selected range
-          window.electronAPI?.emitEditorFileRange(id, fileObj.path, null);
-        } else if (external && provider && window.electronAPI) {
-          // open in new window
-          window.electronAPI.openEditor(
-            id,
-            provider.connection.host,
-            provider.connection.port,
-            fileObj.path,
-            fileObj.path,
-            null
-          );
-          return;
-        } else {
-          emitCustomEvent(
-            EVENT_OPEN_COMPONENT,
-            eventOpenComponent(
-              id,
-              getBaseName(fileObj.name),
-              <FileEditorPanel
-                tabId={id}
-                providerId={selectedProvider}
-                referenceFilePath={null}
-                currentFilePath={fileObj.path}
-                rootFilePath={fileObj.path}
-                fileRange={null}
-              />,
-              true,
-              LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
-              new LayoutTabConfig(true, "editor", null, {
-                id: id,
-                host: provider.connection.host,
-                port: provider.connection.port,
-                rootLaunch: fileObj.path,
-                path: fileObj.path,
-                fileRange: null,
-              })
-            )
-          );
-        }
-      }
+      rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, external);
     },
-    [selectedProvider]
+    [selectedProvider, rosCtx]
   );
 
   /**

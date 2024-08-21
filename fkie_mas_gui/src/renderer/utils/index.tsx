@@ -2,7 +2,7 @@ const generateUniqueId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-const extractSubstring = (data, s1, s2) => {
+const extractSubstring: (data: string, s1: string, s2: string) => string = (data, s1, s2) => {
   if (!data || data.length === 0) return "";
 
   let indexS1 = 0;
@@ -14,7 +14,7 @@ const extractSubstring = (data, s1, s2) => {
   return data.substring(indexS1 + s1.length, indexS2);
 };
 
-const delay = (ms) => {
+const delay: (ms: number) => Promise<string> = (ms) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve("");
@@ -22,7 +22,7 @@ const delay = (ms) => {
   });
 };
 
-const pathJoin = (pathArr) => {
+const pathJoin = (pathArr: string[]) => {
   return pathArr
     .map((path) => {
       let result = path;
@@ -37,18 +37,18 @@ const pathJoin = (pathArr) => {
     .join("/");
 };
 
-const splitOrSearchTerm = (searchTerm) => {
+const splitOrSearchTerm: (searchTerm: string) => string[] = (searchTerm) => {
   return searchTerm.split(" ").filter((item) => item.length > 0);
 };
 
-const splitAndSearchTerm = (searchTerm) => {
+const splitAndSearchTerm: (searchTerm: string) => string[] = (searchTerm) => {
   return searchTerm.split("+").filter((item) => item.length > 0);
 };
 
 /** Search for a given search term in given word without split the term.
  * Returns true if one of the words contains the search term.
  */
-const findTerm = (searchTerm, words) => {
+const findTerm: (searchTerm: string, words: string[]) => boolean = (searchTerm, words) => {
   // eslint-disable-next-line no-restricted-syntax
   for (const w of words) {
     if (Array.isArray(w)) {
@@ -69,7 +69,7 @@ const findTerm = (searchTerm, words) => {
 
 /** Splits the search term first by <space> for OR and then by "+" for AND.
  */
-const findIn = (searchTerms, words) => {
+const findIn: (searchTerms: string, words: string[]) => boolean = (searchTerms, words) => {
   let invert = false;
   const searchOrTerms = splitOrSearchTerm(searchTerms);
   // eslint-disable-next-line no-restricted-syntax
@@ -109,7 +109,7 @@ const findIn = (searchTerms, words) => {
   return invert;
 };
 
-const removeDDSuid = (item) => {
+const removeDDSuid: (item: string) => string = (item) => {
   const lastIndex = item.lastIndexOf("-");
   return lastIndex === -1 ? item : item.substring(0, lastIndex);
 };
@@ -119,7 +119,7 @@ const removeDDSuid = (item) => {
  *
  * @param {string} path - Ros topic/service/node name
  */
-const getRosNameAbb = (name) => {
+const getRosNameAbb: (name: string) => string = (name) => {
   if (!name) return name;
   const base = name.replace(/^.*[\\/]/, "").replace(/@.*/, "");
   if (base) {
@@ -136,7 +136,7 @@ const getRosNameAbb = (name) => {
       }
     }
     if (name.length < 3) {
-      name += base[base.length - 1]
+      name += base[base.length - 1];
     }
     // check if ends with number
     const lastMatch = base.match(/^.*(\d+)$/);
@@ -148,4 +148,8 @@ const getRosNameAbb = (name) => {
   return name;
 };
 
-export { delay, extractSubstring, findIn, generateUniqueId, getRosNameAbb, pathJoin, removeDDSuid };
+const xor: (a1: boolean, a2: boolean) => boolean = (a1, a2) => {
+  return (a1 && !a2) || (!a1 && a2);
+};
+
+export { delay, extractSubstring, findIn, generateUniqueId, getRosNameAbb, pathJoin, removeDDSuid, xor };
