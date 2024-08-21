@@ -98,9 +98,9 @@ class MultimasterManager {
     } else if (versStr === "2") {
       let domainPrefix = "";
       if (port !== undefined && port !== 0) {
-        domainPrefix = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=${port} `;
+        domainPrefix = `ROS_DOMAIN_ID=${port} `;
       }
-      cmdMasterDiscovery = `${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
+      cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
       } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
