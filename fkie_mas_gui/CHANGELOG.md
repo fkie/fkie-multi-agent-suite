@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.2 - 21.08.2024
+
+Added option to open editor in external window by default
+Reduced control buttons using key modifiers
+Run refresh nodes callback also if not connected to provider
+Prepand always "RMW_IMPLEMENTATION=rmw_fastrtps_cpp" while start ros2 discovery node
+Fixed: detection of running discovery node in ros2
+
 ## 2.3.1 - 26.07.2024
 
 Add dialog to save changed file on close external editor
