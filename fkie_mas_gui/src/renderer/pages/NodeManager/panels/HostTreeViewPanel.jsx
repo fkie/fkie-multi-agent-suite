@@ -907,10 +907,8 @@ function HostTreeViewPanel() {
 
   const refreshAllProvider = useCallback(() => {
     rosCtx.providersConnected.forEach((p) => {
-      if (p.isReady()) {
-        p.updateRosNodes();
-        p.updateTimeDiff();
-      }
+      p.updateRosNodes();
+      p.updateTimeDiff();
     });
   }, [rosCtx.providersConnected]);
 
