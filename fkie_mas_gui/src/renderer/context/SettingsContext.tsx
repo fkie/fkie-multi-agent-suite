@@ -196,6 +196,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "none",
     description: "Each host shows all nodes visible to it",
   },
+  showButtonsForKeyModifiers: {
+    label: "Show buttons for key modifiers",
+    default: false,
+    type: "boolean",
+    description: "Display buttons for additional functions that are otherwise accessible via key modifiers",
+  },
 };
 
 interface ISettingProvider {

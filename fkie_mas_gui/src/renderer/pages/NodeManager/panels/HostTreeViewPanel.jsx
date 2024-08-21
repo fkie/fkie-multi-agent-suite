@@ -70,6 +70,9 @@ function HostTreeViewPanel() {
 
   // state variables
   const [showRemoteNodes, setShowRemoteNodes] = useState(settingsCtx.get("showRemoteNodes"));
+  const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState(
+    settingsCtx.get("showButtonsForKeyModifiers")
+  );
   const [filterText, setFilterText] = useState("");
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
@@ -95,6 +98,11 @@ function HostTreeViewPanel() {
     addStatus: addStatusQueueMain,
   } = useQueue(setProgressQueueMain);
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+
+  useEffect(() => {
+    setShowRemoteNodes(settingsCtx.get("showRemoteNodes"));
+    setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers"));
+  }, [settingsCtx, settingsCtx.changed]);
 
   /**
    * Get list of nodes from a list of node.idGlobal
@@ -361,7 +369,7 @@ function HostTreeViewPanel() {
         // TODO: select
       }
       const provider = rosCtx.getProviderById(node.providerId);
-      const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`
+      const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
       if (external && provider && window.electronAPI) {
         // open in new window
         window.electronAPI.openEditor(
@@ -379,11 +387,7 @@ function HostTreeViewPanel() {
       const hasExtEditor = await window.electronAPI?.hasEditor(id);
       if (hasExtEditor) {
         // inform external window about new selected range
-        window.electronAPI?.emitEditorFileRange(
-          id,
-          node.launchInfo.file_name,
-          node.launchInfo.file_range
-        );
+        window.electronAPI?.emitEditorFileRange(id, node.launchInfo.file_name, node.launchInfo.file_range);
       } else if (!openIds.includes(id)) {
         // inform already open tab about new node selection
         emitCustomEvent(
@@ -1053,6 +1057,37 @@ function HostTreeViewPanel() {
     const selectedNodes = getSelectedNodes();
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
+        {navCtx.selectedProviders?.length > 0 && (
+          <Tooltip
+            title="Open Terminal on selected host (external terminal with shift+click)"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <span>
+              <IconButton
+                size="medium"
+                aria-label="Open Terminal on selected host"
+                disabled={navCtx.selectedProviders?.length === 0}
+                onClick={(event) => {
+                  // open a new terminal for each selected provider
+                  navCtx.selectedProviders.forEach((providerId) => {
+                    const prov = rosCtx.getProviderById(providerId);
+                    const emptyNode = new RosNode();
+                    emptyNode.name = "";
+                    emptyNode.providerId = providerId;
+                    emptyNode.providerName = prov?.name();
+                    createSingleTerminalPanel(CmdType.TERMINAL, emptyNode, "", event.nativeEvent.shiftKey);
+                  });
+                }}
+              >
+                <TerminalIcon fontSize="inherit" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
+        {navCtx.selectedProviders?.length > 0 && <Divider />}
         <Tooltip
           title="Start"
           placement="left"
@@ -1074,7 +1109,7 @@ function HostTreeViewPanel() {
           </span>
         </Tooltip>
         <Tooltip
-          title="Stop"
+          title="Stop; Ctrl: kill; Ctrl+Shift: Unregister ROS1 nodes"
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1084,8 +1119,16 @@ function HostTreeViewPanel() {
             <IconButton
               size="medium"
               aria-label="Stop"
-              onClick={() => {
-                stopSelectedNodes();
+              onClick={(event) => {
+                if (event.nativeEvent.ctrlKey) {
+                  if (event.nativeEvent.shiftKey) {
+                    unregisterSelectedNodes();
+                  } else {
+                    killSelectedNodes();
+                  }
+                } else {
+                  stopSelectedNodes();
+                }
               }}
               disabled={selectedNodes.length === 0}
             >
@@ -1093,7 +1136,6 @@ function HostTreeViewPanel() {
             </IconButton>
           </span>
         </Tooltip>
-        <Divider />
         <Tooltip
           title="Restart"
           placement="left"
@@ -1114,55 +1156,40 @@ function HostTreeViewPanel() {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Kill" placement="left" disableInteractive>
-          <span>
-            <IconButton
-              size="medium"
-              aria-label="Kill"
-              onClick={() => {
-                killSelectedNodes();
-              }}
-              disabled={selectedNodes.length === 0}
-            >
-              <CancelPresentationIcon fontSize="inherit" />
-            </IconButton>
-          </span>
-        </Tooltip>
         <Divider />
-        <Tooltip title="Unregister ROS1 nodes" placement="left" disableInteractive>
-          <span>
-            <IconButton
-              size="medium"
-              aria-label="Unregister"
-              onClick={() => {
-                unregisterSelectedNodes();
-              }}
-              disabled={selectedNodes.filter((node) => node.masteruri?.length > 0).length === 0}
-            >
-              <DeleteForeverIcon fontSize="inherit" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Dynamic reconfigure for ROS1 nodes" placement="left" disableInteractive>
-          <span>
-            <IconButton
-              size="medium"
-              aria-label="dynamic reconfigure"
-              onClick={() => {
-                startDynamicReconfigure();
-              }}
-              disabled={
-                selectedNodes.filter((node) => {
-                  return isDynamicReconfigureNode(node);
-                }).length === 0
-              }
-            >
-              <SettingsSuggestIcon fontSize="inherit" />
-            </IconButton>
-          </span>
-        </Tooltip>
-
-        <Divider />
+        {showButtonsForKeyModifiers && (
+          <Stack>
+            <Tooltip title="Kill" placement="left" disableInteractive>
+              <span>
+                <IconButton
+                  size="medium"
+                  aria-label="Kill"
+                  onClick={() => {
+                    killSelectedNodes();
+                  }}
+                  disabled={selectedNodes.length === 0}
+                >
+                  <CancelPresentationIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Unregister ROS1 nodes" placement="left" disableInteractive>
+              <span>
+                <IconButton
+                  size="medium"
+                  aria-label="Unregister"
+                  onClick={() => {
+                    unregisterSelectedNodes();
+                  }}
+                  disabled={selectedNodes.filter((node) => node.masteruri?.length > 0).length === 0}
+                >
+                  <DeleteForeverIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Divider />
+          </Stack>
+        )}
         <Tooltip
           title="Edit (new window with shift+click)"
           placement="left"
@@ -1207,6 +1234,28 @@ function HostTreeViewPanel() {
             </IconButton>
           </span>
         </Tooltip>
+        {selectedNodes.filter((node) => {
+          return isDynamicReconfigureNode(node);
+        }).length > 0 && (
+          <Tooltip title="Dynamic reconfigure for ROS1 nodes" placement="left" disableInteractive>
+            <span>
+              <IconButton
+                size="medium"
+                aria-label="dynamic reconfigure"
+                onClick={() => {
+                  startDynamicReconfigure();
+                }}
+                // disabled={
+                //   selectedNodes.filter((node) => {
+                //     return isDynamicReconfigureNode(node);
+                //   }).length === 0
+                // }
+              >
+                <SettingsSuggestIcon fontSize="inherit" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
         <Divider />
         <Tooltip title="Screen (external terminal with shift+click)" placement="left" disableInteractive>
           <span>
@@ -1273,22 +1322,6 @@ function HostTreeViewPanel() {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Change log level" placement="left" disableInteractive>
-          <span>
-            <IconButton
-              size="medium"
-              aria-label="Log Level"
-              disabled={selectedNodes.length === 0}
-              onClick={(event) => {
-                getSelectedNodes().forEach((node) => {
-                  createLoggerPanel(node);
-                });
-              }}
-            >
-              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: "90deg" }} />
-            </IconButton>
-          </span>
-        </Tooltip>
         <Tooltip title="Log (external terminal with shift+click)" placement="left" disableInteractive>
           <span>
             <IconButton
@@ -1302,6 +1335,22 @@ function HostTreeViewPanel() {
               }}
             >
               <WysiwygIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Change log level" placement="left" disableInteractive>
+          <span>
+            <IconButton
+              size="medium"
+              aria-label="Log Level"
+              disabled={selectedNodes.length === 0}
+              onClick={(event) => {
+                getSelectedNodes().forEach((node) => {
+                  createLoggerPanel(node);
+                });
+              }}
+            >
+              <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: "90deg" }} />
             </IconButton>
           </span>
         </Tooltip>
@@ -1324,35 +1373,6 @@ function HostTreeViewPanel() {
               }}
             >
               <DeleteSweepIcon fontSize="inherit" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Divider />
-        <Tooltip
-          title="Open Terminal on selected host (external terminal with shift+click)"
-          placement="left"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <span>
-            <IconButton
-              size="medium"
-              aria-label="Open Terminal on selected host"
-              disabled={navCtx.selectedProviders?.length === 0}
-              onClick={(event) => {
-                // open a new terminal for each selected provider
-                navCtx.selectedProviders.forEach((providerId) => {
-                  const prov = rosCtx.getProviderById(providerId);
-                  const emptyNode = new RosNode();
-                  emptyNode.name = "";
-                  emptyNode.providerId = providerId;
-                  emptyNode.providerName = prov?.name();
-                  createSingleTerminalPanel(CmdType.TERMINAL, emptyNode, "", event.nativeEvent.shiftKey);
-                });
-              }}
-            >
-              <TerminalIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>
