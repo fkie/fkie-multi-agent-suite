@@ -507,7 +507,9 @@ export default class Provider implements IProvider {
     );
     if (rosProviders.length > 0) {
       this.logger?.debug(`Providers updated for [${this.name()}]`, ``);
-      this.discovery = true;
+      if (this.rosVersion === "1") {
+        this.discovery = true;
+      }
 
       // Update list of providers
       let oldRemoteProviders = this.remoteProviders;
@@ -806,7 +808,9 @@ export default class Provider implements IProvider {
           });
 
           this.logger?.debug(`Nodes updated for [${this.name()}]`, ``);
-          this.discovery = rawNodeList.length > 0;
+          if (this.rosVersion === "1") {
+            this.discovery = rawNodeList.length > 0;
+          }
           return Array.from(nodeList.values());
         }
       } catch (error) {
