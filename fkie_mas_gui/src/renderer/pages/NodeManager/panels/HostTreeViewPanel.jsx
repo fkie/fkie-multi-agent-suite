@@ -1061,7 +1061,7 @@ function HostTreeViewPanel() {
           </span>
         </Tooltip>
         <Tooltip
-          title="Stop; Ctrl: kill; Ctrl+Shift: Unregister ROS1 nodes"
+          title="Stop; Shift: kill; Ctrl+Shift: Unregister ROS1 nodes"
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1072,8 +1072,8 @@ function HostTreeViewPanel() {
               size="medium"
               aria-label="Stop"
               onClick={(event) => {
-                if (event.nativeEvent.ctrlKey) {
-                  if (event.nativeEvent.shiftKey) {
+                if (event.nativeEvent.shiftKey) {
+                  if (event.nativeEvent.ctrlKey) {
                     unregisterSelectedNodes();
                   } else {
                     killSelectedNodes();
