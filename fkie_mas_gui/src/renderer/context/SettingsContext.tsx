@@ -190,8 +190,15 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: ["BORDER_TOP", "CENTER", "BORDER_BOTTOM"],
     description: "",
   },
-  topicOpenLocation: {
-    label: "Location to open topic echo/publisher window",
+  subscriberOpenLocation: {
+    label: "Location to open topic subscriber window",
+    type: "string",
+    default: "BORDER_RIGHT",
+    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
+    description: "",
+  },
+  publisherOpenLocation: {
+    label: "Location to open topic publisher window",
     type: "string",
     default: "BORDER_RIGHT",
     options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
@@ -211,6 +218,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   editorOpenExternal: {
     label: "Open editor in external window by default",
+    default: false,
+    type: "boolean",
+    description: "",
+  },
+  subscriberOpenExternal: {
+    label: "Open subscriber in external window by default",
     default: false,
     type: "boolean",
     description: "",

@@ -13,11 +13,15 @@ import {
   ProviderLaunchConfiguration,
   RosNode,
   SubscriberFilter,
-  SubscriberNode, getBaseName, getFileName
+  SubscriberNode,
+  getBaseName,
+  getFileName,
 } from "../models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
+import ITerminalConfig from "../pages/NodeManager/layout/LayoutTabConfig";
 import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
-import { ConnectionState } from "../providers";
+import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
+import { CmdType, ConnectionState } from "../providers";
 import Provider from "../providers/Provider";
 import {
   EVENT_PROVIDER_DISCOVERED,
@@ -954,6 +958,96 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     [getProviderById, emitCustomEvent]
   );
 
+  const openSubscriber = useCallback(
+    async (
+      providerId: string,
+      topic: string,
+      defaultNoData: boolean,
+      externalKeyModifier: boolean,
+      forceOpenTerminal: boolean
+    ) => {
+      const openExternal: boolean = xor(settingsCtx.get("subscriberOpenExternal"), externalKeyModifier);
+      const provider = getProviderById(providerId);
+      if (provider) {
+        const id = `echo-${provider.connection.host}-${provider.connection.port}-${topic}`;
+        // const hasExtSubscriber = await window.electronAPI?.hasSubscriber(id);
+        const hasExtSubscriber = false;
+        if (forceOpenTerminal) {
+          try {
+            const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
+            const result = await window.CommandExecutor?.execTerminal(
+              null, // we start the publish always local
+              `"echo ${topic}"`,
+              terminalCmd.cmd
+            );
+            if (!result?.result) {
+              logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, true);
+            }
+          } catch (error) {
+            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, true);
+          }
+          return;
+        }
+        if (hasExtSubscriber) {
+          // inform external window about new selected range
+          // window.electronAPI?.focusSubscriber(id);
+        } else if (openExternal && provider && window.CommandExecutor) {
+          // open in new window
+          // window.electronAPI.openSubscriber(
+          //   id,
+          //   provider.connection.host,
+          //   provider.connection.port,
+          //   topic,
+          //   defaultNoData,
+          // );
+          try {
+            const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
+            const result = await window.CommandExecutor?.execTerminal(
+              null, // we start the publish always local
+              `"echo ${topic}"`,
+              terminalCmd.cmd
+            );
+            if (!result?.result) {
+              logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, true);
+            }
+          } catch (error) {
+            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, true);
+          }
+        } else {
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              id,
+              topic,
+              <TopicEchoPanel
+                showOptions
+                defaultProvider={providerId}
+                defaultTopic={topic}
+                defaultNoData={defaultNoData}
+              />,
+              true,
+              LAYOUT_TAB_SETS[settingsCtx.get("subscriberOpenLocation")],
+              new LayoutTabConfig(
+                true,
+                `${CmdType.ECHO}`,
+                {
+                  type: CmdType.ECHO,
+                  providerId,
+                  topicName: topic,
+                  nodeName: "",
+                  screen: "",
+                  cmd: "",
+                },
+                null
+              )
+            )
+          );
+        }
+      }
+    },
+    [getProviderById, emitCustomEvent]
+  );
+
   // initialize ROS and system Info
   const init = async () => {
     setInitialized(() => false);
@@ -1244,6 +1338,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       isLocalHost,
       addProvider,
       openEditor,
+      openSubscriber,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

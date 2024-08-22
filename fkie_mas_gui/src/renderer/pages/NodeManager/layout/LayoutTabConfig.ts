@@ -1,6 +1,6 @@
 import CmdType from "../../../providers/CmdType";
 
-interface ITerminalConfig {
+export interface ITerminalConfig {
   type: CmdType | undefined;
   providerId: string;
   nodeName: string;
@@ -9,7 +9,7 @@ interface ITerminalConfig {
   cmd: string;
 }
 
-interface IEditorConfig {
+export interface IEditorConfig {
   id: string,
   host: string;
   port: number;

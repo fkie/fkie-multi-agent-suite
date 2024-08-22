@@ -1,9 +1,10 @@
+import { Brightness1 } from "@mui/icons-material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import PropTypes from "prop-types";
@@ -247,28 +248,12 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTopics]);
 
-  const onEchoClick = useCallback((topic) => {
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        `echo-${topic.name}-${topic.providerId}`,
-        topic.name,
-        <TopicEchoPanel
-          showOptions
-          defaultProvider={topic.providerId}
-          defaultTopic={topic.name}
-          defaultNoData={false}
-        />,
-        true,
-        LAYOUT_TAB_SETS[settingsCtx.get("topicOpenLocation")],
-        new LayoutTabConfig(true, CmdType.ECHO, {
-          type: CmdType.ECHO,
-          providerId: topic.providerId,
-          topicName: topic.name,
-        })
-      )
-    );
-  }, []);
+  const onEchoClick = useCallback(
+    (topic, external, openInTerminal = false) => {
+      rosCtx.openSubscriber(topic.providerId, topic.name, false, external, openInTerminal);
+    },
+    [rosCtx]
+  );
 
   const onPublishClick = useCallback((topic) => {
     emitCustomEvent(
@@ -331,6 +316,53 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     }
   }, [filteredTopics, selectedItems]);
 
+  const createButtonBox = useMemo(() => {
+    return (
+      <ButtonGroup orientation="vertical" aria-label="topic control group">
+        <Tooltip
+          title="Echo"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              disabled={!topicForSelected}
+              size="medium"
+              aria-label="Subscribe to topic and show the output"
+              onClick={(event) => {
+                onEchoClick(topicForSelected, event.nativeEvent.shiftKey, event.nativeEvent.ctrlKey);
+              }}
+            >
+              <ChatBubbleOutlineIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title="Publish to"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              disabled={!topicForSelected}
+              size="medium"
+              aria-label="Create a publisher"
+              onClick={() => {
+                onPublishClick(topicForSelected);
+              }}
+            >
+              <PlayCircleOutlineIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </ButtonGroup>
+    );
+  }, [tooltipDelay, topicForSelected, onPublishClick]);
+
   const createTreeView = useMemo(() => {
     return (
       <SimpleTreeView
@@ -369,49 +401,6 @@ function TopicsPanel({ initialSearchTerm = "" }) {
           // }}
         >
           <Stack direction="row" spacing={1} alignItems="center">
-            <Stack direction="row" paddingTop="5px">
-              <Tooltip
-                title="Echo"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <span>
-                  <IconButton
-                    disabled={!topicForSelected}
-                    size="small"
-                    aria-label="Subscribe to topic and show the output"
-                    onClick={() => {
-                      onEchoClick(topicForSelected);
-                    }}
-                  >
-                    <ChatBubbleOutlineIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip
-                title="Publish to"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <span>
-                  <IconButton
-                    disabled={!topicForSelected}
-                    size="small"
-                    aria-label="Create a publisher"
-                    onClick={() => {
-                      onPublishClick(topicForSelected);
-                    }}
-                  >
-                    <PlayCircleOutlineIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Stack>
-
             <SearchBar
               onSearch={onSearch}
               placeholder="Filter Topics (<space> for OR, + for AND)"
@@ -430,6 +419,11 @@ function TopicsPanel({ initialSearchTerm = "" }) {
             </Tooltip>
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
+            <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1}}>
+              {/* <Paper elevation={0} sx={{ border: 1 }} height="100%"> */}
+              {createButtonBox}
+              {/* </Paper> */}
+            </Box>
             <Box width="100%" height="100%" overflow="auto">
               {createTreeView}
             </Box>

@@ -80,7 +80,7 @@ function NodesDetailsPanel() {
   }, [navCtx.selectedNodes, rosCtx.nodeMap]);
 
   const onTopicClick = useCallback(
-    async (rosTopicType, topic, providerId, external = false) => {
+    async (rosTopicType, topic, providerId, external = false, openInTerminal = false) => {
       if (rosTopicType === "clipboard") {
         if (navigator && navigator.clipboard) {
           navigator.clipboard.writeText(topic);
@@ -111,7 +111,7 @@ function NodesDetailsPanel() {
             topic,
             <TopicPublishPanel topicName={topic} providerId={providerId} />,
             true,
-            LAYOUT_TAB_SETS[settingsCtx.get("topicOpenLocation")],
+            LAYOUT_TAB_SETS[settingsCtx.get("publisherOpenLocation")],
             new LayoutTabConfig(false, "publish")
           )
         );
@@ -122,44 +122,7 @@ function NodesDetailsPanel() {
       if (rosTopicType === "ECHO") {
         defaultNoData = false;
       }
-      const provider = rosCtx.getProviderById(providerId);
-      if (external && window.CommandExecutor) {
-        try {
-          const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic);
-          const result = await window.CommandExecutor?.execTerminal(
-            null, // we start the publish always local
-            `"echo ${topic}"`,
-            terminalCmd.cmd
-          );
-          if (!result.result) {
-            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, result.message, true);
-          }
-        } catch (error) {
-          logCtx.error(`Can't open subscriber in external terminal for ${topic}`, error, true);
-        }
-      } else {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `echo-${topic}-${providerId}`,
-            topic,
-            <TopicEchoPanel
-              showOptions
-              defaultRosTopicType={rosTopicType}
-              defaultProvider={providerId}
-              defaultTopic={topic}
-              defaultNoData={defaultNoData}
-            />,
-            true,
-            LAYOUT_TAB_SETS[settingsCtx.get("topicOpenLocation")],
-            new LayoutTabConfig(true, CmdType.ECHO, {
-              type: CmdType.ECHO,
-              providerId,
-              topicName: topic,
-            })
-          )
-        );
-      }
+      rosCtx.openSubscriber(providerId, topic, defaultNoData, external, openInTerminal);
     },
     [logCtx, rosCtx]
   );
@@ -396,7 +359,8 @@ function NodesDetailsPanel() {
                                           event.nativeEvent.ctrlKey ? "PUBLISH" : "ECHO",
                                           topic.name,
                                           node.providerId,
-                                          event.nativeEvent.shiftKey
+                                          event.nativeEvent.shiftKey,
+                                          event.nativeEvent.ctrlKey & event.nativeEvent.shiftKey
                                         )
                                       }
                                     >
@@ -507,7 +471,8 @@ function NodesDetailsPanel() {
                                           event.nativeEvent.ctrlKey ? "PUBLISH" : "ECHO",
                                           topic.name,
                                           node.providerId,
-                                          event.nativeEvent.shiftKey
+                                          event.nativeEvent.shiftKey,
+                                          event.nativeEvent.ctrlKey & event.nativeEvent.shiftKey
                                         );
                                       }}
                                     >
