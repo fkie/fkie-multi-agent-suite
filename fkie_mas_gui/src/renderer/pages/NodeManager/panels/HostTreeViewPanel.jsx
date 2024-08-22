@@ -43,6 +43,7 @@ import useQueue from "../../../hooks/useQueue";
 import { RosNode, RosNodeStatus, getBaseName } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
+import { xor } from "../../../utils";
 import {
   EVENT_EDITOR_SELECT_RANGE,
   EVENT_OPEN_COMPONENT,
@@ -73,6 +74,8 @@ function HostTreeViewPanel() {
   const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState(
     settingsCtx.get("showButtonsForKeyModifiers")
   );
+  const [screenOpenExternal, setScreenOpenExternal] = useState(settingsCtx.get("screenOpenExternal"));
+  const [logOpenExternal, setLogOpenExternal] = useState(settingsCtx.get("logOpenExternal"));
   const [filterText, setFilterText] = useState("");
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
@@ -102,6 +105,8 @@ function HostTreeViewPanel() {
   useEffect(() => {
     setShowRemoteNodes(settingsCtx.get("showRemoteNodes"));
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers"));
+    setScreenOpenExternal(settingsCtx.get("screenOpenExternal"));
+    setLogOpenExternal(settingsCtx.get("logOpenExternal"));
   }, [settingsCtx, settingsCtx.changed]);
 
   /**
@@ -312,7 +317,11 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
    */
   const createSingleTerminalPanel = useCallback(
-    async (type, node, screen, external = false) => {
+    async (type, node, screen, externalKeyModifier = false) => {
+      const external =
+        type === CmdType.SCREEN
+          ? xor(screenOpenExternal, externalKeyModifier)
+          : xor(logOpenExternal, externalKeyModifier);
       if (external && window.CommandExecutor) {
         // create a terminal command
         const provider = rosCtx.getProviderById(node.providerId);

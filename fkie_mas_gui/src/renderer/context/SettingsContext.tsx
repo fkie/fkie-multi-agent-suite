@@ -215,6 +215,18 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "",
   },
+  screenOpenExternal: {
+    label: "Open screen in external window by default",
+    default: false,
+    type: "boolean",
+    description: "",
+  },
+  logOpenExternal: {
+    label: "Open logs in external window by default",
+    default: false,
+    type: "boolean",
+    description: "",
+  },
 };
 
 interface ISettingProvider {
