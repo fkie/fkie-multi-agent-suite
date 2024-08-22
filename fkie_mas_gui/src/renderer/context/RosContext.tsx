@@ -6,15 +6,6 @@ import MultimasterManager from "../../main/IPC/MultimasterManager";
 import { IROSInfo, ROSInfo } from "../../main/IPC/ROSInfo";
 import { ISystemInfo, SystemInfo } from "../../main/IPC/SystemInfo";
 import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "../components/UI";
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
-import {
-  EVENT_OPEN_COMPONENT,
-  eventOpenComponent,
-  EVENT_EDITOR_SELECT_RANGE,
-  eventEditorSelectRange,
-} from "../utils/events";
-import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
-import { getBaseName } from "../models";
 import {
   LaunchArgument,
   LaunchLoadRequest,
@@ -22,9 +13,10 @@ import {
   ProviderLaunchConfiguration,
   RosNode,
   SubscriberFilter,
-  SubscriberNode,
-  getFileName,
+  SubscriberNode, getBaseName, getFileName
 } from "../models";
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
+import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
 import { ConnectionState } from "../providers";
 import Provider from "../providers/Provider";
 import {
@@ -45,10 +37,16 @@ import {
   EventProviderState,
   EventProviderWarnings,
 } from "../providers/events";
+import {
+  EVENT_EDITOR_SELECT_RANGE,
+  EVENT_OPEN_COMPONENT,
+  eventEditorSelectRange,
+  eventOpenComponent,
+} from "../utils/events";
+import { xor } from "../utils/index";
 import { LoggingContext } from "./LoggingContext";
 import { SSHContext } from "./SSHContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
-import { xor } from "../utils/index";
 
 declare global {
   interface Window {
@@ -208,7 +206,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const getProviderById = useCallback(
     (providerId: string, includeNotAvailable: boolean = true) => {
       return providers.find((provider) => {
-        console.log(`${provider.id} === ${providerId}`);
         return (provider.isAvailable() || includeNotAvailable) && provider.id === providerId;
       });
     },
