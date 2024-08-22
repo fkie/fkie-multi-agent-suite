@@ -93,7 +93,6 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
             initialCommands={initialCommands}
             width={width}
             name={`${node.name}`}
-            invisibleTerminal={false}
             errorHighlighting={errorHighlighting}
             onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
           />
@@ -106,7 +105,6 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
             initialCommands={initialCommands}
             width={width}
             name={`${cmd.replaceAll("/", " ")}`}
-            invisibleTerminal={false}
             errorHighlighting={errorHighlighting}
             onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
           />

@@ -10,14 +10,13 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from "@mui/material";
 import { FitAddon } from "@xterm/addon-fit";
 import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
+import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
-import { ITerminalOptions, Terminal } from "@xterm/xterm";
+import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import React from "react";
-import SearchBar from "../../UI/SearchBar";
-import { FlowControl, ZmodemAddon } from "../zmodem";
-import OverlayAddon from "./overlay";
+import SearchBar from "../UI/SearchBar";
 
 const enum Command {
   // server side
@@ -46,7 +45,6 @@ interface Props {
   clientOptions: ClientOptions;
   termOptions: ITerminalOptions;
   initialCommands: string[];
-  invisibleTerminal: boolean | null;
   name: string;
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
@@ -58,26 +56,24 @@ type XtermState = {
   opened: boolean;
 };
 
-export class Xterm extends React.Component<Props, XtermState> {
+export class Terminal extends React.Component<Props, XtermState> {
   private textEncoder: TextEncoder;
 
   private textDecoder: TextDecoder;
 
   private container: HTMLElement | null = null;
 
-  private terminal: Terminal | null = null;
+  private terminal: XTerminal | null = null;
 
   private fitAddon: FitAddon;
 
-  private searchAddon: SearchAddon;
+  private searchAddon: SearchAddon = new SearchAddon();
 
   private searchAddonOptions: ISearchOptions;
 
-  private overlayAddon: OverlayAddon | null = null;
-
-  private zModemAddon: ZmodemAddon | null = null;
-
-  private webglAddon: WebglAddon | null = null;
+  private webglAddon: WebglAddon = new WebglAddon();
+  
+  private unicode11Addon = new Unicode11Addon();
 
   private socket: WebSocket | null = null;
 
@@ -91,7 +87,7 @@ export class Xterm extends React.Component<Props, XtermState> {
 
   private resizeObserver: ResizeObserver | null = null;
 
-  private id: string = "";
+  private gotFocus: boolean = false;
 
   private lastContainerSize: { width: number; height: number } = {
     width: 0,
@@ -104,19 +100,15 @@ export class Xterm extends React.Component<Props, XtermState> {
     this.state = {
       opened: false,
     };
-
-    this.id = props.id;
     this.textEncoder = new TextEncoder();
     this.textDecoder = new TextDecoder();
     this.fitAddon = new FitAddon();
-    this.overlayAddon = new OverlayAddon();
 
-    this.searchAddon = new SearchAddon();
     this.searchAddonOptions = {
       regex: true,
       caseSensitive: false,
 
-      // TODO: Check why decorations does not work
+      // decoration
       decorations: {
         matchBackground: "#797D7F",
         activeMatchBackground: "#d81e00",
@@ -128,33 +120,54 @@ export class Xterm extends React.Component<Props, XtermState> {
 
     // TODO Add setting for this parameter
     this.fontSize = props.fontSize;
-    this.onWindowUnload = this.onWindowUnload.bind(this);
     this.onSocketOpen = this.onSocketOpen.bind(this);
     this.onSocketError = this.onSocketError.bind(this);
     this.onSocketData = this.onSocketData.bind(this);
-    this.setRendererType = this.setRendererType.bind(this);
-    this.openTerminal = this.openTerminal.bind(this);
     this.connect = this.connect.bind(this);
     this.pause = this.pause.bind(this);
-    this.applyOptions = this.applyOptions.bind(this);
     this.onTerminalResize = this.onTerminalResize.bind(this);
     this.onTerminalData = this.onTerminalData.bind(this);
     this.resume = this.resume.bind(this);
-    this.sendData = this.sendData.bind(this);
+    // this.sendData = this.sendData.bind(this);
+  }
+
+  private connect() {
+    console.log(`[ttyd] connect to ${this.props.wsUrl}`);
+    this.socket = new WebSocket(this.props.wsUrl, ["tty"]);
+    this.socket.binaryType = "arraybuffer";
+    this.socket.onopen = this.onSocketOpen;
+    this.socket.onmessage = this.onSocketData;
+    // this.socket.onclose = this.onSocketClose;
+    this.socket.onerror = this.onSocketError;
   }
 
   async componentDidMount() {
-    // await this.refreshToken();
-    this.openTerminal();
+    const { termOptions } = this.props;
+    termOptions.allowProposedApi = true;
+    this.terminal = new XTerminal(termOptions);
+
+    const { terminal, fitAddon, searchAddon, webglAddon, unicode11Addon } = this;
+
+    terminal.loadAddon(fitAddon);
+    terminal.loadAddon(searchAddon);
+    terminal.loadAddon(new WebLinksAddon());
+    terminal.loadAddon(unicode11Addon);
+    webglAddon.onContextLoss((_event) => {
+      webglAddon.dispose();
+    });
+    terminal.loadAddon(webglAddon);
+    terminal.onData(this.onTerminalData);
+    terminal.onResize(this.onTerminalResize);
     this.connect();
+    if (this.container) {
+      console.log(`CONTAINER OK`);
+      terminal.open(this.container);
+    }
+    fitAddon.fit();
 
     // show the name of the node during 300 ms at launch time
-    const { overlayAddon } = this;
-    const { name } = this.props;
-    overlayAddon?.showOverlay(name ? name : "empty name", 300);
     if (this.container) {
       this.resizeObserver = new ResizeObserver(() => {
-        this.componentDidUpdate();
         const rect = this.container?.getBoundingClientRect();
         if (
           rect &&
@@ -168,44 +181,42 @@ export class Xterm extends React.Component<Props, XtermState> {
       });
       this.resizeObserver.observe(this.container);
     }
-    // const { id } = this.props;
-    // const terminalContainer = document.getElementById(id);
-    // terminalContainer?.focus();
+
+    const keyMap = [
+      {
+        key: "C",
+        shiftKey: true,
+        ctrlKey: true,
+        callback: () => {
+          navigator.clipboard.writeText(terminal.getSelection());
+        },
+      },
+    ];
+
+    terminal.attachCustomKeyEventHandler((ev) => {
+      if (ev.type === "keydown") {
+        for (let i in keyMap) {
+          if (keyMap[i].key == ev.key && keyMap[i].shiftKey == ev.shiftKey && keyMap[i].ctrlKey == ev.ctrlKey) {
+            keyMap[i].callback();
+            return false;
+          }
+        }
+      }
+      return true;
+    });
   }
 
   componentWillUnmount() {
     // send SIGINT on terminal close
     this.socket?.close(1000, "Component closed");
-
     if (this.terminal) this.terminal.dispose();
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
   }
 
-  componentDidUpdate() {
-    const { tokenUrl } = this.props;
-    if (this.token !== tokenUrl || this.socket?.readyState === WebSocket.CLOSED) {
-      this.token = tokenUrl;
-
-      this.socket?.close();
-      this.connect();
-    }
-  }
-
-  private onWindowUnload(event: BeforeUnloadEvent): string {
-    const { socket } = this;
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      const message = "Close terminal? this will also terminate the command.";
-      event.returnValue = message;
-      return message;
-    }
-    event.preventDefault();
-    return "";
-  }
-
   private onSocketOpen() {
-    const { socket, textEncoder, terminal, fitAddon, overlayAddon, state } = this;
+    const { socket, textEncoder, terminal, fitAddon, state } = this;
     const dims = fitAddon.proposeDimensions();
     this.setState({
       opened: true,
@@ -225,7 +236,6 @@ export class Xterm extends React.Component<Props, XtermState> {
       if (state.opened && terminal) {
         terminal.reset();
         terminal.resize(dims.cols, dims.rows);
-        overlayAddon?.showOverlay("Reconnected", 300);
       }
     }
 
@@ -236,44 +246,19 @@ export class Xterm extends React.Component<Props, XtermState> {
     const { initialCommands } = this.props;
     if (initialCommands) {
       initialCommands.forEach((command) => {
-        this.onTerminalData(command);
+        this.socket?.send(textEncoder.encode(Command.INPUT + command));
+        // this.onTerminalData(command);
       });
     }
-
-    // if (terminal) terminal.focus();
   }
-
-  // // @bind
-  // private onSocketClose(event: CloseEvent) {
-  //   // console.debug(websocket connection closed`[ttyd] websocket connection closed with code: ${event.code}`);
-  //   // Do we need this?
-  //   // const { refreshToken, connect, doReconnect, overlayAddon } = this;
-  //   // overlayAddon.showOverlay('Connection Closed', null);
-  //   // // 1000: CLOSE_NORMAL
-  //   // if (event.code !== 1000 && doReconnect) {
-  //   //   overlayAddon.showOverlay('Reconnecting...', null);
-  //   //   refreshToken().then(connect);
-  //   // } else {
-  //   //   const { terminal } = this;
-  //   //   const keyDispose = terminal.onKey((e) => {
-  //   //     const event = e.domEvent;
-  //   //     if (event.key === 'Enter') {
-  //   //       keyDispose.dispose();
-  //   //       overlayAddon.showOverlay('Reconnecting...', null);
-  //   //       refreshToken().then(connect);
-  //   //     }
-  //   //   });
-  //   //   overlayAddon.showOverlay('Press ⏎ to Reconnect', null);
-  //   // }
-  // }
 
   private onSocketError(_event: Event) {
     // might be fired when component is closed
-    // console.error('[ttyd] websocket connection error: ', _event);
+    console.error("[ttyd] websocket connection error: ", _event);
   }
 
   private onSocketData(event: MessageEvent) {
-    const { textDecoder, zModemAddon } = this;
+    const { textDecoder } = this;
     const rawData = event.data as ArrayBuffer;
     const cmd = String.fromCharCode(new Uint8Array(rawData)[0]);
     const data = rawData.slice(1);
@@ -283,118 +268,29 @@ export class Xterm extends React.Component<Props, XtermState> {
 
     switch (cmd) {
       case Command.OUTPUT:
-        zModemAddon?.consume(data);
+        // show data in the terminal
+        this.terminal?.write(textDecoder.decode(data));
         break;
       case Command.SET_WINDOW_TITLE:
         this.title = textDecoder.decode(data);
         document.title = this.title;
         break;
       case Command.SET_PREFERENCES: {
-        const preferences = JSON.parse(textDecoder.decode(data));
-        const { clientOptions } = this.props;
-        this.applyOptions({ ...clientOptions, ...preferences });
         break;
       }
-
       default:
         console.warn(`[ttyd] unknown command: ${cmd}`);
         break;
     }
-  }
-
-  private setRendererType(value: "webgl") {
-    const { terminal } = this;
-
-    const disposeWebglRenderer = () => {
-      try {
-        this.webglAddon?.dispose();
-      } catch {
-        // ignore
-      }
-      this.webglAddon = null;
-    };
-
-    switch (value) {
-      case "webgl":
-        if (this.webglAddon) return;
-        try {
-          if (window.WebGL2RenderingContext && document.createElement("canvas").getContext("webgl2")) {
-            this.webglAddon = new WebglAddon();
-            this.webglAddon.onContextLoss(() => {
-              disposeWebglRenderer();
-            });
-
-            if (terminal) terminal.loadAddon(this.webglAddon);
-            // console.debug(`[ttyd] WebGL renderer enabled`);
-          }
-        } catch (e) {
-          console.warn(`[ttyd] webgl2 init error`, e);
-        }
-        break;
-      default:
-        disposeWebglRenderer();
-        // if (terminal) terminal.options.rendererType = value;
-        break;
+    if (!this.gotFocus) {
+      this.terminal?.focus();
+      this.gotFocus = true;
     }
-  }
-
-  private openTerminal() {
-    const { termOptions } = this.props;
-    termOptions.allowProposedApi = true;
-    this.terminal = new Terminal(termOptions);
-
-    const { terminal, container, fitAddon, searchAddon, overlayAddon } = this;
-
-    terminal.loadAddon(fitAddon);
-    terminal.loadAddon(searchAddon);
-    if (overlayAddon) terminal.loadAddon(overlayAddon);
-    terminal.loadAddon(new WebLinksAddon());
-    if (this.zModemAddon) terminal.loadAddon(this.zModemAddon);
-    terminal.onData(this.onTerminalData);
-    terminal.onResize(this.onTerminalResize);
-    if (container) terminal.open(container);
-    fitAddon.fit();
   }
 
   render() {
-    const control = {
-      limit: 100000,
-      highWater: 10,
-      lowWater: 4,
-      pause: () => this.pause(),
-      resume: () => this.resume(),
-    } as FlowControl;
-
-    const { invisibleTerminal } = this.props;
-
-    // create an "invisible" terminal (visibility: 'hidden')
-    // used for sending commands to a provider host
-    // in combination with [onIncomingData] callback
-    if (invisibleTerminal) {
-      return (
-        <div
-          ref={(c) => {
-            this.container = c;
-            return this.container;
-          }}
-          style={{ visibility: "hidden", height: 0 }}
-        >
-          <ZmodemAddon
-            key={`zmodem-${this.id}`}
-            id={`zmodem-${this.id}`}
-            ref={(c) => {
-              this.zModemAddon = c;
-              return this.zModemAddon;
-            }}
-            sender={this.sendData}
-            control={control}
-          />
-        </div>
-      );
-    }
     const { state, fitAddon } = this;
     fitAddon.fit();
-
     return (
       <Stack width="100%" height="100%" alignItems="center">
         {!state.opened && (
@@ -494,112 +390,22 @@ export class Xterm extends React.Component<Props, XtermState> {
         )}
 
         <Box
-          ref={(c) => {
-            this.container = c as HTMLElement;
+          ref={(c: HTMLElement) => {
+            this.container = c;
             return this.container;
           }}
           width="100%"
           height={state.opened ? "100%" : 0}
           visibility={state.opened ? "visible" : "hidden"}
           overflow="auto"
-        >
-          <ZmodemAddon
-            key={`zmodem-${this.id}`}
-            id={`zmodem-${this.id}`}
-            ref={(c) => {
-              this.zModemAddon = c;
-              return this.zModemAddon;
-            }}
-            sender={this.sendData}
-            control={control}
-          />
-        </Box>
+        ></Box>
       </Stack>
     );
   }
 
-  // @bind
-  // private async refreshToken() {
-  //   const { tokenUrl } = this.props;
-
-  //   try {
-  //     const resp = await fetch(tokenUrl, { mode: 'no-cors' });
-  //     if (resp.ok) {
-  //       const json = await resp.json();
-  //       this.token = json.token;
-  //     }
-  //   } catch (e) {
-  //     console.error(`[ttyd] fetch ${tokenUrl}: `, e);
-  //   }
-  // }
-
-  private connect() {
-    const { wsUrl } = this.props;
-    this.socket = new WebSocket(wsUrl, ["tty"]);
-
-    this.socket.binaryType = "arraybuffer";
-    this.socket.onopen = this.onSocketOpen;
-    this.socket.onmessage = this.onSocketData;
-    // this.socket.onclose = this.onSocketClose;
-    this.socket.onerror = this.onSocketError;
-  }
-
   private pause() {
     const { textEncoder, socket } = this;
-
     socket?.send(textEncoder.encode(Command.PAUSE));
-  }
-
-  private applyOptions(options: any) {
-    const { fitAddon } = this;
-
-    Object.keys(options).forEach((key) => {
-      const value = options[key];
-      switch (key) {
-        case "rendererType":
-          this.setRendererType(value);
-          break;
-        case "disableLeaveAlert":
-          if (value) {
-            window.removeEventListener("beforeunload", this.onWindowUnload);
-          }
-          break;
-        case "disableResizeOverlay":
-          if (value) {
-            console.debug(`[ttyd] Resize overlay disabled`);
-          }
-          break;
-        case "disableReconnect":
-          if (value) {
-            console.debug(`[ttyd] Reconnect disabled`);
-          }
-          break;
-        // case 'titleFixed':
-        //   if (!value || value === '') return;
-        //   console.debug(`[ttyd] setting fixed title: ${value}`);
-        //   this.titleFixed = value;
-        //   document.title = value;
-        //   break;
-        default:
-          console.debug(`[ttyd] option: ${key}=${JSON.stringify(value)}`);
-          // TODO: Check if this is required
-          // if (!terminal) break;
-
-          // if (terminal.options[key] instanceof Object) {
-          //   terminal.options[key] = Object.assign(
-          //     {},
-          //     terminal.options[key],
-          //     value
-          //   );
-          // } else {
-          //   terminal.options[key] = value;
-          // }
-
-          if (key.indexOf("font") === 0) fitAddon.fit();
-
-          break;
-      }
-    });
   }
 
   private onTerminalResize(size: { cols: number; rows: number }) {
@@ -613,7 +419,10 @@ export class Xterm extends React.Component<Props, XtermState> {
   private onTerminalData(data: string) {
     if (data?.charCodeAt(0) === 4) {
       const { wsUrl, tokenUrl, onCtrlD } = this.props;
-      if (onCtrlD) onCtrlD(wsUrl, tokenUrl);
+      if (onCtrlD) {
+        console.log(`CTRL+D: ${data?.charCodeAt(0)}`);
+        onCtrlD(wsUrl, tokenUrl);
+      }
     }
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -624,13 +433,5 @@ export class Xterm extends React.Component<Props, XtermState> {
   private resume() {
     const { textEncoder, socket } = this;
     socket?.send(textEncoder.encode(Command.RESUME));
-  }
-
-  private sendData(data: ArrayLike<number>) {
-    const { socket } = this;
-    const payload = new Uint8Array(data.length + 1);
-    payload[0] = Command.INPUT.charCodeAt(0);
-    payload.set(data, 1);
-    socket?.send(payload);
   }
 }

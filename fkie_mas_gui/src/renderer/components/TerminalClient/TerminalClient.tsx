@@ -8,7 +8,7 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 import { ITerminalOptions, ITheme } from "@xterm/xterm";
 import { useContext } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
-import { ClientOptions, Xterm } from "./terminal";
+import { ClientOptions, Terminal } from "./Terminal";
 
 // TODO: Add parameter for this
 const clientOptions = {
@@ -21,6 +21,7 @@ const clientOptions = {
 // see:
 // https://github.com/xtermjs/xterm.js/blob/master/typings/xterm.d.ts
 const termOptions = {
+  allowProposedApi: true,
   cursorBlink: true,
   cursorStyle: "block",
   fastScrollModifier: "alt",
@@ -61,14 +62,13 @@ interface ITerminalClient {
   tokenUrl: string;
   wsUrl: string;
   name: string;
-  invisibleTerminal: boolean;
   errorHighlighting: boolean;
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
 }
 
 function TerminalClient(props: ITerminalClient) {
-  const { initialCommands, tokenUrl, wsUrl, name, invisibleTerminal, errorHighlighting, onIncomingData, onCtrlD } =
+  const { initialCommands, tokenUrl, wsUrl, name, errorHighlighting, onIncomingData, onCtrlD } =
     props;
   const settingsCtx = useContext(SettingsContext);
 
@@ -100,7 +100,7 @@ function TerminalClient(props: ITerminalClient) {
   } as ITheme;
 
   return (
-    <Xterm
+    <Terminal
       key={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
       id={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
       wsUrl={wsUrl}
@@ -109,7 +109,6 @@ function TerminalClient(props: ITerminalClient) {
       termOptions={termOptions}
       initialCommands={initialCommands}
       name={name}
-      invisibleTerminal={invisibleTerminal}
       onIncomingData={onIncomingData}
       onCtrlD={onCtrlD}
       fontSize={termOptions.fontSize ? termOptions.fontSize : 14}
