@@ -153,16 +153,6 @@ function NodeManager() {
           setModifiedEditorTabs([mTab]);
           return;
         }
-        // select nodes tab it is in the same set as close editor
-        const nodeBId = model.getNodeById(tabId);
-        nodeBId
-          ?.getParent()
-          .getChildren()
-          .filter((tab) => {
-            if (tab.getId() === LAYOUT_TABS.NODES) {
-              model.doAction(Actions.selectTab(tab.getId()));
-            }
-          });
       }
       // handle tabs in bottom border
       const nodeBId = model.getNodeById(tabId);
@@ -176,6 +166,17 @@ function NodeManager() {
         if (shouldSelectNewTab) {
           model.doAction(Actions.selectTab(tabId));
         }
+      } else {
+        // select nodes tab it is in the same set as closed tab
+        const nodeBId = model.getNodeById(tabId);
+        nodeBId
+          ?.getParent()
+          .getChildren()
+          .filter((tab) => {
+            if (tab.getId() === LAYOUT_TABS.NODES) {
+              model.doAction(Actions.selectTab(tab.getId()));
+            }
+          });
       }
       model.doAction(Actions.deleteTab(tabId));
     },
@@ -285,7 +286,7 @@ function NodeManager() {
     if (addToLayout.length > 0) {
       const tab = addToLayout.pop();
       const panelId = getPanelId(tab.id, tab.panelGroup);
-      const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, -1);
+      const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, 1);
       model.doAction(action);
       if (panelId.isBorder && panelId.id) {
         // If a tab in the same border is visible,
@@ -461,7 +462,14 @@ function NodeManager() {
                   }
                   if (node.getConfig().subscriberConfig) {
                     const cfg = node.getConfig().subscriberConfig;
-                    window.electronAPI.openSubscriber(cfg.id, cfg.host, cfg.port, cfg.topic, cfg.showOptions, cfg.noData);
+                    window.electronAPI.openSubscriber(
+                      cfg.id,
+                      cfg.host,
+                      cfg.port,
+                      cfg.topic,
+                      cfg.showOptions,
+                      cfg.noData
+                    );
                     deleteTab(node.getId());
                   }
                   event.stopPropagation();
