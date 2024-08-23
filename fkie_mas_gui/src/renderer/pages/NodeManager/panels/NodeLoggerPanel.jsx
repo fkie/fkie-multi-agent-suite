@@ -1,4 +1,5 @@
 import ClearIcon from "@mui/icons-material/Clear";
+import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   CircularProgress,
@@ -16,7 +17,7 @@ import {
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { SearchBar, colorFromHostname } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
@@ -34,6 +35,7 @@ function NodeLoggerPanel(node) {
   const [loggers, setLoggers] = useState([]);
   const [loggersFiltered, setLoggersFiltered] = useState([]);
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+  const [changedLevels, forceUpdate] = useReducer((x) => x + 1, 0);
 
   const setLoggersOnProvider = useCallback(
     async (rosNode, newLoggers) => {
@@ -151,6 +153,7 @@ function NodeLoggerPanel(node) {
       changedLoggers.forEach((l) => {
         if (l.name !== "all") {
           currentNode.rosLoggers[l.name] = l.level;
+          forceUpdate();
         }
       });
       // set loggers on ros node
@@ -181,6 +184,7 @@ function NodeLoggerPanel(node) {
       // remove user defined changes from node
       if (currentNode) {
         currentNode.rosLoggers = {};
+        forceUpdate();
       }
     };
   }, []);
@@ -201,22 +205,27 @@ function NodeLoggerPanel(node) {
       </Stack>
       <Stack direction="row" spacing={0.5} justifyItems="center">
         <Tooltip
-          title="Remove user changes, loggers are not reverted!"
+          title={`Remove last changed levels to prevent change them after node restart!`}
           placement="bottom"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
+          disableInteractive
         >
-          <IconButton
-            size="small"
-            aria-label="Remove user changes"
-            onClick={() => {
-              if (currentNode) {
-                currentNode.rosLoggers = {};
-              }
-            }}
-          >
-            <ClearIcon fontSize="inherit" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              aria-label="Remove user changes"
+              onClick={() => {
+                if (currentNode) {
+                  currentNode.rosLoggers = {};
+                  forceUpdate();
+                }
+              }}
+              disabled={Object.keys(currentNode?.rosLoggers).length === 0}
+            >
+              <PlaylistRemoveIcon fontSize="inherit" />
+            </IconButton>
+          </span>
         </Tooltip>
         <SearchBar
           onSearch={(value) => {
@@ -226,7 +235,13 @@ function NodeLoggerPanel(node) {
           defaultValue={filterText}
           // fullWidth={true}
         />
-        <Tooltip title="Refresh logger list" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
+        <Tooltip
+          title="Refresh logger list"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
           <IconButton
             size="small"
             edge="start"
@@ -265,58 +280,68 @@ function NodeLoggerPanel(node) {
                           flexDirection: "row",
                         }}
                       >
-                        <Radio
-                          value="FATAL"
-                          size="small"
-                          sx={{
-                            color: "#C0392B",
-                            "&.Mui-checked": {
+                        <Tooltip title="fatal" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+                          <Radio
+                            value="FATAL"
+                            size="small"
+                            sx={{
                               color: "#C0392B",
-                            },
-                            ...radioSize,
-                          }}
-                        />
-                        <Radio
-                          value="ERROR"
-                          size="small"
-                          sx={{
-                            color: "#D35400",
-                            "&.Mui-checked": {
+                              "&.Mui-checked": {
+                                color: "#C0392B",
+                              },
+                              ...radioSize,
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="error" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+                          <Radio
+                            value="ERROR"
+                            size="small"
+                            sx={{
                               color: "#D35400",
-                            },
-                            ...radioSize,
-                          }}
-                        />
-                        <Radio
-                          value="WARN"
-                          size="small"
-                          sx={{
-                            color: "#F39C12",
-                            "&.Mui-checked": {
-                              color: "#F39C12cd",
-                            },
-                            ...radioSize,
-                          }}
-                        />
-                        <Radio
-                          value="INFO"
-                          size="small"
-                          sx={{
-                            color: "#2980B9",
-                            "&.Mui-checked": {
+                              "&.Mui-checked": {
+                                color: "#D35400",
+                              },
+                              ...radioSize,
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="warning" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+                          <Radio
+                            value="WARN"
+                            size="small"
+                            sx={{
+                              color: "#F39C12",
+                              "&.Mui-checked": {
+                                color: "#F39C12cd",
+                              },
+                              ...radioSize,
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="info" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+                          <Radio
+                            value="INFO"
+                            size="small"
+                            sx={{
                               color: "#2980B9",
-                            },
-                            ...radioSize,
-                          }}
-                        />
-                        <Radio
-                          value="DEBUG"
-                          color="default"
-                          size="small"
-                          sx={{
-                            ...radioSize,
-                          }}
-                        />
+                              "&.Mui-checked": {
+                                color: "#2980B9",
+                              },
+                              ...radioSize,
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip title="debug" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+                          <Radio
+                            value="DEBUG"
+                            color="default"
+                            size="small"
+                            sx={{
+                              ...radioSize,
+                            }}
+                          />
+                        </Tooltip>
                       </RadioGroup>
                     </TableCell>
                     <TableCell
