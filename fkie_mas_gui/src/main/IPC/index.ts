@@ -8,6 +8,7 @@ import MultimasterManager from "./MultimasterManager";
 import PasswordManager from "./PasswordManager";
 import { IROSInfo, ROSInfo } from "./ROSInfo";
 import ShutdownInterface from "./ShutdownInterface";
+import SubscriberManager from "./SubscriberManager";
 import { ISystemInfo, SystemInfo } from "./SystemInfo";
 import TerminalManager from "./TerminalManager";
 
@@ -15,9 +16,11 @@ const sPasswordManager = new PasswordManager();
 const sCommandExecutor = new CommandExecutor();
 const sMultimasterManager = new MultimasterManager();
 const editorManager = new EditorManager();
+const subscriberManager = new SubscriberManager();
 
 export const registerHandlers = (): void => {
   editorManager.registerHandlers();
+  subscriberManager.registerHandlers();
 
   // Password Manager
   ipcMain.handle("PasswordManager:setPassword", (_event, service: string, account: string, password: string) => {
@@ -130,6 +133,7 @@ export {
   PasswordManager,
   ROSInfo,
   ShutdownInterface,
+  SubscriberManager,
   TerminalManager
 };
 export type { IROSInfo, ISystemInfo };

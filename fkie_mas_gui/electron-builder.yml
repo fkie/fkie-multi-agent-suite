@@ -11,6 +11,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - out/renderer/editor.html
+  - out/renderer/subscriber.html
 win:
   executableName: mas-gui
   icon: 'icon/'

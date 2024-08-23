@@ -18,6 +18,15 @@ export interface IEditorConfig {
   fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number } | null;
 }
 
+export interface ISubscriberConfig {
+  id: string,
+  host: string;
+  port: number;
+  topic: string,
+  showOptions: boolean,
+  noData: boolean,
+}
+
 export default class LayoutTabConfig {
   openExternal: boolean;
 
@@ -27,15 +36,19 @@ export default class LayoutTabConfig {
 
   editorConfig: IEditorConfig | null;
 
+  subscriberConfig: ISubscriberConfig | null;
+
   constructor(
     openExternal: boolean = false,
     tabType: string = "",
     terminalConfig: ITerminalConfig | null = null,
-    editorConfig: IEditorConfig | null = null
+    editorConfig: IEditorConfig | null = null,
+    subscriberConfig: ISubscriberConfig | null = null
   ) {
     this.openExternal = openExternal;
     this.tabType = tabType;
     this.terminalConfig = terminalConfig;
     this.editorConfig = editorConfig;
+    this.subscriberConfig = subscriberConfig;
   }
 }

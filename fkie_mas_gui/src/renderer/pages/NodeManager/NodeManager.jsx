@@ -422,7 +422,7 @@ function NodeManager() {
           renderValues.buttons.push(
             <Tooltip
               key={`button-close-${node.getId()}`}
-              title="open in external terminal"
+              title="open new in external window"
               placement="bottom"
               enterDelay={tooltipDelay}
               disableInteractive
@@ -457,6 +457,11 @@ function NodeManager() {
                   if (node.getConfig().editorConfig) {
                     const cfg = node.getConfig().editorConfig;
                     window.electronAPI.openEditor(cfg.id, cfg.host, cfg.port, cfg.rootLaunch, cfg.path, cfg.fileRange);
+                    deleteTab(node.getId());
+                  }
+                  if (node.getConfig().subscriberConfig) {
+                    const cfg = node.getConfig().subscriberConfig;
+                    window.electronAPI.openSubscriber(cfg.id, cfg.host, cfg.port, cfg.topic, cfg.showOptions, cfg.noData);
                     deleteTab(node.getId());
                   }
                   event.stopPropagation();

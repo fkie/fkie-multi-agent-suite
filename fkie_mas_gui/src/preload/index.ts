@@ -180,6 +180,26 @@ if (process.contextIsolated) {
         ipcRenderer.on("editor:onClose", (_event, id) => {
           return callback(id);
         }),
+      openSubscriber: (
+        id: string,
+        host: string,
+        port: number,
+        topic: string,
+        showOptions: boolean,
+        noData: boolean
+      ) => {
+        return ipcRenderer.invoke("subscriber:open", id, host, port, topic, showOptions, noData);
+      },
+      closeSubscriber: (id: string) => {
+        return ipcRenderer.invoke("subscriber:close", id);
+      },
+      hasSubscriber: (id: string) => {
+        return ipcRenderer.invoke("subscriber:has", id);
+      },
+      onSubscriberClose: (callback: (tabId: string) => Promise<boolean>) =>
+        ipcRenderer.on("subscriber:onClose", (_event, id) => {
+          return callback(id);
+        }),
     });
   } catch (error) {
     console.error(error);

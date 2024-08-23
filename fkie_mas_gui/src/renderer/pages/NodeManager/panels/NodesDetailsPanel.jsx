@@ -122,7 +122,7 @@ function NodesDetailsPanel() {
       if (rosTopicType === "ECHO") {
         defaultNoData = false;
       }
-      rosCtx.openSubscriber(providerId, topic, defaultNoData, external, openInTerminal);
+      rosCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
     },
     [logCtx, rosCtx]
   );
@@ -356,7 +356,7 @@ function NodesDetailsPanel() {
                                       }}
                                       onClick={(event) =>
                                         onTopicClick(
-                                          event.nativeEvent.ctrlKey ? "PUBLISH" : "ECHO",
+                                          event.nativeEvent.ctrlKey & !event.nativeEvent.shiftKey ? "PUBLISH" : "ECHO",
                                           topic.name,
                                           node.providerId,
                                           event.nativeEvent.shiftKey,
@@ -468,7 +468,7 @@ function NodesDetailsPanel() {
                                       }}
                                       onClick={(event) => {
                                         onTopicClick(
-                                          event.nativeEvent.ctrlKey ? "PUBLISH" : "ECHO",
+                                          event.nativeEvent.ctrlKey & !event.nativeEvent.shiftKey ? "PUBLISH" : "ECHO",
                                           topic.name,
                                           node.providerId,
                                           event.nativeEvent.shiftKey,

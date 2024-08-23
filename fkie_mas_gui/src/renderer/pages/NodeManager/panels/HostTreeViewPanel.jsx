@@ -1152,7 +1152,7 @@ function HostTreeViewPanel() {
           </Stack>
         )}
         <Tooltip
-          title="Edit (shift+click for alternative)"
+          title="Edit (shift+click for alternative open location)"
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1174,8 +1174,8 @@ function HostTreeViewPanel() {
         <Tooltip
           title="Parameters"
           placement="left"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
+          // enterDelay={tooltipDelay}
+          // enterNextDelay={tooltipDelay}
           disableInteractive
         >
           <span>
@@ -1218,7 +1218,7 @@ function HostTreeViewPanel() {
           </Tooltip>
         )}
         <Divider />
-        <Tooltip title="Screen (external terminal with shift+click)" placement="left" disableInteractive>
+        <Tooltip title="Screen (shift+click for alternative open location)" placement="left" disableInteractive>
           <span>
             <IconButton
               size="medium"
@@ -1283,7 +1283,7 @@ function HostTreeViewPanel() {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Log (external terminal with shift+click)" placement="left" disableInteractive>
+        <Tooltip title="Log (shift+click for alternative open location)" placement="left" disableInteractive>
           <span>
             <IconButton
               size="medium"

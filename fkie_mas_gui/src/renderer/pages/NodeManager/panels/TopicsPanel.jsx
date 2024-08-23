@@ -2,6 +2,7 @@ import { Brightness1 } from "@mui/icons-material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import DvrIcon from '@mui/icons-material/Dvr';
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
@@ -250,7 +251,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
 
   const onEchoClick = useCallback(
     (topic, external, openInTerminal = false) => {
-      rosCtx.openSubscriber(topic.providerId, topic.name, false, external, openInTerminal);
+      rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
     },
     [rosCtx]
   );
@@ -320,7 +321,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     return (
       <ButtonGroup orientation="vertical" aria-label="topic control group">
         <Tooltip
-          title="Echo"
+          title="Echo (shift+click for alternative open location)"
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -336,6 +337,26 @@ function TopicsPanel({ initialSearchTerm = "" }) {
               }}
             >
               <ChatBubbleOutlineIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title="Echo in Terminal"
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              disabled={!topicForSelected}
+              size="medium"
+              aria-label="Subscribe to topic and show the output"
+              onClick={(event) => {
+                onEchoClick(topicForSelected, event.nativeEvent.shiftKey, true);
+              }}
+            >
+              <DvrIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>

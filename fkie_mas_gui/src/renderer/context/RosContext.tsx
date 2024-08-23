@@ -18,7 +18,6 @@ import {
   getFileName,
 } from "../models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
-import ITerminalConfig from "../pages/NodeManager/layout/LayoutTabConfig";
 import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
 import { CmdType, ConnectionState } from "../providers";
@@ -962,6 +961,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     async (
       providerId: string,
       topic: string,
+      showOptions: boolean,
       defaultNoData: boolean,
       externalKeyModifier: boolean,
       forceOpenTerminal: boolean
@@ -970,13 +970,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       const provider = getProviderById(providerId);
       if (provider) {
         const id = `echo-${provider.connection.host}-${provider.connection.port}-${topic}`;
-        // const hasExtSubscriber = await window.electronAPI?.hasSubscriber(id);
-        const hasExtSubscriber = false;
         if (forceOpenTerminal) {
           try {
             const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
             const result = await window.CommandExecutor?.execTerminal(
-              null, // we start the publish always local
+              null, // we start the subscriber always local
               `"echo ${topic}"`,
               terminalCmd.cmd
             );
@@ -988,31 +986,17 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (hasExtSubscriber) {
-          // inform external window about new selected range
-          // window.electronAPI?.focusSubscriber(id);
-        } else if (openExternal && provider && window.CommandExecutor) {
+        if (openExternal && provider && window.electronAPI) {
           // open in new window
-          // window.electronAPI.openSubscriber(
-          //   id,
-          //   provider.connection.host,
-          //   provider.connection.port,
-          //   topic,
-          //   defaultNoData,
-          // );
-          try {
-            const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
-            const result = await window.CommandExecutor?.execTerminal(
-              null, // we start the publish always local
-              `"echo ${topic}"`,
-              terminalCmd.cmd
-            );
-            if (!result?.result) {
-              logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, true);
-            }
-          } catch (error) {
-            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, true);
-          }
+          // we do not check for existing subscriber, it is done by IPC with given id
+          window.electronAPI.openSubscriber(
+            id,
+            provider.connection.host,
+            provider.connection.port,
+            topic,
+            showOptions,
+            defaultNoData
+          );
         } else {
           emitCustomEvent(
             EVENT_OPEN_COMPONENT,
@@ -1020,7 +1004,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               id,
               topic,
               <TopicEchoPanel
-                showOptions
+                showOptions={showOptions}
                 defaultProvider={providerId}
                 defaultTopic={topic}
                 defaultNoData={defaultNoData}
@@ -1030,15 +1014,24 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               new LayoutTabConfig(
                 true,
                 `${CmdType.ECHO}`,
+                // {
+                //   type: CmdType.ECHO,
+                //   providerId,
+                //   topicName: topic,
+                //   nodeName: "",
+                //   screen: "",
+                //   cmd: "",
+                // },
+                null,
+                null,
                 {
-                  type: CmdType.ECHO,
-                  providerId,
-                  topicName: topic,
-                  nodeName: "",
-                  screen: "",
-                  cmd: "",
-                },
-                null
+                  id: id,
+                  host: provider.connection.host,
+                  port: provider.connection.port,
+                  topic: topic,
+                  showOptions: showOptions,
+                  noData: defaultNoData,
+                }
               )
             )
           );

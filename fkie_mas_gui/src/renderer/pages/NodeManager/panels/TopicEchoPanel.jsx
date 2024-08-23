@@ -40,7 +40,6 @@ import { lightThemeJson } from "../../../themes/lightTheme";
 
 function TopicEchoPanel({
   showOptions = true,
-  showDetails = false,
   defaultProvider = "",
   defaultTopic = "",
   defaultNoData = false,
@@ -456,7 +455,6 @@ function TopicEchoPanel({
 
 TopicEchoPanel.propTypes = {
   showOptions: PropTypes.bool,
-  showDetails: PropTypes.bool,
   defaultProvider: PropTypes.string,
   defaultTopic: PropTypes.string,
   defaultNoData: PropTypes.bool,

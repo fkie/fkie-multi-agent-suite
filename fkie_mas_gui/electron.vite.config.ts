@@ -32,6 +32,7 @@ export default defineConfig({
         input: {
           app: resolve(__dirname, "src/renderer/index.html"),
           editor: resolve(__dirname, "src/renderer/editor.html"),
+          subscriber: resolve(__dirname, "src/renderer/subscriber.html"),
         },
       },
     },
