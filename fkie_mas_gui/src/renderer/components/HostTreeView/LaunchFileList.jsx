@@ -65,7 +65,7 @@ function LaunchFileList({
           `${launchName}@${provider.name()}`,
           <LaunchFilePanel launchContent={launchContent} />,
           true,
-          LAYOUT_TAB_SETS.BORDER_TOP,
+          LAYOUT_TAB_SETS.BORDER_CENTER,
           new LayoutTabConfig(false, "info")
         )
       );

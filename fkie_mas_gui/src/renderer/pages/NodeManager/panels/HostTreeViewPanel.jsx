@@ -294,7 +294,7 @@ function HostTreeViewPanel() {
         title,
         <NodeLoggerPanel node={node} />,
         true,
-        LAYOUT_TAB_SETS.BORDER_RIGHT,
+        LAYOUT_TAB_SETS[settingsCtx.get("nodeLoggerOpenLocation")],
         new LayoutTabConfig(false, "node-logger", {})
       )
     );
@@ -397,7 +397,7 @@ function HostTreeViewPanel() {
           `${node.name}`,
           <ParameterPanel nodes={[node]} providers={null} />,
           true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
+          LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation")],
           new LayoutTabConfig(false, "parameter")
         )
       );
@@ -410,7 +410,7 @@ function HostTreeViewPanel() {
           `${provider}`,
           <ParameterPanel nodes={null} providers={[provider]} />,
           true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
+          LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation")],
           new LayoutTabConfig(false, "parameter")
         )
       );

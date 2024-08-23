@@ -204,6 +204,20 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
     description: "",
   },
+  nodeLoggerOpenLocation: {
+    label: "Location to open log level window",
+    type: "string",
+    default: "BORDER_RIGHT",
+    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
+    description: "",
+  },
+  nodeParamOpenLocation: {
+    label: "Location to open node parameter window",
+    type: "string",
+    default: "BORDER_RIGHT",
+    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
+    description: "",
+  },
   showRemoteNodes: {
     label: "Show remote nodes",
     default: false,
