@@ -114,7 +114,13 @@ function HostTreeView({
               stopNodes([node.idGlobal]);
             } else {
               node.screens.forEach((screen) => {
-                createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
+                createSingleTerminalPanel(
+                  CmdType.SCREEN,
+                  node,
+                  screen,
+                  event.nativeEvent.shiftKey,
+                  event.nativeEvent.ctrlKey
+                );
               });
             }
           } else {
@@ -122,7 +128,13 @@ function HostTreeView({
               // stop node
               startNodes([node.idGlobal]);
             } else {
-              createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+              createSingleTerminalPanel(
+                CmdType.LOG,
+                node,
+                undefined,
+                event.nativeEvent.shiftKey,
+                event.nativeEvent.ctrlKey
+              );
             }
           }
         }

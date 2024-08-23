@@ -317,50 +317,10 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
    */
   const createSingleTerminalPanel = useCallback(
-    async (type, node, screen, externalKeyModifier = false) => {
-      const external =
-        type === CmdType.SCREEN
-          ? xor(screenOpenExternal, externalKeyModifier)
-          : xor(logOpenExternal, externalKeyModifier);
-      if (external && window.CommandExecutor) {
-        // create a terminal command
-        const provider = rosCtx.getProviderById(node.providerId);
-        const terminalCmd = await provider.cmdForType(type, node.name, "", screen, "");
-        // open screen in a new terminal
-        try {
-          const result = await window.CommandExecutor?.execTerminal(
-            provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
-            `"${type.toLocaleUpperCase()} ${node.name}@${provider.host()}"`,
-            terminalCmd.cmd
-          );
-          if (!result.result) {
-            logCtx.error(`Can't open external terminal on ${provider.host()}`, result.message, true);
-          }
-        } catch (error) {
-          logCtx.error(`Can't open external terminal on ${provider.host()}`, error, true);
-        }
-      } else {
-        const id = `${type}-${screen}-${node.name}@${node.providerName}`;
-        const title = node.name ? `${node.name}@${node.providerName}` : node.providerName;
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            id,
-            title,
-            <SingleTerminalPanel id={id} type={type} providerId={node.providerId} node={node} screen={screen} />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_BOTTOM,
-            new LayoutTabConfig(true, type, {
-              type,
-              providerId: node.providerId,
-              nodeName: node.name,
-              screen,
-            })
-          )
-        );
-      }
+    async (type, node, screen, externalKeyModifier = false, openInTerminal = false) => {
+      rosCtx.openTerminal(type, node.providerId, node.name, screen, "", externalKeyModifier, openInTerminal);
     },
-    [rosCtx, SSHCtx, logCtx]
+    [rosCtx]
   );
 
   /**
@@ -1039,7 +999,13 @@ function HostTreeViewPanel() {
                     emptyNode.name = "";
                     emptyNode.providerId = providerId;
                     emptyNode.providerName = prov?.name();
-                    createSingleTerminalPanel(CmdType.TERMINAL, emptyNode, "", event.nativeEvent.shiftKey);
+                    createSingleTerminalPanel(
+                      CmdType.TERMINAL,
+                      emptyNode,
+                      "",
+                      event.nativeEvent.shiftKey,
+                      event.nativeEvent.ctrlKey
+                    );
                   });
                 }}
               >
@@ -1247,7 +1213,13 @@ function HostTreeViewPanel() {
                     if (node.screens.length === 1) {
                       // 1 screen available
                       node.screens.forEach((screen) => {
-                        createSingleTerminalPanel(CmdType.SCREEN, node, screen, event.nativeEvent.shiftKey);
+                        createSingleTerminalPanel(
+                          CmdType.SCREEN,
+                          node,
+                          screen,
+                          event.nativeEvent.shiftKey,
+                          event.nativeEvent.ctrlKey
+                        );
                       });
                     } else if (node.screens.length > 1) {
                       // Multiple screens available
@@ -1269,7 +1241,13 @@ function HostTreeViewPanel() {
                       );
                     } else {
                       // no screens, try to find by node name instead
-                      createSingleTerminalPanel(CmdType.SCREEN, node, undefined, event.nativeEvent.shiftKey);
+                      createSingleTerminalPanel(
+                        CmdType.SCREEN,
+                        node,
+                        undefined,
+                        event.nativeEvent.shiftKey,
+                        event.nativeEvent.ctrlKey
+                      );
                     }
                   });
                 }
@@ -1291,7 +1269,13 @@ function HostTreeViewPanel() {
               disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 getSelectedNodes().forEach((node) => {
-                  createSingleTerminalPanel(CmdType.LOG, node, undefined, event.nativeEvent.shiftKey);
+                  createSingleTerminalPanel(
+                    CmdType.LOG,
+                    node,
+                    undefined,
+                    event.nativeEvent.shiftKey,
+                    event.nativeEvent.ctrlKey
+                  );
                 });
               }}
             >

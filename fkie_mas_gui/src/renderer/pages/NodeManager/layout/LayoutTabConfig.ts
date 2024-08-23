@@ -1,7 +1,5 @@
-import CmdType from "../../../providers/CmdType";
-
-export interface ITerminalConfig {
-  type: CmdType | undefined;
+export interface IExtTerminalConfig {
+  type: string;
   providerId: string;
   nodeName: string;
   topicName: string;
@@ -10,7 +8,7 @@ export interface ITerminalConfig {
 }
 
 export interface IEditorConfig {
-  id: string,
+  id: string;
   host: string;
   port: number;
   rootLaunch: string;
@@ -19,12 +17,22 @@ export interface IEditorConfig {
 }
 
 export interface ISubscriberConfig {
-  id: string,
+  id: string;
   host: string;
   port: number;
-  topic: string,
-  showOptions: boolean,
-  noData: boolean,
+  topic: string;
+  showOptions: boolean;
+  noData: boolean;
+}
+
+export interface ITerminalConfig {
+  id: string;
+  host: string;
+  port: number;
+  cmdType: string;
+  node: string;
+  screen: string;
+  cmd: string;
 }
 
 export default class LayoutTabConfig {
@@ -32,23 +40,27 @@ export default class LayoutTabConfig {
 
   tabType: string;
 
-  terminalConfig: ITerminalConfig | null;
+  extTerminalConfig: IExtTerminalConfig | null;
 
   editorConfig: IEditorConfig | null;
 
   subscriberConfig: ISubscriberConfig | null;
 
+  terminalConfig: ITerminalConfig | null;
+
   constructor(
     openExternal: boolean = false,
     tabType: string = "",
-    terminalConfig: ITerminalConfig | null = null,
+    extTerminalConfig: IExtTerminalConfig | null = null,
     editorConfig: IEditorConfig | null = null,
-    subscriberConfig: ISubscriberConfig | null = null
+    subscriberConfig: ISubscriberConfig | null = null,
+    terminalConfig: ITerminalConfig | null = null
   ) {
     this.openExternal = openExternal;
     this.tabType = tabType;
-    this.terminalConfig = terminalConfig;
+    this.extTerminalConfig = extTerminalConfig;
     this.editorConfig = editorConfig;
     this.subscriberConfig = subscriberConfig;
+    this.terminalConfig = terminalConfig;
   }
 }

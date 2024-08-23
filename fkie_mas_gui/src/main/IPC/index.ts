@@ -17,10 +17,12 @@ const sCommandExecutor = new CommandExecutor();
 const sMultimasterManager = new MultimasterManager();
 const editorManager = new EditorManager();
 const subscriberManager = new SubscriberManager();
+const terminalManager = new TerminalManager();
 
 export const registerHandlers = (): void => {
   editorManager.registerHandlers();
   subscriberManager.registerHandlers();
+  terminalManager.registerHandlers();
 
   // Password Manager
   ipcMain.handle("PasswordManager:setPassword", (_event, service: string, account: string, password: string) => {

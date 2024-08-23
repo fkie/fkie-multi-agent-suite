@@ -140,6 +140,7 @@ if (process.contextIsolated) {
       openFile: (path: string) => {
         return ipcRenderer.invoke("dialog:openFile", path);
       },
+      // editor interface
       openEditor: (
         id: string,
         host: string,
@@ -180,6 +181,7 @@ if (process.contextIsolated) {
         ipcRenderer.on("editor:onClose", (_event, id) => {
           return callback(id);
         }),
+      // subscriber interface
       openSubscriber: (
         id: string,
         host: string,
@@ -198,6 +200,28 @@ if (process.contextIsolated) {
       },
       onSubscriberClose: (callback: (tabId: string) => Promise<boolean>) =>
         ipcRenderer.on("subscriber:onClose", (_event, id) => {
+          return callback(id);
+        }),
+      // terminal interface
+      openTerminal: (
+        id: string,
+        host: string,
+        port: number,
+        info: string,
+        node: string,
+        screen: string,
+        cmd: string
+      ) => {
+        return ipcRenderer.invoke("terminal:open", id, host, port, info, node, screen, cmd);
+      },
+      closeTerminal: (id: string) => {
+        return ipcRenderer.invoke("terminal:close", id);
+      },
+      hasTerminal: (id: string) => {
+        return ipcRenderer.invoke("terminal:has", id);
+      },
+      onTerminalClose: (callback: (tabId: string) => Promise<boolean>) =>
+        ipcRenderer.on("terminal:onClose", (_event, id) => {
           return callback(id);
         }),
     });

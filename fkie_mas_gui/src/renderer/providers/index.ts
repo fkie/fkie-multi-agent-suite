@@ -1,5 +1,6 @@
 import CmdTerminal from "./CmdTerminal";
-import CmdType from "./CmdType";
+import CmdType, { cmdTypeFromString } from "./CmdType";
 import { ConnectionState } from "./ConnectionState";
 
-export { CmdTerminal, CmdType, ConnectionState };
+export { CmdTerminal, CmdType, cmdTypeFromString, ConnectionState };
+

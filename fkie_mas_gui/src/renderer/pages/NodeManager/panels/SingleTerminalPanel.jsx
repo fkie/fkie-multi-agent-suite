@@ -9,11 +9,11 @@ import { RosNode } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../../../utils/events";
 
-function SingleTerminalPanel({ id, type, node = null, screen = null, providerId = "", width = null, cmd = "" }) {
+function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen = "", width = null, cmd = "" }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [initialCommands, setInitialCommands] = useState([]);
-  const [currentProvider, setCurrentProvider] = useState(null);
+  const [currentHost, setCurrentHost] = useState(null);
   const [lastScreenUsed, setLastScreenUsed] = useState("");
   const [tokenUrl, setTokenUrl] = useState(providerId);
   const [errorHighlighting, setErrorHighlighting] = useState(false);
@@ -24,30 +24,31 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
       const provider = rosCtx.getProviderById(providerId);
 
       if (!provider) {
-        setCurrentProvider(null);
+        setCurrentHost(null);
         return;
       }
-
-      let tkUrl = `${node.name.replaceAll("/", "")}`;
+      setCurrentHost(provider.host());
+      let tkUrl = `${nodeName.replaceAll("/", "")}`;
       if (!tkUrl) {
         tkUrl = providerId;
       }
       setTokenUrl(tkUrl);
-      setCurrentProvider(() => provider);
-      const terminalCmd = await provider.cmdForType(type, node?.name, "", newScreen, cmd);
-      setInitialCommands([`${terminalCmd.cmd}\r`]);
+      const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd);
+      if (terminalCmd.cmd) {
+        setInitialCommands([`${terminalCmd.cmd}\r`]);
+      }
       if (type === CmdType.SCREEN) {
         setLastScreenUsed(terminalCmd.screen);
       }
     },
-    [cmd, node.name, providerId, rosCtx, type]
+    [cmd, nodeName, providerId, rosCtx, type]
   );
 
   const updateScreenName = useCallback(() => {
     // node changed, update the screen for the current node
-    if (node && type === CmdType.SCREEN) {
+    if (nodeName && type === CmdType.SCREEN) {
       rosCtx.mapProviderRosNodes.get(providerId)?.forEach((n) => {
-        if (n.name === node.name) {
+        if (n.name === nodeName) {
           // TODO: How to handle multiple screens? For now just do this for nodes with a single screen.
           if (n.screens.length > 0) {
             setErrorHighlighting(false);
@@ -68,7 +69,7 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
         }
       });
     }
-  }, [initializeTerminal, lastScreenUsed, node, providerId, rosCtx.mapProviderRosNodes, screen, type]);
+  }, [initializeTerminal, lastScreenUsed, nodeName, providerId, rosCtx.mapProviderRosNodes, screen, type]);
 
   // load commands initially
   useEffect(() => {
@@ -85,23 +86,36 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
   const createTerminalView = useMemo(() => {
     return (
       <Box key={id} width="100%" height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
-        {currentProvider && node && node.providerId && initialCommands.length > 0 && (
+        {!nodeName && type !== CmdType.CMD && type !== CmdType.TERMINAL && (
+          <Alert severity="info">
+            <AlertTitle>Please select a node</AlertTitle>
+          </Alert>
+        )}
+
+        {!currentHost && (
+          <Alert severity="info">
+            <AlertTitle>{`Invalid provider: [${providerId}]`}</AlertTitle>
+            Please report this bug.
+          </Alert>
+        )}
+
+        {currentHost && nodeName && initialCommands.length > 0 && (
           <TerminalClient
             key={`term-${id}`}
             tokenUrl={tokenUrl}
-            wsUrl={`ws://${currentProvider.host()}:7681/ws`}
+            wsUrl={`ws://${currentHost}:7681/ws`}
             initialCommands={initialCommands}
             width={width}
-            name={`${node.name}`}
+            name={`${nodeName}`}
             errorHighlighting={errorHighlighting}
             onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
           />
         )}
-        {currentProvider && cmd && providerId && initialCommands.length > 0 && (
+        {currentHost && cmd && initialCommands.length > 0 && (
           <TerminalClient
             key={`term-cmd-${id}`}
             tokenUrl={`${cmd.replaceAll("/", " ")}`}
-            wsUrl={`ws://${currentProvider.host()}:7681/ws`}
+            wsUrl={`ws://${currentHost}:7681/ws`}
             initialCommands={initialCommands}
             width={width}
             name={`${cmd.replaceAll("/", " ")}`}
@@ -109,22 +123,21 @@ function SingleTerminalPanel({ id, type, node = null, screen = null, providerId 
             onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
           />
         )}
-
-        {!node && type !== "cmd" && (
-          <Alert severity="info">
-            <AlertTitle>Please select a node</AlertTitle>
-          </Alert>
-        )}
-
-        {!currentProvider && (
-          <Alert severity="info">
-            <AlertTitle>{`Invalid provider: [${providerId}]`}</AlertTitle>
-            Please report this bug.
-          </Alert>
+        {currentHost && type === CmdType.TERMINAL && (
+          <TerminalClient
+            key={`term-terminal-${id}`}
+            tokenUrl={`${cmd.replaceAll("/", " ")}`}
+            wsUrl={`ws://${currentHost}:7681/ws`}
+            initialCommands={initialCommands}
+            width={width}
+            name={`bash`}
+            errorHighlighting={errorHighlighting}
+            onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
+          />
         )}
       </Box>
     );
-  }, [cmd, currentProvider, id, initialCommands, node, providerId, settingsCtx, tokenUrl, type, width]);
+  }, [cmd, currentHost, id, initialCommands, nodeName, providerId, settingsCtx, tokenUrl, type, width]);
 
   return createTerminalView;
 }
@@ -133,7 +146,7 @@ SingleTerminalPanel.propTypes = {
   id: PropTypes.string.isRequired,
   type: PropTypes.instanceOf(CmdType).isRequired,
   providerId: PropTypes.string,
-  node: PropTypes.instanceOf(RosNode),
+  nodeName: PropTypes.string,
   screen: PropTypes.string,
   width: PropTypes.number,
   cmd: PropTypes.string,

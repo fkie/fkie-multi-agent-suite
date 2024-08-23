@@ -12,6 +12,7 @@ files:
 asarUnpack:
   - out/renderer/editor.html
   - out/renderer/subscriber.html
+  - out/renderer/terminal.html
 win:
   executableName: mas-gui
   icon: 'icon/'

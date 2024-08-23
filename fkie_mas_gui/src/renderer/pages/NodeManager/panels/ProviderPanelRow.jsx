@@ -464,12 +464,8 @@ function ProviderPanelRow({ provider }) {
                 edge="start"
                 onClick={() => {
                   // open terminal for update
-                  const emptyNode = new RosNode();
-                  emptyNode.name = "";
-                  emptyNode.providerId = provider.id;
-                  emptyNode.providerName = provider.name();
                   const type = CmdType.TERMINAL;
-                  const id = `${type}${emptyNode.name}@${emptyNode.providerName}`;
+                  const id = `${type}@${provider.name()}`;
                   emitCustomEvent(
                     EVENT_OPEN_COMPONENT,
                     eventOpenComponent(
@@ -478,16 +474,16 @@ function ProviderPanelRow({ provider }) {
                       <SingleTerminalPanel
                         id={id}
                         type={type}
-                        providerId={emptyNode.providerId}
-                        node={emptyNode}
+                        providerId={provider.id}
+                        nodeName={""}
                         cmd=""
                       />,
                       true,
                       LAYOUT_TAB_SETS.BORDER_BOTTOM,
                       new LayoutTabConfig(true, type, {
                         type,
-                        providerId: emptyNode.providerId,
-                        nodeName: emptyNode.name,
+                        providerId: provider.id,
+                        nodeName: "",
                         cmd: "",
                       })
                     )

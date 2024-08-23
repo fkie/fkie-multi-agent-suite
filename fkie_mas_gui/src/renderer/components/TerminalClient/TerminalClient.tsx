@@ -72,10 +72,6 @@ function TerminalClient(props: ITerminalClient) {
     props;
   const settingsCtx = useContext(SettingsContext);
 
-  if (!tokenUrl || !initialCommands || !wsUrl) {
-    return "";
-  }
-
   termOptions.fontSize = settingsCtx.get("fontSizeTerminal");
   termOptions.theme = {
     foreground: "#d2d2d2",

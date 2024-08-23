@@ -1998,7 +1998,7 @@ export default class Provider implements IProvider {
   /**
    * Update the screen state of each node reported in the list of ScreensMapping.
    */
-  private callbackScreensUpdate: (msg: JSONObject) => void = async (msg) => {
+  public callbackScreensUpdate: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debugInterface(URI.ROS_SCREEN_LIST, msg, "", this.id);
     if (!msg) {
       return;

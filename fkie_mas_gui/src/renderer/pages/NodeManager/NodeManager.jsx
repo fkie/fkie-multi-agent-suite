@@ -430,7 +430,7 @@ function NodeManager() {
             >
               <IconButton
                 onMouseDown={(event) => {
-                  if (node.getConfig().terminalConfig) {
+                  if (node.getConfig().extTerminalConfig) {
                     const openExternalTerminal = async (config, tabNodeId) => {
                       // create a terminal command
                       const provider = rosCtx.getProviderById(config.providerId);
@@ -453,7 +453,7 @@ function NodeManager() {
                         logCtx.error(`Can't open external terminal for ${config.nodeName}`, error, true);
                       }
                     };
-                    openExternalTerminal(node.getConfig().terminalConfig, node.getId());
+                    openExternalTerminal(node.getConfig().extTerminalConfig, node.getId());
                   }
                   if (node.getConfig().editorConfig) {
                     const cfg = node.getConfig().editorConfig;
@@ -469,6 +469,19 @@ function NodeManager() {
                       cfg.topic,
                       cfg.showOptions,
                       cfg.noData
+                    );
+                    deleteTab(node.getId());
+                  }
+                  if (node.getConfig().terminalConfig) {
+                    const cfg = node.getConfig().terminalConfig;
+                    window.electronAPI.openTerminal(
+                      cfg.id,
+                      cfg.host,
+                      cfg.port,
+                      cfg.cmdType,
+                      cfg.node,
+                      cfg.screen,
+                      cfg.cmd
                     );
                     deleteTab(node.getId());
                   }

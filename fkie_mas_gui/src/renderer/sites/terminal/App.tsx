@@ -4,29 +4,29 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { getFileName } from "../../models";
-import TopicEchoPanel from "../../pages/NodeManager/panels/TopicEchoPanel";
-import SubscriberProvider from "../../providers/SubscriberProvider";
+import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
+import { CmdType, cmdTypeFromString } from "../../providers";
+import TerminalProvider from "../../providers/TerminalProvider";
 // load default style for flexlayout-react. Dark/Light theme changes are in ./themes
 import "../../App.scss";
 import { darkThemeDef, lightThemeDef } from "../../themes";
 
-interface ISubscriberInfo {
+interface ITerminalInfo {
   id: string;
-  provider: SubscriberProvider;
-  topic: string;
-  showOptions: boolean;
-  noData: boolean;
+  provider: TerminalProvider;
+  info: CmdType;
+  node: string;
+  screen: string;
+  cmd: string;
 }
 
-export default function SubscriberApp() {
+export default function TerminalApp() {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [lightTheme, setLightTheme] = useState(createTheme(lightThemeDef as ThemeOptions));
   const [darkTheme, setDarkTheme] = useState(createTheme(darkThemeDef as ThemeOptions));
-  const [subInfo, setSubInfo] = useState<ISubscriberInfo | null>(null);
-  const [stopRequested, setStopRequested] = useState<string>("");
+  const [paramInfo, setParamInfo] = useState<ITerminalInfo | null>(null);
 
   const initProvider = useCallback(async () => {
     const queryString = window.location.search;
@@ -35,49 +35,35 @@ export default function SubscriberApp() {
     const id = urlParams.get("id");
     const host = urlParams.get("host");
     const port = urlParams.get("port");
-    const topic = urlParams.get("topic");
-    const showOptionsParam = urlParams.get("showOptions");
-    const showOptions = showOptionsParam ? JSON.parse(showOptionsParam) : false;
-    const noDataParam = urlParams.get("noData");
-    const noData = noDataParam ? JSON.parse(noDataParam) : false;
+    const info = urlParams.get("info");
+    const node = urlParams.get("node");
+    const screen = urlParams.get("screen");
+    const cmd = urlParams.get("cmd");
     if (!host || !port) {
       logCtx.error(`invalid address ${host}:${port}`, "", false);
-      return;
-    }
-    if (!topic) {
-      logCtx.error(`invalid topic ${topic}`, "", false);
       return;
     }
     if (!id) {
       logCtx.error(`no id found ${id}`, "", false);
       return;
     }
-    document.title = `Echo - ${getFileName(topic)}`;
-    const prov = new SubscriberProvider(settingsCtx, host, "", parseInt(port), false, logCtx);
+    const nodeName = node ? node : "bash";
+    document.title = `${info} - ${nodeName}`;
+    const prov = new TerminalProvider(settingsCtx, host, "", parseInt(port), false, logCtx);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
-      setSubInfo({
+      setParamInfo({
         id: id,
         provider: prov,
-        topic: topic,
-        showOptions: showOptions,
-        noData: noData,
+        info: cmdTypeFromString(info),
+        node: node ? node : "",
+        screen: screen ? screen : "",
+        cmd: cmd ? cmd : "",
       });
     } else {
       logCtx.error(`connection to ${host}:${port} failed`, "", false);
     }
-  }, [setSubInfo]);
-
-  const stopSubscriber = async (topic: string, provider: SubscriberProvider) => {
-    // stop ros node for given topic
-    logCtx.info(`Stopping subscriber node for '${topic} on '${provider.name()}'`, "");
-    const result = await provider.stopSubscriber(topic);
-    if (result) {
-      logCtx.info(`Stopped subscriber node for '${topic} on '${provider.name()}'`, "");
-    } else {
-      logCtx.error(`Can not stop subscriber node for: ${topic} on '${provider.name()}`, `${result}`);
-    }
-  };
+  }, [setParamInfo]);
 
   const handleWindowError = (e) => {
     // fix "ResizeObserver loop limit exceeded" while change size of the editor
@@ -107,20 +93,11 @@ export default function SubscriberApp() {
   }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
-    if (stopRequested) {
-      if (subInfo) {
-        stopSubscriber(subInfo.topic, subInfo.provider);
-      }
-      // close window on stop request
-      window.electronAPI?.closeSubscriber(stopRequested);
-    }
-  }, [subInfo, stopRequested]);
-
-  useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
-    window.electronAPI?.onSubscriberClose((id: string) => {
-      setStopRequested(id);
+    window.electronAPI?.onTerminalClose((id: string) => {
+      // close window on stop request
+      window.electronAPI?.closeTerminal(id);
     });
     initProvider();
     return () => {
@@ -143,12 +120,14 @@ export default function SubscriberApp() {
         //   bottom: 2,
         // }}
       >
-        {subInfo && (
-          <TopicEchoPanel
-            showOptions
-            defaultProvider={subInfo.provider.id}
-            defaultTopic={subInfo.topic}
-            defaultNoData={subInfo.noData}
+        {paramInfo && (
+          <SingleTerminalPanel
+            id={paramInfo.id}
+            type={paramInfo.info}
+            providerId={paramInfo.provider.id}
+            nodeName={paramInfo.node}
+            screen={paramInfo.screen}
+            cmd={paramInfo.cmd}
           />
         )}
       </Stack>

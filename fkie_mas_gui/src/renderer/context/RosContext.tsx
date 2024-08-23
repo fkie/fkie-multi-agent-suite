@@ -19,6 +19,7 @@ import {
 } from "../models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
+import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
 import { CmdType, ConnectionState } from "../providers";
 import Provider from "../providers/Provider";
@@ -1041,6 +1042,92 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     [getProviderById, emitCustomEvent]
   );
 
+  const openTerminal = useCallback(
+    async (
+      type: string,
+      providerId: string,
+      node: string,
+      screen: string,
+      cmd: string,
+      externalKeyModifier: boolean,
+      forceOpenTerminal: boolean
+    ) => {
+      const openExternal: boolean =
+        type === CmdType.SCREEN
+          ? xor(settingsCtx.get("screenOpenExternal"), externalKeyModifier)
+          : xor(settingsCtx.get("logOpenExternal"), externalKeyModifier);
+      const provider = getProviderById(providerId);
+      if (provider) {
+        const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${node}`;
+        if (forceOpenTerminal) {
+          try {
+            // create a terminal command
+            const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd);
+            const result = await window.CommandExecutor?.execTerminal(
+              provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
+              `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
+              terminalCmd.cmd
+            );
+            if (!result?.result) {
+              logCtx.error(`Can't open external terminal on ${provider.host()}`, `${result?.message}`, true);
+            }
+          } catch (error) {
+            logCtx.error(`Can't open external terminal on ${provider.host()}`, `${error}`, true);
+          }
+          return;
+        }
+        if (openExternal && provider && window.electronAPI) {
+          // open in new window
+          // we do not check for existing subscriber, it is done by IPC with given id
+          window.electronAPI.openTerminal(
+            id,
+            provider.connection.host,
+            provider.connection.port,
+            type,
+            node,
+            screen,
+            cmd
+          );
+        } else {
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              id,
+              node,
+              <SingleTerminalPanel
+                id={id}
+                type={type}
+                providerId={providerId}
+                nodeName={node}
+                screen={screen}
+                cmd={cmd}
+              />,
+              true,
+              LAYOUT_TAB_SETS.BORDER_BOTTOM,
+              new LayoutTabConfig(
+                true,
+                `${type.toLocaleUpperCase()}`,
+                null,
+                null,
+                null,
+                {
+                  id: id,
+                  host: provider.connection.host,
+                  port: provider.connection.port,
+                  cmdType: type,
+                  node: node,
+                  screen: screen,
+                  cmd: cmd,
+                }
+              )
+            )
+          );
+        }
+      }
+    },
+    [getProviderById, emitCustomEvent, SSHCtx]
+  );
+
   // initialize ROS and system Info
   const init = async () => {
     setInitialized(() => false);
@@ -1332,6 +1419,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       addProvider,
       openEditor,
       openSubscriber,
+      openTerminal,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [

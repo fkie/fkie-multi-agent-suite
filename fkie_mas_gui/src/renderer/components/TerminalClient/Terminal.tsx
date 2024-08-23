@@ -10,7 +10,7 @@ import LastPageIcon from "@mui/icons-material/LastPage";
 import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from "@mui/material";
 import { FitAddon } from "@xterm/addon-fit";
 import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
-import { Unicode11Addon } from '@xterm/addon-unicode11';
+import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
@@ -72,7 +72,7 @@ export class Terminal extends React.Component<Props, XtermState> {
   private searchAddonOptions: ISearchOptions;
 
   private webglAddon: WebglAddon = new WebglAddon();
-  
+
   private unicode11Addon = new Unicode11Addon();
 
   private socket: WebSocket | null = null;
@@ -160,7 +160,6 @@ export class Terminal extends React.Component<Props, XtermState> {
     terminal.onResize(this.onTerminalResize);
     this.connect();
     if (this.container) {
-      console.log(`CONTAINER OK`);
       terminal.open(this.container);
     }
     fitAddon.fit();
@@ -272,8 +271,8 @@ export class Terminal extends React.Component<Props, XtermState> {
         this.terminal?.write(textDecoder.decode(data));
         break;
       case Command.SET_WINDOW_TITLE:
-        this.title = textDecoder.decode(data);
-        document.title = this.title;
+        // this.title = textDecoder.decode(data);
+        // document.title = this.title;
         break;
       case Command.SET_PREFERENCES: {
         break;
