@@ -38,12 +38,7 @@ import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "../../../providers/event
 import { darkThemeJson } from "../../../themes/darkTheme";
 import { lightThemeJson } from "../../../themes/lightTheme";
 
-function TopicEchoPanel({
-  showOptions = true,
-  defaultProvider = "",
-  defaultTopic = "",
-  defaultNoData = false,
-}) {
+function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic = "", defaultNoData = false }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
@@ -257,17 +252,30 @@ function TopicEchoPanel({
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
                   <DataObjectIcon />
                 </ToggleButton>
               </Tooltip>
-              <Tooltip title="show arrays" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
+              <Tooltip
+                title="show arrays"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+                disableInteractive
+              >
                 <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
                   <DataArrayIcon />
                 </ToggleButton>
               </Tooltip>
-              <Tooltip title="show strings" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
+              <Tooltip
+                title="show strings"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+                disableInteractive
+              >
                 <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
                   <AbcIcon />
                 </ToggleButton>
@@ -277,6 +285,7 @@ function TopicEchoPanel({
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <ToggleButton
                   size="small"
@@ -293,6 +302,7 @@ function TopicEchoPanel({
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <ToggleButton
                   size="small"
@@ -353,6 +363,7 @@ function TopicEchoPanel({
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <IconButton
                   size="medium"
@@ -368,6 +379,7 @@ function TopicEchoPanel({
                 placement="bottom"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <IconButton
                   size="medium"
@@ -384,6 +396,7 @@ function TopicEchoPanel({
                 placement="right"
                 enterDelay={tooltipDelay}
                 enterNextDelay={tooltipDelay}
+                disableInteractive
               >
                 <Select
                   id="select-msg-count"
