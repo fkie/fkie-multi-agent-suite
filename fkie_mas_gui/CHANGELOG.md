@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.0 - 26.08.2024
+
+Added: close tabs with middle mouse
+Added: ctrl+shift+c to copy text in the terminal window
+Added: options to open terminals (screen, log) in external window by default
+Added: options to open subscriber in external window by default
+Added: tooltips for log levels in logger panel
+Added: configurations for open tab locations
+Select nodes tab on close tab if it is in the same set
+
 ## 2.3.2 - 21.08.2024
 
 Added option to open editor in external window by default
