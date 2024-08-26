@@ -1039,7 +1039,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
       }
     },
-    [getProviderById, emitCustomEvent]
+    [getProviderById, emitCustomEvent, settingsCtx]
   );
 
   const openTerminal = useCallback(
@@ -1093,7 +1093,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             EVENT_OPEN_COMPONENT,
             eventOpenComponent(
               id,
-              node,
+              node ? node : `${type}_${provider.connection.host}`,
               <SingleTerminalPanel
                 id={id}
                 type={type}

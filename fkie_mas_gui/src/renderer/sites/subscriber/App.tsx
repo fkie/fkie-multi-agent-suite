@@ -77,6 +77,8 @@ export default function SubscriberApp() {
     } else {
       logCtx.error(`Can not stop subscriber node for: ${topic} on '${provider.name()}`, `${result}`);
     }
+    // close window on stop request
+    window.electronAPI?.closeSubscriber(stopRequested);
   };
 
   const handleWindowError = (e) => {
@@ -110,9 +112,10 @@ export default function SubscriberApp() {
     if (stopRequested) {
       if (subInfo) {
         stopSubscriber(subInfo.topic, subInfo.provider);
+      } else {
+        // close window on stop request if no valid info is available
+        window.electronAPI?.closeSubscriber(stopRequested);
       }
-      // close window on stop request
-      window.electronAPI?.closeSubscriber(stopRequested);
     }
   }, [subInfo, stopRequested]);
 

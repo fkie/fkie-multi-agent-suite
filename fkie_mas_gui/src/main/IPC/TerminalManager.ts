@@ -135,7 +135,7 @@ class TerminalManager {
           id: id,
           host: host,
           port: `${port}`,
-          info: info,
+          info: `${info}`,
           node: node,
           screen: screen,
           cmd: cmd,

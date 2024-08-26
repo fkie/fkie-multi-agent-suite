@@ -33,6 +33,7 @@ export default defineConfig({
           app: resolve(__dirname, "src/renderer/index.html"),
           editor: resolve(__dirname, "src/renderer/editor.html"),
           subscriber: resolve(__dirname, "src/renderer/subscriber.html"),
+          terminal: resolve(__dirname, "src/renderer/terminal.html"),
         },
       },
     },
