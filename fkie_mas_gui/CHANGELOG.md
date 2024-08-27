@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.2 - 27.08.2024
+
+Fixed: do not open external window on middle mouse click
+Fixed: open terminal as tab or as external window
+
 ## 2.4.1 - 27.08.2024
 
 Expand node groups on filter nodes
