@@ -72,6 +72,7 @@ class TopicExtendedInfo {
 }
 
 function TopicsPanel({ initialSearchTerm = "" }) {
+  const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [topics, setTopics] = useState([]); // [topicInfo: TopicExtendedInfo]
@@ -79,8 +80,9 @@ function TopicsPanel({ initialSearchTerm = "" }) {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [rootDataList, setRootDataList] = useState([]);
   const [expanded, setExpanded] = useState([]);
+  const [expandedFiltered, setExpandedFiltered] = useState([]);
   const [topicForSelected, setTopicForSelected] = useState(null);
-  const [selectedItems, setSelectedItems] = useState("");
+  const [selectedItem, setSelectedItem] = useState("");
 
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
@@ -186,6 +188,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
   const fillTree = (fullPrefix, topicsGroup) => {
+    const groupKeys = [];
     const byPrefixP1 = new Map("", []);
     // create a map with simulated tree for the namespaces of the topic list
     // for (const [key, topicInfo] of Object.entries(topics)) {
@@ -212,6 +215,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     byPrefixP1.forEach((value, key) => {
       // don't create group with one parameter
       if (value.length > 1) {
+        groupKeys.push(key);
         const { groupName } = fromGroupId(key);
         const groupTopics = value.map((item) => {
           return item.topicInfo;
@@ -223,11 +227,15 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         } else {
           count += subResult.count;
         }
+        if (subResult.groupKeys.length > 0) {
+          groupKeys.push(...subResult.groupKeys);
+        }
         newFilteredTopics.push([
           {
             groupKey: key,
             topics: subResult.topics,
             count: subResult.count,
+            groupKeys: groupKeys,
           },
         ]);
       } else {
@@ -239,13 +247,14 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         }
       }
     });
-    return { topics: newFilteredTopics, count };
+    return { topics: newFilteredTopics, count, groupKeys };
   };
 
   // create topics tree from filtered topic list
   useEffect(() => {
     const tree = fillTree("", filteredTopics);
     setRootDataList(tree.topics);
+    setExpandedFiltered(tree.groupKeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTopics]);
 
@@ -310,14 +319,14 @@ function TopicsPanel({ initialSearchTerm = "" }) {
 
   useEffect(() => {
     const selectedTopics = filteredTopics.filter((item) => {
-      return genKey([item.name, item.msgtype, item.providerId]) === selectedItems;
+      return genKey([item.name, item.msgtype, item.providerId]) === selectedItem;
     });
     if (selectedTopics?.length >= 0) {
       setTopicForSelected(selectedTopics[0]);
     } else {
       setTopicForSelected(null);
     }
-  }, [filteredTopics, selectedItems]);
+  }, [filteredTopics, selectedItem]);
 
   const createButtonBox = useMemo(() => {
     return (
@@ -390,27 +399,38 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     return (
       <SimpleTreeView
         aria-label="parameters"
-        expandedItems={expanded}
+        expandedItems={searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
         onSelectedItemsChange={(event, itemId) => {
-          setSelectedItems(itemId);
-          const index = expanded.indexOf(itemId);
+          setSelectedItem(itemId);
+          console.log(`el cha: ${itemId}`);
+          const index =
+            searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
+              ? expanded.indexOf(itemId)
+              : expandedFiltered.indexOf(itemId);
           const copyExpanded = [...expanded];
+          if (searchTerm.length >= EXPAND_ON_SEARCH_MIN_CHARS) {
+            copyExpanded.push(...expandedFiltered);
+          }
           if (index === -1) {
             copyExpanded.push(itemId);
           } else {
             copyExpanded.splice(index, 1);
           }
-          setExpanded(copyExpanded);
+          if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+            setExpanded(copyExpanded);
+          } else {
+            setExpandedFiltered(copyExpanded);
+          }
         }}
       >
         {rootDataList.map((item) => {
-          return topicTreeToStyledItems("", item, selectedItems);
+          return topicTreeToStyledItems("", item, selectedItem);
         })}
       </SimpleTreeView>
     );
-  }, [expanded, rootDataList, topicTreeToStyledItems]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm, topicTreeToStyledItems]);
 
   const createPanel = useMemo(() => {
     return (
@@ -454,7 +474,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         </Stack>
       </Box>
     );
-  }, [rootDataList, expanded, selectedItems, topicForSelected]);
+  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, topicForSelected]);
   return createPanel;
 }
 
