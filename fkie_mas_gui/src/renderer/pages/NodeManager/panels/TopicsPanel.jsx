@@ -254,7 +254,9 @@ function TopicsPanel({ initialSearchTerm = "" }) {
   useEffect(() => {
     const tree = fillTree("", filteredTopics);
     setRootDataList(tree.topics);
-    setExpandedFiltered(tree.groupKeys);
+    if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+      setExpandedFiltered(tree.groupKeys);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTopics]);
 
@@ -404,15 +406,11 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         // defaultEndIcon={<div style={{ width: 24 }} />}
         onSelectedItemsChange={(event, itemId) => {
           setSelectedItem(itemId);
-          console.log(`el cha: ${itemId}`);
           const index =
             searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
               ? expanded.indexOf(itemId)
               : expandedFiltered.indexOf(itemId);
-          const copyExpanded = [...expanded];
-          if (searchTerm.length >= EXPAND_ON_SEARCH_MIN_CHARS) {
-            copyExpanded.push(...expandedFiltered);
-          }
+          const copyExpanded = [...(searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
           if (index === -1) {
             copyExpanded.push(itemId);
           } else {

@@ -72,6 +72,10 @@ function HostTreeView({
     setExpanded(nodeIds);
   }, []);
 
+  useEffect(() => {
+    setExpanded(groupKeys);
+  }, [groupKeys])
+
   /**
    * Callback when items on the tree are double clicked
    */
@@ -274,7 +278,6 @@ function HostTreeView({
    */
   useEffect(() => {
     updateSelectedNodeIds();
-    setExpanded(groupKeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // update only if providerNodeTree was changed

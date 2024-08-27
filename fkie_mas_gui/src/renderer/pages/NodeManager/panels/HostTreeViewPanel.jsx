@@ -201,7 +201,11 @@ function HostTreeViewPanel() {
       });
     });
     setProviderNodeTree(newProvidersTree);
-    setGroupKeys(newGroupKeys.reverse());
+    if (filterText.length >= EXPAND_ON_SEARCH_MIN_CHARS) {
+      setGroupKeys(newGroupKeys);
+    } else if (groupKeys.length > 0) {
+      setGroupKeys([]);
+    }
   }, 300);
 
   useCustomEventListener(
@@ -1408,7 +1412,7 @@ function HostTreeViewPanel() {
             )}
             <HostTreeView
               providerNodeTree={providerNodeTree}
-              groupKeys={filterText.length < EXPAND_ON_SEARCH_MIN_CHARS ? [] : groupKeys}
+              groupKeys={groupKeys}
               onNodeSelect={handleNodesSelect}
               onProviderSelect={handleProviderSelect}
               showLoggers={createLoggerPanelFromId}
