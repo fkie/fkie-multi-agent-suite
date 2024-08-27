@@ -79,7 +79,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private token: string | null = null;
 
-  private title: string = "Terminal";
+  // private title: string = "Terminal";
 
   private searchText: string = "";
 

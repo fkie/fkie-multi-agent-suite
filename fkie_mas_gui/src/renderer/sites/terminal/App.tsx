@@ -120,7 +120,7 @@ export default function TerminalApp() {
         //   bottom: 2,
         // }}
       >
-        {paramInfo && (
+        {paramInfo && rosCtx.mapProviderRosNodes.size > 0 && (
           <SingleTerminalPanel
             id={paramInfo.id}
             type={paramInfo.info}

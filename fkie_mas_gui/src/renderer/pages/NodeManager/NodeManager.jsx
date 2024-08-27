@@ -119,6 +119,10 @@ function NodeManager() {
   }, []);
 
   useEffect(() => {
+    rosCtx.setLayoutModel(model);
+  }, [model]);
+
+  useEffect(() => {
     // check on load if float button should be enabled or not
     let changed = updateFloatButton(layoutJson.layout);
     layoutJson.border?.forEach((border) => {

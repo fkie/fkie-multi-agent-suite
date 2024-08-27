@@ -146,7 +146,7 @@ export default function SubscriberApp() {
         //   bottom: 2,
         // }}
       >
-        {subInfo && (
+        {subInfo && rosCtx.mapProviderRosNodes.size > 0 && (
           <TopicEchoPanel
             showOptions
             defaultProvider={subInfo.provider.id}

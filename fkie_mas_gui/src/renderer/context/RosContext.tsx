@@ -1,5 +1,6 @@
 import { useDebounceCallback } from "@react-hook/debounce";
 import { SnackbarKey, useSnackbar } from "notistack";
+import { Model } from "flexlayout-react";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import MultimasterManager from "../../main/IPC/MultimasterManager";
@@ -69,6 +70,7 @@ export interface IRosProviderContext {
   providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
+  layoutModel: Model | null;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean>;
@@ -86,6 +88,7 @@ export interface IRosProviderContext {
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
   isLocalHost: (host: string) => void;
   addProvider: (provider: Provider) => void;
+  setLayoutModel: (model: Model) => void;
 }
 
 export const DEFAULT = {
@@ -97,6 +100,7 @@ export const DEFAULT = {
   providersConnected: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
   nodeMap: new Map(),
+  layoutModel: null,
   connectToProvider: () => new Promise<false>(() => {}),
   startProvider: () => new Promise<boolean>(() => {}),
   startConfig: () => new Promise<boolean>(() => {}),
@@ -114,6 +118,7 @@ export const DEFAULT = {
   updateFilterRosTopic: () => null,
   isLocalHost: () => null,
   addProvider: () => null,
+  setLayoutModel: () => null,
 };
 
 interface IRosProviderComponent {
@@ -140,6 +145,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
+  const [layoutModel, setLayoutModel] = useState<Model | null>(null);
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(DEFAULT.mapProviderRosNodes);
   // nodeMap: Map<string, RosNode>
@@ -906,10 +912,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   const openEditor = useCallback(
     async (providerId: string, rootLaunch: string, path: string, fileRange, externalKeyModifier: boolean) => {
-      const openExternal: boolean = xor(settingsCtx.get("editorOpenExternal"), externalKeyModifier);
       const provider = getProviderById(providerId);
       if (provider) {
         const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
+        // open in external window depending on setting and key modifier and if no tab already existing
+        const openExternal: boolean =
+          xor(settingsCtx.get("editorOpenExternal"), externalKeyModifier) && !layoutModel?.getNodeById(id);
         const hasExtEditor = await window.electronAPI?.hasEditor(id);
         if (hasExtEditor) {
           // inform external window about new selected range
@@ -955,7 +963,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
       }
     },
-    [getProviderById, emitCustomEvent]
+    [getProviderById, emitCustomEvent, layoutModel]
   );
 
   const openSubscriber = useCallback(
@@ -967,10 +975,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       externalKeyModifier: boolean,
       forceOpenTerminal: boolean
     ) => {
-      const openExternal: boolean = xor(settingsCtx.get("subscriberOpenExternal"), externalKeyModifier);
       const provider = getProviderById(providerId);
       if (provider) {
         const id = `echo-${provider.connection.host}-${provider.connection.port}-${topic}`;
+        // open in external window depending on setting and key modifier and if no tab already existing
+        const openExternal: boolean =
+          xor(settingsCtx.get("subscriberOpenExternal"), externalKeyModifier) && !layoutModel?.getNodeById(id);
         if (forceOpenTerminal) {
           try {
             const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
@@ -987,7 +997,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (openExternal && provider && window.electronAPI) {
+        if (provider && window.electronAPI && (openExternal || (await window.electronAPI?.hasSubscriber(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
           window.electronAPI.openSubscriber(
@@ -1039,7 +1049,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
       }
     },
-    [getProviderById, emitCustomEvent, settingsCtx]
+    [getProviderById, emitCustomEvent, settingsCtx, layoutModel]
   );
 
   const openTerminal = useCallback(
@@ -1052,13 +1062,16 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       externalKeyModifier: boolean,
       forceOpenTerminal: boolean
     ) => {
-      const openExternal: boolean =
-        type === CmdType.SCREEN
-          ? xor(settingsCtx.get("screenOpenExternal"), externalKeyModifier)
-          : xor(settingsCtx.get("logOpenExternal"), externalKeyModifier);
       const provider = getProviderById(providerId);
       if (provider) {
         const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${node}`;
+        // open in external window depending on setting and key modifier and if no tab already existing
+        const openExternal: boolean = xor(
+          type === CmdType.SCREEN
+            ? xor(settingsCtx.get("screenOpenExternal"), externalKeyModifier)
+            : xor(settingsCtx.get("logOpenExternal"), externalKeyModifier),
+          !layoutModel?.getNodeById(id)
+        );
         if (forceOpenTerminal) {
           try {
             // create a terminal command
@@ -1076,7 +1089,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (openExternal && provider && window.electronAPI) {
+        if (provider && window.electronAPI && (openExternal || (await window.electronAPI?.hasTerminal(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
           window.electronAPI.openTerminal(
@@ -1104,28 +1117,21 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               />,
               true,
               LAYOUT_TAB_SETS.BORDER_BOTTOM,
-              new LayoutTabConfig(
-                true,
-                `${type.toLocaleUpperCase()}`,
-                null,
-                null,
-                null,
-                {
-                  id: id,
-                  host: provider.connection.host,
-                  port: provider.connection.port,
-                  cmdType: type,
-                  node: node,
-                  screen: screen,
-                  cmd: cmd,
-                }
-              )
+              new LayoutTabConfig(true, `${type.toLocaleUpperCase()}`, null, null, null, {
+                id: id,
+                host: provider.connection.host,
+                port: provider.connection.port,
+                cmdType: type,
+                node: node,
+                screen: screen,
+                cmd: cmd,
+              })
             )
           );
         }
       }
     },
-    [getProviderById, emitCustomEvent, SSHCtx]
+    [getProviderById, emitCustomEvent, SSHCtx, layoutModel]
   );
 
   // initialize ROS and system Info
@@ -1398,6 +1404,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       providersConnected,
       mapProviderRosNodes,
       nodeMap,
+      layoutModel,
       connectToProvider,
       startProvider,
       startConfig,
@@ -1417,6 +1424,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       getProviderName,
       isLocalHost,
       addProvider,
+      setLayoutModel,
       openEditor,
       openSubscriber,
       openTerminal,
