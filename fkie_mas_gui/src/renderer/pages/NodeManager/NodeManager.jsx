@@ -434,6 +434,7 @@ function NodeManager() {
             >
               <IconButton
                 onMouseDown={(event) => {
+                  if (event?.button === 1) return;
                   if (node.getConfig().extTerminalConfig) {
                     const openExternalTerminal = async (config, tabNodeId) => {
                       // create a terminal command
