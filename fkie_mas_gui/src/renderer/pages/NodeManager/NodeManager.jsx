@@ -457,7 +457,7 @@ function NodeManager() {
                   }
                   if (node.getConfig().editorConfig) {
                     const cfg = node.getConfig().editorConfig;
-                    window.electronAPI.openEditor(cfg.id, cfg.host, cfg.port, cfg.rootLaunch, cfg.path, cfg.fileRange);
+                    window.electronAPI.openEditor(cfg.id, cfg.host, cfg.port, cfg.path, cfg.rootLaunch, cfg.fileRange);
                     deleteTab(node.getId());
                   }
                   if (node.getConfig().subscriberConfig) {

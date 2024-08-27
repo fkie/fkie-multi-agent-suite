@@ -920,8 +920,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             id,
             provider.connection.host,
             provider.connection.port,
-            rootLaunch,
             path,
+            rootLaunch,
             fileRange
           );
         } else {
