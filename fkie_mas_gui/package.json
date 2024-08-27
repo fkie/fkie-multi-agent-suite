@@ -40,7 +40,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@mui/icons-material": "^5.16.1",
     "@mui/material": "^5.16.0",
-    "@mui/x-tree-view": "^7.10.0",
+    "@mui/x-tree-view": "^7.14.0",
     "@react-hook/debounce": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",

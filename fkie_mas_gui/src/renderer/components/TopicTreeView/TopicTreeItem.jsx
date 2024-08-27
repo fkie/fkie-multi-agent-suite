@@ -65,6 +65,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
     requestData = false,
     topicInfo = null,
     providerName = "",
+    selectedItem = "",
     ...other
   },
   ref
@@ -73,7 +74,11 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const [label, setLabel] = useState(labelText);
+  // state variables to show/hide extended info
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
+  const [selected, setSelected] = useState(false);
+  const [ignoreNextClick, setIgnoreNextClick] = useState(true);
+
   const styleProps = {
     "--tree-view-color": settingsCtx.get("useDarkMode") ? colorForDarkMode : color,
     "--tree-view-bg-color": settingsCtx.get("useDarkMode") ? bgColorForDarkMode : bgColor,
@@ -103,6 +108,21 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
     }
   }, [labelRoot, labelText, topicInfo]);
 
+  useEffect(() => {
+    // update state variables to show/hide extended info
+    if (selectedItem !== other.itemId) {
+      if (selected) {
+        setSelected(false);
+        setIgnoreNextClick(true);
+      }
+    } else {
+      if (selected) {
+        setShowExtendedInfo(!showExtendedInfo);
+      }
+      setSelected(true);
+    }
+  }, [selectedItem]);
+
   return (
     <TopicTreeItemRoot
       label={
@@ -113,6 +133,13 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
               alignItems: "center",
               // p: 0.3,
               pr: 0,
+            }}
+            onClick={() => {
+              if (ignoreNextClick) {
+                setIgnoreNextClick(false);
+              } else {
+                setShowExtendedInfo(!showExtendedInfo);
+              }
             }}
           >
             {labelIcon && <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />}
@@ -167,10 +194,6 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     // showZero={true}
                     color={topicInfo.publishers.length > 0 ? "default" : "warning"}
                     label={topicInfo.publishers.length}
-                    onClick={(event) => {
-                      setShowExtendedInfo(!showExtendedInfo);
-                      event.stopPropagation();
-                    }}
                   />
 
                   <Chip
@@ -179,10 +202,6 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     // showZero={true}
                     color={topicInfo.subscribers.length > 0 ? "default" : "warning"}
                     label={topicInfo.subscribers.length}
-                    onClick={(event) => {
-                      setShowExtendedInfo(!showExtendedInfo);
-                      event.stopPropagation();
-                    }}
                   />
                 </Stack>
               )}
@@ -252,6 +271,7 @@ TopicTreeItem.propTypes = {
   bgColorForDarkMode: PropTypes.string,
   topicInfo: PropTypes.object,
   providerName: PropTypes.string,
+  selectedItem: PropTypes.string,
 };
 
 export default TopicTreeItem;

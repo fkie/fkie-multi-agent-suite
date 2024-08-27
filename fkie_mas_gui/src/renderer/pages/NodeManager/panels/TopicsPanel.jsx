@@ -2,7 +2,7 @@ import { Brightness1 } from "@mui/icons-material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import DvrIcon from '@mui/icons-material/Dvr';
+import DvrIcon from "@mui/icons-material/Dvr";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
@@ -270,7 +270,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     );
   }, []);
 
-  const topicTreeToStyledItems = useCallback((rootPath, treeItem) => {
+  const topicTreeToStyledItems = useCallback((rootPath, treeItem, selectedItem) => {
     if (Array.isArray(treeItem)) {
       return treeItem.map((item) => {
         const { groupName, fullPrefix } = fromGroupId(item.groupKey);
@@ -282,6 +282,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
             labelRoot={rootPath}
             labelText={`${groupName}`}
             labelCount={item.count}
+            selectedItem={selectedItem}
           >
             {item.topics.map((subItem) => {
               return topicTreeToStyledItems(newRootName, subItem);
@@ -302,6 +303,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         colorForDarkMode="#B8E7FB"
         bgColorForDarkMode="#071318"
         topicInfo={treeItem}
+        selectedItem={selectedItem}
       />
     );
   }, []);
@@ -404,7 +406,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         }}
       >
         {rootDataList.map((item) => {
-          return topicTreeToStyledItems("", item);
+          return topicTreeToStyledItems("", item, selectedItems);
         })}
       </SimpleTreeView>
     );
@@ -440,7 +442,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
             </Tooltip>
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
-            <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1}}>
+            <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1 }}>
               {/* <Paper elevation={0} sx={{ border: 1 }} height="100%"> */}
               {createButtonBox}
               {/* </Paper> */}
