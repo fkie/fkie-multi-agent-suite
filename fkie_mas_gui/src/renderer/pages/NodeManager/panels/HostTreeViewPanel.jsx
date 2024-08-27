@@ -86,6 +86,7 @@ function HostTreeViewPanel() {
   const [rosCleanPurge, setRosCleanPurge] = useState(false);
   const [nodeScreens, setNodeScreens] = useState(null);
   const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
+  const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState(null);
   const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
   const [nodesToStart, setNodesToStart] = useState(null);
   const [progressQueueMain, setProgressQueueMain] = useState(null);
@@ -140,7 +141,7 @@ function HostTreeViewPanel() {
   // search in the origin node list and create a new tree
   const onSearch = useDebounceCallback((searchTerm) => {
     const newProvidersTree = [];
-    const newGroupKeys = []
+    const newGroupKeys = [];
     providerNodes.forEach((item) => {
       const { providerId, nodes } = item;
       // generate node tree structure based on node list
@@ -701,57 +702,33 @@ function HostTreeViewPanel() {
   };
 
   /**
-   * Check given node for dynamic reconfigure capabilities
-   */
-  const isDynamicReconfigureNode = (node) => {
-    if (!node.masteruri) return false;
-    if (
-      Array.from(node.services.keys()).filter((service) => {
-        return service.endsWith("/set_parameters");
-      }).length === 0
-    ) {
-      // no services for dynamic reconfigure found
-      return false;
-    }
-    return true;
-  };
-
-  /**
    * Start dynamic reconfigure GUI for selected nodes
    */
-  const startDynamicReconfigure = useCallback(() => {
-    const nodes2configure = [];
-    getSelectedNodes().map(async (node) => {
-      if (!isDynamicReconfigureNode(node)) {
-        return;
-      }
+  const startDynamicReconfigure = useCallback(
+    (service, masteruri) => {
       if (
         queueItemsQueueMain &&
         queueItemsQueueMain.find((elem) => {
-          return elem.action === "DYNAMIC_RECONFIGURE" && elem.node.name === node.name;
+          return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
         })
       ) {
-        // TODO: skippedNodes.set(node.name, 'already in queue');
+        // TODO: skippedNodes.set(service, 'already in queue');
       } else {
-        nodes2configure.push(node);
+        updateQueueMain([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
       }
-    });
-    updateQueueMain(
-      nodes2configure.map((node) => {
-        return { node, action: "DYNAMIC_RECONFIGURE" };
-      })
-    );
-  }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
+    },
+    [queueItemsQueueMain, updateQueueMain]
+  );
 
   /** start dynamic reconfigure in the queue and trigger the next one. */
-  const dynamicReconfigureQueued = async (node) => {
-    if (node !== null) {
+  const dynamicReconfigureQueued = async (service, masteruri) => {
+    if (service) {
       // store result for message
-      const result = await rosCtx.startDynamicReconfigureClient(node);
+      const result = await rosCtx.startDynamicReconfigureClient(service, masteruri);
       if (!result.result) {
-        addStatusQueueMain("DYNAMIC_RECONFIGURE", node.name, false, result.message);
+        addStatusQueueMain("DYNAMIC_RECONFIGURE", service, false, result.message);
       } else {
-        addStatusQueueMain("DYNAMIC_RECONFIGURE", node.name, true, `dynamic reconfigure started`);
+        addStatusQueueMain("DYNAMIC_RECONFIGURE", service, true, `dynamic reconfigure started`);
       }
     }
   };
@@ -925,7 +902,7 @@ function HostTreeViewPanel() {
         } else if (queueItem.action === "CLEAR_LOG") {
           clearNodeLogQueued(queueItem.node);
         } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
-          dynamicReconfigureQueued(queueItem.node);
+          dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
         }
       } else {
         // queue is finished, print success results
@@ -1167,7 +1144,7 @@ function HostTreeViewPanel() {
           </span>
         </Tooltip>
         {selectedNodes.filter((node) => {
-          return isDynamicReconfigureNode(node);
+          return node.dynamicReconfigureServices?.length > 0;
         }).length > 0 && (
           <Tooltip title="Dynamic reconfigure for ROS1 nodes" placement="left" disableInteractive>
             <span>
@@ -1175,11 +1152,25 @@ function HostTreeViewPanel() {
                 size="medium"
                 aria-label="dynamic reconfigure"
                 onClick={() => {
-                  startDynamicReconfigure();
+                  let countDri = 0;
+                  const driItems = [];
+                  getSelectedNodes().forEach((node) => {
+                    countDri += node.dynamicReconfigureServices.length;
+                    driItems.push(node);
+                  });
+                  if (countDri > 2) {
+                    setDynamicReconfigureItems(driItems);
+                  } else {
+                    driItems.forEach((node) => {
+                      node.dynamicReconfigureServices.forEach((dri) => {
+                        startDynamicReconfigure(dri, node.masteruri);
+                      });
+                    });
+                  }
                 }}
                 // disabled={
                 //   selectedNodes.filter((node) => {
-                //     return isDynamicReconfigureNode(node);
+                //     return node.dynamicReconfigureServices?.length > 0;
                 //   }).length === 0
                 // }
               >
@@ -1489,6 +1480,30 @@ function HostTreeViewPanel() {
           onCancelCallback={() => {
             setNodeMultiLaunches(null);
             setNodesAwaitModal(null);
+          }}
+        />
+      )}
+      {dynamicReconfigureItems && (
+        <MapSelectionModal
+          title={"Select dynamic configuration to start"}
+          list={dynamicReconfigureItems.reduce((prev, node) => {
+            prev.push({
+              title: node.name,
+              list: node.dynamicReconfigureServices,
+            });
+            return prev;
+          }, [])}
+          onConfirmCallback={(items) => {
+            items.forEach((item) => {
+              const node = dynamicReconfigureItems.find((node) => node.name === item.title);
+              item.list.forEach((dri) => {
+                startDynamicReconfigure(dri, node.masteruri);
+              });
+            });
+            setDynamicReconfigureItems(null);
+          }}
+          onCancelCallback={() => {
+            setDynamicReconfigureItems(null);
           }}
         />
       )}

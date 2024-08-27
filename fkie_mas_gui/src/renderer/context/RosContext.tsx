@@ -813,15 +813,15 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   );
 
   const startDynamicReconfigureClient = useCallback(
-    async (node: RosNode) => {
+    async (nodeName: string, masteruri: string) => {
       if (!multimasterManager) return { result: false, message: "multimasterManager not available in Browser" };
       logCtx.debug(`Starting Dynamic Reconfigure GUI for '${name}'`, "");
-      if (!node.masteruri) {
-        const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${node.name}`;
+      if (!masteruri) {
+        const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${nodeName}`;
         logCtx.error(msg, "");
         return { result: false, message: msg };
       }
-      const result = await multimasterManager.startDynamicReconfigureClient(node.name, node.masteruri, null);
+      const result = await multimasterManager.startDynamicReconfigureClient(nodeName, masteruri, null);
       return result;
     },
     [logCtx, multimasterManager]

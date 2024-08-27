@@ -156,6 +156,8 @@ class RosNode {
    */
   parent_id?: string;
 
+  dynamicReconfigureServices: string[] = [];
+
   /**
    * Class Constructor
    *

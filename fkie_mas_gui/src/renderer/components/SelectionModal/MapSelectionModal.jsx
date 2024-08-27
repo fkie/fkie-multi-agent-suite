@@ -19,7 +19,13 @@ import PropTypes from "prop-types";
 import { useRef, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 
-function MapSelectionModal({ list, onConfirmCallback, onCancelCallback = null, useRadioGroup = false }) {
+function MapSelectionModal({
+  title = "Confirm Selection",
+  list,
+  onConfirmCallback,
+  onCancelCallback = null,
+  useRadioGroup = false,
+}) {
   const [open, setOpen] = useState(true);
   const [selectedItems, setSelectedItems] = useState(
     list.map((o) => {
@@ -97,25 +103,27 @@ function MapSelectionModal({ list, onConfirmCallback, onCancelCallback = null, u
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
-        Confirm Selection
+        {title}
       </DialogTitle>
 
       {list && (
-        <DialogContent scroll="paper" aria-label="list">
+        <DialogContent scroll="paper" aria-label="list" sx={{ paddingBottom: 0 }}>
           <List
             sx={{
               width: "100%",
               overflow: "auto",
+              padding: 0,
+              margin: 0,
               // bgcolor: 'background.paper',
-              "& ul": { padding: 0, margin: 0 },
+              // "& ul": { padding: 0, margin: 0 },
             }}
           >
             {list.map((node) => {
               const labelId = `list-${node.title}`;
               return (
                 <li key={`section-${labelId}`}>
-                  <ul style={{ padding: 0, marginBottom: 0 }}>
-                    <ListSubheader sx={{ padding: 0 }}>{node.title}</ListSubheader>
+                  <ul style={{ padding: 0, paddingBottom: "1em" }}>
+                    <ListSubheader sx={{ padding: 0, marginBottom: 0, lineHeight: 2 }}>{node.title}:</ListSubheader>
                     {useRadioGroup && (
                       <RadioGroup
                         key={`radio-group-${node.title}`}
@@ -153,6 +161,7 @@ function MapSelectionModal({ list, onConfirmCallback, onCancelCallback = null, u
                                   }
                                   tabIndex={-1}
                                   disableRipple
+                                  sx={{ padding: 0, margin: 0 }}
                                   inputProps={{
                                     "aria-labelledby": labelId,
                                   }}
@@ -186,6 +195,7 @@ function MapSelectionModal({ list, onConfirmCallback, onCancelCallback = null, u
 
 MapSelectionModal.propTypes = {
   list: PropTypes.array.isRequired, // [{'title': 'ab', 'list': ['a', 'b']}]
+  title: PropTypes.string,
   onConfirmCallback: PropTypes.func.isRequired,
   onCancelCallback: PropTypes.func,
   useRadioGroup: PropTypes.bool,

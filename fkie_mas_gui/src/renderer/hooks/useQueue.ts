@@ -20,7 +20,7 @@ const useQueue = (onProgress: (progress: number) => void) => {
   const update = useCallback(
     (list: []) => {
       const doReset = queue.length === 0;
-      setQueue([...queue, ...list]);
+      setQueue((prev) => [...prev, ...list]);
       if (doReset) {
         onProgress(0);
         if (list.length > 0) setCurrentIndex(0);

@@ -1936,6 +1936,8 @@ export default class Provider implements IProvider {
       return !ignored;
     });
 
+    const dynamicReconfigureNodes = new Set<string>();
+
     // check if nodes are not available or run in other host (not monitoring)
     nl.forEach((n) => {
       // idGlobal should be the same for life of the node on remote host
@@ -1943,9 +1945,23 @@ export default class Provider implements IProvider {
       n.providerName = this.name();
       n.providerId = this.id;
 
+      // copy (selected) old state
+      const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
+      if (oldNode) {
+        n.diagnosticStatus = oldNode.diagnosticStatus;
+        n.diagnosticLevel = oldNode.diagnosticLevel;
+        n.diagnosticMessage = oldNode.diagnosticMessage;
+        n.launchPaths = oldNode.launchPaths;
+        n.launchPath = oldNode.launchPath;
+        n.group = oldNode.group;
+        n.launchInfo = oldNode.launchInfo;
+        n.rosLoggers = oldNode.rosLoggers;
+      }
+
       if (!n.node_API_URI || n.node_API_URI.length === 0) return;
       if (!n.masteruri || n.masteruri.length === 0) return;
 
+      // update infos available only for ROS1 nodes
       if (!n.pid || n.pid <= 0) {
         const hostApiUir = n.node_API_URI.split(":")[0];
         const hostMasterUri = n.masteruri.split(":")[0];
@@ -1960,17 +1976,20 @@ export default class Provider implements IProvider {
           n.status = RosNodeStatus.NOT_MONITORED;
         }
       }
-      // copy (selected) old state
-      const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
-      if (oldNode) {
-        n.diagnosticStatus = oldNode.diagnosticStatus;
-        n.diagnosticLevel = oldNode.diagnosticLevel;
-        n.diagnosticMessage = oldNode.diagnosticMessage;
-        n.launchPaths = oldNode.launchPaths;
-        n.launchPath = oldNode.launchPath;
-        n.group = oldNode.group;
-        n.launchInfo = oldNode.launchInfo;
-        n.rosLoggers = oldNode.rosLoggers;
+      // check if the node has dynamic reconfigure service
+      Array.from(n.services.keys()).forEach((service) => {
+        if (service.endsWith("/set_parameters")) {
+          const serviceNs = service.slice(0, -15);
+          n.dynamicReconfigureServices.push(serviceNs);
+          if (serviceNs !== n.name) {
+            dynamicReconfigureNodes.add(serviceNs);
+          }
+        }
+      });
+    });
+    nl.forEach((n) => {
+      if (dynamicReconfigureNodes.has(n.name)) {
+        n.dynamicReconfigureServices.push(n.name);
       }
     });
     // do not sort nodes -> start order defined by capability_group
