@@ -48,6 +48,7 @@ const compareTreeProvider = (a, b) => {
 
 function HostTreeView({
   providerNodeTree = [],
+  groupKeys = [],
   onNodeSelect = () => {},
   onProviderSelect = () => {},
   showLoggers = () => {},
@@ -60,7 +61,7 @@ function HostTreeView({
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
 
-  const [expanded, setExpanded] = useState([]);
+  const [expanded, setExpanded] = useState(groupKeys);
   const [selectedItems, setSelectedItems] = useState([]);
   const [keyNodeList, setKeyNodeList] = useState([]); // <= keyNodeList: {key: string, idGlobal: string}[]
 
@@ -273,6 +274,7 @@ function HostTreeView({
    */
   useEffect(() => {
     updateSelectedNodeIds();
+    setExpanded(groupKeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // update only if providerNodeTree was changed
@@ -743,6 +745,7 @@ function HostTreeView({
 
 HostTreeView.propTypes = {
   providerNodeTree: PropTypes.array,
+  groupKeys: PropTypes.array,
   onNodeSelect: PropTypes.func,
   onProviderSelect: PropTypes.func,
   showLoggers: PropTypes.func,

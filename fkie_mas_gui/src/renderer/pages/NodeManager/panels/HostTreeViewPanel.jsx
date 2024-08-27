@@ -62,6 +62,7 @@ import SingleTerminalPanel from "./SingleTerminalPanel";
 const IGNORED_NODES = [];
 
 function HostTreeViewPanel() {
+  const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   // context objects
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -88,6 +89,7 @@ function HostTreeViewPanel() {
   const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
   const [nodesToStart, setNodesToStart] = useState(null);
   const [progressQueueMain, setProgressQueueMain] = useState(null);
+  const [groupKeys, setGroupKeys] = useState([]);
   const {
     update: updateQueueMain,
     clear: clearQueueMain,
@@ -138,6 +140,7 @@ function HostTreeViewPanel() {
   // search in the origin node list and create a new tree
   const onSearch = useDebounceCallback((searchTerm) => {
     const newProvidersTree = [];
+    const newGroupKeys = []
     providerNodes.forEach((item) => {
       const { providerId, nodes } = item;
       // generate node tree structure based on node list
@@ -145,7 +148,7 @@ function HostTreeViewPanel() {
       const nodeTree = [];
       const level = { nodeTree };
       // ...and keep a list of the tree nodes
-      const nodeTreeList = [];
+      // const nodeTreeList = [];
       const nodeItemMap = new Map();
       nodes.forEach((node) => {
         nodeItemMap.set(node.idGlobal, node);
@@ -171,7 +174,7 @@ function HostTreeViewPanel() {
                 children: r[name].nodeTree,
                 node,
               });
-              nodeTreeList.push(`${providerId}#${treePath}`);
+              // nodeTreeList.push(`${providerId}#${treePath}`);
             } else {
               // create a (sub)group
 
@@ -181,7 +184,8 @@ function HostTreeViewPanel() {
                 children: r[name].nodeTree,
                 node: null,
               });
-              nodeTreeList.push(treePath ? `${providerId}#${treePath}` : providerId);
+              // nodeTreeList.push(treePath ? `${providerId}#${treePath}` : providerId);
+              newGroupKeys.push(treePath ? `${providerId}#${treePath}` : providerId);
             }
           }
           return r[name];
@@ -196,6 +200,7 @@ function HostTreeViewPanel() {
       });
     });
     setProviderNodeTree(newProvidersTree);
+    setGroupKeys(newGroupKeys.reverse());
   }, 300);
 
   useCustomEventListener(
@@ -1412,6 +1417,7 @@ function HostTreeViewPanel() {
             )}
             <HostTreeView
               providerNodeTree={providerNodeTree}
+              groupKeys={filterText.length < EXPAND_ON_SEARCH_MIN_CHARS ? [] : groupKeys}
               onNodeSelect={handleNodesSelect}
               onProviderSelect={handleProviderSelect}
               showLoggers={createLoggerPanelFromId}
