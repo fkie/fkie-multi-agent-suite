@@ -1066,12 +1066,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (provider) {
         const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${node}`;
         // open in external window depending on setting and key modifier and if no tab already existing
-        const openExternal: boolean = xor(
+        const openExternal: boolean =
           type === CmdType.SCREEN
             ? xor(settingsCtx.get("screenOpenExternal"), externalKeyModifier)
-            : xor(settingsCtx.get("logOpenExternal"), externalKeyModifier),
-          !layoutModel?.getNodeById(id)
-        );
+            : xor(settingsCtx.get("logOpenExternal"), externalKeyModifier) && !layoutModel?.getNodeById(id);
         if (forceOpenTerminal) {
           try {
             // create a terminal command
