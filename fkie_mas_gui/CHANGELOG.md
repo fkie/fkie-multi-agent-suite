@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.1 - 27.08.2024
+
+Expand node groups on filter nodes
+Expand topic groups on filter topics
+Changed behaviour to show/hide extended topic info in topics panel
+Prevent open as tab and external window at same time
+Fixed: start of dynamic reconfiguration dialog
+Fixed: open node launch configuration in external window
+
 ## 2.4.0 - 26.08.2024
 
 Added: close tabs with middle mouse
