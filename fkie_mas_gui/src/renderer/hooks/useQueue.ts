@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface StatusItem {
   action: string;
@@ -11,7 +11,17 @@ const useQueue = (onProgress: (progress: number) => void) => {
   // offers variable to store success and failed results
   const [resultStatus, setResultStatus] = useState<StatusItem[]>([]);
   const [queue, setQueue] = useState<[]>([]);
+  const [addToQueue, setAddToQueue] = useState<[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
+
+  useEffect(() => {
+    const doReset = queue.length === 0;
+    setQueue([...queue, ...addToQueue]);
+    if (doReset) {
+      onProgress(0);
+      if (addToQueue.length > 0) setCurrentIndex(0);
+    }
+  }, [addToQueue]);
 
   /**
    * Append items to the queue
@@ -19,14 +29,9 @@ const useQueue = (onProgress: (progress: number) => void) => {
    */
   const update = useCallback(
     (list: []) => {
-      const doReset = queue.length === 0;
-      setQueue((prev) => [...prev, ...list]);
-      if (doReset) {
-        onProgress(0);
-        if (list.length > 0) setCurrentIndex(0);
-      }
+      setAddToQueue(list);
     },
-    [setQueue, onProgress, queue, setCurrentIndex]
+    [setAddToQueue]
   );
 
   /** Clear queue and all result states */
@@ -48,22 +53,20 @@ const useQueue = (onProgress: (progress: number) => void) => {
   }, [currentIndex, queue]);
 
   /**
+   * Adds a status to the item of the current index.
    * Increase the current index and update the progress state.
    */
-  const next = useCallback(() => {
-    const nextIndex = currentIndex + 1;
-    if (nextIndex <= queue.length) {
-      onProgress((nextIndex / queue.length) * 100);
-    }
-    setCurrentIndex(nextIndex);
-  }, [currentIndex, onProgress, setCurrentIndex]);
-
   const addStatus = useCallback(
     (action: string, itemName: string, success: boolean, message: string) => {
       setResultStatus([...resultStatus, { action, itemName, success, message }]);
-      next();
+      // increase index and progress
+      const nextIndex = currentIndex + 1;
+      if (nextIndex <= queue.length) {
+        onProgress((nextIndex / queue.length) * 100);
+      }
+      setCurrentIndex(nextIndex);
     },
-    [resultStatus, setResultStatus, next]
+    [resultStatus, setResultStatus, currentIndex, queue, onProgress, setCurrentIndex]
   );
 
   const success = useCallback(
@@ -81,19 +84,11 @@ const useQueue = (onProgress: (progress: number) => void) => {
   );
 
   return {
+    queue,
+    currentIndex,
     update,
     clear,
-    next,
     get,
-    get queueItems() {
-      return queue;
-    },
-    get size() {
-      return queue.length;
-    },
-    get index() {
-      return currentIndex;
-    },
     success,
     failed,
     addStatus,

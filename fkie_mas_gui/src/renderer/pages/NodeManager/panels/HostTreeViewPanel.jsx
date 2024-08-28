@@ -30,6 +30,7 @@ import {
   Stack,
   ToggleButton,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
@@ -94,11 +95,9 @@ function HostTreeViewPanel() {
   const {
     update: updateQueueMain,
     clear: clearQueueMain,
-    next: nextQueueMain,
     get: getQueueMain,
-    queueItems: queueItemsQueueMain,
-    size: sizeQueueMain,
-    index: indexQueueMain,
+    queue: queueItemsQueueMain,
+    currentIndex: indexQueueMain,
     success: successQueueMain,
     failed: failedQueueMain,
     addStatus: addStatusQueueMain,
@@ -883,30 +882,27 @@ function HostTreeViewPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodesToStart]);
 
-  // update queue
-  useEffect(() => {
-    if (sizeQueueMain === 0) return;
-
-    if (indexQueueMain < 0) {
-      // default index, we should start queue
-      nextQueueMain();
-    } else {
+  const performQueueMain = useCallback(
+    async (index) => {
+      if (index < 0) return;
       // get current item from queue.
       // The index will be increased after the task was executed (by the callback).
       const queueItem = getQueueMain();
       if (queueItem) {
         if (queueItem.action === "START") {
-          startNodeQueued(queueItem.node);
+          await startNodeQueued(queueItem.node);
         } else if (queueItem.action === "STOP") {
-          stopNodeQueued(queueItem.node);
+          await stopNodeQueued(queueItem.node);
         } else if (queueItem.action === "UNREGISTER") {
-          unregisterNodeQueued(queueItem.node);
+          await unregisterNodeQueued(queueItem.node);
         } else if (queueItem.action === "KILL") {
-          killNodeQueued(queueItem.node);
+          await killNodeQueued(queueItem.node);
         } else if (queueItem.action === "CLEAR_LOG") {
-          clearNodeLogQueued(queueItem.node);
+          await clearNodeLogQueued(queueItem.node);
         } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
-          dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
+          await dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
+        } else {
+          console.log(`unknown item: ${JSON.stringify(queueItem)}`);
         }
       } else {
         // queue is finished, print success results
@@ -941,9 +937,28 @@ function HostTreeViewPanel() {
         // clear queue and results
         clearQueueMain();
       }
-    }
+    },
+    [
+      queueItemsQueueMain,
+      indexQueueMain,
+      getQueueMain,
+      failedQueueMain,
+      successQueueMain,
+      startNodeQueued,
+      stopNodeQueued,
+      unregisterNodeQueued,
+      killNodeQueued,
+      clearNodeLogQueued,
+      dynamicReconfigureQueued,
+      logCtx,
+    ]
+  );
+
+  // update queue
+  useEffect(() => {
+    performQueueMain(indexQueueMain);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indexQueueMain, failedQueueMain, successQueueMain]);
+  }, [indexQueueMain]);
 
   const showRemoteOnAllProvider = useCallback(
     (state) => {
@@ -1335,7 +1350,7 @@ function HostTreeViewPanel() {
       backgroundColor={settingsCtx.get("backgroundColor")}
     >
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
-        {sizeQueueMain === 0 && (
+        {indexQueueMain < 0 && (
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Tooltip
               title="Each host shows all nodes visible to it"
@@ -1379,12 +1394,12 @@ function HostTreeViewPanel() {
             />
           </Stack>
         )}
-        {sizeQueueMain > 0 && (
+        {indexQueueMain >= 0 && (
           <Paper elevation={2}>
             <Stack alignItems="center" justifyItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
               <LinearProgress sx={{ width: "100%" }} variant="determinate" value={progressQueueMain} />
               <FormLabel>
-                {indexQueueMain}/{sizeQueueMain}
+                {indexQueueMain}/{queueItemsQueueMain.length}
               </FormLabel>
               <IconButton
                 onClick={() => {
