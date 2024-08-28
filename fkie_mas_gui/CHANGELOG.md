@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.3 - 28.08.2024
+
+Added selection dialog on actions with multiple nodes
+Parameter tab revised
+Fixed: progress bar in nodes tab
+Fixed: Uncaught TypeError: styled_default is not a function
+
 ## 2.4.2 - 27.08.2024
 
 Fixed: do not open external window on middle mouse click
