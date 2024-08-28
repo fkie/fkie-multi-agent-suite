@@ -441,7 +441,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   <ContentCopyIcon fontSize="inherit" />
                 </IconButton>
               </span>
-            </Tooltip>{" "}
+            </Tooltip>
           </ButtonGroup>
         </Stack>
 

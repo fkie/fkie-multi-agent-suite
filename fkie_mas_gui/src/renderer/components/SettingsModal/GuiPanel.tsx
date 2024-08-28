@@ -23,6 +23,7 @@ import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/Accord
 import { styled } from "@mui/material/styles";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { ISettingsParam, SettingsContext } from "../../context/SettingsContext";
+import SearchBar from "../UI/SearchBar";
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -63,42 +64,55 @@ const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
 export interface IGroupEntry {
   group: string;
   params: { name: string; param: ISettingsParam }[];
+  forceExpanded: boolean;
 }
 
 export default function GuiPanel() {
   const settingsCtx = useContext(SettingsContext);
   const [grouped, setGrouped] = useState<IGroupEntry[]>([]);
   const [expanded, setExpanded] = useState<string | false>(false);
+  const [filter, setFilter] = useState("");
 
   const handleChange = (panel: string) => (_event: React.SyntheticEvent, newExpanded: boolean) => {
     setExpanded(newExpanded ? panel : false);
   };
 
   const createGroups = useCallback(() => {
-    const groupedDict: { [group: string]: { name: string; param: ISettingsParam }[] } = { Application: [] };
+    const groupedDict: { [group: string]: { name: string; param: ISettingsParam }[] } = {};
     settingsCtx.getParamList().forEach(({ name, param }) => {
-      const group = param.group ? param.group : "Application";
-      if (!groupedDict[group]) {
-        groupedDict[group] = [];
+      if (filter.length <= 1 || name.toLocaleLowerCase().includes(filter)) {
+        const group = param.group ? param.group : "Application";
+        if (!groupedDict[group]) {
+          groupedDict[group] = [];
+        }
+        groupedDict[group].push({ name, param });
       }
-      groupedDict[group].push({ name, param });
     });
     const newGrouped: IGroupEntry[] = [];
     Object.keys(groupedDict).forEach(function (key) {
-      newGrouped.push({ group: key, params: groupedDict[key] });
+      newGrouped.push({ group: key, params: groupedDict[key], forceExpanded: filter.length > 1 });
     });
     setGrouped(newGrouped);
-  }, [grouped, setGrouped, settingsCtx]);
+  }, [grouped, setGrouped, filter, settingsCtx]);
 
   useEffect(() => {
     createGroups();
-  }, [settingsCtx.changed]);
+  }, [settingsCtx.changed, filter]);
 
   return (
-    <Stack sx={{ minHeight: 400 }} margin={0} overflow="auto">
-      {grouped.map(({ group, params }) => {
+    <Stack sx={{ minHeight: "400px"}} overflow="hidden">
+      <SearchBar
+        onSearch={(value) => setFilter(value.toLocaleLowerCase())}
+        placeholder="Filter Parameter"
+        defaultValue=""
+      />
+      {grouped.map(({ group, params, forceExpanded }) => {
         return (
-          <Accordion expanded={expanded === group} onChange={handleChange(group)}>
+          <Accordion
+            key={`${group}-accordion`}
+            expanded={expanded === group || (forceExpanded && filter.length > 1)}
+            onChange={handleChange(group)}
+          >
             <AccordionSummary aria-controls={`${group}-content`} id={`${group}-header`}>
               <Typography>{group}</Typography>
             </AccordionSummary>
@@ -108,13 +122,13 @@ export default function GuiPanel() {
                   if (Array.isArray(param.options)) {
                     return (
                       <Stack
+                        key={`opt-${name}-array`}
                         sx={{
                           "&:hover": {
                             backgroundColor: (theme) => theme.palette.action.hover,
                           },
                         }}
                       >
-                        {" "}
                         {param.type.endsWith("[]") ? (
                           // multiple values can be selected
                           <>
@@ -224,6 +238,7 @@ export default function GuiPanel() {
                   if (param.type === "boolean") {
                     return (
                       <Stack
+                        key={`opt-${name}-boolean`}
                         sx={{
                           "&:hover": {
                             backgroundColor: (theme) => theme.palette.action.hover,
@@ -271,6 +286,7 @@ export default function GuiPanel() {
                   if (param.type === "number") {
                     return (
                       <Stack
+                        key={`opt-${name}-number`}
                         direction="column"
                         spacing={0}
                         sx={{
@@ -321,6 +337,7 @@ export default function GuiPanel() {
                   if (param.type === "button") {
                     return (
                       <Stack
+                        key={`opt-${name}-button`}
                         direction="row"
                         spacing={"1em"}
                         sx={{
@@ -346,6 +363,7 @@ export default function GuiPanel() {
                   if (param.type === "string") {
                     return (
                       <Stack
+                        key={`opt-${name}-array`}
                         direction="column"
                         spacing={0}
                         sx={{

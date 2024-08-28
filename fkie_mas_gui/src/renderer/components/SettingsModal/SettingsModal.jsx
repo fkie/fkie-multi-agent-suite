@@ -86,10 +86,11 @@ function SettingsModal() {
                 setSelectedTabIndex(newValue);
               }}
               aria-label="List of tabs"
+              style={{ minHeight: "24px" }}
             >
-              <Tab label="Interface" {...a11yProps(0)} />
-              <Tab label="SSH Credentials" {...a11yProps(1)} />
-              <Tab label="About" {...a11yProps(2)} />
+              <Tab label="Interface" {...a11yProps(0)} style={{ minHeight: "24px" }} />
+              <Tab label="SSH Credentials" {...a11yProps(1)} style={{ minHeight: "24px" }} />
+              <Tab label="About" {...a11yProps(2)} style={{ minHeight: "24px" }} />
             </Tabs>
           </Box>
           <TabPanel value={selectedTabIndex} index={0}>
@@ -100,7 +101,7 @@ function SettingsModal() {
           </TabPanel>
           <TabPanel value={selectedTabIndex} index={2}>
             <About />
-          </TabPanel>{" "}
+          </TabPanel>
         </DialogContent>
         <DialogActions>
           <Button
