@@ -35,6 +35,7 @@ import {
 import { useDebounceCallback } from "@react-hook/debounce";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConfirmModal, HostTreeView, MapSelectionModal, SearchBar } from "../../../components";
+import ListSelectionModal from "../../../components/SelectionModal/ListSelectionModal";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { NavigationContext } from "../../../context/NavigationContext";
 import { RosContext } from "../../../context/RosContext";
@@ -86,6 +87,9 @@ function HostTreeViewPanel() {
   const [providerNodeTree, setProviderNodeTree] = useState([]);
   const [rosCleanPurge, setRosCleanPurge] = useState(false);
   const [nodeScreens, setNodeScreens] = useState(null);
+  const [nodeParams, setNodeParams] = useState(null);
+  const [nodeLogs, setNodeLogs] = useState(null);
+  const [nodeLoggers, setNodeLoggers] = useState(null);
   const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
   const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState(null);
   const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
@@ -358,32 +362,50 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [ParameterPanel] for selected nodes
    */
   const createParameterPanel = useCallback((nodes, providers) => {
+    const params = []; // {name: string: callback}
     nodes?.forEach((node) => {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `parameter-node-${node.idGlobal}`,
-          `${node.name}`,
-          <ParameterPanel nodes={[node]} providers={null} />,
-          true,
-          LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation")],
-          new LayoutTabConfig(false, "parameter")
-        )
-      );
+      params.push({
+        name: node.name,
+        callback: () => {
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              `parameter-node-${node.idGlobal}`,
+              `${node.name}`,
+              <ParameterPanel nodes={[node]} providers={null} />,
+              true,
+              LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation")],
+              new LayoutTabConfig(false, "parameter")
+            )
+          );
+        },
+      });
     });
     providers?.forEach((provider) => {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `parameter-provider-${provider}`,
-          `${provider}`,
-          <ParameterPanel nodes={null} providers={[provider]} />,
-          true,
-          LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation")],
-          new LayoutTabConfig(false, "parameter")
-        )
-      );
+      params.push({
+        name: provider.name(),
+        callback: () => {
+          emitCustomEvent(
+            EVENT_OPEN_COMPONENT,
+            eventOpenComponent(
+              `parameter-provider-${provider}`,
+              `${provider}`,
+              <ParameterPanel nodes={null} providers={[provider]} />,
+              true,
+              LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation")],
+              new LayoutTabConfig(false, "parameter")
+            )
+          );
+        },
+      });
     });
+    if (params.length >= 3) {
+      setNodeParams(params);
+    } else {
+      params.forEach((item) => {
+        item.callback();
+      });
+    }
   }, []);
 
   const startNodeQueued = async (node) => {
@@ -902,7 +924,7 @@ function HostTreeViewPanel() {
         } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
           await dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
         } else {
-          console.log(`unknown item: ${JSON.stringify(queueItem)}`);
+          console.log(`unknown item in the queue: ${JSON.stringify(queueItem)}`);
         }
       } else {
         // queue is finished, print success results
@@ -1224,47 +1246,60 @@ function HostTreeViewPanel() {
                     setNodeScreens((prevNodes) => (prevNodes ? [...prevNodes, sl] : [sl]));
                   });
                 } else {
+                  const screens = []; // {node : string, screen: string, callback: () => void, external: boolean}
                   getSelectedNodes().forEach((node) => {
                     if (node.screens.length === 1) {
                       // 1 screen available
-                      node.screens.forEach((screen) => {
-                        createSingleTerminalPanel(
-                          CmdType.SCREEN,
-                          node,
-                          screen,
-                          event.nativeEvent.shiftKey,
-                          event.nativeEvent.ctrlKey
-                        );
+                      screens.push({
+                        node: node.name,
+                        screen: node.screens[0],
+                        callback: () => {
+                          createSingleTerminalPanel(
+                            CmdType.SCREEN,
+                            node,
+                            screen,
+                            event.nativeEvent.shiftKey,
+                            event.nativeEvent.ctrlKey
+                          );
+                        },
                       });
                     } else if (node.screens.length > 1) {
                       // Multiple screens available
-                      setNodeScreens((prevNodes) =>
-                        prevNodes
-                          ? [
-                              ...prevNodes,
-                              {
-                                node,
-                                external: event.nativeEvent.shiftKey,
-                              },
-                            ]
-                          : [
-                              {
-                                node,
-                                external: event.nativeEvent.shiftKey,
-                              },
-                            ]
-                      );
+                      node.screens.map((screen) => {
+                        screens.push({
+                          node: node.name,
+                          screen: screens,
+                          external: event.nativeEvent.shiftKey,
+                        });
+                      });
                     } else {
                       // no screens, try to find by node name instead
-                      createSingleTerminalPanel(
-                        CmdType.SCREEN,
-                        node,
-                        undefined,
-                        event.nativeEvent.shiftKey,
-                        event.nativeEvent.ctrlKey
-                      );
+                      screens.push({
+                        node: node.name,
+                        screen: "autodetect",
+                        callback: () => {
+                          createSingleTerminalPanel(
+                            CmdType.SCREEN,
+                            node,
+                            undefined,
+                            event.nativeEvent.shiftKey,
+                            event.nativeEvent.ctrlKey
+                          );
+                        },
+                      });
                     }
                   });
+                  if (screens.length >= 3) {
+                    setNodeScreens(screens);
+                  } else {
+                    screens.forEach((item) => {
+                      if (item.callback) {
+                        item.callback();
+                      } else {
+                        createSingleTerminalPanel(CmdType.SCREEN, item.node, screen, item.external);
+                      }
+                    });
+                  }
                 }
               }}
             >
@@ -1283,15 +1318,28 @@ function HostTreeViewPanel() {
               aria-label="Log"
               disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
+                const logs = []; // {node : string, callback: () => void}
                 getSelectedNodes().forEach((node) => {
-                  createSingleTerminalPanel(
-                    CmdType.LOG,
-                    node,
-                    undefined,
-                    event.nativeEvent.shiftKey,
-                    event.nativeEvent.ctrlKey
-                  );
+                  logs.push({
+                    node: node,
+                    callback: () => {
+                      createSingleTerminalPanel(
+                        CmdType.LOG,
+                        node,
+                        undefined,
+                        event.nativeEvent.shiftKey,
+                        event.nativeEvent.ctrlKey
+                      );
+                    },
+                  });
                 });
+                if (logs.length >= 3) {
+                  setNodeLogs(logs);
+                } else {
+                  logs.forEach((item) => {
+                    item.callback();
+                  });
+                }
               }}
             >
               <WysiwygIcon fontSize="inherit" />
@@ -1305,9 +1353,22 @@ function HostTreeViewPanel() {
               aria-label="Log Level"
               disabled={selectedNodes.length === 0}
               onClick={(event) => {
+                const loggers = []; // {node : string, callback: () => void}
                 getSelectedNodes().forEach((node) => {
-                  createLoggerPanel(node);
+                  loggers.push({
+                    node: node,
+                    callback: () => {
+                      createLoggerPanel(node);
+                    },
+                  });
                 });
+                if (loggers.length >= 3) {
+                  setNodeLoggers(loggers);
+                } else {
+                  loggers.forEach((item) => {
+                    item.callback();
+                  });
+                }
               }}
             >
               <SettingsInputCompositeOutlinedIcon fontSize="inherit" sx={{ rotate: "90deg" }} />
@@ -1453,28 +1514,91 @@ function HostTreeViewPanel() {
           }}
         />
       )}
-
-      {nodeScreens && (
-        <MapSelectionModal
-          list={nodeScreens.reduce((prev, item) => {
-            prev.push({
-              title: item.node.name,
-              list: item.node.screens,
-              external: item.external,
-            });
+      {nodeParams && (
+        <ListSelectionModal
+          title="Select nodes to open parameter"
+          list={nodeParams.reduce((prev, item) => {
+            prev.push(`${item.name}`);
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
             items.forEach((item) => {
-              item.list.forEach((screen) => {
-                const nodeWithOpt = nodeScreens.find((nodeMultiple) => nodeMultiple.node.screens.includes(screen));
+              const nodeWithOpt = nodeParams.find((nodeItem) => `${nodeItem.node.name}` === item);
+              if (nodeWithOpt.callback) {
+                nodeWithOpt.callback();
+              }
+            });
+            setNodeParams(null);
+          }}
+          onCancelCallback={() => {
+            setNodeParams(null);
+          }}
+        />
+      )}
+      {nodeScreens && (
+        <ListSelectionModal
+          title="Select screens to open"
+          list={nodeScreens.reduce((prev, item) => {
+            prev.push(`${item.node} [${item.screen}]`);
+            return prev;
+          }, [])}
+          onConfirmCallback={(items) => {
+            items.forEach((item) => {
+              const nodeWithOpt = nodeScreens.find(
+                (nodeScreen) => `${nodeScreen.node} [${nodeScreen.screen}]` === item
+              );
+              if (nodeWithOpt.callback) {
+                nodeWithOpt.callback();
+              } else {
                 createSingleTerminalPanel(CmdType.SCREEN, nodeWithOpt.node, screen, nodeWithOpt.external);
-              });
+              }
             });
             setNodeScreens(null);
           }}
           onCancelCallback={() => {
             setNodeScreens(null);
+          }}
+        />
+      )}
+      {nodeLogs && (
+        <ListSelectionModal
+          title="Select logs to open"
+          list={nodeLogs.reduce((prev, item) => {
+            prev.push(`${item.node.name}`);
+            return prev;
+          }, [])}
+          onConfirmCallback={(items) => {
+            items.forEach((item) => {
+              const nodeWithOpt = nodeLogs.find((logItem) => `${logItem.node.name}` === item);
+              if (nodeWithOpt.callback) {
+                nodeWithOpt.callback();
+              }
+            });
+            setNodeLogs(null);
+          }}
+          onCancelCallback={() => {
+            setNodeLogs(null);
+          }}
+        />
+      )}
+      {nodeLoggers && (
+        <ListSelectionModal
+          title="Select nodes to open logger levels"
+          list={nodeLoggers.reduce((prev, item) => {
+            prev.push(`${item.node.name}`);
+            return prev;
+          }, [])}
+          onConfirmCallback={(items) => {
+            items.forEach((item) => {
+              const nodeWithOpt = nodeLogs.find((nodeItem) => `${nodeItem.node.name}` === item);
+              if (nodeWithOpt.callback) {
+                nodeWithOpt.callback();
+              }
+            });
+            setNodeLoggers(null);
+          }}
+          onCancelCallback={() => {
+            setNodeLoggers(null);
           }}
         />
       )}
