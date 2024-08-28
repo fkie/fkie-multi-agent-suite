@@ -26,7 +26,7 @@ const useQueue = (onProgress: (progress: number) => void) => {
         if (list.length > 0) setCurrentIndex(0);
       }
     },
-    [onProgress, queue, setCurrentIndex]
+    [setQueue, onProgress, queue, setCurrentIndex]
   );
 
   /** Clear queue and all result states */
@@ -56,7 +56,7 @@ const useQueue = (onProgress: (progress: number) => void) => {
       onProgress((nextIndex / queue.length) * 100);
     }
     setCurrentIndex(nextIndex);
-  }, [currentIndex, onProgress]);
+  }, [currentIndex, onProgress, setCurrentIndex]);
 
   const addStatus = useCallback(
     (action: string, itemName: string, success: boolean, message: string) => {
