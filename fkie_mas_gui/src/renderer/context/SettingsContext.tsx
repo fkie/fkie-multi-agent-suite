@@ -17,7 +17,7 @@ export interface ISettingsContext {
   changed: number;
   get: (attribute: string) => any;
   set: (attribute: string, value: any, settingsCtx?: ISettingsContext) => void;
-  getParamList?: () => void;
+  getParamList: () => { name: string; param: ISettingsParam }[];
 }
 
 export const LOG_LEVEL_LIST = ["DEBUG", "INFO", "SUCCESS", "WARN", "ERROR"];
@@ -67,18 +67,28 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
       set("color", newValue ? DEFAULT_SETTINGS.fgColorForDarkMode : DEFAULT_SETTINGS.fgColor);
       set("backgroundColor", newValue ? DEFAULT_SETTINGS.bgColorForDarkMod : DEFAULT_SETTINGS.bgColor);
     },
+    group: "Appearance",
   },
   colorizeHosts: {
     label: "Colorize hosts",
     default: true,
     type: "boolean",
-    description: "",
+    description: "Each host is assigned a color. Everything related to this host is marked with this color.",
+    group: "Appearance",
+  },
+  showButtonsForKeyModifiers: {
+    label: "Show buttons for key modifiers",
+    default: false,
+    type: "boolean",
+    description: "Display buttons for additional functions that are otherwise accessible via key modifiers",
+    group: "Appearance",
   },
   showFloatingButtons: {
     label: "Show floating buttons",
     default: false,
     type: "boolean",
-    description: "",
+    description: "Show control buttons for each node",
+    group: "Appearance",
   },
   checkForUpdates: {
     label: "Check for updates on start",
@@ -86,11 +96,28 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "",
   },
+  fontSizeTerminal: {
+    label: "Font size in terminal",
+    type: "number",
+    default: 14,
+    min: 2,
+    description: "This font size only affects the terminal tab (e.g. for screen and log)",
+    group: "Appearance",
+  },
+  fontSize: {
+    label: "Font size",
+    type: "number",
+    default: 14,
+    min: 2,
+    description: "Global font size except in the terminal",
+    group: "Appearance",
+  },
   resetLayout: {
     label: "Reset layout",
     type: "button",
     default: false,
-    description: "",
+    description: "Restores default sizes and positions of the tabs and main window",
+    group: "Appearance",
   },
   rosVersion: {
     label: "Default ROS version",
@@ -98,21 +125,25 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "string",
     options: ["1", "2"],
     readOnly: false,
-    description: "default ROS version used to start remote daemon and discovery nodes.",
+    description:
+      "Standard ROS version used to start remote daemon and discovery nodes. Only if automatic detection has failed.",
   },
   guiLogLevel: {
     label: "Log Level",
     type: "string[]",
     default: ["INFO", "SUCCESS", "WARN", "ERROR"],
     options: LOG_LEVEL_LIST,
-    description: "displayed log levels",
+    description: "Messages that are displayed on the console. This has no effect on the output in the ‘Logging’ tab.",
+    group: "Logging",
   },
   debugByUri: {
     label: "Interface URIs",
     type: "string[]",
     default: [URI.ROS_PROVIDER_GET_LIST, URI.ROS_DAEMON_READY, URI.ROS_DISCOVERY_READY],
     options: Object.values(URI).sort(),
-    description: "",
+    description:
+      "When communicating with the MAS daemon, the messages from the listed URIs are output as debug messages.",
+    group: "Logging",
   },
   groupParameters: {
     label: "Group parameters",
@@ -121,7 +152,8 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "string[]",
     default: ["/capability_group"],
     options: ["/capability_group"],
-    description: "parameter specified the group of the node",
+    description:
+      "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter, it is grouped according to the namespace.",
   },
   launchHistoryLength: {
     label: "Launch History Length",
@@ -129,6 +161,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: 5,
     min: 0,
     max: 15,
+    description: "Number of recently loaded files displayed in the Package Explorer tab.",
   },
   ntpServer: {
     label: "NTP Server",
@@ -137,6 +170,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "string[]",
     default: ["ntp.ubuntu.com"],
     options: ["ntp.ubuntu.com"],
+    group: "Parametrization"
+  },
+  logCommand: {
+    label: "Log command prefix",
+    description: "Terminal command to display the log file. The file name is appended.",
+    type: "string",
+    default: "/usr/bin/less -fLnQrSU +G",
+    group: "Parametrization"
   },
   color: {
     label: "Color",
@@ -171,52 +212,45 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: ["ASK", "DISMISS", "RELOAD"],
     description: "",
   },
-  fontSizeTerminal: {
-    label: "Font size in terminal",
-    type: "number",
-    default: 14,
-    min: 2,
-  },
-  fontSize: {
-    label: "Font size",
-    type: "number",
-    default: 14,
-    min: 2,
-  },
   editorOpenLocation: {
-    label: "Location to open new editor",
+    label: "Location to open editor tab",
     type: "string",
     default: "CENTER",
     options: ["BORDER_TOP", "CENTER", "BORDER_BOTTOM"],
     description: "",
-  },
-  subscriberOpenLocation: {
-    label: "Location to open topic subscriber window",
-    type: "string",
-    default: "BORDER_RIGHT",
-    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
-    description: "",
-  },
-  publisherOpenLocation: {
-    label: "Location to open topic publisher window",
-    type: "string",
-    default: "BORDER_RIGHT",
-    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
-    description: "",
+    group: "Window behavior",
   },
   nodeLoggerOpenLocation: {
-    label: "Location to open log level window",
+    label: "Location to open log level tab",
     type: "string",
     default: "BORDER_RIGHT",
     options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
     description: "",
+    group: "Window behavior",
   },
   nodeParamOpenLocation: {
-    label: "Location to open node parameter window",
+    label: "Location to open node parameter tab",
     type: "string",
     default: "BORDER_RIGHT",
     options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
     description: "",
+    group: "Window behavior",
+  },
+  publisherOpenLocation: {
+    label: "Location to open topic publisher tab",
+    type: "string",
+    default: "BORDER_RIGHT",
+    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
+    description: "",
+    group: "Window behavior",
+  },
+  subscriberOpenLocation: {
+    label: "Location to open topic subscriber tab",
+    type: "string",
+    default: "BORDER_RIGHT",
+    options: ["BORDER_RIGHT", "CENTER", "BORDER_BOTTOM"],
+    description: "",
+    group: "Window behavior",
   },
   showRemoteNodes: {
     label: "Show remote nodes",
@@ -224,35 +258,33 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "none",
     description: "Each host shows all nodes visible to it",
   },
-  showButtonsForKeyModifiers: {
-    label: "Show buttons for key modifiers",
-    default: false,
-    type: "boolean",
-    description: "Display buttons for additional functions that are otherwise accessible via key modifiers",
-  },
   editorOpenExternal: {
     label: "Open editor in external window by default",
     default: false,
     type: "boolean",
     description: "",
-  },
-  subscriberOpenExternal: {
-    label: "Open subscriber in external window by default",
-    default: false,
-    type: "boolean",
-    description: "",
-  },
-  screenOpenExternal: {
-    label: "Open screen in external window by default",
-    default: false,
-    type: "boolean",
-    description: "",
+    group: "Window behavior",
   },
   logOpenExternal: {
     label: "Open logs in external window by default",
     default: false,
     type: "boolean",
     description: "",
+    group: "Window behavior",
+  },
+  screenOpenExternal: {
+    label: "Open screen in external window by default",
+    default: false,
+    type: "boolean",
+    description: "",
+    group: "Window behavior",
+  },
+  subscriberOpenExternal: {
+    label: "Open subscriber in external window by default",
+    default: false,
+    type: "boolean",
+    description: "",
+    group: "Window behavior",
   },
 };
 
@@ -291,7 +323,7 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
     }
   };
 
-  const getParamList = () => {
+  const getParamList: () => { name: string; param: ISettingsParam }[] = () => {
     const params: { name: string; param: ISettingsParam }[] = [];
     Object.keys(SETTINGS_DEF).forEach(function (key) {
       params.push({ name: key, param: SETTINGS_DEF[key] });

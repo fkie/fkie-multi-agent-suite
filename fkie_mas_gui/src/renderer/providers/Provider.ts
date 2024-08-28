@@ -361,7 +361,7 @@ export default class Provider implements IProvider {
         const logPaths = await this.getLogPaths([nodeName]);
         if (logPaths.length > 0) {
           // `tail -f ${logPaths[0].screen_log} \r`,
-          result.cmd = `/usr/bin/less -fLnQrSU +G ${logPaths[0].screen_log}`;
+          result.cmd = `${this.settings.get("logCommand")} ${logPaths[0].screen_log}`;
           result.log = logPaths[0].screen_log;
         }
         break;
