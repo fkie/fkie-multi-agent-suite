@@ -5,6 +5,7 @@ MIT License
 Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
+import CloseIcon from "@mui/icons-material/Close";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import LastPageIcon from "@mui/icons-material/LastPage";
 import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from "@mui/material";
@@ -15,7 +16,8 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import React from "react";
+import React, { useState } from "react";
+import { ISettingsContext } from "../../context/SettingsContext";
 import SearchBar from "../UI/SearchBar";
 
 const enum Command {
@@ -48,12 +50,12 @@ interface Props {
   name: string;
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
-  fontSize: number;
-  setFontsize: (size: number) => void | null;
+  settingsCtx: ISettingsContext;
 }
 
 type XtermState = {
   opened: boolean;
+  showSearchBar: boolean;
 };
 
 export class Terminal extends React.Component<Props, XtermState> {
@@ -81,9 +83,11 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   // private title: string = "Terminal";
 
-  private searchText: string = "";
+  private settingsCtx: ISettingsContext | null = null;
 
-  private fontSize: number;
+  private fontSize: number = 14;
+
+  private searchText: string = "";
 
   private resizeObserver: ResizeObserver | null = null;
 
@@ -99,6 +103,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
     this.state = {
       opened: false,
+      showSearchBar: false,
     };
     this.textEncoder = new TextEncoder();
     this.textDecoder = new TextDecoder();
@@ -117,9 +122,9 @@ export class Terminal extends React.Component<Props, XtermState> {
         activeMatchColorOverviewRuler: "#d81e00",
       },
     };
-
     // TODO Add setting for this parameter
-    this.fontSize = props.fontSize;
+    this.settingsCtx = props.settingsCtx;
+    this.fontSize = this.settingsCtx?.get("fontSizeTerminal");
     this.onSocketOpen = this.onSocketOpen.bind(this);
     this.onSocketError = this.onSocketError.bind(this);
     this.onSocketData = this.onSocketData.bind(this);
@@ -186,8 +191,67 @@ export class Terminal extends React.Component<Props, XtermState> {
         key: "C",
         shiftKey: true,
         ctrlKey: true,
+        altKey: false,
         callback: () => {
           navigator.clipboard.writeText(terminal.getSelection());
+        },
+      },
+      {
+        key: "+",
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: false,
+        callback: () => {
+          this.fontSize = this.fontSize + 1;
+          const { terminal } = this;
+          if (terminal) terminal.options.fontSize = this.fontSize;
+          this.settingsCtx?.set("fontSizeTerminal", this.fontSize);
+          fitAddon.fit();
+        },
+      },
+      {
+        key: "-",
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: false,
+        callback: () => {
+          this.fontSize = this.fontSize - 1;
+          const { terminal } = this;
+          if (terminal) terminal.options.fontSize = this.fontSize;
+          this.settingsCtx?.set("fontSizeTerminal", this.fontSize);
+          fitAddon.fit();
+        },
+      },
+      {
+        key: "0",
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: false,
+        callback: () => {
+          this.fontSize = this.settingsCtx?.getDefault("fontSizeTerminal");
+          const { terminal } = this;
+          if (terminal) terminal.options.fontSize = this.fontSize;
+          this.settingsCtx?.set("fontSizeTerminal", this.fontSize);
+          fitAddon.fit();
+        },
+      },
+      {
+        key: "Backspace",
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: false,
+        callback: () => {
+          const { terminal } = this;
+          if (terminal) terminal.clear();
+        },
+      },
+      {
+        key: "f",
+        shiftKey: false,
+        ctrlKey: true,
+        altKey: false,
+        callback: () => {
+          this.setState({ opened: this.state.opened, showSearchBar: !this.state.showSearchBar });
         },
       },
     ];
@@ -195,8 +259,15 @@ export class Terminal extends React.Component<Props, XtermState> {
     terminal.attachCustomKeyEventHandler((ev) => {
       if (ev.type === "keydown") {
         for (let i in keyMap) {
-          if (keyMap[i].key == ev.key && keyMap[i].shiftKey == ev.shiftKey && keyMap[i].ctrlKey == ev.ctrlKey) {
+          if (
+            keyMap[i].key == ev.key &&
+            keyMap[i].shiftKey == ev.altKey &&
+            keyMap[i].ctrlKey == ev.ctrlKey &&
+            keyMap[i].altKey == ev.altKey
+          ) {
             keyMap[i].callback();
+            ev.preventDefault();
+            ev.stopPropagation();
             return false;
           }
         }
@@ -219,6 +290,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     const dims = fitAddon.proposeDimensions();
     this.setState({
       opened: true,
+      showSearchBar: this.state.showSearchBar,
     });
 
     if (dims && socket) {
@@ -299,10 +371,10 @@ export class Terminal extends React.Component<Props, XtermState> {
           </Alert>
         )}
 
-        {state.opened && (
+        {state.opened && state.showSearchBar && (
           <Stack
             spacing={0.3}
-            padding={0.5}
+            // padding={0.5}
             width="100%"
             direction="row"
             alignContent="center"
@@ -312,9 +384,17 @@ export class Terminal extends React.Component<Props, XtermState> {
             <SearchBar
               onSearch={(value: string) => {
                 const { searchAddon, searchAddonOptions } = this;
-                fitAddon.fit();
+                // fitAddon.fit();
                 this.searchText = value;
                 searchAddon.findNext(value, searchAddonOptions);
+              }}
+              onCloseRequest={() => {
+                this.searchText = "";
+                const { searchAddon } = this;
+                searchAddon.clearDecorations();
+                this.setState({ opened: this.state.opened, showSearchBar: !this.state.showSearchBar });
+                this.terminal?.focus();
+                fitAddon.fit();
               }}
               placeholder="Search Text (Supports Regular Expressions)"
               defaultValue={this.searchText}
@@ -331,7 +411,7 @@ export class Terminal extends React.Component<Props, XtermState> {
                 searchAddon.findPrevious(this.searchText, searchAddonOptions);
               }}
             >
-              <FirstPageIcon />
+              <FirstPageIcon fontSize="inherit" />
             </IconButton>
 
             <IconButton
@@ -344,47 +424,21 @@ export class Terminal extends React.Component<Props, XtermState> {
                 searchAddon.findNext(this.searchText, searchAddonOptions);
               }}
             >
-              <LastPageIcon />
+              <LastPageIcon fontSize="inherit" />
             </IconButton>
 
-            <Box sx={{ width: 100 }}>
-              <TextField
-                type="number"
-                id="ni_font_size"
-                size="small"
-                variant="standard"
-                defaultValue={this.fontSize}
-                placeholder="Font size"
-                InputProps={{
-                  inputProps: {
-                    min: 8,
-                    max: 18,
-                    style: { textAlign: "center" },
-                  },
-                }}
-                fullWidth
-                onChange={(event) => {
-                  this.fontSize = Number(event.target.value);
-                  const { terminal } = this;
-                  if (terminal) terminal.options.fontSize = this.fontSize;
-                  const { setFontsize } = this.props;
-                  if (setFontsize) setFontsize(this.fontSize);
-                  fitAddon.fit();
-                }}
-              />
-            </Box>
-
-            <Button
+            <IconButton
               size="small"
-              color="secondary"
-              variant="text"
               onClick={() => {
-                const { terminal } = this;
-                if (terminal) terminal.clear();
+                this.searchText = "";
+                const { searchAddon } = this;
+                searchAddon.clearDecorations();
+                this.setState({ opened: this.state.opened, showSearchBar: !this.state.showSearchBar });
+                this.terminal?.focus();
               }}
             >
-              Clear
-            </Button>
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
           </Stack>
         )}
 

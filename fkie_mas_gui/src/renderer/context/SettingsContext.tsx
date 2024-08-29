@@ -16,6 +16,7 @@ export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
   changed: number;
   get: (attribute: string) => any;
+  getDefault: (attribute: string) => any;
   set: (attribute: string, value: any, settingsCtx?: ISettingsContext) => void;
   getParamList: () => { name: string; param: ISettingsParam }[];
 }
@@ -33,6 +34,9 @@ export const DEFAULT_SETTINGS = {
 
   changed: 0,
   get: () => {
+    return undefined;
+  },
+  getDefault: () => {
     return undefined;
   },
   set: () => {},
@@ -309,6 +313,13 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
     throw new Error(`Configuration attribute ${attribute} not found!`);
   };
 
+  const getDefault = (attribute: string) => {
+    if (attribute in SETTINGS_DEF) {
+      return SETTINGS_DEF[attribute]?.default;
+    }
+    throw new Error(`Configuration attribute ${attribute} not found!`);
+  };
+
   const set = (attribute: string, value: any) => {
     if (SETTINGS_DEF[attribute]) {
       // TODO: check for valid value
@@ -336,6 +347,7 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
       MIN_VERSION_DAEMON,
       changed,
       get,
+      getDefault,
       set,
       getParamList,
     }),

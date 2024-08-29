@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 function SearchBar({
   onSearch,
+  onCloseRequest = () => {},
   placeholder = "Filter",
   defaultValue = "",
   fullWidth = true,
@@ -28,6 +29,9 @@ function SearchBar({
         // resend search value on Enter
         if (e.key === "Enter") {
           onSearch(searched);
+        }
+        if (e.key === "Escape") {
+          if (onCloseRequest) onCloseRequest();
         }
       }}
       size="small"
@@ -72,6 +76,7 @@ function SearchBar({
 
 SearchBar.propTypes = {
   onSearch: PropTypes.func.isRequired,
+  onCloseRequest: PropTypes.func,
   placeholder: PropTypes.string,
   defaultValue: PropTypes.string,
   fullWidth: PropTypes.bool,
