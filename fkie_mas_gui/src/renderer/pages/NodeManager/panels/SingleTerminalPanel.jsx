@@ -108,7 +108,10 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
             width={width}
             name={`${nodeName}`}
             errorHighlighting={errorHighlighting}
-            onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
+            onCtrlD={() => {
+              window.electronAPI?.closeTerminal(id);
+              emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+            }}
           />
         )}
         {currentHost && cmd && initialCommands.length > 0 && (
@@ -120,7 +123,10 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
             width={width}
             name={`${cmd.replaceAll("/", " ")}`}
             errorHighlighting={errorHighlighting}
-            onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
+            onCtrlD={() => {
+              window.electronAPI?.closeTerminal(id);
+              emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+            }}
           />
         )}
         {currentHost && type === CmdType.TERMINAL && (
@@ -132,7 +138,10 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
             width={width}
             name={`bash`}
             errorHighlighting={errorHighlighting}
-            onCtrlD={() => emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id))}
+            onCtrlD={() => {
+              window.electronAPI?.closeTerminal(id);
+              emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+            }}
           />
         )}
       </Box>
