@@ -1,6 +1,6 @@
 import { useDebounceCallback } from "@react-hook/debounce";
-import { SnackbarKey, useSnackbar } from "notistack";
 import { Model } from "flexlayout-react";
+import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import MultimasterManager from "../../main/IPC/MultimasterManager";
@@ -1115,7 +1115,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               />,
               true,
               LAYOUT_TAB_SETS.BORDER_BOTTOM,
-              new LayoutTabConfig(true, `${type.toLocaleUpperCase()}`, null, null, null, {
+              new LayoutTabConfig(true, type, null, null, null, {
                 id: id,
                 host: provider.connection.host,
                 port: provider.connection.port,

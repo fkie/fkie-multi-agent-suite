@@ -1,12 +1,12 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 import BorderColorIcon from "@mui/icons-material/BorderColor";
-import CallMadeIcon from "@mui/icons-material/CallMade";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
 import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import LaunchIcon from "@mui/icons-material/Launch";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import SubjectIcon from "@mui/icons-material/Subject";
@@ -390,35 +390,35 @@ function NodeManager() {
         // add leading icons to the tabs
         switch (node.getConfig()?.tabType) {
           case CmdType.LOG:
-            renderValues.leading = <WysiwygIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <WysiwygIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case CmdType.SCREEN:
-            renderValues.leading = <DvrIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <DvrIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case CmdType.TERMINAL:
-            renderValues.leading = <TerminalIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <TerminalIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "echo":
           case CmdType.ECHO:
-            renderValues.leading = <ChatBubbleOutlineIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <ChatBubbleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "publish":
-            renderValues.leading = <PlayCircleOutlineIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <PlayCircleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case LAYOUT_TABS.SERVICES:
-            renderValues.leading = <SyncAltOutlinedIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <SyncAltOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "info":
-            renderValues.leading = <InfoOutlinedIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <InfoOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "parameter":
-            renderValues.leading = <TuneIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <TuneIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "editor":
-            renderValues.leading = <BorderColorIcon sx={{ fontSize: "inherit" }} />;
+            renderValues.leading = <BorderColorIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "node-logger":
-            renderValues.leading = <SettingsInputCompositeOutlinedIcon sx={{ fontSize: "inherit", rotate: "90deg" }} />;
+            renderValues.leading = <SettingsInputCompositeOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize, rotate: "90deg" }} />;
             break;
           default:
             break;
@@ -433,6 +433,7 @@ function NodeManager() {
               disableInteractive
             >
               <IconButton
+                sx={{ padding: "1px" }}
                 onMouseDown={(event) => {
                   if (event?.button === 1) return;
                   if (node.getConfig().extTerminalConfig) {
@@ -450,7 +451,7 @@ function NodeManager() {
                       try {
                         window.CommandExecutor?.execTerminal(
                           provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
-                          `"${config.type.toLocaleUpperCase()} ${config.nodeName}@${provider.host()}"`,
+                          `"${config.type} ${config.nodeName}@${provider.host()}"`,
                           terminalCmd.cmd
                         );
                         deleteTab(tabNodeId);
@@ -493,7 +494,11 @@ function NodeManager() {
                   event.stopPropagation();
                 }}
               >
-                <CallMadeIcon sx={{ fontSize: "inherit" }} />
+                <LaunchIcon
+                  sx={{
+                    fontSize: (theme) => theme.typography.fontSize,
+                  }}
+                />
               </IconButton>
             </Tooltip>
           );
@@ -688,6 +693,9 @@ function NodeManager() {
     }
     if (event.ctrlKey && event.key === "-") {
       settingsCtx.set("fontSize", settingsCtx.get("fontSize") - 1);
+    }
+    if (event.ctrlKey && event.key === "0") {
+      settingsCtx.set("fontSize", settingsCtx.getDefault("fontSize"));
     }
   };
 
