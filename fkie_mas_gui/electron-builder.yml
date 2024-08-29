@@ -11,6 +11,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - out/renderer/editor.html
+  - out/renderer/popout.html
   - out/renderer/subscriber.html
   - out/renderer/terminal.html
 win:

@@ -16,7 +16,7 @@ export default defineConfig({
       },
     },
     optimizeDeps: {
-      include: ["@emotion/react", "@emotion/styled", "@mui/material/Tooltip"],
+      include: ["@emotion/react", "@emotion/styled", "@mui/material"],
     },
     plugins: [
       react({
@@ -32,6 +32,7 @@ export default defineConfig({
         input: {
           app: resolve(__dirname, "src/renderer/index.html"),
           editor: resolve(__dirname, "src/renderer/editor.html"),
+          popout: resolve(__dirname, "src/renderer/popout.html"),
           subscriber: resolve(__dirname, "src/renderer/subscriber.html"),
           terminal: resolve(__dirname, "src/renderer/terminal.html"),
         },
