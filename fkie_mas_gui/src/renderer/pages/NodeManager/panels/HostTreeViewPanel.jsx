@@ -1257,7 +1257,7 @@ function HostTreeViewPanel() {
                           createSingleTerminalPanel(
                             CmdType.SCREEN,
                             node,
-                            screen,
+                            node.screens[0],
                             event.nativeEvent.shiftKey,
                             event.nativeEvent.ctrlKey
                           );
@@ -1268,7 +1268,7 @@ function HostTreeViewPanel() {
                       node.screens.map((screen) => {
                         screens.push({
                           node: node.name,
-                          screen: screens,
+                          screen: screen,
                           external: event.nativeEvent.shiftKey,
                         });
                       });
@@ -1296,7 +1296,7 @@ function HostTreeViewPanel() {
                       if (item.callback) {
                         item.callback();
                       } else {
-                        createSingleTerminalPanel(CmdType.SCREEN, item.node, screen, item.external);
+                        createSingleTerminalPanel(CmdType.SCREEN, item.node, item.screen, item.external);
                       }
                     });
                   }
