@@ -8,7 +8,7 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 import CloseIcon from "@mui/icons-material/Close";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import LastPageIcon from "@mui/icons-material/LastPage";
-import { Alert, AlertTitle, Box, Button, IconButton, Stack, TextField } from "@mui/material";
+import { Alert, AlertTitle, Box, IconButton, Stack } from "@mui/material";
 import { FitAddon } from "@xterm/addon-fit";
 import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -16,7 +16,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import React, { useState } from "react";
+import React from "react";
 import { ISettingsContext } from "../../context/SettingsContext";
 import SearchBar from "../UI/SearchBar";
 
