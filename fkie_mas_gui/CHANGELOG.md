@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.4.4 - 28.08.2024
+
+NodeDetailsPanel cleaned up
+Hide some parameter in web version
+Terminal revised: new shortcuts, switchable search bar
+    * Ctr+{+, - , 0}: change font size
+    * Ctr+f: enable search bar
+    * Escape in search bar: close search bar
+    ----
+    * Ctrl+Shift+C: copy selected text to clipboard
+    * Ctrl+D: close terminal
+Version of the dependencies pumped up
+Fixed: popout capability in browser
+Fixed: warning while open screen
+
 ## 2.4.3 - 28.08.2024
 
 Added selection dialog on actions with multiple nodes
