@@ -20,6 +20,7 @@ import {
 import React, { useCallback, useContext, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { SSHContext } from "../../context/SSHContext";
+import useLocalStorage from "../../hooks/useLocalStorage";
 import SearchBar from "../UI/SearchBar";
 
 const headers = [
@@ -51,8 +52,14 @@ function SSHCredentialsPanel() {
   const [port, setPort] = useState(22);
   const [password, setPassword] = useState("");
 
-  const [openInfoPwd, setOpenInfoPwd] = React.useState(true);
-  const [openInfoCred, setOpenInfoCred] = React.useState(true);
+  const [openInfoPwd, setOpenInfoPwd] = useLocalStorage(
+    "SettingsModal:openInfoPwd",
+    true
+  );
+  const [openInfoCred, setOpenInfoCred] = useLocalStorage(
+    "SettingsModal:openInfoCred",
+    []
+  );
 
   const [errorMessage, setErrorMessage] = useState("");
   const [filter, setFilter] = useState("");
@@ -153,9 +160,10 @@ function SSHCredentialsPanel() {
             setOpenInfoCred(false);
           }}
         >
-          <AlertTitle>We might configure SSH credentials to edit and load remote files using a SFTP client.</AlertTitle>
-          {`The host field must coincide with the provider's host to be able to use
-          these credentials.`}
+          <AlertTitle>
+            We might configure SSH credentials to run MAS nodes on remote host.
+          </AlertTitle>
+          {`The host field must coincide with the provider's host to be able to use these credentials.`}
         </Alert>
       )}
 
