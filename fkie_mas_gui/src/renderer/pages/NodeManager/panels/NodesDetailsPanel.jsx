@@ -12,12 +12,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { CopyButton, Tag, getDiagnosticStyle } from "../../../components";
+import { CopyButton, Tag, colorFromHostname, getDiagnosticStyle } from "../../../components";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { NavigationContext } from "../../../context/NavigationContext";
 import { RosContext } from "../../../context/RosContext";
@@ -167,6 +168,20 @@ function NodesDetailsPanel() {
     [logCtx]
   );
 
+  const getHostStyle = useCallback(
+    (providerName) => {
+      if (settingsCtx.get("colorizeHosts")) {
+        return {
+          borderTopStyle: "solid",
+          borderTopColor: colorFromHostname(providerName),
+          borderTopWidth: "0.4em",
+        };
+      }
+      return {};
+    },
+    [settingsCtx]
+  );
+
   const createNodeDetailsView = useMemo(() => {
     const result = nodesShow.map((node) => {
       return (
@@ -175,25 +190,29 @@ function NodesDetailsPanel() {
           // spacing={1}
           alignItems="left"
         >
-          <Stack paddingTop={1}>
+          <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(node.providerName)} >
             <Typography
               variant="subtitle1"
               style={{
+                // cursor: "pointer",
                 color: "#fff",
                 backgroundColor: "#2196f3",
               }}
               align="center"
             >
-              <Box sx={{ fontWeight: "bold", m: 0.5 }}>
-                {node.name.replace(node.namespace, "").replace("/", "")}
-                <CopyButton value={node.name} />
-              </Box>
-            </Typography>
-            <Typography variant="subtitle2" style={{ color: grey[700] }} align="center">
-              Namespace: {node?.namespace}
-            </Typography>
-            <Typography variant="subtitle2" style={{ color: grey[700] }} align="center">
-              <Box sx={{ fontWeight: "bold", m: 1 }}>{node.providerName}</Box>
+              <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
+                {node.namespace !== "/" && (
+                  <Tooltip title="namespace" placement="bottom" disableInteractive>
+                    <Typography variant="subtitle2" align="center">
+                      {node?.namespace}
+                    </Typography>
+                  </Tooltip>
+                )}
+                <Box>
+                  {node.namespace !== "/" ? node.name.replace(node.namespace, "").replace("/", "") : node.name}
+                  <CopyButton value={node.name} fontSize={"inherit"} />
+                </Box>
+              </Stack>
             </Typography>
           </Stack>
 
@@ -208,28 +227,33 @@ function NodesDetailsPanel() {
               <Stack direction="row" spacing={0.5}>
                 <Tag
                   color={node.status === RosNodeStatus.RUNNING ? "success" : "default"}
-                  title="Status:"
+                  title=""
                   // title={`${RosNodeStatusInfo[node.status]}`}
                   text={node.status}
                   wrap
                 />
-
-                {node.pid && Math.round(node.pid) > 0 && <Tag color="info" title="PID:" text={`${node.pid}`} wrap />}
-
-                {node.node_API_URI && node.node_API_URI.length > 0 && (
-                  <Tag color="default" title="URI:" text={node.node_API_URI} wrap />
-                )}
               </Stack>
+              {node.pid && Math.round(node.pid) > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="PID:" text={`${node.pid}`} wrap />
+                </Stack>
+              )}
+
+              {node.node_API_URI && node.node_API_URI.length > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="URI:" text={node.node_API_URI} wrap />
+                </Stack>
+              )}
 
               {node.masteruri && node.masteruri.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
-                  <Tag color="primary" title="MASTERURI:" text={node.masteruri} wrap />
+                  <Tag color="default" title="MASTERURI:" text={node.masteruri} wrap />
                 </Stack>
               )}
 
               {node.location && (
                 <Stack direction="row" spacing={0.5}>
-                  <Tag color="primary" title="Location:" text={JSON.stringify(node.location)} wrap />
+                  <Tag color="default" title="Location:" text={`${node.location} - ${node.providerName}`} wrap />
                 </Stack>
               )}
 
@@ -238,7 +262,7 @@ function NodesDetailsPanel() {
                   {node.screens.map((screen) => (
                     <Tag
                       key={`screen-${node.name}`}
-                      color="lightGrey"
+                      color="default"
                       title="Screen:"
                       text={screen}
                       wrap
@@ -279,41 +303,6 @@ function NodesDetailsPanel() {
                   {node.subscribers.size > 0 && (
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
-                        {/* <TableHead>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>
-                              <Stack
-                                direction="row"
-                                alignItems="center"
-                                spacing={0}
-                              >
-                                {showConnections && (
-                                  <Chip
-                                    size="small"
-                                    title="pub"
-                                    color="default"
-                                    label="pub"
-                                  />
-                                )}
-                                {showConnections && (
-                                  <Chip
-                                    size="small"
-                                    title="sub"
-                                    color="default"
-                                    label="sub"
-                                  />
-                                )}
-                                <Typography
-                                  marginLeft="0.5em"
-                                  fontWeight="bold"
-                                  variant="body2"
-                                >
-                                  Topic Name
-                                </Typography>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        </TableHead> */}
                         <TableBody>
                           {Array.from(node.subscribers.values())
                             .sort(compareTopics)
@@ -389,42 +378,6 @@ function NodesDetailsPanel() {
                     // useZebraStyles={false}>
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
-                        {/* <TableHead>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>
-                              <Stack
-                                direction="row"
-                                alignItems="center"
-                                spacing={0}
-                                padding={0}
-                              >
-                                {showConnections && (
-                                  <Chip
-                                    size="small"
-                                    title="pub"
-                                    color="default"
-                                    label="pub"
-                                  />
-                                )}
-                                {showConnections && (
-                                  <Chip
-                                    size="small"
-                                    title="sub"
-                                    color="default"
-                                    label="sub"
-                                  />
-                                )}
-                                <Typography
-                                  marginLeft="0.5em"
-                                  fontWeight="bold"
-                                  variant="body2"
-                                >
-                                  Topic Name
-                                </Typography>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        </TableHead> */}
                         <TableBody>
                           {Array.from(node.publishers.values())
                             .sort(compareTopics)
@@ -540,7 +493,7 @@ function NodesDetailsPanel() {
                     <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
                       <Tag
                         key={launchPath}
-                        color="white"
+                        color="default"
                         title="Launch path:"
                         text={launchPath}
                         wrap
@@ -554,7 +507,7 @@ function NodesDetailsPanel() {
                         <Stack direction="row" spacing={0.5}>
                           <Tag
                             key={logItem.screen_log}
-                            color="white"
+                            color="default"
                             title="Screen log:"
                             text={logItem.screen_log}
                             wrap
@@ -564,7 +517,7 @@ function NodesDetailsPanel() {
                         <Stack direction="row" spacing={0.5}>
                           <Tag
                             key={logItem.ros_log}
-                            color="white"
+                            color="default"
                             title="Ros log:"
                             text={logItem.ros_log}
                             wrap
