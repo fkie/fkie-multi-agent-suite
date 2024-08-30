@@ -66,6 +66,10 @@ function SettingsModal() {
         PaperProps={{
           component: DraggablePaper,
           dialogRef: dialogRef,
+          sx: {
+            minHeight: "80vh",
+            maxHeight: "80vh",
+          },
         }}
         aria-labelledby="draggable-dialog-title"
         fullWidth
@@ -77,22 +81,21 @@ function SettingsModal() {
         <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
           Settings editor
         </DialogTitle>
-
-        <DialogContent>
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs
-              value={selectedTabIndex}
-              onChange={(event, newValue) => {
-                setSelectedTabIndex(newValue);
-              }}
-              aria-label="List of tabs"
-              style={{ minHeight: "24px" }}
-            >
-              <Tab label="Interface" {...a11yProps(0)} style={{ minHeight: "24px" }} />
-              <Tab label="SSH Credentials" {...a11yProps(1)} style={{ minHeight: "24px" }} />
-              <Tab label="About" {...a11yProps(2)} style={{ minHeight: "24px" }} />
-            </Tabs>
-          </Box>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs
+            value={selectedTabIndex}
+            onChange={(event, newValue) => {
+              setSelectedTabIndex(newValue);
+            }}
+            aria-label="List of tabs"
+            style={{ minHeight: "24px" }}
+          >
+            <Tab label="Interface" {...a11yProps(0)} style={{ minHeight: "24px" }} />
+            <Tab label="SSH Credentials" {...a11yProps(1)} style={{ minHeight: "24px" }} />
+            <Tab label="About" {...a11yProps(2)} style={{ minHeight: "24px" }} />
+          </Tabs>
+        </Box>
+        <DialogContent sx={{padding: "16px"}}>
           <TabPanel value={selectedTabIndex} index={0}>
             <GuiPanel />
           </TabPanel>

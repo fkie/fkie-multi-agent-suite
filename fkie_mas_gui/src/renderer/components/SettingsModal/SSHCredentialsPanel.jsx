@@ -106,7 +106,7 @@ function SSHCredentialsPanel() {
   }, [addingCredential, username, host, port, password, logCtx, SSHCtx]);
 
   return (
-    <Stack spacing={2} sx={{ minHeight: 400 }}>
+    <Stack spacing={2}>
       <SearchBar onSearch={setFilter} placeholder="Filter Credentials" defaultValue="" />
       <TableContainer component={Paper}>
         <Table stickyHeader size="small" aria-label="ssh credential table">

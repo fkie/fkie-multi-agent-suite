@@ -93,7 +93,7 @@ function About() {
   }, []);
 
   return (
-    <Stack paddingTop={2} spacing={0.2} sx={{ minHeight: 400 }} overflow="auto">
+    <Stack paddingTop={2} spacing={0.2} overflow="auto">
       <Stack spacing={1} direction="row">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Version:
