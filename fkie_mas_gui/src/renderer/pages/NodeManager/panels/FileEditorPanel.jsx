@@ -450,14 +450,14 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       return;
     // get range
     const range = {
-      endColumn: changes[0].range.startColumn - (addedComment ? 3 : 0),
+      endColumn: changes[0].range.startColumn + (addedComment ? 4 : 0),
       endLineNumber: changes[0].range.startLineNumber,
       startColumn: changes[1].range.endColumn + (addedComment ? 4 : 0),
       startLineNumber: changes[1].range.endLineNumber,
     };
     const matches = model.findMatches(addedComment ? "--" : "- - ", range);
     matches.reverse().map((match) => {
-      model.applyEdits([{ forceMoveMarkers: false, range: match.range, text: addedComment ? "- - " : "--" }]);
+      model.pushEditOperations(null, [{ forceMoveMarkers: false, range: match.range, text: addedComment ? "- - " : "--" }]);
     }, true);
   };
 
