@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.5 - 28.08.2024
+
+Optimized settings dialog
+
 ## 2.4.4 - 28.08.2024
 
 NodeDetailsPanel cleaned up
