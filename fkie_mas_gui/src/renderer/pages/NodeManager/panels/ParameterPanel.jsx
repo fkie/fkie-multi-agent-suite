@@ -19,6 +19,7 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import { findIn } from "../../../utils/index";
 
 export default function ParameterPanel({ nodes = null, providers = null }) {
+  const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
@@ -29,6 +30,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   const [rootDataFiltered, setRootDataFiltered] = useState(new Map("", []));
   const [rootDataTree, setRootDataTree] = useState(new Map("", []));
   const [expanded, setExpanded] = useState([]);
+  const [expandedFiltered, setExpandedFiltered] = useState([]);
   const [nodeFilter, setNodeFilter] = useState(false);
   const [searched, setSearched] = useState("");
   const [selectedItems, setSelectedItems] = useState(null);
@@ -36,7 +38,6 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
   // debounced search callback
   // search in the origin parameter list and create a new one
   const onSearch = useDebounceCallback((searchTerm) => {
-    setSearched(searchTerm);
     const filteredData = new Map("", {});
     if (!searchTerm) {
       rootData.forEach((paramList, rootName) => {
@@ -55,6 +56,10 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     }
     setRootDataFiltered(filteredData);
   }, 300);
+
+  useEffect(() => {
+    onSearch(searched);
+  }, [searched]);
 
   const getParameterList = useCallback(async () => {
     if (!rosCtx.initialized) return;
@@ -107,7 +112,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosCtx.initialized, rosCtx.providers, nodes, roots]);
+  }, [rosCtx.initialized, rosCtx.providers, nodes, roots, searched]);
 
   // debounced callback when updating a parameter
   const updateParameter = useDebounceCallback(async (parameter, newValue, newType) => {
@@ -211,81 +216,90 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
 
   useEffect(() => {
     getParameterList();
-  }, [getParameterList, roots]);
-
-  // get group name from id of group tree item
-  const fromGroupId = (id) => {
-    if (id.endsWith("#")) {
-      const trimmed = id.slice(0, -1);
-      return {
-        groupName: trimmed.substr(trimmed.lastIndexOf("/") + 1, trimmed.length - 1),
-        fullPrefix: trimmed.substr(0, id.lastIndexOf("/")),
-      };
-    }
-    return { groupName: id, fullPrefix: id };
-  };
-
-  // create id for group tree item
-  const toGroupId = (groupName, fullPrefix) => {
-    return `${fullPrefix}/${groupName}#`;
-  };
+  }, [roots]);
 
   // create tree based on parameter namespace
   // parameters are grouped only if more then one is in the group
-  const fillTree = (name, fullPrefix, params) => {
-    if (!params) return [];
+  const fillTree = (name, fullPrefix, params, itemId) => {
+    if (!params) return { params: [], count: 0, groupKeys: [] };
+    const groupKeys = [];
     const byPrefixP1 = new Map("", []);
     // count parameter for each group
     params.forEach((param) => {
       const nameSuffix = param.name.slice(fullPrefix.length + 1);
-      const [firstName, ...restName] = nameSuffix.split("/");
+      const [groupName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {
-        const groupName = firstName;
         const restNameSuffix = restName.join("/");
-        const groupId = toGroupId(groupName, fullPrefix);
-        if (byPrefixP1.has(groupId)) {
-          byPrefixP1.get(groupId).push({ restNameSuffix, param });
+        if (byPrefixP1.has(groupName)) {
+          byPrefixP1.get(groupName).push({ restNameSuffix, param });
         } else {
-          byPrefixP1.set(groupId, [{ restNameSuffix, param }]);
+          byPrefixP1.set(groupName, [{ restNameSuffix, param }]);
         }
       } else {
-        byPrefixP1.set(firstName, [{ param }]);
+        byPrefixP1.set(groupName, [{ param }]);
       }
     });
 
     // create result
+    let count = 0;
     const filteredParams = [];
-    byPrefixP1.forEach((value, key) => {
+    byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
       if (value.length > 1) {
-        const { groupName } = fromGroupId(key);
+        const groupKey = `${itemId}-${groupName}`;
+        const newFullPrefix = `${fullPrefix}/${groupName}`;
+        groupKeys.push(groupKey);
         const groupParams = value.map((item) => {
           return item.param;
         });
+        const subResult = fillTree(groupName, newFullPrefix, groupParams, groupKey);
+        // the result count is 0 -> we added multiple provider for topic with same name.
+        if (subResult.count === 0) {
+          count += 1;
+        } else {
+          count += subResult.count;
+        }
+        if (subResult.groupKeys.length > 0) {
+          groupKeys.push(...subResult.groupKeys);
+        }
         filteredParams.push([
           {
-            groupKey: key,
-            params: fillTree(key, `${fullPrefix}/${groupName}`, groupParams),
-            count: value.length,
-            fullPrefix: fullPrefix ? fullPrefix : name,
+            groupKey: groupKey,
+            groupName: `/${groupName}`,
+            params: subResult.params,
+            count: subResult.count,
+            fullPrefix: newFullPrefix,
+            groupKeys: groupKeys,
           },
         ]);
       } else {
         filteredParams.push(value[0].param);
+        count += 1;
       }
     });
-    return filteredParams;
+    return { params: filteredParams, count, groupKeys };
   };
 
   // create parameter tree from filtered parameter list
   useEffect(() => {
     const tree = new Map("", []);
+    const rootKeys = [];
     Array.from(roots).map(([rootName, rootObj]) => {
-      const subtree = fillTree(rootName, nodeFilter ? `${rootName}` : "", rootDataFiltered.get(rootName));
-      tree.set(rootName, subtree);
+      const subtree = fillTree(
+        rootName,
+        nodeFilter ? `${rootName}` : "",
+        rootDataFiltered.get(rootName),
+        nodeFilter ? `${rootName}` : rootObj.id
+      );
+      tree.set(rootName, subtree.params);
+      rootKeys.push(rootName);
+      rootKeys.push(...subtree.groupKeys);
       return null;
     });
     setRootDataTree(tree);
+    // if (searched.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+    setExpandedFiltered(rootKeys);
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeFilter, rootDataFiltered, roots]);
 
@@ -322,17 +336,15 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         );
       }
       return param.map((group) => {
-        const { groupName, fullPrefix } = fromGroupId(group.groupKey);
-        const newRootName = `${fullPrefix}/${groupName}`;
         return (
           <ParameterTreeItem
-            key={`${group.fullPrefix}-${newRootName}`}
-            itemId={`${group.fullPrefix}-${newRootName}`}
+            key={group.groupKey}
+            itemId={group.groupKey}
             labelRoot={rootPath}
-            labelText={`${groupName}`}
+            labelText={group.groupName}
             labelCount={group.count}
           >
-            {paramTreeToStyledItems(newRootName, group.params)}
+            {paramTreeToStyledItems(group.fullPrefix, group.params)}
           </ParameterTreeItem>
         );
       });
@@ -423,7 +435,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
             </IconButton>
           </Tooltip>
           <SearchBar
-            onSearch={onSearch}
+            onSearch={setSearched}
             placeholder="Filter parameters (<space> for OR, + for AND)"
             // defaultValue={initialSearchTerm}
             fullWidth
@@ -440,7 +452,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           <Box width="100%" height="100%" overflow="auto">
             <SimpleTreeView
               aria-label="parameters"
-              expandedItems={expanded}
+              expandedItems={searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
               slots={{
                 collapseIcon: ArrowDropDownIcon,
                 expandIcon: ArrowRightIcon,
@@ -448,14 +460,21 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
               // defaultEndIcon={<div style={{ width: 24 }} />}
               onSelectedItemsChange={(event, itemId) => {
                 setSelectedItems(itemId);
-                const index = expanded.indexOf(itemId);
-                const copyExpanded = [...expanded];
+                const index =
+                  searched.length < EXPAND_ON_SEARCH_MIN_CHARS
+                    ? expanded.indexOf(itemId)
+                    : expandedFiltered.indexOf(itemId);
+                const copyExpanded = [...(searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
                 if (index === -1) {
                   copyExpanded.push(itemId);
                 } else {
                   copyExpanded.splice(index, 1);
                 }
-                setExpanded(copyExpanded);
+                if (searched.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+                  setExpanded(copyExpanded);
+                } else {
+                  setExpandedFiltered(copyExpanded);
+                }
               }}
               // workaround for https://github.com/mui/mui-x/issues/12622
               onItemFocus={(e, itemId) => {
