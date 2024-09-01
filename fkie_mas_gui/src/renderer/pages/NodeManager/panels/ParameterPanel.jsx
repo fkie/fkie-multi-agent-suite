@@ -397,13 +397,8 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
         //   display: 'flex',
         // }}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Tooltip
-            title="Delete selected parameter"
-            placement="bottom"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-          >
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <Tooltip title="Delete selected parameter" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
             <span>
               <IconButton
                 disabled={!selectedItems}
@@ -417,19 +412,24 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
               </IconButton>
             </span>
           </Tooltip>
+          <Tooltip title="Reload parameter list" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+            <IconButton
+              size="small"
+              onClick={() => {
+                getParameterList();
+              }}
+            >
+              <RefreshIcon sx={{ fontSize: "inherit" }} />
+            </IconButton>
+          </Tooltip>
           <SearchBar
             onSearch={onSearch}
             placeholder="Filter parameters (<space> for OR, + for AND)"
             // defaultValue={initialSearchTerm}
             fullWidth
           />
-          <Tooltip title="Reload parameter list" placement="bottom">
-            <IconButton size="small" onClick={getParameterList}>
-              <RefreshIcon sx={{ fontSize: "inherit" }} />
-            </IconButton>
-          </Tooltip>
           {searched && (
-            <Tooltip title="Delete filtered parameters" placement="bottom">
+            <Tooltip title="Delete filtered parameters" placement="bottom" disableInteractive>
               <IconButton size="small" onClick={onDeleteParameters} color="warning">
                 <DeleteIcon sx={{ fontSize: "inherit" }} />
               </IconButton>

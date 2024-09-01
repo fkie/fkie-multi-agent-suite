@@ -337,7 +337,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
           title="Echo (shift+click for alternative open location)"
           placement="left"
           enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
+          // enterNextDelay={tooltipDelay}
           disableInteractive
         >
           <span>
@@ -357,7 +357,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
           title="Echo in Terminal"
           placement="left"
           enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
+          // enterNextDelay={tooltipDelay}
           disableInteractive
         >
           <span>
@@ -377,7 +377,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
           title="Publish to"
           placement="left"
           enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
+          // enterNextDelay={tooltipDelay}
           disableInteractive
         >
           <span>
@@ -441,13 +441,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
           //   display: 'flex',
           // }}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <SearchBar
-              onSearch={onSearch}
-              placeholder="Filter Topics (<space> for OR, + for AND)"
-              defaultValue={initialSearchTerm}
-              fullWidth
-            />
+          <Stack direction="row" spacing={0.5} alignItems="center">
             <Tooltip title="Reload topic list" placement="left" disableInteractive>
               <IconButton
                 size="small"
@@ -458,6 +452,12 @@ function TopicsPanel({ initialSearchTerm = "" }) {
                 <RefreshIcon sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
+            <SearchBar
+              onSearch={onSearch}
+              placeholder="Filter Topics (<space> for OR, + for AND)"
+              defaultValue={initialSearchTerm}
+              fullWidth
+            />
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
             <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1 }}>
