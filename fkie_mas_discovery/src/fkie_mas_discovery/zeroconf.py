@@ -51,6 +51,7 @@ except ImportError:
 
 import rospy
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket import ws_port
 
 
 from .common import get_hostname
@@ -789,7 +790,7 @@ class Discoverer(Zeroconf):
     '''
     ROSMASTER_HZ = 1  # the test rate of ROS master state in hz
 
-    def __init__(self, monitor_port=11611, network_id=0):
+    def __init__(self, monitor_port=11611, network_id=0, ws_port=ws_port()):
         '''
         Initialize method of the local master.
 
@@ -807,7 +808,7 @@ class Discoverer(Zeroconf):
         self._use_ipv6 = 'ROS_IPV6' in os.environ and os.environ['ROS_IPV6'] == 'on'
         Log.info("IPv6: %s" %
                  ('enabled' if self._use_ipv6 else 'disabled'))
-        self.master_monitor = MasterMonitor(monitor_port, ipv6=self._use_ipv6)
+        self.master_monitor = MasterMonitor(monitor_port, ipv6=self._use_ipv6, ws_port=ws_port)
         name = self.master_monitor.getMastername()
         materuri = self.master_monitor.getMasteruri()
         # create the txtArray for the zeroconf service of the ROS master

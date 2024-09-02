@@ -86,20 +86,20 @@ class MultimasterManager {
     const namespace = versStr === "2" ? "/mas" : "";
     const nameArg = `--name=${namespace}/${dName}`;
 
+    let domainPrefix = "";
+    if (networkId !== undefined && networkId !== 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
+    }
     if (versStr === "1") {
       // networkId shift the default multicast port (11511)
       const dPort = `${Number(getArgument(ARGUMENTS.DISCOVERY_MCAST_PORT)) + (networkId || 0)}`;
       const dGroup = group || getArgument(ARGUMENTS.DISCOVERY_MCAST_GROUP);
       const dHeartbeat = heartbeatHz || getArgument(ARGUMENTS.DISCOVERY_HEARTBEAT_HZ);
       const dRobotHosts = robotHosts ? `_robot_hosts:=[${robotHosts}]` : "";
-      cmdMasterDiscovery = `rosrun fkie_mas_daemon mas-remote-node.py ${
+      cmdMasterDiscovery = `${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
       } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
     } else if (versStr === "2") {
-      let domainPrefix = "";
-      if (networkId !== undefined && networkId !== 0) {
-        domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
-      }
       cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
       } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
@@ -210,18 +210,14 @@ class MultimasterManager {
       this.respawn ? "--respawn" : ""
     } ${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
 
-    let port = rosVersion === "2" ? 35430 : 35685;
-    if (networkId !== undefined) {
-      port += networkId;
+    let domainPrefix = "";
+    if (networkId !== undefined && networkId !== 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
     }
     if (versStr === "1") {
-      cmdDaemon = `rosrun ${cmdDaemon} --port ${port}; `;
+      cmdDaemon = `${domainPrefix}rosrun ${cmdDaemon}`;
     } else if (versStr === "2") {
-      if (networkId !== 0 && networkId !== undefined) {
-        cmdDaemon = `ROS_DOMAIN_ID=${networkId} ros2 run ${cmdDaemon} --port ${port}; `;
-      } else {
-        cmdDaemon = `ros2 run ${cmdDaemon}; `;
-      }
+      cmdDaemon = `${domainPrefix}ros2 run ${cmdDaemon}; `;
     } else {
       return Promise.resolve({
         result: false,

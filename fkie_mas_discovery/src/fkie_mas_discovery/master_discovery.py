@@ -34,7 +34,7 @@ from fkie_mas_pylib.interface.runtime_interface import RosProvider
 from fkie_mas_pylib.interface.runtime_interface import SystemWarning
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.system.url import get_port
+from fkie_mas_pylib.websocket import ws_port, ws_port_from
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -511,7 +511,7 @@ class Discoverer(object):
 
     NETPACKET_SIZE = 68
 
-    def __init__(self, mcast_port, mcast_group, monitor_port, rpc_addr=''):
+    def __init__(self, mcast_port, mcast_group, monitor_port, rpc_addr='', ws_port=ws_port()):
         '''
         Initialize method for the Discoverer class
 
@@ -617,7 +617,7 @@ class Discoverer(object):
         mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
         is_ip6 = self._is_ipv6_group(mgroup)
         self.master_monitor = MasterMonitor(
-            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True, network_id=(mcast_port-11511))
+            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True, ws_port=ws_port)
         # create timer to check for ros master changes
         self._timer_ros_changes = threading.Timer(
             0.1, self.checkROSMaster_loop)
@@ -1026,12 +1026,9 @@ class Discoverer(object):
             result = []
             for (addr, port), master in self.masters.items():
                 # check for master.online
-                master_port = get_port(master.masteruri)
-                master_port = master_port - 11311 if master_port else 0
-                network_id=(self.mcast_port-11511)
                 cbmaster = RosProvider(name=master.mastername if master.mastername and len(master.mastername) > 0 else f'{addr}:{port}',
                                        host=addr[0],
-                                       port=NMD_DEFAULT_PORT + 255 + network_id + MAX_ROS1_NETWORKS * master_port,
+                                       port=ws_port_from(self.mcast_port, master.masteruri),
                                        masteruri=master.masteruri if len(
                     master.masteruri) > 0 else f'{addr}:{port}',
                     origin=master.masteruri == self.master_monitor.getMasteruri(),

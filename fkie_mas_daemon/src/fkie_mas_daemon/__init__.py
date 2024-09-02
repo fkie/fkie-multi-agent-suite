@@ -63,8 +63,6 @@ def init_arg_parser():
                                                            " comma separated for multiple files")
     parser.add_argument('--port', nargs='?', type=int,
                             default=ws_port(),  help='change port for websocket server')
-    parser.add_argument('--networkId', nargs='?', type=int,
-                            default=0,  help='change network id, only if port was not set')
     return parser
 
 
@@ -99,10 +97,7 @@ def start_server(node_name='mas_daemon'):
         Log.error("No SCREEN available! You can't launch nodes.")
     try:
         launch_manager = MASDaemon()
-        port = parsed_args.port
-        if port == ws_port() and parsed_args.networkId != 0:
-            port = ws_port(parsed_args.networkId)
-        launch_manager.start(port)
+        launch_manager.start(parsed_args.port)
         # load launch file from parameter
         for lfile in load_files:
             launch_manager.load_launch_file(lfile, autostart=False)

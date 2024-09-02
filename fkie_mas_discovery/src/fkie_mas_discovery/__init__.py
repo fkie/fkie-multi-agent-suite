@@ -105,6 +105,7 @@ def main():
     Creates and runs the ROS node using multicast messages for discovering
     '''
     import fkie_mas_discovery.master_discovery as mas_discovery
+    from fkie_mas_pylib.websocket import ws_port
     wait_for_free_port()
     # setup the loglevel
     try:
@@ -120,9 +121,10 @@ def main():
     mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
     rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port())
     rpc_addr = rospy.get_param('~rpc_addr', '')
+    ws_port = rospy.get_param('~ws_port', ws_port())
     try:
         discoverer = mas_discovery.Discoverer(
-            mcast_port, mcast_group, rpc_port, rpc_addr=rpc_addr)
+            mcast_port, mcast_group, rpc_port, rpc_addr=rpc_addr, ws_port=ws_port)
         discoverer.start()
         rospy.spin()
         discoverer.finish()
@@ -139,6 +141,7 @@ def main_zeroconf():
     Creates and runs the ROS node using zeroconf/avahi for discovering
     '''
     import fkie_mas_discovery.zeroconf as zeroconf
+    from fkie_mas_pylib.websocket import ws_port
     PROCESS_NAME = "zeroconf"
     wait_for_free_port()
     # setup the loglevel
@@ -153,6 +156,7 @@ def main_zeroconf():
     set_process_name(rospy.get_name())
     mcast_port = rospy.get_param('~mcast_port', MCAST_PORT)
     rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port(True))
-    discoverer = zeroconf.Discoverer(rpc_port, mcast_port - MCAST_PORT)
+    ws_port = rospy.get_param('~ws_port', ws_port())
+    discoverer = zeroconf.Discoverer(rpc_port, mcast_port - MCAST_PORT, ws_port=ws_port)
     discoverer.start()
     rospy.spin()
