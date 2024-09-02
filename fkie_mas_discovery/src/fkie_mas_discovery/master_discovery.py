@@ -29,10 +29,12 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
+from fkie_mas_pylib.defines import MAX_ROS1_NETWORKS
 from fkie_mas_pylib.interface.runtime_interface import RosProvider
 from fkie_mas_pylib.interface.runtime_interface import SystemWarning
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.system.url import get_port
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -615,7 +617,7 @@ class Discoverer(object):
         mgroup = DiscoverSocket.normalize_mgroup(mcast_group)
         is_ip6 = self._is_ipv6_group(mgroup)
         self.master_monitor = MasterMonitor(
-            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True, server_port=35685+(mcast_port-11511))
+            monitor_port, ipv6=is_ip6, rpc_addr=rpc_addr, connect_server=True, network_id=(mcast_port-11511))
         # create timer to check for ros master changes
         self._timer_ros_changes = threading.Timer(
             0.1, self.checkROSMaster_loop)
@@ -1024,13 +1026,15 @@ class Discoverer(object):
             result = []
             for (addr, port), master in self.masters.items():
                 # check for master.online
+                master_port = get_port(master.masteruri)
+                master_port = master_port - 11311 if master_port else 0
                 cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
-                                        host=addr[0],
-                                        port=port + 24074,
-                                        masteruri=master.masteruri if len(
-                                            master.masteruri) > 0 else f'{addr}:{port}',
-                                        origin=master.masteruri == self.master_monitor.getMasteruri(),
-                                        hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
+                                       host=addr[0],
+                                       port=port + 24073 + MAX_ROS1_NETWORKS * master_port,
+                                       masteruri=master.masteruri if len(
+                    master.masteruri) > 0 else f'{addr}:{port}',
+                    origin=master.masteruri == self.master_monitor.getMasteruri(),
+                    hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
                 cbmaster.ros_domain_id = self.mcast_port - 11511
                 result.append(cbmaster)
                 json_reported_masters.add(master.masteruri)
@@ -1176,7 +1180,7 @@ class Discoverer(object):
         json_w_exception = SystemWarningGroup(
             SystemWarningGroup.ID_EXCEPTION)
         json_warnings = [json_w_ip_mismatch, json_w_resolve,
-                             json_w_udp_send, json_w_exception]
+                         json_w_udp_send, json_w_exception]
         with self.__lock:
             try:
                 current_errors = self.master_monitor.getMasterErrors()[1]

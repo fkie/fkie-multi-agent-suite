@@ -55,6 +55,7 @@ SCREEN = "/usr/bin/screen"
 
 SCREEN_NAME_MAX_CHARS = 74
 
+MAX_ROS1_NETWORKS = 101
 
 NMD_DEFAULT_PORT = 35430
 ''':var NMD_DEFAULT_PORT: default port of node manager daemon.'''

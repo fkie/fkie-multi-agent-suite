@@ -133,7 +133,7 @@ class MasterMonitor:
 
     INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr='', connect_server=False, server_port=35685):
+    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr='', connect_server=False, network_id=0):
         '''
         Initialize method. Creates an XML-RPC server on given port and starts this
         in its own thread.
@@ -233,13 +233,12 @@ class MasterMonitor:
             rospy.get_param('~hide_services', []), 'hide_services')
 
         self.provider_list = []
-        self.ws_port = ws_port()
-        if server_port != self.ws_port:
-            self.ws_port = server_port
+        self.ws_port = ws_port(network_id)
 
         # Start websocket server only if requested
         self.connect_server = connect_server
         if connect_server:
+            Log.info(f"connect to web socket http://localhost:{self.ws_port}")
             self.wsClient = WebSocketClient(self.ws_port)
             self.wsClient.register("ros.screen.get_list", self.getScreenList)
             self.wsClient.register("ros.provider.get_list", self.getProviderList)
