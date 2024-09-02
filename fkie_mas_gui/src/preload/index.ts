@@ -73,7 +73,7 @@ if (process.contextIsolated) {
         rosVersion: string,
         credential: ICredential,
         name?: string,
-        port?: number,
+        networkId?: number,
         group?: string,
         heartbeatHz?: number,
         robotHosts?: string[]
@@ -83,7 +83,7 @@ if (process.contextIsolated) {
           rosVersion,
           credential,
           name,
-          port,
+          networkId,
           group,
           heartbeatHz,
           robotHosts

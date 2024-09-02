@@ -208,7 +208,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   function addProvider(provider: Provider) {
     if (!getProviderById(provider.id)) {
-      setProviders([...providers, provider]);
+      setProviders((prev) => [...prev, provider]);
     }
   }
 
@@ -1169,7 +1169,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     (data: EventProviderRemoved) => {
       // trigger remove provider
       logCtx.debug(
-        `trigger add new provider: ${data.provider.rosState.name}`,
+        `trigger provider removed: ${data.provider.rosState.name}`,
         `RosState details: ${JSON.stringify(data.provider.rosState)}`
       );
 
@@ -1385,7 +1385,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       setProvidersAddQueue([...providersAddQueue]);
     }
-  }, [providersAddQueue, getProviderByHosts, setProvidersAddQueue, setProviders, connectToProvider]);
+  }, [providersAddQueue]);
 
   // Effect to initialize RosContext
   useEffect(() => {

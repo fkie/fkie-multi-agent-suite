@@ -46,7 +46,7 @@ class MultimasterManager {
    *
    * @param {ICredential} credential - Credential to be used
    * @param {string} name - Node name
-   * @param {number} port - Port
+   * @param {number} networkId - Network Id
    * @param {string} group - Multicast group
    * @param {number} heartbeatHz - Heartbeat in HZ
    * @return {bool} execution result
@@ -55,7 +55,7 @@ class MultimasterManager {
     rosVersion?: string | null,
     credential?: ICredential | null,
     name?: string,
-    port?: number,
+    networkId?: number,
     group?: string,
     heartbeatHz?: number,
     robotHosts?: string[]
@@ -63,7 +63,7 @@ class MultimasterManager {
     rosVersion = null,
     credential = null,
     name = undefined,
-    port = undefined,
+    networkId = undefined,
     group = undefined,
     heartbeatHz = undefined,
     robotHosts = undefined
@@ -87,8 +87,8 @@ class MultimasterManager {
     const nameArg = `--name=${namespace}/${dName}`;
 
     if (versStr === "1") {
-      // port shift the default multicast port (11511)
-      const dPort = `${Number(getArgument(ARGUMENTS.DISCOVERY_MCAST_PORT)) + (port || 0)}`;
+      // networkId shift the default multicast port (11511)
+      const dPort = `${Number(getArgument(ARGUMENTS.DISCOVERY_MCAST_PORT)) + (networkId || 0)}`;
       const dGroup = group || getArgument(ARGUMENTS.DISCOVERY_MCAST_GROUP);
       const dHeartbeat = heartbeatHz || getArgument(ARGUMENTS.DISCOVERY_HEARTBEAT_HZ);
       const dRobotHosts = robotHosts ? `_robot_hosts:=[${robotHosts}]` : "";
@@ -97,8 +97,8 @@ class MultimasterManager {
       } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
     } else if (versStr === "2") {
       let domainPrefix = "";
-      if (port !== undefined && port !== 0) {
-        domainPrefix = `ROS_DOMAIN_ID=${port} `;
+      if (networkId !== undefined && networkId !== 0) {
+        domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
       }
       cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
