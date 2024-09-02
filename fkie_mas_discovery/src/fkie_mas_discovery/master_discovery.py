@@ -29,7 +29,7 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
-from fkie_mas_pylib.defines import MAX_ROS1_NETWORKS
+from fkie_mas_pylib.defines import MAX_ROS1_NETWORKS, NMD_DEFAULT_PORT
 from fkie_mas_pylib.interface.runtime_interface import RosProvider
 from fkie_mas_pylib.interface.runtime_interface import SystemWarning
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
@@ -1028,9 +1028,10 @@ class Discoverer(object):
                 # check for master.online
                 master_port = get_port(master.masteruri)
                 master_port = master_port - 11311 if master_port else 0
-                cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
+                network_id=(self.mcast_port-11511)
+                cbmaster = RosProvider(name=master.mastername if master.mastername and len(master.mastername) > 0 else f'{addr}:{port}',
                                        host=addr[0],
-                                       port=port + 24073 + MAX_ROS1_NETWORKS * master_port,
+                                       port=NMD_DEFAULT_PORT + 255 + network_id + MAX_ROS1_NETWORKS * master_port,
                                        masteruri=master.masteruri if len(
                     master.masteruri) > 0 else f'{addr}:{port}',
                     origin=master.masteruri == self.master_monitor.getMasteruri(),
