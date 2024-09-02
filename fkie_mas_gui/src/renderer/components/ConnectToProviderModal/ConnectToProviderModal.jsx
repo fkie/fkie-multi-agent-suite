@@ -10,7 +10,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import {
-  AccordionSummary,
+  // AccordionSummary,
   // AccordionDetails,
   Autocomplete,
   Box,
@@ -42,6 +42,7 @@ import {
 } from "@mui/material";
 import MuiAccordion from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import MuiAccordionSummary from "@mui/material/AccordionSummary";
 import { grey } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
 import { useCustomEventListener } from "react-custom-events";
@@ -60,6 +61,14 @@ import DraggablePaper from "../UI/DraggablePaper";
 const Accordion = styled((props) => <MuiAccordion disableGutters elevation={0} square {...props} />)(({ theme }) => ({
   border: "none",
   backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
+  ".MuiAccordionSummary-content": { margin: 0 },
+}));
+
+const AccordionSummary = styled(MuiAccordionSummary)(() => ({
+  paddingTop: 0,
+  margin: 0,
+  minHeight: 32,
+  // borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));
 
 const AccordionDetails = styled(MuiAccordionDetails)(() => ({
@@ -86,6 +95,7 @@ const DEFAULT_PARAMETER = {
   ttyd: {
     port: 7681,
   },
+  rosMasterUri: "default",
 };
 
 function ConnectToProviderModal() {
@@ -114,10 +124,16 @@ function ConnectToProviderModal() {
   const [selectedHistory, setSelectedHistory] = useState("");
   const [forceRestart, setForceRestart] = useState(true);
   const [saveDefaultParameter, setSaveDefaultParameter] = useState(false);
+  const [enableMasterUri, setEnableMasterUri] = useState(false);
   const [enableDaemonNode, setEnableDaemonNode] = useState(true);
   const [enableDiscoveryNode, setEnableDiscoveryNode] = useState(true);
   const [enableSyncNode, setEnableSyncNode] = useState(startParameter.sync.enable);
   const [enableTerminalManager, setEnableTerminalManager] = useState(true);
+
+  const [inputMasterUri, setInputMasterUri] = useState("http://{HOST}:11311");
+  const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
+    "http://{HOST}:11311",
+  ]);
 
   const [tsList, setTSList] = useState([]);
   const [topicList, setTopicList] = useState([]);
@@ -218,6 +234,11 @@ function ConnectToProviderModal() {
     [startParameter]
   );
 
+  const setMasterUri = (masterUri) => {
+    startParameter.rosMasterUri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
+    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+  };
+
   const setNetworkId = (networkId) => {
     startParameter.networkId = networkId;
     setStartParameter(JSON.parse(JSON.stringify(startParameter)));
@@ -276,6 +297,9 @@ function ConnectToProviderModal() {
     launchCfg.autoConnect = true;
     launchCfg.autostart = rosCtx.isLocalHost(host);
     launchCfg.forceRestart = forceRestart;
+    if (startParameter.masterUri !== "default") {
+      launchCfg.ros1MasterUri = startParameter.masterUri.replace("{HOST}", host);
+    }
     return launchCfg;
   };
 
@@ -601,9 +625,10 @@ function ConnectToProviderModal() {
               </Stack>
               <Accordion
                 disabled={!window.CommandExecutor}
-                disableGutters
+                disableGutters={true}
                 elevation={0}
                 sx={{
+                  paddingTop: "12px",
                   "&:before": {
                     display: "none",
                   },
@@ -614,29 +639,12 @@ function ConnectToProviderModal() {
                   expandIcon={<ExpandMoreIcon />}
                   aria-controls="advanced-options"
                   id="advanced-options"
-                  sx={{ pl: 0 }}
+                  sx={{ pl: 0, paddingBottom: 0 }}
+                  style={{ ".MuiAccordionSummary-content": { margin: 0 } }}
                 >
                   <Stack direction="row" alignItems="center" spacing="0.3em">
                     <SettingsOutlinedIcon fontSize="inherit" />
                     <Typography variant="subtitle1">Advanced parameters:</Typography>
-                    {/* <Tooltip
-                      title="Reset advanced parameters to default"
-                      placement="right"
-                    >
-                      <IconButton
-                        color="default"
-                        onClick={(event) => {
-                          setStartParameter(DEFAULT_PARAMETER);
-                          setForceRestart(true);
-                          setSaveDefaultParameter(false);
-                          setSelectedHistory('');
-                          event.stopPropagation();
-                        }}
-                        size="small"
-                      >
-                        <RestartAltIcon fontSize="inherit" />
-                      </IconButton>
-                    </Tooltip> */}
                   </Stack>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -644,6 +652,122 @@ function ConnectToProviderModal() {
                     direction="column"
                     // divider={<Divider orientation="horizontal" />}
                   >
+                    {startParameter.rosVersion === "1" && (
+                      <Accordion
+                        disableGutters
+                        elevation={0}
+                        sx={{
+                          "&:before": {
+                            display: "none",
+                          },
+                        }}
+                      >
+                        <AccordionSummary
+                          expandIcon={<ExpandMoreIcon />}
+                          aria-controls="discovery_panel-content"
+                          id="master-uri-header"
+                          sx={{ pl: 0 }}
+                        >
+                          <Grid container>
+                            <Grid item xs={4}>
+                              <FormGroup
+                                aria-label="position"
+                                row
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                }}
+                              >
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox
+                                      checked={enableMasterUri}
+                                      onChange={(event) => {
+                                        setEnableMasterUri(event.target.checked);
+                                      }}
+                                    />
+                                  }
+                                  label="ROS_MASTER_URI"
+                                  labelPlacement="end"
+                                />
+                              </FormGroup>
+                            </Grid>
+                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                              <Stack direction="column" sx={{ display: "grid" }}>
+                                <Typography
+                                  noWrap
+                                  variant="body2"
+                                  sx={{
+                                    color: grey[700],
+                                    fontWeight: "inherit",
+                                    flexGrow: 1,
+                                    ml: 0.5,
+                                  }}
+                                >
+                                  {`${startParameter.rosMasterUri}`}
+                                </Typography>
+                              </Stack>
+                            </Grid>
+                          </Grid>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Stack direction="column" divider={<Divider orientation="vertical" />}>
+                            <Tooltip
+                              title={
+                                <>
+                                  <Typography color="h2">Use new ROS_MASTER_URI to start system nodes.</Typography>
+                                  <Typography color="body2">Enter: save entry</Typography>
+                                  <Typography color="body2">Delete: remove selected entry from options list</Typography>
+                                </>
+                              }
+                              placement="bottom"
+                              disableInteractive
+                            >
+                              <Autocomplete
+                                disableListWrap
+                                handleHomeEndKeys={false}
+                                autoHighlight
+                                value={inputMasterUri}
+                                options={optionsMasterUri}
+                                getOptionLabel={(option) => option}
+                                onInputChange={(e, newValue) => {
+                                  setMasterUri(newValue);
+                                  setInputMasterUri(newValue);
+                                }}
+                                size="small"
+                                fullWidth
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    // label="ROS_MASTER_URI"
+                                    variant="outlined"
+                                    onKeyDown={(e) => {
+                                      if (
+                                        e.key === "Enter" &&
+                                        optionsMasterUri.findIndex((o) => o === inputMasterUri) === -1
+                                      ) {
+                                        // add to options
+                                        setOptionsMasterUri((prev) => [
+                                          ...prev.filter((item) => item !== inputMasterUri),
+                                          inputMasterUri,
+                                        ]);
+                                      }
+                                      if (e.key === "Delete") {
+                                        // remove entry from options
+                                        setOptionsMasterUri((prev) => [
+                                          ...prev.filter(
+                                            (item) => item !== inputMasterUri || item === "http://{HOST}:11311"
+                                          ),
+                                        ]);
+                                      }
+                                    }}
+                                  />
+                                )}
+                              />
+                            </Tooltip>
+                          </Stack>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
                     <FormGroup aria-label="position" row>
                       <FormControlLabel
                         control={
@@ -692,7 +816,7 @@ function ConnectToProviderModal() {
                           sx={{ pl: 0 }}
                         >
                           <Grid container>
-                            <Grid item xs={6} sm={5} md={4} lg={4} xl={3}>
+                            <Grid item xs={4}>
                               <FormGroup
                                 aria-label="position"
                                 row
@@ -714,7 +838,7 @@ function ConnectToProviderModal() {
                                 />
                               </FormGroup>
                             </Grid>
-                            <Grid item sx={{ alignSelf: "center" }}>
+                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
                               <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
@@ -801,7 +925,7 @@ function ConnectToProviderModal() {
                           sx={{ pl: 0 }}
                         >
                           <Grid container>
-                            <Grid item xs={6} sm={5} md={4} lg={4} xl={3}>
+                            <Grid item xs={4}>
                               <FormGroup
                                 aria-label="position"
                                 row
@@ -824,7 +948,7 @@ function ConnectToProviderModal() {
                                 />
                               </FormGroup>
                             </Grid>
-                            <Grid item sx={{ alignSelf: "center" }}>
+                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
                               <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
@@ -916,7 +1040,7 @@ function ConnectToProviderModal() {
                         }}
                       >
                         <Grid container>
-                          <Grid item xs={6} sm={5} md={4} lg={4} xl={3}>
+                          <Grid item xs={5}>
                             <FormGroup
                               aria-label="position"
                               row
@@ -986,7 +1110,7 @@ function ConnectToProviderModal() {
                               />
                             </FormGroup>
                           </Grid>
-                          <Grid item sx={{ alignSelf: "center" }}>
+                          <Grid item xs={5} sx={{ alignSelf: "center" }}>
                             <Stack direction="column" sx={{ display: "grid" }}>
                               <Typography
                                 variant="body2"

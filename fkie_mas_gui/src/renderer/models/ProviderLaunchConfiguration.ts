@@ -53,6 +53,8 @@ class ProviderLaunchConfiguration {
   /** Start system nodes on failed connection */
   autostart: boolean = false;
 
+  ros1MasterUri: string = "";
+
   /**
    * Class Constructor
    *
