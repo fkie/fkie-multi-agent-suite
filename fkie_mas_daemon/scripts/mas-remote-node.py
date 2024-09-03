@@ -82,7 +82,7 @@ def parse_arguments():
                         help='kill the process with given pid')
     parser.add_argument('--masteruri', default=None,
                         help='the ROS MASTER URI for started node')
-    parser.add_argument('--force', default=None, action='store_false',
+    parser.add_argument('--force', default=None, action='store_true',
                         help='Force command even if a process with the same name is running')
     parser.add_argument('--pre_check_binary', type=str2bool, nargs='?',
                         const=True, default=False,
