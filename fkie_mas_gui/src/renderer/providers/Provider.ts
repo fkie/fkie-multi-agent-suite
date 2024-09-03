@@ -704,7 +704,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.message as IProviderTimestamp;
       }
-      this.logger?.error(`Provider [${this.name()}]: Error at updateTimeDiff()`, `${value.message}`);
+      this.logger?.error(`Provider [${this.name()}]: Error at updateTimeDiff()`, `${value.message}`, false);
       return {
         timestamp: 0,
         diff: 0,
