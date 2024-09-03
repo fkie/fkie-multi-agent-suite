@@ -108,6 +108,10 @@ class RosStateServicer:
         result = self._endpoints_to_provider(self._endpoints)
         self.websocket.publish('ros.provider.list', result)
 
+    def publish_discovery_state(self):
+        self.websocket.publish('ros.discovery.ready', {
+            'status': self.topic_state_publisher_count > 0, 'timestamp': time.time() * 1000})
+
     def get_publisher_count(self):
         if hasattr(self, 'topic_name_endpoint') and self.topic_name_endpoint is not None:
             return nmd.ros_node.count_publishers(self.topic_name_endpoint)
@@ -118,9 +122,8 @@ class RosStateServicer:
             if self.topic_state_publisher_count:
                 # check if we have a discovery node
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
-                    self.websocket.publish('ros.discovery.ready', {
-                        'status': False, 'timestamp': time.time() * 1000})
                     self.topic_state_publisher_count = 0
+                    self.publish_discovery_state()
                     self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
             # therefor the self._ts_state_updated was updated
@@ -143,8 +146,8 @@ class RosStateServicer:
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
-        self.websocket.publish('ros.discovery.ready', {
-            'status': False, 'timestamp': time.time() * 1000})
+        self.topic_state_publisher_count = 0
+        self.publish_discovery_state()
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''
@@ -153,9 +156,9 @@ class RosStateServicer:
         :type msg: fkie_mas_msgs.DiscoveredState<XXX>
         '''
         if not self.topic_state_publisher_count:
-            self.websocket.publish('ros.discovery.ready', {'status': True})
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
+            self.publish_discovery_state()
         # update the participant info (IP addresses)
         new_ros_state = {}
         for participant in msg.participants:

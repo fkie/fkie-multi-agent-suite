@@ -87,7 +87,7 @@ class Server:
             self.ws_server,
             ws_port=self.ws_port,
         )
-        self.version_servicer = VersionServicer(self.ws_server)
+        self.version_servicer = VersionServicer(self.ws_server, self.rosstate_servicer)
 
         self.rosname = ns_join(
             nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
