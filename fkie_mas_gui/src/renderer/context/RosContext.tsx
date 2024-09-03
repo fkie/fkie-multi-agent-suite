@@ -593,7 +593,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
         const port = config.port
           ? config.port
-          : getDefaultPortFromRos(Provider.defaultType, config.rosVersion) + config.networkId;
+          : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri) + config.networkId;
         // check and add provider if new
         let provider = getProviderByHosts([config.host], port, null) as Provider;
         if (!provider) {
@@ -677,7 +677,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             config.rosVersion,
             credential,
             undefined,
-            config.networkId
+            config.networkId,
+            config.ros1MasterUri,
+            config.forceRestart
           );
           if (!resultStartDaemon.result) {
             logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
@@ -696,7 +698,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             config.networkId,
             undefined,
             undefined,
-            config.discovery.robotHosts
+            config.discovery.robotHosts,
+            config.ros1MasterUri,
+            config.forceRestart
           );
           if (!resultStartDiscovery.result) {
             logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
@@ -714,7 +718,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             credential,
             undefined,
             config.sync.doNotSync,
-            config.sync.syncTopics
+            config.sync.syncTopics,
+            config.ros1MasterUri,
+            config.forceRestart
           );
           if (!resultStartSync.result) {
             logCtx.warn(`Failed to start sync on host '${config.host}'`, resultStartSync.message);

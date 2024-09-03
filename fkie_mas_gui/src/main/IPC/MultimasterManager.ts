@@ -41,6 +41,17 @@ class MultimasterManager {
     return this.terminalManager.spawnTerminal(rosVersion, credential, port);
   };
 
+  public toRos1MasterUriPrefix: (ros1MasterUri: string | undefined, credential: ICredential | null) => string = (
+    ros1MasterUri,
+    credential
+  ) => {
+    let rosMasterUriPrefix = "";
+    if (ros1MasterUri && ros1MasterUri.length > 0 && ros1MasterUri !== "default") {
+      rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.replace("{HOST}", credential ? credential.host : "localhost")} `;
+    }
+    return rosMasterUriPrefix;
+  };
+
   /**
    * Try to start a master discovery node
    *
@@ -58,7 +69,9 @@ class MultimasterManager {
     networkId?: number,
     group?: string,
     heartbeatHz?: number,
-    robotHosts?: string[]
+    robotHosts?: string[],
+    ros1MasterUri?: string,
+    forceStart?: boolean
   ) => Promise<{ result: boolean; message: string }> = (
     rosVersion = null,
     credential = null,
@@ -66,7 +79,9 @@ class MultimasterManager {
     networkId = undefined,
     group = undefined,
     heartbeatHz = undefined,
-    robotHosts = undefined
+    robotHosts = undefined,
+    ros1MasterUri = undefined,
+    forceStart = undefined
   ) => {
     let versStr = rosVersion;
     if (!versStr) {
@@ -90,19 +105,21 @@ class MultimasterManager {
     if (networkId !== undefined && networkId !== 0) {
       domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
     }
+    const forceArg = forceStart ? "--force " : "";
     if (versStr === "1") {
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
       // networkId shift the default multicast port (11511)
       const dPort = `${Number(getArgument(ARGUMENTS.DISCOVERY_MCAST_PORT)) + (networkId || 0)}`;
       const dGroup = group || getArgument(ARGUMENTS.DISCOVERY_MCAST_GROUP);
       const dHeartbeat = heartbeatHz || getArgument(ARGUMENTS.DISCOVERY_HEARTBEAT_HZ);
       const dRobotHosts = robotHosts ? `_robot_hosts:=[${robotHosts}]` : "";
-      cmdMasterDiscovery = `${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${
+      cmdMasterDiscovery = `${ros1MasterUriPrefix}${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
-      } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
+      } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
     } else if (versStr === "2") {
       cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
-      } ${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
+      } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
       return Promise.resolve({
         result: false,
@@ -130,13 +147,17 @@ class MultimasterManager {
     credential?: ICredential | null,
     name?: string,
     doNotSync?: string[],
-    syncTopics?: string[]
+    syncTopics?: string[],
+    ros1MasterUri?: string,
+    forceStart?: boolean
   ) => Promise<{ result: boolean; message: string }> = (
     rosVersion = null,
     credential = null,
     name = undefined,
     doNotSync = undefined,
-    syncTopics = undefined
+    syncTopics = undefined,
+    ros1MasterUri = undefined,
+    forceStart = undefined
   ) => {
     let versStr = rosVersion;
     if (!versStr) {
@@ -152,10 +173,12 @@ class MultimasterManager {
       const doNotSyncParam = doNotSync && doNotSync?.length > 0 ? `_do_not_sync:=[${doNotSync?.toString()}]` : " ";
       const syncTopicsParam = syncTopics && syncTopics?.length > 0 ? `_sync_topics:=[${syncTopics?.toString()}]` : " ";
       let cmdMasterSync = "";
+      const forceArg = forceStart ? "--force " : "";
       if (versStr === "1") {
-        cmdMasterSync = `rosrun fkie_mas_daemon mas-remote-node.py  ${
+        const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
+        cmdMasterSync = `${ros1MasterUriPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${
           this.respawn ? "--respawn" : ""
-        } ${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam};`;
+        } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam};`;
       }
       // combine commands and execute
       const cmd = `${cmdMasterSync}`;
@@ -179,12 +202,16 @@ class MultimasterManager {
     rosVersion?: string | null,
     credential?: ICredential | null,
     name?: string,
-    networkId?: number
+    networkId?: number,
+    ros1MasterUri?: string,
+    forceStart?: boolean
   ) => Promise<{ result: boolean; message: string }> = (
     rosVersion = null,
     credential = null,
     name = undefined,
-    networkId = 0
+    networkId = 0,
+    ros1MasterUri = undefined,
+    forceStart = false
   ) => {
     let versStr = rosVersion;
     if (!versStr) {
@@ -205,17 +232,19 @@ class MultimasterManager {
     if (versStr === "2") {
       daemonType = "mas-daemon";
     }
+    const forceArg = forceStart ? "--force " : "";
     // uses ROS1 method
     let cmdDaemon = `fkie_mas_daemon mas-remote-node.py ${
       this.respawn ? "--respawn" : ""
-    } ${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
+    } ${forceArg}${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
 
     let domainPrefix = "";
     if (networkId !== undefined && networkId !== 0) {
       domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
     }
     if (versStr === "1") {
-      cmdDaemon = `${domainPrefix}rosrun ${cmdDaemon}`;
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
+      cmdDaemon = `${ros1MasterUriPrefix}${domainPrefix}rosrun ${cmdDaemon}`;
     } else if (versStr === "2") {
       cmdDaemon = `${domainPrefix}ros2 run ${cmdDaemon}; `;
     } else {

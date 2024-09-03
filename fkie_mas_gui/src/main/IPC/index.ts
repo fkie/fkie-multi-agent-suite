@@ -65,8 +65,23 @@ export const registerHandlers = (): void => {
 
   ipcMain.handle(
     "MultimasterManager:startMultimasterDaemon",
-    (_event, rosVersion: string, credential: ICredential, name?: string, networkId?: number) => {
-      return sMultimasterManager.startMultimasterDaemon(rosVersion, credential, name, networkId);
+    (
+      _event,
+      rosVersion: string,
+      credential: ICredential,
+      name?: string,
+      networkId?: number,
+      ros1MasterUri?: string,
+      forceStart?: boolean
+    ) => {
+      return sMultimasterManager.startMultimasterDaemon(
+        rosVersion,
+        credential,
+        name,
+        networkId,
+        ros1MasterUri,
+        forceStart
+      );
     }
   );
 
@@ -80,7 +95,9 @@ export const registerHandlers = (): void => {
       port?: number,
       group?: string,
       heartbeatHz?: number,
-      robotHosts?: string[]
+      robotHosts?: string[],
+      ros1MasterUri?: string,
+      forceStart?: boolean
     ) => {
       return sMultimasterManager.startMasterDiscovery(
         rosVersion,
@@ -89,7 +106,9 @@ export const registerHandlers = (): void => {
         port,
         group,
         heartbeatHz,
-        robotHosts
+        robotHosts,
+        ros1MasterUri,
+        forceStart
       );
     }
   );
@@ -102,9 +121,19 @@ export const registerHandlers = (): void => {
       credential: ICredential,
       name?: string,
       doNotSync?: string[],
-      syncTopics?: string[]
+      syncTopics?: string[],
+      ros1MasterUri?: string,
+      forceStart?: boolean
     ) => {
-      return sMultimasterManager.startMasterSync(rosVersion, credential, name, doNotSync, syncTopics);
+      return sMultimasterManager.startMasterSync(
+        rosVersion,
+        credential,
+        name,
+        doNotSync,
+        syncTopics,
+        ros1MasterUri,
+        forceStart
+      );
     }
   );
 
@@ -136,7 +165,6 @@ export {
   ROSInfo,
   ShutdownInterface,
   SubscriberManager,
-  TerminalManager
+  TerminalManager,
 };
 export type { IROSInfo, ISystemInfo };
-

@@ -58,10 +58,26 @@ import { EVENT_OPEN_CONNECT } from "../../utils/events";
 import CopyButton from "../UI/CopyButton";
 import DraggablePaper from "../UI/DraggablePaper";
 
+const AccordionAdv = styled((props) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
+  ({ theme }) => ({
+    border: "none",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
+    ".MuiAccordionSummary-content": { margin: 0 },
+    "&:before": {
+      display: "none",
+    },
+    paddingTop: "12px",
+  })
+);
+
 const Accordion = styled((props) => <MuiAccordion disableGutters elevation={0} square {...props} />)(({ theme }) => ({
   border: "none",
   backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
   ".MuiAccordionSummary-content": { margin: 0 },
+  "&:before": {
+    display: "none",
+  },
+  "&:hover": { backgroundColor: theme.palette.action.hover },
 }));
 
 const AccordionSummary = styled(MuiAccordionSummary)(() => ({
@@ -95,7 +111,7 @@ const DEFAULT_PARAMETER = {
   ttyd: {
     port: 7681,
   },
-  rosMasterUri: "default",
+  ros1MasterUri: "default",
 };
 
 function ConnectToProviderModal() {
@@ -130,7 +146,7 @@ function ConnectToProviderModal() {
   const [enableSyncNode, setEnableSyncNode] = useState(startParameter.sync.enable);
   const [enableTerminalManager, setEnableTerminalManager] = useState(true);
 
-  const [inputMasterUri, setInputMasterUri] = useState("http://{HOST}:11311");
+  const [inputMasterUri, setInputMasterUri] = useState(startParameter.ros1MasterUri);
   const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
     "http://{HOST}:11311",
   ]);
@@ -235,7 +251,7 @@ function ConnectToProviderModal() {
   );
 
   const setMasterUri = (masterUri) => {
-    startParameter.rosMasterUri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
+    startParameter.ros1MasterUri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
     setStartParameter(JSON.parse(JSON.stringify(startParameter)));
   };
 
@@ -297,8 +313,8 @@ function ConnectToProviderModal() {
     launchCfg.autoConnect = true;
     launchCfg.autostart = rosCtx.isLocalHost(host);
     launchCfg.forceRestart = forceRestart;
-    if (startParameter.masterUri !== "default") {
-      launchCfg.ros1MasterUri = startParameter.masterUri.replace("{HOST}", host);
+    if (startParameter.ros1MasterUri !== "default") {
+      launchCfg.ros1MasterUri = startParameter.ros1MasterUri.replace("{HOST}", host);
     }
     return launchCfg;
   };
@@ -372,7 +388,8 @@ function ConnectToProviderModal() {
     }
     const port = startParameter.port
       ? startParameter.port
-      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion) + startParameter.networkId;
+      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion, startParameter.ros1MasterUri) +
+        startParameter.networkId;
     // join each host separately
     await Promise.all(
       hosts.map(async (remoteHost) => {
@@ -623,24 +640,13 @@ function ConnectToProviderModal() {
                   </Stack>
                 )}
               </Stack>
-              <Accordion
-                disabled={!window.CommandExecutor}
-                disableGutters={true}
-                elevation={0}
-                sx={{
-                  paddingTop: "12px",
-                  "&:before": {
-                    display: "none",
-                  },
-                }}
-              >
+              <AccordionAdv disabled={!window.CommandExecutor}>
                 <AccordionSummary
                   // disabled={!startSystemNodes}
                   expandIcon={<ExpandMoreIcon />}
                   aria-controls="advanced-options"
                   id="advanced-options"
                   sx={{ pl: 0, paddingBottom: 0 }}
-                  style={{ ".MuiAccordionSummary-content": { margin: 0 } }}
                 >
                   <Stack direction="row" alignItems="center" spacing="0.3em">
                     <SettingsOutlinedIcon fontSize="inherit" />
@@ -652,123 +658,11 @@ function ConnectToProviderModal() {
                     direction="column"
                     // divider={<Divider orientation="horizontal" />}
                   >
-                    {startParameter.rosVersion === "1" && (
-                      <Accordion
-                        disableGutters
-                        elevation={0}
-                        sx={{
-                          "&:before": {
-                            display: "none",
-                          },
-                        }}
-                      >
-                        <AccordionSummary
-                          expandIcon={<ExpandMoreIcon />}
-                          aria-controls="discovery_panel-content"
-                          id="master-uri-header"
-                          sx={{ pl: 0 }}
-                        >
-                          <Grid container>
-                            <Grid item xs={4}>
-                              <FormGroup
-                                aria-label="position"
-                                row
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                }}
-                              >
-                                <FormControlLabel
-                                  control={
-                                    <Checkbox
-                                      checked={enableMasterUri}
-                                      onChange={(event) => {
-                                        setEnableMasterUri(event.target.checked);
-                                      }}
-                                    />
-                                  }
-                                  label="ROS_MASTER_URI"
-                                  labelPlacement="end"
-                                />
-                              </FormGroup>
-                            </Grid>
-                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
-                              <Stack direction="column" sx={{ display: "grid" }}>
-                                <Typography
-                                  noWrap
-                                  variant="body2"
-                                  sx={{
-                                    color: grey[700],
-                                    fontWeight: "inherit",
-                                    flexGrow: 1,
-                                    ml: 0.5,
-                                  }}
-                                >
-                                  {`${startParameter.rosMasterUri}`}
-                                </Typography>
-                              </Stack>
-                            </Grid>
-                          </Grid>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          <Stack direction="column" divider={<Divider orientation="vertical" />}>
-                            <Tooltip
-                              title={
-                                <>
-                                  <Typography color="h2">Use new ROS_MASTER_URI to start system nodes.</Typography>
-                                  <Typography color="body2">Enter: save entry</Typography>
-                                  <Typography color="body2">Delete: remove selected entry from options list</Typography>
-                                </>
-                              }
-                              placement="bottom"
-                              disableInteractive
-                            >
-                              <Autocomplete
-                                disableListWrap
-                                handleHomeEndKeys={false}
-                                autoHighlight
-                                value={inputMasterUri}
-                                options={optionsMasterUri}
-                                getOptionLabel={(option) => option}
-                                onInputChange={(e, newValue) => {
-                                  setMasterUri(newValue);
-                                  setInputMasterUri(newValue);
-                                }}
-                                size="small"
-                                fullWidth
-                                renderInput={(params) => (
-                                  <TextField
-                                    {...params}
-                                    // label="ROS_MASTER_URI"
-                                    variant="outlined"
-                                    onKeyDown={(e) => {
-                                      if (
-                                        e.key === "Enter" &&
-                                        optionsMasterUri.findIndex((o) => o === inputMasterUri) === -1
-                                      ) {
-                                        // add to options
-                                        setOptionsMasterUri((prev) => [
-                                          ...prev.filter((item) => item !== inputMasterUri),
-                                          inputMasterUri,
-                                        ]);
-                                      }
-                                      if (e.key === "Delete") {
-                                        // remove entry from options
-                                        setOptionsMasterUri((prev) => [
-                                          ...prev.filter(
-                                            (item) => item !== inputMasterUri || item === "http://{HOST}:11311"
-                                          ),
-                                        ]);
-                                      }
-                                    }}
-                                  />
-                                )}
-                              />
-                            </Tooltip>
-                          </Stack>
-                        </AccordionDetails>
-                      </Accordion>
-                    )}
-                    <FormGroup aria-label="position" row>
+                    <FormGroup
+                      aria-label="position"
+                      row
+                      sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+                    >
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -1040,7 +934,7 @@ function ConnectToProviderModal() {
                         }}
                       >
                         <Grid container>
-                          <Grid item xs={5}>
+                          <Grid item xs={4}>
                             <FormGroup
                               aria-label="position"
                               row
@@ -1059,7 +953,7 @@ function ConnectToProviderModal() {
                                 }
                                 label={
                                   <div>
-                                    Terminal Manager (TTYD)
+                                    Terminal Manager (ttyd)
                                     <Tooltip
                                       title={
                                         <>
@@ -1110,7 +1004,7 @@ function ConnectToProviderModal() {
                               />
                             </FormGroup>
                           </Grid>
-                          <Grid item xs={5} sx={{ alignSelf: "center" }}>
+                          <Grid item xs={6} sx={{ alignSelf: "center" }}>
                             <Stack direction="column" sx={{ display: "grid" }}>
                               <Typography
                                 variant="body2"
@@ -1141,7 +1035,131 @@ function ConnectToProviderModal() {
                         />
                       </AccordionDetails>
                     </Accordion>
-                    <FormGroup aria-label="position" row>
+                    {startParameter.rosVersion === "1" && (
+                      <Accordion>
+                        <AccordionSummary
+                          expandIcon={<ExpandMoreIcon />}
+                          aria-controls="discovery_panel-content"
+                          id="master-uri-header"
+                          sx={{ pl: 0 }}
+                        >
+                          <Grid container>
+                            <Grid item xs={4}>
+                              <FormGroup
+                                aria-label="position"
+                                row
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                }}
+                              >
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox
+                                      size="small"
+                                      checked={enableMasterUri}
+                                      onChange={(event) => {
+                                        setEnableMasterUri(event.target.checked);
+                                      }}
+                                    />
+                                  }
+                                  label={
+                                    <Tooltip
+                                      title={"The new ROS_MASTER_URI is prefixed when system nodes are started."}
+                                      placement="bottom"
+                                      disableInteractive
+                                    >
+                                      <Typography>ROS_MASTER_URI</Typography>
+                                    </Tooltip>
+                                  }
+                                  labelPlacement="end"
+                                />
+                              </FormGroup>
+                            </Grid>
+                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                              <Stack direction="column" sx={{ display: "grid" }}>
+                                <Typography
+                                  noWrap
+                                  variant="body2"
+                                  sx={{
+                                    color: grey[700],
+                                    fontWeight: "inherit",
+                                    flexGrow: 1,
+                                    ml: 0.5,
+                                  }}
+                                >
+                                  {`${startParameter.ros1MasterUri}`}
+                                </Typography>
+                              </Stack>
+                            </Grid>
+                          </Grid>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Stack direction="column" divider={<Divider orientation="vertical" />}>
+                            <Tooltip
+                              title={
+                                <>
+                                  <Typography color="body2">Enter: save entry</Typography>
+                                  <Typography color="body2">Delete: remove selected entry from options list</Typography>
+                                </>
+                              }
+                              placement="bottom"
+                              disableInteractive
+                            >
+                              <Autocomplete
+                                disableListWrap
+                                handleHomeEndKeys={false}
+                                autoHighlight
+                                value={inputMasterUri}
+                                options={optionsMasterUri}
+                                isOptionEqualToValue={(option, value) =>
+                                  option === value || (option === "http://{HOST}:11311" && value === "default")
+                                }
+                                getOptionLabel={(option) => option}
+                                onInputChange={(e, newValue) => {
+                                  setMasterUri(newValue);
+                                  setInputMasterUri(newValue);
+                                }}
+                                size="small"
+                                fullWidth
+                                freeSolo
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    // label="ROS_MASTER_URI"
+                                    variant="outlined"
+                                    onKeyDown={(e) => {
+                                      if (
+                                        e.key === "Enter" &&
+                                        optionsMasterUri.findIndex((o) => o === inputMasterUri) === -1
+                                      ) {
+                                        // add to options
+                                        setOptionsMasterUri((prev) => [
+                                          ...prev.filter((item) => item !== inputMasterUri),
+                                          inputMasterUri,
+                                        ]);
+                                      }
+                                      if (e.key === "Delete") {
+                                        // remove entry from options
+                                        setOptionsMasterUri((prev) => [
+                                          ...prev.filter(
+                                            (item) => item !== inputMasterUri || item === "http://{HOST}:11311"
+                                          ),
+                                        ]);
+                                      }
+                                    }}
+                                  />
+                                )}
+                              />
+                            </Tooltip>
+                          </Stack>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
+                    <FormGroup
+                      aria-label="position"
+                      row
+                      sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+                    >
                       <FormControlLabel
                         disabled={!(enableDaemonNode && enableDiscoveryNode)}
                         control={
@@ -1157,7 +1175,11 @@ function ConnectToProviderModal() {
                         labelPlacement="end"
                       />
                     </FormGroup>
-                    <FormGroup aria-label="position" row>
+                    <FormGroup
+                      aria-label="position"
+                      row
+                      sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+                    >
                       <FormControlLabel
                         disabled={!(enableDaemonNode && enableDiscoveryNode && enableTerminalManager)}
                         control={
@@ -1200,7 +1222,7 @@ function ConnectToProviderModal() {
                     </Box>
                   </Stack>
                 </AccordionDetails>
-              </Accordion>
+              </AccordionAdv>
             </Stack>
           </Stack>
         </DialogContent>

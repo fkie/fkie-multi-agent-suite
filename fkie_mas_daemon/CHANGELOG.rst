@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (2024-09-2)
+------------------
+* fkie_mas_daemon: fixed --force parameter.
+* fkie_mas_daemon: use ROS_DOMAIN_ID environment to calculate websocket port in ROS1 and ROS2.
+* Contributors: Alexander Tiderko
+
 3.0.5 (2024-07-24)
 ------------------
 * fkie_mas_daemon: added dynamic-reconfigure.py script

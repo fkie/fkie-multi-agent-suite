@@ -2,14 +2,20 @@ import React, { createContext, useMemo, useReducer } from "react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import URI from "../models/uris";
 
-export const getDefaultPortFromRos: (connectionType: string, rosVersion: string) => number = (
+export const getDefaultPortFromRos: (connectionType: string, rosVersion: string, ros1MasterUri: string) => number = (
   connectionType,
-  rosVersion
+  rosVersion,
+  ros1MasterUri
 ) => {
   if (connectionType === "crossbar-wamp") {
     return rosVersion === "2" ? 11811 : 11911;
   }
-  return rosVersion === "2" ? 35430 : 35685;
+  let uriShift = 0;
+  if (ros1MasterUri && ros1MasterUri !== "default") {
+    // shift port if ROS_MASTER_URI has not a default port
+    uriShift = (parseInt(ros1MasterUri.split(":").slice(-1)[0]) - 11311) * 101;
+  }
+  return rosVersion === "2" ? 35430 : 35685 + uriShift;
 };
 
 export interface ISettingsContext {
@@ -174,14 +180,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "string[]",
     default: ["ntp.ubuntu.com"],
     options: ["ntp.ubuntu.com"],
-    group: "Parametrization"
+    group: "Parametrization",
   },
   logCommand: {
     label: "Log command prefix",
     description: "Terminal command to display the log file. The file name is appended.",
     type: "string",
     default: "/usr/bin/less -fLnQrSU +G",
-    group: "Parametrization"
+    group: "Parametrization",
   },
   color: {
     label: "Color",

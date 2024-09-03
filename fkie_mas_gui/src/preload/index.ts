@@ -66,8 +66,23 @@ if (process.contextIsolated) {
       startTerminalManager: (rosVersion: string, credential: ICredential, port?: number) =>
         ipcRenderer.invoke("MultimasterManager:startTerminalManager", rosVersion, credential, port),
 
-      startMultimasterDaemon: (rosVersion: string, credential: ICredential, name?: string, networkId?: number) =>
-        ipcRenderer.invoke("MultimasterManager:startMultimasterDaemon", rosVersion, credential, name, networkId),
+      startMultimasterDaemon: (
+        rosVersion: string,
+        credential: ICredential,
+        name?: string,
+        networkId?: number,
+        ros1MasterUri?: string,
+        forceStart?: boolean
+      ) =>
+        ipcRenderer.invoke(
+          "MultimasterManager:startMultimasterDaemon",
+          rosVersion,
+          credential,
+          name,
+          networkId,
+          ros1MasterUri,
+          forceStart
+        ),
 
       startMasterDiscovery: (
         rosVersion: string,
@@ -76,7 +91,9 @@ if (process.contextIsolated) {
         networkId?: number,
         group?: string,
         heartbeatHz?: number,
-        robotHosts?: string[]
+        robotHosts?: string[],
+        ros1MasterUri?: string,
+        forceStart?: boolean
       ) =>
         ipcRenderer.invoke(
           "MultimasterManager:startMasterDiscovery",
@@ -86,7 +103,9 @@ if (process.contextIsolated) {
           networkId,
           group,
           heartbeatHz,
-          robotHosts
+          robotHosts,
+          ros1MasterUri,
+          forceStart
         ),
 
       startMasterSync: (
@@ -94,9 +113,20 @@ if (process.contextIsolated) {
         credential: ICredential,
         name?: string,
         doNotSync?: string[],
-        syncTopics?: string[]
+        syncTopics?: string[],
+        ros1MasterUri?: string,
+        forceStart?: boolean
       ) =>
-        ipcRenderer.invoke("MultimasterManager:startMasterSync", rosVersion, credential, name, doNotSync, syncTopics),
+        ipcRenderer.invoke(
+          "MultimasterManager:startMasterSync",
+          rosVersion,
+          credential,
+          name,
+          doNotSync,
+          syncTopics,
+          ros1MasterUri,
+          forceStart
+        ),
 
       startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: ICredential | null) =>
         ipcRenderer.invoke("MultimasterManager:startDynamicReconfigureClient", name, rosMasterUri, credential),
