@@ -168,59 +168,41 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topics, searchTerm]);
 
-  // get group name from id of group tree item
-  const fromGroupId = (id) => {
-    if (id.endsWith("#")) {
-      const trimmed = id.slice(0, -1);
-      return {
-        groupName: trimmed.substr(trimmed.lastIndexOf("/") + 1, trimmed.length - 1),
-        fullPrefix: trimmed.substr(0, id.lastIndexOf("/")),
-      };
-    }
-    return { groupName: id, fullPrefix: id };
-  };
-
-  // create id for group tree item
-  const toGroupId = (groupName, fullPrefix) => {
-    return `${fullPrefix}/${groupName}#`;
-  };
-
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
-  const fillTree = (fullPrefix, topicsGroup) => {
+  const fillTree = (fullPrefix, topicsGroup, itemId) => {
     const groupKeys = [];
     const byPrefixP1 = new Map("", []);
     // create a map with simulated tree for the namespaces of the topic list
     // for (const [key, topicInfo] of Object.entries(topics)) {
     Object.entries(topicsGroup).forEach(([key, topicInfo]) => {
       const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
-      const [firstName, ...restName] = nameSuffix.split("/");
+      const [groupName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {
-        const groupName = firstName;
         const restNameSuffix = restName.join("/");
-        const groupId = toGroupId(groupName, fullPrefix);
-        if (byPrefixP1.has(groupId)) {
-          byPrefixP1.get(groupId).push({ restNameSuffix, topicInfo });
+        if (byPrefixP1.has(groupName)) {
+          byPrefixP1.get(groupName).push({ restNameSuffix, topicInfo });
         } else {
-          byPrefixP1.set(groupId, [{ restNameSuffix, topicInfo }]);
+          byPrefixP1.set(groupName, [{ restNameSuffix, topicInfo }]);
         }
       } else {
-        byPrefixP1.set(firstName, [{ topicInfo }]);
+        byPrefixP1.set(groupName, [{ topicInfo }]);
       }
     });
 
     let count = 0;
     // create result
     const newFilteredTopics = [];
-    byPrefixP1.forEach((value, key) => {
+    byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
+      const groupKey = itemId ? `${itemId}-${groupName}` : groupName;
+      const newFullPrefix = `${fullPrefix}/${groupName}`;
       if (value.length > 1) {
-        groupKeys.push(key);
-        const { groupName } = fromGroupId(key);
+        groupKeys.push(groupKey);
         const groupTopics = value.map((item) => {
           return item.topicInfo;
         });
-        const subResult = fillTree(`${fullPrefix}/${groupName}`, groupTopics);
+        const subResult = fillTree(newFullPrefix, groupTopics, groupKey);
         // the result count is 0 -> we added multiple provider for topic with same name.
         if (subResult.count === 0) {
           count += 1;
@@ -230,17 +212,31 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         if (subResult.groupKeys.length > 0) {
           groupKeys.push(...subResult.groupKeys);
         }
+        // if all topics of the group have same message id, show it in the group info
+        let msgType = undefined;
+        value.map((item) => {
+          if (msgType === undefined) {
+            msgType = item.topicInfo.msgtype;
+          } else if (msgType !== item.topicInfo.msgtype) {
+            if (msgType !== "") {
+              msgType = "";
+            }
+          }
+        });
         newFilteredTopics.push([
           {
-            groupKey: key,
+            groupKey: groupKey,
+            groupName: `/${groupName}`,
             topics: subResult.topics,
             count: subResult.count,
+            fullPrefix: newFullPrefix,
+            msgType: msgType ? msgType : "",
             groupKeys: groupKeys,
           },
         ]);
       } else {
         newFilteredTopics.push(value[0].topicInfo);
-        if (value[0].topicInfo.providerName !== key) {
+        if (value[0].topicInfo.providerName !== groupName) {
           // since the same topic can be on multiple provider
           // we count only topics
           count += 1;
@@ -252,7 +248,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
 
   // create topics tree from filtered topic list
   useEffect(() => {
-    const tree = fillTree("", filteredTopics);
+    const tree = fillTree("", filteredTopics, "");
     setRootDataList(tree.topics);
     if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
       setExpandedFiltered(tree.groupKeys);
@@ -284,19 +280,18 @@ function TopicsPanel({ initialSearchTerm = "" }) {
   const topicTreeToStyledItems = useCallback((rootPath, treeItem, selectedItem) => {
     if (Array.isArray(treeItem)) {
       return treeItem.map((item) => {
-        const { groupName, fullPrefix } = fromGroupId(item.groupKey);
-        const newRootName = `${fullPrefix}/${groupName}`;
         return (
           <TopicTreeItem
             key={item.groupKey}
             itemId={item.groupKey}
             labelRoot={rootPath}
-            labelText={`${groupName}`}
+            labelText={item.groupName}
             labelCount={item.count}
+            labelInfo={item.msgType}
             selectedItem={selectedItem}
           >
             {item.topics.map((subItem) => {
-              return topicTreeToStyledItems(newRootName, subItem);
+              return topicTreeToStyledItems(item.fullPrefix, subItem, selectedItem);
             })}
           </TopicTreeItem>
         );
@@ -428,7 +423,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm, topicTreeToStyledItems]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm]);
 
   const createPanel = useMemo(() => {
     return (
