@@ -34,6 +34,11 @@ class RosService {
   provider: string[];
 
   /**
+   * List of ROS nodes requested this service.
+   */
+  requester: string[];
+
+  /**
    * Class Constructor
    *
    * @param {string} name - Topic name including namespace
@@ -49,7 +54,8 @@ class RosService {
     service_API_URI: string,
     masteruri = "",
     provider: string[] = [],
-    location = "local"
+    location = "local",
+    requester: string[] = [],
   ) {
     this.name = name;
     this.srvtype = srvtype;
@@ -57,6 +63,7 @@ class RosService {
     this.masteruri = masteruri;
     this.provider = provider;
     this.location = location;
+    this.requester = requester;
   }
 
   /**

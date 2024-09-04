@@ -797,7 +797,7 @@ export default class Provider implements IProvider {
             n.services.forEach((s: RosService) => {
               rn.services.set(
                 s.name,
-                new RosService(s.name, s.srvtype, s.masteruri, s.service_API_URI, s.provider, s.location)
+                new RosService(s.name, s.srvtype, s.masteruri, s.service_API_URI, s.provider, s.location, s.requester)
               );
             });
 

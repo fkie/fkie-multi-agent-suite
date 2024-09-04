@@ -132,7 +132,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
       });
       setTopics(newTopics);
     }
-  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
+  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes, setTopics]);
 
   // debounced search callback
   const onSearch = useDebounceCallback((newSearchTerm) => {
@@ -174,7 +174,6 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     const groupKeys = [];
     const byPrefixP1 = new Map("", []);
     // create a map with simulated tree for the namespaces of the topic list
-    // for (const [key, topicInfo] of Object.entries(topics)) {
     Object.entries(topicsGroup).forEach(([key, topicInfo]) => {
       const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
@@ -390,12 +389,12 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         </Tooltip>
       </ButtonGroup>
     );
-  }, [tooltipDelay, topicForSelected, onPublishClick]);
+  }, [tooltipDelay, topicForSelected]);
 
   const createTreeView = useMemo(() => {
     return (
       <SimpleTreeView
-        aria-label="parameters"
+        aria-label="topics"
         expandedItems={searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}

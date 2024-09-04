@@ -4,6 +4,7 @@ import PackageExplorer from "./PackageExplorer/PackageExplorer";
 import ParameterTreeItem from "./ParameterTreeView/ParameterTreeItem";
 import ConfirmModal from "./SelectionModal/ConfirmModal";
 import MapSelectionModal from "./SelectionModal/MapSelectionModal";
+import ServiceTreeItem from "./ServiceTreeView/ServiceTreeItem";
 import TopicTreeItem from "./TopicTreeView/TopicTreeItem";
 import { TagColors, colorFromHostname, getDiagnosticStyle, levelColors, levelColorsWbg } from "./UI/Colors";
 import CopyButton from "./UI/CopyButton";
@@ -30,6 +31,7 @@ export {
   ReloadFileAlertComponent,
   RestartNodesAlertComponent,
   SearchBar,
+  ServiceTreeItem,
   TabPanel,
   Tag,
   TagColors,

@@ -10,7 +10,7 @@ import { removeDDSuid } from "../../utils/index";
 import { colorFromHostname } from "../UI/Colors";
 import CopyButton from "../UI/CopyButton";
 
-const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
+const ServiceTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
   [`& .${treeItemClasses.content}`]: {
     color: theme.palette.text.secondary,
@@ -40,7 +40,7 @@ const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
       width: 10,
     },
   },
-  [`& .${treeItemClasses.group}`]: {
+  [`& .${treeItemClasses.groupTransition}`]: {
     marginLeft: 12,
     paddingLeft: 5,
     // [`& .${treeItemClasses.content}`]: {
@@ -51,7 +51,7 @@ const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   },
 }));
 
-const TopicTreeItem = React.forwardRef(function TopicTreeItem(
+const ServiceTreeItem = React.forwardRef(function ServiceTreeItem(
   {
     color = "#1a73e8",
     bgColor = "#e8f0fe",
@@ -63,7 +63,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
     labelCount = null,
     labelText = "",
     requestData = false,
-    topicInfo = null,
+    serviceInfo = null,
     providerName = "",
     selectedItem = "",
     ...other
@@ -85,12 +85,12 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   };
 
   const getHostStyle = () => {
-    if (topicInfo?.providerName && settingsCtx.get("colorizeHosts")) {
+    if (serviceInfo?.providerName && settingsCtx.get("colorizeHosts")) {
       return {
         flexGrow: 1,
         alignItems: "center",
         borderLeftStyle: "solid",
-        borderLeftColor: colorFromHostname(topicInfo?.providerName),
+        borderLeftColor: colorFromHostname(serviceInfo?.providerName),
         borderLeftWidth: "0.6em",
       };
     }
@@ -99,14 +99,14 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
 
   useEffect(() => {
     if (!labelRoot) return;
-    if (!topicInfo) return;
+    if (!serviceInfo) return;
 
-    if (topicInfo?.name === labelRoot) {
-      setLabel(topicInfo.providerName);
+    if (serviceInfo?.name === labelRoot) {
+      setLabel(serviceInfo.providerName);
     } else {
       setLabel(labelText.slice(labelRoot.length + 1));
     }
-  }, [labelRoot, labelText, topicInfo]);
+  }, [labelRoot, labelText, serviceInfo]);
 
   useEffect(() => {
     // update state variables to show/hide extended info
@@ -124,7 +124,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   }, [selectedItem]);
 
   return (
-    <TopicTreeItemRoot
+    <ServiceTreeItemRoot
       label={
         <Stack direction="column">
           <Box
@@ -183,72 +183,65 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 </Typography>
               )}
               {labelCount > 0 && (
-                // <Tag text={labelCount} color="default" copyButton={false}></Tag>
                 <Typography variant="caption" color="inherit" padding={0.5}>
                   [{labelCount}]
                 </Typography>
               )}
-              {topicInfo && (
+              {/* {serviceInfo && (
                 <Stack direction="row" spacing={1}>
                   <Chip
                     size="small"
                     title="publishers"
                     // showZero={true}
-                    color={topicInfo.publishers.length > 0 ? "default" : "warning"}
-                    label={topicInfo.publishers.length}
-                  />
-
-                  <Chip
-                    size="small"
-                    title="subscribers"
-                    // showZero={true}
-                    color={topicInfo.subscribers.length > 0 ? "default" : "warning"}
-                    label={topicInfo.subscribers.length}
+                    color={serviceInfo.publishers.length > 0 ? "default" : "warning"}
+                    label={serviceInfo.publishers.length}
                   />
                 </Stack>
-              )}
+              )} */}
             </Stack>
           </Box>
-          {showExtendedInfo && topicInfo && (
+          {showExtendedInfo && serviceInfo && (
             <Stack paddingLeft={3}>
               <Typography fontWeight="bold" fontSize="small">
-                Publisher [{topicInfo.publishers.length}]:
+                Provider [{serviceInfo.nodeProviders.length}]:
               </Typography>
-              {topicInfo.publishers.map((item) => {
-                const pubNodeName = removeDDSuid(item);
+              {serviceInfo.nodeProviders.map((item) => {
                 return (
-                  <Stack key={item} paddingLeft={3} direction="row">
+                  <Stack key={item.nodeId} paddingLeft={1} direction="row">
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", ".")}`]);
+                        navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", ".")}`]);
                       }}
                     >
-                      {pubNodeName}
+                      {item.nodeName}
                     </Typography>
-                    {/* <CopyButton value={pubNodeName} fontSize="0.7em" /> */}
+                    {/* <CopyButton value={item.nodeName} fontSize="0.7em" /> */}
                   </Stack>
                 );
               })}
-              <Typography fontWeight="bold" fontSize="small">
-                Subscriber [{topicInfo.subscribers.length}]:
-              </Typography>
-              {topicInfo.subscribers.map((item) => {
-                const subNodeName = removeDDSuid(item);
-                return (
-                  <Stack key={item} paddingLeft={3} direction="row">
-                    <Typography
-                      fontSize="small"
-                      onClick={() => {
-                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", ".")}`]);
-                      }}
-                    >
-                      {subNodeName}
-                    </Typography>
-                    {/* <CopyButton value={subNodeName} fontSize="0.7em" /> */}
-                  </Stack>
-                );
-              })}
+              {serviceInfo.nodeRequester.length > 0 && (
+                <Stack>
+                  <Typography fontWeight="bold" fontSize="small">
+                    Requester [{serviceInfo.nodeRequester.length}]:
+                  </Typography>
+                  {serviceInfo.nodeRequester.map((item) => {
+                    return (
+                      <Stack key={item.nodeId} paddingLeft={1} direction="row">
+                        <Typography
+                          fontSize="small"
+                          onClick={() => {
+                            navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", ".")}`]);
+                          }}
+                        >
+                          {item.nodeName}
+                        </Typography>
+                        {/* <CopyButton value={item.nodeName} fontSize="0.7em" /> */}
+                      </Stack>
+                    );
+                  })}
+                </Stack>
+              )}
             </Stack>
           )}
         </Stack>
@@ -260,7 +253,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
   );
 });
 
-TopicTreeItem.propTypes = {
+ServiceTreeItem.propTypes = {
   bgColor: PropTypes.string,
   color: PropTypes.string,
   labelRoot: PropTypes.string,
@@ -271,9 +264,9 @@ TopicTreeItem.propTypes = {
   requestData: PropTypes.bool,
   colorForDarkMode: PropTypes.string,
   bgColorForDarkMode: PropTypes.string,
-  topicInfo: PropTypes.object,
+  serviceInfo: PropTypes.object,
   providerName: PropTypes.string,
   selectedItem: PropTypes.string,
 };
 
-export default TopicTreeItem;
+export default ServiceTreeItem;

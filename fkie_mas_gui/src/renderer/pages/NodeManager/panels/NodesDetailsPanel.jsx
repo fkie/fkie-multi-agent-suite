@@ -239,6 +239,12 @@ function NodesDetailsPanel() {
                 </Stack>
               )}
 
+              {node.id && node.id !== node.name && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="ID:" text={`${node.id}`} wrap />
+                </Stack>
+              )}
+
               {node.node_API_URI && node.node_API_URI.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="URI:" text={node.node_API_URI} wrap />
