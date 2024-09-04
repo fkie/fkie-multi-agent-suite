@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.5.0 - 28.08.2024
+## 2.5.1 - 04.09.2024
+
+Added host colors to editor, terminal, echo, publisher and service caller panels
+
+## 2.5.0 - 04.09.2024
 
 Service panel revised
 Added optional ROS_MASTER_URI prefix while starting system nodes
@@ -13,7 +17,7 @@ Fixed: websocket ports calculation depending on network id and ros master uri
 Fixed: hot reloading after change .jsx files
 Fixed: undo of comment/uncomment text with "--" in xml files
 
-## 2.4.5 - 28.08.2024
+## 2.4.5 - 02.09.2024
 
 Optimized settings dialog
 
