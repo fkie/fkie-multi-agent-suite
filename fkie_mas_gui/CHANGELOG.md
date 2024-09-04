@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.5.0 - 28.08.2024
+
+Service panel revised
+Added optional ROS_MASTER_URI prefix while starting system nodes
+Use ROS_DOMAIN_ID environment variable for network id while start ros1 system nodes
+Added ros master uri to connect dialog
+Added expand parameter groups on search
+Replaced refresh buttons in parameter and topic panel
+Fixed: detection of discovery state in ros2
+Fixed: websocket ports calculation depending on network id and ros master uri
+Fixed: hot reloading after change .jsx files
+Fixed: undo of comment/uncomment text with "--" in xml files
+
 ## 2.4.5 - 28.08.2024
 
 Optimized settings dialog
