@@ -56,7 +56,7 @@ export default class WebsocketConnection extends ProviderConnection {
     this.queue = {};
     this.rpcId = 0;
     this.logger = logger;
-    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion);
+    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion, "");
     this.uri = `ws://${host}:${providerPort}`;
 
     this.port = providerPort;

@@ -29,7 +29,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
   ) {
     super();
     this.logger = logger;
-    const providerPort = port !== 0 ? port : getDefaultPortFromRos(CrossbarIOConnection.type, rosVersion);
+    const providerPort = port !== 0 ? port : getDefaultPortFromRos(CrossbarIOConnection.type, rosVersion, "");
     this.crossbar = new CrossbarIO(host, providerPort, onClose, onOpen, useSSL);
     this.uri = this.crossbar.wsURI;
     this.port = this.crossbar.port;
