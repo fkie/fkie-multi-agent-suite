@@ -408,7 +408,7 @@ class RosStateServicer:
                 else:
                     topic_by_id[t_guid] = topic_objs[(
                         topic_name[2:], topic_type)]
-                return topic_by_id[t_guid], True
+                return topic_by_id[t_guid], True, False
             elif topic_name[:2] in ['rr', 'rq', 'rs']:
                 srv_type = self.get_service_type(topic_type)
                 # TODO: distinction between Reply/Request? Currently it is removed.
@@ -423,7 +423,7 @@ class RosStateServicer:
                 else:
                     service_by_id[t_guid] = service_objs[(
                         srv_name, srv_type)]
-                return service_by_id[t_guid], False
+                return service_by_id[t_guid], False, topic_name[:2] == 'rq'
         result = []
 
         topic_list = nmd.ros_node.get_topic_names_and_types(True)
@@ -435,29 +435,35 @@ class RosStateServicer:
                     if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
                         continue
                     n_guid = self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
-                    ros_node, isnew = _get_node_from(
+                    ros_node, is_new = _get_node_from(
                         pub_info.node_namespace, pub_info.node_name, n_guid)
                     for topic_type in topic_types:
-                        tp, istopic = _get_topic_from(topic_name, topic_type)
-                        # add tp.qos_profil
-                        if istopic:
+                        tp, is_topic, is_request = _get_topic_from(
+                            topic_name, topic_type)
+                        # add tp.qos_profile
+                        if is_topic:
                             discover_state_publisher = False
                             endpoint_publisher = False
                             Log.debug(
-                                f"{self.__class__.__name__}:      add publisher {n_guid} {pub_info.node_namespace}/{pub_info.node_name}")
+                                f"{self.__class__.__name__}:      add publisher {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
                             tp.publisher.append(ros_node.id)
                             ros_node.publishers.append(tp)
                             discover_state_publisher = 'fkie_mas_msgs/msg/DiscoveredState' in topic_type
                             endpoint_publisher = 'fkie_mas_msgs/msg/Endpoint' in topic_type
                             ros_node.system_node = ros_node.system_node or discover_state_publisher or endpoint_publisher
                         else:
-                            if n_guid not in tp.provider:
+                            if not is_request and ros_node.id not in tp.provider:
                                 Log.debug(
-                                    f"{self.__class__.__name__}:      add provider {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
-                                tp.provider.append(n_guid)
-                            ros_node.services.append(tp)
+                                    f"{self.__class__.__name__}:      add provider {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
+                                tp.provider.append(ros_node.id)
+                            elif is_request and ros_node.id not in tp.requester:
+                                Log.debug(
+                                    f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
+                                tp.requester.append(ros_node.id)
+                            if not is_request:
+                                ros_node.services.append(tp)
 
-                    if isnew:
+                    if is_new:
                         result.append(ros_node)
             sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(
                 topic_name, True)
@@ -467,27 +473,32 @@ class RosStateServicer:
                     if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
                         continue
                     n_guid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
-                    ros_node, isnew = _get_node_from(
+                    ros_node, is_new = _get_node_from(
                         sub_info.node_namespace, sub_info.node_name, n_guid)
                     for topic_type in topic_types:
                         try:
-                            tp, istopic = _get_topic_from(
+                            tp, is_topic, is_request = _get_topic_from(
                                 topic_name, topic_type)
-                            # add tp.qos_profil
-                            if istopic:
+                            # add tp.qos_profile
+                            if is_topic:
                                 Log.debug(
-                                    f"{self.__class__.__name__}:      add subscriber {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
+                                    f"{self.__class__.__name__}:      add subscriber {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
                                 tp.subscriber.append(ros_node.id)
                                 ros_node.subscribers.append(tp)
                             else:
-                                if n_guid not in tp.provider:
+                                if is_request and ros_node.id not in tp.provider:
                                     Log.debug(
-                                        f"{self.__class__.__name__}:      add provider {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
-                                    tp.provider.append(n_guid)
-                                ros_node.services.append(tp)
+                                        f"{self.__class__.__name__}:      add provider {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
+                                    tp.provider.append(ros_node.id)
+                                elif not is_request and ros_node.id not in tp.requester:
+                                    Log.debug(
+                                        f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
+                                    tp.requester.append(ros_node.id)
+                                if is_request:
+                                    ros_node.services.append(tp)
                         except Exception as err:
                             print(err)
-                    if isnew:
+                    if is_new:
                         result.append(ros_node)
         return result
 
