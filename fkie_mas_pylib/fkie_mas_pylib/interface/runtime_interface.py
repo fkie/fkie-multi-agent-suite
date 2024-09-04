@@ -128,6 +128,7 @@ class RosService:
         self.masteruri = ""
         self.service_API_URI = ""
         self.provider: List[str] = []
+        self.requester: List[str] = []
         self.location = "local"
 
     def __str__(self):
