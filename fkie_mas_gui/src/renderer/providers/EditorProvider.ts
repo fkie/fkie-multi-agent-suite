@@ -45,6 +45,7 @@ export default class EditorProvider extends Provider {
         if (this.isAvailable()) {
           this.daemonVersion = dv;
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
+          this.updateProviderList();
           return true;
         }
         return false;

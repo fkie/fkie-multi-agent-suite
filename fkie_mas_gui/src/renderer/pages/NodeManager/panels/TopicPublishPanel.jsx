@@ -21,6 +21,7 @@ import {
 import { useDebounceCallback } from "@react-hook/debounce";
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useState } from "react";
+import { colorFromHostname } from "../../../components/UI/Colors";
 import SearchBar from "../../../components/UI/SearchBar";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { RosContext } from "../../../context/RosContext";
@@ -348,8 +349,21 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
     );
   }
 
+  const getHostStyle = () => {
+    const providerName = provider?.name();
+    if (providerName && settingsCtx.get("colorizeHosts")) {
+      return {
+        flexGrow: 1,
+        borderTopStyle: "solid",
+        borderTopColor: colorFromHostname(providerName),
+        borderTopWidth: "0.3em",
+      };
+    }
+    return { flexGrow: 1, alignItems: "center" };
+  };
+
   return (
-    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")} style={getHostStyle()}>
       <Stack spacing={1} margin={0.5}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography fontWeight="bold">{topicName}</Typography>

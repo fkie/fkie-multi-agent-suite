@@ -38,6 +38,7 @@ export default class SubscriberProvider extends Provider {
           this.daemonVersion = dv;
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.updateRosNodes({});
+          this.updateProviderList();
           return true;
         }
         return false;

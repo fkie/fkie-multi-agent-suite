@@ -13,7 +13,6 @@ import {
   Box,
   Button,
   Divider,
-  FormControl,
   IconButton,
   Menu,
   MenuItem,
@@ -29,7 +28,7 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { JSONTree } from "react-json-tree";
 import { v4 as uuid } from "uuid";
-import { ProviderSelector } from "../../../components";
+import { colorFromHostname } from "../../../components/UI/Colors";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
@@ -225,8 +224,27 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
     });
   }, [history, settingsCtx]);
 
+  const getHostStyle = () => {
+    const providerName = currentProvider?.name();
+    if (providerName && settingsCtx.get("colorizeHosts")) {
+      return {
+        flexGrow: 1,
+        borderTopStyle: "solid",
+        borderTopColor: colorFromHostname(providerName),
+        borderTopWidth: "0.3em",
+      };
+    }
+    return { flexGrow: 1, alignItems: "center" };
+  };
+
   return (
-    <Box width="100%" height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
+    <Box
+      width="100%"
+      height="100%"
+      overflow="auto"
+      backgroundColor={settingsCtx.get("backgroundColor")}
+      style={getHostStyle()}
+    >
       <Paper
         width="100%"
         elevation={1}

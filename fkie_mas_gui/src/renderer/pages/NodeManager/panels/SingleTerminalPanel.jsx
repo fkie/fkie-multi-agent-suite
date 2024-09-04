@@ -3,9 +3,9 @@ import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import TerminalClient from "../../../components/TerminalClient/TerminalClient";
+import { colorFromHostname } from "../../../components/UI/Colors";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { RosNode } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../../../utils/events";
 
@@ -13,6 +13,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [initialCommands, setInitialCommands] = useState([]);
+  const [providerName, setProviderName] = useState("");
   const [currentHost, setCurrentHost] = useState(null);
   const [lastScreenUsed, setLastScreenUsed] = useState("");
   const [tokenUrl, setTokenUrl] = useState(providerId);
@@ -27,6 +28,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
         setCurrentHost(null);
         return;
       }
+      setProviderName(provider.name());
       setCurrentHost(provider.host());
       let tkUrl = `${nodeName.replaceAll("/", "")}`;
       if (!tkUrl) {
@@ -83,9 +85,28 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosCtx.mapProviderRosNodes]);
 
+  const getHostStyle = () => {
+    if (providerName && settingsCtx.get("colorizeHosts")) {
+      return {
+        flexGrow: 1,
+        borderTopStyle: "solid",
+        borderTopColor: colorFromHostname(providerName),
+        borderTopWidth: "0.3em",
+      };
+    }
+    return { flexGrow: 1, alignItems: "center" };
+  };
+
   const createTerminalView = useMemo(() => {
     return (
-      <Box key={id} width="100%" height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
+      <Box
+        key={id}
+        width="100%"
+        height="100%"
+        overflow="auto"
+        backgroundColor={settingsCtx.get("backgroundColor")}
+        style={getHostStyle()}
+      >
         {!nodeName && type !== CmdType.CMD && type !== CmdType.TERMINAL && (
           <Alert severity="info">
             <AlertTitle>Please select a node</AlertTitle>

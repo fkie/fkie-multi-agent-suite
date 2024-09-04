@@ -44,6 +44,7 @@ export default class TerminalProvider extends Provider {
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.updateRosNodes({});
           this.updateScreens(null);
+          this.updateProviderList();
           return true;
         }
         return false;

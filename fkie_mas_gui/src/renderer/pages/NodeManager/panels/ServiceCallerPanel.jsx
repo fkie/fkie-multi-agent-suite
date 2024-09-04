@@ -18,6 +18,7 @@ import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { JSONTree } from "react-json-tree";
 import { SearchBar } from "../../../components";
+import { colorFromHostname } from "../../../components/UI/Colors";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
@@ -340,6 +341,19 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
     );
   }
 
+  const getHostStyle = () => {
+    const providerName = provider?.name();
+    if (providerName && settingsCtx.get("colorizeHosts")) {
+      return {
+        flexGrow: 1,
+        borderTopStyle: "solid",
+        borderTopColor: colorFromHostname(providerName),
+        borderTopWidth: "0.3em",
+      };
+    }
+    return { flexGrow: 1, alignItems: "center" };
+  };
+
   const createJsonView = useMemo(() => {
     return (
       <JSONTree
@@ -356,7 +370,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
   }, [resultMessage, settingsCtx.changed]);
 
   return (
-    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")}>
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")} style={getHostStyle()}>
       <Stack spacing={1} margin={1}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Typography fontWeight="bold">{serviceName}</Typography>
