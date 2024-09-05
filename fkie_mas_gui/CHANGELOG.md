@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.2 - 05.09.2024
+
+Fix: eliminate -- inside XML comments
+
 ## 2.5.1 - 04.09.2024
 
 Added host colors to editor, terminal, echo, publisher and service caller panels
