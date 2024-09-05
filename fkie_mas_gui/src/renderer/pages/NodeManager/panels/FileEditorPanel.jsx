@@ -450,7 +450,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       return;
     // get range
     const range = {
-      endColumn: changes[0].range.startColumn + (addedComment ? 4 : 0),
+      endColumn: changes[0].range.startColumn + (addedComment ? 2 : 0),
       endLineNumber: changes[0].range.startLineNumber,
       startColumn: changes[1].range.endColumn + (addedComment ? 4 : 0),
       startLineNumber: changes[1].range.endLineNumber,
