@@ -261,7 +261,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         for (let i in keyMap) {
           if (
             keyMap[i].key == ev.key &&
-            keyMap[i].shiftKey == ev.altKey &&
+            keyMap[i].shiftKey == ev.shiftKey &&
             keyMap[i].ctrlKey == ev.ctrlKey &&
             keyMap[i].altKey == ev.altKey
           ) {
