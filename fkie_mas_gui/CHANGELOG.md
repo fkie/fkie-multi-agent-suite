@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.3 - 09.09.2024
+
+Fixed: shortcuts in terminal
+
 ## 2.5.2 - 05.09.2024
 
 Fix: eliminate -- inside XML comments
