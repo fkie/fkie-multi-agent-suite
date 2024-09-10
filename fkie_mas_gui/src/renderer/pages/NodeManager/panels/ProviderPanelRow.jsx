@@ -470,7 +470,7 @@ function ProviderPanelRow({ provider }) {
                     EVENT_OPEN_COMPONENT,
                     eventOpenComponent(
                       id,
-                      `${emptyNode.providerName}`,
+                      `${provider.name()}`,
                       <SingleTerminalPanel
                         id={id}
                         type={type}
