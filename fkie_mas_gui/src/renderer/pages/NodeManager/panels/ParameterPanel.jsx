@@ -66,8 +66,6 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     setRootData(new Map("", {}));
     setRootDataFiltered(new Map("", []));
 
-    const parameterMapLocal = new Map("", "");
-
     Array.from(roots).forEach(async ([rootId, rootObj]) => {
       if (Object.hasOwn(rootObj, "system_node")) {
         // dirty check to test if object is RosNode
@@ -80,9 +78,6 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           return;
         }
         const paramList = await provider.getNodeParameters([rootObj.name]);
-        paramList.forEach((p) => {
-          parameterMapLocal.set(p.name, p);
-        });
         // sort parameter by name
         paramList.sort(function (a, b) {
           return a.name.localeCompare(b.name);
@@ -100,7 +95,6 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           return;
         }
         const paramList = await rootObj.getParameterList();
-        paramList.forEach((p) => parameterMapLocal.set(p.name, p));
         // sort parameter by name
         paramList.sort(function (a, b) {
           return a.name.localeCompare(b.name);
@@ -112,7 +106,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosCtx.initialized, rosCtx.providers, nodes, roots, searched]);
+  }, [rosCtx.initialized, rosCtx.providers, nodes, roots, rootData, searched]);
 
   // debounced callback when updating a parameter
   const updateParameter = useDebounceCallback(async (parameter, newValue, newType) => {
@@ -205,7 +199,11 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
     } else {
       rosCtx.providers.forEach((provider) => {
         if (provider.isAvailable()) {
-          newRoots.set(provider.id, provider);
+          if (provider.rosVersion === "1") {
+            newRoots.set(provider.id, provider);
+          } else {
+            provider.rosNodes.map((item) => newRoots.set(item.name, item));
+          }
         }
       });
     }
