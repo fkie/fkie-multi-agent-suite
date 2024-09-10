@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.5 - 10.09.2024
+
+Fixed: grouping by capability group, use group parameter in the namespace of the node
+Fixed: node template for XML launch files
+Fixed: parameter panel for ROS2
+Fixed: open terminal for update
+
 ## 2.5.4 - 10.09.2024
 
 Changed position of the provider terminal button
