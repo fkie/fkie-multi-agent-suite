@@ -1001,43 +1001,6 @@ function HostTreeViewPanel() {
     const selectedNodes = getSelectedNodes();
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
-        {navCtx.selectedProviders?.length > 0 && (
-          <Tooltip
-            title="Open Terminal on selected host (external terminal with shift+click)"
-            placement="left"
-            enterDelay={tooltipDelay}
-            enterNextDelay={tooltipDelay}
-            disableInteractive
-          >
-            <span>
-              <IconButton
-                size="medium"
-                aria-label="Open Terminal on selected host"
-                disabled={navCtx.selectedProviders?.length === 0}
-                onClick={(event) => {
-                  // open a new terminal for each selected provider
-                  navCtx.selectedProviders.forEach((providerId) => {
-                    const prov = rosCtx.getProviderById(providerId);
-                    const emptyNode = new RosNode();
-                    emptyNode.name = "";
-                    emptyNode.providerId = providerId;
-                    emptyNode.providerName = prov?.name();
-                    createSingleTerminalPanel(
-                      CmdType.TERMINAL,
-                      emptyNode,
-                      "",
-                      event.nativeEvent.shiftKey,
-                      event.nativeEvent.ctrlKey
-                    );
-                  });
-                }}
-              >
-                <TerminalIcon fontSize="inherit" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
-        {navCtx.selectedProviders?.length > 0 && <Divider />}
         <Tooltip
           title="Start"
           placement="left"
@@ -1397,6 +1360,43 @@ function HostTreeViewPanel() {
             </IconButton>
           </span>
         </Tooltip>
+        {navCtx.selectedProviders?.length > 0 && <Divider />}
+        {navCtx.selectedProviders?.length > 0 && (
+          <Tooltip
+            title="Open Terminal on selected host (external terminal with shift+click)"
+            placement="left"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <span>
+              <IconButton
+                size="medium"
+                aria-label="Open Terminal on selected host"
+                disabled={navCtx.selectedProviders?.length === 0}
+                onClick={(event) => {
+                  // open a new terminal for each selected provider
+                  navCtx.selectedProviders.forEach((providerId) => {
+                    const prov = rosCtx.getProviderById(providerId);
+                    const emptyNode = new RosNode();
+                    emptyNode.name = "";
+                    emptyNode.providerId = providerId;
+                    emptyNode.providerName = prov?.name();
+                    createSingleTerminalPanel(
+                      CmdType.TERMINAL,
+                      emptyNode,
+                      "",
+                      event.nativeEvent.shiftKey,
+                      event.nativeEvent.ctrlKey
+                    );
+                  });
+                }}
+              >
+                <TerminalIcon fontSize="inherit" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
       </ButtonGroup>
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
