@@ -1158,6 +1158,13 @@ export default class Provider implements IProvider {
               launchFile.parameters.forEach((p) => {
                 if (p.name.indexOf(uniqueNodeName) !== -1) {
                   nodeParameters.set(p.name.replace(uniqueNodeName, ""), p.value);
+                } else {
+                  // use group parameter in the namespace of the node
+                  this.settings.get("groupParameters")?.forEach((parameter) => {
+                    if (`${launchNode.node_namespace}${parameter}` === p.name) {
+                      nodeParameters.set(parameter, p.value);
+                    }
+                  })
                 }
               });
 
