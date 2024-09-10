@@ -223,10 +223,6 @@ function HostTreeViewPanel() {
         if (node.system_node) {
           node.group += settingsCtx.get("namespaceSystemNodes");
         }
-        // If node has namespace, add it to the group with the second highest priority
-        if (node.namespace && node.namespace !== "/") {
-          node.group += `${node.namespace}`;
-        }
         // group using parameters
         settingsCtx.get("groupParameters")?.forEach((parameter) => {
           if (node.parameters && node.parameters.has(parameter)) {
@@ -235,9 +231,13 @@ function HostTreeViewPanel() {
             // const parameterName = parameter.replaceAll('/', ' ');
             // node.group += `/${parameterName}: ${parameterValue}`;
 
-            node.group += `/${parameterValue}`;
+            node.group += `/{${parameterValue}}`;
           }
         });
+        // If node has namespace, add it to the group with the second highest priority
+        if (node.namespace && node.namespace !== "/") {
+          node.group += `${node.namespace}`;
+        }
         newNodes.push(node);
       });
       // update state
