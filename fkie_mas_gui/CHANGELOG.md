@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.4 - 10.09.2024
+
+Changed position of the provider terminal button
+
 ## 2.5.3 - 09.09.2024
 
 Fixed: shortcuts in terminal
