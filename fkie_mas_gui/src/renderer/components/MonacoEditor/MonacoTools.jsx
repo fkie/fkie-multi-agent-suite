@@ -13,7 +13,7 @@ const createXMLDependencyProposals = (monaco, range, clipText) => {
       label: "node",
       kind: monaco.languages.CompletionItemKind.Function,
       documentation: "Add a new ROS node",
-      insertText: 'node name="${1:NAME}" package="${2:PACKAGE}" type="${3:TYPE}" clear_params="true"></node',
+      insertText: 'node name="${1:NAME}" pkg="${2:PACKAGE}" type="${3:TYPE}" clear_params="true"></node',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
