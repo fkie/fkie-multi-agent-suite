@@ -1797,7 +1797,7 @@ export default class Provider implements IProvider {
    * @return {Promise<Result>} Returns a result
    */
   public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> = async (nodes) => {
-    const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], true).then(
+    const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], false).then(
       (value: ICallResult) => {
         if (value.result) {
           const paramList: RosParameter[] = [];
