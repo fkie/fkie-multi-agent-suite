@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.7 - 12.09.2024
+
+Fixed restart nodes on changed binary notification
+
 ## 2.5.6 - 12.09.2024
 
 Do not display notifications about changed binary files in external windows
