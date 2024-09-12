@@ -166,3 +166,14 @@ export class EventProviderLaunchLoaded {
     this.launchFile = launchFile;
   }
 }
+
+export class EventProviderRestartNodes {
+  provider: Provider;
+
+  nodes: RosNode[];
+
+  constructor(provider: Provider, nodes: RosNode[]) {
+    this.provider = provider;
+    this.nodes = nodes;
+  }
+}

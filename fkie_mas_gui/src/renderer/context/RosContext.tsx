@@ -28,6 +28,7 @@ import {
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
+  EVENT_PROVIDER_RESTART_NODES,
   EVENT_PROVIDER_ROS_NODES,
   EVENT_PROVIDER_SCREENS,
   EVENT_PROVIDER_STATE,
@@ -37,6 +38,7 @@ import {
   EventProviderDiscovered,
   EventProviderPathEvent,
   EventProviderRemoved,
+  EventProviderRestartNodes,
   EventProviderRosNodes,
   EventProviderScreens,
   EventProviderState,
@@ -414,7 +416,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     message: string,
     provider: Provider,
     changedNodes: string[],
-    modifiedFile: string
+    _modifiedFile: string
   ) {
     return (
       <RestartNodesAlertComponent
@@ -422,29 +424,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         message={message}
         provider={provider}
         nodeList={changedNodes}
-        onReload={(p, nodeList) => {
-          Promise.all(
-            nodeList.map(async (nodeName: string) => {
-              const node = new RosNode();
-              node.providerId = p;
-              node.name = nodeName;
-              node.id = nodeName;
-              node.launchPath = modifiedFile;
-
-              await provider.stopNode(node.id);
-              const resultStartNode = await provider.startNode(node);
-
-              if (resultStartNode.success) {
-                logCtx.success(resultStartNode.message, resultStartNode.details);
-              } else {
-                logCtx.error(resultStartNode.message, resultStartNode.details);
-              }
-
-              return resultStartNode;
-            })
-          ).catch((error) => {
-            logCtx.debug(`Error restarting nodes: ${error}`, "");
-          });
+        onReload={(_providerId, nodeList) => {
+          // restart is handled by hostTreeViewPanel using queue
+          const nodes = provider.rosNodes.filter((rosNode) => nodeList.includes(rosNode.name));
+          // TODO: use modifiedFile e.g. node.launchPath = modifiedFile;
+          emitCustomEvent(EVENT_PROVIDER_RESTART_NODES, new EventProviderRestartNodes(provider, nodes));
         }}
       />
     );

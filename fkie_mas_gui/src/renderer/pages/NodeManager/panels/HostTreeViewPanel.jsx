@@ -44,7 +44,7 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import useQueue from "../../../hooks/useQueue";
 import { RosNode, RosNodeStatus, getBaseName } from "../../../models";
 import { CmdType } from "../../../providers";
-import { EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
+import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
 import { xor } from "../../../utils";
 import {
   EVENT_EDITOR_SELECT_RANGE,
@@ -254,6 +254,14 @@ function HostTreeViewPanel() {
       // setSelectedTreeItems((prevValues) => [...prevValues]);
     },
     [setProviderNodes]
+  );
+
+  useCustomEventListener(
+    EVENT_PROVIDER_RESTART_NODES,
+    (data) => {
+      restartNodes(data.nodes);
+    },
+    [restartNodes]
   );
 
   // Register Callbacks ----------------------------------------------------------------------------------
