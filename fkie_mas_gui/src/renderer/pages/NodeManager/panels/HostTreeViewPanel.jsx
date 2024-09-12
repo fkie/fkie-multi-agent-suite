@@ -260,8 +260,7 @@ function HostTreeViewPanel() {
     EVENT_PROVIDER_RESTART_NODES,
     (data) => {
       restartNodes(data.nodes);
-    },
-    [restartNodes]
+    }
   );
 
   // Register Callbacks ----------------------------------------------------------------------------------
