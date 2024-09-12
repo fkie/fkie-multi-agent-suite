@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.6 - 12.09.2024
+
+Do not display notifications about changed binary files in external windows
+
 ## 2.5.5 - 10.09.2024
 
 Fixed: grouping by capability group, use group parameter in the namespace of the node
