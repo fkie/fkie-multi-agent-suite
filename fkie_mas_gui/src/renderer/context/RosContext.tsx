@@ -1194,7 +1194,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, (data: EventProviderPathEvent) => {
-    if (data.path.affected.length === 0) {
+    if (data.path.affected.length === 0 && data.provider.className === "Provider") {
       // no affected launch files => it is a binary
       const nodes: string[] = [];
       data.provider.launchFiles.forEach((launch) => {

@@ -30,6 +30,7 @@ export default class EditorProvider extends Provider {
     logger: ILoggingContext | null = null
   ) {
     super(settings, host, rosVersion, port, useSSL, logger);
+    this.className = "EditorProvider";
   }
 
   public getCallbacks: () => IConCallback[] = () => {

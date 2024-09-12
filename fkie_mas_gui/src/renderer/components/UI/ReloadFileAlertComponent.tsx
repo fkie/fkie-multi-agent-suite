@@ -60,7 +60,11 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
   useEffect(() => {
     switch (settingsCtx.get("actionOnChangeLaunch")) {
       case "RELOAD":
-        handleReload();
+        if (provider.className === "Provider") {
+          handleReload();
+        } else {
+          handleDismiss();
+        }
         break;
       case "DISMISS":
         handleDismiss();

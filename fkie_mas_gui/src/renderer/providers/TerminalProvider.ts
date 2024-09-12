@@ -26,12 +26,12 @@ export default class TerminalProvider extends Provider {
     logger: ILoggingContext | null = null
   ) {
     super(settings, host, rosVersion, port, useSSL, logger);
+    this.className = "TerminalProvider";
   }
 
   public getCallbacks: () => IConCallback[] = () => {
     return [
       { uri: URI.ROS_NODES_CHANGED, callback: this.updateRosNodes },
-      { uri: URI.ROS_PATH_CHANGED, callback: this.callbackChangedFile },
       { uri: URI.ROS_SCREEN_LIST, callback: this.callbackScreensUpdate },
     ];
   };

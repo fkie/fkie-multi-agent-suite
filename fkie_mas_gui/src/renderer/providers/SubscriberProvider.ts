@@ -25,6 +25,7 @@ export default class SubscriberProvider extends Provider {
     logger: ILoggingContext | null = null
   ) {
     super(settings, host, rosVersion, port, useSSL, logger);
+    this.className = "SubscriberProvider";
   }
 
   public getCallbacks: () => IConCallback[] = () => {

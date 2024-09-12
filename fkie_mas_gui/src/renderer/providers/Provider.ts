@@ -105,6 +105,7 @@ interface ICallResult {
 }
 
 interface IProvider {
+  className: string;
   getCallbacks: () => IConCallback[];
   updateDaemonInit: () => void;
 }
@@ -114,6 +115,8 @@ interface IProvider {
  */
 export default class Provider implements IProvider {
   static defaultType: string = "websocket";
+
+  className: string = "Provider";
 
   type: string = Provider.defaultType;
 
@@ -1963,6 +1966,9 @@ export default class Provider implements IProvider {
         n.group = oldNode.group;
         n.launchInfo = oldNode.launchInfo;
         n.rosLoggers = oldNode.rosLoggers;
+        if (oldNode.pid !== n.pid) {
+          emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
+        }
       }
 
       if (!n.node_API_URI || n.node_API_URI.length === 0) return;
