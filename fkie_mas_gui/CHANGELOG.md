@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.8 - 12.09.2024
+
+Fixed rendering error caused by last change
+
 ## 2.5.7 - 12.09.2024
 
 Fixed restart nodes on changed binary notification
