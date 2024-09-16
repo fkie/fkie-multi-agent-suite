@@ -290,7 +290,7 @@ export default class Provider implements IProvider {
           this.updateTimeDiff();
           this.getProviderSystemInfo();
           this.getProviderSystemEnv();
-          this.updateRosNodes({});
+          // this.updateRosNodes({});
           this.updateDiagnostics(null);
           // this.getPackageList();  <- this request is done by package explorer
           this.updateScreens(null);
@@ -1116,6 +1116,11 @@ export default class Provider implements IProvider {
     return Promise.resolve(true);
   };
 
+  public toNamespace: (name: string) => { namespace: string, level: number } = (name) => {
+    const rest = name.split("/").slice(0, -1);
+    return { namespace: rest.join("/"), level: rest.length - 1 };
+  }
+
   /**
    * Get the list of nodes loaded in launch files. update launch files into provider object
    *
@@ -1149,27 +1154,47 @@ export default class Provider implements IProvider {
         this.launchFiles = launchList;
         emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
 
+        const groupLevelParams: { namespace: string, level: number, param: RosParameter }[] = [];
         // update nodes
         // Add nodes from launch files to the list of nodes
         this.launchFiles.forEach((launchFile) => {
+          // get global group parameter by namespace level
+          launchFile.parameters.forEach((p) => {
+            this.settings.get("groupParameters")?.forEach((parameter: string) => {
+              if (p.name.endsWith(parameter)) {
+                const { namespace, level } = this.toNamespace(p.name);
+                const ofNodes = launchFile.nodes.filter((node) => node.node_name === namespace);
+                if (ofNodes.length === 0) {
+                  groupLevelParams.push({ namespace, level, param: p });
+                }
+              }
+            })
+          })
           launchFile.nodes.forEach((launchNode) => {
             const nodeParameters = new Map();
-
+            let groupParameterFound = false;
             const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
             if (uniqueNodeName) {
               // update parameters
               launchFile.parameters.forEach((p) => {
                 if (p.name.indexOf(uniqueNodeName) !== -1) {
-                  nodeParameters.set(p.name.replace(uniqueNodeName, ""), p.value);
-                } else {
-                  // use group parameter in the namespace of the node
-                  this.settings.get("groupParameters")?.forEach((parameter) => {
-                    if (`${launchNode.node_namespace}${parameter}` === p.name) {
-                      nodeParameters.set(parameter, p.value);
+                  this.settings.get("groupParameters")?.forEach((parameter: string) => {
+                    // use group parameter in the namespace of the node
+                    if (p.name.endsWith(parameter)) {
+                      groupParameterFound = true;
                     }
                   })
+                  nodeParameters.set(p.name.replace(uniqueNodeName, ""), p.value);
                 }
               });
+              // use group parameter of higher level
+              if (!groupParameterFound) {
+                const availableGroupParams = groupLevelParams.filter((gp) => uniqueNodeName.startsWith(gp.namespace)).sort((a, b) => { if (a.level < b.level) return -1; if (a.level > b.level) return 1; return 0; });
+                if (availableGroupParams.length > 0) {
+                  const gp = availableGroupParams.slice(-1);
+                  nodeParameters.set(gp[0].param.name.replace(gp[0].namespace, ""), gp[0].param.value);
+                }
+              }
 
               let associations: string[] = [];
               launchFile.associations.forEach((item) => {
