@@ -31,8 +31,8 @@ import LaunchFileList from "./LaunchFileList";
 
 const compareTreeItems = (a, b) => {
   // place system groups are at the end
-  const aSystem = a.treePath.includes("{");
-  const bSystem = b.treePath.includes("{");
+  const aSystem = a.treePath.includes("{SYSTEM}");
+  const bSystem = b.treePath.includes("{SYSTEM}");
   if (aSystem && !bSystem) {
     return 1;
   }
@@ -508,11 +508,18 @@ function HostTreeView({
         console.error("Invalid item ", providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
       }
-      const { children, treePath, node } = treeItem;
+      let { children, treePath, node, name } = treeItem;
+      // while (children && children.length === 1) {
+      //   const child = children[0];
+      //   children = child.children;
+      //   treePath = child.treePath;
+      //   node = child.node;
+      //   name = `${name}/${child.name}`;
+      // }
       const itemId = `${providerId}#${treePath}`;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
-        let label = node.name.replace(node.namespace, "");
+        let label = name; // node.name.replace(node.namespace, "");
         label = label[0] === "/" ? label.slice(1) : label;
         newKeyNodeList.push({
           key: `${itemId}#${node.id}`,
@@ -545,7 +552,7 @@ function HostTreeView({
         );
       }
       // valid children means that item is a group
-      const groupName = treePath.split("/").pop();
+      const groupName = name; // treePath.split("/").pop();
       newKeyNodeList.push({ key: itemId });
       return (
         <HostTreeViewItem

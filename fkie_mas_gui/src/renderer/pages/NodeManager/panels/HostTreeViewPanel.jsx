@@ -137,7 +137,8 @@ function HostTreeViewPanel() {
   }, [getNodesFromIds, navCtx.selectedNodes]);
 
   const nameWithoutNamespace = (node) => {
-    return node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
+    const name = node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
+    return name[0] === "/" ? name.slice(1) : name;
   };
 
   // debounced search callback
@@ -177,6 +178,7 @@ function HostTreeViewPanel() {
                 treePath,
                 children: r[name].nodeTree,
                 node,
+                name: nameWithoutNamespace(node), 
               });
               // nodeTreeList.push(`${providerId}#${treePath}`);
             } else {
@@ -187,6 +189,7 @@ function HostTreeViewPanel() {
                 treePath,
                 children: r[name].nodeTree,
                 node: null,
+                name: a.slice(i, i + 1).join("/")
               });
               // nodeTreeList.push(treePath ? `${providerId}#${treePath}` : providerId);
               newGroupKeys.push(treePath ? `${providerId}#${treePath}` : providerId);
