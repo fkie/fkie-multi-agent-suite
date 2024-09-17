@@ -391,6 +391,7 @@ class RosStateServicer:
                     ros_node.screens.append(session_name)
                 ros_node.system_node = os.path.basename(
                     full_name).startswith('_') or full_name in ['/rosout']
+                ros_node.system_node |= node_ns == '/mas' or node_ns.startswith('/mas/')
 
                 return node_dict[key], True
             return node_dict[key], False
@@ -448,9 +449,9 @@ class RosStateServicer:
                                 f"{self.__class__.__name__}:      add publisher {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
                             tp.publisher.append(ros_node.id)
                             ros_node.publishers.append(tp)
-                            discover_state_publisher = 'fkie_mas_msgs/msg/DiscoveredState' in topic_type
-                            endpoint_publisher = 'fkie_mas_msgs/msg/Endpoint' in topic_type
-                            ros_node.system_node = ros_node.system_node or discover_state_publisher or endpoint_publisher
+                            discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in topic_type
+                            endpoint_publisher = 'fkie_mas_msgs::msg::dds_::Endpoint_' in topic_type
+                            ros_node.system_node |= ros_node.system_node or discover_state_publisher or endpoint_publisher
                         else:
                             if not is_request and ros_node.id not in tp.provider:
                                 Log.debug(

@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.1 (2024-09-17)
+------------------
+* fkie_mas_daemon: fixed system node determination in ROS2.
+* Contributors: Alexander Tiderko
+
 3.1.0 (2024-09-2)
 ------------------
 * fkie_mas_daemon: fixed --force parameter.
