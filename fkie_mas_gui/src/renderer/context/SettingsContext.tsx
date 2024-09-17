@@ -162,8 +162,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "string[]",
     default: ["/capability_group"],
     options: ["/capability_group"],
-    description:
-      "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter, it is grouped according to the namespace.",
+    description: "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter, it is grouped according to the namespace.",
+  },
+  groupParameterDepth: {
+    label: "Group parameter tree depth",
+    type: "number",
+    default: 0,
+    min: 0,
+    description: "If a group parameter is found, the parameter specifies the maximum depth at which it is placed in the namespace tree. Manually update your nodes after the change!",
   },
   launchHistoryLength: {
     label: "Launch History Length",

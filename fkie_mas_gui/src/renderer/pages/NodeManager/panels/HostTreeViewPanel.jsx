@@ -223,20 +223,29 @@ function HostTreeViewPanel() {
         if (node.system_node) {
           node.group += settingsCtx.get("namespaceSystemNodes");
         }
+        const namespaceArray = [];
+        const namespaceAfterGroup = [];
+        // If node has namespace, add it to the group with the second highest priority
+        if (node.namespace && node.namespace !== "/") {
+          const nsSplit = node.namespace.split("/");
+          const groupDepth = settingsCtx.get("groupParameterDepth") + 1;
+          namespaceArray.push(...nsSplit.slice(0, groupDepth));
+          namespaceAfterGroup.push(...nsSplit.slice(groupDepth));
+        }
         // group using parameters
         settingsCtx.get("groupParameters")?.forEach((parameter) => {
           if (node.parameters && node.parameters.has(parameter)) {
             const parameterValue = `${node.parameters.get(parameter)}`;
-            // TODO: Add parameter name to group?
-            // const parameterName = parameter.replaceAll('/', ' ');
-            // node.group += `/${parameterName}: ${parameterValue}`;
-
-            node.group += `/{${parameterValue}}`;
+            if (namespaceArray.length === 0) {
+              // the group should always start with "/"
+              namespaceArray.push("");
+            }
+            namespaceArray.push(`{${parameterValue}}`);
           }
         });
-        // If node has namespace, add it to the group with the second highest priority
-        if (node.namespace && node.namespace !== "/") {
-          node.group += `${node.namespace}`;
+        if (namespaceArray.length > 0) {
+          namespaceArray.push(...namespaceAfterGroup);
+          node.group = namespaceArray.join("/");
         }
         newNodes.push(node);
       });
@@ -253,15 +262,12 @@ function HostTreeViewPanel() {
       ]);
       // setSelectedTreeItems((prevValues) => [...prevValues]);
     },
-    [setProviderNodes]
+    [setProviderNodes, settingsCtx]
   );
 
-  useCustomEventListener(
-    EVENT_PROVIDER_RESTART_NODES,
-    (data) => {
-      restartNodes(data.nodes);
-    }
-  );
+  useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, (data) => {
+    restartNodes(data.nodes);
+  });
 
   // Register Callbacks ----------------------------------------------------------------------------------
 

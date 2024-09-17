@@ -329,7 +329,7 @@ export default function GuiPanel() {
                             sx={{ margin: 0 }}
                             label={
                               <Stack direction="row" alignItems="center">
-                                {param.default && param.default !== settingsCtx.get(name) && (
+                                {param.default !== undefined && param.default !== settingsCtx.get(name) && (
                                   <Tooltip title="Restore default value" placement="bottom" disableInteractive>
                                     <IconButton
                                       onClick={() => {
