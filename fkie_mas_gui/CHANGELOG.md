@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.9 - 17.09.2024
+
+Added parameter to move the group parameter in the namespace tree
+Changed sort order for capability groups
+Fixed: determination of group parameters for nodes if group parameter are defined globally
+
 ## 2.5.8 - 12.09.2024
 
 Fixed rendering error caused by last change
