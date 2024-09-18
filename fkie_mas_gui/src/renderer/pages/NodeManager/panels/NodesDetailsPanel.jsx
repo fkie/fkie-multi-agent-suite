@@ -62,6 +62,7 @@ function NodesDetailsPanel() {
   const [showServices] = useLocalStorage("NodesDetailsPanel:showServices", false);
   const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
   const [showPaths] = useLocalStorage("NodesDetailsPanel:showPaths", true);
+  const [showLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
 
   useEffect(() => {
     // TODO: Make a parameter or config for [maxNodes]
@@ -190,7 +191,7 @@ function NodesDetailsPanel() {
           // spacing={1}
           alignItems="left"
         >
-          <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(node.providerName)} >
+          <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(node.providerName)}>
             <Typography
               variant="subtitle1"
               style={{
@@ -553,6 +554,43 @@ function NodesDetailsPanel() {
                   )}
                 </Stack>
               )}
+              {showLaunchParameter && (
+                <>
+                  <Typography variant="caption">
+                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>Launch Parameter:</Box>
+                  </Typography>
+                  {[...node.launchPaths].map((launchPath) => {
+                    const launchParameters = node.parameters.get(launchPath);
+                    if (launchParameters) {
+                      return (
+                        <Stack key={launchPath} marginTop={"0.5em"}>
+                          <Typography variant="caption">
+                            <Box sx={{ fontWeight: "bold"}}>
+                              {`${launchPath.split("/").slice(-1)} [${launchParameters.length}]`}
+                            </Box>
+                          </Typography>
+                          {launchParameters.length > 0 && (
+                            <TableContainer component={Paper}>
+                              <Table size="small" aria-label="a dense table">
+                                <TableBody>
+                                  {launchParameters.map((parameter) => (
+                                    <TableRow key={parameter.name}>
+                                      <TableCell style={{ padding: 0 }}>
+                                        {parameter.name.slice(node.namespace.length + 1)}
+                                      </TableCell>
+                                      <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          )}
+                        </Stack>
+                      );
+                    }
+                  })}
+                </>
+              )}
             </Stack>
           )}
         </Stack>
@@ -567,6 +605,7 @@ function NodesDetailsPanel() {
     showSubscribers,
     showServices,
     showPaths,
+    showLaunchParameter,
     // onTopicClick,    <= causes unnecessary rebuilds
     // onServiceClick,  <= causes unnecessary rebuilds
     rosCtx,

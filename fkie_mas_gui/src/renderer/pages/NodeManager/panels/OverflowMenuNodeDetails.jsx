@@ -9,6 +9,7 @@ function OverflowMenuNodeDetails() {
   const [showSubscribers, setShowSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
   const [showServices, setShowServices] = useLocalStorage("NodesDetailsPanel:showServices", false);
   const [showConnections, setShowConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
+  const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
 
   const createMenu = useMemo(() => {
     return (
@@ -50,11 +51,18 @@ function OverflowMenuNodeDetails() {
               setShowConnections((prev) => !prev);
             },
           },
+          {
+            name: `${showLaunchParameter ? "Hide" : "Show"} Launch Parameter`,
+            key: "toggle-launch-parameter",
+            onClick: () => {
+              setShowLaunchParameter((prev) => !prev);
+            },
+          },
         ]}
         id="node-details-options"
       />
     );
-  }, [showNodeInfo, showPublishers, showSubscribers, showServices, showConnections]);
+  }, [showNodeInfo, showPublishers, showSubscribers, showServices, showConnections, showLaunchParameter]);
 
   return createMenu;
 }
