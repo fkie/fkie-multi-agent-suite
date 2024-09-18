@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.10 - 18.09.2024
+
+Handling of capability groups revised
+Added launch parameter to the node details view
+Fixed: system node determination in ROS2
+
 ## 2.5.9 - 17.09.2024
 
 Added parameter to move the group parameter in the namespace tree
