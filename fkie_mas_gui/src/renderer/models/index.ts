@@ -12,7 +12,7 @@ import { FileItem, FileLanguageAssociations, getBaseName, getFileAbb, getFileExt
 import PathEvent, { PATH_EVENT_TYPE } from "./PathEvent";
 import PathItem from "./PathItem";
 import RosDuration from "./RosDuration";
-import RosNode, { RosNodeStatus, RosNodeStatusInfo, compareRosNodes } from "./RosNode";
+import RosNode, { RosNodeStatus, RosNodeStatusInfo } from "./RosNode";
 import RosPackage from "./RosPackage";
 import RosParameter from "./RosParameter";
 import RosQos from "./RosQos";
@@ -102,7 +102,6 @@ export {
   SystemWarning,
   SystemWarningGroup,
   URI,
-  compareRosNodes,
   getBaseName,
   getDiagnosticLevelName,
   getFileAbb,

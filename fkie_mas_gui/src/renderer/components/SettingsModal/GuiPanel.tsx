@@ -397,7 +397,10 @@ export default function GuiPanel() {
                               size="small"
                               variant="outlined"
                               fullWidth={true}
-                              onChange={(e) => settingsCtx.set(name, `${e.target.value}`)}
+                              onChange={(e) => {
+                                const value = `${e.target.value}`;
+                                settingsCtx.set(name, param.validate ? param.validate(value) : value);
+                              }}
                               value={settingsCtx.get(name)}
                               sx={{ marginRight: "0.5em" }}
                               // helperText={param.description}

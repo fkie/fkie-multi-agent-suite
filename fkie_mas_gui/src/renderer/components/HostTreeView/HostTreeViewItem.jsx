@@ -77,6 +77,8 @@ function HostTreeViewItem({
   labelText,
   paddingLeft,
   itemId = "",
+  isNode = false,
+  namespacePart = "",
   iconColor = "",
   onClick = () => {},
   onDoubleClick = () => {},
@@ -331,7 +333,8 @@ function HostTreeViewItem({
               )
             }
           >
-            <Typography
+            <Stack
+              direction="row"
               onClick={onClick}
               onDoubleClick={(event) => {
                 if (onDoubleClick) {
@@ -340,10 +343,21 @@ function HostTreeViewItem({
                 }
               }}
               variant="body2"
-              sx={{ fontWeight: "inherit", flexGrow: 1, userSelect: 'none'}}
+              sx={{ fontWeight: "inherit", flexGrow: 1, userSelect: "none" }}
             >
-              {labelText}
-            </Typography>
+              {isNode ? (
+                <>
+                  <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                    {namespacePart}
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: "bold", userSelect: "none" }}>
+                    {labelText.slice(namespacePart.length)}
+                  </Typography>
+                </>
+              ) : (
+                labelText
+              )}
+            </Stack>
             {(!focus || !showFloatingButtons || (!onStartClick && !onStopClick && !onRestartClick)) &&
               tags.map((tag) => (
                 <Tag key={tag.text} text={tag.text} color={tag.color} style={{ pointerEvents: "none" }} />
@@ -397,6 +411,8 @@ function HostTreeViewItem({
 
 HostTreeViewItem.propTypes = {
   itemId: PropTypes.string,
+  isNode: PropTypes.bool,
+  namespacePart: PropTypes.string,
   iconColor: PropTypes.string,
   bgColor: PropTypes.string.isRequired,
   color: PropTypes.string.isRequired,

@@ -5,7 +5,7 @@ import WarningIcon from "@mui/icons-material/Warning";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
-import { DiagnosticLevel, RosNodeStatus, compareRosNodes, getMaxDiagnosticLevel } from "../../models";
+import { DiagnosticLevel, RosNodeStatus, getMaxDiagnosticLevel } from "../../models";
 
 const StyledBottomNavigationAction = styled(BottomNavigationAction)(() => ({
   padding: 0,
@@ -24,8 +24,6 @@ const GroupStatus = {
   SOME_RUNNING: 1,
   ALL_RUNNING: 2,
 };
-
-const namespaceSystemNodes = "/{SYSTEM}";
 
 const getNodeIcon = (status) => {
   switch (status) {
@@ -194,12 +192,9 @@ const rosCleanPurge = async (logCtx, SSHCtx, host) => {
 export {
   GroupStatus,
   StyledBottomNavigationAction,
-  compareRosNodes,
   getGroupIcon,
   getGroupIconColor,
   getGroupStatus,
   getNodeIcon,
   getNodeIconColor,
-  namespaceSystemNodes
 };
-

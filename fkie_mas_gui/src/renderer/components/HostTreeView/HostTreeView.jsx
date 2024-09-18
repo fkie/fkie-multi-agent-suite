@@ -20,13 +20,7 @@ import { generateUniqueId, removeDDSuid } from "../../utils";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
 import { colorFromHostname } from "../UI/Colors";
 import HostTreeViewItem from "./HostTreeViewItem";
-import {
-  getGroupIcon,
-  getGroupIconColor,
-  getNodeIcon,
-  getNodeIconColor,
-  namespaceSystemNodes,
-} from "./HostTreeViewUtils";
+import { getGroupIcon, getGroupIconColor, getNodeIcon, getNodeIconColor } from "./HostTreeViewUtils";
 import LaunchFileList from "./LaunchFileList";
 
 const compareTreeItems = (a, b) => {
@@ -74,7 +68,7 @@ function HostTreeView({
 
   useEffect(() => {
     setExpanded(groupKeys);
-  }, [groupKeys])
+  }, [groupKeys]);
 
   /**
    * Callback when items on the tree are double clicked
@@ -509,13 +503,15 @@ function HostTreeView({
         return <div key={`${providerId}#${generateUniqueId()}`} />;
       }
       let { children, treePath, node, name } = treeItem;
-      // while (children && children.length === 1) {
-      //   const child = children[0];
-      //   children = child.children;
-      //   treePath = child.treePath;
-      //   node = child.node;
-      //   name = `${name}/${child.name}`;
-      // }
+      let namespacePart = "";
+      while (children && children.length === 1) {
+        const child = children[0];
+        children = child.children;
+        treePath = child.treePath;
+        node = child.node;
+        namespacePart = `${name}/`;
+        name = `${name}/${child.name}`;
+      }
       const itemId = `${providerId}#${treePath}`;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
@@ -529,6 +525,8 @@ function HostTreeView({
           <HostTreeViewItem
             key={`${itemId}#${node.id}`}
             itemId={`${itemId}#${node.id}`}
+            isNode={true}
+            namespacePart={namespacePart}
             labelText={label}
             labelIcon={getNodeIcon(node.status)}
             iconColor={getNodeIconColor(node, settingsCtx.get("useDarkMode"))}
@@ -567,7 +565,7 @@ function HostTreeView({
           }
           color={blue[700]}
           bgColor={blue[200]}
-          paddingLeft={0.5}
+          paddingLeft={0.0}
           showMultipleScreen={node ? node.screens && node.screens.length > 1 : false}
           showLoggers={node?.getRosLoggersCount() > 0}
           showNoScreen={node ? node.screens && node.screens.length < 1 : false}
@@ -589,7 +587,7 @@ function HostTreeView({
           }
           onRestartClick={
             (node && node.launchInfo && node.status !== RosNodeStatus.INACTIVE) ||
-            groupName !== namespaceSystemNodes.replace("/", "")
+            groupName !== settingsCtx.get("namespaceSystemNodes").replace("/", "")
               ? onRestartClick
               : null
           }

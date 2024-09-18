@@ -64,6 +64,7 @@ export interface ISettingsParam {
   min?: number;
   max?: number;
   cb?: (get: (attribute: string) => any, set: (attribute: string, value: any) => void) => void;
+  validate?: (value: any) => any;
 }
 
 export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
@@ -155,21 +156,18 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
       "When communicating with the MAS daemon, the messages from the listed URIs are output as debug messages.",
     group: "Logging",
   },
-  groupParameters: {
-    label: "Group parameters",
-    placeholder: "...",
+  capabilityGroupParameter: {
+    label: "Capability Group parameter",
     freeSolo: true,
-    type: "string[]",
-    default: ["/capability_group"],
-    options: ["/capability_group"],
-    description: "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter, it is grouped according to the namespace.",
-  },
-  groupParameterDepth: {
-    label: "Group parameter tree depth",
-    type: "number",
-    default: 0,
-    min: 0,
-    description: "If a group parameter is found, the parameter specifies the maximum depth at which it is placed in the namespace tree. Manually update your nodes after the change!",
+    type: "string",
+    default: "capability_group",
+    description: "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter it use a global one or group according to the namespace.",
+    validate: (value: string) => {
+      if ((value as string).startsWith("/")) {
+        return (value as string).substring(1);
+      }
+      return value;
+    }
   },
   launchHistoryLength: {
     label: "Launch History Length",

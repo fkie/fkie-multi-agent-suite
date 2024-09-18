@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
 import { DiagnosticLevel, DiagnosticStatus } from "./Diagnostics";
 import LaunchNodeInfo from "./LaunchNodeInfo";
+import RosParameter from "./RosParameter";
 import RosService from "./RosService";
 import RosTopic from "./RosTopic";
 
@@ -130,14 +131,15 @@ class RosNode {
   system_node: boolean;
 
   /**
-   * List of parameter and values
+   * Map of launch files and list of parameters
    */
-  parameters?: Map<string, string | number | boolean | string[]>;
+  parameters: Map<string, RosParameter[]>;
 
   /**
    * group used for visualization
    */
-  group?: string;
+  capabilityGroup: { namespace?: string, name?: string } = {};
+  group: string = "";
 
   /**
    * Info given on launch file
@@ -193,6 +195,7 @@ class RosNode {
     services = new Map<string, RosService>(),
     screens = [],
     launchPaths = new Set<string>(),
+    parameters =  new Map<string, RosParameter[]>(),
     launchPath = ""
   ) {
     this.id = id;
@@ -210,6 +213,7 @@ class RosNode {
     this.screens = screens;
     this.launchPaths = launchPaths;
     this.launchPath = launchPath;
+    this.parameters = parameters;
   }
 
   getRosLoggersCount: () => number = () => {
@@ -225,17 +229,5 @@ class RosNode {
     return `${this.name} - ${this.namespace} - ${this.status}`;
   };
 }
-
-export const compareRosNodes = (a: RosNode, b: RosNode) => {
-  const aValue = a.group + a.name.replace(a.namespace, "");
-  const bValue = b.group + b.name.replace(a.namespace, "");
-  if (aValue < bValue) {
-    return -1;
-  }
-  if (aValue > bValue) {
-    return 1;
-  }
-  return 0;
-};
 
 export default RosNode;

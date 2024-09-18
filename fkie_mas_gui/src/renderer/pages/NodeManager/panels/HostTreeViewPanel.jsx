@@ -163,7 +163,8 @@ function HostTreeViewPanel() {
           if (!isMatch) return;
         }
 
-        const nodePath = `${node.group}/${node.idGlobal}`;
+        const pathPrefix = node.group ? node.group : node.namespace && node.namespace !== "/" ? node.namespace : "";
+        const nodePath = `${pathPrefix}/${node.idGlobal}`;
         nodePath.split("/").reduce((r, name, i, a) => {
           if (!r[name]) {
             r[name] = { nodeTree: [] };
@@ -218,41 +219,24 @@ function HostTreeViewPanel() {
     EVENT_PROVIDER_ROS_NODES,
     (data) => {
       const { provider, nodes } = data;
+      const namespaceSystemNodes = settingsCtx.get("namespaceSystemNodes");
       // create new node list with updated group labels
       const newNodes = [];
       nodes.forEach((node) => {
-        node.group = "";
-        // If the node is flagged as system node, set a group with the highest priority
         if (node.system_node) {
-          node.group += settingsCtx.get("namespaceSystemNodes");
-        }
-        const namespaceArray = [];
-        const namespaceAfterGroup = [];
-        // If node has namespace, add it to the group with the second highest priority
-        if (node.namespace && node.namespace !== "/") {
-          const nsSplit = node.namespace.split("/");
-          const groupDepth = settingsCtx.get("groupParameterDepth") + 1;
-          namespaceArray.push(...nsSplit.slice(0, groupDepth));
-          namespaceAfterGroup.push(...nsSplit.slice(groupDepth));
-        }
-        // group using parameters
-        settingsCtx.get("groupParameters")?.forEach((parameter) => {
-          if (node.parameters && node.parameters.has(parameter)) {
-            const parameterValue = `${node.parameters.get(parameter)}`;
-            if (namespaceArray.length === 0) {
-              // the group should always start with "/"
-              namespaceArray.push("");
-            }
-            namespaceArray.push(`{${parameterValue}}`);
+          node.group = namespaceSystemNodes;
+        } else {
+          let groupNamespace = "";
+          let groupName = "";
+          let nodeRestNamespace = "";
+          if (node.capabilityGroup.namespace) {
+            groupNamespace = `${node.capabilityGroup.namespace}`;
+            nodeRestNamespace = node.namespace.replace(groupNamespace, "");
           }
-        });
-        if (namespaceArray.length > 0) {
-          namespaceArray.push(...namespaceAfterGroup);
-          if (!node.system_node) {
-            node.group = namespaceArray.join("/");
-          } else {
-            node.group += namespaceArray.join("/");
+          if (node.capabilityGroup.name) {
+            groupName = `/${node.capabilityGroup.name}`;
           }
+          node.group = `${groupNamespace}${groupName}${nodeRestNamespace}`;
         }
         newNodes.push(node);
       });

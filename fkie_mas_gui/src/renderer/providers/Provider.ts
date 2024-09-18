@@ -17,6 +17,7 @@ import {
   LaunchLoadRequest,
   LaunchMessageStruct,
   LaunchNode,
+  LaunchNodeInfo,
   LaunchNodeReply,
   LaunchPublishMessage,
   LogPathItem,
@@ -1154,47 +1155,45 @@ export default class Provider implements IProvider {
         this.launchFiles = launchList;
         emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
 
-        const groupLevelParams: { namespace: string, level: number, param: RosParameter }[] = [];
+        const capabilityGroupParamName = `/${this.settings.get("capabilityGroupParameter")}`;
         // update nodes
         // Add nodes from launch files to the list of nodes
         this.launchFiles.forEach((launchFile) => {
-          // get global group parameter by namespace level
-          launchFile.parameters.forEach((p) => {
-            this.settings.get("groupParameters")?.forEach((parameter: string) => {
-              if (p.name.endsWith(parameter)) {
-                const { namespace, level } = this.toNamespace(p.name);
-                const ofNodes = launchFile.nodes.filter((node) => node.node_name === namespace);
-                if (ofNodes.length === 0) {
-                  groupLevelParams.push({ namespace, level, param: p });
-                }
-              }
-            })
-          })
-          launchFile.nodes.forEach((launchNode) => {
-            const nodeParameters = new Map();
+          launchFile.nodes.forEach((launchNode: LaunchNodeInfo) => {
+            // get parameter of a node and determine the capability group parameter
+            const nodeParameters: RosParameter[] = [];
+            let nodeGroup: { namespace?: string, name?: string } = {};
             let groupParameterFound = false;
+            let nodesParametersFound = false;
             const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
             if (uniqueNodeName) {
+              const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`
               // update parameters
-              launchFile.parameters.forEach((p) => {
-                if (p.name.indexOf(uniqueNodeName) !== -1) {
-                  this.settings.get("groupParameters")?.forEach((parameter: string) => {
-                    // use group parameter in the namespace of the node
-                    if (p.name.endsWith(parameter)) {
-                      groupParameterFound = true;
-                    }
-                  })
-                  nodeParameters.set(p.name.replace(uniqueNodeName, ""), p.value);
+              launchFile.parameters.forEach((p: RosParameter) => {
+                if (nodesParametersFound) {
+                  // skip parse further parameter if we found one and next was not in node namespace
+                  // assumption: parameters are sorted
+                  return;
+                } else if (p.name.startsWith(uniqueNodeName)) {
+                  nodeParameters.push(p);
+                  if (p.name === capabilityGroupOfNode) {
+                    // update capability group
+                    groupParameterFound = true;
+                    const ns = launchNode.node_namespace ? launchNode.node_namespace : "";
+                    nodeGroup = { namespace: ns, name: `{${p.value}}` };
+                  }
+                } else if (nodeParameters.length > 0) {
+                  // we found one parameter of the node, but current parameter is not in node namespace => skip all further parameter
+                  // assumption: parameters are sorted
+                  nodesParametersFound = true;
+                } else if (!groupParameterFound && p.name.endsWith(capabilityGroupParamName)) {
+                  // use capability group parameter in the higher level namespace until we found one in the node namespace
+                  const { namespace } = this.toNamespace(p.name);
+                  if (uniqueNodeName.startsWith(namespace)) {
+                    nodeGroup = { namespace: namespace, name: `{${p.value}}` };
+                  }
                 }
               });
-              // use group parameter of higher level
-              if (!groupParameterFound) {
-                const availableGroupParams = groupLevelParams.filter((gp) => uniqueNodeName.startsWith(gp.namespace)).sort((a, b) => { if (a.level < b.level) return -1; if (a.level > b.level) return 1; return 0; });
-                if (availableGroupParams.length > 0) {
-                  const gp = availableGroupParams.slice(-1);
-                  nodeParameters.set(gp[0].param.name.replace(gp[0].namespace, ""), gp[0].param.value);
-                }
-              }
 
               let associations: string[] = [];
               launchFile.associations.forEach((item) => {
@@ -1210,9 +1209,12 @@ export default class Provider implements IProvider {
               });
               if (iNode >= 0) {
                 this.rosNodes[iNode].launchPaths.add(launchFile.path);
-                this.rosNodes[iNode].parameters = nodeParameters;
+                this.rosNodes[iNode].parameters.set(launchFile.path, nodeParameters);
                 this.rosNodes[iNode].launchInfo = launchNode;
                 this.rosNodes[iNode].associations = associations;
+                if (nodeGroup.name) {
+                  this.rosNodes[iNode].capabilityGroup = nodeGroup;
+                }
                 nodeIsRunning = true;
               }
 
@@ -1226,13 +1228,16 @@ export default class Provider implements IProvider {
                   RosNodeStatus.INACTIVE
                 );
                 n.launchPaths.add(launchFile.path);
-                n.parameters = nodeParameters;
+                n.parameters.set(launchFile.path, nodeParameters);
                 n.launchInfo = launchNode;
                 // idGlobal should be the same for life of the node on remote host
                 n.idGlobal = `${this.id}${n.id.replaceAll("/", ".")}`;
                 n.providerName = this.name();
                 n.providerId = this.id;
                 n.associations = associations;
+                if (nodeGroup.name) {
+                  n.capabilityGroup = nodeGroup;
+                }
                 this.rosNodes.push(n);
               }
             }
@@ -1272,9 +1277,6 @@ export default class Provider implements IProvider {
           }
         });
 
-        // do not sort nodes -> start order defined by capability_group
-        // this.rosNodes.sort(compareRosNodes);
-        // await this.updateScreens(null);
         this.daemon = true;
         emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
         return true;
@@ -1994,6 +1996,8 @@ export default class Provider implements IProvider {
         if (oldNode.pid !== n.pid) {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
         }
+      } else if (n.system_node) {
+        n.group = this.settings.get("namespaceSystemNodes");
       }
 
       if (!n.node_API_URI || n.node_API_URI.length === 0) return;
@@ -2030,9 +2034,6 @@ export default class Provider implements IProvider {
         n.dynamicReconfigureServices.push(n.name);
       }
     });
-    // do not sort nodes -> start order defined by capability_group
-    // nl.sort(compareRosNodes);
-
     this.rosNodes = nl;
     // emitCustomEvent(
     //   EVENT_PROVIDER_ROS_NODES,
