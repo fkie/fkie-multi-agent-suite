@@ -576,7 +576,7 @@ function NodesDetailsPanel() {
                                   {launchParameters.map((parameter) => (
                                     <TableRow key={parameter.name}>
                                       <TableCell style={{ padding: 0 }}>
-                                        {parameter.name.slice(node.namespace.length + 1)}
+                                        {parameter.name.slice(node.name.length + 1)}
                                       </TableCell>
                                       <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
                                     </TableRow>
