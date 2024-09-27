@@ -16,7 +16,7 @@ const getFileName = (path: string) => {
  * @param {string} path - File path
  */
 const getBaseName = (path: string) => {
-  let fileName = getFileName(path);
+  const fileName = getFileName(path);
   if (fileName) {
     const base = fileName
       .replace(/^.*[\\/]/, "")

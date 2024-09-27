@@ -11,7 +11,7 @@ import { SettingsContext } from "./SettingsContext";
 interface LoggingDetailsComponentProps {
   id: SnackbarKey | undefined;
   message: SnackbarMessage;
-  details: string | Object;
+  details: string | object;
   variant: VariantType;
   onDetailsClick: Function;
 }

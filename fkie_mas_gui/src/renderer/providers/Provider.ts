@@ -573,7 +573,7 @@ export default class Provider implements IProvider {
    * @return {Promise<{ file: FileItem; error: string }>}
    */
   public getFileContent: (path: string) => Promise<{ file: FileItem; error: string }> = async (path) => {
-    let error: string = "";
+    const error: string = "";
     const fileItem: FileItem | null = await this.makeCall(URI.ROS_FILE_GET, [path], false).then(
       (value: ICallResult) => {
         if (value.result) {

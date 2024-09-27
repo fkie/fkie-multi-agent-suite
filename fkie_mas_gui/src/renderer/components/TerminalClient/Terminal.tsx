@@ -258,7 +258,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
     terminal.attachCustomKeyEventHandler((ev) => {
       if (ev.type === "keydown") {
-        for (let i in keyMap) {
+        for (const i in keyMap) {
           if (
             keyMap[i].key == ev.key &&
             keyMap[i].shiftKey == ev.shiftKey &&
