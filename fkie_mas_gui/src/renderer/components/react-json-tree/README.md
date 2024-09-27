@@ -7,18 +7,18 @@ React JSON Viewer Component, Extracted from [redux-devtools](https://github.com/
 ### Usage
 
 ```jsx
-import { JSONTree } from 'react-json-tree';
+import { JSONTree } from "react-json-tree";
 // If you're using Immutable.js: `npm i --save immutable`
-import { Map } from 'immutable';
+import { Map } from "immutable";
 
 // Inside a React component:
 const json = {
   array: [1, 2, 3],
   bool: true,
   object: {
-    foo: 'bar',
+    foo: "bar",
   },
-  immutable: Map({ key: 'value' }),
+  immutable: Map({ key: "value" }),
 };
 
 <JSONTree data={json} />;
@@ -41,24 +41,24 @@ Every theme has a light version, which is enabled with `invertTheme` prop.
 
 ```jsx
 const theme = {
-  scheme: 'monokai',
-  author: 'wimer hazenberg (http://www.monokai.nl)',
-  base00: '#272822',
-  base01: '#383830',
-  base02: '#49483e',
-  base03: '#75715e',
-  base04: '#a59f85',
-  base05: '#f8f8f2',
-  base06: '#f5f4f1',
-  base07: '#f9f8f5',
-  base08: '#f92672',
-  base09: '#fd971f',
-  base0A: '#f4bf75',
-  base0B: '#a6e22e',
-  base0C: '#a1efe4',
-  base0D: '#66d9ef',
-  base0E: '#ae81ff',
-  base0F: '#cc6633',
+  scheme: "monokai",
+  author: "wimer hazenberg (http://www.monokai.nl)",
+  base00: "#272822",
+  base01: "#383830",
+  base02: "#49483e",
+  base03: "#75715e",
+  base04: "#a59f85",
+  base05: "#f8f8f2",
+  base06: "#f5f4f1",
+  base07: "#f9f8f5",
+  base08: "#f92672",
+  base09: "#fd971f",
+  base0A: "#f4bf75",
+  base0B: "#a6e22e",
+  base0C: "#a1efe4",
+  base0D: "#66d9ef",
+  base0E: "#ae81ff",
+  base0F: "#cc6633",
 };
 
 <div>
@@ -80,14 +80,14 @@ const theme = {
       extend: theme,
       // underline keys for literal values
       valueLabel: {
-        textDecoration: 'underline',
+        textDecoration: "underline",
       },
       // switch key for objects to uppercase when object is expanded.
       // `nestedNodeLabel` receives additional argument `expandable`
       nestedNodeLabel: ({ style }, keyPath, nodeType, expanded) => ({
         style: {
           ...style,
-          textTransform: expanded ? 'uppercase' : style.textTransform,
+          textTransform: expanded ? "uppercase" : style.textTransform,
         },
       }),
     }}
@@ -122,10 +122,7 @@ Then the preview of child elements now look like this:
 You can pass the following properties to customize rendered labels and values:
 
 ```jsx
-<JSONTree
-  labelRenderer={([key]) => <strong>{key}</strong>}
-  valueRenderer={(raw) => <em>{raw}</em>}
-/>
+<JSONTree labelRenderer={([key]) => <strong>{key}</strong>} valueRenderer={(raw) => <em>{raw}</em>} />
 ```
 
 In this example the label and value will be rendered with `<strong>` and `<em>` wrappers respectively.

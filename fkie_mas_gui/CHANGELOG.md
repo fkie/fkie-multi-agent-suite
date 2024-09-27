@@ -69,12 +69,11 @@ Optimized settings dialog
 NodeDetailsPanel cleaned up
 Hide some parameter in web version
 Terminal revised: new shortcuts, switchable search bar
-    * Ctr+{+, - , 0}: change font size
-    * Ctr+f: enable search bar
-    * Escape in search bar: close search bar
-    ----
-    * Ctrl+Shift+C: copy selected text to clipboard
-    * Ctrl+D: close terminal
+_ Ctr+{+, - , 0}: change font size
+_ Ctr+f: enable search bar
+_ Escape in search bar: close search bar
+----
+_ Ctrl+Shift+C: copy selected text to clipboard \* Ctrl+D: close terminal
 Version of the dependencies pumped up
 Fixed: popout capability in browser
 Fixed: warning while open screen
@@ -362,7 +361,7 @@ Modified processing of uint8[] message datatypes to send only the first 10 bytes
 
 ## 1.2.0 - 01.03.2024
 
-Added panel to change log level 
+Added panel to change log level
 Show info if daemon version is lower then gui's version
 Prevent waiting for the timeout if daemon is not available
 Fix transport of uint8[] datatypes in echo node

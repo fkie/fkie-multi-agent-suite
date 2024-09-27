@@ -1,9 +1,9 @@
-import JSONArrayNode from './JSONArrayNode.js';
-import JSONIterableNode from './JSONIterableNode.js';
-import JSONObjectNode from './JSONObjectNode.js';
-import JSONValueNode from './JSONValueNode.js';
-import objType from './objType.js';
-import type { CommonInternalProps } from './types.js';
+import JSONArrayNode from "./JSONArrayNode.js";
+import JSONIterableNode from "./JSONIterableNode.js";
+import JSONObjectNode from "./JSONObjectNode.js";
+import JSONValueNode from "./JSONValueNode.js";
+import objType from "./objType.js";
+import type { CommonInternalProps } from "./types.js";
 
 interface Props extends CommonInternalProps {
   value: unknown;
@@ -19,7 +19,7 @@ export default function JSONNode({
   isCustomNode,
   ...rest
 }: Props) {
-  const nodeType = isCustomNode(value) ? 'Custom' : objType(value);
+  const nodeType = isCustomNode(value) ? "Custom" : objType(value);
 
   const simpleNodeProps = {
     getItemString,
@@ -40,62 +40,35 @@ export default function JSONNode({
   };
 
   switch (nodeType) {
-    case 'Object':
-    case 'Error':
-    case 'WeakMap':
-    case 'WeakSet':
+    case "Object":
+    case "Error":
+    case "WeakMap":
+    case "WeakSet":
       return <JSONObjectNode {...nestedNodeProps} />;
-    case 'Array':
+    case "Array":
       return <JSONArrayNode {...nestedNodeProps} />;
-    case 'Iterable':
-    case 'Map':
-    case 'Set':
+    case "Iterable":
+    case "Map":
+    case "Set":
       return <JSONIterableNode {...nestedNodeProps} />;
-    case 'String':
-      return (
-        <JSONValueNode
-          {...simpleNodeProps}
-          valueGetter={(raw: string) => `"${raw}"`}
-        />
-      );
-    case 'Number':
+    case "String":
+      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw: string) => `"${raw}"`} />;
+    case "Number":
       return <JSONValueNode {...simpleNodeProps} />;
-    case 'Boolean':
-      return (
-        <JSONValueNode
-          {...simpleNodeProps}
-          valueGetter={(raw) => (raw ? 'true' : 'false')}
-        />
-      );
-    case 'Date':
-      return (
-        <JSONValueNode
-          {...simpleNodeProps}
-          valueGetter={(raw) => raw.toISOString()}
-        />
-      );
-    case 'Null':
-      return <JSONValueNode {...simpleNodeProps} valueGetter={() => 'null'} />;
-    case 'Undefined':
-      return (
-        <JSONValueNode {...simpleNodeProps} valueGetter={() => 'undefined'} />
-      );
-    case 'Function':
-    case 'Symbol':
-      return (
-        <JSONValueNode
-          {...simpleNodeProps}
-          valueGetter={(raw) => raw.toString()}
-        />
-      );
-    case 'Custom':
+    case "Boolean":
+      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw) => (raw ? "true" : "false")} />;
+    case "Date":
+      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw) => raw.toISOString()} />;
+    case "Null":
+      return <JSONValueNode {...simpleNodeProps} valueGetter={() => "null"} />;
+    case "Undefined":
+      return <JSONValueNode {...simpleNodeProps} valueGetter={() => "undefined"} />;
+    case "Function":
+    case "Symbol":
+      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw) => raw.toString()} />;
+    case "Custom":
       return <JSONValueNode {...simpleNodeProps} />;
     default:
-      return (
-        <JSONValueNode
-          {...simpleNodeProps}
-          valueGetter={() => `<${nodeType}>`}
-        />
-      );
+      return <JSONValueNode {...simpleNodeProps} valueGetter={() => `<${nodeType}>`} />;
   }
 }

@@ -1117,10 +1117,10 @@ export default class Provider implements IProvider {
     return Promise.resolve(true);
   };
 
-  public toNamespace: (name: string) => { namespace: string, level: number } = (name) => {
+  public toNamespace: (name: string) => { namespace: string; level: number } = (name) => {
     const rest = name.split("/").slice(0, -1);
     return { namespace: rest.join("/"), level: rest.length - 1 };
-  }
+  };
 
   /**
    * Get the list of nodes loaded in launch files. update launch files into provider object
@@ -1162,12 +1162,12 @@ export default class Provider implements IProvider {
           launchFile.nodes.forEach((launchNode: LaunchNodeInfo) => {
             // get parameter of a node and determine the capability group parameter
             const nodeParameters: RosParameter[] = [];
-            let nodeGroup: { namespace?: string, name?: string } = {};
+            let nodeGroup: { namespace?: string; name?: string } = {};
             let groupParameterFound = false;
             let nodesParametersFound = false;
             const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
             if (uniqueNodeName) {
-              const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`
+              const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
               launchFile.parameters.forEach((p: RosParameter) => {
                 if (nodesParametersFound) {

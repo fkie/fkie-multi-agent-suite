@@ -87,7 +87,6 @@ export type {
   ShouldExpandNodeInitially,
   SortObjectKeys,
   Styling,
-  ValueRenderer
+  ValueRenderer,
 } from "./types.js";
 export type { StylingValue };
-

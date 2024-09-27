@@ -68,8 +68,7 @@ interface ITerminalClient {
 }
 
 function TerminalClient(props: ITerminalClient) {
-  const { initialCommands, tokenUrl, wsUrl, name, errorHighlighting, onIncomingData, onCtrlD } =
-    props;
+  const { initialCommands, tokenUrl, wsUrl, name, errorHighlighting, onIncomingData, onCtrlD } = props;
   const settingsCtx = useContext(SettingsContext);
 
   termOptions.fontSize = settingsCtx.get("fontSizeTerminal");

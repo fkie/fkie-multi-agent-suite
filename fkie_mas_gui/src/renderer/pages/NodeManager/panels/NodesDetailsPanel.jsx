@@ -565,7 +565,7 @@ function NodesDetailsPanel() {
                       return (
                         <Stack key={launchPath} marginTop={"0.5em"}>
                           <Typography variant="caption">
-                            <Box sx={{ fontWeight: "bold"}}>
+                            <Box sx={{ fontWeight: "bold" }}>
                               {`${launchPath.split("/").slice(-1)} [${launchParameters.length}]`}
                             </Box>
                           </Typography>

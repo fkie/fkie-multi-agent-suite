@@ -2,4 +2,3 @@ import { IShutdownManager, ShutdownManagerEvents, TShutdownManager } from "./Shu
 
 export { ShutdownManagerEvents };
 export type { IShutdownManager, TShutdownManager };
-

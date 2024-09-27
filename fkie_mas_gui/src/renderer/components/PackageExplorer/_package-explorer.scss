@@ -1,5 +1,5 @@
 div.rendered-react-keyed-file-browser {
-  font-family: 'IBM Plex, Sans';
+  font-family: "IBM Plex, Sans";
   font-size: smaller;
 }
 
@@ -8,9 +8,9 @@ div.rendered-react-keyed-file-browser div.action-bar {
   flex-wrap: wrap;
   display: flex;
   align-items: flex-start;
-  font-family: 'IBM Plex, Sans';
+  font-family: "IBM Plex, Sans";
 }
-div.rendered-react-keyed-file-browser div.action-bar input[type='search'] {
+div.rendered-react-keyed-file-browser div.action-bar input[type="search"] {
   display: block;
   flex-grow: 2;
   min-width: 300px;
@@ -18,7 +18,7 @@ div.rendered-react-keyed-file-browser div.action-bar input[type='search'] {
   line-height: 1em;
   margin-bottom: 0.5rem;
   border: 0.1rem solid var(--cds-ui-background);
-  font-family: 'IBM Plex, Sans';
+  font-family: "IBM Plex, Sans";
   border-radius: 1px;
 }
 div.rendered-react-keyed-file-browser div.action-bar .item-actions {
@@ -37,10 +37,7 @@ div.rendered-react-keyed-file-browser div.action-bar ul.item-actions li {
   display: inline-block;
   margin: 0;
 }
-div.rendered-react-keyed-file-browser
-  div.action-bar
-  ul.item-actions
-  li:not(:last-child) {
+div.rendered-react-keyed-file-browser div.action-bar ul.item-actions li:not(:last-child) {
   margin-right: 0.5rem;
 }
 
@@ -92,12 +89,7 @@ div.rendered-react-keyed-file-browser div.files table td.name form.renaming i {
   flex-grow: 0;
   flex-shrink: 0;
 }
-div.rendered-react-keyed-file-browser
-  div.files
-  table
-  td.name
-  form.renaming
-  input[type='text'] {
+div.rendered-react-keyed-file-browser div.files table td.name form.renaming input[type="text"] {
   flex: 1;
 }
 div.rendered-react-keyed-file-browser div.files table tr td {
@@ -113,12 +105,8 @@ div.rendered-react-keyed-file-browser div.files table tr.selected td button {
 div.rendered-react-keyed-file-browser div.files table tr.selected td.name {
   position: relative;
 }
-div.rendered-react-keyed-file-browser
-  div.files
-  table
-  tr.selected
-  td.name:after {
-  content: ' ';
+div.rendered-react-keyed-file-browser div.files table tr.selected td.name:after {
+  content: " ";
   position: absolute;
   left: 0;
   top: 0;
@@ -228,12 +216,7 @@ div.rendered-file-browser div.files ul li.folder.expanded.selected {
 div.rendered-file-browser div.files ul li.selected.folder > div.item {
   border: 1px solid var(--cds-ui-background);
 }
-div.rendered-file-browser
-  div.files
-  ul
-  li.selected.folder
-  > div.item
-  span.thumb {
+div.rendered-file-browser div.files ul li.selected.folder > div.item span.thumb {
   border: none;
 }
 div.rendered-file-browser div.files ul li.file {
@@ -270,13 +253,7 @@ div.rendered-file-browser div.files ul li.file > div.item span.thumb div.image {
 div.rendered-file-browser div.files ul li.selected.file > div.item span.thumb {
   border: 1px solid #bfbfbf;
 }
-div.rendered-file-browser
-  div.files
-  ul
-  li.selected.file
-  > div.item
-  span.thumb
-  div.image {
+div.rendered-file-browser div.files ul li.selected.file > div.item span.thumb div.image {
   opacity: 0.8;
 }
 
@@ -286,14 +263,13 @@ div.rendered-file-browser p.empty {
 }
 
 a {
-  color:  var(--cds-text-01);
+  color: var(--cds-text-01);
   background: var(--cds-ui-background);
   text-decoration: none;
 }
 
 a:hover {
-
-  color:  var(--cds-text-01);
+  color: var(--cds-text-01);
   background: var(--cds-ui-background);
   text-decoration: none;
 }

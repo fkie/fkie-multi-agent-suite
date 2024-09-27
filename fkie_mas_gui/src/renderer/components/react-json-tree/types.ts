@@ -1,5 +1,5 @@
-import React from 'react';
-import { StylingFunction } from 'react-base16-styling';
+import React from "react";
+import { StylingFunction } from "react-base16-styling";
 
 export type Key = string | number;
 
@@ -10,27 +10,19 @@ export type GetItemString = (
   data: unknown,
   itemType: React.ReactNode,
   itemString: string,
-  keyPath: KeyPath,
+  keyPath: KeyPath
 ) => React.ReactNode;
 
 export type LabelRenderer = (
   keyPath: KeyPath,
   nodeType: string,
   expanded: boolean,
-  expandable: boolean,
+  expandable: boolean
 ) => React.ReactNode;
 
-export type ValueRenderer = (
-  valueAsString: unknown,
-  value: unknown,
-  ...keyPath: KeyPath
-) => React.ReactNode;
+export type ValueRenderer = (valueAsString: unknown, value: unknown, ...keyPath: KeyPath) => React.ReactNode;
 
-export type ShouldExpandNodeInitially = (
-  keyPath: KeyPath,
-  data: unknown,
-  level: number,
-) => boolean;
+export type ShouldExpandNodeInitially = (keyPath: KeyPath, data: unknown, level: number) => boolean;
 
 export type PostprocessValue = (value: unknown) => unknown;
 

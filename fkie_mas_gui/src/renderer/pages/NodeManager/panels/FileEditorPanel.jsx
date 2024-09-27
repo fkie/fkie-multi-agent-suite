@@ -457,7 +457,9 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     };
     const matches = model.findMatches(addedComment ? "--" : "- - ", range);
     matches.reverse().map((match) => {
-      model.pushEditOperations(null, [{ forceMoveMarkers: false, range: match.range, text: addedComment ? "- - " : "--" }]);
+      model.pushEditOperations(null, [
+        { forceMoveMarkers: false, range: match.range, text: addedComment ? "- - " : "--" },
+      ]);
     }, true);
   };
 

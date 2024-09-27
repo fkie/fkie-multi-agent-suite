@@ -12,15 +12,15 @@ export default class CmdType extends String {
 
 export function cmdTypeFromString(type: string | undefined | null) {
   switch (type?.toLocaleLowerCase()) {
-    case 'cmd':
+    case "cmd":
       return CmdType.CMD;
-    case 'screen':
+    case "screen":
       return CmdType.SCREEN;
-    case 'log':
+    case "log":
       return CmdType.LOG;
-    case 'echo':
+    case "echo":
       return CmdType.ECHO;
-    case 'terminal':
+    case "terminal":
       return CmdType.TERMINAL;
     default:
       return CmdType.TERMINAL;

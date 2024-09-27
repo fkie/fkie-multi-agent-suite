@@ -52,14 +52,8 @@ function SSHCredentialsPanel() {
   const [port, setPort] = useState(22);
   const [password, setPassword] = useState("");
 
-  const [openInfoPwd, setOpenInfoPwd] = useLocalStorage(
-    "SettingsModal:openInfoPwd",
-    true
-  );
-  const [openInfoCred, setOpenInfoCred] = useLocalStorage(
-    "SettingsModal:openInfoCred",
-    []
-  );
+  const [openInfoPwd, setOpenInfoPwd] = useLocalStorage("SettingsModal:openInfoPwd", true);
+  const [openInfoCred, setOpenInfoCred] = useLocalStorage("SettingsModal:openInfoCred", []);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [filter, setFilter] = useState("");
@@ -160,9 +154,7 @@ function SSHCredentialsPanel() {
             setOpenInfoCred(false);
           }}
         >
-          <AlertTitle>
-            We might configure SSH credentials to run MAS nodes on remote host.
-          </AlertTitle>
+          <AlertTitle>We might configure SSH credentials to run MAS nodes on remote host.</AlertTitle>
           {`The host field must coincide with the provider's host to be able to use these credentials.`}
         </Alert>
       )}

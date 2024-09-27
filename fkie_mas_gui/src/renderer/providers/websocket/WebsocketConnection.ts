@@ -130,17 +130,19 @@ export default class WebsocketConnection extends ProviderConnection {
    */
   subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async (uri, callback) => {
     this.subscriptions[uri] = callback;
-    const result = await this.call("sub", [uri]).catch((err) => {
-      return {
-        result: false,
-        message: err,
-      };
-    }).then((value) => {
-      return {
-        result: value,
-        message: "",
-      };
-    });
+    const result = await this.call("sub", [uri])
+      .catch((err) => {
+        return {
+          result: false,
+          message: err,
+        };
+      })
+      .then((value) => {
+        return {
+          result: value,
+          message: "",
+        };
+      });
     if (!result.result) {
       delete this.subscriptions[uri];
     }

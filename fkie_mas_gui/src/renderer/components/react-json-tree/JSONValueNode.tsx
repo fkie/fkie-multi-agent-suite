@@ -1,11 +1,4 @@
-import type {
-  GetItemString,
-  Key,
-  KeyPath,
-  LabelRenderer,
-  Styling,
-  ValueRenderer,
-} from './types.js';
+import type { GetItemString, Key, KeyPath, LabelRenderer, Styling, ValueRenderer } from "./types.js";
 
 /**
  * Renders simple values (eg. strings, numbers, booleans, etc)
@@ -33,13 +26,11 @@ export default function JSONValueNode({
   valueGetter = (value) => value,
 }: Props) {
   return (
-    <li {...styling('value', nodeType, keyPath)}>
-      <label {...styling(['label', 'valueLabel'], nodeType, keyPath)}>
+    <li {...styling("value", nodeType, keyPath)}>
+      <label {...styling(["label", "valueLabel"], nodeType, keyPath)}>
         {labelRenderer(keyPath, nodeType, false, false)}
       </label>
-      <span {...styling('valueText', nodeType, keyPath)}>
-        {valueRenderer(valueGetter(value), value, ...keyPath)}
-      </span>
+      <span {...styling("valueText", nodeType, keyPath)}>{valueRenderer(valueGetter(value), value, ...keyPath)}</span>
     </li>
   );
 }

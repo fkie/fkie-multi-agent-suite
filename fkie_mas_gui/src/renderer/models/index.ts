@@ -107,6 +107,5 @@ export {
   getFileAbb,
   getFileExtension,
   getFileName,
-  getMaxDiagnosticLevel
+  getMaxDiagnosticLevel,
 };
-

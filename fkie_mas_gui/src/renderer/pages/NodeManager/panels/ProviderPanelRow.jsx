@@ -471,13 +471,7 @@ function ProviderPanelRow({ provider }) {
                     eventOpenComponent(
                       id,
                       `${provider.name()}`,
-                      <SingleTerminalPanel
-                        id={id}
-                        type={type}
-                        providerId={provider.id}
-                        nodeName={""}
-                        cmd=""
-                      />,
+                      <SingleTerminalPanel id={id} type={type} providerId={provider.id} nodeName={""} cmd="" />,
                       true,
                       LAYOUT_TAB_SETS.BORDER_BOTTOM,
                       new LayoutTabConfig(true, type, {

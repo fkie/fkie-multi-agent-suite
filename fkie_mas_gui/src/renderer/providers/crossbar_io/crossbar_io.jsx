@@ -1,4 +1,4 @@
-import autobahn from 'autobahn-browser';
+import autobahn from "autobahn-browser";
 
 /**
  * CrossbarIO class connects to a WAMP Application
@@ -14,14 +14,7 @@ class CrossbarIO {
    * @param {func} onOpen - onOpen callback
    * @param {boolean} useWSS - Use WSS instead of WS
    */
-  constructor(
-    host = 'localhost',
-    port = 8080,
-    onClose = null,
-    onOpen = null,
-    useWSS = false,
-    realm = 'ros',
-  ) {
+  constructor(host = "localhost", port = 8080, onClose = null, onOpen = null, useWSS = false, realm = "ros") {
     this.session = null;
     this.details = null;
     this.connection = null;
@@ -35,8 +28,8 @@ class CrossbarIO {
     this.registrationList = [];
 
     // the URL of the WAMP Router (Crossbar.io)
-    const wsType = this.useWSS ? 'wss' : 'ws';
-    const httpType = this.useWSS ? 'https' : 'http';
+    const wsType = this.useWSS ? "wss" : "ws";
+    const httpType = this.useWSS ? "https" : "http";
     this.wsURI = `${wsType}://${host}:${port}/${wsType}`;
     this.httpURI = `${httpType}://${host}:${port}/${wsType}`;
     this.host = host;
@@ -69,11 +62,11 @@ class CrossbarIO {
       realm: this.realm,
       transports: [
         {
-          type: 'websocket',
+          type: "websocket",
           url: this.wsURI,
         },
         {
-          type: 'longpoll',
+          type: "longpoll",
           url: this.httpURI,
         },
       ],
@@ -107,10 +100,7 @@ class CrossbarIO {
       }
 
       // Max Timeout passed
-      else if (
-        this.connectionClosed ||
-        (timeout && Date.now() - start >= timeout)
-      ) {
+      else if (this.connectionClosed || (timeout && Date.now() - start >= timeout)) {
         resolve(false);
       }
 
@@ -129,20 +119,14 @@ class CrossbarIO {
     try {
       await Promise.all(
         this.subscriptionList.map((subscription) => {
-          console.log(
-            `CROSSBAR_IO: (${this.host}:${this.port}) Closing subscription to: [${subscription.topic}]`,
-          );
+          console.log(`CROSSBAR_IO: (${this.host}:${this.port}) Closing subscription to: [${subscription.topic}]`);
           return subscription.unsubscribe();
-        }),
+        })
       ).catch((error) => {
-        console.error(
-          `CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`,
-        );
+        console.error(`CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`);
       });
     } catch (error) {
-      console.error(
-        `CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`,
-      );
+      console.error(`CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`);
     }
     this.subscriptionList = [];
   };
@@ -152,28 +136,18 @@ class CrossbarIO {
    */
   closeSubscription = async (topic) => {
     try {
-      const toClose = this.subscriptionList.filter(
-        (subscription) => subscription.topic === topic,
-      );
+      const toClose = this.subscriptionList.filter((subscription) => subscription.topic === topic);
       await Promise.all(
         toClose.map((subscription) => {
-          console.log(
-            `CROSSBAR_IO: (${this.host}:${this.port}) Closing subscription to: [${subscription.topic}]`,
-          );
+          console.log(`CROSSBAR_IO: (${this.host}:${this.port}) Closing subscription to: [${subscription.topic}]`);
           return subscription.unsubscribe();
-        }),
+        })
       ).catch((error) => {
-        console.error(
-          `CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`,
-        );
+        console.error(`CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`);
       });
-      this.subscriptionList = this.subscriptionList.filter(
-        (subscription) => subscription.topic !== topic,
-      );
+      this.subscriptionList = this.subscriptionList.filter((subscription) => subscription.topic !== topic);
     } catch (error) {
-      console.error(
-        `CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`,
-      );
+      console.error(`CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`);
     }
   };
 
@@ -184,21 +158,14 @@ class CrossbarIO {
     try {
       await Promise.all(
         this.registrationList.map((registration) => {
-          console.log(
-            `CROSSBAR_IO (${this.host}:${this.port}): Closing registration`,
-            registration,
-          );
+          console.log(`CROSSBAR_IO (${this.host}:${this.port}): Closing registration`, registration);
           return registration.unregister();
-        }),
+        })
       ).catch((error) => {
-        console.error(
-          `CROSSBAR_IO (${this.host}:${this.port}): Error while unregister: [${error}]`,
-        );
+        console.error(`CROSSBAR_IO (${this.host}:${this.port}): Error while unregister: [${error}]`);
       });
     } catch (error) {
-      console.error(
-        `CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`,
-      );
+      console.error(`CROSSBAR_IO (${this.host}:${this.port}): Error while unsubscribe: [${error}]`);
     }
     this.registrationList = [];
   };
@@ -222,10 +189,7 @@ class CrossbarIO {
       }
 
       // close active connection
-      await this.connection.close(
-        'wamp.goodbye.normal',
-        'Closing ROS provider',
-      );
+      await this.connection.close("wamp.goodbye.normal", "Closing ROS provider");
     }
     this.connection = null;
     this.session = null;
@@ -240,9 +204,7 @@ class CrossbarIO {
    */
   subscribe = (uri, callback) => {
     if (!this.connectionIsOpen) return false;
-    if (
-      uri in this.subscriptionList.map((subscription) => subscription.topic)
-    ) {
+    if (uri in this.subscriptionList.map((subscription) => subscription.topic)) {
       console.log(`ignore subscription to ${uri}, already subscribed`);
       return false;
     }
@@ -252,22 +214,16 @@ class CrossbarIO {
         (subscription) => {
           // subscription succeeded, subscription is an instance of autobahn.Subscription
           this.subscriptionList.push(subscription);
-          return [true, subscription, ''];
+          return [true, subscription, ""];
         },
         (error) => {
           // subscription failed, error is an instance of autobahn.Error
-          console.error(
-            `crossbar.subscribe: Subscription to [${uri}] failed: `,
-            error,
-          );
+          console.error(`crossbar.subscribe: Subscription to [${uri}] failed: `, error);
           return [false, null, JSON.stringify(error)];
-        },
+        }
       )
       .catch((error) => {
-        console.error(
-          `crossbar.subscribe: Subscription to [${uri}] failed: catch error: `,
-          error,
-        );
+        console.error(`crossbar.subscribe: Subscription to [${uri}] failed: catch error: `, error);
         return [false, null, JSON.stringify(error)];
       });
   };
@@ -289,23 +245,17 @@ class CrossbarIO {
       .then(
         (publication) => {
           // publish was successful
-          return [true, publication, ''];
+          return [true, publication, ""];
         },
         (error) => {
           // publish failed
-          console.error(
-            `crossbar.publish: Publication of [${uri}] failed: `,
-            error,
-          );
+          console.error(`crossbar.publish: Publication of [${uri}] failed: `, error);
           return [false, null, JSON.stringify(error)];
-        },
+        }
       )
       .catch((error) => {
         // crossbar publish failed
-        console.error(
-          `crossbar.publish: Publication of [${uri}] failed: Catch error: `,
-          error,
-        );
+        console.error(`crossbar.publish: Publication of [${uri}] failed: Catch error: `, error);
         return [false, null, JSON.stringify(error)];
       });
   };
@@ -330,22 +280,16 @@ class CrossbarIO {
         (registration) => {
           // registration succeeded
           this.registrationList.push(registration);
-          return [true, registration, ''];
+          return [true, registration, ""];
         },
         (error) => {
           // registration failed, error is an instance of autobahn.Error
-          console.error(
-            `crossbar.register: Registration of [${uri}] failed: `,
-            error,
-          );
+          console.error(`crossbar.register: Registration of [${uri}] failed: `, error);
           return [false, null, JSON.stringify(error)];
-        },
+        }
       )
       .catch((error) => {
-        console.error(
-          `crossbar.register: Registration of [${uri}] failed: catch error: `,
-          error,
-        );
+        console.error(`crossbar.register: Registration of [${uri}] failed: catch error: `, error);
         return [false, null, JSON.stringify(error)];
       });
   };
@@ -358,19 +302,19 @@ class CrossbarIO {
    * @return {List} List with three items: A boolean success, a incoming response object and a string error if failure.
    */
   call = async (uri, args = []) => {
-    if (!this.connectionIsOpen) return [false, null, 'Connection is closed'];
+    if (!this.connectionIsOpen) return [false, null, "Connection is closed"];
 
     const rCall = await this.session
       .call(uri, args)
       .then(
         (result) => {
           // call was successful
-          return [true, result, ''];
+          return [true, result, ""];
         },
         (error) => {
           // call failed
           return [false, null, JSON.stringify(error)];
-        },
+        }
       )
       .catch((error) => {
         return [false, null, JSON.stringify(error)];
@@ -395,7 +339,7 @@ class CrossbarIO {
     //   "unsupported": No WebSocket transport could be created. For security reasons the WebSocket spec states that there should not be any specific errors for network-related issues, so no details are returned in this case either.
     // details is an object containing the reason and message passed to autobahn.Connection.close(), and thus does not apply in case of "lost" or "unreachable".
     this.connectionIsOpen = false;
-    this.wsUnreachable = reason === 'unreachable';
+    this.wsUnreachable = reason === "unreachable";
 
     if (this.onCloseCallback) this.onCloseCallback(reason, details);
   };

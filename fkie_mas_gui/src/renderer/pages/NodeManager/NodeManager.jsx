@@ -418,7 +418,11 @@ function NodeManager() {
             renderValues.leading = <BorderColorIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "node-logger":
-            renderValues.leading = <SettingsInputCompositeOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize, rotate: "90deg" }} />;
+            renderValues.leading = (
+              <SettingsInputCompositeOutlinedIcon
+                sx={{ fontSize: (theme) => theme.typography.fontSize, rotate: "90deg" }}
+              />
+            );
             break;
           default:
             break;

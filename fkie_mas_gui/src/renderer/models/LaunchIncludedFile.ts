@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import LaunchArgument from './LaunchArgument';
+import LaunchArgument from "./LaunchArgument";
 
 /**
  * Representation of an included file found in given string or path of a file.
@@ -80,7 +80,7 @@ class LaunchIncludedFile {
     rec_depth: number,
     args: LaunchArgument[],
     default_inc_args: LaunchArgument[],
-    size: number,
+    size: number
   ) {
     this.host = host;
     this.path = path;

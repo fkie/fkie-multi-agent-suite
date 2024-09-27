@@ -138,7 +138,7 @@ class RosNode {
   /**
    * group used for visualization
    */
-  capabilityGroup: { namespace?: string, name?: string } = {};
+  capabilityGroup: { namespace?: string; name?: string } = {};
   group: string = "";
 
   /**
@@ -195,7 +195,7 @@ class RosNode {
     services = new Map<string, RosService>(),
     screens = [],
     launchPaths = new Set<string>(),
-    parameters =  new Map<string, RosParameter[]>(),
+    parameters = new Map<string, RosParameter[]>(),
     launchPath = ""
   ) {
     this.id = id;

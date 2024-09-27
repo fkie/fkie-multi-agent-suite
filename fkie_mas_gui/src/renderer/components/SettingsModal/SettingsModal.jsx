@@ -95,7 +95,7 @@ function SettingsModal() {
             <Tab label="About" {...a11yProps(2)} style={{ minHeight: "24px" }} />
           </Tabs>
         </Box>
-        <DialogContent sx={{padding: "16px"}}>
+        <DialogContent sx={{ padding: "16px" }}>
           <TabPanel value={selectedTabIndex} index={0}>
             <GuiPanel />
           </TabPanel>

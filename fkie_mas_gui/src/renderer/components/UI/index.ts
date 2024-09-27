@@ -21,6 +21,5 @@ export {
   colorFromHostname,
   getDiagnosticStyle,
   levelColors,
-  levelColorsWbg
+  levelColorsWbg,
 };
-

@@ -161,13 +161,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     freeSolo: true,
     type: "string",
     default: "capability_group",
-    description: "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter it use a global one or group according to the namespace.",
+    description:
+      "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter it use a global one or group according to the namespace.",
     validate: (value: string) => {
       if ((value as string).startsWith("/")) {
         return (value as string).substring(1);
       }
       return value;
-    }
+    },
   },
   launchHistoryLength: {
     label: "Launch History Length",

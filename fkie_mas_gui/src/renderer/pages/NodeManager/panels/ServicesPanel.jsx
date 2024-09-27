@@ -79,11 +79,11 @@ function ServicesPanel({ initialSearchTerm = "" }) {
           const serviceInfo = newServicesMap.get(key);
           if (serviceInfo) {
             service.provider.map((item) => {
-              serviceInfo.addProvider(item.split("-")[0], item)
-            })
+              serviceInfo.addProvider(item.split("-")[0], item);
+            });
             service.requester.map((item) => {
-              serviceInfo.addRequester(item.split("-")[0], item)
-            })
+              serviceInfo.addRequester(item.split("-")[0], item);
+            });
           } else {
             const serviceInfo = new ServiceExtendedInfo(service, node.providerId, node.providerName);
             service.provider.map((item) => {

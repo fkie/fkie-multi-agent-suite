@@ -172,7 +172,6 @@ class EditorManager {
     }
     return Promise.resolve(null);
   };
-
 }
 
 export default EditorManager;

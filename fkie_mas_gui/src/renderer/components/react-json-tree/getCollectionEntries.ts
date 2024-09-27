@@ -1,9 +1,9 @@
-import type { SortObjectKeys } from './types.js';
+import type { SortObjectKeys } from "./types.js";
 
 function getLength(type: string, collection: unknown) {
-  if (type === 'Object') {
+  if (type === "Object") {
     return Object.keys(collection as object).length;
-  } else if (type === 'Array') {
+  } else if (type === "Array") {
     return (collection as unknown[]).length;
   }
 
@@ -11,7 +11,7 @@ function getLength(type: string, collection: unknown) {
 }
 
 function isIterableMap(collection: unknown) {
-  return typeof (collection as Map<unknown, unknown>).set === 'function';
+  return typeof (collection as Map<unknown, unknown>).set === "function";
 }
 
 function getEntries(
@@ -19,11 +19,11 @@ function getEntries(
   collection: any,
   sortObjectKeys: SortObjectKeys,
   from = 0,
-  to = Infinity,
+  to = Infinity
 ): { entries: { key: string | number; value: unknown }[]; hasMore?: boolean } {
   let res;
 
-  if (type === 'Object') {
+  if (type === "Object") {
     let keys = Object.getOwnPropertyNames(collection);
 
     if (sortObjectKeys) {
@@ -35,15 +35,13 @@ function getEntries(
     res = {
       entries: keys.map((key) => ({ key, value: collection[key] })),
     };
-  } else if (type === 'Array') {
+  } else if (type === "Array") {
     res = {
-      entries: collection
-        .slice(from, to + 1)
-        .map((val: unknown, idx: number) => ({ key: idx + from, value: val })),
+      entries: collection.slice(from, to + 1).map((val: unknown, idx: number) => ({ key: idx + from, value: val })),
     };
   } else {
     let idx = 0;
-    const entries: { key: string | number; value: any; }[] = [];
+    const entries: { key: string | number; value: any }[] = [];
     let done = true;
 
     const isMap = isIterableMap(collection);
@@ -55,14 +53,14 @@ function getEntries(
       }
       if (from <= idx) {
         if (isMap && Array.isArray(item)) {
-          if (typeof item[0] === 'string' || typeof item[0] === 'number') {
+          if (typeof item[0] === "string" || typeof item[0] === "number") {
             entries.push({ key: item[0], value: item[1] });
           } else {
             entries.push({
               key: `[entry ${idx}]`,
               value: {
-                '[key]': item[0],
-                '[value]': item[1],
+                "[key]": item[0],
+                "[value]": item[1],
               },
             });
           }
@@ -83,7 +81,7 @@ function getEntries(
 }
 
 function getRanges(from: number, to: number, limit: number) {
-  const ranges: { from: number; to: number; }[] = [];
+  const ranges: { from: number; to: number }[] = [];
   while (to - from > limit * limit) {
     limit = limit * limit;
   }
@@ -100,14 +98,9 @@ export default function getCollectionEntries(
   sortObjectKeys: SortObjectKeys,
   limit: number,
   from = 0,
-  to = Infinity,
+  to = Infinity
 ) {
-  const getEntriesBound = getEntries.bind(
-    null,
-    type,
-    collection,
-    sortObjectKeys,
-  );
+  const getEntriesBound = getEntries.bind(null, type, collection, sortObjectKeys);
 
   if (!limit) {
     return getEntriesBound().entries;
@@ -116,7 +109,7 @@ export default function getCollectionEntries(
   const isSubset = to < Infinity;
   const length = Math.min(to - from, getLength(type, collection));
 
-  if (type !== 'Iterable') {
+  if (type !== "Iterable") {
     if (length <= limit || limit < 7) {
       return getEntriesBound(from, to).entries;
     }
@@ -127,12 +120,10 @@ export default function getCollectionEntries(
   }
 
   let limitedEntries;
-  if (type === 'Iterable') {
+  if (type === "Iterable") {
     const { hasMore, entries } = getEntriesBound(from, from + limit - 1);
 
-    limitedEntries = hasMore
-      ? [...entries, ...getRanges(from + limit, from + 2 * limit - 1, limit)]
-      : entries;
+    limitedEntries = hasMore ? [...entries, ...getRanges(from + limit, from + 2 * limit - 1, limit)] : entries;
   } else {
     limitedEntries = isSubset
       ? getRanges(from, to, limit)

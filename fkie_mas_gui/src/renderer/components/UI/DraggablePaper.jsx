@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import React from "react";
 import Draggable from "react-draggable";
 
-function DraggablePaper({ dialogRef=null, ...props }) {
+function DraggablePaper({ dialogRef = null, ...props }) {
   return (
     <Draggable nodeRef={dialogRef} handle=".handle">
       <Paper {...props} />

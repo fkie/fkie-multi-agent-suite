@@ -100,4 +100,3 @@ class SystemInfo {
 
 export { SystemInfo };
 export type { ISystemInfo };
-

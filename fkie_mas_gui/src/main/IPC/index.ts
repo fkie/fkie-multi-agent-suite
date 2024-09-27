@@ -165,7 +165,6 @@ export {
   ROSInfo,
   ShutdownManager,
   SubscriberManager,
-  TerminalManager
+  TerminalManager,
 };
 export type { IROSInfo, ISystemInfo };
-

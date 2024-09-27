@@ -1,11 +1,11 @@
-import JSONNestedNode from './JSONNestedNode.js';
-import type { CommonInternalProps } from './types.js';
+import JSONNestedNode from "./JSONNestedNode.js";
+import type { CommonInternalProps } from "./types.js";
 
 // Returns the "n Items" string for this node,
 // generating and caching it if it hasn't been created yet.
 function createItemString(data: unknown) {
   const len = Object.getOwnPropertyNames(data).length;
-  return `${len} ${len !== 1 ? 'keys' : 'key'}`;
+  return `${len} ${len !== 1 ? "keys" : "key"}`;
 }
 
 interface Props extends CommonInternalProps {
@@ -20,7 +20,7 @@ export default function JSONObjectNode({ data, ...props }: Props) {
       {...props}
       data={data}
       nodeType="Object"
-      nodeTypeIndicator={props.nodeType === 'Error' ? 'Error()' : '{}'}
+      nodeTypeIndicator={props.nodeType === "Error" ? "Error()" : "{}"}
       createItemString={createItemString}
       expandable={Object.getOwnPropertyNames(data).length > 0}
     />
