@@ -18,7 +18,6 @@ import { CmdType } from "../../../providers";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import TopicEchoPanel from "./TopicEchoPanel";
 import TopicPublishPanel from "./TopicPublishPanel";
 
 class TopicExtendedInfo {
