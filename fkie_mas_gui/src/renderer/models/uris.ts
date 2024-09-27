@@ -55,5 +55,4 @@ const URI = {
   ROS_SYSTEM_GET_URI: "ros.system.get_uri",
 };
 
-// eslint-disable-next-line import/prefer-default-export
 export default URI;

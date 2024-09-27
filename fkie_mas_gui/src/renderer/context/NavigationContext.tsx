@@ -1,10 +1,10 @@
 import React, { createContext, useMemo, useState } from "react";
 
 export interface INavigationContext {
-  selectedNodes: any[];
-  setSelectedNodes?: (nodes: any[]) => void;
-  selectedProviders: any[];
-  setSelectedProviders?: (providers: any[]) => void;
+  selectedNodes: string[];
+  setSelectedNodes?: (nodes: string[]) => void;
+  selectedProviders: string[];
+  setSelectedProviders?: (providers: string[]) => void;
 }
 
 export const DEFAULT = {
@@ -20,8 +20,8 @@ interface INavigationProvider {
 export const NavigationContext = createContext<INavigationContext>(DEFAULT);
 
 export function NavigationProvider({ children }: INavigationProvider): ReturnType<React.FC<INavigationProvider>> {
-  const [selectedNodes, setSelectedNodes] = useState<any[]>(DEFAULT.selectedNodes);
-  const [selectedProviders, setSelectedProviders] = useState<any[]>(DEFAULT.selectedProviders);
+  const [selectedNodes, setSelectedNodes] = useState<string[]>(DEFAULT.selectedNodes);
+  const [selectedProviders, setSelectedProviders] = useState<string[]>(DEFAULT.selectedProviders);
 
   const attributesMemo = useMemo(
     () => ({

@@ -32,13 +32,6 @@ import {
 import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
 import { EVENT_EDITOR_SELECT_RANGE } from "../../../utils/events";
 
-const layoutCSS = {
-  height: "100%",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
 function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fileRange }) {
   const monaco = Monaco.useMonaco();
   const settingsCtx = useContext(SettingsContext);
@@ -340,11 +333,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     if (ownUriPaths.includes(changedUri)) {
       // ignore if we saved the file
       if (savedFiles.includes(changedUri)) {
-        setSavedFiles(
-          savedFiles.filter((uri) => {
-            uri !== changedUri;
-          })
-        );
+        setSavedFiles(savedFiles.filter((uri) => uri !== changedUri));
         return;
       }
       const provider = rosCtx.getProviderById(providerId);

@@ -1,3 +1,4 @@
+import { JSONObject } from "@/types";
 import Fade from "@mui/material/Fade";
 import { VariantType, useSnackbar } from "notistack";
 import React, { createContext, useContext, useMemo, useState } from "react";
@@ -17,7 +18,12 @@ export interface ILoggingContext {
   warn: (description: string, details: string, showSnackbar?: boolean) => void;
   error: (description: string, details: string, showSnackbar?: boolean) => void;
   clearLogs?: () => void;
-  debugInterface: (uri: string, result: any, details?: any, providerName?: string) => void;
+  debugInterface: (
+    uri: string,
+    result: JSONObject | string,
+    details?: JSONObject | string,
+    providerName?: string
+  ) => void;
 }
 
 export interface ILoggingProvider {
@@ -57,7 +63,8 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     // add new log event
     setLogs((prevLogs) => [new LogEvent(level, description, details), ...prevLogs]);
     // check settings logger level
-    if (!settingsCtx.get("guiLogLevel")?.includes(level)) return;
+    const value = settingsCtx.get("guiLogLevel");
+    if (Array.isArray(value) && !value.includes(level)) return;
 
     if (level === LoggingLevel.ERROR) {
       console.error(level, description, details);
@@ -118,29 +125,37 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     setLogs(() => []);
   };
 
-  const debugInterface = (uri: string, msg: any, details?: any, providerName?: string) => {
+  const debugInterface = (
+    uri: string,
+    msg: JSONObject | string,
+    details?: JSONObject | string,
+    providerName?: string
+  ) => {
     // check settings to debug by uri
 
-    let parsedMsg = null;
+    let parsedMsg: JSONObject | string = {};
     try {
       if (msg && typeof msg === "string" && msg.length > 0) parsedMsg = JSON.parse(msg);
       else parsedMsg = msg;
-    } catch (errorParse) {
+    } catch (errorParse: unknown) {
+      warn(`[URI] ${providerName} (${uri}): error while read debug message`, JSON.stringify(errorParse));
       parsedMsg = msg;
     }
 
-    let parseDetails = "";
+    let parseDetails: JSONObject | string = {};
     if (details) {
       try {
         if (typeof details === "string" && details.length > 0) {
           parseDetails = JSON.parse(details);
         } else parseDetails = details;
-      } catch (errorParse) {
+      } catch (errorParse: unknown) {
+        warn(`[URI] ${providerName} (${uri}): error while read debug details`, JSON.stringify(errorParse));
         parseDetails = details;
       }
     }
 
-    if (settingsCtx.get("debugByUri").includes(uri)) {
+    const value = settingsCtx.get("debugByUri");
+    if (Array.isArray(value) && value.includes(uri)) {
       debug(`[URI] ${providerName} (${uri}): ${parseDetails}}`, JSON.stringify(parsedMsg));
     }
   };

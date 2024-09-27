@@ -1,4 +1,3 @@
-import { Brightness1 } from "@mui/icons-material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -14,7 +13,6 @@ import { emitCustomEvent } from "react-custom-events";
 import { SearchBar, TopicTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { CmdType } from "../../../providers";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";

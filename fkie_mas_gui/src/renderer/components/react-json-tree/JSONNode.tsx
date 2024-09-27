@@ -23,7 +23,6 @@ export default function JSONNode({
 
   const simpleNodeProps = {
     getItemString,
-    key: keyPath[0],
     keyPath,
     labelRenderer,
     nodeType,
@@ -52,23 +51,23 @@ export default function JSONNode({
     case "Set":
       return <JSONIterableNode {...nestedNodeProps} />;
     case "String":
-      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw: string) => `"${raw}"`} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={(raw: string) => `"${raw}"`} />;
     case "Number":
-      return <JSONValueNode {...simpleNodeProps} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} />;
     case "Boolean":
-      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw) => (raw ? "true" : "false")} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={(raw) => (raw ? "true" : "false")} />;
     case "Date":
-      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw) => raw.toISOString()} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={(raw) => raw.toISOString()} />;
     case "Null":
-      return <JSONValueNode {...simpleNodeProps} valueGetter={() => "null"} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={() => "null"} />;
     case "Undefined":
-      return <JSONValueNode {...simpleNodeProps} valueGetter={() => "undefined"} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={() => "undefined"} />;
     case "Function":
     case "Symbol":
-      return <JSONValueNode {...simpleNodeProps} valueGetter={(raw) => raw.toString()} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={(raw) => raw.toString()} />;
     case "Custom":
-      return <JSONValueNode {...simpleNodeProps} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} />;
     default:
-      return <JSONValueNode {...simpleNodeProps} valueGetter={() => `<${nodeType}>`} />;
+      return <JSONValueNode key={keyPath[0]} {...simpleNodeProps} valueGetter={() => `<${nodeType}>`} />;
   }
 }

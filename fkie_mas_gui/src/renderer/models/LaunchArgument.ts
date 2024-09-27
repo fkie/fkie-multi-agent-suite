@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+
 /**
  * LaunchArgument models arguments for launch files.
  */
@@ -13,7 +14,7 @@ class LaunchArgument {
    */
   value: string;
 
-  default_value: any;
+  default_value: unknown;
 
   description: string;
 
@@ -24,14 +25,14 @@ class LaunchArgument {
    *
    * @param {string} name - argument name.
    * @param {string} value - argument value.
-   * @param {any} default_value - default argument value.
+   * @param {unknown} default_value - default argument value.
    * @param {string} description - argument description.
    * @param {string[]} choices - possible values.
    */
   constructor(
     name: string,
     value: string,
-    default_value: any = undefined,
+    default_value: unknown = undefined,
     description: string = "",
     choices: string[] = []
   ) {

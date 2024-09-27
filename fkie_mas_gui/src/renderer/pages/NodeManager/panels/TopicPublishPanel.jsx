@@ -45,7 +45,6 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
   const [provider, setProvider] = useState(null);
   const [inputElements, setInputElements] = useState(null);
 
-  const [startPublisherStatus, setStartPublisherStatus] = useState("");
   const [startPublisherDescription, setStartPublisherDescription] = useState("");
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
 
@@ -286,7 +285,6 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
   }, [searchTerm]);
 
   const handleStartPublisher = async () => {
-    setStartPublisherStatus("active");
     setStartPublisherDescription("Starting publisher...");
     setStartPublisherIsSubmitting(true);
 
@@ -326,7 +324,6 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
     setTimeout(() => {
       setStartPublisherIsSubmitting(false);
       setStartPublisherDescription("");
-      setStartPublisherStatus("inactive");
     }, 5000);
   };
 
@@ -380,6 +377,7 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
                   const re = new RegExp(value, "i");
                   setSearchTerm(value);
                 } catch (error) {
+                  console.log(`error while search: ${error}`);
                   // TODO: visualize error
                 }
               }}

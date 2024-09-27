@@ -383,7 +383,7 @@ function HostTreeView({
    * Callback when the event of reloading a launch file is triggered
    */
   const onReloadLaunch = useCallback(
-    async (providerId, path, masteruri) => {
+    async (providerId, path, _masteruri) => {
       await rosCtx.reloadLaunchFile(providerId, path);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -654,13 +654,9 @@ function HostTreeView({
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           const { providerId, nodeTree } = item;
           let providerIsAvailable = false;
-          let providerIsReady = false;
           const p = rosCtx.getProviderById(providerId);
           if (p && p.isAvailable()) {
             providerIsAvailable = true;
-          }
-          if (p && p.isReady()) {
-            providerIsReady = true;
           }
           if (!p) {
             return "";

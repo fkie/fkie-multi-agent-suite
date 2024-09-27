@@ -1,4 +1,4 @@
-import JSONObject from "../models/JsonObject";
+import { JSONObject } from "@/types";
 
 export interface IProviderTimestamp {
   timestamp: number;
@@ -46,8 +46,8 @@ export default class ProviderConnection {
   /** Default connection timeout in milliseconds */
   timeout: number = 5000;
 
-  open: () => Promise<any> = () => {
-    return Promise.resolve({});
+  open: () => Promise<boolean> = () => {
+    return Promise.resolve(false);
   };
 
   close: () => Promise<void> = () => {
@@ -72,9 +72,9 @@ export default class ProviderConnection {
    * Make a request to remote server.
    *
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
-   * @param {Object} param - Arguments passed to the call
+   * @param {unknown} param - Arguments passed to the call
    */
-  call: (uri: string, param: any[]) => Promise<JSONObject> = async () => {
+  call: (uri: string, param: unknown[]) => Promise<JSONObject> = async () => {
     throw Error("not implemented");
   };
 

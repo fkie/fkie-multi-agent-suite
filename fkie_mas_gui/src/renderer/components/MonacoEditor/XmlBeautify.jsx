@@ -75,8 +75,8 @@ export default class XmlBeautify {
     var ar = xml
         .replace(/>\s{0,}</g, "><")
         .replace(/</g, "~::~<")
-        .replace(/\s*xmlns\:/g, "~::~xmlns:")
-        .replace(/\s*xmlns\=/g, "~::~xmlns=")
+        .replace(/\s*xmlns:/g, "~::~xmlns:")
+        .replace(/\s*xmlns=/g, "~::~xmlns=")
         .split("~::~"),
       len = ar.length,
       inComment = false,
@@ -104,7 +104,7 @@ export default class XmlBeautify {
       else if (
         /^<\w/.exec(ar[ix - 1]) &&
         /^<\/\w/.exec(ar[ix]) &&
-        /^<[\w:\-\.\,]+/.exec(ar[ix - 1]) == /^<\/[\w:\-\.\,]+/.exec(ar[ix])[0].replace("/", "")
+        /^<[\w:\-.,]+/.exec(ar[ix - 1]) == /^<\/[\w:\-.,]+/.exec(ar[ix])[0].replace("/", "")
       ) {
         str += ar[ix];
         if (!inComment) deep--;
@@ -130,7 +130,7 @@ export default class XmlBeautify {
         str += shift[deep] + ar[ix];
       }
       // xmlns //
-      else if (ar[ix].search(/xmlns\:/) > -1 || ar[ix].search(/xmlns\=/) > -1) {
+      else if (ar[ix].search(/xmlns:/) > -1 || ar[ix].search(/xmlns=/) > -1) {
         str += shift[deep] + ar[ix];
       } else {
         str += ar[ix];

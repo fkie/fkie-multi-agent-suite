@@ -42,7 +42,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
 
-  const [selectedProvider, setSelectedProvider] = useState(defaultProvider);
+  const [selectedProvider] = useState(defaultProvider);
   const [currentProvider, setCurrentProvider] = useState(null);
   const [subscribed, setSubscribed] = useState(false);
   const [topicName, setTopic] = useState(defaultTopic);
@@ -90,7 +90,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   useCustomEventListener(
     `${EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX}_${topicName}`,
     (data) => {
-      const { provider, event } = data;
+      const { event } = data;
       if (event === undefined) return;
       event.key = uuid();
       if (event?.data?.header?.seq) {

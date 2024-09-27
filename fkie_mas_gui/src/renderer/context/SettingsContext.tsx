@@ -1,3 +1,4 @@
+import { JSONObject, JSONValue } from "@/types";
 import React, { createContext, useMemo, useReducer } from "react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import URI from "../models/uris";
@@ -21,9 +22,9 @@ export const getDefaultPortFromRos: (connectionType: string, rosVersion: string,
 export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
   changed: number;
-  get: (attribute: string) => any;
-  getDefault: (attribute: string) => any;
-  set: (attribute: string, value: any, settingsCtx?: ISettingsContext) => void;
+  get: (attribute: string) => JSONValue | undefined;
+  getDefault: (attribute: string) => JSONValue | undefined;
+  set: (attribute: string, value: JSONValue, settingsCtx?: ISettingsContext) => void;
   getParamList: () => { name: string; param: ISettingsParam }[];
 }
 
@@ -53,18 +54,18 @@ export const DEFAULT_SETTINGS = {
 
 export interface ISettingsParam {
   label?: string;
-  default: any;
+  default: JSONValue;
   type: string;
   placeholder?: string;
-  options?: string | any[];
+  options?: string | JSONValue[];
   freeSolo?: boolean;
   readOnly?: boolean;
   description?: string;
   group?: string;
   min?: number;
   max?: number;
-  cb?: (get: (attribute: string) => any, set: (attribute: string, value: any) => void) => void;
-  validate?: (value: any) => any;
+  cb?: (get: (attribute: string) => JSONValue, set: (attribute: string, value: JSONValue) => void) => void;
+  validate?: (value: JSONValue) => JSONValue;
 }
 
 export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
@@ -73,7 +74,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: false,
     type: "boolean",
     description: "",
-    cb: (get: (attribute: string) => any, set: (attribute: string, value: any) => void) => {
+    cb: (get: (attribute: string) => JSONValue, set: (attribute: string, value: JSONValue) => void) => {
       const newValue = get("useDarkMode");
       set("color", newValue ? DEFAULT_SETTINGS.fgColorForDarkMode : DEFAULT_SETTINGS.fgColor);
       set("backgroundColor", newValue ? DEFAULT_SETTINGS.bgColorForDarkMod : DEFAULT_SETTINGS.bgColor);
@@ -163,7 +164,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: "capability_group",
     description:
       "ROS1 parameter that specifies the group of the node. If the ROS node does not have this parameter it use a global one or group according to the namespace.",
-    validate: (value: string) => {
+    validate: (value: JSONValue) => {
       if ((value as string).startsWith("/")) {
         return (value as string).substring(1);
       }
@@ -312,7 +313,7 @@ export const SettingsContext = createContext<ISettingsContext>(DEFAULT_SETTINGS)
 export function SettingsProvider({ children }: ISettingProvider): ReturnType<React.FC<ISettingProvider>> {
   const { MIN_VERSION_DAEMON } = DEFAULT_SETTINGS;
   const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
-  const [config, setConfig] = useLocalStorage<any>("SettingsContext:config", {});
+  const [config, setConfig] = useLocalStorage<JSONObject>("SettingsContext:config", {});
 
   const get = (attribute: string) => {
     if (attribute in config) {
@@ -331,7 +332,7 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
     throw new Error(`Configuration attribute ${attribute} not found!`);
   };
 
-  const set = (attribute: string, value: any) => {
+  const set = (attribute: string, value: JSONValue) => {
     if (SETTINGS_DEF[attribute]) {
       // TODO: check for valid value
       config[attribute] = value;

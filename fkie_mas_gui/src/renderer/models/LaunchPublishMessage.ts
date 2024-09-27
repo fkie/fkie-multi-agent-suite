@@ -1,4 +1,6 @@
 /* eslint-disable camelcase */
+import { JSONObject } from "@/types";
+
 /**
  * LaunchPublishMessage models the message to publish to a ROS topic.
  */
@@ -16,7 +18,7 @@ class LaunchPublishMessage {
   /**
    * Dictionary structure of the ROS message as JSON string.
    */
-  data: any | null;
+  data: JSONObject | null;
 
   /**
    * Publishing rate (hz), only if once and latched is False.
@@ -53,7 +55,7 @@ class LaunchPublishMessage {
    *
    * @param {string} topic_name - The ROS topic name.
    * @param {string} msg_type - Type of the message.
-   * @param {any | null} data - Dictionary structure of the ROS message as JSON string.
+   * @param {JSONObject | null} data - Dictionary structure of the ROS message as JSON string.
    * @param {number} rate - Publishing rate (hz), only if once and latched is False.
    * @param {boolean} once - Publish one message and exit.
    * @param {boolean} latched - Enable latching.
@@ -64,7 +66,7 @@ class LaunchPublishMessage {
   constructor(
     topic_name: string,
     msg_type: string,
-    data: any | null,
+    data: JSONObject | null,
     rate: number,
     once: boolean,
     latched: boolean,

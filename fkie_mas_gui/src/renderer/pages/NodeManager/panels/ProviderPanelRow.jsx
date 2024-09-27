@@ -370,17 +370,6 @@ function ProviderPanelRow({ provider }) {
       return `${(dp * 1000.0).toFixed(0)}ms`;
     }
     return `${dp.toFixed(0)}s`;
-    {
-      provider.currentDelay < 0.1 ? provider.currentDelay.toFixed(3) : provider.currentDelay.toFixed(2);
-    }
-
-    if (delay < 0.1) {
-      return "green";
-    }
-    if (delay < 0.5) {
-      return "orange";
-    }
-    return "red";
   }, []);
 
   const createTableRow = useMemo(() => {

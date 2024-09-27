@@ -500,7 +500,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           return true;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         logCtx.debug(
           `Could not initialize provider [${provider.name()}] (${
             provider.type
@@ -523,7 +523,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         logCtx.error(error, "");
         provider.errorDetails = `${error}`;
         provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
-      } catch (error: any) {
+      } catch (error: unknown) {
         logCtx.debug(
           `Could not initialize provider [${provider.name()}] (${
             provider.type
@@ -559,7 +559,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           logCtx.debug(`refreshProvider ${provider.name()} failed`, JSON.stringify(err), false);
           connectToProvider(provider);
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // ignore errors while refresh
         logCtx.debug(`refreshProviderList failed`, JSON.stringify(error), false);
       }

@@ -24,9 +24,10 @@ let autoUpdateManager: AutoUpdateManager | null = null;
 let dialogManager: DialogManager | null = null;
 let shutdownManager: ShutdownManager | null = null;
 
+import * as sourceMap from "source-map-support";
+
 if (process.env.NODE_ENV === "production") {
-  const sourceMapSupport = require("source-map-support");
-  sourceMapSupport.install();
+  sourceMap.install();
 }
 
 // const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'

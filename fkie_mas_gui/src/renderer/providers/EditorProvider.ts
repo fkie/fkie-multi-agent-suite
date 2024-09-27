@@ -1,8 +1,8 @@
+import { JSONObject } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
 import { ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import { URI } from "../models";
-import JSONObject from "../models/JsonObject";
 import { ConnectionState } from "./ConnectionState";
 import { EventProviderLaunchLoaded } from "./events";
 import { EVENT_PROVIDER_LAUNCH_LOADED } from "./eventTypes";

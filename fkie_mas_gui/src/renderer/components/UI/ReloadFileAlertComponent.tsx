@@ -145,4 +145,6 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
   );
 });
 
+ReloadFileAlertComponent.displayName = "ReloadFileAlertComponent";
+
 export default ReloadFileAlertComponent;

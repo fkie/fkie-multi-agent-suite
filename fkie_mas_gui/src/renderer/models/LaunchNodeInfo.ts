@@ -21,13 +21,13 @@ class LaunchNodeInfo {
 
   args: string | null;
 
-  remap_args: any[] | null;
+  remap_args: unknown[] | null;
 
-  parameters: any[] | null;
+  parameters: unknown[] | null;
 
-  env: any[] | null;
+  env: unknown[] | null;
 
-  additional_env: any[] | null;
+  additional_env: unknown[] | null;
 
   launch_prefix: string | null;
 
@@ -43,15 +43,15 @@ class LaunchNodeInfo {
 
   sigkill_timeout: number | null;
 
-  on_exit: any[] | null;
+  on_exit: unknown[] | null;
 
   required: boolean | null;
 
   file_name: string | null;
 
-  file_range: number | null;
+  file_range: unknown | null;
 
-  launch_context_arg: any[] | null;
+  launch_context_arg: unknown[] | null;
 
   launch_name: string | null;
 
@@ -71,10 +71,10 @@ class LaunchNodeInfo {
     respawn: boolean | null = null,
     respawn_delay: number | null = null,
     args: string | null = null,
-    remap_args: any[] | null = null,
-    parameters: any[] | null = null,
-    env: any[] | null = null,
-    additional_env: any[] | null = null,
+    remap_args: unknown[] | null = null,
+    parameters: unknown[] | null = null,
+    env: unknown[] | null = null,
+    additional_env: unknown[] | null = null,
     launch_prefix: string | null = null,
     output: string | null = null,
     output_format: string | null,
@@ -82,11 +82,11 @@ class LaunchNodeInfo {
     cwd: string | null,
     sigterm_timeout: number | null,
     sigkill_timeout: number | null,
-    on_exit: any[] | null,
+    on_exit: unknown[] | null,
     required: boolean | null = null,
     file_name: string | null = null,
-    file_range: any | null = null,
-    launch_context_arg: any[] | null = null,
+    file_range: unknown | null = null,
+    launch_context_arg: unknown[] | null = null,
     launch_name: string | null = null,
     composable_container: string | null
   ) {

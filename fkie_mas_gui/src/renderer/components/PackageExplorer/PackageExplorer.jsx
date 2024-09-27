@@ -9,9 +9,8 @@ import LoggingContext from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
-import { getBaseName, getFileExtension, getFileName } from "../../models";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
-import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
+import { getFileExtension, getFileName } from "../../models";
+import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
 import LaunchFileModal from "../LaunchFileModal/LaunchFileModal";
 import Tag from "../UI/Tag";
@@ -47,7 +46,6 @@ function PackageExplorer({ packageList, selectedProvider }) {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const [launchFileHistory, setLaunchFileHistory] = useLocalStorage("PackageExplorer:launchFileHistory", []);
@@ -291,7 +289,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
    * Callback when files are double-clicked by the user
    */
   const onFileDoubleClick = useCallback(
-    (label, itemId, ctrlKey, shiftKey, altKey) => {
+    (label, itemId, ctrlKey, shiftKey) => {
       const callbackFile = packageItemList.find((item) => item.id === itemId);
       if (!callbackFile) return;
 

@@ -158,7 +158,7 @@ function LaunchFilePanel({ launchContent }) {
                 height: 150,
               }}
             >
-              <VariableSizeList height={150} width="100%" itemSize={(index) => 30} itemCount={nodes.length}>
+              <VariableSizeList height={150} width="100%" itemSize={() => 30} itemCount={nodes.length}>
                 {renderNodeRow}
               </VariableSizeList>
             </Box>

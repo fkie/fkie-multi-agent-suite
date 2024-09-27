@@ -1,6 +1,6 @@
+import { JSONObject } from "@/types";
 import { ILoggingContext } from "../../context/LoggingContext";
 import { getDefaultPortFromRos } from "../../context/SettingsContext";
-import JSONObject from "../../models/JsonObject";
 import ProviderConnection, { IResult } from "../ProviderConnection";
 
 interface IQueueItem {
@@ -71,7 +71,7 @@ export default class WebsocketConnection extends ProviderConnection {
     return this.rpcId;
   };
 
-  open: () => Promise<any> = () => {
+  open: () => Promise<boolean> = () => {
     if (this.websocket !== null) return Promise.resolve(true);
     this.websocket = new WebSocket(this.uri);
     this.websocket.addEventListener("open", () => {
@@ -92,7 +92,7 @@ export default class WebsocketConnection extends ProviderConnection {
       this.handleMessage(event.data);
     });
     const start = Date.now();
-    const waitForConnection = (resolve: (value: any) => void, reject: (reason?: any) => void) => {
+    const waitForConnection = (resolve: (value: boolean) => void, reject: (reason?: boolean) => void) => {
       // connection available :)
       if (this.connected()) {
         resolve(true);
@@ -155,7 +155,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
    * @param {Object} params - Arguments passed to the call
    */
-  call: (uri: string, params: any[]) => Promise<JSONObject> = async (uri, params) => {
+  call: (uri: string, params: unknown[]) => Promise<JSONObject> = async (uri, params) => {
     return new Promise((resolve, reject) => {
       if (!this.connected()) reject(new Error(`[${this.uri}] socket not ready`));
 

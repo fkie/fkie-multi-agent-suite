@@ -6,7 +6,6 @@ import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import DvrIcon from "@mui/icons-material/Dvr";
-import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import LocalPlayOutlinedIcon from "@mui/icons-material/LocalPlayOutlined";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -30,7 +29,6 @@ import {
   Stack,
   ToggleButton,
   Tooltip,
-  Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
@@ -39,29 +37,16 @@ import ListSelectionModal from "../../../components/SelectionModal/ListSelection
 import { LoggingContext } from "../../../context/LoggingContext";
 import { NavigationContext } from "../../../context/NavigationContext";
 import { RosContext } from "../../../context/RosContext";
-import { SSHContext } from "../../../context/SSHContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useQueue from "../../../hooks/useQueue";
-import { RosNode, RosNodeStatus, getBaseName } from "../../../models";
+import { RosNode, RosNodeStatus } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
-import { xor } from "../../../utils";
-import {
-  EVENT_EDITOR_SELECT_RANGE,
-  EVENT_OPEN_COMPONENT,
-  eventEditorSelectRange,
-  eventOpenComponent,
-} from "../../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import FileEditorPanel from "./FileEditorPanel";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
-import SingleTerminalPanel from "./SingleTerminalPanel";
-
-// TODO: Add settings for this
-// const IGNORED_NODES = ['rostopic_'];
-const IGNORED_NODES = [];
 
 function HostTreeViewPanel() {
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
@@ -69,7 +54,6 @@ function HostTreeViewPanel() {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const logCtx = useContext(LoggingContext);
-  const SSHCtx = useContext(SSHContext);
   const navCtx = useContext(NavigationContext);
 
   // state variables
@@ -77,8 +61,6 @@ function HostTreeViewPanel() {
   const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState(
     settingsCtx.get("showButtonsForKeyModifiers")
   );
-  const [screenOpenExternal, setScreenOpenExternal] = useState(settingsCtx.get("screenOpenExternal"));
-  const [logOpenExternal, setLogOpenExternal] = useState(settingsCtx.get("logOpenExternal"));
   const [filterText, setFilterText] = useState("");
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
@@ -111,8 +93,6 @@ function HostTreeViewPanel() {
   useEffect(() => {
     setShowRemoteNodes(settingsCtx.get("showRemoteNodes"));
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers"));
-    setScreenOpenExternal(settingsCtx.get("screenOpenExternal"));
-    setLogOpenExternal(settingsCtx.get("logOpenExternal"));
   }, [settingsCtx, settingsCtx.changed]);
 
   /**
@@ -1319,7 +1299,7 @@ function HostTreeViewPanel() {
               size="medium"
               aria-label="Log Level"
               disabled={selectedNodes.length === 0}
-              onClick={(event) => {
+              onClick={() => {
                 const loggers = []; // {node : string, callback: () => void}
                 getSelectedNodes().forEach((node) => {
                   loggers.push({

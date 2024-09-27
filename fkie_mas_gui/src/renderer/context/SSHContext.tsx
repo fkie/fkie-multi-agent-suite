@@ -242,8 +242,8 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
       setCredentials((previousCredentials: ICredential[]) => {
         return [...previousCredentials, credential];
       });
-    } catch (error: any) {
-      return { result: false, message: error.message };
+    } catch (error: unknown) {
+      return { result: false, message: JSON.stringify(error) };
     }
 
     return { result: true, message: "" };

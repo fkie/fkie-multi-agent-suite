@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
+import { JSONObject } from "@/types";
 import { ILoggingContext } from "../../context/LoggingContext";
 import { getDefaultPortFromRos } from "../../context/SettingsContext";
-import JSONObject from "../../models/JsonObject";
 import ProviderConnection, { IResult } from "../ProviderConnection";
 import CrossbarIO from "./crossbar_io";
 
@@ -36,7 +36,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
     this.host = this.crossbar.host;
   }
 
-  open: () => Promise<any> = () => {
+  open: () => Promise<boolean> = () => {
     return this.crossbar.open(this.timeout);
   };
 
@@ -80,7 +80,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
    * @param {Object} args - Arguments passed to the call
    */
-  call: (uri: string, params: any[]) => Promise<JSONObject> = async (uri, params) => {
+  call: (uri: string, params: unknown[]) => Promise<JSONObject> = async (uri, params) => {
     const r = await this.crossbar.call(uri, params);
     if (r[0]) {
       return Promise.resolve(JSON.parse(r[1]));

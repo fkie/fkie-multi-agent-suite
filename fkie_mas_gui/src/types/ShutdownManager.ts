@@ -3,6 +3,8 @@ const ShutdownManagerEvents = {
   quitGui: "ShutdownManager:quitGui",
 };
 
+type TerminateCallback = () => void;
+
 interface IShutdownManager {
   registerHandlers: () => void;
   sendTerminateSubprocesses: () => void;
@@ -10,9 +12,10 @@ interface IShutdownManager {
 }
 
 type TShutdownManager = {
-  onTerminateSubprocesses: (callback: Function) => void;
+  onTerminateSubprocesses: (callback: TerminateCallback) => void;
   quitGui: () => void;
 };
 
 export { ShutdownManagerEvents };
-export type { IShutdownManager, TShutdownManager };
+export type { IShutdownManager, TShutdownManager, TerminateCallback };
+

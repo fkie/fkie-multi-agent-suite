@@ -1,4 +1,3 @@
-import ClearIcon from "@mui/icons-material/Clear";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {

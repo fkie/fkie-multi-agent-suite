@@ -1,4 +1,6 @@
 /* eslint-disable camelcase */
+import { JSONObject } from "@/types";
+
 /**
  * SubscriberEvent models a received ROS message and statistics for a topic.
  */
@@ -18,7 +20,7 @@ class SubscriberEvent {
   /**
    * Dictionary of the ROS message as JSON string.
    */
-  data: any | null;
+  data: JSONObject | null;
 
   /**
    * Count of received messages since the start.
@@ -62,7 +64,7 @@ class SubscriberEvent {
    *
    * @param {string} topic - Name of the ROS topic to listen to (e.g. '/chatter').
    * @param {string} message_type - Type of the ROS message (e.g. 'std_msgs/msg/String')
-   * @param {any | null} data - Dictionary of the ROS message as JSON string.
+   * @param {JSONObject | null} data - Dictionary of the ROS message as JSON string.
    * @param {number} count - Count of received messages since the start.
    * @param {number} rate - Receive rate on the topic
    */
@@ -70,7 +72,7 @@ class SubscriberEvent {
     topic: string,
     message_type: string,
     latched: boolean,
-    data: any | null,
+    data: JSONObject | null,
     count: number,
     rate: number,
     bw: number,

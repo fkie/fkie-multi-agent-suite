@@ -14,9 +14,8 @@ import { useCallback, useContext } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { getBaseName, getFileName } from "../../models";
+import { getFileName } from "../../models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
-import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
 import LaunchFilePanel from "../../pages/NodeManager/panels/LaunchFilePanel";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
 
@@ -77,7 +76,7 @@ function LaunchFileList({
     <List dense disablePadding onMouseOver={onMouseOver}>
       {launchContentList.length > 0 &&
         launchContentList.sort(compareLaunchFiles).map((lc) => {
-          if (!lc.path) return <div>Invalid launch file</div>;
+          if (!lc.path) return (<div key={`${lc.path}`}>Invalid launch file</div>);
           const launchName = getFileName(lc.path);
           return (
             <ListItem

@@ -1,5 +1,3 @@
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
@@ -9,7 +7,6 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LaunchIcon from "@mui/icons-material/Launch";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
-import SubjectIcon from "@mui/icons-material/Subject";
 import SyncAltOutlinedIcon from "@mui/icons-material/SyncAltOutlined";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import TopicIcon from "@mui/icons-material/Topic";
@@ -102,7 +99,7 @@ function NodeManager() {
   const updateFloatButton = useCallback((layout) => {
     if (!layout.children) return false;
     let result = false;
-    const tabs = layout.children.forEach((item) => {
+    layout.children.forEach((item) => {
       if (item.type === "tab") {
         if (item.enableFloat !== !window.CommandExecutor) {
           item.enableFloat = !window.CommandExecutor;

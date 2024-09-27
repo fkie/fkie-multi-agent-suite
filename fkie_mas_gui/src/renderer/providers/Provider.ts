@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+import { JSONObject } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
 import { TagColors } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
@@ -39,7 +40,6 @@ import {
   SystemWarningGroup,
   URI,
 } from "../models";
-import JSONObject from "../models/JsonObject";
 import { delay, generateUniqueId } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";
@@ -182,9 +182,9 @@ export default class Provider implements IProvider {
 
   screens: ScreensMapping[] = [];
 
-  systemInfo: {} = {};
+  systemInfo: object = {};
 
-  systemEnv: {} = {};
+  systemEnv: object = {};
 
   /** All known hostnames for this provides, e.g. IPv4 IPv6 or names */
   hostnames: string[] = [];
@@ -653,10 +653,10 @@ export default class Provider implements IProvider {
    *
    * @return {Promise<any>}
    */
-  public getProviderSystemInfo: () => Promise<any> = async () => {
+  public getProviderSystemInfo: () => Promise<object> = async () => {
     const systemInfo = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_INFO, [], true).then((value: ICallResult) => {
       if (value.result) {
-        this.systemInfo = value.message as {};
+        this.systemInfo = value.message as object;
         return this.systemInfo;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemInfo()`, `${value.message}`);
@@ -670,10 +670,10 @@ export default class Provider implements IProvider {
    *
    * @return {Promise<any>}
    */
-  public getProviderSystemEnv: () => Promise<any> = async () => {
+  public getProviderSystemEnv: () => Promise<object> = async () => {
     const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: ICallResult) => {
       if (value.result) {
-        this.systemEnv = value.message as {};
+        this.systemEnv = value.message as object;
         return this.systemEnv;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemEnv()`, `${value.message}`);
@@ -2098,9 +2098,9 @@ export default class Provider implements IProvider {
     }
   };
 
-  private registerCallbacks: () => Promise<any> = async () => {
+  private registerCallbacks: () => Promise<boolean> = async () => {
     if (!this.isAvailable()) {
-      return;
+      return false;
     }
     await this.connection
       .closeSubscriptions()
@@ -2117,6 +2117,7 @@ export default class Provider implements IProvider {
         });
         return true;
       });
+    return false;
   };
 
   /* Generic functions */
@@ -2125,10 +2126,10 @@ export default class Provider implements IProvider {
    * Execute a call considering [callAttempts] and [delayCallAttempts]
    *
    * @param {string} uri URI to be called
-   * @param {any} args call arguments
+   * @param {unknown} args call arguments
    * @return {Promise<JSONObject>} Return promise of the call
    */
-  private makeCall: (uri: string, args: any, lockRequest: boolean) => Promise<ICallResult> = async (
+  private makeCall: (uri: string, args: unknown, lockRequest: boolean) => Promise<ICallResult> = async (
     uri,
     args,
     lockRequest = true
@@ -2143,7 +2144,7 @@ export default class Provider implements IProvider {
         message: `[${this.name()}]: Ignoring request to: [${uri}] with ${JSON.stringify(args)}, request already running!`,
       };
     }
-    const callRequest: (_uri: string, _args: any, currentAttempt?: number) => Promise<ICallResult> = async (
+    const callRequest: (_uri: string, _args: unknown, currentAttempt?: number) => Promise<ICallResult> = async (
       _uri,
       _args,
       currentAttempt = 0

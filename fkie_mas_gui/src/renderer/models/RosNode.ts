@@ -36,7 +36,7 @@ class RosNode {
   /** ID used on the UI side across all provider. idGlobal should be the same for life of the node on remote host */
   idGlobal: string = "";
 
-  tags: any[] = []; // used on gui side
+  tags: unknown[] = []; // used on gui side
 
   /**
    * Unique identifier
@@ -76,7 +76,7 @@ class RosNode {
   /**
    * Describes whether the node is running on the same host as the ROS master. Possible values: local, remote
    */
-  location: string | any;
+  location: string | unknown;
 
   /**
    * (optional) name of the provider that returned the node
@@ -151,7 +151,7 @@ class RosNode {
   /** Used to store by user changed logger configuration.
    * type: { name: string; level: string }
    */
-  rosLoggers: {} = {};
+  rosLoggers: { [id: string]: string } = {};
 
   /**
    * ID of the composable/nodelet's parent

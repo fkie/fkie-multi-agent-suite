@@ -1,7 +1,7 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Button, Card, CardActions, Collapse, IconButton, Stack, Typography } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
-import { forwardRef, useCallback, useContext, useState } from "react";
+import React, { forwardRef, useCallback, useContext, useState } from "react";
 import { JSONTree } from "react-json-tree";
 import { levelColorsWbg } from "../components/UI/Colors";
 import { darkThemeJson } from "../themes/darkTheme";
@@ -13,7 +13,7 @@ interface LoggingDetailsComponentProps {
   message: SnackbarMessage;
   details: string | object;
   variant: VariantType;
-  onDetailsClick: Function;
+  onDetailsClick: (id: SnackbarKey | undefined, event: React.MouseEvent) => void;
 }
 
 const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsComponentProps>((props, ref) => {
@@ -92,5 +92,7 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
     </SnackbarContent>
   );
 });
+
+LoggingDetailsComponent.displayName = "LoggingDetailsComponent";
 
 export default LoggingDetailsComponent;

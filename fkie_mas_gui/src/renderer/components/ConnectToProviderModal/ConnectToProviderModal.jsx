@@ -154,7 +154,6 @@ function ConnectToProviderModal() {
   const [tsList, setTSList] = useState([]);
   const [topicList, setTopicList] = useState([]);
 
-  const [startProviderStatus, setStartProviderStatus] = useState("");
   const [startProviderDescription, setStartProviderDescription] = useState("");
   const [startProviderIsSubmitting, setStartProviderIsSubmitting] = useState(false);
 
@@ -191,7 +190,7 @@ function ConnectToProviderModal() {
     setHostValues(["localhost"]);
   }, [rosCtx.systemInfo]);
 
-  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data) => {
+  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
     // trigger add new provider
     const newAcTsSet = new Set();
     const newAcTopicSet = new Set();
@@ -219,7 +218,7 @@ function ConnectToProviderModal() {
     setTopicList(Array.from(newAcTopicSet));
   });
 
-  useCustomEventListener(EVENT_OPEN_CONNECT, (data) => {
+  useCustomEventListener(EVENT_OPEN_CONNECT, () => {
     handleOpen();
   });
 
@@ -322,7 +321,6 @@ function ConnectToProviderModal() {
   const handleStartProvider = async () => {
     if (!rosCtx.multimasterManager) return;
 
-    setStartProviderStatus("active");
     setStartProviderDescription("Starting nodes on selected hosts");
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
@@ -361,23 +359,18 @@ function ConnectToProviderModal() {
       })
     );
     if (successStart) {
-      setStartProviderStatus("finished");
       setStartProviderDescription("");
-    } else {
-      setStartProviderStatus("error");
     }
 
     // remove loading message
     setTimeout(() => {
       setStartProviderIsSubmitting(false);
       setStartProviderDescription("");
-      setStartProviderStatus("inactive");
       handleClose();
     }, 500);
   };
 
   const handleJoinProvider = async () => {
-    setStartProviderStatus("active");
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
       setStartConfigurationsDefault(startParameter);
@@ -407,7 +400,6 @@ function ConnectToProviderModal() {
     setTimeout(() => {
       setStartProviderIsSubmitting(false);
       setStartProviderDescription("");
-      setStartProviderStatus("inactive");
       handleClose();
     }, 500);
   };

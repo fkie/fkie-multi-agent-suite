@@ -10,12 +10,10 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableHead,
   TableRow,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { CopyButton, Tag, colorFromHostname, getDiagnosticStyle } from "../../../components";
@@ -25,7 +23,6 @@ import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { RosNodeStatus, getDiagnosticLevelName, getFileName } from "../../../models";
-import { CmdType } from "../../../providers";
 import { generateUniqueId } from "../../../utils";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
@@ -33,7 +30,6 @@ import OverflowMenuService from "./OverflowMenuService";
 import OverflowMenuTopic from "./OverflowMenuTopic";
 import ServiceCallerPanel from "./ServiceCallerPanel";
 import ServicesPanel from "./ServicesPanel";
-import TopicEchoPanel from "./TopicEchoPanel";
 import TopicPublishPanel from "./TopicPublishPanel";
 import TopicsPanel from "./TopicsPanel";
 

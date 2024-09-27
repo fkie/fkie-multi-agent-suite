@@ -1,4 +1,6 @@
-import { IShutdownManager, ShutdownManagerEvents, TShutdownManager } from "./ShutdownManager";
+import JSONObject, { JSONValue } from "./JsonObject";
+import { IShutdownManager, ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 
 export { ShutdownManagerEvents };
-export type { IShutdownManager, TShutdownManager };
+export type { IShutdownManager, JSONObject, JSONValue, TerminateCallback, TShutdownManager };
+

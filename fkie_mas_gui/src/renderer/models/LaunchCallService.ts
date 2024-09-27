@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+import { JSONObject } from "@/types";
 /**
  * LaunchCallService models the service to call a ROS service.
  */
@@ -16,16 +17,16 @@ class LaunchCallService {
   /**
    * Dictionary structure of the ROS request service as JSON string.
    */
-  data: any | null;
+  data: JSONObject | null;
 
   /**
    * Class Constructor
    *
    * @param {string} service_name - The ROS service name.
    * @param {string} srv_type - Type of the request service.
-   * @param {any | null} data - Dictionary structure of the ROS request service as JSON string.
+   * @param {JSONObject | null} data - Dictionary structure of the ROS request service as JSON string.
    */
-  constructor(service_name: string, srv_type: string, data: any | null) {
+  constructor(service_name: string, srv_type: string, data: JSONObject | null) {
     this.service_name = service_name;
     this.srv_type = srv_type;
     this.data = data;

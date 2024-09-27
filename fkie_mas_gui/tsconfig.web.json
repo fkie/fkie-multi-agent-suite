@@ -6,6 +6,7 @@
     "src/preload/*.d.ts",
     "src/renderer/**/*",
     "src/renderer/**/*.jsx",
+    "src/renderer/**/**/*.jsx",
     "src/renderer/**/*.tsx",
     "src/renderer/**/**/*.tsx",
     "src/types/**/*.ts"

@@ -4,7 +4,7 @@ import { TShutdownManager } from "./types";
 declare global {
   interface Window {
     shutdownManager: TShutdownManager;
-    autoUpdate: any;
-    electronAPI: any;
+    autoUpdate: unknown;
+    electronAPI: unknown;
   }
 }

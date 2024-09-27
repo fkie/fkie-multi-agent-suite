@@ -161,4 +161,6 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
   );
 });
 
+RestartNodesAlertComponent.displayName = "RestartNodesAlertComponent";
+
 export default RestartNodesAlertComponent;

@@ -80,7 +80,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
   }, []);
 
   const handleStorageChange = useCallback(
-    (data: any) => {
+    (data: CustomEvent) => {
       if (data.detail === key) {
         setStoredValue(readValue());
         data.stopPropagation();

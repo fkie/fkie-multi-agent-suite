@@ -1,4 +1,4 @@
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { alpha, styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 import PropTypes from "prop-types";
@@ -6,9 +6,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { NavigationContext } from "../../context/NavigationContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { removeDDSuid } from "../../utils/index";
 import { colorFromHostname } from "../UI/Colors";
-import CopyButton from "../UI/CopyButton";
 
 const ServiceTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -62,9 +60,7 @@ const ServiceTreeItem = React.forwardRef(function ServiceTreeItem(
     labelInfo = "",
     labelCount = null,
     labelText = "",
-    requestData = false,
     serviceInfo = null,
-    providerName = "",
     selectedItem = "",
     ...other
   },
