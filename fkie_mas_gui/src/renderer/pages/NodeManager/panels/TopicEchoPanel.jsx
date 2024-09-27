@@ -184,45 +184,222 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   const generateJsonTopics = useMemo(() => {
     return history.map((event) => {
       return (
-        <Box key={`box-${event.key}`}>
-          <Stack marginTop={1} spacing={1} direction="row">
-            {/* <Tag
+        // <Box key={`box-${event.key}`}>
+        <Stack hight="300px" key={`box-${event.key}`} marginTop={1} spacing={1} direction="row">
+          {/* <Tag
             key={event.receivedIndex}
             color="info"
             title={`${event.receivedIndex}`}
           /> */}
-            {event.seq === undefined && (
-              <Typography fontStyle="italic" fontSize="0.8em" color="gray">
-                {event.receivedIndex}:
-              </Typography>
-            )}
-            {event.seq !== undefined && (
-              <Typography fontStyle="italic" fontSize="0.8em" color="gray">
-                {event.seq}
-              </Typography>
-              // <Tag
-              //   key={event.seq}
-              //   color="info"
-              //   title="seq: "
-              //   text={`${event.seq}`}
-              // />
-            )}
-            <JSONTree
-              key={`${event.key}`}
-              data={event?.data}
-              sortObjectKeys={true}
-              theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
-              invertTheme={false}
-              hideRoot={true}
-              shouldExpandNodeInitially={([key]) => {
-                return true;
-              }}
-            />
-          </Stack>
-        </Box>
+          {event.seq === undefined && (
+            <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+              {event.receivedIndex}:
+            </Typography>
+          )}
+          {event.seq !== undefined && (
+            <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+              {event.seq}
+            </Typography>
+            // <Tag
+            //   key={event.seq}
+            //   color="info"
+            //   title="seq: "
+            //   text={`${event.seq}`}
+            // />
+          )}
+          <JSONTree
+            key={`${event.key}`}
+            data={event?.data}
+            sortObjectKeys={true}
+            theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
+            invertTheme={false}
+            hideRoot={true}
+            shouldExpandNodeInitially={([key]) => {
+              return true;
+            }}
+          />
+        </Stack>
+        // </Box>
       );
     });
-  }, [history, settingsCtx]);
+  }, [history, settingsCtx.changed]);
+
+  const generateOptions = useMemo(() => {
+    return (
+      <Stack spacing={0.5} margin={0.5} direction="row">
+        <Tooltip
+          title="show message data"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
+            <DataObjectIcon />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip
+          title="show arrays"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
+            <DataArrayIcon />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip
+          title="show strings"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
+            <AbcIcon />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip
+          title="limit message forward to 1 Hz"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <ToggleButton size="small" value="noStr" selected={hz === 1.0} onChange={() => setHz(hz === 1.0 ? 0.0 : 1.0)}>
+            <Filter1Icon />
+          </ToggleButton>
+        </Tooltip>
+        <Divider orientation="vertical" />
+        <Tooltip
+          title="show statistics"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <ToggleButton
+            size="small"
+            value="statistics"
+            selected={showStatistics}
+            onChange={() => setShowStatistics(!showStatistics)}
+          >
+            <NotesIcon />
+          </ToggleButton>
+        </Tooltip>
+        {currentProvider?.rosVersion === "X" && (
+          <>
+            <Button
+              id="qos-button"
+              aria-controls={openQos ? "qos-menu" : undefined}
+              aria-haspopup="true"
+              aria-expanded={openQos ? "true" : undefined}
+              variant="outlined"
+              disableElevation
+              onClick={handleQosClick}
+              endIcon={<KeyboardArrowDownIcon />}
+            >
+              QoS
+            </Button>
+            <Menu
+              id="qos-menu"
+              MenuListProps={{
+                "aria-labelledby": "qos-button",
+              }}
+              anchorEl={qosAnchorEl}
+              open={openQos}
+              onClose={handleQosClose}
+            >
+              <MenuItem onClick={handleQosClose} disableRipple>
+                System Default
+              </MenuItem>
+              <MenuItem onClick={handleQosClose} disableRipple>
+                Sensor Data
+              </MenuItem>
+              <Divider sx={{ my: 0.5 }} />
+              <MenuItem onClick={handleQosClose} disableRipple>
+                Services Default
+              </MenuItem>
+              <MenuItem onClick={handleQosClose} disableRipple>
+                Parameters
+              </MenuItem>
+              <MenuItem onClick={handleQosClose} disableRipple>
+                Parameter events
+              </MenuItem>
+              <MenuItem onClick={handleQosClose} disableRipple>
+                Action Status Default
+              </MenuItem>
+            </Menu>
+          </>
+        )}
+        <Tooltip
+          title={pause ? "start subscriber" : "stop subscriber"}
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <IconButton
+            size="medium"
+            onClick={() => {
+              setPause(!pause);
+            }}
+          >
+            {pause ? <PlayArrowIcon /> : <StopIcon />}
+          </IconButton>
+        </Tooltip>
+        <Tooltip
+          title="clear messages"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <IconButton
+            size="medium"
+            onClick={() => {
+              setHistory([]);
+            }}
+          >
+            <PlaylistRemoveIcon />
+          </IconButton>
+        </Tooltip>
+        <Divider orientation="vertical" />
+        <Tooltip
+          title="count of displayed messages"
+          placement="right"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <Select
+            id="select-msg-count"
+            autoWidth={false}
+            value={msgCount.toString()}
+            onChange={(event) => {
+              setMsgCount(event.target.value);
+            }}
+            size="small"
+          >
+            {[1, 10, 20, 50, 100].map((value) => {
+              return (
+                <MenuItem key={`msg-count-${value}`} value={value}>
+                  {value.toString()}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </Tooltip>
+        {/* <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
+        <ProviderSelector
+          defaultProvider={selectedProvider}
+          setSelectedProvider={(provId) => setSelectedProvider(provId)}
+        />
+      </FormControl> */}
+      </Stack>
+    );
+  }, [currentProvider, noArr, noData, noStr, hz, pause, tooltipDelay, msgCount, qosAnchorEl, openQos, showStatistics]);
 
   const getHostStyle = () => {
     const providerName = currentProvider?.name();
@@ -238,247 +415,53 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   };
 
   return (
-    <Box
-      width="100%"
-      height="100%"
-      overflow="auto"
-      backgroundColor={settingsCtx.get("backgroundColor")}
-      style={getHostStyle()}
-    >
-      <Paper
-        width="100%"
-        elevation={1}
-        sx={
-          {
-            // position: 'fixed',
-            // borderTop: 1,
-          }
-        }
-        overflow="auto"
-      >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontWeight="bold">{topicName}</Typography>
-          <Typography color="grey" fontSize="0.8em">
-            {currentProvider?.name()}
-          </Typography>
-        </Stack>
-        <Stack>
-          {showOptions && (
-            <Stack spacing={0.5} margin={0.5} direction="row">
-              <Tooltip
-                title="show message data"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
-                  <DataObjectIcon />
-                </ToggleButton>
-              </Tooltip>
-              <Tooltip
-                title="show arrays"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
-                  <DataArrayIcon />
-                </ToggleButton>
-              </Tooltip>
-              <Tooltip
-                title="show strings"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
-                  <AbcIcon />
-                </ToggleButton>
-              </Tooltip>
-              <Tooltip
-                title="limit message forward to 1 Hz"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <ToggleButton
-                  size="small"
-                  value="noStr"
-                  selected={hz === 1.0}
-                  onChange={() => setHz(hz === 1.0 ? 0.0 : 1.0)}
-                >
-                  <Filter1Icon />
-                </ToggleButton>
-              </Tooltip>
-              <Divider orientation="vertical" />
-              <Tooltip
-                title="show statistics"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <ToggleButton
-                  size="small"
-                  value="statistics"
-                  selected={showStatistics}
-                  onChange={() => setShowStatistics(!showStatistics)}
-                >
-                  <NotesIcon />
-                </ToggleButton>
-              </Tooltip>
-              {currentProvider?.rosVersion === "X" && (
-                <>
-                  <Button
-                    id="qos-button"
-                    aria-controls={openQos ? "qos-menu" : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={openQos ? "true" : undefined}
-                    variant="outlined"
-                    disableElevation
-                    onClick={handleQosClick}
-                    endIcon={<KeyboardArrowDownIcon />}
-                  >
-                    QoS
-                  </Button>
-                  <Menu
-                    id="qos-menu"
-                    MenuListProps={{
-                      "aria-labelledby": "qos-button",
+    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")} style={getHostStyle()}>
+      <Stack spacing={1} height="100%">
+        <Paper width="100%" elevation={1}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography fontWeight="bold">{topicName}</Typography>
+            <Typography color="grey" fontSize="0.8em">
+              {currentProvider?.name()}
+            </Typography>
+          </Stack>
+          <Stack>{showOptions && generateOptions}</Stack>
+          {content && showStatistics && (
+            <Stack margin={0.5} spacing={1}>
+              <Stack spacing={1} direction="row" fontSize="0.8em">
+                {content.latched && (
+                  <Box
+                    style={{
+                      fontWeight: "bold",
                     }}
-                    anchorEl={qosAnchorEl}
-                    open={openQos}
-                    onClose={handleQosClose}
                   >
-                    <MenuItem onClick={handleQosClose} disableRipple>
-                      System Default
-                    </MenuItem>
-                    <MenuItem onClick={handleQosClose} disableRipple>
-                      Sensor Data
-                    </MenuItem>
-                    <Divider sx={{ my: 0.5 }} />
-                    <MenuItem onClick={handleQosClose} disableRipple>
-                      Services Default
-                    </MenuItem>
-                    <MenuItem onClick={handleQosClose} disableRipple>
-                      Parameters
-                    </MenuItem>
-                    <MenuItem onClick={handleQosClose} disableRipple>
-                      Parameter events
-                    </MenuItem>
-                    <MenuItem onClick={handleQosClose} disableRipple>
-                      Action Status Default
-                    </MenuItem>
-                  </Menu>
-                </>
-              )}
-              <Tooltip
-                title={pause ? "start subscriber" : "stop subscriber"}
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <IconButton
-                  size="medium"
-                  onClick={() => {
-                    setPause(!pause);
-                  }}
-                >
-                  {pause ? <PlayArrowIcon /> : <StopIcon />}
-                </IconButton>
-              </Tooltip>
-              <Tooltip
-                title="clear messages"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <IconButton
-                  size="medium"
-                  onClick={() => {
-                    setHistory([]);
-                  }}
-                >
-                  <PlaylistRemoveIcon />
-                </IconButton>
-              </Tooltip>
-              <Divider orientation="vertical" />
-              <Tooltip
-                title="count of displayed messages"
-                placement="right"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <Select
-                  id="select-msg-count"
-                  autoWidth={false}
-                  value={msgCount.toString()}
-                  onChange={(event) => {
-                    setMsgCount(event.target.value);
-                  }}
-                  size="small"
-                >
-                  {[1, 10, 20, 50, 100].map((value) => {
-                    return (
-                      <MenuItem key={`msg-count-${value}`} value={value}>
-                        {value.toString()}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </Tooltip>
-              {/* <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
-                <ProviderSelector
-                  defaultProvider={selectedProvider}
-                  setSelectedProvider={(provId) => setSelectedProvider(provId)}
-                />
-              </FormControl> */}
+                    latched
+                  </Box>
+                )}
+                <Box>{content.count} messages</Box>
+                <Box>average rate: {content.rate.toFixed(2)} Hz</Box>
+              </Stack>
+              <Stack spacing={1} direction="row" fontSize="0.8em">
+                <Box>
+                  bw: {normalizePrint(content.bw, 2, "/s")} [min: {normalizePrint(content.bw_min, 0, "/s")}, max:{" "}
+                  {normalizePrint(content.bw_max, 0, "/s")}]
+                </Box>
+                <Box>
+                  size: {normalizePrint(content.size, 2)} [min: {normalizePrint(content.size_min, 0)}, max:{" "}
+                  {normalizePrint(content.size_max, 0)}]
+                </Box>
+              </Stack>
             </Stack>
           )}
+        </Paper>
+        <Stack width="100%" hight="100%" overflow="auto">
+          {history && !noData && generateJsonTopics}
+          {!currentProvider && (
+            <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
+              <AlertTitle>{`Invalid provider: [${selectedProvider}]`}</AlertTitle>
+              Please report this bug.
+            </Alert>
+          )}
         </Stack>
-        {content && showStatistics && (
-          <Stack margin={0.5} spacing={1}>
-            <Stack spacing={1} direction="row" fontSize="0.8em">
-              {content.latched && (
-                <Box
-                  style={{
-                    fontWeight: "bold",
-                  }}
-                >
-                  latched
-                </Box>
-              )}
-              <Box>{content.count} messages</Box>
-              <Box>average rate: {content.rate.toFixed(2)} Hz</Box>
-            </Stack>
-            <Stack spacing={1} direction="row" fontSize="0.8em">
-              <Box>
-                bw: {normalizePrint(content.bw, 2, "/s")} [min: {normalizePrint(content.bw_min, 0, "/s")}, max:{" "}
-                {normalizePrint(content.bw_max, 0, "/s")}]
-              </Box>
-              <Box>
-                size: {normalizePrint(content.size, 2)} [min: {normalizePrint(content.size_min, 0)}, max:{" "}
-                {normalizePrint(content.size_max, 0)}]
-              </Box>
-            </Stack>
-          </Stack>
-        )}
-      </Paper>
-      <Stack sx={{ width: "100%" }}>
-        {history && !noData && generateJsonTopics}
-        {!currentProvider && (
-          <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
-            <AlertTitle>{`Invalid provider: [${selectedProvider}]`}</AlertTitle>
-            Please report this bug.
-          </Alert>
-        )}
       </Stack>
     </Box>
   );
