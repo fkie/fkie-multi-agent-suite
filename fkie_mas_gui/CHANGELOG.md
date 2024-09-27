@@ -71,9 +71,11 @@ Hide some parameter in web version
 Terminal revised: new shortcuts, switchable search bar
 _ Ctr+{+, - , 0}: change font size
 _ Ctr+f: enable search bar
-_ Escape in search bar: close search bar
-----
-_ Ctrl+Shift+C: copy selected text to clipboard \* Ctrl+D: close terminal
+\_ Escape in search bar: close search bar
+
+---
+
+\_ Ctrl+Shift+C: copy selected text to clipboard \* Ctrl+D: close terminal
 Version of the dependencies pumped up
 Fixed: popout capability in browser
 Fixed: warning while open screen

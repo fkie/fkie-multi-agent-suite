@@ -18,4 +18,3 @@ type TShutdownManager = {
 
 export { ShutdownManagerEvents };
 export type { IShutdownManager, TShutdownManager, TerminateCallback };
-

@@ -3,4 +3,3 @@ import { IShutdownManager, ShutdownManagerEvents, TerminateCallback, TShutdownMa
 
 export { ShutdownManagerEvents };
 export type { IShutdownManager, JSONObject, JSONValue, TerminateCallback, TShutdownManager };
-

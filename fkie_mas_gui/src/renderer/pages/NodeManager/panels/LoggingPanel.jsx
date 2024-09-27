@@ -27,10 +27,10 @@ import useLocalStorage from "../../../hooks/useLocalStorage";
 import { LoggingLevel } from "../../../models";
 import "./TableResizable.css";
 
-const VtScroller = React.forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />)
+const VtScroller = React.forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />);
 VtScroller.displayName = "VtScroller";
 
-const VtTableBody =  React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />);
+const VtTableBody = React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />);
 VtTableBody.displayName = "VtTableBody";
 
 const VirtuosoTableComponents = {

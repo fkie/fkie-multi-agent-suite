@@ -76,7 +76,7 @@ function LaunchFileList({
     <List dense disablePadding onMouseOver={onMouseOver}>
       {launchContentList.length > 0 &&
         launchContentList.sort(compareLaunchFiles).map((lc) => {
-          if (!lc.path) return (<div key={`${lc.path}`}>Invalid launch file</div>);
+          if (!lc.path) return <div key={`${lc.path}`}>Invalid launch file</div>;
           const launchName = getFileName(lc.path);
           return (
             <ListItem
