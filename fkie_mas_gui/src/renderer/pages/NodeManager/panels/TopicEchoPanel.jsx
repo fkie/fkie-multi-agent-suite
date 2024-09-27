@@ -1,3 +1,4 @@
+import { JSONTree } from "@/renderer/components/react-json-tree";
 import AbcIcon from "@mui/icons-material/Abc";
 import DataArrayIcon from "@mui/icons-material/DataArray";
 import DataObjectIcon from "@mui/icons-material/DataObject";
@@ -26,7 +27,6 @@ import {
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { JSONTree } from "react-json-tree";
 import { v4 as uuid } from "uuid";
 import { colorFromHostname } from "../../../components/UI/Colors";
 import { LoggingContext } from "../../../context/LoggingContext";
@@ -47,6 +47,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   const [subscribed, setSubscribed] = useState(false);
   const [topicName, setTopic] = useState(defaultTopic);
   const [content, setContent] = useState(null);
+  const [collapsedKeys, setCollapsedKeys] = useState(["stamp", "covariance"]);
   const [history, setHistory] = useState([]);
   const [showStatistics, setShowStatistics] = useState(true);
   const [noData, setNoData] = useState(defaultNoData);
@@ -215,14 +216,20 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
             invertTheme={false}
             hideRoot={true}
             shouldExpandNodeInitially={([key]) => {
-              return true;
+              return !collapsedKeys.includes(key);
+            }}
+            onCollapse={([key]) => {
+              setCollapsedKeys((prev) => [...prev, key]);
+            }}
+            onExpand={([key]) => {
+              setCollapsedKeys((prev) => prev.filter((item) => item != key));
             }}
           />
         </Stack>
         // </Box>
       );
     });
-  }, [history, settingsCtx.changed]);
+  }, [history, settingsCtx.changed, collapsedKeys]);
 
   const generateOptions = useMemo(() => {
     return (
