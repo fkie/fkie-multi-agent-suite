@@ -655,15 +655,15 @@ function NodeManager() {
     // do not ask for shutdown on some reasons
     if (electronCtx.terminateSubprocesses) {
       if (isInstallUpdateRequested()) {
-        electronCtx.shutdownInterface.quitGui();
+        electronCtx.shutdownManager.quitGui();
       }
       if (rosCtx.providers.length <= 0) {
-        electronCtx.shutdownInterface.quitGui();
+        electronCtx.shutdownManager.quitGui();
       }
       setModifiedEditorTabs(monacoCtx.getModifiedTabs());
     }
   }, [
-    electronCtx.shutdownInterface,
+    electronCtx.shutdownManager,
     electronCtx.terminateSubprocesses,
     isInstallUpdateRequested,
     monacoCtx,
@@ -682,7 +682,7 @@ function NodeManager() {
         );
       }
       console.log(`Quit app`);
-      electronCtx.shutdownInterface.quitGui();
+      electronCtx.shutdownManager.quitGui();
     },
     [electronCtx]
   );
@@ -750,7 +750,7 @@ function NodeManager() {
           providers={rosCtx.providers}
           onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
           onConfirmCallback={(providers) => shutdownProviders(providers)}
-          onForceCloseCallback={() => electronCtx.shutdownInterface.quitGui()}
+          onForceCloseCallback={() => electronCtx.shutdownManager.quitGui()}
         />
       )}
       {modifiedEditorTabs.length > 0 && (

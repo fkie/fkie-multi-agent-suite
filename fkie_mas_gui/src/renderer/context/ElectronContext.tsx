@@ -1,6 +1,6 @@
+import { TShutdownManager } from "@/types";
 import { createContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import ShutdownInterface from "../../main/IPC/ShutdownInterface";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_EDITOR_SELECT_RANGE,
@@ -8,15 +8,8 @@ import {
   eventEditorSelectRange,
 } from "../utils/events";
 
-declare global {
-  interface Window {
-    ShutdownInterface?: ShutdownInterface;
-    electronAPI: any;
-  }
-}
-
 export interface IElectronContext {
-  shutdownInterface: ShutdownInterface | null;
+  shutdownManager: TShutdownManager | null;
   terminateSubprocesses: boolean;
   setTerminateSubprocesses: (terminate: boolean) => void;
   requestedInstallUpdate: boolean;
@@ -28,7 +21,7 @@ export interface IElectronContext {
 }
 
 export const DEFAULT = {
-  shutdownInterface: null,
+  shutdownManager: null,
   terminateSubprocesses: false,
   setTerminateSubprocesses: () => {},
   requestedInstallUpdate: false,
@@ -45,15 +38,15 @@ export const ElectronContext = createContext<IElectronContext>(DEFAULT);
 export function ElectronProvider({
   children,
 }: IElectronProviderComponent): ReturnType<React.FC<IElectronProviderComponent>> {
-  const [shutdownInterface, setShutdownInterface] = useState<ShutdownInterface | null>(null);
+  const [shutdownManager, setShutdownManager] = useState<TShutdownManager | null>(null);
   const [terminateSubprocesses, setTerminateSubprocesses] = useState<boolean>(false);
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
   const [updateAvailable, setUpdateAvailable] = useState<string>("");
   const [checkedForUpdates, setCheckedForUpdates] = useState<boolean>(false);
-  // Effect to initialize the shutdownInterface
+  // Effect to initialize the shutdownManager
   useEffect(() => {
-    if (window.ShutdownInterface) {
-      setShutdownInterface(window.ShutdownInterface);
+    if (window.shutdownManager) {
+      setShutdownManager(window.shutdownManager);
     }
     window.electronAPI?.onEditorFileRange(
       (
@@ -73,16 +66,16 @@ export function ElectronProvider({
 
   // Effect to initialize the onTerminateSubprocesses callback
   useEffect(() => {
-    if (shutdownInterface?.onTerminateSubprocesses) {
-      shutdownInterface.onTerminateSubprocesses(() => {
+    if (shutdownManager?.onTerminateSubprocesses) {
+      shutdownManager?.onTerminateSubprocesses(() => {
         setTerminateSubprocesses(true);
       });
     }
-  }, [shutdownInterface]);
+  }, [shutdownManager]);
 
   const attributesMemo = useMemo(
     () => ({
-      shutdownInterface,
+      shutdownManager,
       terminateSubprocesses,
       setTerminateSubprocesses,
       requestedInstallUpdate,
@@ -93,7 +86,7 @@ export function ElectronProvider({
       setCheckedForUpdates,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [requestedInstallUpdate, shutdownInterface, terminateSubprocesses, updateAvailable, checkedForUpdates]
+    [requestedInstallUpdate, shutdownManager, terminateSubprocesses, updateAvailable, checkedForUpdates]
   );
 
   return <ElectronContext.Provider value={attributesMemo}>{children}</ElectronContext.Provider>;

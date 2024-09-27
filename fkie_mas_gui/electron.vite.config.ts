@@ -4,15 +4,25 @@ import { resolve } from "path";
 
 export default defineConfig({
   main: {
+    resolve: {
+      alias: {
+        "@": resolve("./src"),
+      },
+    },
     plugins: [externalizeDepsPlugin()],
   },
   preload: {
+    resolve: {
+      alias: {
+        "@": resolve("./src"),
+      },
+    },
     plugins: [externalizeDepsPlugin()],
   },
   renderer: {
     resolve: {
       alias: {
-        "@renderer": resolve("src/renderer/"),
+        "@": resolve("./src"),
       },
     },
     optimizeDeps: {
@@ -31,11 +41,11 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          app: resolve(__dirname, "src/renderer/index.html"),
-          editor: resolve(__dirname, "src/renderer/editor.html"),
-          popout: resolve(__dirname, "src/renderer/popout.html"),
-          subscriber: resolve(__dirname, "src/renderer/subscriber.html"),
-          terminal: resolve(__dirname, "src/renderer/terminal.html"),
+          app: resolve("src/renderer/index.html"),
+          editor: resolve("src/renderer/editor.html"),
+          popout: resolve("src/renderer/popout.html"),
+          subscriber: resolve("src/renderer/subscriber.html"),
+          terminal: resolve("src/renderer/terminal.html"),
         },
       },
     },

@@ -1,4 +1,5 @@
 // import { electronAPI } from "@electron-toolkit/preload";
+import { ShutdownManagerEvents, TShutdownManager } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 import { ICredential } from "../main/models/ICredential";
 
@@ -160,11 +161,11 @@ if (process.contextIsolated) {
       },
     });
 
-    contextBridge.exposeInMainWorld("ShutdownInterface", {
+    contextBridge.exposeInMainWorld("shutdownManager", {
       onTerminateSubprocesses: (callback: Function) =>
-        ipcRenderer.on("ShutdownInterface:terminateSubprocesses", () => callback()),
-      quitGui: () => ipcRenderer.invoke("ShutdownInterface:quitGui"),
-    });
+        ipcRenderer.on(ShutdownManagerEvents.terminateSubprocesses, () => callback()),
+      quitGui: () => ipcRenderer.invoke(ShutdownManagerEvents.quitGui),
+    } as TShutdownManager);
 
     contextBridge.exposeInMainWorld("electronAPI", {
       openFile: (path: string) => {

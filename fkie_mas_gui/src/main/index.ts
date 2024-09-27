@@ -7,10 +7,10 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { BrowserWindow, app, ipcMain, shell } from "electron";
+import { BrowserWindow, app, shell } from "electron";
 import { join } from "path";
 import { registerArguments } from "./CommandLineInterface";
-import { AutoUpdateManager, DialogManager, ShutdownInterface, registerHandlers } from "./IPC";
+import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
 import MenuBuilder from "./menu";
 import windowStateKeeper from "./windowStateKeeper";
 // import installer from 'electron-devtools-installer'
@@ -22,7 +22,7 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
 let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
 let dialogManager: DialogManager | null = null;
-let shutdownInterface: ShutdownInterface | null = null;
+let shutdownManager: ShutdownManager | null = null;
 
 if (process.env.NODE_ENV === "production") {
   const sourceMapSupport = require("source-map-support");
@@ -70,6 +70,13 @@ const createWindow = async (): Promise<void> => {
   });
   // Track window state
   mainWindowStateKeeper.track(mainWindow);
+  dialogManager = new DialogManager(mainWindow);
+
+  // Remove this if your app does not use auto updates
+  autoUpdateManager = new AutoUpdateManager(mainWindow);
+
+  // Handle app shutdown.
+  shutdownManager = new ShutdownManager(mainWindow);
 
   mainWindow.on("ready-to-show", () => {
     if (!mainWindow) {
@@ -85,7 +92,7 @@ const createWindow = async (): Promise<void> => {
 
   mainWindow.on("close", (e) => {
     e.preventDefault();
-    mainWindow?.webContents.send("ShutdownInterface:terminateSubprocesses");
+    shutdownManager?.sendTerminateSubprocesses();
   });
 
   mainWindow.on("closed", () => {
@@ -112,19 +119,6 @@ const createWindow = async (): Promise<void> => {
     }
     shell.openExternal(data.url);
     return { action: "deny" };
-  });
-
-  dialogManager = new DialogManager(mainWindow);
-
-  // Remove this if your app does not use auto updates
-  autoUpdateManager = new AutoUpdateManager(mainWindow);
-
-  // Handle app shutdown.
-  shutdownInterface = new ShutdownInterface(mainWindow);
-
-  // ShutdownInterface
-  ipcMain.handle("ShutdownInterface:quitGui", () => {
-    return shutdownInterface?.quitGui();
   });
 
   // HMR for renderer base on electron-vite cli.
@@ -171,6 +165,7 @@ app
     registerHandlers();
 
     createWindow();
+
     app.on("activate", () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
@@ -178,4 +173,3 @@ app
     });
   })
   .catch(console.log);
-

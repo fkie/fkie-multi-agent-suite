@@ -1,14 +1,15 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
-  "include": ["src/renderer/**/*", "src/renderer/**/*.jsx", "src/renderer/**/*.tsx", "src/renderer/**/**/*.tsx", "src/preload/*.d.ts"],
+  "include": ["src/index.d.ts", "src/preload/**/*.ts", "src/preload/*.d.ts", "src/renderer/**/*", "src/renderer/**/*.jsx", "src/renderer/**/*.tsx", "src/renderer/**/**/*.tsx", "src/types/**/*.ts"],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": ["src/renderer/*"]
+      "@/*": ["src/*"]
     },
     "allowJs": true,
-    "lib": ["ES2021"]
+    "lib": ["ES2021"],
+    "skipLibCheck": false
   }
 }

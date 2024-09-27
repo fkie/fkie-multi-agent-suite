@@ -7,7 +7,7 @@ import EditorManager from "./EditorManager";
 import MultimasterManager from "./MultimasterManager";
 import PasswordManager from "./PasswordManager";
 import { IROSInfo, ROSInfo } from "./ROSInfo";
-import ShutdownInterface from "./ShutdownInterface";
+import ShutdownManager from "./ShutdownManager";
 import SubscriberManager from "./SubscriberManager";
 import { ISystemInfo, SystemInfo } from "./SystemInfo";
 import TerminalManager from "./TerminalManager";
@@ -163,8 +163,9 @@ export {
   MultimasterManager,
   PasswordManager,
   ROSInfo,
-  ShutdownInterface,
+  ShutdownManager,
   SubscriberManager,
-  TerminalManager,
+  TerminalManager
 };
 export type { IROSInfo, ISystemInfo };
+
