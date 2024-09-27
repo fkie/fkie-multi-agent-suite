@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.11 - 27.09.2024
+
+Added lint to configuration
+Changed handling of collapse/expand in echo panel
+Fixed: do not scroll control panel in echo tab
+
 ## 2.5.10 - 18.09.2024
 
 Handling of capability groups revised
