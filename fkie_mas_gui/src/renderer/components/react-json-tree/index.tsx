@@ -3,18 +3,18 @@
 // Dave Vedder <veddermatic@gmail.com> http://www.eskimospy.com/
 // port by Daniele Zannotti http://www.github.com/dzannotti <dzannotti@me.com>
 
-import React, { useMemo } from 'react';
-import type { StylingValue, Theme } from 'react-base16-styling';
-import { invertTheme } from 'react-base16-styling';
-import JSONNode from './JSONNode.js';
-import createStylingFromTheme from './createStylingFromTheme.js';
+import { useMemo } from "react";
+import type { StylingValue, Theme } from "react-base16-styling";
+import { invertTheme } from "react-base16-styling";
+import JSONNode from "./JSONNode.js";
+import createStylingFromTheme from "./createStylingFromTheme.js";
 import type {
   CommonExternalProps,
   GetItemString,
   IsCustomNode,
   LabelRenderer,
   ShouldExpandNodeInitially,
-} from './types.js';
+} from "./types.js";
 
 interface Props extends Partial<CommonExternalProps> {
   data: unknown;
@@ -23,9 +23,8 @@ interface Props extends Partial<CommonExternalProps> {
 }
 
 const identity = (value: any) => value;
-const expandRootNode: ShouldExpandNodeInitially = (keyPath, data, level) =>
-  level === 0;
-const defaultItemString: GetItemString = (type, data, itemType, itemString) => (
+const expandRootNode: ShouldExpandNodeInitially = (_keyPath, _data, level) => level === 0;
+const defaultItemString: GetItemString = (_type, _data, itemType, itemString) => (
   <span>
     {itemType} {itemString}
   </span>
@@ -37,7 +36,7 @@ export function JSONTree({
   data: value,
   theme,
   invertTheme: shouldInvertTheme,
-  keyPath = ['root'],
+  keyPath = ["root"],
   labelRenderer = defaultLabelRenderer,
   valueRenderer = identity,
   shouldExpandNodeInitially = expandRootNode,
@@ -51,13 +50,12 @@ export function JSONTree({
   onExpand = () => {},
 }: Props) {
   const styling = useMemo(
-    () =>
-      createStylingFromTheme(shouldInvertTheme ? invertTheme(theme) : theme),
-    [theme, shouldInvertTheme],
+    () => createStylingFromTheme(shouldInvertTheme ? invertTheme(theme) : theme),
+    [theme, shouldInvertTheme]
   );
 
   return (
-    <ul {...styling('tree')}>
+    <ul {...styling("tree")}>
       <JSONNode
         keyPath={hideRoot ? [] : keyPath}
         value={postprocessValue(value)}
@@ -79,9 +77,17 @@ export function JSONTree({
 }
 
 export type {
-  CommonExternalProps, GetItemString, IsCustomNode, Key,
-  KeyPath, LabelRenderer, PostprocessValue, ShouldExpandNodeInitially, SortObjectKeys,
-  Styling, ValueRenderer
-} from './types.js';
+  CommonExternalProps,
+  GetItemString,
+  IsCustomNode,
+  Key,
+  KeyPath,
+  LabelRenderer,
+  PostprocessValue,
+  ShouldExpandNodeInitially,
+  SortObjectKeys,
+  Styling,
+  ValueRenderer
+} from "./types.js";
 export type { StylingValue };
 

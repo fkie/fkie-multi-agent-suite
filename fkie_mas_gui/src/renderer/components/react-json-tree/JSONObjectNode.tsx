@@ -1,4 +1,3 @@
-import React from 'react';
 import JSONNestedNode from './JSONNestedNode.js';
 import type { CommonInternalProps } from './types.js';
 

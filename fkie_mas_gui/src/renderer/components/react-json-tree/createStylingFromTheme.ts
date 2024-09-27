@@ -1,11 +1,11 @@
 import type { CurriedFunction1 } from 'lodash';
-import { createStyling } from 'react-base16-styling';
 import type {
   Base16Theme,
   StylingConfig,
   StylingFunction,
   Theme,
 } from 'react-base16-styling';
+import { createStyling } from 'react-base16-styling';
 import solarized from './themes/solarized.js';
 
 const colorMap = (theme: Base16Theme) => ({
@@ -58,7 +58,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       backgroundColor: colors.BACKGROUND_COLOR,
     },
 
-    value: ({ style }, nodeType, keyPath) => ({
+    value: ({ style }, _nodeType, keyPath) => ({
       style: {
         ...style,
         paddingTop: '0.25em',
@@ -92,7 +92,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       },
     }),
 
-    itemRange: (styling, expanded) => ({
+    itemRange: (_styling, expanded) => ({
       style: {
         paddingTop: expanded ? 0 : '0.25em',
         cursor: 'pointer',
@@ -100,7 +100,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       },
     }),
 
-    arrow: ({ style }, nodeType, expanded) => ({
+    arrow: ({ style }, _nodeType, expanded) => ({
       style: {
         ...style,
         marginLeft: 0,
@@ -139,7 +139,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       left: '-0.4em',
     },
 
-    nestedNode: ({ style }, keyPath, nodeType, expanded, expandable) => ({
+    nestedNode: ({ style }, keyPath, _nodeType, _expanded, expandable) => ({
       style: {
         ...style,
         position: 'relative',
@@ -154,7 +154,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       margin: 0,
     },
 
-    nestedNodeLabel: ({ style }, keyPath, nodeType, expanded, expandable) => ({
+    nestedNodeLabel: ({ style }, _keyPath, _nodeType, _expanded, expandable) => ({
       style: {
         ...style,
         margin: 0,
@@ -165,7 +165,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       },
     }),
 
-    nestedNodeItemString: ({ style }, keyPath, nodeType, expanded) => ({
+    nestedNodeItemString: ({ style }, _keyPath, _nodeType, expanded) => ({
       style: {
         ...style,
         paddingLeft: '0.5em',
@@ -181,7 +181,7 @@ const getDefaultThemeStyling = (theme: Base16Theme): StylingConfig => {
       marginRight: '0.3em',
     },
 
-    nestedNodeChildren: ({ style }, nodeType, expanded) => ({
+    nestedNodeChildren: ({ style }, _nodeType, expanded) => ({
       style: {
         ...style,
         padding: 0,

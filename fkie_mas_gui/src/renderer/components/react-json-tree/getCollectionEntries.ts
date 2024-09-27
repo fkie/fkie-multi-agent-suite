@@ -43,7 +43,7 @@ function getEntries(
     };
   } else {
     let idx = 0;
-    const entries = [];
+    const entries: { key: string | number; value: any; }[] = [];
     let done = true;
 
     const isMap = isIterableMap(collection);
@@ -83,7 +83,7 @@ function getEntries(
 }
 
 function getRanges(from: number, to: number, limit: number) {
-  const ranges = [];
+  const ranges: { from: number; to: number; }[] = [];
   while (to - from > limit * limit) {
     limit = limit * limit;
   }

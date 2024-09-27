@@ -1,4 +1,3 @@
-import React from 'react';
 import JSONNestedNode from './JSONNestedNode.js';
 import type { CommonInternalProps } from './types.js';
 
@@ -11,7 +10,7 @@ function createItemString(data: any, limit: number) {
     count = data.size;
   } else {
     // eslint-disable-next-line no-unused-vars
-    for (const entry of data) {
+    for (const _entry of data) {
       if (limit && count + 1 > limit) {
         hasMore = true;
         break;
