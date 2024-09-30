@@ -51,6 +51,7 @@ export default function EditorApp() {
   const [launchInfo, setLaunchInfo] = useState<ILaunchInfo | null>(null);
   const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
   const dialogRef = useRef(null);
+  let escapePressCount = 0;
 
   const initProvider = useCallback(async () => {
     const queryString = window.location.search;
@@ -118,6 +119,19 @@ export default function EditorApp() {
     },
     [monacoCtx]
   );
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      escapePressCount++;
+      if (escapePressCount === 2) {
+        window.close();
+      }
+      // Reset after 500 ms
+      setTimeout(() => {
+        escapePressCount = 0;
+      }, 500);
+    }
+  });
 
   const handleWindowError = (e) => {
     // fix "ResizeObserver loop limit exceeded" while change size of the editor
