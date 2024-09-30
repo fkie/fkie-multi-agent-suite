@@ -1,12 +1,10 @@
+import { TCredential, TSystemInfo } from "@/types";
 import React, { createContext, useContext, useMemo, useState } from "react";
-import useLocalStorage from "../hooks/useLocalStorage";
-import { DEFAULT_BUG_TEXT, LoggingContext } from "./LoggingContext";
-// import FileManagerWrapper from '../../main/IPC/FileManagerWrapper';
 import CommandExecutor from "../../main/IPC/CommandExecutor";
 import PasswordManager from "../../main/IPC/PasswordManager";
-import { ISystemInfo } from "../../main/IPC/SystemInfo";
-import { ICredential } from "../../main/models/ICredential";
+import useLocalStorage from "../hooks/useLocalStorage";
 import { generateUniqueId } from "../utils";
+import { DEFAULT_BUG_TEXT, LoggingContext } from "./LoggingContext";
 
 declare global {
   interface Window {
@@ -18,29 +16,29 @@ declare global {
 
 export interface IRosProviderContext {
   // credentials methods
-  credentials: ICredential[];
-  systemInfo: ISystemInfo | null;
-  addCredential: (credential: ICredential) => void;
+  credentials: TCredential[];
+  systemInfo: TSystemInfo | null;
+  addCredential: (credential: TCredential) => void;
   deleteCredential: (credentialId: string) => void;
-  getCredentialHost: (host: string) => ICredential | null;
+  getCredentialHost: (host: string) => TCredential | null;
 
   // Password Manager methods
-  setPassword: (credential: ICredential) => void;
-  deletePassword: (credential: ICredential) => void;
+  setPassword: (credential: TCredential) => void;
+  deletePassword: (credential: TCredential) => void;
 
   // // SFTP Methods
-  // exist: (credential: ICredential, path: string) => Promise<boolean>;
-  // stat: (credential: ICredential, path: string) => Promise<any>;
+  // exist: (credential: TCredential, path: string) => Promise<boolean>;
+  // stat: (credential: TCredential, path: string) => Promise<any>;
   // get: (
-  //   credential: ICredential,
+  //   credential: TCredential,
   //   path: string
   // ) => Promise<string | NodeJS.WritableStream | Buffer | null>;
   // put: (
-  //   credential: ICredential,
+  //   credential: TCredential,
   //   content: string,
   //   path: string
   // ) => Promise<string | null>;
-  exec: (credential: ICredential | null, command: string) => Promise<{ result: boolean; message: string }>;
+  exec: (credential: TCredential | null, command: string) => Promise<{ result: boolean; message: string }>;
 }
 
 export const DEFAULT = {
@@ -75,7 +73,7 @@ interface IRosProviderComponent {
   children: React.ReactNode;
 }
 
-const DEFAULT_CREDENTIALS: ICredential[] = [];
+const DEFAULT_CREDENTIALS: TCredential[] = [];
 
 export const SSHContext = createContext<IRosProviderContext>(DEFAULT);
 
@@ -83,11 +81,11 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   const logCtx = useContext(LoggingContext);
 
   // uses system info to get the /etc/hosts entries
-  const [systemInfo, setSystemInfo] = useState<ISystemInfo | null>(null);
+  const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
   const getSystemInfo = async () => {
     // get local System Info
-    if (window.SystemInfo) {
-      setSystemInfo(await window.SystemInfo.getInfo());
+    if (window.systemInfo) {
+      setSystemInfo(await window.systemInfo.getInfo());
     }
   };
   if (!systemInfo) {
@@ -97,7 +95,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   const [credentials, setCredentials] = useLocalStorage("SSHContext:credentials", DEFAULT_CREDENTIALS);
 
   // // FileManagerWrapper methods
-  // const exist = async (credential: ICredential, path: string) => {
+  // const exist = async (credential: TCredential, path: string) => {
   //   if (!window.FileManagerWrapper) {
   //     logCtx.error(
   //       'exist: Invalid [FileManagerWrapper]',
@@ -112,7 +110,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   //   return false;
   // };
 
-  // const stat = async (credential: ICredential, path: string) => {
+  // const stat = async (credential: TCredential, path: string) => {
   //   if (!window.FileManagerWrapper) {
   //     logCtx.error(
   //       'stat: Invalid [FileManagerWrapper]',
@@ -124,7 +122,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   //   return res;
   // };
 
-  // const get = async (credential: ICredential, path: string) => {
+  // const get = async (credential: TCredential, path: string) => {
   //   if (!window.FileManagerWrapper) {
   //     logCtx.error(
   //       'get: Invalid [FileManagerWrapper]',
@@ -137,7 +135,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   // };
 
   // const put = async (
-  //   credential: ICredential,
+  //   credential: TCredential,
   //   content: string,
   //   path: string
   // ) => {
@@ -164,7 +162,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   // };
 
   // PasswordManager methods
-  const setPassword = async (credential: ICredential) => {
+  const setPassword = async (credential: TCredential) => {
     if (!window.PasswordManager) {
       logCtx.error("setPassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return null;
@@ -177,7 +175,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     return res;
   };
 
-  const deletePassword = async (credential: ICredential) => {
+  const deletePassword = async (credential: TCredential) => {
     if (!window.PasswordManager) {
       logCtx.error("deletePassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return;
@@ -186,7 +184,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     await window.PasswordManager.deletePassword(credential.service, credential.account);
   };
 
-  const checkPassword = (credential: ICredential) => {
+  const checkPassword = (credential: TCredential) => {
     if (!window.CommandExecutor) {
       logCtx.error("checkPassword: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return Promise.resolve({
@@ -198,7 +196,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   };
 
   // credentials methods
-  const addCredential = async (credential: ICredential) => {
+  const addCredential = async (credential: TCredential) => {
     if (!credential.host || !credential.username || !credential.password) {
       logCtx.error("Try to add an invalid credential", "Please check credential settings");
       return { result: false, message: "Try to add an invalid credential" };
@@ -239,7 +237,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
       }
 
       // if successful, add new credential to app
-      setCredentials((previousCredentials: ICredential[]) => {
+      setCredentials((previousCredentials: TCredential[]) => {
         return [...previousCredentials, credential];
       });
     } catch (error: unknown) {
@@ -281,7 +279,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     }
 
     // search the SSH credentials based on host
-    let credentialHost: ICredential | null = null;
+    let credentialHost: TCredential | null = null;
     credentials.forEach((credential) => {
       if (credential.host === host) {
         credentialHost = credential;
@@ -329,7 +327,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   };
 
   // CommandExecutor
-  const exec = async (credential: ICredential | null, command: string) => {
+  const exec = async (credential: TCredential | null, command: string) => {
     if (!window.CommandExecutor) {
       logCtx.error("exec: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return {

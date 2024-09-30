@@ -1,15 +1,15 @@
-import { dialog, ipcMain } from "electron";
-import { ICredential } from "../models/ICredential";
+import { TCredential } from "@/types";
+import { ipcMain } from "electron";
 import AutoUpdateManager from "./AutoUpdateManager";
 import CommandExecutor from "./CommandExecutor";
 import DialogManager from "./DialogManager";
 import EditorManager from "./EditorManager";
 import MultimasterManager from "./MultimasterManager";
 import PasswordManager from "./PasswordManager";
-import { IROSInfo, ROSInfo } from "./ROSInfo";
+import { ROSInfo } from "./ROSInfo";
 import ShutdownManager from "./ShutdownManager";
 import SubscriberManager from "./SubscriberManager";
-import { ISystemInfo, SystemInfo } from "./SystemInfo";
+import { SystemInfo } from "./SystemInfo";
 import TerminalManager from "./TerminalManager";
 
 const sPasswordManager = new PasswordManager();
@@ -34,22 +34,22 @@ export const registerHandlers = (): void => {
   });
 
   // SSH Manager
-  ipcMain.handle("CommandExecutor:exec", (_event, credential: ICredential, command: string) => {
+  ipcMain.handle("CommandExecutor:exec", (_event, credential: TCredential, command: string) => {
     return sCommandExecutor.exec(credential, command);
   });
 
   // SSH Manager
-  ipcMain.handle("CommandExecutor:execTerminal", (_event, credential: ICredential, title: string, command: string) => {
+  ipcMain.handle("CommandExecutor:execTerminal", (_event, credential: TCredential, title: string, command: string) => {
     return sCommandExecutor.execTerminal(credential, title, command);
   });
 
   // ROSInfo
-  ipcMain.handle("ROSInfo:getInfo", () => {
+  ipcMain.handle("rosInfo:getInfo", () => {
     return new ROSInfo().getInfo();
   });
 
   // ROSInfo
-  ipcMain.handle("SystemInfo:getInfo", () => {
+  ipcMain.handle("systemInfo:getInfo", () => {
     return new SystemInfo().getInfo();
   });
 
@@ -58,7 +58,7 @@ export const registerHandlers = (): void => {
   // if (['1', '2'].includes(`${sMultimasterManager.rosInfo.version}`)) {
   ipcMain.handle(
     "MultimasterManager:startTerminalManager",
-    (_event, rosVersion: string, credential: ICredential, port?: number) => {
+    (_event, rosVersion: string, credential: TCredential, port?: number) => {
       return sMultimasterManager.startTerminalManager(rosVersion, credential, port);
     }
   );
@@ -68,7 +68,7 @@ export const registerHandlers = (): void => {
     (
       _event,
       rosVersion: string,
-      credential: ICredential,
+      credential: TCredential,
       name?: string,
       networkId?: number,
       ros1MasterUri?: string,
@@ -90,7 +90,7 @@ export const registerHandlers = (): void => {
     (
       _event,
       rosVersion: string,
-      credential: ICredential,
+      credential: TCredential,
       name?: string,
       port?: number,
       group?: string,
@@ -118,7 +118,7 @@ export const registerHandlers = (): void => {
     (
       _event,
       rosVersion: string,
-      credential: ICredential,
+      credential: TCredential,
       name?: string,
       doNotSync?: string[],
       syncTopics?: string[],
@@ -139,7 +139,7 @@ export const registerHandlers = (): void => {
 
   ipcMain.handle(
     "MultimasterManager:startDynamicReconfigureClient",
-    (_event, name: string, rosMasterUri: string, credential?: ICredential | null) => {
+    (_event, name: string, rosMasterUri: string, credential?: TCredential | null) => {
       return sMultimasterManager.startDynamicReconfigureClient(name, rosMasterUri, credential);
     }
   );
@@ -156,4 +156,3 @@ export {
   SubscriberManager,
   TerminalManager,
 };
-export type { IROSInfo, ISystemInfo };

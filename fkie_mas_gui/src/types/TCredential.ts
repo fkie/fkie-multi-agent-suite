@@ -1,4 +1,4 @@
-export interface ICredential {
+export type TCredential = {
   id: string;
   host: string;
   port: number;

@@ -222,13 +222,13 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
           setMessageType(msgType);
           const msgStruct = await newProvider.getMessageStruct(msgType);
           if (msgStruct) {
-            setMessageStructOrg(msgStruct);
-            setMessageStruct(msgStruct);
+            setMessageStructOrg(msgStruct.data);
+            setMessageStruct(msgStruct.data);
             setInputElements(
               <InputElements
-                key={msgStruct.type}
-                messageStruct={msgStruct}
-                parentName={msgStruct.type ? msgStruct.type : `${topicName}[${msgType}]`}
+                key={msgStruct.data.type}
+                messageStruct={msgStruct.data}
+                parentName={msgStruct.data.type ? msgStruct.data.type : `${topicName}[${msgType}]`}
                 filterText={searchTerm}
                 onCopyToClipboard={onCopyToClipboard}
               />

@@ -5,6 +5,7 @@ import {
   EditorManagerEvents,
   FileRange,
   FileRangeCallback,
+  TCredential,
   ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
@@ -17,7 +18,6 @@ import {
   TTerminalManager,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
-import { ICredential } from "../main/models/ICredential";
 
 // Custom APIs for renderer
 // const api = {};
@@ -41,51 +41,51 @@ if (process.contextIsolated) {
     // TODO remove SFTP if websocket ros.file.get and ros.file.save works
     // Register SFTP Manager
     // contextBridge.exposeInMainWorld('FileManagerWrapper', {
-    //   checkPassword: (credential: ICredential) =>
+    //   checkPassword: (credential: TCredential) =>
     //     ipcRenderer.invoke('FileManagerWrapper:checkPassword', credential),
 
-    //   exist: (credential: ICredential, path: string) =>
+    //   exist: (credential: TCredential, path: string) =>
     //     ipcRenderer.invoke('FileManagerWrapper:exist', credential, path),
 
-    //   stat: (credential: ICredential, path: string) =>
+    //   stat: (credential: TCredential, path: string) =>
     //     ipcRenderer.invoke('FileManagerWrapper:stat', credential, path),
 
-    //   get: (credential: ICredential, path: string) =>
+    //   get: (credential: TCredential, path: string) =>
     //     ipcRenderer.invoke('FileManagerWrapper:get', credential, path),
 
-    //   put: (credential: ICredential, content: string, path: string) =>
+    //   put: (credential: TCredential, content: string, path: string) =>
     //     ipcRenderer.invoke('FileManagerWrapper:put', credential, content, path),
     // });
 
     // Register Command Executor
     contextBridge.exposeInMainWorld("CommandExecutor", {
-      exec: (credential: ICredential, command: string) =>
+      exec: (credential: TCredential, command: string) =>
         ipcRenderer.invoke("CommandExecutor:exec", credential, command),
 
-      execTerminal: (credential: ICredential, title: string, command: string) =>
+      execTerminal: (credential: TCredential, title: string, command: string) =>
         ipcRenderer.invoke("CommandExecutor:execTerminal", credential, title, command),
     });
 
     // Register ROS Info
-    contextBridge.exposeInMainWorld("ROSInfo", {
-      getInfo: () => ipcRenderer.invoke("ROSInfo:getInfo"),
+    contextBridge.exposeInMainWorld("rosInfo", {
+      getInfo: () => ipcRenderer.invoke("rosInfo:getInfo"),
     });
 
     // Register System Info
-    contextBridge.exposeInMainWorld("SystemInfo", {
-      getInfo: () => ipcRenderer.invoke("SystemInfo:getInfo"),
+    contextBridge.exposeInMainWorld("systemInfo", {
+      getInfo: () => ipcRenderer.invoke("systemInfo:getInfo"),
     });
 
     // Register Multimaster Manager
     //    Validate first if ROS is available
     // if (['1', '2'].includes(`${sMultimasterManagerPreload.rosInfo.version}`)) {
     contextBridge.exposeInMainWorld("MultimasterManager", {
-      startTerminalManager: (rosVersion: string, credential: ICredential, port?: number) =>
+      startTerminalManager: (rosVersion: string, credential: TCredential, port?: number) =>
         ipcRenderer.invoke("MultimasterManager:startTerminalManager", rosVersion, credential, port),
 
       startMultimasterDaemon: (
         rosVersion: string,
-        credential: ICredential,
+        credential: TCredential,
         name?: string,
         networkId?: number,
         ros1MasterUri?: string,
@@ -103,7 +103,7 @@ if (process.contextIsolated) {
 
       startMasterDiscovery: (
         rosVersion: string,
-        credential: ICredential,
+        credential: TCredential,
         name?: string,
         networkId?: number,
         group?: string,
@@ -127,7 +127,7 @@ if (process.contextIsolated) {
 
       startMasterSync: (
         rosVersion: string,
-        credential: ICredential,
+        credential: TCredential,
         name?: string,
         doNotSync?: string[],
         syncTopics?: string[],
@@ -145,7 +145,7 @@ if (process.contextIsolated) {
           forceStart
         ),
 
-      startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: ICredential | null) =>
+      startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: TCredential | null) =>
         ipcRenderer.invoke("MultimasterManager:startDynamicReconfigureClient", name, rosMasterUri, credential),
     });
 

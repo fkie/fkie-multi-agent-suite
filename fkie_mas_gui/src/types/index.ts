@@ -8,6 +8,8 @@ import {
   TEditorManager,
 } from "./EditorManager";
 import { FileRange } from "./FileRange";
+import { TCredential } from "./TCredential";
+import { TRosInfo } from "./TRosInfo";
 import JSONObject, { JSONValue } from "./JsonObject";
 import { IShutdownManager, ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 import {
@@ -24,6 +26,7 @@ import {
   TerminalManagerEvents,
   TTerminalManager,
 } from "./TerminalManager";
+import { TSystemInfo } from "./TSystemInfo";
 
 export {
   DialogManagerEvents,
@@ -36,9 +39,11 @@ export type {
   EditorCloseCallback,
   FileRange,
   FileRangeCallback,
+  TCredential,
   IDialogManager,
   IEditor,
   IEditorManager,
+  TRosInfo,
   IShutdownManager,
   ISubscriber,
   ISubscriberManager,
@@ -53,5 +58,6 @@ export type {
   TerminateCallback,
   TShutdownManager,
   TSubscriberManager,
+  TSystemInfo,
   TTerminalManager,
 };

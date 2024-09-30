@@ -1,3 +1,4 @@
+import { TCredential, TSystemInfo } from "@/types";
 import { spawn, StdioOptions } from "child_process";
 import log from "electron-log";
 import fs from "fs";
@@ -5,20 +6,19 @@ import os from "os";
 import path from "path";
 import { Client, ConnectConfig } from "ssh2";
 import { ARGUMENTS, getArgument } from "../CommandLineInterface";
-import { ICredential } from "../models/ICredential";
 import PasswordManager from "./PasswordManager";
-import { ISystemInfo, SystemInfo } from "./SystemInfo";
+import { SystemInfo } from "./SystemInfo";
 
 const textDecoder = new TextDecoder();
 /**
  * Class CommandExecutor: Execute commands locally or remote using SSH2 interface
  */
 class CommandExecutor {
-  localCredential: ICredential;
+  localCredential: TCredential;
 
   pm: PasswordManager;
 
-  systemInfo?: ISystemInfo;
+  systemInfo?: TSystemInfo;
 
   terminalOptions: {
     terminals: string[];
@@ -54,12 +54,12 @@ class CommandExecutor {
 
   /**
    * Executes a command using a SSH connection
-   * @param {ICredential} credential - SSH credential, null for local host.
+   * @param {TCredential} credential - SSH credential, null for local host.
    * @param {string} command - Remote directory path
    * @return {Promise<{result: boolean, message: string}>} Returns response
    */
-  public exec: (credential: ICredential | null, command: string) => Promise<{ result: boolean; message: string }> =
-    async (credential: ICredential | null, command: string) => {
+  public exec: (credential: TCredential | null, command: string) => Promise<{ result: boolean; message: string }> =
+    async (credential: TCredential | null, command: string) => {
       let c = credential;
 
       // if no credential is given, assumes local host
@@ -225,13 +225,13 @@ class CommandExecutor {
 
   /**
    * Executes a command in an external Terminal (using a SSH connection on remote hosts)
-   * @param {ICredential} credential - SSH credential, null for local host
+   * @param {TCredential} credential - SSH credential, null for local host
    * @param {string} title - Remote directory path
    * @param {string} command - Remote directory path
    * @return {Promise<{result: boolean, message: string}>} Returns response
    */
   public execTerminal: (
-    credential: ICredential | null,
+    credential: TCredential | null,
     title: string,
     command: string
   ) => Promise<{ result: boolean; message: string }> = async (credential, title, command) => {
@@ -300,10 +300,10 @@ class CommandExecutor {
 
   /**
    * Generate configuration file for SSH connection
-   * @param {ICredential} credential - SSH credential
+   * @param {TCredential} credential - SSH credential
    * @return {object} Returns a configuration file
    */
-  private generateConfig = async (credential: ICredential): Promise<ConnectConfig> => {
+  private generateConfig = async (credential: TCredential): Promise<ConnectConfig> => {
     // try to get password from password manager
     let pwd: string | null = null;
     try {

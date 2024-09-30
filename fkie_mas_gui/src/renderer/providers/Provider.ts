@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { JSONObject } from "@/types";
+import { TSystemInfo, JSONObject } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
 import { TagColors } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
@@ -182,7 +182,7 @@ export default class Provider implements IProvider {
 
   screens: ScreensMapping[] = [];
 
-  systemInfo: object = {};
+  systemInfo: TSystemInfo = {};
 
   systemEnv: object = {};
 
@@ -1348,7 +1348,7 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Returns a messags struct for given message type.
+   * Returns a messages struct for given message type.
    *
    * @param {string} request - Topic type to be requested
    * @return {Promise<LaunchMessageStruct>} Returns a message struct
@@ -1359,7 +1359,7 @@ export default class Provider implements IProvider {
         const parsed = value.message as LaunchMessageStruct;
         const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
         if (response.valid) {
-          return response.data;
+          return response;
         }
         this.logger?.error(`Can't parse message: ${request}`, parsed.error_msg);
         return null;
@@ -1371,7 +1371,7 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Returns a messags struct for given service type.
+   * Returns a messages struct for given service type.
    *
    * @param {string} request - Service type to be requested
    * @return {Promise<LaunchMessageStruct>} Returns a message struct
@@ -1382,7 +1382,7 @@ export default class Provider implements IProvider {
         const parsed = value.message as LaunchMessageStruct;
         const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
         if (response.valid) {
-          return response.data;
+          return response;
         }
         this.logger?.error(`Can't parse service: ${request}`, parsed.error_msg);
         return null;
@@ -1997,7 +1997,7 @@ export default class Provider implements IProvider {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
         }
       } else if (n.system_node) {
-        n.group = this.settings.get("namespaceSystemNodes");
+        n.group = this.settings.get("namespaceSystemNodes") as string;
       }
 
       if (!n.node_API_URI || n.node_API_URI.length === 0) return;

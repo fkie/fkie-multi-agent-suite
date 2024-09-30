@@ -1,11 +1,10 @@
+import { TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import MultimasterManager from "../../main/IPC/MultimasterManager";
-import { IROSInfo, ROSInfo } from "../../main/IPC/ROSInfo";
-import { ISystemInfo, SystemInfo } from "../../main/IPC/SystemInfo";
 import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "../components/UI";
 import {
   LaunchArgument,
@@ -57,16 +56,14 @@ import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "
 
 declare global {
   interface Window {
-    ROSInfo?: ROSInfo;
-    SystemInfo?: SystemInfo;
     MultimasterManager?: MultimasterManager;
   }
 }
 
 export interface IRosProviderContext {
   initialized: boolean;
-  rosInfo: IROSInfo | null;
-  systemInfo: ISystemInfo | null;
+  rosInfo: TRosInfo | null;
+  systemInfo: TSystemInfo | null;
   multimasterManager: MultimasterManager | null;
   providers: Provider[];
   providersConnected: Provider[];
@@ -141,8 +138,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const { enqueueSnackbar } = useSnackbar();
 
   const [initialized, setInitialized] = useState(DEFAULT.initialized);
-  const [rosInfo, setRosInfo] = useState<IROSInfo | null>(null);
-  const [systemInfo, setSystemInfo] = useState<ISystemInfo | null>(null);
+  const [rosInfo, setRosInfo] = useState<TRosInfo | null>(null);
+  const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
   const [multimasterManager, setMultimasterManager] = useState<MultimasterManager | null>(null);
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -1123,13 +1120,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setMultimasterManager(window.MultimasterManager);
     }
     // get local ROS Info
-    if (window.ROSInfo) {
-      const rinfo = await window.ROSInfo.getInfo();
+    if (window.rosInfo) {
+      const rinfo = await window.rosInfo.getInfo();
       setRosInfo(rinfo);
     }
     // get local System Info
-    if (window.SystemInfo) {
-      setSystemInfo(await window.SystemInfo.getInfo());
+    if (window.systemInfo) {
+      setSystemInfo(await window.systemInfo.getInfo());
     }
     setInitialized(true);
   };

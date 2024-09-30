@@ -1,14 +1,4 @@
-interface IROSInfo {
-  version: string | undefined;
-  pythonVersion: string | undefined;
-  etcDir: string | undefined;
-  masterUri: string | undefined;
-  root: string | undefined;
-  distro: string | undefined;
-  domainId: string | undefined;
-  localhostOnly: string | undefined;
-}
-
+import { TRosInfo } from "@/types";
 /**
  * Read ROS info stored in Environment variables
  */
@@ -53,7 +43,7 @@ class ROSInfo {
     this.localhostOnly = process.env.ROS_LOCALHOST_ONLY;
   }
 
-  public getInfo: () => IROSInfo = () => {
+  public getInfo: () => TRosInfo = () => {
     return {
       version: this.version,
       pythonVersion: this.pythonVersion,
@@ -63,7 +53,7 @@ class ROSInfo {
       distro: this.distro,
       domainId: this.domainId,
       localhostOnly: this.localhostOnly,
-    };
+    } as TRosInfo;
   };
 
   /**
@@ -75,5 +65,4 @@ class ROSInfo {
   };
 }
 
-export type { IROSInfo };
 export { ROSInfo };

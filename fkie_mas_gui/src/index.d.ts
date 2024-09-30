@@ -1,9 +1,12 @@
+import { TRosInfo, TSystemInfo } from "@/types";
 import { TDialogManager, TEditorManager, TShutdownManager, TSubscriberManager, TTerminalManager } from "./types";
 
 declare global {
   interface Window {
     dialogManager: TDialogManager;
     editorManager: TEditorManager;
+    rosInfo: TRosInfo;
+    systemInfo: TSystemInfo;
     shutdownManager: TShutdownManager;
     subscriberManager: TSubscriberManager;
     terminalManager: TTerminalManager;

@@ -1,10 +1,9 @@
+import { TCredential, ITerminalManager, TerminalManagerEvents } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
 import { join } from "path";
-import { TerminalManagerEvents, ITerminalManager } from "@/types";
 import { ARGUMENTS, getArgument, hasArgument } from "../CommandLineInterface";
-import { ICredential } from "../models/ICredential";
 import windowStateKeeper from "../windowStateKeeper";
 import CommandExecutor from "./CommandExecutor";
 import { ROSInfo } from "./ROSInfo";
@@ -149,13 +148,13 @@ class TerminalManager implements ITerminalManager {
   /**
    * Creates a new terminal using given credentials and execute bash
    *
-   * @param {ICredential} credential - Credentials to connect with
+   * @param {TCredential} credential - Credentials to connect with
    * @param {number} port - TTYD Port
    * @return {string} Returns result
    */
   public spawnTerminal: (
     rosVersion?: string | null,
-    credential?: ICredential | null,
+    credential?: TCredential | null,
     port?: number
   ) => Promise<{ result: boolean; message: string }> = (rosVersion = null, credential = null, port = undefined) => {
     let version = rosVersion;

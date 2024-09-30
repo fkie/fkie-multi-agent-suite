@@ -207,13 +207,13 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
           setServiceType(srvType);
           const srvStruct = await newProvider.getServiceStruct(srvType);
           if (srvStruct) {
-            setServiceStructOrg(srvStruct);
-            setServiceStruct(srvStruct);
+            setServiceStructOrg(srvStruct.data);
+            setServiceStruct(srvStruct.data);
             setInputElements(
               <InputElements
-                key={srvStruct.type}
-                messageStruct={srvStruct}
-                parentName={srvStruct.type ? srvStruct.type : `${serviceName}[${srvType}]`}
+                key={srvStruct.data.type}
+                messageStruct={srvStruct.data}
+                parentName={srvStruct.data.type ? srvStruct.data.type : `${serviceName}[${srvType}]`}
                 filterText={searchTerm}
                 onCopyToClipboard={onCopyToClipboard}
               />

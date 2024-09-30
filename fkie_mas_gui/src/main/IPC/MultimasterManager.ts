@@ -1,6 +1,6 @@
+import { TCredential } from "@/types";
 import log from "electron-log";
 import { ARGUMENTS, getArgument } from "../CommandLineInterface";
-import { ICredential } from "../models/ICredential";
 import CommandExecutor from "./CommandExecutor";
 import { ROSInfo } from "./ROSInfo";
 import TerminalManager from "./TerminalManager";
@@ -29,19 +29,19 @@ class MultimasterManager {
   /**
    * Try to start a Terminal manager (default TTYD)
    *
-   * @param {ICredential} credential - Credential to be used
+   * @param {TCredential} credential - Credential to be used
    * @param {number} port - TTYD Port
    * @return {string} execution result
    */
   public startTerminalManager: (
     rosVersion?: string | null,
-    credential?: ICredential | null,
+    credential?: TCredential | null,
     port?: number
   ) => Promise<{ result: boolean; message: string }> = (rosVersion = null, credential = null, port = undefined) => {
     return this.terminalManager.spawnTerminal(rosVersion, credential, port);
   };
 
-  public toRos1MasterUriPrefix: (ros1MasterUri: string | undefined, credential: ICredential | null) => string = (
+  public toRos1MasterUriPrefix: (ros1MasterUri: string | undefined, credential: TCredential | null) => string = (
     ros1MasterUri,
     credential
   ) => {
@@ -55,7 +55,7 @@ class MultimasterManager {
   /**
    * Try to start a master discovery node
    *
-   * @param {ICredential} credential - Credential to be used
+   * @param {TCredential} credential - Credential to be used
    * @param {string} name - Node name
    * @param {number} networkId - Network Id
    * @param {string} group - Multicast group
@@ -64,7 +64,7 @@ class MultimasterManager {
    */
   public startMasterDiscovery: (
     rosVersion?: string | null,
-    credential?: ICredential | null,
+    credential?: TCredential | null,
     name?: string,
     networkId?: number,
     group?: string,
@@ -136,7 +136,7 @@ class MultimasterManager {
   /**
    * Try to start a master sync node
    *
-   * @param {ICredential} credential - Credential to be used
+   * @param {TCredential} credential - Credential to be used
    * @param {string} name - Node name
    * @param {string[]} doNotSync - a list with topics to ignore while syncing
    * @param {string[]} syncTopics - a list with topics to sync
@@ -144,7 +144,7 @@ class MultimasterManager {
    */
   public startMasterSync: (
     rosVersion?: string | null,
-    credential?: ICredential | null,
+    credential?: TCredential | null,
     name?: string,
     doNotSync?: string[],
     syncTopics?: string[],
@@ -194,13 +194,13 @@ class MultimasterManager {
   /**
    * Try to start a Daemon Node
    *
-   * @param {ICredential} credential - Credential to be used
+   * @param {TCredential} credential - Credential to be used
    * @param {string} name - Node name
    * @return {bool} execution result
    */
   public startMultimasterDaemon: (
     rosVersion?: string | null,
-    credential?: ICredential | null,
+    credential?: TCredential | null,
     name?: string,
     networkId?: number,
     ros1MasterUri?: string,
@@ -261,14 +261,14 @@ class MultimasterManager {
   /**
    * Try to start a Dynamic Reconfigure Node
    *
-   * @param {ICredential} credential - Credential to be used
+   * @param {TCredential} credential - Credential to be used
    * @param {string} name - Node name
    * @return {bool} execution result
    */
   public startDynamicReconfigureClient: (
     name: string,
     rosMasterUri: string,
-    credential?: ICredential | null
+    credential?: TCredential | null
   ) => Promise<{ result: boolean; message: string }> = async (name, rosMasterUri, credential = null) => {
     const nameArg = `--name=/dynamic_reconfigure${name}`;
     const envArg = `ROS_MASTER_URI=${rosMasterUri}`;

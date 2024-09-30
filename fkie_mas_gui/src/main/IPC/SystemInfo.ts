@@ -1,25 +1,12 @@
+import { TSystemInfo } from "@/types";
 import log from "electron-log";
 import hostile from "hostile";
 import si from "systeminformation";
 
-interface ISystemInfo {
-  time?: si.Systeminformation.TimeData;
-  cpu?: si.Systeminformation.CpuData;
-  cpuCurrentSpeed?: si.Systeminformation.CpuCurrentSpeedData;
-  cpuTemperature?: si.Systeminformation.CpuTemperatureData;
-  mem?: si.Systeminformation.MemData;
-  battery?: si.Systeminformation.BatteryData;
-  graphics?: si.Systeminformation.GraphicsData;
-  osInfo?: si.Systeminformation.OsData;
-  networkInterfaces?: si.Systeminformation.NetworkInterfacesData[];
-  // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
-  hosts?: hostile.Lines;
-}
-
 /**
  * Read general local system information
  */
-class SystemInfo {
+class SystemInfo implements TSystemInfo {
   time?: si.Systeminformation.TimeData;
 
   cpu?: si.Systeminformation.CpuData;
@@ -42,7 +29,7 @@ class SystemInfo {
 
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
 
-  public getInfo: () => Promise<ISystemInfo> = () => {
+  public getInfo: () => Promise<TSystemInfo> = () => {
     return new Promise((resolve, reject) => {
       const fetchInfo = async (): Promise<void> => {
         try {
@@ -78,7 +65,7 @@ class SystemInfo {
             networkInterfaces: this.networkInterfaces,
             // networkConnections: this.networkConnections,
             hosts: this.hosts,
-          });
+          } as TSystemInfo);
         } catch (error) {
           log.error(`SystemInfo: getInfo error: ${error}`);
           reject(error);
@@ -99,4 +86,3 @@ class SystemInfo {
 }
 
 export { SystemInfo };
-export type { ISystemInfo };
