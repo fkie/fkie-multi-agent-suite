@@ -85,9 +85,9 @@ export default function TerminalApp() {
 
   useEffect(() => {
     // update font size globally
-    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize");
+    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize") as number;
     lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] =
-      settingsCtx.get("fontSize");
+      `${settingsCtx.get("fontSize")}`;
     setDarkTheme(createTheme(darkThemeDef as ThemeOptions));
     setLightTheme(createTheme(lightThemeDef as ThemeOptions));
   }, [settingsCtx, settingsCtx.changed]);
@@ -95,9 +95,9 @@ export default function TerminalApp() {
   useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
-    window.electronAPI?.onTerminalClose((id: string) => {
+    window.terminalManager.onClose((id: string) => {
       // close window on stop request
-      window.electronAPI?.closeTerminal(id);
+      window.terminalManager.close(id);
     });
     initProvider();
     return () => {

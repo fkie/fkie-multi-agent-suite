@@ -2,6 +2,7 @@ import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
 import { join } from "path";
+import { TerminalManagerEvents, ITerminalManager } from "@/types";
 import { ARGUMENTS, getArgument, hasArgument } from "../CommandLineInterface";
 import { ICredential } from "../models/ICredential";
 import windowStateKeeper from "../windowStateKeeper";
@@ -15,7 +16,7 @@ interface ITerminal {
 /**
  * Class TerminalManager: Allows to create terminal objects to interact with console
  */
-class TerminalManager {
+class TerminalManager implements ITerminalManager {
   commandExecutor: CommandExecutor;
 
   rosInfo: ROSInfo;
@@ -28,9 +29,9 @@ class TerminalManager {
   }
 
   public registerHandlers: () => void = () => {
-    ipcMain.handle("terminal:has", this.handleHasTerminal);
-    ipcMain.handle("terminal:open", this.handleTerminalOpen);
-    ipcMain.handle("terminal:close", this.handleTerminalClose);
+    ipcMain.handle(TerminalManagerEvents.has, this.handleHasTerminal);
+    ipcMain.handle(TerminalManagerEvents.open, this.handleOpenTerminal);
+    ipcMain.handle(TerminalManagerEvents.close, this.handleCloseTerminal);
   };
 
   public handleHasTerminal: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
@@ -43,7 +44,7 @@ class TerminalManager {
     return Promise.resolve(false);
   };
 
-  public handleTerminalClose: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
+  public handleCloseTerminal: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
     _event,
     id
   ) => {
@@ -55,7 +56,7 @@ class TerminalManager {
     return Promise.resolve(false);
   };
 
-  public handleTerminalOpen: (
+  public handleOpenTerminal: (
     _event: Electron.IpcMainInvokeEvent,
     id: string,
     host: string,
@@ -112,7 +113,7 @@ class TerminalManager {
       // send close request to the renderer
       if (this.instances[id]) {
         e.preventDefault();
-        this.instances[id].window.webContents.send("terminal:onClose", id);
+        this.instances[id].window.webContents.send(TerminalManagerEvents.onClose, id);
       }
     });
 

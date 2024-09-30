@@ -1078,18 +1078,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (provider && window.electronAPI && (openExternal || (await window.electronAPI?.hasTerminal(id)))) {
+        if (provider && window.electronAPI && (openExternal || (await window.terminalManager.has(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
-          window.electronAPI.openTerminal(
-            id,
-            provider.connection.host,
-            provider.connection.port,
-            type,
-            node,
-            screen,
-            cmd
-          );
+          window.terminalManager.open(id, provider.connection.host, provider.connection.port, type, node, screen, cmd);
         } else {
           emitCustomEvent(
             EVENT_OPEN_COMPONENT,

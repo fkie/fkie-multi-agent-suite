@@ -474,15 +474,7 @@ function NodeManager() {
                   }
                   if (node.getConfig().terminalConfig) {
                     const cfg = node.getConfig().terminalConfig;
-                    window.electronAPI.openTerminal(
-                      cfg.id,
-                      cfg.host,
-                      cfg.port,
-                      cfg.cmdType,
-                      cfg.node,
-                      cfg.screen,
-                      cfg.cmd
-                    );
+                    window.terminalManager.open(cfg.id, cfg.host, cfg.port, cfg.cmdType, cfg.node, cfg.screen, cfg.cmd);
                     deleteTab(node.getId());
                   }
                   event.stopPropagation();

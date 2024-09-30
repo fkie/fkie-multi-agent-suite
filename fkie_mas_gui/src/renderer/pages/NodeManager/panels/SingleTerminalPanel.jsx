@@ -130,7 +130,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
             name={`${nodeName}`}
             errorHighlighting={errorHighlighting}
             onCtrlD={() => {
-              window.electronAPI?.closeTerminal(id);
+              window.terminalManager.close(id);
               emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
             }}
           />
@@ -145,7 +145,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
             name={`${cmd.replaceAll("/", " ")}`}
             errorHighlighting={errorHighlighting}
             onCtrlD={() => {
-              window.electronAPI?.closeTerminal(id);
+              window.terminalManager.close(id);
               emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
             }}
           />
@@ -160,7 +160,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
             name={`bash`}
             errorHighlighting={errorHighlighting}
             onCtrlD={() => {
-              window.electronAPI?.closeTerminal(id);
+              window.terminalManager.close(id);
               emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
             }}
           />

@@ -16,8 +16,15 @@ import {
   SubscriberManagerEvents,
   TSubscriberManager,
 } from "./SubscriberManager";
+import {
+  ITerminal,
+  ITerminalManager,
+  TerminalCloseCallback,
+  TerminalManagerEvents,
+  TTerminalManager,
+} from "./TerminalManager";
 
-export { EditorManagerEvents, ShutdownManagerEvents, SubscriberManagerEvents };
+export { EditorManagerEvents, ShutdownManagerEvents, SubscriberManagerEvents, TerminalManagerEvents };
 export type {
   EditorCloseCallback,
   FileRange,
@@ -34,4 +41,8 @@ export type {
   TerminateCallback,
   TShutdownManager,
   TSubscriberManager,
+  ITerminal,
+  ITerminalManager,
+  TerminalCloseCallback,
+  TTerminalManager,
 };

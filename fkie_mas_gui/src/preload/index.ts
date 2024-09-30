@@ -11,6 +11,9 @@ import {
   TSubscriberManager,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
+  TerminalManagerEvents,
+  TerminalCloseCallback,
+  TTerminalManager,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 import { ICredential } from "../main/models/ICredential";
@@ -224,32 +227,26 @@ if (process.contextIsolated) {
         }),
     } as TSubscriberManager);
 
+    contextBridge.exposeInMainWorld("terminalManager", {
+      // terminal interface
+      open: (id: string, host: string, port: number, info: string, node: string, screen: string, cmd: string) => {
+        return ipcRenderer.invoke(TerminalManagerEvents.open, id, host, port, info, node, screen, cmd);
+      },
+      close: (id: string) => {
+        return ipcRenderer.invoke(TerminalManagerEvents.close, id);
+      },
+      has: (id: string) => {
+        return ipcRenderer.invoke(TerminalManagerEvents.has, id);
+      },
+      onClose: (callback: TerminalCloseCallback) =>
+        ipcRenderer.on(TerminalManagerEvents.onClose, (_event, id) => {
+          return callback(id);
+        }),
+    } as TTerminalManager);
     contextBridge.exposeInMainWorld("electronAPI", {
       openFile: (path: string) => {
         return ipcRenderer.invoke("dialog:openFile", path);
       },
-      // terminal interface
-      openTerminal: (
-        id: string,
-        host: string,
-        port: number,
-        info: string,
-        node: string,
-        screen: string,
-        cmd: string
-      ) => {
-        return ipcRenderer.invoke("terminal:open", id, host, port, info, node, screen, cmd);
-      },
-      closeTerminal: (id: string) => {
-        return ipcRenderer.invoke("terminal:close", id);
-      },
-      hasTerminal: (id: string) => {
-        return ipcRenderer.invoke("terminal:has", id);
-      },
-      onTerminalClose: (callback: (tabId: string) => Promise<boolean>) =>
-        ipcRenderer.on("terminal:onClose", (_event, id) => {
-          return callback(id);
-        }),
     });
   } catch (error) {
     console.error(error);
