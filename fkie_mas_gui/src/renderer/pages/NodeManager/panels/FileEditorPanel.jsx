@@ -9,7 +9,7 @@ import { Alert, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } fro
 import { useDebounceCallback } from "@react-hook/debounce";
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useCustomEventListener } from "react-custom-events";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 import ExplorerTree from "../../../components/MonacoEditor/ExplorerTree";
@@ -30,7 +30,7 @@ import {
   getFileName,
 } from "../../../models";
 import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
-import { EVENT_EDITOR_SELECT_RANGE } from "../../../utils/events";
+import { EVENT_CLOSE_COMPONENT, EVENT_EDITOR_SELECT_RANGE, eventCloseComponent } from "../../../utils/events";
 
 function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fileRange }) {
   const monaco = Monaco.useMonaco();
@@ -87,6 +87,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const [savedFiles, setSavedFiles] = useState([]);
+
+  let escapePressCount = 0;
 
   const createUriPath = useCallback(
     (path) => {
@@ -855,6 +857,23 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     // });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialized, monaco, loadFiles]);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      escapePressCount++;
+      if (escapePressCount === 2) {
+        const provider = rosCtx.getProviderById(providerId);
+        if (provider) {
+          const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
+          emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+        }
+      }
+      // Reset after 500 ms
+      setTimeout(() => {
+        escapePressCount = 0;
+      }, 500);
+    }
+  });
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
