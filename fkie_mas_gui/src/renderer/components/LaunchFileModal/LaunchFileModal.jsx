@@ -270,10 +270,10 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
   );
 
   const openFileDialog = useCallback(
-    async (argName) => {
+    async (argName, argValue) => {
       let defaultPath = lastOpenPath;
-      if (argName.startsWith("/")) {
-        defaultPath = argName;
+      if (!defaultPath && argValue.startsWith("/")) {
+        defaultPath = argValue;
       }
       const filePath = await window.electronAPI?.openFile(defaultPath);
       if (filePath) {
@@ -457,7 +457,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                         //     : 'hidden',
                         // }}
                         onClick={() => {
-                          openFileDialog(arg.name);
+                          openFileDialog(arg.name, arg.value);
                         }}
                       >
                         <MoreHorizIcon />
