@@ -59,6 +59,7 @@
     "file-saver": "^2.0.5",
     "flexlayout-react": "^0.7.15",
     "hostile": "^1.4.0",
+    "json5": "^2.2.3",
     "jtest": "^0.0.1",
     "keytar": "^7.9.0",
     "notistack": "^3.0.1",

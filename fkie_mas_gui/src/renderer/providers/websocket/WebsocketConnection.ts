@@ -1,3 +1,4 @@
+import JSON5 from 'json5';
 import { JSONObject } from "@/types";
 import { ILoggingContext } from "../../context/LoggingContext";
 import { getDefaultPortFromRos } from "../../context/SettingsContext";
@@ -224,7 +225,7 @@ export default class WebsocketConnection extends ProviderConnection {
 
   handleMessage: (msg: string) => void = (msg) => {
     try {
-      const message = JSON.parse(msg);
+      const message = JSON5.parse(msg);
       if ("id" in message) {
         // object with "id" means the response for an rpc request
         if (!this.queue[message.id]) {
