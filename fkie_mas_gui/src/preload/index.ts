@@ -1,18 +1,19 @@
 // import { electronAPI } from "@electron-toolkit/preload";
 import {
+  DialogManagerEvents,
+  EditorCloseCallback,
   EditorManagerEvents,
   FileRange,
-  ShutdownManagerEvents,
-  TEditorManager,
-  TerminateCallback,
-  TShutdownManager,
   FileRangeCallback,
-  EditorCloseCallback,
-  TSubscriberManager,
+  ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
-  TerminalManagerEvents,
+  TEditorManager,
   TerminalCloseCallback,
+  TerminalManagerEvents,
+  TerminateCallback,
+  TShutdownManager,
+  TSubscriberManager,
   TTerminalManager,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
@@ -243,9 +244,10 @@ if (process.contextIsolated) {
           return callback(id);
         }),
     } as TTerminalManager);
-    contextBridge.exposeInMainWorld("electronAPI", {
+
+    contextBridge.exposeInMainWorld("dialogManager", {
       openFile: (path: string) => {
-        return ipcRenderer.invoke("dialog:openFile", path);
+        return ipcRenderer.invoke(DialogManagerEvents.openFile, path);
       },
     });
   } catch (error) {

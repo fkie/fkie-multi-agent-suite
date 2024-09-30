@@ -143,17 +143,6 @@ export const registerHandlers = (): void => {
       return sMultimasterManager.startDynamicReconfigureClient(name, rosMasterUri, credential);
     }
   );
-
-  async function handleFileOpen(_event: Electron.IpcMainInvokeEvent, path: string): Promise<string | null> {
-    const { canceled, filePaths } = await dialog.showOpenDialog({
-      defaultPath: path,
-    });
-    if (!canceled) {
-      return filePaths[0];
-    }
-    return null;
-  }
-  ipcMain.handle("dialog:openFile", handleFileOpen);
 };
 
 export {

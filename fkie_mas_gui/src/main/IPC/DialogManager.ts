@@ -1,21 +1,35 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import log from "electron-log";
+import { IDialogManager, DialogManagerEvents } from "@/types";
 
 /**
  * Class DialogManager: Open files requests
  */
-class DialogManager {
+class DialogManager implements IDialogManager {
   mainWindow: BrowserWindow | null = null;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
     log.transports.file.level = "info";
-
-    ipcMain.on("select-file", () => {
-      if (this.mainWindow)
-        this.mainWindow.webContents.send("file-selected", dialog.showOpenDialog({ properties: ["openFile"] }));
-    });
+    this.registerHandlers();
   }
+
+  public registerHandlers: () => void = () => {
+    ipcMain.handle(DialogManagerEvents.openFile, this.handleFileOpen);
+  };
+
+  public handleFileOpen: (event: Electron.IpcMainInvokeEvent, path: string) => Promise<string | null> = async (
+    _event,
+    path
+  ) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      defaultPath: path,
+    });
+    if (!canceled) {
+      return filePaths[0];
+    }
+    return null;
+  };
 
   quit(): void {
     // TODO

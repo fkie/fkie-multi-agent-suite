@@ -912,7 +912,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         if (hasExtEditor) {
           // inform external window about new selected range
           window.editorManager.emitFileRange(id, path, fileRange);
-        } else if (openExternal && provider && window.electronAPI) {
+        } else if (openExternal && provider && window.editorManager) {
           // open in new window
           window.editorManager.open(
             id,
@@ -1078,7 +1078,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (provider && window.electronAPI && (openExternal || (await window.terminalManager.has(id)))) {
+        if (provider && window.terminalManager && (openExternal || (await window.terminalManager.has(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
           window.terminalManager.open(id, provider.connection.host, provider.connection.port, type, node, screen, cmd);

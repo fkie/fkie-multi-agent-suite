@@ -1,3 +1,4 @@
+import { DialogManagerEvents, IDialogManager, TDialogManager } from "./DialogManager";
 import {
   EditorCloseCallback,
   EditorManagerEvents,
@@ -24,25 +25,33 @@ import {
   TTerminalManager,
 } from "./TerminalManager";
 
-export { EditorManagerEvents, ShutdownManagerEvents, SubscriberManagerEvents, TerminalManagerEvents };
+export {
+  DialogManagerEvents,
+  EditorManagerEvents,
+  ShutdownManagerEvents,
+  SubscriberManagerEvents,
+  TerminalManagerEvents,
+};
 export type {
   EditorCloseCallback,
   FileRange,
   FileRangeCallback,
+  IDialogManager,
   IEditor,
   IEditorManager,
   IShutdownManager,
   ISubscriber,
   ISubscriberManager,
+  ITerminal,
+  ITerminalManager,
   JSONObject,
   JSONValue,
   SubscriberCloseCallback,
+  TDialogManager,
   TEditorManager,
+  TerminalCloseCallback,
   TerminateCallback,
   TShutdownManager,
   TSubscriberManager,
-  ITerminal,
-  ITerminalManager,
-  TerminalCloseCallback,
   TTerminalManager,
 };
