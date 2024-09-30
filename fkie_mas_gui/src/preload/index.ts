@@ -8,6 +8,9 @@ import {
   TShutdownManager,
   FileRangeCallback,
   EditorCloseCallback,
+  TSubscriberManager,
+  SubscriberCloseCallback,
+  SubscriberManagerEvents,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 import { ICredential } from "../main/models/ICredential";
@@ -204,31 +207,27 @@ if (process.contextIsolated) {
         }),
     } as TEditorManager);
 
+    contextBridge.exposeInMainWorld("subscriberManager", {
+      // subscriber interface
+      open: (id: string, host: string, port: number, topic: string, showOptions: boolean, noData: boolean) => {
+        return ipcRenderer.invoke(SubscriberManagerEvents.open, id, host, port, topic, showOptions, noData);
+      },
+      close: (id: string) => {
+        return ipcRenderer.invoke(SubscriberManagerEvents.close, id);
+      },
+      has: (id: string) => {
+        return ipcRenderer.invoke(SubscriberManagerEvents.has, id);
+      },
+      onClose: (callback: SubscriberCloseCallback) =>
+        ipcRenderer.on(SubscriberManagerEvents.onClose, (_event, id) => {
+          return callback(id);
+        }),
+    } as TSubscriberManager);
+
     contextBridge.exposeInMainWorld("electronAPI", {
       openFile: (path: string) => {
         return ipcRenderer.invoke("dialog:openFile", path);
       },
-      // subscriber interface
-      openSubscriber: (
-        id: string,
-        host: string,
-        port: number,
-        topic: string,
-        showOptions: boolean,
-        noData: boolean
-      ) => {
-        return ipcRenderer.invoke("subscriber:open", id, host, port, topic, showOptions, noData);
-      },
-      closeSubscriber: (id: string) => {
-        return ipcRenderer.invoke("subscriber:close", id);
-      },
-      hasSubscriber: (id: string) => {
-        return ipcRenderer.invoke("subscriber:has", id);
-      },
-      onSubscriberClose: (callback: (tabId: string) => Promise<boolean>) =>
-        ipcRenderer.on("subscriber:onClose", (_event, id) => {
-          return callback(id);
-        }),
       // terminal interface
       openTerminal: (
         id: string,

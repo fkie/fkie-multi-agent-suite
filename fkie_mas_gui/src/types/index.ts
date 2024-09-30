@@ -9,8 +9,15 @@ import {
 import { FileRange } from "./FileRange";
 import JSONObject, { JSONValue } from "./JsonObject";
 import { IShutdownManager, ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
+import {
+  ISubscriber,
+  ISubscriberManager,
+  SubscriberCloseCallback,
+  SubscriberManagerEvents,
+  TSubscriberManager,
+} from "./SubscriberManager";
 
-export { EditorManagerEvents, ShutdownManagerEvents };
+export { EditorManagerEvents, ShutdownManagerEvents, SubscriberManagerEvents };
 export type {
   EditorCloseCallback,
   FileRange,
@@ -18,9 +25,13 @@ export type {
   IEditor,
   IEditorManager,
   IShutdownManager,
+  ISubscriber,
+  ISubscriberManager,
   JSONObject,
   JSONValue,
+  SubscriberCloseCallback,
   TEditorManager,
   TerminateCallback,
   TShutdownManager,
+  TSubscriberManager,
 };

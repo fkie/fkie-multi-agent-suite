@@ -988,10 +988,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (provider && window.electronAPI && (openExternal || (await window.electronAPI?.hasSubscriber(id)))) {
+        if (provider && window.subscriberManager && (openExternal || (await window.subscriberManager.has(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
-          window.electronAPI.openSubscriber(
+          window.subscriberManager.open(
             id,
             provider.connection.host,
             provider.connection.port,

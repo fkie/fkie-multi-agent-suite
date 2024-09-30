@@ -469,14 +469,7 @@ function NodeManager() {
                   }
                   if (node.getConfig().subscriberConfig) {
                     const cfg = node.getConfig().subscriberConfig;
-                    window.electronAPI.openSubscriber(
-                      cfg.id,
-                      cfg.host,
-                      cfg.port,
-                      cfg.topic,
-                      cfg.showOptions,
-                      cfg.noData
-                    );
+                    window.subscriberManager.open(cfg.id, cfg.host, cfg.port, cfg.topic, cfg.showOptions, cfg.noData);
                     deleteTab(node.getId());
                   }
                   if (node.getConfig().terminalConfig) {

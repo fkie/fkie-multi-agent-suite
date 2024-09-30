@@ -1,24 +1,21 @@
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
+import { SubscriberManagerEvents, ISubscriber, ISubscriberManager } from "@/types";
 import windowStateKeeper from "../windowStateKeeper";
-
-interface ISubscriber {
-  window: BrowserWindow;
-}
 
 /**
  * Class SubscriberManager: handle communication with external echo window
  */
-class SubscriberManager {
+class SubscriberManager implements ISubscriberManager {
   instances: { [id: string]: ISubscriber } = {};
 
   constructor() {}
 
   public registerHandlers: () => void = () => {
-    ipcMain.handle("subscriber:has", this.handleHasSubscriber);
-    ipcMain.handle("subscriber:open", this.handleSubscriberOpen);
-    ipcMain.handle("subscriber:close", this.handleSubscriberClose);
+    ipcMain.handle(SubscriberManagerEvents.has, this.handleHasSubscriber);
+    ipcMain.handle(SubscriberManagerEvents.open, this.handleSubscriberOpen);
+    ipcMain.handle(SubscriberManagerEvents.close, this.handleSubscriberClose);
   };
 
   public handleHasSubscriber: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
@@ -52,9 +49,6 @@ class SubscriberManager {
     showOptions: boolean,
     noData: boolean
   ) => Promise<string | null> = async (_event, id, host, port, topic, showOptions, noData) => {
-    // if (isDebug) {
-    //   await installExtensions()
-    // }
     if (this.instances[id]) {
       this.instances[id].window.focus();
       return Promise.resolve(null);
@@ -97,7 +91,7 @@ class SubscriberManager {
       // send close request to the renderer
       if (this.instances[id]) {
         e.preventDefault();
-        this.instances[id].window.webContents.send("subscriber:onClose", id);
+        this.instances[id].window.webContents.send(SubscriberManagerEvents.onClose, id);
       }
     });
 

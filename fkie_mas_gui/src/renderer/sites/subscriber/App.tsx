@@ -78,7 +78,7 @@ export default function SubscriberApp() {
       logCtx.error(`Can not stop subscriber node for: ${topic} on '${provider.name()}`, `${result}`);
     }
     // close window on stop request
-    window.electronAPI?.closeSubscriber(stopRequested);
+    window.subscriberManager.close(stopRequested);
   };
 
   const handleWindowError = (e) => {
@@ -101,9 +101,9 @@ export default function SubscriberApp() {
 
   useEffect(() => {
     // update font size globally
-    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize");
+    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize") as number;
     lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] =
-      settingsCtx.get("fontSize");
+      `${settingsCtx.get("fontSize") as number}`;
     setDarkTheme(createTheme(darkThemeDef as ThemeOptions));
     setLightTheme(createTheme(lightThemeDef as ThemeOptions));
   }, [settingsCtx, settingsCtx.changed]);
@@ -114,7 +114,7 @@ export default function SubscriberApp() {
         stopSubscriber(subInfo.topic, subInfo.provider);
       } else {
         // close window on stop request if no valid info is available
-        window.electronAPI?.closeSubscriber(stopRequested);
+        window.subscriberManager.close(stopRequested);
       }
     }
   }, [subInfo, stopRequested]);
@@ -122,7 +122,7 @@ export default function SubscriberApp() {
   useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
-    window.electronAPI?.onSubscriberClose((id: string) => {
+    window.subscriberManager.onClose((id: string) => {
       setStopRequested(id);
     });
     initProvider();
