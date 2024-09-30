@@ -907,14 +907,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
         // open in external window depending on setting and key modifier and if no tab already existing
         const openExternal: boolean =
-          xor(settingsCtx.get("editorOpenExternal"), externalKeyModifier) && !layoutModel?.getNodeById(id);
-        const hasExtEditor = await window.electronAPI?.hasEditor(id);
+          xor(settingsCtx.get("editorOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
+        const hasExtEditor = await window.editorManager.has(id);
         if (hasExtEditor) {
           // inform external window about new selected range
-          window.electronAPI?.emitEditorFileRange(id, path, fileRange);
+          window.editorManager.emitFileRange(id, path, fileRange);
         } else if (openExternal && provider && window.electronAPI) {
           // open in new window
-          window.electronAPI.openEditor(
+          window.editorManager.open(
             id,
             provider.connection.host,
             provider.connection.port,
@@ -970,7 +970,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         const id = `echo-${provider.connection.host}-${provider.connection.port}-${topic}`;
         // open in external window depending on setting and key modifier and if no tab already existing
         const openExternal: boolean =
-          xor(settingsCtx.get("subscriberOpenExternal"), externalKeyModifier) && !layoutModel?.getNodeById(id);
+          xor(settingsCtx.get("subscriberOpenExternal") as boolean, externalKeyModifier) &&
+          !layoutModel?.getNodeById(id);
         if (forceOpenTerminal) {
           try {
             const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");

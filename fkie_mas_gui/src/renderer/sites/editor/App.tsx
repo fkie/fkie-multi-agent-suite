@@ -115,7 +115,7 @@ export default function EditorApp() {
         setModifiedEditorTabs([mTab]);
         return;
       }
-      window.electronAPI?.closeEditor(data.id);
+      window.editorManager.close(data.id);
     },
     [monacoCtx]
   );
@@ -153,9 +153,9 @@ export default function EditorApp() {
 
   useEffect(() => {
     // update font size globally
-    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize");
+    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize") as number;
     lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] =
-      settingsCtx.get("fontSize");
+      settingsCtx.get("fontSize") as string;
     setDarkTheme(createTheme(darkThemeDef as ThemeOptions));
     setLightTheme(createTheme(lightThemeDef as ThemeOptions));
   }, [settingsCtx, settingsCtx.changed]);
@@ -228,7 +228,7 @@ export default function EditorApp() {
                 color="warning"
                 onClick={() => {
                   setModifiedEditorTabs([]);
-                  window.electronAPI?.closeEditor(launchInfo.id);
+                  window.editorManager.close(launchInfo.id);
                 }}
               >
                 Don&apos;t save
@@ -263,7 +263,7 @@ export default function EditorApp() {
                     }
                   });
                   if (!failed) {
-                    window.electronAPI?.closeEditor(launchInfo.id);
+                    window.editorManager.close(launchInfo.id);
                   }
                   setModifiedEditorTabs([]);
                 }}

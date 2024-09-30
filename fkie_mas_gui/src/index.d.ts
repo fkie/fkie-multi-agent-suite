@@ -1,8 +1,9 @@
 // import { ElectronAPI } from "@electron-toolkit/preload";
-import { TShutdownManager } from "./types";
+import { TEditorManager, TShutdownManager } from "./types";
 
 declare global {
   interface Window {
+    editorManager: TEditorManager;
     shutdownManager: TShutdownManager;
     autoUpdate: unknown;
     electronAPI: unknown;

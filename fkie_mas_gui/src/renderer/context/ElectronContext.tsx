@@ -1,4 +1,4 @@
-import { TShutdownManager } from "@/types";
+import { FileRange, TShutdownManager } from "@/types";
 import { createContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import {
@@ -48,18 +48,12 @@ export function ElectronProvider({
     if (window.shutdownManager) {
       setShutdownManager(window.shutdownManager);
     }
-    window.electronAPI?.onEditorFileRange(
-      (
-        tabId: string,
-        filePath: string,
-        fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number } | null
-      ) => {
-        if (fileRange) {
-          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange));
-        }
+    window.editorManager.onFileRange((tabId: string, filePath: string, fileRange: FileRange | null) => {
+      if (fileRange) {
+        emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange));
       }
-    );
-    window.electronAPI?.onEditorClose((tabId: string) => {
+    });
+    window.editorManager.onClose((tabId: string) => {
       emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(tabId));
     });
   }, []);

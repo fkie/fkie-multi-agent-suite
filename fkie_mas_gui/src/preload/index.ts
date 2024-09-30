@@ -1,5 +1,14 @@
 // import { electronAPI } from "@electron-toolkit/preload";
-import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "@/types";
+import {
+  EditorManagerEvents,
+  FileRange,
+  ShutdownManagerEvents,
+  TEditorManager,
+  TerminateCallback,
+  TShutdownManager,
+  FileRangeCallback,
+  EditorCloseCallback,
+} from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 import { ICredential } from "../main/models/ICredential";
 
@@ -161,57 +170,44 @@ if (process.contextIsolated) {
       },
     });
 
+    // register shutdown interface
     contextBridge.exposeInMainWorld("shutdownManager", {
       onTerminateSubprocesses: (callback: TerminateCallback) =>
         ipcRenderer.on(ShutdownManagerEvents.terminateSubprocesses, () => callback()),
       quitGui: () => ipcRenderer.invoke(ShutdownManagerEvents.quitGui),
     } as TShutdownManager);
 
+    // register editor interface
+    contextBridge.exposeInMainWorld("editorManager", {
+      open: (id: string, host: string, port: number, path: string, rootLaunch: string, fileRange: FileRange) => {
+        return ipcRenderer.invoke(EditorManagerEvents.open, id, host, port, rootLaunch, path, fileRange);
+      },
+      close: (id: string) => {
+        return ipcRenderer.invoke(EditorManagerEvents.close, id);
+      },
+      changed: (id: string, path: string, changed: boolean) => {
+        return ipcRenderer.invoke(EditorManagerEvents.changed, id, path, changed);
+      },
+      emitFileRange: (id: string, path: string, fileRange: FileRange) => {
+        return ipcRenderer.invoke(EditorManagerEvents.emitFileRange, id, path, fileRange);
+      },
+      has: (id: string) => {
+        return ipcRenderer.invoke(EditorManagerEvents.has, id);
+      },
+      onFileRange: (callback: FileRangeCallback) =>
+        ipcRenderer.on(EditorManagerEvents.onFileRange, (_event, id, launchFile, fileRange) => {
+          callback(id, launchFile, fileRange);
+        }),
+      onClose: (callback: EditorCloseCallback) =>
+        ipcRenderer.on(EditorManagerEvents.onClose, (_event, id) => {
+          return callback(id);
+        }),
+    } as TEditorManager);
+
     contextBridge.exposeInMainWorld("electronAPI", {
       openFile: (path: string) => {
         return ipcRenderer.invoke("dialog:openFile", path);
       },
-      // editor interface
-      openEditor: (
-        id: string,
-        host: string,
-        port: number,
-        path: string,
-        rootLaunch: string,
-        fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
-      ) => {
-        return ipcRenderer.invoke("editor:open", id, host, port, rootLaunch, path, fileRange);
-      },
-      closeEditor: (id: string) => {
-        return ipcRenderer.invoke("editor:close", id);
-      },
-      changedEditor: (id: string, path: string, changed: boolean) => {
-        return ipcRenderer.invoke("editor:changed", id, path, changed);
-      },
-      emitEditorFileRange: (
-        id: string,
-        path: string,
-        fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
-      ) => {
-        return ipcRenderer.invoke("editor:emitFileRange", id, path, fileRange);
-      },
-      hasEditor: (id: string) => {
-        return ipcRenderer.invoke("editor:has", id);
-      },
-      onEditorFileRange: (
-        callback: (
-          tabId: string,
-          filePath: string,
-          fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
-        ) => void
-      ) =>
-        ipcRenderer.on("editor:onFileRange", (_event, id, launchFile, fileRange) => {
-          callback(id, launchFile, fileRange);
-        }),
-      onEditorClose: (callback: (tabId: string) => Promise<boolean>) =>
-        ipcRenderer.on("editor:onClose", (_event, id) => {
-          return callback(id);
-        }),
       // subscriber interface
       openSubscriber: (
         id: string,

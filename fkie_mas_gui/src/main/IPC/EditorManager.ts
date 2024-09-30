@@ -1,27 +1,23 @@
 import { is } from "@electron-toolkit/utils";
+import { IEditorManager, IEditor, EditorManagerEvents, FileRange } from "@/types";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
 import windowStateKeeper from "../windowStateKeeper";
 
-interface IEditor {
-  window: BrowserWindow;
-  changed: string[];
-}
-
 /**
  * Class EditorManager: handle communication with external editor
  */
-class EditorManager {
+class EditorManager implements IEditorManager {
   editors: { [id: string]: IEditor } = {};
 
   constructor() {}
 
   public registerHandlers: () => void = () => {
-    ipcMain.handle("editor:has", this.handleHasEditor);
-    ipcMain.handle("editor:open", this.handleEditorOpen);
-    ipcMain.handle("editor:close", this.handleEditorClose);
-    ipcMain.handle("editor:changed", this.handleEditorChanged);
-    ipcMain.handle("editor:emitFileRange", this.handleEditorFileRange);
+    ipcMain.handle(EditorManagerEvents.has, this.handleHasEditor);
+    ipcMain.handle(EditorManagerEvents.open, this.handleEditorOpen);
+    ipcMain.handle(EditorManagerEvents.close, this.handleEditorClose);
+    ipcMain.handle(EditorManagerEvents.changed, this.handleEditorChanged);
+    ipcMain.handle(EditorManagerEvents.emitFileRange, this.handleEditorFileRange);
   };
 
   public handleHasEditor: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
@@ -38,11 +34,11 @@ class EditorManager {
     _event: Electron.IpcMainInvokeEvent,
     id: string,
     launchFile: string,
-    fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
+    fileRange: FileRange
   ) => Promise<null> = async (_event, id, launchFile, fileRange) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();
-      this.editors[id].window.webContents.send("editor:onFileRange", id, launchFile, fileRange);
+      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange);
     }
     return Promise.resolve(null);
   };
@@ -85,14 +81,11 @@ class EditorManager {
     port: number,
     rootLaunch: string,
     launchFile: string,
-    fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number }
+    fileRange: FileRange
   ) => Promise<string | null> = async (_event, id, host, port, rootLaunch, launchFile, fileRange) => {
-    // if (isDebug) {
-    //   await installExtensions()
-    // }
     if (this.editors[id]) {
       this.editors[id].window.focus();
-      this.editors[id].window.webContents.send("editor:onFileRange", id, launchFile, fileRange);
+      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange);
       return Promise.resolve(null);
     }
 
@@ -132,7 +125,7 @@ class EditorManager {
     editorWindow.on("close", async (e) => {
       // send close request to the renderer
       e.preventDefault();
-      this.editors[id].window.webContents.send("editor:onClose", id);
+      this.editors[id].window.webContents.send(EditorManagerEvents.onClose, id);
     });
 
     editorWindow.on("closed", () => {
