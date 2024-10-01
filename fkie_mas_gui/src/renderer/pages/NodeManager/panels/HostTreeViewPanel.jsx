@@ -1176,21 +1176,19 @@ function HostTreeViewPanel() {
               disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 if (navCtx.selectedProviders?.length > 0) {
+                  const screens = []; // {node : string, screen: string, callback: () => void, external: boolean}
                   navCtx.selectedProviders?.forEach((providerId) => {
                     const prov = rosCtx.getProviderById(providerId);
-                    const emptyNode = new RosNode();
-                    emptyNode.name = prov?.name();
-                    emptyNode.providerId = providerId;
-                    emptyNode.providerName = prov?.name();
-                    emptyNode.screens = [];
-                    prov?.screens.forEach((screen) => {
-                      emptyNode.screens = [...emptyNode.screens, ...screen.screens];
+                    prov?.screens.forEach((screenMap) => {
+                      screenMap.screens.forEach((screen) => {
+                        screens.push({
+                          node: screenMap.name,
+                          screen: screen,
+                          external: event.nativeEvent.shiftKey,
+                        });
+                      });
                     });
-                    const sl = {
-                      node: emptyNode,
-                      external: event.nativeEvent.shiftKey,
-                    };
-                    setNodeScreens((prevNodes) => (prevNodes ? [...prevNodes, sl] : [sl]));
+                    setNodeScreens(screens);
                   });
                 } else {
                   const screens = []; // {node : string, screen: string, callback: () => void, external: boolean}
