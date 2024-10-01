@@ -543,7 +543,7 @@ function ConnectToProviderModal() {
                   }}
                   disableCloseOnSelect
                   renderOption={(props, option, { selected }) => (
-                    <li {...props} style={{ height: "1.5em" }}>
+                    <li {...props} key={`${option.ip}_${option.host}`} style={{ height: "1.5em" }}>
                       <Checkbox
                         icon={icon}
                         checkedIcon={checkedIcon}
@@ -776,7 +776,7 @@ function ConnectToProviderModal() {
                                 }}
                                 disableCloseOnSelect
                                 renderOption={(props, option, { selected }) => (
-                                  <li {...props} style={{ height: "1.5em" }}>
+                                  <li {...props} key={`${option.ip}_${option.host}`} style={{ height: "1.5em" }}>
                                     <Checkbox
                                       icon={icon}
                                       checkedIcon={checkedIcon}

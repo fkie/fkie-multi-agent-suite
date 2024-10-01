@@ -363,7 +363,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                           />
                         )}
                         renderOption={(props, option) => (
-                          <Stack {...props} direction="row">
+                          <Stack {...props} key={option} direction="row">
                             <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
                               {option}
                             </Typography>
@@ -383,6 +383,10 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = newArgValue;
+                                // update last path
+                                if (isPathParam(item.name, item.value)) {
+                                  setLastOpenPath(item.value);
+                                }
                               }
                               return item;
                             })
@@ -393,6 +397,10 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = newInputValue;
+                                // update last path
+                                if (isPathParam(item.name, item.value)) {
+                                  setLastOpenPath(item.value);
+                                }
                               }
                               return item;
                             })
@@ -420,6 +428,10 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = options[newIndex];
+                                // update last path on wheel
+                                if (isPathParam(item.name, item.value)) {
+                                  setLastOpenPath(item.value);
+                                }
                               }
                               return item;
                             })
