@@ -395,7 +395,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
             const model = getModelFromPath(prevModel.path);
             model.modified = false;
             const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
-            window.editorManager.changed(id, path, false);
+            window.editorManager?.changed(id, path, false);
             if (!savedFiles.includes(model.uri.path)) {
               setSavedFiles([...savedFiles, model.uri.path]);
             }
@@ -467,7 +467,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           const provider = rosCtx.getProviderById(providerId);
           if (provider) {
             const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
-            window.editorManager.changed(id, activeModel.path, true);
+            window.editorManager?.changed(id, activeModel.path, true);
           }
         }
       }

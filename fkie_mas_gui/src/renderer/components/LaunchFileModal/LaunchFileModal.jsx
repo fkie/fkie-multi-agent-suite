@@ -275,7 +275,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       if (!defaultPath && argValue.startsWith("/")) {
         defaultPath = argValue;
       }
-      const filePath = await window.dialogManager.openFile(defaultPath);
+      const filePath = await window.dialogManager?.openFile(defaultPath);
       if (filePath) {
         setLastOpenPath(filePath);
         setCurrentArgs(

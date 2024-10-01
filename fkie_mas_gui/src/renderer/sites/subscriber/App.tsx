@@ -78,7 +78,7 @@ export default function SubscriberApp() {
       logCtx.error(`Can not stop subscriber node for: ${topic} on '${provider.name()}`, `${result}`);
     }
     // close window on stop request
-    window.subscriberManager.close(stopRequested);
+    window.subscriberManager?.close(stopRequested);
   };
 
   const handleWindowError = (e) => {
@@ -114,7 +114,7 @@ export default function SubscriberApp() {
         stopSubscriber(subInfo.topic, subInfo.provider);
       } else {
         // close window on stop request if no valid info is available
-        window.subscriberManager.close(stopRequested);
+        window.subscriberManager?.close(stopRequested);
       }
     }
   }, [subInfo, stopRequested]);
@@ -122,7 +122,7 @@ export default function SubscriberApp() {
   useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
-    window.subscriberManager.onClose((id: string) => {
+    window.subscriberManager?.onClose((id: string) => {
       setStopRequested(id);
     });
     initProvider();

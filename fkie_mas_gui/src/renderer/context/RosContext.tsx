@@ -898,13 +898,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // open in external window depending on setting and key modifier and if no tab already existing
         const openExternal: boolean =
           xor(settingsCtx.get("editorOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
-        const hasExtEditor = await window.editorManager.has(id);
+        const hasExtEditor = await window.editorManager?.has(id);
         if (hasExtEditor) {
           // inform external window about new selected range
-          window.editorManager.emitFileRange(id, path, fileRange);
+          window.editorManager?.emitFileRange(id, path, fileRange);
         } else if (openExternal && provider && window.editorManager) {
           // open in new window
-          window.editorManager.open(
+          window.editorManager?.open(
             id,
             provider.connection.host,
             provider.connection.port,
@@ -978,10 +978,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (provider && window.subscriberManager && (openExternal || (await window.subscriberManager.has(id)))) {
+        if (provider && window.subscriberManager && (openExternal || (await window.subscriberManager?.has(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
-          window.subscriberManager.open(
+          window.subscriberManager?.open(
             id,
             provider.connection.host,
             provider.connection.port,
@@ -1068,10 +1068,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
           return;
         }
-        if (provider && window.terminalManager && (openExternal || (await window.terminalManager.has(id)))) {
+        if (provider && window.terminalManager && (openExternal || (await window.terminalManager?.has(id)))) {
           // open in new window
           // we do not check for existing subscriber, it is done by IPC with given id
-          window.terminalManager.open(id, provider.connection.host, provider.connection.port, type, node, screen, cmd);
+          window.terminalManager?.open(id, provider.connection.host, provider.connection.port, type, node, screen, cmd);
         } else {
           emitCustomEvent(
             EVENT_OPEN_COMPONENT,

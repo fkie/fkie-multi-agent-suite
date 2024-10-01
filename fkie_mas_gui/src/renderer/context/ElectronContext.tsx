@@ -48,12 +48,12 @@ export function ElectronProvider({
     if (window.shutdownManager) {
       setShutdownManager(window.shutdownManager);
     }
-    window.editorManager.onFileRange((tabId: string, filePath: string, fileRange: FileRange | null) => {
+    window.editorManager?.onFileRange((tabId: string, filePath: string, fileRange: FileRange | null) => {
       if (fileRange) {
         emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange));
       }
     });
-    window.editorManager.onClose((tabId: string) => {
+    window.editorManager?.onClose((tabId: string) => {
       emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(tabId));
     });
   }, []);

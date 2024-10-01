@@ -464,17 +464,17 @@ function NodeManager() {
                   }
                   if (node.getConfig().editorConfig) {
                     const cfg = node.getConfig().editorConfig;
-                    window.editorManager.open(cfg.id, cfg.host, cfg.port, cfg.path, cfg.rootLaunch, cfg.fileRange);
+                    window.editorManager?.open(cfg.id, cfg.host, cfg.port, cfg.path, cfg.rootLaunch, cfg.fileRange);
                     deleteTab(node.getId());
                   }
                   if (node.getConfig().subscriberConfig) {
                     const cfg = node.getConfig().subscriberConfig;
-                    window.subscriberManager.open(cfg.id, cfg.host, cfg.port, cfg.topic, cfg.showOptions, cfg.noData);
+                    window.subscriberManager?.open(cfg.id, cfg.host, cfg.port, cfg.topic, cfg.showOptions, cfg.noData);
                     deleteTab(node.getId());
                   }
                   if (node.getConfig().terminalConfig) {
                     const cfg = node.getConfig().terminalConfig;
-                    window.terminalManager.open(cfg.id, cfg.host, cfg.port, cfg.cmdType, cfg.node, cfg.screen, cfg.cmd);
+                    window.terminalManager?.open(cfg.id, cfg.host, cfg.port, cfg.cmdType, cfg.node, cfg.screen, cfg.cmd);
                     deleteTab(node.getId());
                   }
                   event.stopPropagation();
@@ -641,10 +641,10 @@ function NodeManager() {
     // do not ask for shutdown on some reasons
     if (electronCtx.terminateSubprocesses) {
       if (isInstallUpdateRequested()) {
-        electronCtx.shutdownManager.quitGui();
+        electronCtx.shutdownManager?.quitGui();
       }
       if (rosCtx.providers.length <= 0) {
-        electronCtx.shutdownManager.quitGui();
+        electronCtx.shutdownManager?.quitGui();
       }
       setModifiedEditorTabs(monacoCtx.getModifiedTabs());
     }
@@ -668,7 +668,7 @@ function NodeManager() {
         );
       }
       console.log(`Quit app`);
-      electronCtx.shutdownManager.quitGui();
+      electronCtx.shutdownManager?.quitGui();
     },
     [electronCtx]
   );
@@ -736,7 +736,7 @@ function NodeManager() {
           providers={rosCtx.providers}
           onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
           onConfirmCallback={(providers) => shutdownProviders(providers)}
-          onForceCloseCallback={() => electronCtx.shutdownManager.quitGui()}
+          onForceCloseCallback={() => electronCtx.shutdownManager?.quitGui()}
         />
       )}
       {modifiedEditorTabs.length > 0 && (

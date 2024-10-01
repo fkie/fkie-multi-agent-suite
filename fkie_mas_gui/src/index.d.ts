@@ -6,15 +6,15 @@ import PasswordManager from "./main/IPC/PasswordManager";
 
 declare global {
   interface Window {
-    dialogManager: TDialogManager;
-    editorManager: TEditorManager;
+    dialogManager?: TDialogManager;
+    editorManager?: TEditorManager;
     launchManager?: TLaunchManager;
-    rosInfo: TRosInfo;
-    systemInfo: TSystemInfo;
-    shutdownManager: TShutdownManager;
-    subscriberManager: TSubscriberManager;
-    terminalManager: TTerminalManager;
-    autoUpdate: unknown;
+    rosInfo?: TRosInfo;
+    systemInfo?: TSystemInfo;
+    shutdownManager?: TShutdownManager;
+    subscriberManager?: TSubscriberManager;
+    terminalManager?: TTerminalManager;
+    autoUpdate?: unknown;
     PasswordManager?: PasswordManager;
     CommandExecutor?: CommandExecutor;
   }

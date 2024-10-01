@@ -95,9 +95,9 @@ export default function TerminalApp() {
   useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
-    window.terminalManager.onClose((id: string) => {
+    window.terminalManager?.onClose((id: string) => {
       // close window on stop request
-      window.terminalManager.close(id);
+      window.terminalManager?.close(id);
     });
     initProvider();
     return () => {

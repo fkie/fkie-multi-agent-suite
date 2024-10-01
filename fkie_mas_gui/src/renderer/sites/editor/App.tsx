@@ -115,7 +115,7 @@ export default function EditorApp() {
         setModifiedEditorTabs([mTab]);
         return;
       }
-      window.editorManager.close(data.id);
+      window.editorManager?.close(data.id);
     },
     [monacoCtx]
   );
@@ -228,7 +228,7 @@ export default function EditorApp() {
                 color="warning"
                 onClick={() => {
                   setModifiedEditorTabs([]);
-                  window.editorManager.close(launchInfo.id);
+                  window.editorManager?.close(launchInfo.id);
                 }}
               >
                 Don&apos;t save
@@ -263,7 +263,7 @@ export default function EditorApp() {
                     }
                   });
                   if (!failed) {
-                    window.editorManager.close(launchInfo.id);
+                    window.editorManager?.close(launchInfo.id);
                   }
                   setModifiedEditorTabs([]);
                 }}
