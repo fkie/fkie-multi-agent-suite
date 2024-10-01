@@ -1011,6 +1011,12 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                     );
                     if (result) {
                       logCtx.success(`Parent file opened [${getFileName(path)}]`);
+                      setEditorModel(item.path, {
+                        startLineNumber: item.line_number,
+                        endLineNumber: item.line_number,
+                        startColumn: 0,
+                        endColumn: 0,
+                      });
                     }
                   });
                 }}
