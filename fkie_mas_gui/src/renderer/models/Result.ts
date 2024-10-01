@@ -1,7 +1,9 @@
+import { TResult } from "@/types";
+
 /**
  * Result models return result with additional info message
  */
-class Result {
+class Result implements TResult{
   /**
    * Success or not
    */

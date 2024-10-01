@@ -8,9 +8,8 @@ import {
   TEditorManager,
 } from "./EditorManager";
 import { FileRange } from "./FileRange";
-import { TCredential } from "./TCredential";
-import { TRosInfo } from "./TRosInfo";
 import JSONObject, { JSONValue } from "./JsonObject";
+import { LaunchManagerEvents, TLaunchManager } from "./LaunchManager";
 import { IShutdownManager, ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 import {
   ISubscriber,
@@ -19,6 +18,7 @@ import {
   SubscriberManagerEvents,
   TSubscriberManager,
 } from "./SubscriberManager";
+import { TCredential } from "./TCredential";
 import {
   ITerminal,
   ITerminalManager,
@@ -26,38 +26,35 @@ import {
   TerminalManagerEvents,
   TTerminalManager,
 } from "./TerminalManager";
+import { TResult } from "./TResult";
+import { TRosInfo } from "./TRosInfo";
 import { TSystemInfo } from "./TSystemInfo";
 
 export {
   DialogManagerEvents,
-  EditorManagerEvents,
-  ShutdownManagerEvents,
+  EditorManagerEvents, LaunchManagerEvents, ShutdownManagerEvents,
   SubscriberManagerEvents,
-  TerminalManagerEvents,
+  TerminalManagerEvents
 };
 export type {
   EditorCloseCallback,
   FileRange,
-  FileRangeCallback,
-  TCredential,
-  IDialogManager,
+  FileRangeCallback, IDialogManager,
   IEditor,
-  IEditorManager,
-  TRosInfo,
-  IShutdownManager,
+  IEditorManager, IShutdownManager,
   ISubscriber,
   ISubscriberManager,
   ITerminal,
   ITerminalManager,
   JSONObject,
   JSONValue,
-  SubscriberCloseCallback,
-  TDialogManager,
+  SubscriberCloseCallback, TCredential, TDialogManager,
   TEditorManager,
   TerminalCloseCallback,
-  TerminateCallback,
-  TShutdownManager,
+  TerminateCallback, TLaunchManager,
+  TResult, TRosInfo, TShutdownManager,
   TSubscriberManager,
   TSystemInfo,
-  TTerminalManager,
+  TTerminalManager
 };
+

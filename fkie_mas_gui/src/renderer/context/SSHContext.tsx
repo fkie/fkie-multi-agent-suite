@@ -1,18 +1,8 @@
 import { TCredential, TSystemInfo } from "@/types";
 import React, { createContext, useContext, useMemo, useState } from "react";
-import CommandExecutor from "../../main/IPC/CommandExecutor";
-import PasswordManager from "../../main/IPC/PasswordManager";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { generateUniqueId } from "../utils";
 import { DEFAULT_BUG_TEXT, LoggingContext } from "./LoggingContext";
-
-declare global {
-  interface Window {
-    PasswordManager?: PasswordManager;
-    // FileManagerWrapper?: FileManagerWrapper;
-    CommandExecutor?: CommandExecutor;
-  }
-}
 
 export interface IRosProviderContext {
   // credentials methods

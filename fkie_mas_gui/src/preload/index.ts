@@ -16,6 +16,7 @@ import {
   TShutdownManager,
   TSubscriberManager,
   TTerminalManager,
+  LaunchManagerEvents,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 
@@ -76,14 +77,12 @@ if (process.contextIsolated) {
       getInfo: () => ipcRenderer.invoke("systemInfo:getInfo"),
     });
 
-    // Register Multimaster Manager
-    //    Validate first if ROS is available
-    // if (['1', '2'].includes(`${sMultimasterManagerPreload.rosInfo.version}`)) {
-    contextBridge.exposeInMainWorld("MultimasterManager", {
+    // Register launch Manager
+    contextBridge.exposeInMainWorld("launchManager", {
       startTerminalManager: (rosVersion: string, credential: TCredential, port?: number) =>
-        ipcRenderer.invoke("MultimasterManager:startTerminalManager", rosVersion, credential, port),
+        ipcRenderer.invoke(LaunchManagerEvents.startTerminalManager, rosVersion, credential, port),
 
-      startMultimasterDaemon: (
+      startDaemon: (
         rosVersion: string,
         credential: TCredential,
         name?: string,
@@ -92,7 +91,7 @@ if (process.contextIsolated) {
         forceStart?: boolean
       ) =>
         ipcRenderer.invoke(
-          "MultimasterManager:startMultimasterDaemon",
+          LaunchManagerEvents.startDaemon,
           rosVersion,
           credential,
           name,
@@ -113,7 +112,7 @@ if (process.contextIsolated) {
         forceStart?: boolean
       ) =>
         ipcRenderer.invoke(
-          "MultimasterManager:startMasterDiscovery",
+          LaunchManagerEvents.startMasterDiscovery,
           rosVersion,
           credential,
           name,
@@ -135,7 +134,7 @@ if (process.contextIsolated) {
         forceStart?: boolean
       ) =>
         ipcRenderer.invoke(
-          "MultimasterManager:startMasterSync",
+          LaunchManagerEvents.startMasterSync,
           rosVersion,
           credential,
           name,
@@ -146,7 +145,7 @@ if (process.contextIsolated) {
         ),
 
       startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: TCredential | null) =>
-        ipcRenderer.invoke("MultimasterManager:startDynamicReconfigureClient", name, rosMasterUri, credential),
+        ipcRenderer.invoke(LaunchManagerEvents.startDynamicReconfigureClient, name, rosMasterUri, credential),
     });
 
     // Expose protected methods that allow the renderer process to use

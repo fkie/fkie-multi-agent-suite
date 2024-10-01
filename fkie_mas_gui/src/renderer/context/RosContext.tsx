@@ -1,10 +1,9 @@
-import { TRosInfo, TSystemInfo } from "@/types";
+import { TLaunchManager, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import MultimasterManager from "../../main/IPC/MultimasterManager";
 import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "../components/UI";
 import {
   LaunchArgument,
@@ -54,17 +53,11 @@ import { LoggingContext } from "./LoggingContext";
 import { SSHContext } from "./SSHContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
 
-declare global {
-  interface Window {
-    MultimasterManager?: MultimasterManager;
-  }
-}
-
 export interface IRosProviderContext {
   initialized: boolean;
   rosInfo: TRosInfo | null;
   systemInfo: TSystemInfo | null;
-  multimasterManager: MultimasterManager | null;
+  launchManager: TLaunchManager | null;
   providers: Provider[];
   providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
@@ -94,7 +87,7 @@ export const DEFAULT = {
   initialized: false,
   rosInfo: null,
   systemInfo: null,
-  multimasterManager: null,
+  launchManager: null,
   providers: [],
   providersConnected: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
@@ -140,7 +133,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [initialized, setInitialized] = useState(DEFAULT.initialized);
   const [rosInfo, setRosInfo] = useState<TRosInfo | null>(null);
   const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
-  const [multimasterManager, setMultimasterManager] = useState<MultimasterManager | null>(null);
+  const [launchManager, setLaunchManager] = useState<TLaunchManager | null>(null);
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
@@ -565,7 +558,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   const startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean> = useCallback(
     async (config) => {
-      if (!multimasterManager) return false;
+      if (!launchManager) return false;
 
       let allStarted = true;
       try {
@@ -654,7 +647,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // Start Daemon
         if (config.daemon.enable) {
           logCtx.debug(`Starting NodeManager-Daemon on host '${config.host}'`, "");
-          const resultStartDaemon = await multimasterManager.startMultimasterDaemon(
+          const resultStartDaemon = await launchManager.startDaemon(
             config.rosVersion,
             credential,
             undefined,
@@ -672,7 +665,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // Restart Discovery
         if (config.discovery.enable) {
           logCtx.debug(`Starting Multimaster-Discovery on host '${config.host}'`, "");
-          const resultStartDiscovery = await multimasterManager.startMasterDiscovery(
+          const resultStartDiscovery = await launchManager.startMasterDiscovery(
             config.rosVersion,
             credential,
             undefined,
@@ -694,7 +687,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // Restart Sync
         if (config.sync.enable) {
           logCtx.debug(`Starting Multimaster-Sync on host '${config.host}'`, "");
-          const resultStartSync = await multimasterManager.startMasterSync(
+          const resultStartSync = await launchManager.startMasterSync(
             config.rosVersion,
             credential,
             undefined,
@@ -713,7 +706,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // Start terminal manager
         if (config.terminal.enable) {
           logCtx.debug(`Starting Terminal-Manager on host '${config.host}'`, "");
-          const resultStartTerminal = await multimasterManager.startTerminalManager(
+          const resultStartTerminal = await launchManager.startTerminalManager(
             config.rosVersion,
             credential,
             config.terminal.port
@@ -758,7 +751,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       return allStarted;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [multimasterManager, isLocalHost, SSHCtx, getProviderByHosts, settingsCtx, logCtx]
+    [launchManager, isLocalHost, SSHCtx, getProviderByHosts, settingsCtx, logCtx]
   );
 
   const startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean> = useCallback(
@@ -787,7 +780,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   const startMasterSync = useCallback(
     async (host: string, rosVersion: string) => {
-      if (!multimasterManager) return false;
+      if (!launchManager) return false;
       const isLocal = isLocalHost(host);
       const credential = isLocal ? null : SSHCtx.getCredentialHost(host);
       if (!isLocal && !credential) {
@@ -795,29 +788,29 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return false;
       }
       logCtx.debug(`Starting Multimaster-Sync on host '${host}'`, "");
-      const resultStartSync = await multimasterManager.startMasterSync(rosVersion, credential, undefined, [], []);
+      const resultStartSync = await launchManager.startMasterSync(rosVersion, credential, undefined, [], []);
       if (!resultStartSync.result) {
         logCtx.warn(`Failed to start sync on host '${host}'`, resultStartSync.message);
         return false;
       }
       return true;
     },
-    [SSHCtx, isLocalHost, logCtx, multimasterManager]
+    [SSHCtx, isLocalHost, logCtx, launchManager]
   );
 
   const startDynamicReconfigureClient = useCallback(
     async (nodeName: string, masteruri: string) => {
-      if (!multimasterManager) return { result: false, message: "multimasterManager not available in Browser" };
+      if (!launchManager) return { result: false, message: "launchManager not available in Browser" };
       logCtx.debug(`Starting Dynamic Reconfigure GUI for '${name}'`, "");
       if (!masteruri) {
         const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${nodeName}`;
         logCtx.error(msg, "");
         return { result: false, message: msg };
       }
-      const result = await multimasterManager.startDynamicReconfigureClient(nodeName, masteruri, null);
+      const result = await launchManager.startDynamicReconfigureClient(nodeName, masteruri, null);
       return result;
     },
-    [logCtx, multimasterManager]
+    [logCtx, launchManager]
   );
 
   const getProviderName = (providerId: string) => {
@@ -1116,8 +1109,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const init = async () => {
     setInitialized(() => false);
 
-    if (window.MultimasterManager) {
-      setMultimasterManager(window.MultimasterManager);
+    if (window.launchManager) {
+      setLaunchManager(window.launchManager);
     }
     // get local ROS Info
     if (window.rosInfo) {
@@ -1377,7 +1370,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       initialized,
       rosInfo,
       systemInfo,
-      multimasterManager,
+      launchManager,
       providers,
       providersConnected,
       mapProviderRosNodes,
@@ -1412,7 +1405,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       initialized,
       rosInfo,
       systemInfo,
-      multimasterManager,
+      launchManager,
       providers,
       providersConnected,
       mapProviderRosNodes,

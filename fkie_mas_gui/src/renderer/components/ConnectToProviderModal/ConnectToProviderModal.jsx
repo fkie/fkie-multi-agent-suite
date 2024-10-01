@@ -319,7 +319,7 @@ function ConnectToProviderModal() {
   };
 
   const handleStartProvider = async () => {
-    if (!rosCtx.multimasterManager) return;
+    if (!rosCtx.launchManager) return;
 
     setStartProviderDescription("Starting nodes on selected hosts");
     setStartProviderIsSubmitting(true);
