@@ -658,7 +658,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       // if file is a launch or XML, try to fetch included files
       const request = new LaunchIncludedFilesRequest();
       request.path = rootFilePath;
-      request.unique = true;
+      request.unique = false;
       request.recursive = true;
       const includedFilesLocal = await provider.launchGetIncludedFiles(request);
 
@@ -1011,6 +1011,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                     );
                     if (result) {
                       logCtx.success(`Parent file opened [${getFileName(path)}]`);
+                      // TODO check args to select the correct file
                       setEditorModel(item.path, {
                         startLineNumber: item.line_number,
                         endLineNumber: item.line_number,

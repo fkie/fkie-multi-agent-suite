@@ -63,13 +63,13 @@ function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selected
 
   /** Create from SimpleTreeView from given root item */
   const includeFilesToTree = useCallback(
-    (file) => {
+    (file, lineNumberCount) => {
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!file) return <></>;
       return (
         <FileTreeItem
-          key={`${file.inc_path}-${file.line_number}`}
-          itemId={`${file.inc_path}-${file.line_number}`}
+          key={`${file.inc_path}-${file.line_number + lineNumberCount}`}
+          itemId={`${file.inc_path}-${file.line_number + lineNumberCount}`}
           labelText={`${getFileName(file.inc_path)}`}
           labelLine={file.line_number}
           textColor={!file.exists ? "red" : ""}
@@ -98,7 +98,7 @@ function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selected
           }}
         >
           {file.children.map((child) => {
-            return includeFilesToTree(child);
+            return includeFilesToTree(child, lineNumberCount + file.line_number);
           })}
         </FileTreeItem>
       );
@@ -124,7 +124,7 @@ function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selected
       sx={{ flexGrow: 1, overflow: "auto" }}
     >
       {useMemo(() => {
-        return includeFilesToTree(includeRoot);
+        return includeFilesToTree(includeRoot, 0);
       }, [includeFilesToTree, includeRoot])}
     </SimpleTreeView>
   );
