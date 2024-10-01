@@ -8,7 +8,6 @@ import { NavigationContext } from "../../context/NavigationContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { removeDDSuid } from "../../utils/index";
 import { colorFromHostname } from "../UI/Colors";
-import CopyButton from "../UI/CopyButton";
 
 const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -62,9 +61,9 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
     labelInfo = "",
     labelCount = null,
     labelText = "",
-    requestData = false,
+    // requestData = false,
     topicInfo = null,
-    providerName = "",
+    // providerName = "",
     selectedItem = "",
     ...other
   },

@@ -6,7 +6,7 @@ import { useContext, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 import { colorFromHostname } from "./Colors";
 
-const StyledBadge = styled(Badge)(({ theme }) => ({
+const StyledBadge = styled(Badge)((/*{ theme }*/) => ({
   "& .MuiBadge-badge": {
     right: 0,
     top: 22,

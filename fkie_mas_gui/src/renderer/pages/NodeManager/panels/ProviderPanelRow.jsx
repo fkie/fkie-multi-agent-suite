@@ -25,7 +25,6 @@ import semver from "semver";
 import { colorFromHostname } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { RosNode } from "../../../models";
 import { CmdType, ConnectionState } from "../../../providers";
 import {
   EVENT_PROVIDER_ACTIVITY,
@@ -230,7 +229,7 @@ function ProviderPanelRow({ provider }) {
                 disableInteractive
               >
                 <span>
-                  {window.CommandExecutor && (
+                  {window.commandExecutor && (
                     <Button
                       style={{
                         textTransform: "none",
@@ -246,7 +245,7 @@ function ProviderPanelRow({ provider }) {
                       <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>
                     </Button>
                   )}
-                  {!window.CommandExecutor && <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>}
+                  {!window.commandExecutor && <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>}
                 </span>
               </Tooltip>
 
@@ -266,7 +265,7 @@ function ProviderPanelRow({ provider }) {
           return (
             <Stack direction="row" alignItems="center">
               <div style={{ color: "grey" }}>{provider.connectionState}</div>
-              {window.CommandExecutor && (
+              {window.commandExecutor && (
                 <Tooltip title="Start daemon" placement="bottom" disableInteractive>
                   <IconButton
                     color="default"

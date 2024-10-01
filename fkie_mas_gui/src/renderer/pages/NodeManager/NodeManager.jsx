@@ -101,8 +101,8 @@ function NodeManager() {
     let result = false;
     layout.children.forEach((item) => {
       if (item.type === "tab") {
-        if (item.enableFloat !== !window.CommandExecutor) {
-          item.enableFloat = !window.CommandExecutor;
+        if (item.enableFloat !== !window.commandExecutor) {
+          item.enableFloat = !window.commandExecutor;
           result = true;
         }
       }
@@ -217,7 +217,7 @@ function NodeManager() {
           component: data.id,
           panelGroup: data.panelGroup,
           enableClose: data.closable,
-          enableFloat: !window.CommandExecutor,
+          enableFloat: !window.commandExecutor,
           config: data.config,
         };
         layoutComponents[data.id] = data.component;
@@ -424,7 +424,7 @@ function NodeManager() {
           default:
             break;
         }
-        if (node.getConfig()?.openExternal && window.CommandExecutor) {
+        if (node.getConfig()?.openExternal && window.commandExecutor) {
           renderValues.buttons.push(
             <Tooltip
               key={`button-close-${node.getId()}`}
@@ -450,7 +450,7 @@ function NodeManager() {
                       );
                       // open screen in a new terminal
                       try {
-                        window.CommandExecutor?.execTerminal(
+                        window.commandExecutor?.execTerminal(
                           provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
                           `"${config.type} ${config.nodeName}@${provider.host()}"`,
                           terminalCmd.cmd
@@ -474,7 +474,15 @@ function NodeManager() {
                   }
                   if (node.getConfig().terminalConfig) {
                     const cfg = node.getConfig().terminalConfig;
-                    window.terminalManager?.open(cfg.id, cfg.host, cfg.port, cfg.cmdType, cfg.node, cfg.screen, cfg.cmd);
+                    window.terminalManager?.open(
+                      cfg.id,
+                      cfg.host,
+                      cfg.port,
+                      cfg.cmdType,
+                      cfg.node,
+                      cfg.screen,
+                      cfg.cmd
+                    );
                     deleteTab(node.getId());
                   }
                   event.stopPropagation();
@@ -552,7 +560,7 @@ function NodeManager() {
           node.getId(),
           <TuneIcon sx={{ fontSize: "inherit" }} />
         );
-        if (window.CommandExecutor) {
+        if (window.commandExecutor) {
           renderValues.stickyButtons.push(<ExternalAppsModal key="external-apps-dialog" />);
         }
       }

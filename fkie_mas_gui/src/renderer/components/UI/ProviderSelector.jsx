@@ -56,7 +56,7 @@ function ProviderSelector({ defaultProvider = "", setSelectedProvider }) {
     <Select
       autoWidth={false}
       value={currentProvider}
-      onChange={(event, child) => {
+      onChange={(event) => {
         // wait before changing provider
         // it prevents React to render too early child components
         setTimeout(() => {

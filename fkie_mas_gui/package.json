@@ -43,6 +43,7 @@
     "@mui/material": "^5.16.7",
     "@mui/x-tree-view": "^7.14.0",
     "@react-hook/debounce": "^4.0.0",
+    "@types/ssh2": "^1.15.1",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "@xterm/addon-fit": "^0.10.0",

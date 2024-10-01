@@ -1,4 +1,4 @@
-export interface TRosInfo {
+export type TRosInfo = {
   version: string | undefined;
   pythonVersion: string | undefined;
   etcDir: string | undefined;
@@ -8,5 +8,5 @@ export interface TRosInfo {
   domainId: string | undefined;
   localhostOnly: string | undefined;
 
-  getInfo: () => TRosInfo;
-}
+  getInfo?: () => Promise<TRosInfo>;
+};

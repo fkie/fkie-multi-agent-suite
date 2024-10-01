@@ -2,6 +2,7 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { Box, Button, IconButton, Link, Stack, Typography } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
+import PropTypes from "prop-types";
 import { useContext, useEffect, useState } from "react";
 import packageJson from "../../../../package.json";
 import { ElectronContext } from "../../context/ElectronContext";
@@ -9,18 +10,21 @@ import { LoggingContext } from "../../context/LoggingContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import CopyButton from "../UI/CopyButton";
 
-function LinearProgressWithLabel(props) {
+function LinearProgressWithLabel({ value, ...props }) {
   return (
     <Box sx={{ display: "flex", alignItems: "center" }}>
       <Box sx={{ width: "100%", mr: 1 }}>
         <LinearProgress variant="determinate" {...props} />
       </Box>
       <Box sx={{ minWidth: 35 }}>
-        <Typography variant="body2" color="text.secondary">{`${Math.round(props.value)}%`}</Typography>
+        <Typography variant="body2" color="text.secondary">{`${Math.round(value)}%`}</Typography>
       </Box>
     </Box>
   );
 }
+LinearProgressWithLabel.propTypes = {
+  value: PropTypes.number.isRequired,
+};
 
 function About() {
   const settingsCtx = useContext(SettingsContext);
@@ -58,7 +62,7 @@ function About() {
   useEffect(() => {
     if (!window.autoUpdate) return;
 
-    window.autoUpdate.receive("checking-for-update", (data) => {
+    window.autoUpdate.receive("checking-for-update", () => {
       setCheckingForUpdate(true);
     });
 

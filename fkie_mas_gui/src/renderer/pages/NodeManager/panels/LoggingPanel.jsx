@@ -37,7 +37,7 @@ const VirtuosoTableComponents = {
   Scroller: VtScroller,
   Table: (props) => <Table {...props} sx={{ borderCollapse: "separate" }} />,
   TableHead,
-  TableRow: ({ item: _item, ...props }) => <TableRow {...props} />,
+  TableRow: ({ ...props }) => <TableRow {...props} />,
   TableBody: VtTableBody,
 };
 
@@ -230,7 +230,7 @@ function LoggingPanel() {
         </TableCell>
         <TableCell className="tableCell" key={row.key} sx={{ color }}>
           <div>{row.description}</div>
-          {showDetails && <div>{JSON.stringify(row.details)}</div>}
+          {showDetails && row.details && <div>{JSON.stringify(row.details)}</div>}
         </TableCell>
         <TableCell className="tableCell" key="empty" sx={{ color }} />
       </>

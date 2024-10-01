@@ -137,6 +137,7 @@ function ServicesPanel({ initialSearchTerm = "" }) {
 
   const onCallService = useCallback(
     (service, external, openInTerminal = false) => {
+      // TODO: open in external window like subscriber
       // rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,

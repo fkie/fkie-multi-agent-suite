@@ -29,7 +29,7 @@ function NodeLoggerPanel(node) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [filterText, setFilterText] = useState("");
-  const [currentNode, setCurrentNode] = useState(node.node);
+  const [currentNode] = useState(node.node);
   const [isRequesting, setIsRequesting] = useState(false);
   const [loggers, setLoggers] = useState([]);
   const [loggersFiltered, setLoggersFiltered] = useState([]);
@@ -42,7 +42,7 @@ function NodeLoggerPanel(node) {
       const provider = rosCtx.getProviderById(rosNode.providerId);
       if (provider) {
         setIsRequesting(true);
-        const result = await provider.setNodeLoggers(rosNode.id, newLoggers);
+        await provider.setNodeLoggers(rosNode.id, newLoggers);
         setIsRequesting(false);
       }
     },

@@ -1,8 +1,8 @@
 /* eslint-disable max-classes-per-file */
-import { JSONObject } from "@/types";
+import { JSONObject, TResult, TResultData } from "@/types";
 import { ILoggingContext } from "../../context/LoggingContext";
 import { getDefaultPortFromRos } from "../../context/SettingsContext";
-import ProviderConnection, { IResult } from "../ProviderConnection";
+import ProviderConnection from "../ProviderConnection";
 import CrossbarIO from "./crossbar_io";
 
 /**
@@ -54,7 +54,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to subscribe for. (ex. 'ros.system.pong')
    * @param {function} callback - Callback to be executed when new messages arrives.
    */
-  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async (uri, callback) => {
+  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<TResult> = async (uri, callback) => {
     const result = await this.crossbar.subscribe(uri, (msg: string[]) => {
       if (typeof msg[0] === "string") {
         try {
@@ -67,7 +67,7 @@ export default class CrossbarIOConnection extends ProviderConnection {
         callback(msg[0]);
       }
     });
-    const rval: IResult = {
+    const rval: TResult = {
       result: result[0],
       message: result[2],
     };
@@ -80,10 +80,10 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
    * @param {Object} args - Arguments passed to the call
    */
-  call: (uri: string, params: unknown[]) => Promise<JSONObject> = async (uri, params) => {
+  call: (uri: string, params: unknown[]) => Promise<TResultData> = async (uri, params) => {
     const r = await this.crossbar.call(uri, params);
     if (r[0]) {
-      return Promise.resolve(JSON.parse(r[1]));
+      return Promise.resolve({ result: true, message: "", data: JSON.parse(r[1]) } as TResultData);
     }
     throw Error(r[2]);
   };
@@ -94,9 +94,9 @@ export default class CrossbarIOConnection extends ProviderConnection {
    * @param {string} uri - URI to publish. (ex. 'ros.remote.ping')
    * @param {object} payload - payload to be sent with request
    */
-  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async (uri, payload) => {
+  publish: (uri: string, payload: JSONObject) => Promise<TResult> = async (uri, payload) => {
     const result = await this.crossbar.publish(uri, [payload]);
-    const rval: IResult = {
+    const rval: TResult = {
       result: result[0],
       message: result[2],
     };

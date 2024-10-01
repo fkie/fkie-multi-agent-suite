@@ -39,7 +39,6 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
   const [provider, setProvider] = useState(null);
   const [inputElements, setInputElements] = useState(null);
 
-  const [callServiceStatus, setCallServiceStatus] = useState("");
   const [callServiceDescription, setCallServiceDescription] = useState("");
   const [callServiceIsSubmitting, setCallServiceIsSubmitting] = useState(false);
   const [resultError, setResultError] = useState(null);
@@ -242,7 +241,6 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
   const handleCallService = async () => {
     setResultError("");
     setResultMessage(null);
-    setCallServiceStatus("active");
     setCallServiceDescription("Calling service...");
     setCallServiceIsSubmitting(true);
 
@@ -275,7 +273,6 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
       setTimeout(() => {
         setCallServiceIsSubmitting(false);
         setCallServiceDescription("");
-        setCallServiceStatus("inactive");
       }, 5000)
     );
   };
@@ -287,7 +284,6 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
       setTimeoutObj(null);
       setCallServiceIsSubmitting(false);
       setCallServiceDescription("");
-      setCallServiceStatus("inactive");
     }
   }, [timeoutObj, resultMessage, resultError]);
 
@@ -386,7 +382,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
                   // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const re = new RegExp(value, "i");
                   setSearchTerm(value);
-                } catch (error) {
+                } catch {
                   // TODO: visualize error
                 }
               }}

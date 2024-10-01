@@ -1,4 +1,4 @@
-import { JSONObject } from "@/types";
+import { JSONObject, TResult } from "@/types";
 import Fade from "@mui/material/Fade";
 import { VariantType, useSnackbar } from "notistack";
 import React, { createContext, useContext, useMemo, useState } from "react";
@@ -20,8 +20,8 @@ export interface ILoggingContext {
   clearLogs?: () => void;
   debugInterface: (
     uri: string,
-    result: JSONObject | string,
-    details?: JSONObject | string,
+    result: TResult | JSONObject | string,
+    details?: TResult | JSONObject | string,
     providerName?: string
   ) => void;
 }
@@ -127,13 +127,13 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
 
   const debugInterface = (
     uri: string,
-    msg: JSONObject | string,
-    details?: JSONObject | string,
+    msg: TResult | JSONObject | string,
+    details?: TResult | JSONObject | string,
     providerName?: string
   ) => {
     // check settings to debug by uri
 
-    let parsedMsg: JSONObject | string = {};
+    let parsedMsg: TResult | JSONObject | string = {};
     try {
       if (msg && typeof msg === "string" && msg.length > 0) parsedMsg = JSON.parse(msg);
       else parsedMsg = msg;
@@ -142,7 +142,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
       parsedMsg = msg;
     }
 
-    let parseDetails: JSONObject | string = {};
+    let parseDetails: TResult | JSONObject | string = {};
     if (details) {
       try {
         if (typeof details === "string" && details.length > 0) {

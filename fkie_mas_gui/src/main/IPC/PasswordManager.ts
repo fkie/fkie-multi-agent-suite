@@ -1,9 +1,22 @@
 import keytar from "keytar";
+import { ipcMain } from "electron";
+import { PasswordManagerEvents, TPasswordManager } from "@/types";
 
 /**
  * Class PasswordManager: Save/read passwords using the OS keychain (interfaced with keytar)
  */
-class PasswordManager {
+class PasswordManager implements TPasswordManager {
+  public registerHandlers: () => void = () => {
+    // Password Manager
+    ipcMain.handle(PasswordManagerEvents.setPassword, (_event, service: string, account: string, password: string) => {
+      return this.setPassword(service, account, password);
+    });
+
+    ipcMain.handle(PasswordManagerEvents.deletePassword, (_event, service: string, account: string) => {
+      return this.deletePassword(service, account);
+    });
+  };
+
   /**
    * Get the stored password for the service and account.
    *

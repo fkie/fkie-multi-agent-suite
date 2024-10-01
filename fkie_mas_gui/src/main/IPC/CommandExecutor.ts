@@ -1,10 +1,11 @@
-import { TCredential, TSystemInfo } from "@/types";
+import { CommandExecutorEvents, TCommandExecutor, TCredential, TSystemInfo } from "@/types";
 import { spawn, StdioOptions } from "child_process";
+import { ipcMain } from "electron";
 import log from "electron-log";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { Client, ConnectConfig } from "ssh2";
+import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
 import { ARGUMENTS, getArgument } from "../CommandLineInterface";
 import PasswordManager from "./PasswordManager";
 import { SystemInfo } from "./SystemInfo";
@@ -13,7 +14,7 @@ const textDecoder = new TextDecoder();
 /**
  * Class CommandExecutor: Execute commands locally or remote using SSH2 interface
  */
-class CommandExecutor {
+class CommandExecutor implements TCommandExecutor {
   localCredential: TCredential;
 
   pm: PasswordManager;
@@ -52,6 +53,19 @@ class CommandExecutor {
     };
   }
 
+  public registerHandlers: () => void = () => {
+    ipcMain.handle(CommandExecutorEvents.exec, (_event, credential: TCredential, command: string) => {
+      return this.exec(credential, command);
+    });
+
+    ipcMain.handle(
+      CommandExecutorEvents.execTerminal,
+      (_event, credential: TCredential, title: string, command: string) => {
+        return this.execTerminal(credential, title, command);
+      }
+    );
+  };
+
   /**
    * Executes a command using a SSH connection
    * @param {TCredential} credential - SSH credential, null for local host.
@@ -84,7 +98,7 @@ class CommandExecutor {
         // log.debug(`CommandExecutor exec: Using local process for: [${command}]`);
 
         // if local command, do not use SSH but child process instead
-        return new Promise((resolve, _reject) => {
+        return new Promise((resolve) => {
           try {
             let errorString = "";
             log.info(`<cmd>${command}`);
@@ -147,17 +161,17 @@ class CommandExecutor {
       // command must be executed remotely
       const connectionConfig = await this.generateConfig(c);
 
-      return new Promise((resolve, _reject) => {
+      return new Promise((resolve) => {
         if (!command)
           resolve({
             result: false,
             message: "Invalid empty command",
           });
-        const conn = new Client();
+        const conn: Client = new Client();
         try {
           conn
             .on("ready", () => {
-              conn.exec(command, (err: Error | undefined, sshStream: any) => {
+              conn.exec(command, (err: Error | undefined, sshStream: ClientChannel) => {
                 if (c) log.info(`<ssh:${c.username}@${c.host}:${c.port}>${command}`);
                 if (err) {
                   resolve({
@@ -168,7 +182,7 @@ class CommandExecutor {
                 let errorString = "";
                 // .on('close', (code: string, signal: string) => {
                 sshStream
-                  .on("close", (code: number, _signal: string) => {
+                  .on("close", (code: number) => {
                     // TODO: Check code/signal to validate response or errors
                     // command executed correctly and no response
                     if (code !== 0) {
@@ -206,7 +220,7 @@ class CommandExecutor {
               });
             })
             .connect(connectionConfig);
-          conn.on("error", (error: any) => {
+          conn.on("error", (error: Error & ClientErrorExtensions) => {
             log.warn("CommandExecutor - connect error: ", error);
             resolve({
               result: false,
@@ -262,7 +276,7 @@ class CommandExecutor {
         }
         terminalEmulator = t;
         break;
-      } catch (error) {
+      } catch {
         // continue with next terminal
       }
     }

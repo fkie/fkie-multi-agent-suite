@@ -25,7 +25,9 @@ const enum Command {
   OUTPUT = "0",
   SET_WINDOW_TITLE = "1",
   SET_PREFERENCES = "2",
+}
 
+const enum CommandClient {
   // client side
   INPUT = "0",
   RESIZE_TERMINAL = "1",
@@ -124,7 +126,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     };
     // TODO Add setting for this parameter
     this.settingsCtx = props.settingsCtx;
-    this.fontSize = this.settingsCtx?.get("fontSizeTerminal");
+    this.fontSize = this.settingsCtx?.get("fontSizeTerminal") as number;
     this.onSocketOpen = this.onSocketOpen.bind(this);
     this.onSocketError = this.onSocketError.bind(this);
     this.onSocketData = this.onSocketData.bind(this);
@@ -228,7 +230,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         ctrlKey: true,
         altKey: false,
         callback: () => {
-          this.fontSize = this.settingsCtx?.getDefault("fontSizeTerminal");
+          this.fontSize = this.settingsCtx?.getDefault("fontSizeTerminal") as number;
           const { terminal } = this;
           if (terminal) terminal.options.fontSize = this.fontSize;
           this.settingsCtx?.set("fontSizeTerminal", this.fontSize);
@@ -317,7 +319,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     const { initialCommands } = this.props;
     if (initialCommands) {
       initialCommands.forEach((command) => {
-        this.socket?.send(textEncoder.encode(Command.INPUT + command));
+        this.socket?.send(textEncoder.encode(CommandClient.INPUT + command));
         // this.onTerminalData(command);
       });
     }
@@ -458,14 +460,14 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private pause() {
     const { textEncoder, socket } = this;
-    socket?.send(textEncoder.encode(Command.PAUSE));
+    socket?.send(textEncoder.encode(CommandClient.PAUSE));
   }
 
   private onTerminalResize(size: { cols: number; rows: number }) {
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
       const msg = JSON.stringify({ columns: size.cols, rows: size.rows });
-      socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + msg));
+      socket.send(textEncoder.encode(CommandClient.RESIZE_TERMINAL + msg));
     }
   }
 
@@ -479,12 +481,12 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(textEncoder.encode(Command.INPUT + data));
+      socket.send(textEncoder.encode(CommandClient.INPUT + data));
     }
   }
 
   private resume() {
     const { textEncoder, socket } = this;
-    socket?.send(textEncoder.encode(Command.RESUME));
+    socket?.send(textEncoder.encode(CommandClient.RESUME));
   }
 }

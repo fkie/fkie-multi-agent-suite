@@ -965,7 +965,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         if (forceOpenTerminal) {
           try {
             const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
-            const result = await window.CommandExecutor?.execTerminal(
+            const result = await window.commandExecutor?.execTerminal(
               null, // we start the subscriber always local
               `"echo ${topic}"`,
               terminalCmd.cmd
@@ -1049,13 +1049,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // open in external window depending on setting and key modifier and if no tab already existing
         const openExternal: boolean =
           type === CmdType.SCREEN
-            ? xor(settingsCtx.get("screenOpenExternal"), externalKeyModifier)
-            : xor(settingsCtx.get("logOpenExternal"), externalKeyModifier) && !layoutModel?.getNodeById(id);
+            ? xor(settingsCtx.get("screenOpenExternal") as boolean, externalKeyModifier)
+            : xor(settingsCtx.get("logOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
         if (forceOpenTerminal) {
           try {
             // create a terminal command
             const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd);
-            const result = await window.CommandExecutor?.execTerminal(
+            const result = await window.commandExecutor?.execTerminal(
               provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
               `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
               terminalCmd.cmd
@@ -1113,12 +1113,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setLaunchManager(window.launchManager);
     }
     // get local ROS Info
-    if (window.rosInfo) {
+    if (window.rosInfo?.getInfo) {
       const rinfo = await window.rosInfo.getInfo();
       setRosInfo(rinfo);
     }
     // get local System Info
-    if (window.systemInfo) {
+    if (window.systemInfo?.getInfo) {
       setSystemInfo(await window.systemInfo.getInfo());
     }
     setInitialized(true);

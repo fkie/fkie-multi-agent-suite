@@ -10,9 +10,9 @@ export type TSystemInfo = {
   battery?: si.Systeminformation.BatteryData;
   graphics?: si.Systeminformation.GraphicsData;
   osInfo?: si.Systeminformation.OsData;
-  networkInterfaces?: si.Systeminformation.NetworkInterfacesData | si.Systeminformation.NetworkInterfacesData[];
+  networkInterfaces?: si.Systeminformation.NetworkInterfacesData[];
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
   hosts?: hostile.Lines;
 
-  getInfo: () => Promise<TSystemInfo>;
+  getInfo?: () => Promise<TSystemInfo>;
 };

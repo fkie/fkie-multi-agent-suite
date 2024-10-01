@@ -142,7 +142,6 @@ class TerminalManager implements ITerminalManager {
     }
     return Promise.resolve(null);
   };
-
 }
 
 export default TerminalManager;

@@ -1,8 +1,14 @@
 import { TRosInfo, TSystemInfo } from "@/types";
-import { TDialogManager, TEditorManager, TShutdownManager, TSubscriberManager, TTerminalManager, TLaunchManager } from "./types";
-import CommandExecutor from "./main/IPC/CommandExecutor";
-import PasswordManager from "./main/IPC/PasswordManager";
-
+import {
+  TDialogManager,
+  TEditorManager,
+  TShutdownManager,
+  TSubscriberManager,
+  TTerminalManager,
+  TLaunchManager,
+  TCommandExecutor,
+  TPasswordManager,
+} from "./types";
 
 declare global {
   interface Window {
@@ -15,7 +21,7 @@ declare global {
     subscriberManager?: TSubscriberManager;
     terminalManager?: TTerminalManager;
     autoUpdate?: unknown;
-    PasswordManager?: PasswordManager;
-    CommandExecutor?: CommandExecutor;
+    passwordManager?: TPasswordManager;
+    commandExecutor?: TCommandExecutor;
   }
 }

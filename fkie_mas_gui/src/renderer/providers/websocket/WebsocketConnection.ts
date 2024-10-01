@@ -1,24 +1,24 @@
 import JSON5 from "json5";
-import { JSONObject } from "@/types";
+import { JSONObject, TResult, TResultData } from "@/types";
 import { ILoggingContext } from "../../context/LoggingContext";
 import { getDefaultPortFromRos } from "../../context/SettingsContext";
-import ProviderConnection, { IResult } from "../ProviderConnection";
+import ProviderConnection from "../ProviderConnection";
 
-interface IQueueItem {
+type IQueueItem = {
   promise: [
     Parameters<ConstructorParameters<typeof Promise>[0]>[0],
     Parameters<ConstructorParameters<typeof Promise>[0]>[1],
   ];
   timeout?: ReturnType<typeof setTimeout>;
-}
+};
 
-interface IQueue {
+type IQueue = {
   [x: number]: IQueueItem;
-}
+};
 
-interface ISubscriptions {
+type ISubscriptions = {
   [uri: string]: (msg: JSONObject) => void;
-}
+};
 
 /**
  * WebsocketConnection class to connect with a running daemon with websocket
@@ -129,7 +129,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to subscribe for. (ex. 'ros.system.pong')
    * @param {function} callback - Callback to be executed when new messages arrives.
    */
-  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<IResult> = async (uri, callback) => {
+  subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<TResult> = async (uri, callback) => {
     this.subscriptions[uri] = callback;
     const result = await this.call("sub", [uri])
       .catch((err) => {
@@ -147,7 +147,7 @@ export default class WebsocketConnection extends ProviderConnection {
     if (!result.result) {
       delete this.subscriptions[uri];
     }
-    return Promise.resolve(result as unknown as IResult);
+    return Promise.resolve(result as unknown as TResult);
   };
 
   /**
@@ -156,7 +156,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
    * @param {Object} params - Arguments passed to the call
    */
-  call: (uri: string, params: unknown[]) => Promise<JSONObject> = async (uri, params) => {
+  call: (uri: string, params: unknown[]) => Promise<TResultData> = async (uri, params) => {
     return new Promise((resolve, reject) => {
       if (!this.connected()) reject(new Error(`[${this.uri}] socket not ready`));
 
@@ -183,7 +183,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param {string} uri - URI to publish. (ex. 'ros.remote.ping')
    * @param {object} payload - payload to be sent with request
    */
-  publish: (uri: string, payload: JSONObject) => Promise<IResult> = async (uri, payload) => {
+  publish: (uri: string, payload: JSONObject) => Promise<TResult> = async (uri, payload) => {
     if (!this.connected()) {
       return Promise.reject({
         result: false,
@@ -237,7 +237,8 @@ export default class WebsocketConnection extends ProviderConnection {
           this.queue[message.id].promise[1]({
             result: false,
             message: 'Server response malformed. Response must include either "result"' + ' or "error", but not both.',
-          });
+            data: null,
+          } as TResultData);
 
         if (this.queue[message.id].timeout) {
           clearTimeout(this.queue[message.id].timeout);
@@ -247,12 +248,14 @@ export default class WebsocketConnection extends ProviderConnection {
           this.queue[message.id].promise[1]({
             result: false,
             message: message.error,
-          });
+            data: null,
+          } as TResultData);
         } else {
           this.queue[message.id].promise[0]({
             result: true,
-            message: message.result,
-          });
+            message: "",
+            data: message.result,
+          } as TResultData);
         }
 
         delete this.queue[message.id];

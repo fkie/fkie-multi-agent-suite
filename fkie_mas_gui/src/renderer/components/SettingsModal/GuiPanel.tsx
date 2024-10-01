@@ -21,7 +21,7 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { SyntheticEvent, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ISettingsParam, SettingsContext } from "../../context/SettingsContext";
 import SearchBar from "../UI/SearchBar";
 
@@ -77,6 +77,7 @@ export default function GuiPanel() {
   const [filter, setFilter] = useState("");
 
   const handleChange = (panel: string) => (_event: React.SyntheticEvent) => {
+    console.log(`handle cahgne: ${panel}`);
     if (expanded.includes(panel)) {
       setExpanded(expanded.filter((item) => panel !== item));
     } else {
@@ -155,7 +156,7 @@ export default function GuiPanel() {
                                   options={param.options}
                                   freeSolo={param.freeSolo}
                                   sx={{ margin: 0 }}
-                                  getOptionLabel={(option) => option}
+                                  getOptionLabel={(option) => option as string}
                                   renderInput={(params) => (
                                     <TextField
                                       {...params}
@@ -173,7 +174,7 @@ export default function GuiPanel() {
                                   disableCloseOnSelect
                                   renderOption={(props, option, { selected }) => {
                                     return (
-                                      <li {...props} key={option} style={{ height: "1.5em" }}>
+                                      <li {...props} key={option as string} style={{ height: "1.5em" }}>
                                         <Checkbox
                                           icon={icon}
                                           checkedIcon={checkedIcon}
@@ -218,8 +219,8 @@ export default function GuiPanel() {
                                   >
                                     {param.options.map((name) => {
                                       return (
-                                        <MenuItem key={name} value={name}>
-                                          {name}
+                                        <MenuItem key={name as string} value={name as string}>
+                                          {name as string}
                                         </MenuItem>
                                       );
                                     })}
@@ -264,7 +265,7 @@ export default function GuiPanel() {
                               <FormControlLabel
                                 control={
                                   <Checkbox
-                                    checked={settingsCtx.get(name)}
+                                    checked={settingsCtx.get(name) as boolean}
                                     onChange={(event) => {
                                       settingsCtx.set(name, event.target.checked);
                                     }}
@@ -280,7 +281,7 @@ export default function GuiPanel() {
                                 control={
                                   <Switch
                                     // color="primary"
-                                    checked={settingsCtx.get(name)}
+                                    checked={settingsCtx.get(name) as boolean}
                                     onChange={(event) => {
                                       settingsCtx.set(name, event.target.checked);
                                     }}

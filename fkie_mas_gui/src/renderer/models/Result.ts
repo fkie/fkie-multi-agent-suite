@@ -3,14 +3,14 @@ import { TResult } from "@/types";
 /**
  * Result models return result with additional info message
  */
-class Result implements TResult{
+class Result implements TResult {
   /**
    * Success or not
    */
   result: boolean;
 
   /**
-   * Explaning optional message.
+   * Explaining optional message.
    */
   message: string;
 
@@ -18,7 +18,7 @@ class Result implements TResult{
    * Class Constructor
    *
    * @param {boolean} result - Success or not
-   * @param {string} message - Explaning optional message.
+   * @param {string} message - Explaining optional message.
    */
   constructor(result: boolean, message: string) {
     this.result = result;

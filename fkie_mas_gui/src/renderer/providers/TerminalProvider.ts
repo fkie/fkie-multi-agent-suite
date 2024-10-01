@@ -2,7 +2,7 @@ import { ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import { URI } from "../models";
 import { ConnectionState } from "./ConnectionState";
-import Provider, { IConCallback } from "./Provider";
+import Provider, { TConCallback } from "./Provider";
 
 /**
  * Provider with reduced subscriptions to handle external terminal needs.
@@ -29,7 +29,7 @@ export default class TerminalProvider extends Provider {
     this.className = "TerminalProvider";
   }
 
-  public getCallbacks: () => IConCallback[] = () => {
+  public getCallbacks: () => TConCallback[] = () => {
     return [
       { uri: URI.ROS_NODES_CHANGED, callback: this.updateRosNodes },
       { uri: URI.ROS_SCREEN_LIST, callback: this.callbackScreensUpdate },

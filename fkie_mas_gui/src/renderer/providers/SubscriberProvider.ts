@@ -1,7 +1,7 @@
 import { ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import { ConnectionState } from "./ConnectionState";
-import Provider, { IConCallback } from "./Provider";
+import Provider, { TConCallback } from "./Provider";
 
 /**
  * Provider with reduced subscriptions to handle external file editor.
@@ -28,7 +28,7 @@ export default class SubscriberProvider extends Provider {
     this.className = "SubscriberProvider";
   }
 
-  public getCallbacks: () => IConCallback[] = () => {
+  public getCallbacks: () => TConCallback[] = () => {
     return [];
   };
 

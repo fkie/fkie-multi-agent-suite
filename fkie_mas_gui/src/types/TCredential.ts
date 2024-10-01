@@ -6,4 +6,4 @@ export type TCredential = {
   service: string;
   account: string;
   password: string;
-}
+};

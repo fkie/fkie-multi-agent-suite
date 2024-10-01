@@ -23,7 +23,7 @@ class SystemInfo implements TSystemInfo {
 
   osInfo?: si.Systeminformation.OsData;
 
-  networkInterfaces?: si.Systeminformation.NetworkInterfacesData | si.Systeminformation.NetworkInterfacesData[];
+  networkInterfaces?: si.Systeminformation.NetworkInterfacesData[];
 
   hosts?: hostile.Lines;
 
@@ -41,9 +41,13 @@ class SystemInfo implements TSystemInfo {
           this.battery = await si.battery();
           this.graphics = await si.graphics();
           this.osInfo = await si.osInfo();
-          this.networkInterfaces = await si.networkInterfaces();
-          if (!Array.isArray(this.networkInterfaces)) {
-            this.networkInterfaces = [this.networkInterfaces];
+          const networkInterfaces:
+            | si.Systeminformation.NetworkInterfacesData
+            | si.Systeminformation.NetworkInterfacesData[] = await si.networkInterfaces();
+          if (!Array.isArray(networkInterfaces)) {
+            this.networkInterfaces = [networkInterfaces];
+          } else {
+            this.networkInterfaces = networkInterfaces;
           }
           // this.networkConnections = await si.networkConnections();
 

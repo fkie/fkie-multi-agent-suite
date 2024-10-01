@@ -42,14 +42,7 @@ export default class LaunchManager implements TLaunchManager {
         ros1MasterUri?: string,
         forceStart?: boolean
       ) => {
-        return this.startDaemon(
-          rosVersion,
-          credential,
-          name,
-          networkId,
-          ros1MasterUri,
-          forceStart
-        );
+        return this.startDaemon(rosVersion, credential, name, networkId, ros1MasterUri, forceStart);
       }
     );
 
@@ -93,15 +86,7 @@ export default class LaunchManager implements TLaunchManager {
         ros1MasterUri?: string,
         forceStart?: boolean
       ) => {
-        return this.startMasterSync(
-          rosVersion,
-          credential,
-          name,
-          doNotSync,
-          syncTopics,
-          ros1MasterUri,
-          forceStart
-        );
+        return this.startMasterSync(rosVersion, credential, name, doNotSync, syncTopics, ros1MasterUri, forceStart);
       }
     );
 
@@ -111,7 +96,7 @@ export default class LaunchManager implements TLaunchManager {
         return this.startDynamicReconfigureClient(name, rosMasterUri, credential);
       }
     );
-  }
+  };
 
   /** Try to start a Terminal manager (default TTYD) */
   public startTerminalManager: (
@@ -145,10 +130,10 @@ export default class LaunchManager implements TLaunchManager {
   };
 
   /**
- * Returns the path of the suitable executable for the current platform
- *
- * @return {string} Path to the executable
- */
+   * Returns the path of the suitable executable for the current platform
+   *
+   * @return {string} Path to the executable
+   */
   private getPathTTY: () => string = () => {
     if (hasArgument(ARGUMENTS.TTYD_PATH)) {
       const path = getArgument(ARGUMENTS.TTYD_PATH);
@@ -192,53 +177,55 @@ export default class LaunchManager implements TLaunchManager {
     ros1MasterUri = undefined,
     forceStart = undefined
   ) => {
-      let versStr = rosVersion;
-      if (!versStr) {
-        versStr = this.rosInfo.version === "1" ? "1" : "2";
-        log.debug(`use ROS version: ${versStr}`);
+    let versStr = rosVersion;
+    if (!versStr) {
+      versStr = this.rosInfo.version === "1" ? "1" : "2";
+      log.debug(`use ROS version: ${versStr}`);
+    }
+    // Spawn a new Node Manager Master sync node
+    const hostSuffix = "{HOST}";
+    let dName = name || versStr === "2" ? `discovery_${hostSuffix}` : "mas_discovery";
+    if (versStr === "2") {
+      if (!dName.startsWith("_")) {
+        dName = `_${dName}`;
       }
-      // Spawn a new Node Manager Master sync node
-      const hostSuffix = "{HOST}";
-      let dName = name || versStr === "2" ? `discovery_${hostSuffix}` : "mas_discovery";
-      if (versStr === "2") {
-        if (!dName.startsWith("_")) {
-          dName = `_${dName}`;
-        }
-      }
-      // uses ROS1 method
-      let cmdMasterDiscovery: string | null = null;
-      const namespace = versStr === "2" ? "/mas" : "";
-      const nameArg = `--name=${namespace}/${dName}`;
+    }
+    // uses ROS1 method
+    let cmdMasterDiscovery: string | null = null;
+    const namespace = versStr === "2" ? "/mas" : "";
+    const nameArg = `--name=${namespace}/${dName}`;
 
-      let domainPrefix = "";
-      if (networkId !== undefined && networkId !== 0) {
-        domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
-      }
-      const forceArg = forceStart ? "--force " : "";
-      if (versStr === "1") {
-        const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
-        // networkId shift the default multicast port (11511)
-        const dPort = `${Number(getArgument(ARGUMENTS.DISCOVERY_MCAST_PORT)) + (networkId || 0)}`;
-        const dGroup = group || getArgument(ARGUMENTS.DISCOVERY_MCAST_GROUP);
-        const dHeartbeat = heartbeatHz || getArgument(ARGUMENTS.DISCOVERY_HEARTBEAT_HZ);
-        const dRobotHosts = robotHosts ? `_robot_hosts:=[${robotHosts}]` : "";
-        cmdMasterDiscovery = `${ros1MasterUriPrefix}${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${this.respawn ? "--respawn" : ""
-          } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
-      } else if (versStr === "2") {
-        cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${this.respawn ? "--respawn" : ""
-          } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
-      } else {
-        return Promise.resolve({
-          result: false,
-          message: "Could not start [mas_discovery], ROS is not available",
-        });
-      }
+    let domainPrefix = "";
+    if (networkId !== undefined && networkId !== 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
+    }
+    const forceArg = forceStart ? "--force " : "";
+    if (versStr === "1") {
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
+      // networkId shift the default multicast port (11511)
+      const dPort = `${Number(getArgument(ARGUMENTS.DISCOVERY_MCAST_PORT)) + (networkId || 0)}`;
+      const dGroup = group || getArgument(ARGUMENTS.DISCOVERY_MCAST_GROUP);
+      const dHeartbeat = heartbeatHz || getArgument(ARGUMENTS.DISCOVERY_HEARTBEAT_HZ);
+      const dRobotHosts = robotHosts ? `_robot_hosts:=[${robotHosts}]` : "";
+      cmdMasterDiscovery = `${ros1MasterUriPrefix}${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${
+        this.respawn ? "--respawn" : ""
+      } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
+    } else if (versStr === "2") {
+      cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
+        this.respawn ? "--respawn" : ""
+      } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
+    } else {
+      return Promise.resolve({
+        result: false,
+        message: "Could not start [mas_discovery], ROS is not available",
+      });
+    }
 
-      // combine commands and execute
-      const cmd = `${cmdMasterDiscovery}`;
-      log.info(`Starting Master-Discovery: [${cmd}]`);
-      return this.commandExecutor.exec(credential, cmd);
-    };
+    // combine commands and execute
+    const cmd = `${cmdMasterDiscovery}`;
+    log.info(`Starting Master-Discovery: [${cmd}]`);
+    return this.commandExecutor.exec(credential, cmd);
+  };
 
   /** Try to start a master sync node */
   public startMasterSync: (
@@ -258,36 +245,37 @@ export default class LaunchManager implements TLaunchManager {
     ros1MasterUri = undefined,
     forceStart = undefined
   ) => {
-      let versStr = rosVersion;
-      if (!versStr) {
-        versStr = this.rosInfo.version === "1" ? "1" : "2";
-        log.debug(`use ROS version: ${versStr}`);
-      }
+    let versStr = rosVersion;
+    if (!versStr) {
+      versStr = this.rosInfo.version === "1" ? "1" : "2";
+      log.debug(`use ROS version: ${versStr}`);
+    }
+    if (versStr === "1") {
+      // Spawn a new Node Manager Master sync node
+      const dName = name || "mas_sync";
+      // uses ROS1 method
+      const namespace = "";
+      const nameArg = `--name=${namespace}/${dName}`;
+      const doNotSyncParam = doNotSync && doNotSync?.length > 0 ? `_do_not_sync:=[${doNotSync?.toString()}]` : " ";
+      const syncTopicsParam = syncTopics && syncTopics?.length > 0 ? `_sync_topics:=[${syncTopics?.toString()}]` : " ";
+      let cmdMasterSync = "";
+      const forceArg = forceStart ? "--force " : "";
       if (versStr === "1") {
-        // Spawn a new Node Manager Master sync node
-        const dName = name || "mas_sync";
-        // uses ROS1 method
-        const namespace = "";
-        const nameArg = `--name=${namespace}/${dName}`;
-        const doNotSyncParam = doNotSync && doNotSync?.length > 0 ? `_do_not_sync:=[${doNotSync?.toString()}]` : " ";
-        const syncTopicsParam = syncTopics && syncTopics?.length > 0 ? `_sync_topics:=[${syncTopics?.toString()}]` : " ";
-        let cmdMasterSync = "";
-        const forceArg = forceStart ? "--force " : "";
-        if (versStr === "1") {
-          const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
-          cmdMasterSync = `${ros1MasterUriPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${this.respawn ? "--respawn" : ""
-            } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam};`;
-        }
-        // combine commands and execute
-        const cmd = `${cmdMasterSync}`;
-        log.info(`Starting Master-Sync: [${cmd}]`);
-        return this.commandExecutor.exec(credential, cmd);
+        const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
+        cmdMasterSync = `${ros1MasterUriPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${
+          this.respawn ? "--respawn" : ""
+        } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam};`;
       }
-      return Promise.resolve({
-        result: false,
-        message: "Could not start [mas_sync], It is available only for ROS1",
-      });
-    };
+      // combine commands and execute
+      const cmd = `${cmdMasterSync}`;
+      log.info(`Starting Master-Sync: [${cmd}]`);
+      return this.commandExecutor.exec(credential, cmd);
+    }
+    return Promise.resolve({
+      result: false,
+      message: "Could not start [mas_sync], It is available only for ROS1",
+    });
+  };
 
   /** Try to start a Daemon Node */
   public startDaemon: (
@@ -305,49 +293,50 @@ export default class LaunchManager implements TLaunchManager {
     ros1MasterUri = undefined,
     forceStart = false
   ) => {
-      let versStr = rosVersion;
-      if (!versStr) {
-        versStr = this.rosInfo.version === "1" ? "1" : "2";
-        log.debug(`use ROS version: ${versStr}`);
+    let versStr = rosVersion;
+    if (!versStr) {
+      versStr = this.rosInfo.version === "1" ? "1" : "2";
+      log.debug(`use ROS version: ${versStr}`);
+    }
+    // Spawn Daemon node
+    const hostSuffix = "{HOST}";
+    let dName = name || versStr === "2" ? `daemon_${hostSuffix}` : "mas_daemon";
+    if (versStr === "2") {
+      if (!dName.startsWith("_")) {
+        dName = `_${dName}`;
       }
-      // Spawn Daemon node
-      const hostSuffix = "{HOST}";
-      let dName = name || versStr === "2" ? `daemon_${hostSuffix}` : "mas_daemon";
-      if (versStr === "2") {
-        if (!dName.startsWith("_")) {
-          dName = `_${dName}`;
-        }
-      }
-      let daemonType = "mas-daemon";
-      const namespace = versStr === "2" ? "/mas" : "";
-      const nameArg = `--name=${namespace}/${dName}`;
-      if (versStr === "2") {
-        daemonType = "mas-daemon";
-      }
-      const forceArg = forceStart ? "--force " : "";
-      // uses ROS1 method
-      let cmdDaemon = `fkie_mas_daemon mas-remote-node.py ${this.respawn ? "--respawn" : ""
-        } ${forceArg}${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
+    }
+    let daemonType = "mas-daemon";
+    const namespace = versStr === "2" ? "/mas" : "";
+    const nameArg = `--name=${namespace}/${dName}`;
+    if (versStr === "2") {
+      daemonType = "mas-daemon";
+    }
+    const forceArg = forceStart ? "--force " : "";
+    // uses ROS1 method
+    let cmdDaemon = `fkie_mas_daemon mas-remote-node.py ${
+      this.respawn ? "--respawn" : ""
+    } ${forceArg}${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
 
-      let domainPrefix = "";
-      if (networkId !== undefined && networkId !== 0) {
-        domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
-      }
-      if (versStr === "1") {
-        const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
-        cmdDaemon = `${ros1MasterUriPrefix}${domainPrefix}rosrun ${cmdDaemon}`;
-      } else if (versStr === "2") {
-        cmdDaemon = `${domainPrefix}ros2 run ${cmdDaemon}; `;
-      } else {
-        return Promise.resolve({
-          result: false,
-          message: "Could not start [mas-daemon], ROS is not available",
-        });
-      }
+    let domainPrefix = "";
+    if (networkId !== undefined && networkId !== 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${networkId} `;
+    }
+    if (versStr === "1") {
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(ros1MasterUri, credential);
+      cmdDaemon = `${ros1MasterUriPrefix}${domainPrefix}rosrun ${cmdDaemon}`;
+    } else if (versStr === "2") {
+      cmdDaemon = `${domainPrefix}ros2 run ${cmdDaemon}; `;
+    } else {
+      return Promise.resolve({
+        result: false,
+        message: "Could not start [mas-daemon], ROS is not available",
+      });
+    }
 
-      log.info(`Starting Master-Daemon: ${cmdDaemon}`);
-      return this.commandExecutor.exec(credential, cmdDaemon);
-    };
+    log.info(`Starting Master-Daemon: ${cmdDaemon}`);
+    return this.commandExecutor.exec(credential, cmdDaemon);
+  };
 
   /** Try to start a Dynamic Reconfigure Node */
   public startDynamicReconfigureClient: (
@@ -368,4 +357,3 @@ export default class LaunchManager implements TLaunchManager {
     }
   };
 }
-

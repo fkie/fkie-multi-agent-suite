@@ -1,22 +1,29 @@
 // import { electronAPI } from "@electron-toolkit/preload";
 import {
+  CommandExecutorEvents,
   DialogManagerEvents,
   EditorCloseCallback,
   EditorManagerEvents,
   FileRange,
   FileRangeCallback,
-  TCredential,
+  LaunchManagerEvents,
+  PasswordManagerEvents,
   ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
+  TCommandExecutor,
+  TCredential,
   TEditorManager,
   TerminalCloseCallback,
   TerminalManagerEvents,
   TerminateCallback,
+  TLaunchManager,
+  TPasswordManager,
+  TRosInfo,
   TShutdownManager,
   TSubscriberManager,
+  TSystemInfo,
   TTerminalManager,
-  LaunchManagerEvents,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 
@@ -30,52 +37,63 @@ if (process.contextIsolated) {
   try {
     // contextBridge.exposeInMainWorld("electron", electronAPI);
     // contextBridge.exposeInMainWorld("api", api);
+
+    // Expose protected methods that allow the renderer process to use
+    // the ipcRenderer without exposing the entire object
+    // TODO: create autoUpdate type object
+    contextBridge.exposeInMainWorld("autoUpdate", {
+      send: (channel: string, data: unknown) => {
+        // whitelist channels
+        const validChannels = ["check-for-updates", "quit-and-install"];
+        if (validChannels.includes(channel)) {
+          ipcRenderer.send(channel, data);
+        }
+      },
+      receive: (channel: string, func) => {
+        const validChannels = [
+          "checking-for-update",
+          "update-available",
+          "update-not-available",
+          "download-progress",
+          "update-downloaded",
+          "update-error",
+        ];
+        if (validChannels.includes(channel)) {
+          // Deliberately strip event as it includes `sender`
+          ipcRenderer.on(channel, (_event, ...args) => {
+            func(...args);
+          });
+        }
+      },
+    });
+
     // Register Password Manager
-    contextBridge.exposeInMainWorld("PasswordManager", {
+    contextBridge.exposeInMainWorld("passwordManager", {
       setPassword: (service: string, account: string, password: string) =>
-        ipcRenderer.invoke("PasswordManager:setPassword", service, account, password),
+        ipcRenderer.invoke(PasswordManagerEvents.setPassword, service, account, password),
 
       deletePassword: (service: string, account: string) =>
-        ipcRenderer.invoke("PasswordManager:deletePassword", service, account),
-    });
-
-    // TODO remove SFTP if websocket ros.file.get and ros.file.save works
-    // Register SFTP Manager
-    // contextBridge.exposeInMainWorld('FileManagerWrapper', {
-    //   checkPassword: (credential: TCredential) =>
-    //     ipcRenderer.invoke('FileManagerWrapper:checkPassword', credential),
-
-    //   exist: (credential: TCredential, path: string) =>
-    //     ipcRenderer.invoke('FileManagerWrapper:exist', credential, path),
-
-    //   stat: (credential: TCredential, path: string) =>
-    //     ipcRenderer.invoke('FileManagerWrapper:stat', credential, path),
-
-    //   get: (credential: TCredential, path: string) =>
-    //     ipcRenderer.invoke('FileManagerWrapper:get', credential, path),
-
-    //   put: (credential: TCredential, content: string, path: string) =>
-    //     ipcRenderer.invoke('FileManagerWrapper:put', credential, content, path),
-    // });
+        ipcRenderer.invoke(PasswordManagerEvents.deletePassword, service, account),
+    } as TPasswordManager);
 
     // Register Command Executor
-    contextBridge.exposeInMainWorld("CommandExecutor", {
+    contextBridge.exposeInMainWorld("commandExecutor", {
       exec: (credential: TCredential, command: string) =>
-        ipcRenderer.invoke("CommandExecutor:exec", credential, command),
+        ipcRenderer.invoke(CommandExecutorEvents.exec, credential, command),
 
       execTerminal: (credential: TCredential, title: string, command: string) =>
-        ipcRenderer.invoke("CommandExecutor:execTerminal", credential, title, command),
-    });
+        ipcRenderer.invoke(CommandExecutorEvents.execTerminal, credential, title, command),
+    } as TCommandExecutor);
 
     // Register ROS Info
     contextBridge.exposeInMainWorld("rosInfo", {
       getInfo: () => ipcRenderer.invoke("rosInfo:getInfo"),
-    });
+    } as TRosInfo);
 
     // Register System Info
     contextBridge.exposeInMainWorld("systemInfo", {
       getInfo: () => ipcRenderer.invoke("systemInfo:getInfo"),
-    });
+    } as TSystemInfo);
 
     // Register launch Manager
     contextBridge.exposeInMainWorld("launchManager", {
@@ -146,35 +164,7 @@ if (process.contextIsolated) {
 
       startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: TCredential | null) =>
         ipcRenderer.invoke(LaunchManagerEvents.startDynamicReconfigureClient, name, rosMasterUri, credential),
-    });
-
-    // Expose protected methods that allow the renderer process to use
-    // the ipcRenderer without exposing the entire object
-    contextBridge.exposeInMainWorld("autoUpdate", {
-      send: (channel: string, data: unknown) => {
-        // whitelist channels
-        const validChannels = ["check-for-updates", "quit-and-install"];
-        if (validChannels.includes(channel)) {
-          ipcRenderer.send(channel, data);
-        }
-      },
-      receive: (channel: string, func) => {
-        const validChannels = [
-          "checking-for-update",
-          "update-available",
-          "update-not-available",
-          "download-progress",
-          "update-downloaded",
-          "update-error",
-        ];
-        if (validChannels.includes(channel)) {
-          // Deliberately strip event as it includes `sender`
-          ipcRenderer.on(channel, (_event, ...args) => {
-            func(...args);
-          });
-        }
-      },
-    });
+    } as TLaunchManager);
 
     // register shutdown interface
     contextBridge.exposeInMainWorld("shutdownManager", {

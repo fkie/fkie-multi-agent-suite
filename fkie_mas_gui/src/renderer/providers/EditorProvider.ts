@@ -6,7 +6,7 @@ import { URI } from "../models";
 import { ConnectionState } from "./ConnectionState";
 import { EventProviderLaunchLoaded } from "./events";
 import { EVENT_PROVIDER_LAUNCH_LOADED } from "./eventTypes";
-import Provider, { IConCallback } from "./Provider";
+import Provider, { TConCallback } from "./Provider";
 
 /**
  * Provider with reduced subscriptions to handle external file editor.
@@ -33,7 +33,7 @@ export default class EditorProvider extends Provider {
     this.className = "EditorProvider";
   }
 
-  public getCallbacks: () => IConCallback[] = () => {
+  public getCallbacks: () => TConCallback[] = () => {
     return [
       { uri: URI.ROS_PATH_CHANGED, callback: this.callbackChangedFile },
       { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateRosNodes },

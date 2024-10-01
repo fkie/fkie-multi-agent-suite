@@ -12,7 +12,6 @@ export const LaunchManagerEvents = {
  * Start system nodes of the multi agent suite.
  */
 export type TLaunchManager = {
-
   /** Try to start a Terminal manager (default TTYD) */
   startTerminalManager: (
     rosVersion?: string | null,
@@ -60,4 +59,4 @@ export type TLaunchManager = {
     rosMasterUri: string,
     credential?: TCredential | null
   ) => Promise<TResult>;
-}
+};

@@ -1,4 +1,3 @@
-import { TCredential } from "@/types";
 import { ipcMain } from "electron";
 import AutoUpdateManager from "./AutoUpdateManager";
 import CommandExecutor from "./CommandExecutor";
@@ -12,37 +11,20 @@ import SubscriberManager from "./SubscriberManager";
 import { SystemInfo } from "./SystemInfo";
 import TerminalManager from "./TerminalManager";
 
-const sPasswordManager = new PasswordManager();
-const sCommandExecutor = new CommandExecutor();
+const passwordManager = new PasswordManager();
+const commandExecutor = new CommandExecutor();
 const launchManager = new LaunchManager();
 const editorManager = new EditorManager();
 const subscriberManager = new SubscriberManager();
 const terminalManager = new TerminalManager();
 
 export const registerHandlers = (): void => {
+  commandExecutor.registerHandlers();
   editorManager.registerHandlers();
   launchManager.registerHandlers();
+  passwordManager.registerHandlers();
   subscriberManager.registerHandlers();
   terminalManager.registerHandlers();
-
-  // Password Manager
-  ipcMain.handle("PasswordManager:setPassword", (_event, service: string, account: string, password: string) => {
-    return sPasswordManager.setPassword(service, account, password);
-  });
-
-  ipcMain.handle("PasswordManager:deletePassword", (_event, service: string, account: string) => {
-    return sPasswordManager.deletePassword(service, account);
-  });
-
-  // SSH Manager
-  ipcMain.handle("CommandExecutor:exec", (_event, credential: TCredential, command: string) => {
-    return sCommandExecutor.exec(credential, command);
-  });
-
-  // SSH Manager
-  ipcMain.handle("CommandExecutor:execTerminal", (_event, credential: TCredential, title: string, command: string) => {
-    return sCommandExecutor.execTerminal(credential, title, command);
-  });
 
   // ROSInfo
   ipcMain.handle("rosInfo:getInfo", () => {
@@ -53,8 +35,6 @@ export const registerHandlers = (): void => {
   ipcMain.handle("systemInfo:getInfo", () => {
     return new SystemInfo().getInfo();
   });
-
-
 };
 
 export {

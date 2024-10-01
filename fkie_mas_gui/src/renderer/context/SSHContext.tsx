@@ -74,7 +74,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
   const getSystemInfo = async () => {
     // get local System Info
-    if (window.systemInfo) {
+    if (window.systemInfo?.getInfo) {
       setSystemInfo(await window.systemInfo.getInfo());
     }
   };
@@ -153,7 +153,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
 
   // PasswordManager methods
   const setPassword = async (credential: TCredential) => {
-    if (!window.PasswordManager) {
+    if (!window.passwordManager) {
       logCtx.error("setPassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return null;
     }
@@ -161,28 +161,28 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     credential.service = "RosNodeManager";
     credential.account = `${credential.username}:${credential.host}`;
 
-    const res = await window.PasswordManager.setPassword(credential.service, credential.account, credential.password);
+    const res = await window.passwordManager.setPassword(credential.service, credential.account, credential.password);
     return res;
   };
 
   const deletePassword = async (credential: TCredential) => {
-    if (!window.PasswordManager) {
+    if (!window.passwordManager) {
       logCtx.error("deletePassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return;
     }
 
-    await window.PasswordManager.deletePassword(credential.service, credential.account);
+    await window.passwordManager.deletePassword(credential.service, credential.account);
   };
 
   const checkPassword = (credential: TCredential) => {
-    if (!window.CommandExecutor) {
+    if (!window.commandExecutor) {
       logCtx.error("checkPassword: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return Promise.resolve({
         result: false,
         message: "checkPassword: Invalid [CommandExecutor]; Please check Electron App (IPC handlers)",
       });
     }
-    return window.CommandExecutor.exec(credential, "pwd");
+    return window.commandExecutor.exec(credential, "pwd");
   };
 
   // credentials methods
@@ -318,7 +318,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
 
   // CommandExecutor
   const exec = async (credential: TCredential | null, command: string) => {
-    if (!window.CommandExecutor) {
+    if (!window.commandExecutor) {
       logCtx.error("exec: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return {
         result: false,
@@ -336,7 +336,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
       };
     }
 
-    const res = await window.CommandExecutor.exec(credential, command);
+    const res = await window.commandExecutor.exec(credential, command);
     return res;
   };
 

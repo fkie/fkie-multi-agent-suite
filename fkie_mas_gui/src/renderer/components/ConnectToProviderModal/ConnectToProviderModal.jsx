@@ -604,7 +604,7 @@ function ConnectToProviderModal() {
                         handleStartProvider();
                       }}
                       disabled={
-                        !window.CommandExecutor || (hostValues.length === 0 && hostInputValue === "")
+                        !window.commandExecutor || (hostValues.length === 0 && hostInputValue === "")
                         // hostValues.length === 0 && hostInputValue === ''
                       }
                       style={{ height: "3em", textAlign: "center" }}
@@ -632,7 +632,7 @@ function ConnectToProviderModal() {
                   </Stack>
                 )}
               </Stack>
-              <AccordionAdv disabled={!window.CommandExecutor}>
+              <AccordionAdv disabled={!window.commandExecutor}>
                 <AccordionSummary
                   // disabled={!startSystemNodes}
                   expandIcon={<ExpandMoreIcon />}
