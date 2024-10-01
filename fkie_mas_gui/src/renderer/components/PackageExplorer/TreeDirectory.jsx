@@ -110,10 +110,10 @@ function TreeDirectory({
    * Build the tree structure for files and directories
    */
   const buildTreePackageItems = useCallback(
-    (packageName, treeItem) => {
+    (packageName, pathId, treeItem) => {
       if (!treeItem) {
         console.error("Invalid item ", packageName, treeItem);
-        return <div key={`${packageName}#${generateUniqueId()}`} />;
+        return <div key={`${pathId}#${generateUniqueId()}`} />;
       }
       const { directoryName, children, file } = treeItem;
 
@@ -123,7 +123,7 @@ function TreeDirectory({
         const isLaunchFile = LAUNCH_FILE_EXTENSIONS.find((fe) => file.path.endsWith(fe));
         return (
           <PackageItemTree
-            key={`${packageName}#${file.id}`}
+            key={`${pathId}#${file.id}`}
             itemId={`${file.id}`}
             labelText={file.name.replace("/", "")}
             tooltip={isLaunchFile ? file.path : ""}
@@ -141,11 +141,12 @@ function TreeDirectory({
         );
       }
 
+      const newPathId = `${pathId}#${directoryName}`;
       return (
         // valid children means that item is a directory
         <PackageItemTree
-          key={`${packageName}#${directoryName}`}
-          itemId={`${packageName}#${directoryName}`}
+          key={newPathId}
+          itemId={newPathId}
           labelText={directoryName.replace("/", "")}
           labelIcon={FolderOutlinedIcon}
           enableCopy={false}
@@ -157,7 +158,7 @@ function TreeDirectory({
           onClick={handleFolderClick}
         >
           {children.map((tItem) => {
-            return buildTreePackageItems(packageName, tItem);
+            return buildTreePackageItems(packageName, newPathId, tItem);
           })}
         </PackageItemTree>
       );
@@ -220,7 +221,7 @@ function TreeDirectory({
               {itemTree &&
                 itemTree.children &&
                 itemTree.children.map((item) => {
-                  return buildTreePackageItems(packageName, item);
+                  return buildTreePackageItems(packageName, packageName, item);
                 })}
             </PackageItemTree>
           );
