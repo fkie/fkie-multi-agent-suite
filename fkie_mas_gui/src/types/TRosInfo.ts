@@ -8,5 +8,5 @@ export type TRosInfo = {
   domainId: string | undefined;
   localhostOnly: string | undefined;
 
-  getInfo?: () => Promise<TRosInfo>;
+  getInfo?: () => TRosInfo;
 };

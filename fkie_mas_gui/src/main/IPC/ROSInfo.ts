@@ -43,8 +43,8 @@ class ROSInfo {
     this.localhostOnly = process.env.ROS_LOCALHOST_ONLY;
   }
 
-  public getInfo: () => Promise<TRosInfo> = () => {
-    return Promise.resolve({
+  public getInfo: () => TRosInfo = () => {
+    return {
       version: this.version,
       pythonVersion: this.pythonVersion,
       etcDir: this.etcDir,
@@ -53,7 +53,7 @@ class ROSInfo {
       distro: this.distro,
       domainId: this.domainId,
       localhostOnly: this.localhostOnly,
-    } as TRosInfo);
+    } as TRosInfo;
   };
 
   /**

@@ -1114,7 +1114,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     }
     // get local ROS Info
     if (window.rosInfo?.getInfo) {
-      const rinfo = await window.rosInfo.getInfo();
+      const rinfo = window.rosInfo.getInfo();
       setRosInfo(rinfo);
     }
     // get local System Info
