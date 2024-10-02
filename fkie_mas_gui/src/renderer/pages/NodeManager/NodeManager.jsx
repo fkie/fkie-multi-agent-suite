@@ -1,4 +1,5 @@
 import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
+import AboutModal from "@/renderer/components/SettingsModal/AboutModal";
 import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -596,9 +597,9 @@ function NodeManager() {
           renderValues.stickyButtons.push(<ExternalAppsModal key="external-apps-dialog" />);
         }
       }
-      if (child.getId() === LAYOUT_TABS.HOSTS) {
-        renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
-      }
+      // if (child.getId() === LAYOUT_TABS.HOSTS) {
+      //   renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
+      // }
     });
     if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
       // add update button in the bottom border
@@ -626,7 +627,11 @@ function NodeManager() {
         //       v{packageJson.version}
         //     </Typography>,
         //   );
+      } else {
+        renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
       }
+      // add settings to bottom border
+      renderValues.buttons.push(<AboutModal key="about-dialog" />);
     }
   }
 

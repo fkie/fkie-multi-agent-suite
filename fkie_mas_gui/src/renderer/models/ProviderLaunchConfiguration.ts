@@ -82,9 +82,9 @@ class ProviderLaunchConfiguration {
     const ttydCmd = this.terminal.path;
     let cmd = "";
     if (this.rosVersion === "1") {
-      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true `;
+      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
     } else if (this.rosVersion === "2") {
-      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true `;
+      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
     } else {
       return {
         result: false,

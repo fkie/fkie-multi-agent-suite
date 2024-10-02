@@ -76,8 +76,7 @@ export default function GuiPanel() {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [filter, setFilter] = useState("");
 
-  const handleChange = (panel: string) => (_event: React.SyntheticEvent) => {
-    console.log(`handle cahgne: ${panel}`);
+  const handleChange = (panel: string) => () => {
     if (expanded.includes(panel)) {
       setExpanded(expanded.filter((item) => panel !== item));
     } else {
