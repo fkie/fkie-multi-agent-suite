@@ -82,9 +82,9 @@ class ProviderLaunchConfiguration {
     const ttydCmd = this.terminal.path;
     let cmd = "";
     if (this.rosVersion === "1") {
-      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true; `;
+      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true `;
     } else if (this.rosVersion === "2") {
-      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true; `;
+      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true `;
     } else {
       return {
         result: false,
@@ -131,7 +131,7 @@ class ProviderLaunchConfiguration {
       const dRobotHosts = this.discovery.robotHosts ? `_robot_hosts:=[${this.discovery.robotHosts}]` : "";
       cmdMasterDiscovery = `${ros1MasterUriPrefix}${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
-      } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat};`;
+      } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat}`;
     } else if (this.rosVersion === "2") {
       cmdMasterDiscovery = `RMW_IMPLEMENTATION=rmw_fastrtps_cpp ${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn ? "--respawn" : ""
@@ -169,7 +169,7 @@ class ProviderLaunchConfiguration {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
       cmdMasterSync = `${ros1MasterUriPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${
         this.respawn ? "--respawn" : ""
-      } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam};`;
+      } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam}`;
       // combine commands and execute
       const cmd = `${cmdMasterSync}`;
       return { result: true, message: cmd } as TResult;
@@ -226,7 +226,7 @@ class ProviderLaunchConfiguration {
   ) => {
     const nameArg = `--name=/dynamic_reconfigure${nodeName}`;
     const envArg = `ROS_MASTER_URI=${ros1MasterUri}`;
-    const cmd = `${envArg} rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName}; `;
+    const cmd = `${envArg} rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
     return { result: true, message: cmd } as TResult;
   };
 }

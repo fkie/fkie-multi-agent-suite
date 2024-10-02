@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -51,10 +52,10 @@ import { RosContext } from "../../context/RosContext";
 import { SettingsContext, getDefaultPortFromRos } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import ProviderLaunchConfiguration from "../../models/ProviderLaunchConfiguration";
+import { EVENT_OPEN_CONNECT } from "../../pages/NodeManager/layout/events";
 import Provider from "../../providers/Provider";
 import { EVENT_PROVIDER_ROS_NODES } from "../../providers/eventTypes";
 import { generateUniqueId } from "../../utils";
-import { EVENT_OPEN_CONNECT } from "../../pages/NodeManager/layout/events";
 import CopyButton from "../UI/CopyButton";
 import DraggablePaper from "../UI/DraggablePaper";
 
@@ -330,6 +331,23 @@ function ConnectToProviderModal() {
       launchCfg.ros1MasterUri = startParameter.ros1MasterUri.replace("{HOST}", host);
     }
     return launchCfg;
+  };
+
+  const createCommandsFor = (launchCfg) => {
+    const commands = [];
+    if (launchCfg.daemon.enable) {
+      commands.push(launchCfg.daemonStartCmd().message);
+    }
+    if (launchCfg.discovery.enable) {
+      commands.push(launchCfg.masterDiscoveryStartCmd().message);
+    }
+    if (launchCfg.sync.enable) {
+      commands.push(launchCfg.masterSyncStartCmd().message);
+    }
+    if (launchCfg.terminal.enable) {
+      commands.push(launchCfg.terminalStartCmd().message);
+    }
+    return commands;
   };
 
   const handleStartProvider = async () => {
@@ -641,6 +659,28 @@ function ConnectToProviderModal() {
                     >
                       Join
                     </Button>
+                    <Tooltip
+                      title={"Copy terminal commands to start nodes manually. Only for first host!"}
+                      placement="right"
+                      disableInteractive
+                    >
+                      <IconButton
+                        sx={{ color: (theme) => theme.palette.text.disabled, paddingTop: 0, paddingBottom: 0 }}
+                        size="small"
+                        component="span"
+                        onClick={() => {
+                          const hosts = getHosts();
+                          if (hosts.length > 0) {
+                            const launchCfg = createLaunchConfigFor(hosts[0]);
+                            const commands = createCommandsFor(launchCfg);
+                            navigator.clipboard.writeText(commands.join("\n"));
+                            logCtx.success(`Commands copied!`);
+                          }
+                        }}
+                      >
+                        <ContentCopyIcon sx={{ fontSize: "inherit" }} />
+                      </IconButton>
+                    </Tooltip>
                   </Stack>
                 )}
               </Stack>

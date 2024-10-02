@@ -41,7 +41,6 @@ class CommandExecutor implements TCommandExecutor {
     const sshPath = `${os.homedir()}/.ssh`;
 
     // read host/user configuration from ssh config
-    // TODO: read IdentityFile
     fs.readFile(`${sshPath}/config`, "utf8", (err, data) => {
       if (err) {
         log.warn(`error while read ${sshPath}/config`);

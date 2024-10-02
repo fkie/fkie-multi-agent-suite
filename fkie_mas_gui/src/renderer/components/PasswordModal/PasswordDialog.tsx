@@ -1,10 +1,10 @@
+import RosContext from "@/renderer/context/RosContext";
+import { ProviderLaunchConfiguration } from "@/renderer/models";
+import Provider from "@/renderer/providers/Provider";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, TextField } from "@mui/material";
 import { useContext, useState } from "react";
 import { ConnectConfig } from "ssh2";
-import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button } from "@mui/material";
-import { ProviderLaunchConfiguration } from "@/renderer/models";
 import { ConnectionState } from "../../providers";
-import RosContext from "@/renderer/context/RosContext";
-import Provider from "@/renderer/providers/Provider";
 
 const PasswordDialog = ({
   provider,
@@ -45,6 +45,9 @@ const PasswordDialog = ({
   return (
     <Dialog open={open} onClose={() => handleClose()}>
       <DialogTitle>SSH login @{connectConfig.host}</DialogTitle>
+      <Link href="https://linuxize.com/post/using-the-ssh-config-file/" target="_blank" rel="noopener">
+        Setup ssh to avoid this dialog
+      </Link>
       <DialogContent>
         <TextField
           autoFocus
