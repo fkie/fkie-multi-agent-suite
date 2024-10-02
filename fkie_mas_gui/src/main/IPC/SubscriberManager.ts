@@ -1,37 +1,56 @@
+import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
-import { SubscriberManagerEvents, ISubscriber, ISubscriberManager } from "@/types";
 import windowStateKeeper from "../windowStateKeeper";
+
+type TSubscriber = {
+  window: BrowserWindow;
+};
 
 /**
  * Class SubscriberManager: handle communication with external echo window
  */
-class SubscriberManager implements ISubscriberManager {
-  instances: { [id: string]: ISubscriber } = {};
+class SubscriberManager implements TSubscriberManager {
+  instances: { [id: string]: TSubscriber } = {};
 
   constructor() {}
 
-  public registerHandlers: () => void = () => {
-    ipcMain.handle(SubscriberManagerEvents.has, this.handleHasSubscriber);
-    ipcMain.handle(SubscriberManagerEvents.open, this.handleSubscriberOpen);
-    ipcMain.handle(SubscriberManagerEvents.close, this.handleSubscriberClose);
+  onClose: (callback: SubscriberCloseCallback) => void = () => {
+    // implemented in preload script
   };
 
-  public handleHasSubscriber: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
-    _event,
-    id
-  ) => {
+  public registerHandlers: () => void = () => {
+    ipcMain.handle(SubscriberManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+      return this.has(id);
+    });
+    ipcMain.handle(SubscriberManagerEvents.close, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+      return this.has(id);
+    });
+    ipcMain.handle(
+      SubscriberManagerEvents.open,
+      (
+        _event: Electron.IpcMainInvokeEvent,
+        id: string,
+        host: string,
+        port: number,
+        topic: string,
+        showOptions: boolean,
+        noData: boolean
+      ) => {
+        return this.open(id, host, port, topic, showOptions, noData);
+      }
+    );
+  };
+
+  public has: (id: string) => Promise<boolean> = async (id) => {
     if (this.instances[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
   };
 
-  public handleSubscriberClose: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
-    _event,
-    id
-  ) => {
+  public close: (id: string) => Promise<boolean> = async (id) => {
     if (this.instances[id]) {
       this.instances[id].window.destroy();
       delete this.instances[id];
@@ -40,15 +59,14 @@ class SubscriberManager implements ISubscriberManager {
     return Promise.resolve(false);
   };
 
-  public handleSubscriberOpen: (
-    _event: Electron.IpcMainInvokeEvent,
+  public open: (
     id: string,
     host: string,
     port: number,
     topic: string,
     showOptions: boolean,
     noData: boolean
-  ) => Promise<string | null> = async (_event, id, host, port, topic, showOptions, noData) => {
+  ) => Promise<string | null> = async (id, host, port, topic, showOptions, noData) => {
     if (this.instances[id]) {
       this.instances[id].window.focus();
       return Promise.resolve(null);

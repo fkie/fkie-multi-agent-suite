@@ -1,4 +1,4 @@
-import { TFileRange, TLaunchArgs, TLaunchManager, TRosInfo, TSystemInfo } from "@/types";
+import { JSONObject, TFileRange, TLaunchArgs, TLaunchManager, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
@@ -1324,7 +1324,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   });
 
   useCustomEventListener(EVENT_PROVIDER_WARNINGS, (data: EventProviderWarnings) => {
-    logCtx.debugInterface("ros.provider.warnings", data.warnings, "", data.provider.id);
+    logCtx.debugInterface("ros.provider.warnings", JSON.stringify(data.warnings), "", data.provider.id);
   });
 
   useEffect(() => {

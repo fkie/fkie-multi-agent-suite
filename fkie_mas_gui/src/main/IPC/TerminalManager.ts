@@ -1,4 +1,4 @@
-import { ITerminalManager, TerminalManagerEvents } from "@/types";
+import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
@@ -6,45 +6,61 @@ import windowStateKeeper from "../windowStateKeeper";
 import CommandExecutor from "./CommandExecutor";
 import { ROSInfo } from "./ROSInfo";
 
-interface ITerminal {
+type TTerminal = {
   window: BrowserWindow;
-}
+};
 
 /**
  * Class TerminalManager: Allows to create terminal objects to interact with console
  */
-class TerminalManager implements ITerminalManager {
+class TerminalManager implements TTerminalManager {
   commandExecutor: CommandExecutor;
 
   rosInfo: ROSInfo;
 
-  instances: { [id: string]: ITerminal } = {};
+  instances: { [id: string]: TTerminal } = {};
 
   constructor() {
     this.commandExecutor = new CommandExecutor();
     this.rosInfo = new ROSInfo();
   }
 
-  public registerHandlers: () => void = () => {
-    ipcMain.handle(TerminalManagerEvents.has, this.handleHasTerminal);
-    ipcMain.handle(TerminalManagerEvents.open, this.handleOpenTerminal);
-    ipcMain.handle(TerminalManagerEvents.close, this.handleCloseTerminal);
+  onClose: (callback: TerminalCloseCallback) => void = () => {
+    // implemented in preload script
   };
 
-  public handleHasTerminal: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
-    _event,
-    id
-  ) => {
+  public registerHandlers: () => void = () => {
+    ipcMain.handle(TerminalManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+      return this.has(id);
+    });
+    ipcMain.handle(TerminalManagerEvents.close, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+      return this.close(id);
+    });
+    ipcMain.handle(
+      TerminalManagerEvents.open,
+      (
+        _event: Electron.IpcMainInvokeEvent,
+        id: string,
+        host: string,
+        port: number,
+        info: string,
+        node: string,
+        screen: string,
+        cmd: string
+      ) => {
+        return this.open(id, host, port, info, node, screen, cmd);
+      }
+    );
+  };
+
+  public has: (id: string) => Promise<boolean> = async (id) => {
     if (this.instances[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
   };
 
-  public handleCloseTerminal: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
-    _event,
-    id
-  ) => {
+  public close: (id: string) => Promise<boolean> = async (id) => {
     if (this.instances[id]) {
       this.instances[id].window.destroy();
       delete this.instances[id];
@@ -53,8 +69,7 @@ class TerminalManager implements ITerminalManager {
     return Promise.resolve(false);
   };
 
-  public handleOpenTerminal: (
-    _event: Electron.IpcMainInvokeEvent,
+  public open: (
     id: string,
     host: string,
     port: number,
@@ -62,7 +77,7 @@ class TerminalManager implements ITerminalManager {
     node: string,
     screen: string,
     cmd: string
-  ) => Promise<string | null> = async (_event, id, host, port, info, node, screen, cmd) => {
+  ) => Promise<string | null> = async (id, host, port, info, node, screen, cmd) => {
     // if (isDebug) {
     //   await installExtensions()
     // }

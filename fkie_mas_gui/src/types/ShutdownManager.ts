@@ -1,20 +1,13 @@
-const ShutdownManagerEvents = {
+export const ShutdownManagerEvents = {
   terminateSubprocesses: "ShutdownManager:terminateSubprocesses",
   quitGui: "ShutdownManager:quitGui",
 };
 
-type TerminateCallback = () => void;
+export type TerminateCallback = () => void;
 
-interface IShutdownManager {
-  registerHandlers: () => void;
-  sendTerminateSubprocesses: () => void;
-  quitGui: () => void;
-}
-
-type TShutdownManager = {
+export type TShutdownManager = {
   onTerminateSubprocesses: (callback: TerminateCallback) => void;
+  sendTerminateSubprocesses: () => void;
+  registerHandlers: () => void;
   quitGui: () => void;
 };
-
-export { ShutdownManagerEvents };
-export type { IShutdownManager, TShutdownManager, TerminateCallback };

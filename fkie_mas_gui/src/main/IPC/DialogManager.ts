@@ -1,11 +1,11 @@
+import { DialogManagerEvents, TDialogManager } from "@/types";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import log from "electron-log";
-import { IDialogManager, DialogManagerEvents } from "@/types";
 
 /**
  * Class DialogManager: Open files requests
  */
-class DialogManager implements IDialogManager {
+class DialogManager implements TDialogManager {
   mainWindow: BrowserWindow | null = null;
 
   constructor(mainWindow: BrowserWindow) {
@@ -15,13 +15,12 @@ class DialogManager implements IDialogManager {
   }
 
   public registerHandlers: () => void = () => {
-    ipcMain.handle(DialogManagerEvents.openFile, this.handleFileOpen);
+    ipcMain.handle(DialogManagerEvents.openFile, (_event: Electron.IpcMainInvokeEvent, path: string) => {
+      return this.openFile(path);
+    });
   };
 
-  public handleFileOpen: (event: Electron.IpcMainInvokeEvent, path: string) => Promise<string | null> = async (
-    _event,
-    path
-  ) => {
+  public openFile: (path: string) => Promise<string | null> = async (path) => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       defaultPath: path,
     });

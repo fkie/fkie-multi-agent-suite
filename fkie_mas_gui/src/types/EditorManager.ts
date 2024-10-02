@@ -1,4 +1,3 @@
-import { BrowserWindow } from "electron";
 import { TFileRange } from "./FileRange";
 import { TLaunchArgs } from "./LaunchArgs";
 
@@ -11,47 +10,6 @@ export const EditorManagerEvents = {
   onFileRange: "editor:onFileRange",
   onClose: "editor:onClose",
 };
-
-export interface IEditor {
-  window: BrowserWindow;
-  changed: string[];
-}
-
-export interface IEditorManager {
-  editors: { [id: string]: IEditor };
-
-  registerHandlers: () => void;
-
-  handleHasEditor: (event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean>;
-
-  handleEditorFileRange: (
-    event: Electron.IpcMainInvokeEvent,
-    id: string,
-    launchFile: string,
-    fileRange: TFileRange,
-    launchArgs: TLaunchArgs
-  ) => Promise<null>;
-
-  handleEditorClose: (event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean>;
-
-  handleEditorChanged: (
-    event: Electron.IpcMainInvokeEvent,
-    id: string,
-    launchFile: string,
-    changed: boolean
-  ) => Promise<boolean>;
-
-  handleEditorOpen: (
-    event: Electron.IpcMainInvokeEvent,
-    id: string,
-    host: string,
-    port: number,
-    rootLaunch: string,
-    launchFile: string,
-    fileRange: TFileRange,
-    launchArgs: TLaunchArgs
-  ) => Promise<string | null>;
-}
 
 export type FileRangeCallback = (
   tabId: string,
@@ -84,4 +42,6 @@ export type TEditorManager = {
   onFileRange: (callback: FileRangeCallback) => void;
 
   onClose: (callback: EditorCloseCallback) => void;
+
+  registerHandlers: () => void;
 };

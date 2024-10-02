@@ -1,53 +1,96 @@
+import {
+  EditorCloseCallback,
+  EditorManagerEvents,
+  FileRangeCallback,
+  TEditorManager,
+  TFileRange,
+  TLaunchArgs,
+} from "@/types";
 import { is } from "@electron-toolkit/utils";
-import { IEditorManager, IEditor, EditorManagerEvents, TFileRange, TLaunchArgs } from "@/types";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
 import windowStateKeeper from "../windowStateKeeper";
 
+type TEditor = {
+  window: BrowserWindow;
+  changed: string[];
+};
+
 /**
  * Class EditorManager: handle communication with external editor
  */
-class EditorManager implements IEditorManager {
-  editors: { [id: string]: IEditor } = {};
+class EditorManager implements TEditorManager {
+  editors: { [id: string]: TEditor } = {};
 
   constructor() {}
 
-  public registerHandlers: () => void = () => {
-    ipcMain.handle(EditorManagerEvents.has, this.handleHasEditor);
-    ipcMain.handle(EditorManagerEvents.open, this.handleEditorOpen);
-    ipcMain.handle(EditorManagerEvents.close, this.handleEditorClose);
-    ipcMain.handle(EditorManagerEvents.changed, this.handleEditorChanged);
-    ipcMain.handle(EditorManagerEvents.emitFileRange, this.handleEditorFileRange);
+  public onFileRange: (callback: FileRangeCallback) => void = () => {
+    // implemented in preload script
+  };
+  public onClose: (callback: EditorCloseCallback) => void = () => {
+    // implemented in preload script
   };
 
-  public handleHasEditor: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
-    _event,
-    id
-  ) => {
+  public registerHandlers: () => void = () => {
+    ipcMain.handle(EditorManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+      return this.has(id);
+    });
+    ipcMain.handle(
+      EditorManagerEvents.open,
+      (
+        _event: Electron.IpcMainInvokeEvent,
+        id: string,
+        host: string,
+        port: number,
+        rootLaunch: string,
+        launchFile: string,
+        fileRange: TFileRange,
+        launchArgs: TLaunchArgs
+      ) => {
+        return this.open(id, host, port, rootLaunch, launchFile, fileRange, launchArgs);
+      }
+    );
+    ipcMain.handle(EditorManagerEvents.close, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+      return this.close(id);
+    });
+    ipcMain.handle(
+      EditorManagerEvents.changed,
+      (_event: Electron.IpcMainInvokeEvent, id: string, launchFile: string, changed: boolean) => {
+        return this.changed(id, launchFile, changed);
+      }
+    );
+    ipcMain.handle(
+      EditorManagerEvents.emitFileRange,
+      (
+        _event: Electron.IpcMainInvokeEvent,
+        id: string,
+        launchFile: string,
+        fileRange: TFileRange,
+        launchArgs: TLaunchArgs
+      ) => {
+        return this.emitFileRange(id, launchFile, fileRange, launchArgs);
+      }
+    );
+  };
+
+  public has: (id: string) => Promise<boolean> = async (id) => {
     if (this.editors[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
   };
 
-  public handleEditorFileRange: (
-    _event: Electron.IpcMainInvokeEvent,
-    id: string,
-    launchFile: string,
-    fileRange: TFileRange,
-    launchArgs: TLaunchArgs
-  ) => Promise<null> = async (_event, id, launchFile, fileRange, launchArgs) => {
-    if (this.editors[id]) {
-      this.editors[id].window.focus();
-      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange, launchArgs);
-    }
-    return Promise.resolve(null);
-  };
+  public emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => Promise<boolean> =
+    async (id, path, fileRange, launchArgs) => {
+      if (this.editors[id]) {
+        this.editors[id].window.focus();
+        this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
+        return Promise.resolve(true);
+      }
+      return Promise.resolve(false);
+    };
 
-  public handleEditorClose: (_event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean> = async (
-    _event,
-    id
-  ) => {
+  public close: (id: string) => Promise<boolean> = async (id) => {
     if (this.editors[id]) {
       this.editors[id].window.destroy();
       delete this.editors[id];
@@ -56,38 +99,32 @@ class EditorManager implements IEditorManager {
     return Promise.resolve(false);
   };
 
-  public handleEditorChanged: (
-    _event: Electron.IpcMainInvokeEvent,
-    id: string,
-    launchFile: string,
-    changed: boolean
-  ) => Promise<boolean> = async (_event, id, launchFile, changed) => {
+  public changed: (id: string, path: string, changed: boolean) => Promise<boolean> = async (id, path, changed) => {
     if (this.editors[id]) {
-      if (this.editors[id].changed.includes(launchFile)) {
+      if (this.editors[id].changed.includes(path)) {
         if (!changed) {
-          this.editors[id].changed = this.editors[id].changed.filter((item) => item !== launchFile);
+          this.editors[id].changed = this.editors[id].changed.filter((item) => item !== path);
         }
       } else if (changed) {
-        this.editors[id].changed.push(launchFile);
+        this.editors[id].changed.push(path);
       }
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
   };
 
-  public handleEditorOpen: (
-    _event: Electron.IpcMainInvokeEvent,
+  public open: (
     id: string,
     host: string,
     port: number,
-    rootLaunch: string,
+    path: string,
     launchFile: string,
     fileRange: TFileRange,
     launchArgs: TLaunchArgs
-  ) => Promise<string | null> = async (_event, id, host, port, rootLaunch, launchFile, fileRange, launchArgs) => {
+  ) => Promise<string | null> = async (id, host, port, path, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();
-      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange, launchArgs);
+      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
       return Promise.resolve(null);
     }
 
@@ -141,7 +178,7 @@ class EditorManager implements IEditorManager {
       const fileRangeStr = fileRange ? `&range=${JSON.stringify(fileRange)}` : "";
       const launchArgsStr = launchArgs ? `&launchArgs=${JSON.stringify(launchArgs)}` : "";
       editorWindow.loadURL(
-        `${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${id}&host=${host}&port=${port}&root=${rootLaunch}&path=${launchFile}${fileRangeStr}${launchArgsStr}`
+        `${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${id}&host=${host}&port=${port}&root=${path}&path=${launchFile}${fileRangeStr}${launchArgsStr}`
       );
     } else {
       editorWindow.loadFile(join(__dirname, `../renderer/editor.html`), {
@@ -149,7 +186,7 @@ class EditorManager implements IEditorManager {
           id: id,
           host: host,
           port: `${port}`,
-          root: rootLaunch,
+          root: path,
           path: launchFile,
           range: `${JSON.stringify(fileRange)}`,
           launchArgs: `${JSON.stringify(launchArgs)}`,
