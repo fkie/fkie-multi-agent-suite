@@ -21,25 +21,20 @@ import { SettingsContext } from "../../context/SettingsContext";
 import { getBaseName, getFileName } from "../../models";
 import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
 import EditorProvider from "../../providers/EditorProvider";
-import { EVENT_CLOSE_COMPONENT } from "../../utils/events";
+import { EVENT_CLOSE_COMPONENT } from "../../pages/NodeManager/layout/events";
+import { TFileRange, TLaunchArgs } from "@/types";
 // load default style for flexlayout-react. Dark/Light theme changes are in ./themes
 import "../../App.scss";
 import { darkThemeDef, lightThemeDef } from "../../themes";
 
-interface IRange {
-  startLineNumber: number;
-  endLineNumber: number;
-  startColumn: number;
-  endColumn: number;
-}
-
-interface ILaunchInfo {
+type TLaunchInfo = {
   id: string;
   provider: EditorProvider;
   launch: string;
   rootLaunch: string;
-  fileRange: IRange | null;
-}
+  fileRange: TFileRange | null;
+  launchArgs: TLaunchArgs | null;
+};
 
 export default function EditorApp() {
   const logCtx = useContext(LoggingContext);
@@ -48,7 +43,7 @@ export default function EditorApp() {
   const settingsCtx = useContext(SettingsContext);
   const [lightTheme, setLightTheme] = useState(createTheme(lightThemeDef as ThemeOptions));
   const [darkTheme, setDarkTheme] = useState(createTheme(darkThemeDef as ThemeOptions));
-  const [launchInfo, setLaunchInfo] = useState<ILaunchInfo | null>(null);
+  const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
   const dialogRef = useRef(null);
   let escapePressCount = 0;
@@ -62,18 +57,15 @@ export default function EditorApp() {
     const host = urlParams.get("host");
     const port = urlParams.get("port");
     const rootLaunch = urlParams.get("root");
-    const startLineStr = urlParams.get("sl");
-    const endLineStr = urlParams.get("el");
-    const startColumnStr = urlParams.get("sc");
-    const endColumnStr = urlParams.get("ec");
-    let fileRange: IRange | null = null;
-    if (startLineStr && endLineStr && startColumnStr && endColumnStr) {
-      fileRange = {
-        startLineNumber: parseInt(startLineStr),
-        endLineNumber: parseInt(endLineStr),
-        startColumn: parseInt(startColumnStr),
-        endColumn: parseInt(endColumnStr),
-      };
+    const range = urlParams.get("range");
+    const launchArgsStr = urlParams.get("launchArgs");
+    let fileRange: TFileRange | null = null;
+    let launchArgs: TLaunchArgs | null = null;
+    if (range) {
+      fileRange = JSON.parse(range);
+    }
+    if (launchArgsStr) {
+      launchArgs = JSON.parse(launchArgsStr);
     }
     if (!host || !port) {
       logCtx.error(`invalid address ${host}:${port}`, "", false);
@@ -101,6 +93,7 @@ export default function EditorApp() {
         launch: path,
         rootLaunch: rootLaunch,
         fileRange: fileRange,
+        launchArgs: launchArgs,
       });
     } else {
       logCtx.error(`connection to ${host}:${port} failed`, "", false);
@@ -194,6 +187,7 @@ export default function EditorApp() {
             rootFilePath={launchInfo.rootLaunch}
             currentFilePath={launchInfo.launch}
             fileRange={launchInfo.fileRange}
+            launchArgs={launchInfo.launchArgs}
           />
         )}
         {launchInfo && modifiedEditorTabs.length > 0 && (

@@ -1,4 +1,4 @@
-import { TLaunchManager, TRosInfo, TSystemInfo } from "@/types";
+import { TFileRange, TLaunchArgs, TLaunchManager, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
@@ -47,7 +47,7 @@ import {
   EVENT_OPEN_COMPONENT,
   eventEditorSelectRange,
   eventOpenComponent,
-} from "../utils/events";
+} from "../pages/NodeManager/layout/events";
 import { xor } from "../utils/index";
 import { LoggingContext } from "./LoggingContext";
 import { SSHContext } from "./SSHContext";
@@ -891,7 +891,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   }
 
   const openEditor = useCallback(
-    async (providerId: string, rootLaunch: string, path: string, fileRange, externalKeyModifier: boolean) => {
+    async (
+      providerId: string,
+      rootLaunch: string,
+      path: string,
+      fileRange: TFileRange,
+      launchArgs: TLaunchArgs,
+      externalKeyModifier: boolean
+    ) => {
       const provider = getProviderById(providerId);
       if (provider) {
         const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
@@ -901,7 +908,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         const hasExtEditor = await window.editorManager?.has(id);
         if (hasExtEditor) {
           // inform external window about new selected range
-          window.editorManager?.emitFileRange(id, path, fileRange);
+          window.editorManager?.emitFileRange(id, path, fileRange, launchArgs);
         } else if (openExternal && provider && window.editorManager) {
           // open in new window
           window.editorManager?.open(
@@ -910,11 +917,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             provider.connection.port,
             path,
             rootLaunch,
-            fileRange
+            fileRange,
+            launchArgs
           );
         } else {
           // inform already open tab about new node selection
-          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(id, path, fileRange));
+          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(id, path, fileRange, launchArgs));
           // open new editor in a tab. Checks for existing tabs are performed in NodeManager
           emitCustomEvent(
             EVENT_OPEN_COMPONENT,
@@ -927,6 +935,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 currentFilePath={path}
                 rootFilePath={rootLaunch}
                 fileRange={fileRange}
+                launchArgs={launchArgs}
               />,
               true,
               LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
@@ -937,6 +946,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 rootLaunch: rootLaunch,
                 path: path,
                 fileRange: fileRange,
+                launchArgs: launchArgs,
               })
             )
           );

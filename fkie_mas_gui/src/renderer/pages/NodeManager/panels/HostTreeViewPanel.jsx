@@ -42,7 +42,7 @@ import useQueue from "../../../hooks/useQueue";
 import { RosNode, RosNodeStatus } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import NodeLoggerPanel from "./NodeLoggerPanel";
@@ -336,7 +336,14 @@ function HostTreeViewPanel() {
       }
       const id = `${node.providerId}-${rootLaunch}`;
       if (!openIds.includes(id)) {
-        rosCtx.openEditor(node.providerId, rootLaunch, node.launchInfo.file_name, node.launchInfo.file_range, external);
+        rosCtx.openEditor(
+          node.providerId,
+          rootLaunch,
+          node.launchInfo.file_name,
+          node.launchInfo.file_range,
+          node.launchInfo.launch_context_arg,
+          external
+        );
         openIds.push(id);
       }
     });

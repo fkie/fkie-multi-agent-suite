@@ -7,7 +7,7 @@ import { colorFromHostname } from "../../../components/UI/Colors";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { CmdType } from "../../../providers";
-import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../../../utils/events";
+import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
 
 function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen = "", width = null, cmd = "" }) {
   const rosCtx = useContext(RosContext);

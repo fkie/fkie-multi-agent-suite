@@ -1,4 +1,5 @@
-import LayoutTabConfig from "../pages/NodeManager/layout/LayoutTabConfig";
+import { TFileRange, TLaunchArgs } from "@/types";
+import LayoutTabConfig from "./LayoutTabConfig";
 
 export const EVENT_CLOSE_COMPONENT = "EVENT_CLOSE_COMPONENT" as const;
 export const EVENT_OPEN_COMPONENT = "EVENT_OPEN_COMPONENT" as const;
@@ -50,7 +51,8 @@ export function eventCloseComponent(id: string): { id: string } {
 export function eventEditorSelectRange(
   tabId: string,
   filePath: string,
-  fileRange: unknown
-): { tabId: string; filePath: string; fileRange: unknown } {
-  return { tabId, filePath, fileRange };
+  fileRange: TFileRange,
+  launchArgs: TLaunchArgs
+): { tabId: string; filePath: string; fileRange: TFileRange; launchArgs: TLaunchArgs } {
+  return { tabId, filePath, fileRange, launchArgs };
 }

@@ -54,7 +54,7 @@ import ProviderLaunchConfiguration from "../../models/ProviderLaunchConfiguratio
 import Provider from "../../providers/Provider";
 import { EVENT_PROVIDER_ROS_NODES } from "../../providers/eventTypes";
 import { generateUniqueId } from "../../utils";
-import { EVENT_OPEN_CONNECT } from "../../utils/events";
+import { EVENT_OPEN_CONNECT } from "../../pages/NodeManager/layout/events";
 import CopyButton from "../UI/CopyButton";
 import DraggablePaper from "../UI/DraggablePaper";
 

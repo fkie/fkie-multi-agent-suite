@@ -13,7 +13,7 @@ import { emitCustomEvent } from "react-custom-events";
 import { SearchBar, TopicTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import TopicPublishPanel from "./TopicPublishPanel";

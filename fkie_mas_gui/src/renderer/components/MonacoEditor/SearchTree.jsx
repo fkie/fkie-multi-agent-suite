@@ -7,7 +7,7 @@ import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { getFileName } from "../../models";
-import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../utils/events";
+import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../pages/NodeManager/layout/events";
 import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
 
 function SearchTree({ tabId, searchTerm = "", ownUriPaths = [] }) {

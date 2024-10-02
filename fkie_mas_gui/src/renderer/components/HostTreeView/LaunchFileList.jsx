@@ -17,7 +17,7 @@ import { SettingsContext } from "../../context/SettingsContext";
 import { getFileName } from "../../models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
 import LaunchFilePanel from "../../pages/NodeManager/panels/LaunchFilePanel";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 
 const compareLaunchFiles = (a, b) => {
   if (getFileName(a.path) < getFileName(b.path)) {
@@ -45,7 +45,7 @@ function LaunchFileList({
    */
   const createFileEditorPanel = useCallback(
     async (provId, launchContent, external) => {
-      rosCtx.openEditor(provId, launchContent.path, launchContent.path, null, external);
+      rosCtx.openEditor(provId, launchContent.path, launchContent.path, null, null, external);
     },
     [rosCtx]
   );

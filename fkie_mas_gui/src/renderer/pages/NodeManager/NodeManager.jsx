@@ -51,7 +51,7 @@ import {
   eventOpenComponent,
   eventOpenSettings,
   SETTING,
-} from "../../utils/events";
+} from "./layout/events";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import "./NodeManager.css";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
@@ -464,7 +464,15 @@ function NodeManager() {
                   }
                   if (node.getConfig().editorConfig) {
                     const cfg = node.getConfig().editorConfig;
-                    window.editorManager?.open(cfg.id, cfg.host, cfg.port, cfg.path, cfg.rootLaunch, cfg.fileRange);
+                    window.editorManager?.open(
+                      cfg.id,
+                      cfg.host,
+                      cfg.port,
+                      cfg.path,
+                      cfg.rootLaunch,
+                      cfg.fileRange,
+                      cfg.launchArgs
+                    );
                     deleteTab(node.getId());
                   }
                   if (node.getConfig().subscriberConfig) {

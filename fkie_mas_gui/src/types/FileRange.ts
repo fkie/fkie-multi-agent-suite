@@ -1,4 +1,4 @@
-export type FileRange = {
+export type TFileRange = {
   startLineNumber: number;
   endLineNumber: number;
   startColumn: number;

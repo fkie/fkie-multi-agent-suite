@@ -1,5 +1,6 @@
 import { BrowserWindow } from "electron";
-import { FileRange } from "./FileRange";
+import { TFileRange } from "./FileRange";
+import { TLaunchArgs } from "./LaunchArgs";
 
 export const EditorManagerEvents = {
   has: "editor:has",
@@ -27,7 +28,8 @@ export interface IEditorManager {
     event: Electron.IpcMainInvokeEvent,
     id: string,
     launchFile: string,
-    fileRange: FileRange
+    fileRange: TFileRange,
+    launchArgs: TLaunchArgs
   ) => Promise<null>;
 
   handleEditorClose: (event: Electron.IpcMainInvokeEvent, id: string) => Promise<boolean>;
@@ -46,11 +48,17 @@ export interface IEditorManager {
     port: number,
     rootLaunch: string,
     launchFile: string,
-    fileRange: FileRange
+    fileRange: TFileRange,
+    launchArgs: TLaunchArgs
   ) => Promise<string | null>;
 }
 
-export type FileRangeCallback = (tabId: string, filePath: string, fileRange: FileRange) => void;
+export type FileRangeCallback = (
+  tabId: string,
+  filePath: string,
+  fileRange: TFileRange,
+  launchArgs: TLaunchArgs
+) => void;
 
 export type EditorCloseCallback = (tabId: string) => void;
 
@@ -61,7 +69,8 @@ export type TEditorManager = {
     port: number,
     path: string,
     rootLaunch: string,
-    fileRange: FileRange
+    fileRange: TFileRange,
+    launchArgs: TLaunchArgs
   ) => Promise<string | null>;
 
   close: (id: string) => Promise<boolean>;
@@ -70,7 +79,7 @@ export type TEditorManager = {
 
   has: (id: string) => Promise<boolean>;
 
-  emitFileRange: (id: string, path: string, fileRange: FileRange) => Promise<boolean>;
+  emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => Promise<boolean>;
 
   onFileRange: (callback: FileRangeCallback) => void;
 

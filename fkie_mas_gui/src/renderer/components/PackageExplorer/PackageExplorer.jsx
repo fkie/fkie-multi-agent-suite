@@ -11,7 +11,7 @@ import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "../../context/SettingsC
 import useLocalStorage from "../../hooks/useLocalStorage";
 import { getFileExtension, getFileName } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import LaunchFileModal from "../LaunchFileModal/LaunchFileModal";
 import Tag from "../UI/Tag";
 import TreeDirectory from "./TreeDirectory";
@@ -280,7 +280,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
 
   const onEditFile = useCallback(
     async (fileObj, external) => {
-      rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, external);
+      rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, null, external);
     },
     [selectedProvider, rosCtx]
   );

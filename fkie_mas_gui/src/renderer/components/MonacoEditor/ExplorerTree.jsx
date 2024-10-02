@@ -7,10 +7,18 @@ import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { getFileName } from "../../models";
-import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../utils/events";
+import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../pages/NodeManager/layout/events";
 import { FileTreeItem } from "./FileTreeItem";
 
-function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selectedUriPath = "", modifiedUriPaths = [] }) {
+function ExplorerTree({
+  tabId,
+  providerId,
+  rootFilePath,
+  includedFiles,
+  selectedUriPath = "",
+  launchArgs = {},
+  modifiedUriPaths = [],
+}) {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const [includeRoot, setIncludeRoot] = useState(null);
@@ -66,6 +74,8 @@ function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selected
     (file, lineNumberCount) => {
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!file) return <></>;
+      const fileLaunchArgs = {};
+      file.args?.forEach((item) => (fileLaunchArgs[item.name] = item.value));
       return (
         <FileTreeItem
           key={`${file.inc_path}-${file.line_number + lineNumberCount}`}
@@ -74,9 +84,18 @@ function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selected
           labelLine={file.line_number}
           textColor={!file.exists ? "red" : ""}
           modified={modifiedUriPaths.includes(file.uriPath)}
-          selected={selectedUriPath === file.uriPath}
+          selected={
+            selectedUriPath === file.uriPath &&
+            (launchArgs.size === 0 ||
+              file.args?.filter((item) => {
+                return !(launchArgs[item.name] === item.value);
+              }).length === 0)
+          }
           onLabelClick={(event) => {
-            emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, file.inc_path, null));
+            emitCustomEvent(
+              EVENT_EDITOR_SELECT_RANGE,
+              eventEditorSelectRange(tabId, file.inc_path, null, fileLaunchArgs)
+            );
             event.stopPropagation();
           }}
           onLabelDoubleClick={(event) => {
@@ -87,12 +106,17 @@ function ExplorerTree({ tabId, providerId, rootFilePath, includedFiles, selected
           onLinenumberClick={(event) => {
             emitCustomEvent(
               EVENT_EDITOR_SELECT_RANGE,
-              eventEditorSelectRange(tabId, file.path, {
-                startLineNumber: file.line_number,
-                endLineNumber: file.line_number,
-                startColumn: 0,
-                endColumn: 0,
-              })
+              eventEditorSelectRange(
+                tabId,
+                file.path,
+                {
+                  startLineNumber: file.line_number,
+                  endLineNumber: file.line_number,
+                  startColumn: 0,
+                  endColumn: 0,
+                },
+                fileLaunchArgs
+              )
             );
             event.stopPropagation();
           }}
@@ -136,6 +160,7 @@ ExplorerTree.propTypes = {
   rootFilePath: PropTypes.string.isRequired,
   includedFiles: PropTypes.array.isRequired,
   selectedUriPath: PropTypes.string,
+  launchArgs: PropTypes.object,
   modifiedUriPaths: PropTypes.array,
 };
 

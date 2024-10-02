@@ -7,7 +7,7 @@ import { ConnectToProviderModal, SearchBar } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
-import { EVENT_OPEN_CONNECT } from "../../../utils/events";
+import { EVENT_OPEN_CONNECT } from "../layout/events";
 import ProviderPanelRow from "./ProviderPanelRow";
 
 function ProviderPanel() {

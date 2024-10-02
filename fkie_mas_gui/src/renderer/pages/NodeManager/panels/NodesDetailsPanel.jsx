@@ -24,7 +24,7 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { RosNodeStatus, getDiagnosticLevelName, getFileName } from "../../../models";
 import { generateUniqueId } from "../../../utils";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import OverflowMenuService from "./OverflowMenuService";
 import OverflowMenuTopic from "./OverflowMenuTopic";

@@ -17,7 +17,7 @@ import { LAYOUT_TAB_SETS } from "../../pages/NodeManager/layout";
 import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
 import { CmdType } from "../../providers";
 import { generateUniqueId, removeDDSuid } from "../../utils";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { colorFromHostname } from "../UI/Colors";
 import HostTreeViewItem from "./HostTreeViewItem";
 import { getGroupIcon, getGroupIconColor, getNodeIcon, getNodeIconColor } from "./HostTreeViewUtils";

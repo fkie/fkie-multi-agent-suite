@@ -1,5 +1,5 @@
 import { is } from "@electron-toolkit/utils";
-import { IEditorManager, IEditor, EditorManagerEvents, FileRange } from "@/types";
+import { IEditorManager, IEditor, EditorManagerEvents, TFileRange, TLaunchArgs } from "@/types";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
 import windowStateKeeper from "../windowStateKeeper";
@@ -34,11 +34,12 @@ class EditorManager implements IEditorManager {
     _event: Electron.IpcMainInvokeEvent,
     id: string,
     launchFile: string,
-    fileRange: FileRange
-  ) => Promise<null> = async (_event, id, launchFile, fileRange) => {
+    fileRange: TFileRange,
+    launchArgs: TLaunchArgs
+  ) => Promise<null> = async (_event, id, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();
-      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange);
+      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange, launchArgs);
     }
     return Promise.resolve(null);
   };
@@ -81,11 +82,12 @@ class EditorManager implements IEditorManager {
     port: number,
     rootLaunch: string,
     launchFile: string,
-    fileRange: FileRange
-  ) => Promise<string | null> = async (_event, id, host, port, rootLaunch, launchFile, fileRange) => {
+    fileRange: TFileRange,
+    launchArgs: TLaunchArgs
+  ) => Promise<string | null> = async (_event, id, host, port, rootLaunch, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();
-      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange);
+      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, launchFile, fileRange, launchArgs);
       return Promise.resolve(null);
     }
 
@@ -135,32 +137,23 @@ class EditorManager implements IEditorManager {
     // HMR for renderer base on electron-vite cli.
     // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env.ELECTRON_RENDERER_URL) {
+      // const fileRangeStr=`&sl=${fileRange.startLineNumber}&el=${fileRange.endLineNumber}&sc=${fileRange.startColumn}&ec=${fileRange.endColumn}`
+      const fileRangeStr = fileRange ? `&range=${JSON.stringify(fileRange)}` : "";
+      const launchArgsStr = launchArgs ? `&launchArgs=${JSON.stringify(launchArgs)}` : "";
       editorWindow.loadURL(
-        fileRange
-          ? `${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${id}&host=${host}&port=${port}&root=${rootLaunch}&path=${launchFile}&sl=${fileRange.startLineNumber}&el=${fileRange.endLineNumber}&sc=${fileRange.startColumn}&ec=${fileRange.endColumn}`
-          : `${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${id}&host=${host}&port=${port}&root=${rootLaunch}&path=${launchFile}`
+        `${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${id}&host=${host}&port=${port}&root=${rootLaunch}&path=${launchFile}${fileRangeStr}${launchArgsStr}`
       );
     } else {
       editorWindow.loadFile(join(__dirname, `../renderer/editor.html`), {
-        query: fileRange
-          ? {
-              id: id,
-              host: host,
-              port: `${port}`,
-              root: rootLaunch,
-              path: launchFile,
-              sl: `${fileRange.startLineNumber}`,
-              el: `${fileRange.endLineNumber}`,
-              sc: `${fileRange.startColumn}`,
-              ec: `${fileRange.endColumn}`,
-            }
-          : {
-              id: id,
-              host: host,
-              port: `${port}`,
-              root: rootLaunch,
-              path: launchFile,
-            },
+        query: {
+          id: id,
+          host: host,
+          port: `${port}`,
+          root: rootLaunch,
+          path: launchFile,
+          range: `${JSON.stringify(fileRange)}`,
+          launchArgs: `${JSON.stringify(launchArgs)}`,
+        },
       });
     }
     return Promise.resolve(null);

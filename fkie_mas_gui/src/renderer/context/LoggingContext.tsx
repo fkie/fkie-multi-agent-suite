@@ -5,7 +5,7 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LogEvent, LoggingLevel } from "../models";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "../pages/NodeManager/layout/LayoutDefines";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../utils/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../pages/NodeManager/layout/events";
 import LoggingDetailsComponent from "./LoggingDetailsComponent";
 import { SettingsContext } from "./SettingsContext";
 

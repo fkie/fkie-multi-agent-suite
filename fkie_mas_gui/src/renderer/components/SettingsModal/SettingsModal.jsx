@@ -15,7 +15,7 @@ import { useContext, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { SettingsContext } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
-import { EVENT_OPEN_SETTINGS, SETTING } from "../../utils/events";
+import { EVENT_OPEN_SETTINGS, SETTING } from "../../pages/NodeManager/layout/events";
 import DraggablePaper from "../UI/DraggablePaper";
 import TabPanel from "../UI/TabPanel";
 import About from "./About";

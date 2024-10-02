@@ -4,7 +4,7 @@ import {
   DialogManagerEvents,
   EditorCloseCallback,
   EditorManagerEvents,
-  FileRange,
+  TFileRange,
   FileRangeCallback,
   LaunchManagerEvents,
   PasswordManagerEvents,
@@ -24,6 +24,7 @@ import {
   TSubscriberManager,
   TSystemInfo,
   TTerminalManager,
+  TLaunchArgs,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 
@@ -175,8 +176,16 @@ if (process.contextIsolated) {
 
     // register editor interface
     contextBridge.exposeInMainWorld("editorManager", {
-      open: (id: string, host: string, port: number, path: string, rootLaunch: string, fileRange: FileRange) => {
-        return ipcRenderer.invoke(EditorManagerEvents.open, id, host, port, rootLaunch, path, fileRange);
+      open: (
+        id: string,
+        host: string,
+        port: number,
+        path: string,
+        rootLaunch: string,
+        fileRange: TFileRange,
+        launchArgs: TLaunchArgs
+      ) => {
+        return ipcRenderer.invoke(EditorManagerEvents.open, id, host, port, rootLaunch, path, fileRange, launchArgs);
       },
       close: (id: string) => {
         return ipcRenderer.invoke(EditorManagerEvents.close, id);
@@ -184,15 +193,15 @@ if (process.contextIsolated) {
       changed: (id: string, path: string, changed: boolean) => {
         return ipcRenderer.invoke(EditorManagerEvents.changed, id, path, changed);
       },
-      emitFileRange: (id: string, path: string, fileRange: FileRange) => {
-        return ipcRenderer.invoke(EditorManagerEvents.emitFileRange, id, path, fileRange);
+      emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => {
+        return ipcRenderer.invoke(EditorManagerEvents.emitFileRange, id, path, fileRange, launchArgs);
       },
       has: (id: string) => {
         return ipcRenderer.invoke(EditorManagerEvents.has, id);
       },
       onFileRange: (callback: FileRangeCallback) =>
-        ipcRenderer.on(EditorManagerEvents.onFileRange, (_event, id, launchFile, fileRange) => {
-          callback(id, launchFile, fileRange);
+        ipcRenderer.on(EditorManagerEvents.onFileRange, (_event, id, launchFile, fileRange, launchArgs) => {
+          callback(id, launchFile, fileRange, launchArgs);
         }),
       onClose: (callback: EditorCloseCallback) =>
         ipcRenderer.on(EditorManagerEvents.onClose, (_event, id) => {

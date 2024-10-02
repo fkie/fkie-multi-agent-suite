@@ -38,7 +38,7 @@ import {
   SETTING,
   eventOpenComponent,
   eventOpenSettings,
-} from "../../../utils/events";
+} from "../layout/events";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import SingleTerminalPanel from "./SingleTerminalPanel";
 import SystemInformationPanel from "./SystemInformationPanel";

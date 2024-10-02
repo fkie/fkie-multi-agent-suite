@@ -30,9 +30,9 @@ import {
   getFileName,
 } from "../../../models";
 import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
-import { EVENT_CLOSE_COMPONENT, EVENT_EDITOR_SELECT_RANGE, eventCloseComponent } from "../../../utils/events";
+import { EVENT_CLOSE_COMPONENT, EVENT_EDITOR_SELECT_RANGE, eventCloseComponent } from "../layout/events";
 
-function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fileRange }) {
+function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs }) {
   const monaco = Monaco.useMonaco();
   const settingsCtx = useContext(SettingsContext);
   const logCtx = useContext(LoggingContext);
@@ -80,6 +80,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 
   const [selectionRange, setSelectionRange] = useState(null);
+  const [currentLaunchArgs, setCurrentLaunchArgs] = useState(launchArgs);
   const [modifiedFiles, setModifiedFiles] = useState([]);
   const [includedFiles, setIncludedFiles] = useState([]);
   const [includeDecorations, setIncludeDecorations] = useState([]);
@@ -250,7 +251,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
 
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
-    async (uriPath, range = null, forceReload = false) => {
+    async (uriPath, range = null, launchArgs = null, forceReload = false) => {
       if (!uriPath) return false;
       // If model does not exist, try to fetch it
       let model = getModelFromPath(uriPath);
@@ -300,6 +301,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       if (range) {
         setSelectionRange(range);
       }
+      setCurrentLaunchArgs(launchArgs);
       return true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -320,7 +322,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     if (data.tabId === tabId) {
       const model = getModelFromPath(data.filePath);
       if (model) {
-        setEditorModel(data.filePath, data.fileRange);
+        setEditorModel(data.filePath, data.fileRange, data.launchArgs);
       }
     }
   });
@@ -645,7 +647,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         return;
       }
       // setActiveModel({ path: model.uri.path, modified: model.modified });
-      setEditorModel(model.uri.path, fileRange);
+      setEditorModel(model.uri.path, fileRange, launchArgs);
 
       // Ignore "non-launch" files
       // TODO: Add parameter Here
@@ -931,6 +933,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                       rootFilePath={rootFilePath}
                       includedFiles={includedFiles}
                       selectedUriPath={activeModel?.path}
+                      launchArgs={currentLaunchArgs}
                       modifiedUriPaths={modifiedFiles}
                     />
                   </Stack>
@@ -1001,7 +1004,19 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                 aria-label="Open parent file"
                 onClick={async () => {
                   const path = activeModel?.path.split(":")[1];
-                  const parentPaths = includedFiles.filter((item) => path === item.inc_path);
+                  const parentPaths = includedFiles.filter((item) => {
+                    if (path === item.inc_path) {
+                      // check args to select the correct file, if the same file included twice
+                      if (currentLaunchArgs) {
+                        const notEqual = item.args.filter((item) => {
+                          return !(currentLaunchArgs[item.name] === item.value);
+                        });
+                        return notEqual.length === 0;
+                      }
+                      return true;
+                    }
+                    return false;
+                  });
                   parentPaths.forEach(async (item) => {
                     const result = await setEditorModel(
                       `${activeModel?.path.split(":")[0]}:${item.path}`,
@@ -1011,7 +1026,6 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                     );
                     if (result) {
                       logCtx.success(`Parent file opened [${getFileName(path)}]`);
-                      // TODO check args to select the correct file
                       setEditorModel(item.path, {
                         startLineNumber: item.line_number,
                         endLineNumber: item.line_number,
@@ -1031,7 +1045,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                 aria-label="Reload file"
                 onClick={async () => {
                   const path = activeModel?.path;
-                  const result = await setEditorModel(path, null, null, true);
+                  const result = await setEditorModel(path, selectionRange, currentLaunchArgs, true);
                   if (result) {
                     logCtx.success(`File reloaded [${getFileName(path)}]`);
                   }
@@ -1151,6 +1165,7 @@ FileEditorPanel.propTypes = {
   rootFilePath: PropTypes.string.isRequired,
   currentFilePath: PropTypes.string.isRequired,
   fileRange: PropTypes.any,
+  launchArgs: PropTypes.any,
 };
 
 export default FileEditorPanel;

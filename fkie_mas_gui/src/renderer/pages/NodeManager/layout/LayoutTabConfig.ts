@@ -1,3 +1,5 @@
+import { TFileRange, TLaunchArgs } from "@/types";
+
 export interface IExtTerminalConfig {
   type: string;
   providerId: string;
@@ -13,7 +15,8 @@ export interface IEditorConfig {
   port: number;
   rootLaunch: string;
   path: string;
-  fileRange: { startLineNumber: number; endLineNumber: number; startColumn: number; endColumn: number } | null;
+  fileRange: TFileRange;
+  launchArgs: TLaunchArgs;
 }
 
 export interface ISubscriberConfig {
