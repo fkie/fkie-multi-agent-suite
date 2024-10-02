@@ -15,7 +15,6 @@ import { LoggingProvider } from "../../context/LoggingContext";
 import { MonacoProvider } from "../../context/MonacoContext";
 import { NavigationProvider } from "../../context/NavigationContext";
 import { RosProviderReact } from "../../context/RosContext";
-import { SSHProvider } from "../../context/SSHContext";
 import { SettingsProvider } from "../../context/SettingsContext";
 import EditorApp from "../../sites/editor/App";
 
@@ -36,18 +35,16 @@ if (container) {
       >
         <LoggingProvider>
           <ElectronProvider>
-            <SSHProvider>
-              <RosProviderReact>
-                <NavigationProvider>
-                  <BrowserRouter>
-                    {/* TODO: Monaco is not required to be global */}
-                    <MonacoProvider>
-                      <EditorApp />
-                    </MonacoProvider>
-                  </BrowserRouter>
-                </NavigationProvider>
-              </RosProviderReact>
-            </SSHProvider>
+            <RosProviderReact>
+              <NavigationProvider>
+                <BrowserRouter>
+                  {/* TODO: Monaco is not required to be global */}
+                  <MonacoProvider>
+                    <EditorApp />
+                  </MonacoProvider>
+                </BrowserRouter>
+              </NavigationProvider>
+            </RosProviderReact>
           </ElectronProvider>
         </LoggingProvider>
       </SnackbarProvider>

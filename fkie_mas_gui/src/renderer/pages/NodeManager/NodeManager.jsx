@@ -1,3 +1,5 @@
+import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
+import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
@@ -39,11 +41,11 @@ import { MonacoContext } from "../../context/MonacoContext";
 import { NavigationContext } from "../../context/NavigationContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { SSHContext } from "../../context/SSHContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import { getBaseName } from "../../models";
 import { CmdType } from "../../providers";
 import { getRosNameAbb } from "../../utils";
+import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_OPEN_COMPONENT,
@@ -52,7 +54,6 @@ import {
   eventOpenSettings,
   SETTING,
 } from "./layout/events";
-import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import "./NodeManager.css";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
@@ -63,8 +64,6 @@ import ParameterPanel from "./panels/ParameterPanel";
 import ProviderPanel from "./panels/ProviderPanel";
 import ServicesPanel from "./panels/ServicesPanel";
 import TopicsPanel from "./panels/TopicsPanel";
-import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
-import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
 
 function NodeManager() {
   const electronCtx = useContext(ElectronContext);
@@ -73,7 +72,6 @@ function NodeManager() {
   const monacoCtx = useContext(MonacoContext);
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
-  const SSHCtx = useContext(SSHContext);
   const [layoutJson, setLayoutJson] = useLocalStorage("layout", DEFAULT_LAYOUT);
   const [model, setModel] = useState(Model.fromJson(layoutJson));
   const layoutRef = useRef(null);
@@ -477,7 +475,7 @@ function NodeManager() {
                       // open screen in a new terminal
                       try {
                         window.commandExecutor?.execTerminal(
-                          provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
+                          provider.isLocalHost ? null : { host: provider.host() },
                           `"${config.type} ${config.nodeName}@${provider.host()}"`,
                           terminalCmd.cmd
                         );

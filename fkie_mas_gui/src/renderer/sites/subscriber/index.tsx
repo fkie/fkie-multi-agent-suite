@@ -14,7 +14,6 @@ import { ElectronProvider } from "../../context/ElectronContext";
 import { LoggingProvider } from "../../context/LoggingContext";
 import { NavigationProvider } from "../../context/NavigationContext";
 import { RosProviderReact } from "../../context/RosContext";
-import { SSHProvider } from "../../context/SSHContext";
 import { SettingsProvider } from "../../context/SettingsContext";
 import SubscriberApp from "./App";
 
@@ -35,15 +34,13 @@ if (container) {
       >
         <LoggingProvider>
           <ElectronProvider>
-            <SSHProvider>
-              <RosProviderReact>
-                <NavigationProvider>
-                  <BrowserRouter>
-                    <SubscriberApp />
-                  </BrowserRouter>
-                </NavigationProvider>
-              </RosProviderReact>
-            </SSHProvider>
+            <RosProviderReact>
+              <NavigationProvider>
+                <BrowserRouter>
+                  <SubscriberApp />
+                </BrowserRouter>
+              </NavigationProvider>
+            </RosProviderReact>
           </ElectronProvider>
         </LoggingProvider>
       </SnackbarProvider>

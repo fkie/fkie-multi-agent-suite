@@ -4,6 +4,7 @@ import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { ConnectConfig } from "ssh2";
 import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "../components/UI";
 import {
   LaunchArgument,
@@ -17,6 +18,12 @@ import {
   getFileName,
 } from "../models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
+import {
+  EVENT_EDITOR_SELECT_RANGE,
+  EVENT_OPEN_COMPONENT,
+  eventEditorSelectRange,
+  eventOpenComponent,
+} from "../pages/NodeManager/layout/events";
 import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
@@ -44,17 +51,9 @@ import {
   EventProviderState,
   EventProviderWarnings,
 } from "../providers/events";
-import {
-  EVENT_EDITOR_SELECT_RANGE,
-  EVENT_OPEN_COMPONENT,
-  eventEditorSelectRange,
-  eventOpenComponent,
-} from "../pages/NodeManager/layout/events";
 import { xor } from "../utils/index";
 import { LoggingContext } from "./LoggingContext";
-import { SSHContext } from "./SSHContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
-import { ConnectConfig } from "ssh2";
 
 export interface IRosProviderContext {
   initialized: boolean;
@@ -128,7 +127,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const { children } = props;
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
-  const SSHCtx = useContext(SSHContext);
   const { enqueueSnackbar } = useSnackbar();
 
   const [initialized, setInitialized] = useState(DEFAULT.initialized);
@@ -564,7 +562,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         let allStarted = true;
         try {
           const isLocal = isLocalHost(config.host);
-          const credential = isLocal ? null : connectConfig ? connectConfig : SSHCtx.getCredentialHost(config.host);
+          const credential = isLocal ? null : connectConfig ? connectConfig : { host: config.host };
 
           const port = config.port
             ? config.port
@@ -787,7 +785,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return allStarted;
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isLocalHost, SSHCtx, getProviderByHosts, settingsCtx, logCtx]
+      [isLocalHost, getProviderByHosts, settingsCtx, logCtx]
     );
 
   const startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean> = useCallback(
@@ -818,7 +816,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     async (host: string, rosVersion: string) => {
       if (!window.commandExecutor) return false;
       const isLocal = isLocalHost(host);
-      const credential = isLocal ? null : SSHCtx.getCredentialHost(host);
+      const credential = isLocal ? null : { host: host };
       if (!isLocal && !credential) {
         logCtx.error(`'Missing SSH credentials to starting master-sync on host '${host}'`, "");
         return false;
@@ -856,7 +854,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       return true;
     },
-    [SSHCtx, isLocalHost, logCtx, getProviderByHosts]
+    [isLocalHost, logCtx, getProviderByHosts]
   );
 
   const startDynamicReconfigureClient = useCallback(
@@ -1156,7 +1154,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             // create a terminal command
             const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd);
             const result = await window.commandExecutor?.execTerminal(
-              provider.isLocalHost ? null : SSHCtx.getCredentialHost(provider.host()),
+              provider.isLocalHost ? null : { host: provider.host() },
               `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
               terminalCmd.cmd
             );
@@ -1202,7 +1200,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
       }
     },
-    [getProviderById, emitCustomEvent, SSHCtx, layoutModel]
+    [getProviderById, emitCustomEvent, layoutModel]
   );
 
   // initialize ROS and system Info
@@ -1211,7 +1209,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
     // get local ROS Info
     if (window.rosInfo?.getInfo) {
-      const rinfo = window.rosInfo.getInfo();
+      const rinfo = await window.rosInfo.getInfo();
       setRosInfo(rinfo);
     }
     // get local System Info

@@ -35,7 +35,6 @@ export function eventOpenComponent(
 export class SETTING extends String {
   static IDS = {
     INTERFACE: "interface",
-    SSH: "ssh",
     ABOUT: "about",
   };
 }

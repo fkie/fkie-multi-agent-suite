@@ -7,7 +7,6 @@ import os from "os";
 import path from "path";
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
 import { ARGUMENTS, getArgument } from "../CommandLineInterface";
-import PasswordManager from "./PasswordManager";
 import { SystemInfo } from "./SystemInfo";
 
 const textDecoder = new TextDecoder();
@@ -18,9 +17,11 @@ class CommandExecutor implements TCommandExecutor {
   localCredential: ConnectConfig;
 
   // TODO: read ssh config to get username for a given host
-  privateSshKeys: Buffer[] = [];
+  sshUsers: { [id: string]: string } = {}; // host: user
+  sshPorts: { [id: string]: number } = {}; // host: port
+  sshKeys: { [id: string]: Buffer } = {}; // host: privateKeys
 
-  pm: PasswordManager;
+  privateSshKeys: Buffer[] = [];
 
   systemInfo?: TSystemInfo;
 
@@ -37,13 +38,41 @@ class CommandExecutor implements TCommandExecutor {
   };
 
   constructor() {
-    this.pm = new PasswordManager();
+    const sshPath = `${os.homedir()}/.ssh`;
 
-    const sshPath = `${os.homedir()}/.ssh/`;
+    // read host/user configuration from ssh config
+    // TODO: read IdentityFile
+    fs.readFile(`${sshPath}/config`, "utf8", (err, data) => {
+      if (err) {
+        log.warn(`error while read ${sshPath}/config`);
+        return;
+      }
+      const configLines = data.split("\n");
+      let currentHost: string | null = null;
+
+      configLines.forEach((line) => {
+        line = line.trim();
+        if (line.startsWith("Host ")) {
+          currentHost = line.split(" ")[1];
+        } else if (line.startsWith("User ") && currentHost) {
+          const username = line.split(" ")[1];
+          this.sshUsers[currentHost] = username;
+        } else if (line.startsWith("Port ") && currentHost) {
+          const port = line.split(" ")[1];
+          this.sshPorts[currentHost] = parseInt(port);
+        } else if (line.startsWith("IdentityFile ") && currentHost) {
+          const path = line.split(" ")[1].replace("~", os.homedir());
+          this.sshKeys[currentHost] = fs.readFileSync(path);
+        }
+      });
+      // log.info("SSH-configuration (host and username):", this.sshUsers);
+    });
+
+    // read private ssh keys
     const files = fs.readdirSync(sshPath);
     files.filter((item) => {
       if (item.startsWith("id_")) {
-        const content = fs.readFileSync(`${sshPath}${item}`);
+        const content = fs.readFileSync(`${sshPath}/${item}`);
         if (content.includes("PRIVATE KEY---")) {
           this.privateSshKeys.push(content);
           return true;
@@ -196,7 +225,7 @@ class CommandExecutor implements TCommandExecutor {
     keyIndex = 0
   ) => {
     const parentOut = getArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES) === "true";
-    const connectionConfig = await this.generateConfig(credential, keyIndex);
+    const connectionConfig = this.generateConfig(credential, keyIndex);
     return new Promise((resolve) => {
       if (!command)
         resolve({
@@ -351,6 +380,7 @@ class CommandExecutor implements TCommandExecutor {
     let sshCmd = "";
     if (credential) {
       // generate string for SSH command
+      const c: ConnectConfig = this.generateConfig(credential, 0);
       sshCmd = [
         "/usr/bin/ssh",
         "-aqtxXC",
@@ -359,7 +389,7 @@ class CommandExecutor implements TCommandExecutor {
         "-oStrictHostKeyChecking=no",
         "-oVerifyHostKeyDNS=no",
         "-oCheckHostIP=no",
-        [credential.username, credential.host].join("@"),
+        [c.username, c.host].join("@"),
       ].join(" ");
     }
     const cmd = `${terminalEmulator} ${terminalTitle} ${noCloseOpt} ${terminalExecOpt} ${sshCmd} ${command}`;
@@ -371,27 +401,22 @@ class CommandExecutor implements TCommandExecutor {
    * @param {ConnectConfig} credential - SSH credential
    * @return {object} Returns a configuration file
    */
-  private generateConfig = async (credential: ConnectConfig, keyIndex: number): Promise<ConnectConfig> => {
-    // try to get password from password manager
-    let pwd: string | null = null;
-    try {
-      const account = `${credential.username}:${credential.host}`;
-      pwd = await this.pm.getPassword("MAS_PASSWORDS", account);
-    } catch (error) {
-      log.info("CommandExecutor - generateConfig error: ", error);
-    }
-
+  private generateConfig = (credential: ConnectConfig, keyIndex: number): ConnectConfig => {
     let privateKey: Buffer | undefined;
     if (!credential.password && keyIndex < this.privateSshKeys.length) {
       privateKey = this.privateSshKeys[keyIndex];
     }
 
+    const sshHost: string | undefined = credential.host ? this.sshUsers[credential.host] : undefined;
+    const sshPort: number | undefined = credential.host ? this.sshPorts[credential.host] : undefined;
+    const sshKey: Buffer | undefined = credential.host ? this.sshKeys[credential.host] : undefined;
+
     const config: ConnectConfig = {
       host: credential.host,
-      port: credential.port,
-      username: credential.username,
-      password: credential.password || pwd || undefined,
-      privateKey: privateKey,
+      port: credential.port || sshPort,
+      username: credential.username || sshHost || os.userInfo().username,
+      password: credential.password || undefined,
+      privateKey: sshKey || privateKey,
     };
 
     return config;

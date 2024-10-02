@@ -20,7 +20,6 @@ import DraggablePaper from "../UI/DraggablePaper";
 import TabPanel from "../UI/TabPanel";
 import About from "./About";
 import GuiPanel from "./GuiPanel";
-import SSHCredentialsPanel from "./SSHCredentialsPanel";
 
 function SettingsModal() {
   const settingsCtx = useContext(SettingsContext);
@@ -40,16 +39,12 @@ function SettingsModal() {
   }
 
   useCustomEventListener(EVENT_OPEN_SETTINGS, (data) => {
-    if (data.id === SETTING.IDS.SSH) {
-      setSelectedTabIndex(1);
-      setOpen(true);
-    }
     if (data.id === SETTING.IDS.INTERFACE) {
       setSelectedTabIndex(0);
       setOpen(true);
     }
     if (data.id === SETTING.IDS.ABOUT) {
-      setSelectedTabIndex(2);
+      setSelectedTabIndex(1);
       setOpen(true);
     }
   });
@@ -91,8 +86,7 @@ function SettingsModal() {
             style={{ minHeight: "24px" }}
           >
             <Tab label="Interface" {...a11yProps(0)} style={{ minHeight: "24px" }} />
-            <Tab label="SSH Credentials" {...a11yProps(1)} style={{ minHeight: "24px" }} />
-            <Tab label="About" {...a11yProps(2)} style={{ minHeight: "24px" }} />
+            <Tab label="About" {...a11yProps(1)} style={{ minHeight: "24px" }} />
           </Tabs>
         </Box>
         <DialogContent sx={{ padding: "16px" }}>
@@ -100,9 +94,6 @@ function SettingsModal() {
             <GuiPanel />
           </TabPanel>
           <TabPanel value={selectedTabIndex} index={1}>
-            <SSHCredentialsPanel />
-          </TabPanel>
-          <TabPanel value={selectedTabIndex} index={2}>
             <About />
           </TabPanel>
         </DialogContent>

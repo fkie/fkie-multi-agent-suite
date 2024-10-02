@@ -4,9 +4,7 @@ import {
   DialogManagerEvents,
   EditorCloseCallback,
   EditorManagerEvents,
-  TFileRange,
   FileRangeCallback,
-  PasswordManagerEvents,
   ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
@@ -15,12 +13,13 @@ import {
   TerminalCloseCallback,
   TerminalManagerEvents,
   TerminateCallback,
-  TPasswordManager,
+  TFileRange,
+  TLaunchArgs,
+  TRosInfo,
   TShutdownManager,
   TSubscriberManager,
   TSystemInfo,
   TTerminalManager,
-  TLaunchArgs,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
 import { ConnectConfig } from "ssh2";
@@ -65,15 +64,6 @@ if (process.contextIsolated) {
       },
     });
 
-    // Register Password Manager
-    contextBridge.exposeInMainWorld("passwordManager", {
-      setPassword: (service: string, account: string, password: string) =>
-        ipcRenderer.invoke(PasswordManagerEvents.setPassword, service, account, password),
-
-      deletePassword: (service: string, account: string) =>
-        ipcRenderer.invoke(PasswordManagerEvents.deletePassword, service, account),
-    } as TPasswordManager);
-
     // Register Command Executor
     contextBridge.exposeInMainWorld("commandExecutor", {
       exec: (credential: ConnectConfig, command: string) =>
@@ -86,8 +76,7 @@ if (process.contextIsolated) {
     // Register ROS Info
     contextBridge.exposeInMainWorld("rosInfo", {
       getInfo: () => ipcRenderer.invoke("rosInfo:getInfo"),
-    });
-    //  } as TRosInfo);
+    } as TRosInfo);
 
     // Register System Info
     contextBridge.exposeInMainWorld("systemInfo", {

@@ -4,7 +4,6 @@ import { EditorCloseCallback, EditorManagerEvents, FileRangeCallback, TEditorMan
 import { TFileRange } from "./FileRange";
 import JSONObject, { JSONValue } from "./JsonObject";
 import { TLaunchArgs } from "./LaunchArgs";
-import { PasswordManagerEvents, TPasswordManager } from "./PasswordManager";
 import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "./SubscriberManager";
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "./TerminalManager";
@@ -17,14 +16,12 @@ export {
   CommandExecutorEvents,
   DialogManagerEvents,
   EditorManagerEvents,
-  PasswordManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
   TerminalManagerEvents,
 };
 export type {
   EditorCloseCallback,
-  TFileRange,
   FileRangeCallback,
   JSONObject,
   JSONValue,
@@ -34,8 +31,8 @@ export type {
   TEditorManager,
   TerminalCloseCallback,
   TerminateCallback,
+  TFileRange,
   TLaunchArgs,
-  TPasswordManager,
   TResult,
   TResultData,
   TRosInfo,

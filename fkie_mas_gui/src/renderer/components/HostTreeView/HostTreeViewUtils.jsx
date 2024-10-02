@@ -157,38 +157,6 @@ const getGroupIconColor = (treeItems, isDarkMode = false) => {
   }
 };
 
-const deleteFiles = async (logCtx, SSHCtx, host, files) => {
-  // search the SSH credentials based on host
-  const credentialHost = SSHCtx.getCredentialHost(host);
-  if (!credentialHost) return "Host does not have valid SSH credentials";
-
-  let command = "";
-  files.forEach((f, index) => {
-    if (f.length === 0) return;
-
-    if (index < files.length - 1) {
-      command = `${command} rm ${f} && `;
-    } else {
-      command = `${command} rm ${f} \n`;
-    }
-  });
-
-  // delete logs
-  const strResult = await SSHCtx.exec(credentialHost, command);
-  return strResult.message;
-};
-
-const rosCleanPurge = async (logCtx, SSHCtx, host) => {
-  // search the SSH credentials based on host
-  const credentialHost = SSHCtx.getCredentialHost(host);
-  if (!credentialHost) return "Host does not have valid SSH credentials";
-
-  // purge logs
-  // TODO: Make command configurable (perhaps logs are saved in a different folder)
-  const strResult = await SSHCtx.exec(credentialHost, "rosclean purge -y");
-  return strResult.message;
-};
-
 export {
   GroupStatus,
   StyledBottomNavigationAction,

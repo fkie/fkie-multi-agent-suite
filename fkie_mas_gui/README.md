@@ -10,14 +10,6 @@ We need to first install dependencies and run both Front and Back-End components
 
 ### Install dependencies
 
-The code have been tested with `NodeJS v20.15.0`:
-
-```bash
-sudo apt install nodejs yarn libsecret-1-dev
-```
-
-> In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
-
 You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
 
 ```bash
@@ -25,6 +17,8 @@ sudo snap install ttyd --classic
 ```
 
 #### Update nodejs to v20
+
+The code have been tested with `NodeJS v20.15.0`:
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -

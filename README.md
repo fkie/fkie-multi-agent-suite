@@ -18,12 +18,6 @@ You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log
 sudo snap install ttyd --classic
 ```
 
-In Linux, we need `libsecret-1-dev` to safely store SSH credentials.
-
-```bash
-sudo apt install libsecret-1-dev
-```
-
 > A python3-websockets version >11 is required. You can install it using pip:
 
 ```bash

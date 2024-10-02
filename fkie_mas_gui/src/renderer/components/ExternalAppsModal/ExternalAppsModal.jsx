@@ -21,7 +21,6 @@ import {
 } from "@mui/material";
 import { useCallback, useContext, useRef, useState } from "react";
 import { RosContext } from "../../context/RosContext";
-import { SSHContext } from "../../context/SSHContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { generateUniqueId } from "../../utils";
 import DraggablePaper from "../UI/DraggablePaper";
@@ -86,7 +85,6 @@ const applicationRows = [
 function ExternalAppsModal() {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const sshCtx = useContext(SSHContext);
 
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
@@ -95,12 +93,9 @@ function ExternalAppsModal() {
     setOpen(false);
   };
 
-  const runApp = useCallback(
-    async (command) => {
-      await sshCtx.exec(null, command);
-    },
-    [sshCtx]
-  );
+  const runApp = useCallback(async (command) => {
+    await window.commandExecutor?.exec(null, command);
+  }, []);
 
   const dialogRef = useRef(null);
 

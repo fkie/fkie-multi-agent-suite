@@ -62,7 +62,6 @@
     "hostile": "^1.4.0",
     "json5": "^2.2.3",
     "jtest": "^0.0.1",
-    "keytar": "^7.9.0",
     "notistack": "^3.0.1",
     "react-app-polyfill": "^3.0.0",
     "react-custom-events": "^1.1.1",

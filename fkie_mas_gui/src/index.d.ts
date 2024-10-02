@@ -1,12 +1,11 @@
 import { TRosInfo, TSystemInfo } from "@/types";
 import {
+  TCommandExecutor,
   TDialogManager,
   TEditorManager,
   TShutdownManager,
   TSubscriberManager,
   TTerminalManager,
-  TCommandExecutor,
-  TPasswordManager,
 } from "./types";
 
 declare global {
@@ -19,7 +18,6 @@ declare global {
     subscriberManager?: TSubscriberManager;
     terminalManager?: TTerminalManager;
     autoUpdate?: unknown;
-    passwordManager?: TPasswordManager;
     commandExecutor?: TCommandExecutor;
   }
 }

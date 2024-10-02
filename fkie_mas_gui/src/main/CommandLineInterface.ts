@@ -3,13 +3,6 @@ import log from "electron-log";
 
 const ARGUMENTS = {
   SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES: "show-output-from-background-processes",
-
-  TTYD_PATH: "ttyd-path",
-  TTYD_PORT: "ttyd-port",
-
-  DISCOVERY_MCAST_PORT: "discovery-mcast-port",
-  DISCOVERY_MCAST_GROUP: "discovery-mcast-group",
-  DISCOVERY_HEARTBEAT_HZ: "discovery-heartbeat-hz",
 };
 
 /**
@@ -28,14 +21,6 @@ const registerArguments = (): void => {
 
   // Program arguments
   registerArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES, "true");
-
-  // Terminal manager
-  registerArgument(ARGUMENTS.TTYD_PATH, "");
-  registerArgument(ARGUMENTS.TTYD_PORT, "7681");
-
-  registerArgument(ARGUMENTS.DISCOVERY_MCAST_PORT, "11511");
-  registerArgument(ARGUMENTS.DISCOVERY_MCAST_GROUP, "226.0.0.0");
-  registerArgument(ARGUMENTS.DISCOVERY_HEARTBEAT_HZ, "0.5");
 };
 
 /**
