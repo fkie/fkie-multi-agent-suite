@@ -101,7 +101,7 @@ const DEFAULT_PARAMETER = {
   daemon: {},
   discovery: {
     robotHosts: [],
-    heartbeatHz: 0,
+    heartbeatHz: 0.5,
   },
   sync: {
     enable: false,
@@ -109,6 +109,7 @@ const DEFAULT_PARAMETER = {
     syncTopics: [],
   },
   ttyd: {
+    path: "ttyd",
     port: 7681,
   },
   ros1MasterUri: "default",
@@ -259,6 +260,11 @@ function ConnectToProviderModal() {
     setStartParameter(JSON.parse(JSON.stringify(startParameter)));
   };
 
+  const setHeartbeatHz = (hz) => {
+    startParameter.discovery.heartbeatHz = hz;
+    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+  };
+
   const setRobotHostValues = (robotHosts) => {
     startParameter.discovery.robotHosts = robotHosts;
     setStartParameter(JSON.parse(JSON.stringify(startParameter)));
@@ -271,6 +277,11 @@ function ConnectToProviderModal() {
 
   const setSyncTopics = (syncTopics) => {
     startParameter.sync.syncTopics = syncTopics;
+    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+  };
+
+  const setTtydPath = (path) => {
+    startParameter.ttyd.path = path;
     setStartParameter(JSON.parse(JSON.stringify(startParameter)));
   };
 
@@ -302,6 +313,7 @@ function ConnectToProviderModal() {
     launchCfg.daemon.enable = enableDaemonNode;
     launchCfg.discovery.enable = enableDiscoveryNode;
     if (startParameter.networkId) launchCfg.networkId = startParameter.networkId;
+    launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
     if (startParameter.discovery.robotHosts.length > 0)
       launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
     launchCfg.sync.enable = startParameter.sync.enable;
@@ -309,6 +321,7 @@ function ConnectToProviderModal() {
     launchCfg.sync.syncTopics = startParameter.sync.syncTopics;
     launchCfg.terminal.enable = enableTerminalManager;
     launchCfg.terminal.port = startParameter.ttyd.port;
+    launchCfg.terminal.path = startParameter.ttyd.path;
     launchCfg.autoConnect = true;
     launchCfg.autostart = rosCtx.isLocalHost(host);
     launchCfg.forceRestart = forceRestart;
@@ -486,6 +499,7 @@ function ConnectToProviderModal() {
 
   const dialogRef = useRef(null);
 
+  console.log(`PANT CONNECT`);
   return (
     <>
       <Dialog
@@ -736,6 +750,18 @@ function ConnectToProviderModal() {
                                     ml: 0.5,
                                   }}
                                 >
+                                  {`Heartbeat Hz: ${startParameter.discovery.heartbeatHz}`}
+                                </Typography>
+                                <Typography
+                                  noWrap
+                                  variant="body2"
+                                  sx={{
+                                    color: grey[700],
+                                    fontWeight: "inherit",
+                                    flexGrow: 1,
+                                    ml: 0.5,
+                                  }}
+                                >
                                   {`Robot Hosts: [${getRobotHosts().join(",")}]`}
                                 </Typography>
                               </Stack>
@@ -744,51 +770,60 @@ function ConnectToProviderModal() {
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>
-                            <Box>
-                              <Autocomplete
-                                handleHomeEndKeys={false}
-                                disabled={!enableDiscoveryNode}
-                                disablePortal
-                                multiple
-                                id="auto-complete-robot-hosts"
-                                size="small"
-                                options={hostList}
-                                freeSolo
-                                sx={{ margin: 0 }}
-                                ListboxProps={{ style: { maxHeight: 150 } }}
-                                getOptionLabel={(option) => (option.host ? `${option.host} [${option.ip}]` : option)}
-                                renderInput={(params) => (
-                                  <TextField
-                                    {...params}
-                                    variant="outlined"
-                                    label="Add Robot Hosts"
-                                    placeholder="..."
-                                    fullWidth
+                            <TextField
+                              type="number"
+                              id="hearbeat-hz"
+                              label="Heartbeat Hz"
+                              size="small"
+                              variant="outlined"
+                              fullWidth
+                              onChange={(e) => setHeartbeatHz(Number(`${e.target.value}`))}
+                              value={startParameter.discovery.heartbeatHz}
+                              disabled={!enableDiscoveryNode}
+                            />
+                            <Autocomplete
+                              handleHomeEndKeys={false}
+                              disabled={!enableDiscoveryNode}
+                              disablePortal
+                              multiple
+                              id="auto-complete-robot-hosts"
+                              size="small"
+                              options={hostList}
+                              freeSolo
+                              sx={{ margin: 0 }}
+                              ListboxProps={{ style: { maxHeight: 150 } }}
+                              getOptionLabel={(option) => (option.host ? `${option.host} [${option.ip}]` : option)}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  variant="outlined"
+                                  label="Add Robot Hosts"
+                                  placeholder="..."
+                                  fullWidth
+                                />
+                              )}
+                              value={startParameter.discovery.robotHosts}
+                              onChange={(event, newValue) => {
+                                setRobotHostValues(newValue);
+                              }}
+                              inputValue={robotHostInputValue}
+                              onInputChange={(event, newInputValue) => {
+                                setRobotHostInputValue(newInputValue);
+                              }}
+                              disableCloseOnSelect
+                              renderOption={(props, option, { selected }) => (
+                                <li {...props} key={`${option.ip}_${option.host}`} style={{ height: "1.5em" }}>
+                                  <Checkbox
+                                    icon={icon}
+                                    checkedIcon={checkedIcon}
+                                    // style={{ marginRight: 8 }}
+                                    checked={selected}
+                                    size="small"
                                   />
-                                )}
-                                value={startParameter.discovery.robotHosts}
-                                onChange={(event, newValue) => {
-                                  setRobotHostValues(newValue);
-                                }}
-                                inputValue={robotHostInputValue}
-                                onInputChange={(event, newInputValue) => {
-                                  setRobotHostInputValue(newInputValue);
-                                }}
-                                disableCloseOnSelect
-                                renderOption={(props, option, { selected }) => (
-                                  <li {...props} key={`${option.ip}_${option.host}`} style={{ height: "1.5em" }}>
-                                    <Checkbox
-                                      icon={icon}
-                                      checkedIcon={checkedIcon}
-                                      // style={{ marginRight: 8 }}
-                                      checked={selected}
-                                      size="small"
-                                    />
-                                    {`${option.host} [${option.ip}]`}
-                                  </li>
-                                )}
-                              />
-                            </Box>
+                                  {`${option.host} [${option.ip}]`}
+                                </li>
+                              )}
+                            />
                           </Stack>
                         </AccordionDetails>
                       </Accordion>
@@ -1007,6 +1042,17 @@ function ConnectToProviderModal() {
                                   ml: 0.5,
                                 }}
                               >
+                                {`Path: ${startParameter.ttyd.path}`}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: grey[700],
+                                  fontWeight: "inherit",
+                                  flexGrow: 1,
+                                  ml: 0.5,
+                                }}
+                              >
                                 {`Port: ${startParameter.ttyd.port}`}
                               </Typography>
                             </Stack>
@@ -1014,6 +1060,17 @@ function ConnectToProviderModal() {
                         </Grid>
                       </AccordionSummary>
                       <AccordionDetails>
+                        <TextField
+                          type="string"
+                          id="ttyd-path"
+                          label="Path"
+                          size="small"
+                          variant="outlined"
+                          fullWidth
+                          onChange={(e) => setTtydPath(Number(`${e.target.value}`))}
+                          value={startParameter.ttyd.path}
+                          disabled={!enableTerminalManager}
+                        />
                         <TextField
                           type="number"
                           id="ttyd-port"

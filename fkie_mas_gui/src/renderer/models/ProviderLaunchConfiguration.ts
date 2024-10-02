@@ -43,6 +43,7 @@ class ProviderLaunchConfiguration {
   terminal: {
     enable: boolean;
     port?: number;
+    path?: string;
   } = { enable: false };
 
   forceRestart = false;
