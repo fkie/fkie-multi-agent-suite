@@ -79,7 +79,7 @@ class ProviderLaunchConfiguration {
 
   public terminalStartCmd: () => TResult = () => {
     const portNumber = this.terminal.port;
-    const ttydCmd = this.terminal.path;
+    const ttydCmd = `${this.terminal.path} --writable --port ${portNumber} bash`;
     let cmd = "";
     if (this.rosVersion === "1") {
       cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
