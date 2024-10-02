@@ -32,6 +32,7 @@ import {
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
 } from "../../../providers/eventTypes";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import {
   EVENT_OPEN_COMPONENT,
   EVENT_OPEN_SETTINGS,
@@ -39,7 +40,6 @@ import {
   eventOpenComponent,
   eventOpenSettings,
 } from "../layout/events";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import SingleTerminalPanel from "./SingleTerminalPanel";
 import SystemInformationPanel from "./SystemInformationPanel";
 
@@ -172,18 +172,14 @@ function ProviderPanelRow({ provider }) {
               </Tooltip>
             </Stack>
           );
-        case ConnectionState.STATES.NO_SSH_CREDENTIALS:
+        case ConnectionState.STATES.AUTHZ:
           return (
             <Stack direction="row" alignItems="center">
-              <Tooltip
-                title={`Can't access remote host! Please add SSH credentials.`}
-                placement="bottom"
-                disableInteractive
-              >
+              <Tooltip title={`Can't access remote host! Wrong SSH credentials?`} placement="bottom" disableInteractive>
                 <Button
                   style={{ textTransform: "none" }}
                   onClick={() => {
-                    emitCustomEvent(EVENT_OPEN_SETTINGS, eventOpenSettings(SETTING.IDS.SSH));
+                    // TODO: add information panel how to configure SSH
                   }}
                   variant="text"
                   color="error"

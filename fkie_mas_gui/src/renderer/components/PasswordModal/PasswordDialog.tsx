@@ -2,7 +2,7 @@ import RosContext from "@/renderer/context/RosContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, TextField } from "@mui/material";
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { ConnectConfig } from "ssh2";
 import { ConnectionState } from "../../providers";
 
@@ -27,15 +27,19 @@ const PasswordDialog = ({
     connectConfig.username = username;
     connectConfig.password = password;
     rosCtx.startConfig(launchConfig, connectConfig);
-    handleClose();
+    handleClose(null, "confirm");
   };
 
   const handleCancel = () => {
-    provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, "");
-    handleClose();
+    handleClose(null, "cancel");
   };
 
-  const handleClose = () => {
+  const handleClose = (_event, reason) => {
+    console.log(`close: ${reason}`);
+    if (reason && reason === "backdropClick") return;
+    if (reason === "cancel" || reason === "escapeKeyDown") {
+      provider.setConnectionState(ConnectionState.STATES.AUTHZ, "");
+    }
     setOpen(false);
     if (onClose) {
       onClose(provider);
@@ -43,12 +47,12 @@ const PasswordDialog = ({
   };
 
   return (
-    <Dialog open={open} onClose={() => handleClose()}>
+    <Dialog open={open} onClose={handleClose}>
       <DialogTitle>SSH login @{connectConfig.host}</DialogTitle>
-      <Link href="https://linuxize.com/post/using-the-ssh-config-file/" target="_blank" rel="noopener">
-        Setup ssh to avoid this dialog
-      </Link>
       <DialogContent>
+        <Link href="https://linuxize.com/post/using-the-ssh-config-file/" target="_blank" rel="noopener">
+          Setup ssh to avoid this dialog
+        </Link>
         <TextField
           autoFocus
           margin="dense"
@@ -58,18 +62,16 @@ const PasswordDialog = ({
           variant="outlined"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={(e) => {
-            console.log(`key ${e.key}`);
-            if (e.key === "Enter") {
-              // handleSubmit()
-              e.key = "Tab";
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              document.getElementById(`password-${provider.id}`)?.focus();
             }
           }}
         />
         <TextField
-          autoFocus
+          id={`password-${provider.id}`}
           margin="dense"
-          label="Passwort"
+          label="Password"
           type="password"
           fullWidth
           variant="outlined"
@@ -83,11 +85,11 @@ const PasswordDialog = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => handleSubmit()} color="primary">
-          Ok
-        </Button>
         <Button onClick={() => handleCancel()} color="primary">
           Cancel
+        </Button>
+        <Button onClick={() => handleSubmit()} color="success">
+          Ok
         </Button>
       </DialogActions>
     </Dialog>

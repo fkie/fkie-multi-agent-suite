@@ -578,18 +578,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             // return false;
           }
 
-          if (!isLocal && !credential) {
-            // it is possible to start the nodes in parallel (using Promises.all) but it is not advisable.
-            // A problem arises when the ROS master node is not running, and a race condition between
-            // daemon and discovery appears trying to spawn the master node.
-            // instead, just start each process in a sequence
-
-            // check for credentials and throw an exception
-            provider.setConnectionState(ConnectionState.STATES.NO_SSH_CREDENTIALS, "");
-            allStarted = false;
-            throw new Error("Missing SSH credentials");
-          }
-
           if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable)) {
             // use default configuration if no one is configured to start
             config.daemon.enable = true;
@@ -771,7 +759,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (provider !== null) {
             if (`${error}`.includes("Missing SSH credentials")) {
               // add state (no SSH credentials) to provider
-              provider.setConnectionState(ConnectionState.STATES.NO_SSH_CREDENTIALS, "start aborted");
+              provider.setConnectionState(ConnectionState.STATES.AUTHZ, "start aborted");
             } else {
               provider.setConnectionState(
                 ConnectionState.STATES.UNREACHABLE,
@@ -1396,7 +1384,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         mapProviderRosNodes.set(provider.id, []);
         clearProviders();
         break;
-      case ConnectionState.STATES.NO_SSH_CREDENTIALS:
+      case ConnectionState.STATES.AUTHZ:
       case ConnectionState.STATES.LOST:
       case ConnectionState.STATES.UNSUPPORTED:
       case ConnectionState.STATES.UNREACHABLE:

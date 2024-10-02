@@ -10,7 +10,7 @@ export class ConnectionState extends String {
     LOST: "lost",
     UNREACHABLE: "unreachable",
     UNSUPPORTED: "unsupported",
-    NO_SSH_CREDENTIALS: "no SSH credentials",
+    AUTHZ: "AuthZ failed",
     ERRORED: "errored",
   };
 }
