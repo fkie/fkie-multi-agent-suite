@@ -163,7 +163,7 @@ function ConnectToProviderModal() {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
     setOpenTerminalTooltip(false);
-    setStartProviderIsSubmitting(false);
+    // setStartProviderIsSubmitting(false);
   };
 
   useEffect(() => {
@@ -324,7 +324,8 @@ function ConnectToProviderModal() {
     launchCfg.terminal.path = startParameter.ttyd.path;
     launchCfg.autoConnect = true;
     launchCfg.autostart = rosCtx.isLocalHost(host);
-    launchCfg.forceRestart = forceRestart;
+    launchCfg.forceStop = forceRestart;
+    launchCfg.forceStart = forceRestart;
     if (startParameter.ros1MasterUri !== "default") {
       launchCfg.ros1MasterUri = startParameter.ros1MasterUri.replace("{HOST}", host);
     }
@@ -332,8 +333,6 @@ function ConnectToProviderModal() {
   };
 
   const handleStartProvider = async () => {
-    if (!rosCtx.launchManager) return;
-
     setStartProviderDescription("Starting nodes on selected hosts");
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
@@ -376,10 +375,10 @@ function ConnectToProviderModal() {
     }
 
     // remove loading message
+    handleClose();
     setTimeout(() => {
       setStartProviderIsSubmitting(false);
       setStartProviderDescription("");
-      handleClose();
     }, 500);
   };
 
@@ -410,10 +409,10 @@ function ConnectToProviderModal() {
       })
     );
     // remove loading message and close dialog
+    handleClose();
     setTimeout(() => {
       setStartProviderIsSubmitting(false);
       setStartProviderDescription("");
-      handleClose();
     }, 500);
   };
 
@@ -499,7 +498,6 @@ function ConnectToProviderModal() {
 
   const dialogRef = useRef(null);
 
-  console.log(`PANT CONNECT`);
   return (
     <>
       <Dialog

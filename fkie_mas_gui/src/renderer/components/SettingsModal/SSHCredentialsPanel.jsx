@@ -58,13 +58,13 @@ function SSHCredentialsPanel() {
   const [errorMessage, setErrorMessage] = useState("");
   const [filter, setFilter] = useState("");
 
-  const onDeleteCredential = (credentialId) => {
-    if (credentialId.length === 0) {
-      logCtx.error("Invalid credential ID", `credential: ${credentialId}`);
+  const onDeleteCredential = (credential) => {
+    if (!credential) {
+      logCtx.error("Invalid credential ID", `credential: ${credential}`);
       return;
     }
 
-    if (SSHCtx.deleteCredential(credentialId)) {
+    if (SSHCtx.deleteCredential(credential)) {
       logCtx.success("Credential removed successfully", "Both credential and password on keychain removed");
     }
   };
@@ -130,7 +130,7 @@ function SSHCredentialsPanel() {
                         <TableCell key={`${row.id}_${header.key}`}>
                           <IconButton
                             onClick={() => {
-                              onDeleteCredential(row.id);
+                              onDeleteCredential(row);
                             }}
                           >
                             <DeleteIcon sx={{ fontSize: "inherit" }} />

@@ -1,34 +1,22 @@
-import { TCredential, TSystemInfo } from "@/types";
+import { TSystemInfo } from "@/types";
 import React, { createContext, useContext, useMemo, useState } from "react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import { generateUniqueId } from "../utils";
 import { DEFAULT_BUG_TEXT, LoggingContext } from "./LoggingContext";
+import { ConnectConfig } from "ssh2";
 
 export interface IRosProviderContext {
   // credentials methods
-  credentials: TCredential[];
+  credentials: ConnectConfig[];
   systemInfo: TSystemInfo | null;
-  addCredential: (credential: TCredential) => void;
-  deleteCredential: (credentialId: string) => void;
-  getCredentialHost: (host: string) => TCredential | null;
+  addCredential: (credential: ConnectConfig) => void;
+  deleteCredential: (credential: ConnectConfig) => void;
+  getCredentialHost: (host: string) => ConnectConfig | null;
 
   // Password Manager methods
-  setPassword: (credential: TCredential) => void;
-  deletePassword: (credential: TCredential) => void;
-
-  // // SFTP Methods
-  // exist: (credential: TCredential, path: string) => Promise<boolean>;
-  // stat: (credential: TCredential, path: string) => Promise<any>;
-  // get: (
-  //   credential: TCredential,
-  //   path: string
-  // ) => Promise<string | NodeJS.WritableStream | Buffer | null>;
-  // put: (
-  //   credential: TCredential,
-  //   content: string,
-  //   path: string
-  // ) => Promise<string | null>;
-  exec: (credential: TCredential | null, command: string) => Promise<{ result: boolean; message: string }>;
+  setPassword: (credential: ConnectConfig) => void;
+  deletePassword: (credential: ConnectConfig) => void;
+  exec: (credential: ConnectConfig | null, command: string) => Promise<{ result: boolean; message: string }>;
 }
 
 export const DEFAULT = {
@@ -39,21 +27,6 @@ export const DEFAULT = {
   getCredentialHost: () => null,
   setPassword: () => {},
   deletePassword: () => {},
-  // list: () => {
-  //   return Promise.resolve([]);
-  // },
-  // exist: () => {
-  //   return Promise.resolve(false);
-  // },
-  // stat: () => {
-  //   return Promise.resolve({});
-  // },
-  // get: () => {
-  //   return Promise.resolve(null);
-  // },
-  // put: () => {
-  //   return Promise.resolve(null);
-  // },
   exec: () => {
     return Promise.resolve({ result: false, message: "" });
   },
@@ -63,7 +36,8 @@ interface IRosProviderComponent {
   children: React.ReactNode;
 }
 
-const DEFAULT_CREDENTIALS: TCredential[] = [];
+const DEFAULT_CREDENTIALS: ConnectConfig[] = [];
+const SERVICE_NAME = "MAS_PASSWORDS";
 
 export const SSHContext = createContext<IRosProviderContext>(DEFAULT);
 
@@ -84,97 +58,37 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
 
   const [credentials, setCredentials] = useLocalStorage("SSHContext:credentials", DEFAULT_CREDENTIALS);
 
-  // // FileManagerWrapper methods
-  // const exist = async (credential: TCredential, path: string) => {
-  //   if (!window.FileManagerWrapper) {
-  //     logCtx.error(
-  //       'exist: Invalid [FileManagerWrapper]',
-  //       'Please check Electron App (IPC handlers)'
-  //     );
-  //     return false;
-  //   }
-  //   const res = await window.FileManagerWrapper.exist(credential, path);
-
-  //   if (res) return true;
-
-  //   return false;
-  // };
-
-  // const stat = async (credential: TCredential, path: string) => {
-  //   if (!window.FileManagerWrapper) {
-  //     logCtx.error(
-  //       'stat: Invalid [FileManagerWrapper]',
-  //       'Please check Electron App (IPC handlers)'
-  //     );
-  //     return {};
-  //   }
-  //   const res = await window.FileManagerWrapper.stat(credential, path);
-  //   return res;
-  // };
-
-  // const get = async (credential: TCredential, path: string) => {
-  //   if (!window.FileManagerWrapper) {
-  //     logCtx.error(
-  //       'get: Invalid [FileManagerWrapper]',
-  //       'Please check Electron App (IPC handlers)'
-  //     );
-  //     return null;
-  //   }
-  //   const res = await window.FileManagerWrapper.get(credential, path);
-  //   return res;
-  // };
-
-  // const put = async (
-  //   credential: TCredential,
-  //   content: string,
-  //   path: string
-  // ) => {
-  //   if (!window.FileManagerWrapper) {
-  //     logCtx.error(
-  //       'put: Invalid [FileManagerWrapper]',
-  //       'Please check Electron App (IPC handlers)'
-  //     );
-  //     return null;
-  //   }
-
-  //   if (content.length === 0) {
-  //     logCtx.error('put: Invalid empty content', DEFAULT_BUG_TEXT);
-  //     return null;
-  //   }
-
-  //   if (path.length === 0) {
-  //     logCtx.error('put: Invalid empty path', DEFAULT_BUG_TEXT);
-  //     return null;
-  //   }
-
-  //   const res = await window.FileManagerWrapper.put(credential, content, path);
-  //   return res;
-  // };
-
   // PasswordManager methods
-  const setPassword = async (credential: TCredential) => {
+  const setPassword = async (credential: ConnectConfig) => {
     if (!window.passwordManager) {
       logCtx.error("setPassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return null;
     }
 
-    credential.service = "RosNodeManager";
-    credential.account = `${credential.username}:${credential.host}`;
+    const account = `${credential.username}:${credential.host}`;
+    let password: string = "";
+    if (credential.password) {
+      password = credential.password;
+    } else if (credential.privateKey) {
+      password = credential.privateKey;
+    } else if (credential.passphrase) {
+      password = credential.passphrase;
+    }
 
-    const res = await window.passwordManager.setPassword(credential.service, credential.account, credential.password);
+    const res = await window.passwordManager.setPassword(SERVICE_NAME, account, password);
     return res;
   };
 
-  const deletePassword = async (credential: TCredential) => {
+  const deletePassword = async (credential: ConnectConfig) => {
     if (!window.passwordManager) {
       logCtx.error("deletePassword: Invalid [PasswordManager]", "Please check Electron App (IPC handlers)");
       return;
     }
-
-    await window.passwordManager.deletePassword(credential.service, credential.account);
+    const account = `${credential.username}:${credential.host}`;
+    await window.passwordManager.deletePassword(SERVICE_NAME, account);
   };
 
-  const checkPassword = (credential: TCredential) => {
+  const checkPassword = (credential: ConnectConfig) => {
     if (!window.commandExecutor) {
       logCtx.error("checkPassword: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return Promise.resolve({
@@ -186,7 +100,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   };
 
   // credentials methods
-  const addCredential = async (credential: TCredential) => {
+  const addCredential = async (credential: ConnectConfig) => {
     if (!credential.host || !credential.username || !credential.password) {
       logCtx.error("Try to add an invalid credential", "Please check credential settings");
       return { result: false, message: "Try to add an invalid credential" };
@@ -208,9 +122,6 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
       };
     }
 
-    // assign unique ID
-    credential.id = generateUniqueId();
-
     try {
       // save password on systems keychain
       await setPassword(credential);
@@ -227,7 +138,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
       }
 
       // if successful, add new credential to app
-      setCredentials((previousCredentials: TCredential[]) => {
+      setCredentials((previousCredentials: ConnectConfig[]) => {
         return [...previousCredentials, credential];
       });
     } catch (error: unknown) {
@@ -237,17 +148,11 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     return { result: true, message: "" };
   };
 
-  const deleteCredential = (credentialId: string) => {
-    if (typeof credentialId !== "string") {
-      return false;
-    }
-
-    if (credentialId.length === 0) return false;
-
+  const deleteCredential = (credential: ConnectConfig) => {
     // delete associated password
     let foundCredential = false;
     credentials.forEach((c) => {
-      if (c.id === credentialId) {
+      if (c.host === credential.host && c.username === credential.username) {
         deletePassword(c);
         foundCredential = true;
       }
@@ -257,7 +162,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
 
     // remove credential from App
     setCredentials((previousCredentials) => {
-      return previousCredentials.filter((c) => c.id !== credentialId);
+      return previousCredentials.filter((c) => c.host !== credential.host || c.username !== credential.username);
     });
 
     return true;
@@ -269,7 +174,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     }
 
     // search the SSH credentials based on host
-    let credentialHost: TCredential | null = null;
+    let credentialHost: ConnectConfig | null = null;
     credentials.forEach((credential) => {
       if (credential.host === host) {
         credentialHost = credential;
@@ -306,6 +211,12 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
     }
 
     if (!credentialHost) {
+      credentialHost = {
+        username: "robot",
+        host,
+      } as ConnectConfig;
+    }
+    if (!credentialHost) {
       logCtx.error(
         `No SSH credentials have been configured for host: [${JSON.stringify(host)}]`,
         "Please check the SSH credential settings"
@@ -317,7 +228,7 @@ export function SSHProvider({ children }: IRosProviderComponent): ReturnType<Rea
   };
 
   // CommandExecutor
-  const exec = async (credential: TCredential | null, command: string) => {
+  const exec = async (credential: ConnectConfig | null, command: string) => {
     if (!window.commandExecutor) {
       logCtx.error("exec: Invalid [CommandExecutor]", "Please check Electron App (IPC handlers)");
       return {

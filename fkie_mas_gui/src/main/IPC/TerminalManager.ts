@@ -3,7 +3,6 @@ import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
 import windowStateKeeper from "../windowStateKeeper";
-import CommandExecutor from "./CommandExecutor";
 import { ROSInfo } from "./ROSInfo";
 
 type TTerminal = {
@@ -14,14 +13,11 @@ type TTerminal = {
  * Class TerminalManager: Allows to create terminal objects to interact with console
  */
 class TerminalManager implements TTerminalManager {
-  commandExecutor: CommandExecutor;
-
   rosInfo: ROSInfo;
 
   instances: { [id: string]: TTerminal } = {};
 
   constructor() {
-    this.commandExecutor = new CommandExecutor();
     this.rosInfo = new ROSInfo();
   }
 

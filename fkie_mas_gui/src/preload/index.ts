@@ -6,20 +6,16 @@ import {
   EditorManagerEvents,
   TFileRange,
   FileRangeCallback,
-  LaunchManagerEvents,
   PasswordManagerEvents,
   ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
   TCommandExecutor,
-  TCredential,
   TEditorManager,
   TerminalCloseCallback,
   TerminalManagerEvents,
   TerminateCallback,
-  TLaunchManager,
   TPasswordManager,
-  TRosInfo,
   TShutdownManager,
   TSubscriberManager,
   TSystemInfo,
@@ -27,6 +23,7 @@ import {
   TLaunchArgs,
 } from "@/types";
 import { contextBridge, ipcRenderer } from "electron";
+import { ConnectConfig } from "ssh2";
 
 // Custom APIs for renderer
 // const api = {};
@@ -79,98 +76,29 @@ if (process.contextIsolated) {
 
     // Register Command Executor
     contextBridge.exposeInMainWorld("commandExecutor", {
-      exec: (credential: TCredential, command: string) =>
+      exec: (credential: ConnectConfig, command: string) =>
         ipcRenderer.invoke(CommandExecutorEvents.exec, credential, command),
 
-      execTerminal: (credential: TCredential, title: string, command: string) =>
+      execTerminal: (credential: ConnectConfig, title: string, command: string) =>
         ipcRenderer.invoke(CommandExecutorEvents.execTerminal, credential, title, command),
     } as TCommandExecutor);
 
     // Register ROS Info
     contextBridge.exposeInMainWorld("rosInfo", {
       getInfo: () => ipcRenderer.invoke("rosInfo:getInfo"),
-    } as TRosInfo);
+    });
+    //  } as TRosInfo);
 
     // Register System Info
     contextBridge.exposeInMainWorld("systemInfo", {
       getInfo: () => ipcRenderer.invoke("systemInfo:getInfo"),
     } as TSystemInfo);
 
-    // Register launch Manager
-    contextBridge.exposeInMainWorld("launchManager", {
-      startTerminalManager: (rosVersion: string, credential: TCredential, port?: number) =>
-        ipcRenderer.invoke(LaunchManagerEvents.startTerminalManager, rosVersion, credential, port),
-
-      startDaemon: (
-        rosVersion: string,
-        credential: TCredential,
-        name?: string,
-        networkId?: number,
-        ros1MasterUri?: string,
-        forceStart?: boolean
-      ) =>
-        ipcRenderer.invoke(
-          LaunchManagerEvents.startDaemon,
-          rosVersion,
-          credential,
-          name,
-          networkId,
-          ros1MasterUri,
-          forceStart
-        ),
-
-      startMasterDiscovery: (
-        rosVersion: string,
-        credential: TCredential,
-        name?: string,
-        networkId?: number,
-        group?: string,
-        heartbeatHz?: number,
-        robotHosts?: string[],
-        ros1MasterUri?: string,
-        forceStart?: boolean
-      ) =>
-        ipcRenderer.invoke(
-          LaunchManagerEvents.startMasterDiscovery,
-          rosVersion,
-          credential,
-          name,
-          networkId,
-          group,
-          heartbeatHz,
-          robotHosts,
-          ros1MasterUri,
-          forceStart
-        ),
-
-      startMasterSync: (
-        rosVersion: string,
-        credential: TCredential,
-        name?: string,
-        doNotSync?: string[],
-        syncTopics?: string[],
-        ros1MasterUri?: string,
-        forceStart?: boolean
-      ) =>
-        ipcRenderer.invoke(
-          LaunchManagerEvents.startMasterSync,
-          rosVersion,
-          credential,
-          name,
-          doNotSync,
-          syncTopics,
-          ros1MasterUri,
-          forceStart
-        ),
-
-      startDynamicReconfigureClient: (name: string, rosMasterUri: string, credential?: TCredential | null) =>
-        ipcRenderer.invoke(LaunchManagerEvents.startDynamicReconfigureClient, name, rosMasterUri, credential),
-    } as TLaunchManager);
-
     // register shutdown interface
     contextBridge.exposeInMainWorld("shutdownManager", {
+      emitTerminateSubprocesses: () => ipcRenderer.invoke(ShutdownManagerEvents.emitTerminateSubprocesses),
       onTerminateSubprocesses: (callback: TerminateCallback) =>
-        ipcRenderer.on(ShutdownManagerEvents.terminateSubprocesses, () => callback()),
+        ipcRenderer.on(ShutdownManagerEvents.onTerminateSubprocesses, () => callback()),
       quitGui: () => ipcRenderer.invoke(ShutdownManagerEvents.quitGui),
     } as TShutdownManager);
 

@@ -19,5 +19,4 @@ export type TSubscriberManager = {
   close: (id: string) => Promise<boolean>;
   has: (id: string) => Promise<boolean>;
   onClose: (callback: SubscriberCloseCallback) => void;
-  registerHandlers: () => void;
 };

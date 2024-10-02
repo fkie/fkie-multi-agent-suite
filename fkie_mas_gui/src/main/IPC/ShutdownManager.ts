@@ -21,8 +21,8 @@ class ShutdownManager implements TShutdownManager {
     ipcMain.handle(ShutdownManagerEvents.quitGui, this.quitGui);
   };
 
-  public sendTerminateSubprocesses: () => void = () => {
-    this.mainWindow?.webContents.send(ShutdownManagerEvents.terminateSubprocesses);
+  public emitTerminateSubprocesses: () => void = () => {
+    this.mainWindow?.webContents.send(ShutdownManagerEvents.emitTerminateSubprocesses);
   };
 
   /**

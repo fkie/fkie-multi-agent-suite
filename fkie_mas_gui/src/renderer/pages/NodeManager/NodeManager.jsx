@@ -63,6 +63,8 @@ import ParameterPanel from "./panels/ParameterPanel";
 import ProviderPanel from "./panels/ProviderPanel";
 import ServicesPanel from "./panels/ServicesPanel";
 import TopicsPanel from "./panels/TopicsPanel";
+import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
+import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
 
 function NodeManager() {
   const electronCtx = useContext(ElectronContext);
@@ -78,6 +80,7 @@ function NodeManager() {
   const [layoutComponents] = useState({});
   const [addToLayout, setAddToLayout] = useState([]);
   const [modifiedEditorTabs, setModifiedEditorTabs] = useState([]);
+  const [passwordRequests, setPasswordRequests] = useState([]);
 
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
@@ -235,6 +238,29 @@ function NodeManager() {
       deleteTab(data.id);
     },
     [deleteTab]
+  );
+
+  useCustomEventListener(
+    EVENT_PROVIDER_AUTH_REQUEST,
+    (data) => {
+      setPasswordRequests((prev) => [
+        ...prev,
+        <PasswordDialog
+          key={data.provider.id}
+          provider={data.provider}
+          connectConfig={data.connectConfig}
+          launchConfig={data.launchConfig}
+          onClose={(prov) => {
+            setPasswordRequests((prev) =>
+              prev.filter((item) => {
+                return prov.id !== item.key;
+              })
+            );
+          }}
+        />,
+      ]);
+    },
+    [setPasswordRequests]
   );
 
   const getPanelId = useCallback(
@@ -835,6 +861,7 @@ function NodeManager() {
           </DialogActions>
         </Dialog>
       )}
+      {passwordRequests.map((item) => item)}
     </Stack>
   );
 }

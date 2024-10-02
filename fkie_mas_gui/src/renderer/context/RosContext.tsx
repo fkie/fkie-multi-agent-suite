@@ -1,4 +1,4 @@
-import { JSONObject, TFileRange, TLaunchArgs, TLaunchManager, TRosInfo, TSystemInfo } from "@/types";
+import { TFileRange, TLaunchArgs, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
@@ -23,6 +23,7 @@ import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
 import { CmdType, ConnectionState } from "../providers";
 import Provider from "../providers/Provider";
 import {
+  EVENT_PROVIDER_AUTH_REQUEST,
   EVENT_PROVIDER_DISCOVERED,
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
@@ -33,6 +34,7 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "../providers/eventTypes";
 import {
+  EventProviderAuthRequest,
   EventProviderDiscovered,
   EventProviderPathEvent,
   EventProviderRemoved,
@@ -52,12 +54,12 @@ import { xor } from "../utils/index";
 import { LoggingContext } from "./LoggingContext";
 import { SSHContext } from "./SSHContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
+import { ConnectConfig } from "ssh2";
 
 export interface IRosProviderContext {
   initialized: boolean;
   rosInfo: TRosInfo | null;
   systemInfo: TSystemInfo | null;
-  launchManager: TLaunchManager | null;
   providers: Provider[];
   providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
@@ -65,7 +67,7 @@ export interface IRosProviderContext {
   layoutModel: Model | null;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
-  startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean>;
+  startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig) => Promise<boolean>;
   removeProvider: (providerId: string) => void;
   getProviderName: (providerId: string) => string;
   refreshProviderList: () => void;
@@ -87,7 +89,6 @@ export const DEFAULT = {
   initialized: false,
   rosInfo: null,
   systemInfo: null,
-  launchManager: null,
   providers: [],
   providersConnected: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
@@ -133,7 +134,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [initialized, setInitialized] = useState(DEFAULT.initialized);
   const [rosInfo, setRosInfo] = useState<TRosInfo | null>(null);
   const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
-  const [launchManager, setLaunchManager] = useState<TLaunchManager | null>(null);
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
@@ -556,210 +556,246 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     });
   }, debounceTimeout);
 
-  const startConfig: (config: ProviderLaunchConfiguration) => Promise<boolean> = useCallback(
-    async (config) => {
-      if (!launchManager) return false;
+  const startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null) => Promise<boolean> =
+    useCallback(
+      async (config, connectConfig = null) => {
+        if (!window.commandExecutor) return false;
 
-      let allStarted = true;
-      try {
-        const isLocal = isLocalHost(config.host);
-        const credential = isLocal ? null : SSHCtx.getCredentialHost(config.host);
+        let allStarted = true;
+        try {
+          const isLocal = isLocalHost(config.host);
+          const credential = isLocal ? null : connectConfig ? connectConfig : SSHCtx.getCredentialHost(config.host);
 
-        const port = config.port
-          ? config.port
-          : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri) + config.networkId;
-        // check and add provider if new
-        let provider = getProviderByHosts([config.host], port, null) as Provider;
-        if (!provider) {
-          provider = new Provider(settingsCtx, config.host, config.rosVersion, port, config.useSSL, logCtx);
-          provider.isLocalHost = isLocal;
-          provider.startConfiguration = config;
-          // add provider using add queue
-          setProvidersAddQueue((oldValues) => [...oldValues, provider]);
-          // return false;
-        }
-
-        if (!isLocal && !credential) {
-          // it is possible to start the nodes in parallel (using Promises.all) but it is not advisable.
-          // A problem arises when the ROS master node is not running, and a race condition between
-          // daemon and discovery appears trying to spawn the master node.
-          // instead, just start each process in a sequence
-
-          // check for credentials and throw an exception
-          provider.setConnectionState(ConnectionState.STATES.NO_SSH_CREDENTIALS, "");
-          allStarted = false;
-          throw new Error("Missing SSH credentials");
-        }
-
-        if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable)) {
-          // use default configuration if no one is configured to start
-          config.daemon.enable = true;
-          config.discovery.enable = true;
-          config.terminal.enable = true;
-        }
-
-        provider.setConnectionState(ConnectionState.STATES.STARTING, "");
-        // Find running system nodes
-        const systemNodes = provider.rosNodes.filter((n) => n.system_node);
-
-        if (config.forceRestart && systemNodes?.length > 0) {
-          // stop all requested system nodes, daemon as last node
-          let nodesToStop: RosNode[] = [];
-          let syncNode;
-          let daemonNode;
-          let discoveryNode;
-          if (config.sync.enable) {
-            syncNode = systemNodes.find((n) => n.id.includes("mas_sync") || n.id.includes("master_sync"));
+          const port = config.port
+            ? config.port
+            : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri) + config.networkId;
+          // check and add provider if new
+          let provider = getProviderByHosts([config.host], port, null) as Provider;
+          if (!provider) {
+            provider = new Provider(settingsCtx, config.host, config.rosVersion, port, config.useSSL, logCtx);
+            provider.isLocalHost = isLocal;
+            provider.startConfiguration = config;
+            // add provider using add queue
+            setProvidersAddQueue((oldValues) => [...oldValues, provider]);
+            // return false;
           }
+
+          if (!isLocal && !credential) {
+            // it is possible to start the nodes in parallel (using Promises.all) but it is not advisable.
+            // A problem arises when the ROS master node is not running, and a race condition between
+            // daemon and discovery appears trying to spawn the master node.
+            // instead, just start each process in a sequence
+
+            // check for credentials and throw an exception
+            provider.setConnectionState(ConnectionState.STATES.NO_SSH_CREDENTIALS, "");
+            allStarted = false;
+            throw new Error("Missing SSH credentials");
+          }
+
+          if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable)) {
+            // use default configuration if no one is configured to start
+            config.daemon.enable = true;
+            config.discovery.enable = true;
+            config.terminal.enable = true;
+          }
+
+          provider.setConnectionState(ConnectionState.STATES.STARTING, "");
+          // Find running system nodes
+          const systemNodes = provider.rosNodes.filter((n) => n.system_node);
+
+          if (config.forceStop && systemNodes?.length > 0) {
+            // stop all requested system nodes, daemon as last node
+            let nodesToStop: RosNode[] = [];
+            let syncNode;
+            let daemonNode;
+            let discoveryNode;
+            if (config.sync.enable) {
+              syncNode = systemNodes.find((n) => n.id.includes("mas_sync") || n.id.includes("master_sync"));
+            }
+            if (config.daemon.enable) {
+              daemonNode = systemNodes.find((n) => n.id.includes("mas_daemon") || n.id.includes("node_manager_daemon"));
+            }
+            if (config.discovery.enable) {
+              discoveryNode = systemNodes.find(
+                (n) => n.id.includes("mas_discovery") || n.id.includes("master_discovery")
+              );
+              if (discoveryNode) {
+                if (config.rosVersion === "1") {
+                  nodesToStop.push(discoveryNode);
+                } else {
+                  nodesToStop.push(discoveryNode);
+                }
+              }
+            }
+            // we have to stop in right order to be able to use stop_node() method of the provider
+            if (config.rosVersion === "1") {
+              nodesToStop = [syncNode, daemonNode, discoveryNode];
+            } else {
+              nodesToStop = [syncNode, discoveryNode, daemonNode];
+            }
+            await Promise.all(
+              nodesToStop.map(async (node) => {
+                if (node) {
+                  logCtx.debug(`Stopping running ${node.name} on host '${config.host}'`, "");
+                  await provider.stopNode(node.id);
+                }
+              })
+            );
+            // wait a little bit until the ros node is unregistered
+            // await delay(1000);
+            config.forceStop = false;
+          }
+          // Start Daemon
           if (config.daemon.enable) {
-            daemonNode = systemNodes.find((n) => n.id.includes("mas_daemon") || n.id.includes("node_manager_daemon"));
+            logCtx.debug(`Starting daemon on host '${config.host}'`, "");
+            const cmd = config.daemonStartCmd();
+            if (cmd.result) {
+              const resultStartDaemon = await window.commandExecutor?.exec(credential, cmd.message);
+              if (resultStartDaemon) {
+                if (!resultStartDaemon.result) {
+                  if (resultStartDaemon.connectConfig) {
+                    logCtx.error(`Request password`, `${JSON.stringify(resultStartDaemon.connectConfig)}`);
+                    emitCustomEvent(
+                      EVENT_PROVIDER_AUTH_REQUEST,
+                      new EventProviderAuthRequest(provider, config, resultStartDaemon.connectConfig)
+                    );
+                    allStarted = false;
+                    return false;
+                  } else {
+                    logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
+                    provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartDaemon.message);
+                    allStarted = false;
+                    return false;
+                  }
+                }
+              }
+            } else {
+              logCtx.error(`Failed to create daemon start command: ${cmd.message}`, JSON.stringify(config));
+            }
           }
+          // Start Discovery
           if (config.discovery.enable) {
-            discoveryNode = systemNodes.find(
-              (n) => n.id.includes("mas_discovery") || n.id.includes("master_discovery")
-            );
-            if (discoveryNode) {
-              if (config.rosVersion === "1") {
-                nodesToStop.push(discoveryNode);
-              } else {
-                nodesToStop.push(discoveryNode);
+            logCtx.debug(`Starting master-discovery on host '${config.host}'`, "");
+            const cmd = config.masterDiscoveryStartCmd();
+            if (cmd.result) {
+              const resultStartDiscovery = await window.commandExecutor?.exec(credential, cmd.message);
+              if (resultStartDiscovery) {
+                if (!resultStartDiscovery.result) {
+                  if (resultStartDiscovery.connectConfig) {
+                    logCtx.error(`Request password`, `${JSON.stringify(resultStartDiscovery.connectConfig)}`);
+                    emitCustomEvent(
+                      EVENT_PROVIDER_AUTH_REQUEST,
+                      new EventProviderAuthRequest(provider, config, resultStartDiscovery.connectConfig)
+                    );
+                    allStarted = false;
+                    return false;
+                  } else {
+                    logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
+                    provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartDiscovery.message);
+                    allStarted = false;
+                    return false;
+                  }
+                }
               }
+            } else {
+              logCtx.error(`Failed to create discovery start command: ${cmd.message}`, JSON.stringify(config));
             }
           }
-          // we have to stop in right order to be able to use stop_node() method of the provider
-          if (config.rosVersion === "1") {
-            nodesToStop = [syncNode, daemonNode, discoveryNode];
-          } else {
-            nodesToStop = [syncNode, discoveryNode, daemonNode];
-          }
-          await Promise.all(
-            nodesToStop.map(async (node) => {
-              if (node) {
-                logCtx.debug(`Stopping running ${node.name} on host '${config.host}'`, "");
-                await provider.stopNode(node.id);
+
+          // Restart Sync
+          if (config.sync.enable) {
+            logCtx.debug(`Starting master-sync on host '${config.host}'`, "");
+            const cmd = config.masterSyncStartCmd();
+            if (cmd.result) {
+              const resultStartSync = await window.commandExecutor?.exec(credential, cmd.message);
+              if (resultStartSync) {
+                if (!resultStartSync.result) {
+                  if (resultStartSync.connectConfig) {
+                    logCtx.error(`Request password`, `${JSON.stringify(resultStartSync.connectConfig)}`);
+                    emitCustomEvent(
+                      EVENT_PROVIDER_AUTH_REQUEST,
+                      new EventProviderAuthRequest(provider, config, resultStartSync.connectConfig)
+                    );
+                    allStarted = false;
+                    return false;
+                  } else {
+                    logCtx.error(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
+                    provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartSync.message);
+                    allStarted = false;
+                    return false;
+                  }
+                }
               }
-            })
-          );
-          // wait a little bit until the ros node is unregistered
-          // await delay(1000);
-        }
-
-        // Start Daemon
-        if (config.daemon.enable) {
-          logCtx.debug(`Starting NodeManager-Daemon on host '${config.host}'`, "");
-          const resultStartDaemon = await launchManager.startDaemon(
-            config.rosVersion,
-            credential,
-            undefined,
-            config.networkId,
-            config.ros1MasterUri,
-            config.forceRestart
-          );
-          if (!resultStartDaemon.result) {
-            logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
-            provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartDaemon.message);
-            allStarted = false;
-            return false;
-          }
-        }
-        // Restart Discovery
-        if (config.discovery.enable) {
-          logCtx.debug(`Starting Multimaster-Discovery on host '${config.host}'`, "");
-          const resultStartDiscovery = await launchManager.startMasterDiscovery(
-            config.rosVersion,
-            credential,
-            undefined,
-            config.networkId,
-            undefined,
-            undefined,
-            config.discovery.robotHosts,
-            config.ros1MasterUri,
-            config.forceRestart
-          );
-          if (!resultStartDiscovery.result) {
-            logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
-            provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartDiscovery.message);
-            allStarted = false;
-            return false;
-          }
-        }
-
-        // Restart Sync
-        if (config.sync.enable) {
-          logCtx.debug(`Starting Multimaster-Sync on host '${config.host}'`, "");
-          const resultStartSync = await launchManager.startMasterSync(
-            config.rosVersion,
-            credential,
-            undefined,
-            config.sync.doNotSync,
-            config.sync.syncTopics,
-            config.ros1MasterUri,
-            config.forceRestart
-          );
-          if (!resultStartSync.result) {
-            logCtx.warn(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
-            allStarted = false;
-            return false;
-          }
-        }
-
-        // Start terminal manager
-        if (config.terminal.enable) {
-          logCtx.debug(`Starting Terminal-Manager on host '${config.host}'`, "");
-          const resultStartTerminal = await launchManager.startTerminalManager(
-            config.rosVersion,
-            credential,
-            config.terminal.port
-          );
-          if (!resultStartTerminal.result) {
-            logCtx.warn(`Failed to start terminal manager on host '${config.host}'`, resultStartTerminal.message);
-            allStarted = false;
-            // wait a little longer to make sure the processes are fully started
-            if (config.daemon.enable || config.discovery.enable) {
-              logCtx.info(`Connect to '${config.host}' in 3 seconds`, "");
-              setTimeout(() => {
-                connectToProvider(provider);
-              }, 3000);
+            } else {
+              logCtx.error(`Failed to create sync start command: ${cmd.message}`, JSON.stringify(config));
             }
-            return false;
           }
-        }
 
-        // wait a little longer to make sure the processes are fully started
-        setTimeout(() => {
-          logCtx.success(`Provider on host '${config.host}' started successfully`, "");
-          connectToProvider(provider);
-        }, 3000);
-      } catch (error) {
-        logCtx.error(`Error starting host: ${config.host}`, `${error}`);
-        allStarted = false;
-        const provider = getProviderByHosts([config.host], config.port, null);
-        if (provider !== null) {
-          if (`${error}`.includes("Missing SSH credentials")) {
-            // add state (no SSH credentials) to provider
-            provider.setConnectionState(ConnectionState.STATES.NO_SSH_CREDENTIALS, "start aborted");
-          } else {
-            provider.setConnectionState(
-              ConnectionState.STATES.UNREACHABLE,
-              `Error starting host: ${config.host}: ${error}`
-            );
+          // Start terminal manager
+          if (config.terminal.enable) {
+            logCtx.debug(`Starting Terminal-Manager on host '${config.host}'`, "");
+
+            const cmd = config.terminalStartCmd();
+            if (cmd.result) {
+              const resultStartTerminal = await window.commandExecutor?.exec(credential, cmd.message);
+              if (resultStartTerminal) {
+                if (!resultStartTerminal.result) {
+                  if (resultStartTerminal.connectConfig) {
+                    logCtx.error(`Request password`, `${JSON.stringify(resultStartTerminal.connectConfig)}`);
+                    emitCustomEvent(
+                      EVENT_PROVIDER_AUTH_REQUEST,
+                      new EventProviderAuthRequest(provider, config, resultStartTerminal.connectConfig)
+                    );
+                    allStarted = false;
+                    return false;
+                  } else {
+                    logCtx.error(`Failed to start terminal on host '${config.host}'`, resultStartTerminal.message);
+                    provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartTerminal.message);
+                    allStarted = false;
+                    return false;
+                  }
+                }
+              }
+            } else {
+              logCtx.error(`Failed to create terminal start command: ${cmd.message}`, JSON.stringify(config));
+            }
           }
-        } else {
-          console.warn(`provider for host ${config.host}:${config.port} not found`);
+
+          // wait a little longer to make sure the processes are fully started
+          setTimeout(() => {
+            logCtx.success(`Provider on host '${config.host}' started successfully`, "");
+            connectToProvider(provider);
+          }, 3000);
+        } catch (error) {
+          logCtx.error(`Error starting host: ${config.host}`, `${error}`);
+          allStarted = false;
+          const provider = getProviderByHosts([config.host], config.port, null);
+          if (provider !== null) {
+            if (`${error}`.includes("Missing SSH credentials")) {
+              // add state (no SSH credentials) to provider
+              provider.setConnectionState(ConnectionState.STATES.NO_SSH_CREDENTIALS, "start aborted");
+            } else {
+              provider.setConnectionState(
+                ConnectionState.STATES.UNREACHABLE,
+                `Error starting host: ${config.host}: ${error}`
+              );
+            }
+          } else {
+            console.warn(`provider for host ${config.host}:${config.port} not found`);
+          }
         }
-      }
-      return allStarted;
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [launchManager, isLocalHost, SSHCtx, getProviderByHosts, settingsCtx, logCtx]
-  );
+        return allStarted;
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [isLocalHost, SSHCtx, getProviderByHosts, settingsCtx, logCtx]
+    );
 
   const startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean> = useCallback(
     async (provider: Provider, forceStartWithDefault: boolean = true) => {
       provider.setConnectionState(ConnectionState.STATES.STARTING, "");
       const cfg = provider.startConfiguration;
       if (cfg) {
-        const result = await startConfig(cfg);
+        const result = await startConfig(cfg, null);
         return result;
       }
       if (forceStartWithDefault) {
@@ -770,7 +806,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         defaultCfg.terminal.enable = true;
         defaultCfg.autoConnect = true;
         defaultCfg.autostart = false;
-        const result = await startConfig(defaultCfg);
+        const result = await startConfig(defaultCfg, null);
         return result;
       }
       return false;
@@ -780,37 +816,91 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   const startMasterSync = useCallback(
     async (host: string, rosVersion: string) => {
-      if (!launchManager) return false;
+      if (!window.commandExecutor) return false;
       const isLocal = isLocalHost(host);
       const credential = isLocal ? null : SSHCtx.getCredentialHost(host);
       if (!isLocal && !credential) {
-        logCtx.error(`'Missing SSH credentials to starting Multimaster-Sync on host '${host}'`, "");
+        logCtx.error(`'Missing SSH credentials to starting master-sync on host '${host}'`, "");
         return false;
       }
-      logCtx.debug(`Starting Multimaster-Sync on host '${host}'`, "");
-      const resultStartSync = await launchManager.startMasterSync(rosVersion, credential, undefined, [], []);
-      if (!resultStartSync.result) {
-        logCtx.warn(`Failed to start sync on host '${host}'`, resultStartSync.message);
-        return false;
+      logCtx.debug(`Starting master-sync on host '${host}'`, "");
+      // check and add provider if new
+      const provider = getProviderByHosts([host]) as Provider;
+
+      const launchCfg = new ProviderLaunchConfiguration(host, rosVersion);
+      launchCfg.daemon.enable = false;
+      launchCfg.discovery.enable = false;
+      launchCfg.sync.enable = true;
+      launchCfg.sync.doNotSync = [];
+      launchCfg.sync.syncTopics = [];
+      launchCfg.terminal.enable = false;
+      launchCfg.forceStop = true;
+      const cmd = launchCfg.masterSyncStartCmd();
+      if (cmd.result) {
+        const resultStartSync = await window.commandExecutor?.exec(credential, cmd.message);
+        if (resultStartSync) {
+          if (!resultStartSync.result) {
+            if (resultStartSync.connectConfig) {
+              logCtx.error(`Request password`, `${JSON.stringify(resultStartSync.connectConfig)}`);
+              emitCustomEvent(
+                EVENT_PROVIDER_AUTH_REQUEST,
+                new EventProviderAuthRequest(provider, launchCfg, resultStartSync.connectConfig)
+              );
+              return false;
+            } else {
+              logCtx.error(`Failed to start sync on host '${launchCfg.host}'`, resultStartSync.message);
+              return false;
+            }
+          }
+        }
       }
       return true;
     },
-    [SSHCtx, isLocalHost, logCtx, launchManager]
+    [SSHCtx, isLocalHost, logCtx, getProviderByHosts]
   );
 
   const startDynamicReconfigureClient = useCallback(
     async (nodeName: string, masteruri: string) => {
-      if (!launchManager) return { result: false, message: "launchManager not available in Browser" };
-      logCtx.debug(`Starting Dynamic Reconfigure GUI for '${name}'`, "");
+      if (!window.commandExecutor) return { result: false, message: "dynamic reconfigure not available in Browser" };
+      logCtx.debug(`Starting Dynamic Reconfigure GUI for '${nodeName}'`, "");
       if (!masteruri) {
         const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${nodeName}`;
         logCtx.error(msg, "");
         return { result: false, message: msg };
       }
-      const result = await launchManager.startDynamicReconfigureClient(nodeName, masteruri, null);
-      return result;
+      const config = new ProviderLaunchConfiguration("localhost", "1");
+      config.ros1MasterUri = masteruri;
+      const cmd = config.dynamicReconfigureClientCmd(nodeName, masteruri);
+      if (cmd.result) {
+        const resultStartSync = await window.commandExecutor?.exec(null, cmd.message);
+        if (resultStartSync) {
+          if (!resultStartSync.result) {
+            if (resultStartSync.connectConfig) {
+              logCtx.error(`Request password`, `${JSON.stringify(resultStartSync.connectConfig)}`);
+              emitCustomEvent(
+                EVENT_PROVIDER_AUTH_REQUEST,
+                new EventProviderAuthRequest(
+                  getProviderByHosts(["localhost"]) as Provider,
+                  config,
+                  resultStartSync.connectConfig
+                )
+              );
+              return false;
+            } else {
+              logCtx.error(
+                `Failed to start dynamic reconfigure node on host '${config.host}'`,
+                resultStartSync.message
+              );
+              return false;
+            }
+          } else {
+            return true;
+          }
+        }
+      }
+      return false;
     },
-    [logCtx, launchManager]
+    [logCtx]
   );
 
   const getProviderName = (providerId: string) => {
@@ -1119,9 +1209,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const init = async () => {
     setInitialized(() => false);
 
-    if (window.launchManager) {
-      setLaunchManager(window.launchManager);
-    }
     // get local ROS Info
     if (window.rosInfo?.getInfo) {
       const rinfo = window.rosInfo.getInfo();
@@ -1380,7 +1467,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       initialized,
       rosInfo,
       systemInfo,
-      launchManager,
       providers,
       providersConnected,
       mapProviderRosNodes,
@@ -1411,16 +1497,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       openTerminal,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      initialized,
-      rosInfo,
-      systemInfo,
-      launchManager,
-      providers,
-      providersConnected,
-      mapProviderRosNodes,
-      setMapProviderRosNodes,
-    ]
+    [initialized, rosInfo, systemInfo, providers, providersConnected, mapProviderRosNodes, setMapProviderRosNodes]
   );
 
   return <RosContext.Provider value={attributesMemo}>{children}</RosContext.Provider>;

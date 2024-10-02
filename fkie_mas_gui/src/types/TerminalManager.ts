@@ -20,6 +20,4 @@ export type TTerminalManager = {
   close: (id: string) => Promise<boolean>;
   has: (id: string) => Promise<boolean>;
   onClose: (callback: TerminalCloseCallback) => void;
-
-  registerHandlers: () => void;
 };

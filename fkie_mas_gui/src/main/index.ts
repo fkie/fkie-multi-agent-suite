@@ -93,7 +93,7 @@ const createWindow = async (): Promise<void> => {
 
   mainWindow.on("close", (e) => {
     e.preventDefault();
-    shutdownManager?.sendTerminateSubprocesses();
+    shutdownManager?.emitTerminateSubprocesses();
   });
 
   mainWindow.on("closed", () => {

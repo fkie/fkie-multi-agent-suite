@@ -42,6 +42,4 @@ export type TEditorManager = {
   onFileRange: (callback: FileRangeCallback) => void;
 
   onClose: (callback: EditorCloseCallback) => void;
-
-  registerHandlers: () => void;
 };

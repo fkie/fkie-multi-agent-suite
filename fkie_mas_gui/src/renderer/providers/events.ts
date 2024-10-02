@@ -1,6 +1,15 @@
 /* eslint-disable max-classes-per-file */
-import { ConnectionState } from ".";
-import { LaunchContent, PathEvent, RosNode, ScreensMapping, SubscriberEvent, SystemWarningGroup } from "../models";
+import { ConnectionState } from "./ConnectionState";
+import { ConnectConfig } from "ssh2";
+import {
+  LaunchContent,
+  PathEvent,
+  RosNode,
+  ScreensMapping,
+  SubscriberEvent,
+  SystemWarningGroup,
+  ProviderLaunchConfiguration,
+} from "../models";
 import Provider from "./Provider";
 
 export { ConnectionState };
@@ -175,5 +184,19 @@ export class EventProviderRestartNodes {
   constructor(provider: Provider, nodes: RosNode[]) {
     this.provider = provider;
     this.nodes = nodes;
+  }
+}
+
+export class EventProviderAuthRequest {
+  provider: Provider;
+
+  launchConfig: ProviderLaunchConfiguration;
+
+  connectConfig: ConnectConfig;
+
+  constructor(provider: Provider, launchConfig: ProviderLaunchConfiguration, connectConfig: ConnectConfig) {
+    this.provider = provider;
+    this.launchConfig = launchConfig;
+    this.connectConfig = connectConfig;
   }
 }

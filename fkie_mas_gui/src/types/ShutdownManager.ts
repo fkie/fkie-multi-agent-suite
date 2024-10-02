@@ -1,5 +1,6 @@
 export const ShutdownManagerEvents = {
-  terminateSubprocesses: "ShutdownManager:terminateSubprocesses",
+  emitTerminateSubprocesses: "ShutdownManager:emitTerminateSubprocesses",
+  onTerminateSubprocesses: "ShutdownManager:onTerminateSubprocesses",
   quitGui: "ShutdownManager:quitGui",
 };
 
@@ -7,7 +8,6 @@ export type TerminateCallback = () => void;
 
 export type TShutdownManager = {
   onTerminateSubprocesses: (callback: TerminateCallback) => void;
-  sendTerminateSubprocesses: () => void;
-  registerHandlers: () => void;
+  emitTerminateSubprocesses: () => void;
   quitGui: () => void;
 };
