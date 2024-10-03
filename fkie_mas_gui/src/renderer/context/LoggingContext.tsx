@@ -3,10 +3,10 @@ import Fade from "@mui/material/Fade";
 import { VariantType, useSnackbar } from "notistack";
 import React, { createContext, useContext, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
+import LoggingDetailsComponent from "../components/UI/LoggingDetailsComponent";
 import { LogEvent, LoggingLevel } from "../models";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "../pages/NodeManager/layout/LayoutDefines";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../pages/NodeManager/layout/events";
-import LoggingDetailsComponent from "./LoggingDetailsComponent";
 import { SettingsContext } from "./SettingsContext";
 
 export interface ILoggingContext {
@@ -73,31 +73,24 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     else console.info(level, description, details);
 
     if (showSnackbar) {
-      if (details) {
-        enqueueSnackbar(`${description}`, {
-          TransitionComponent: Fade,
-          content: (key, message) => (
-            <LoggingDetailsComponent
-              id={key}
-              message={message}
-              details={details}
-              variant={snackbarVariant}
-              onDetailsClick={() => {
-                emitCustomEvent(
-                  EVENT_OPEN_COMPONENT,
-                  eventOpenComponent(LAYOUT_TABS.LOGGING, "Logging Panel", <></>, false, LAYOUT_TAB_SETS.BORDER_BOTTOM)
-                );
-              }}
-            />
-          ),
-          variant: snackbarVariant,
-        });
-      } else {
-        enqueueSnackbar(description, {
-          variant: snackbarVariant,
-          TransitionComponent: Fade,
-        });
-      }
+      enqueueSnackbar(`${description}`, {
+        TransitionComponent: Fade,
+        content: (key, message) => (
+          <LoggingDetailsComponent
+            id={key}
+            message={message}
+            details={details}
+            variant={snackbarVariant}
+            onDetailsClick={() => {
+              emitCustomEvent(
+                EVENT_OPEN_COMPONENT,
+                eventOpenComponent(LAYOUT_TABS.LOGGING, "Logging Panel", <></>, false, LAYOUT_TAB_SETS.BORDER_BOTTOM)
+              );
+            }}
+          />
+        ),
+        variant: snackbarVariant,
+      });
     }
   };
 

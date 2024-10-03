@@ -58,7 +58,7 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
       <CssBaseline />
       <SnackbarProvider
         maxSnack={4}
-        autoHideDuration={4000}
+        autoHideDuration={5000}
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",
