@@ -604,6 +604,10 @@ function NodeManager() {
       // }
     });
     if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
+      // add settings to bottom border
+      renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
+      // add about to bottom border
+      renderValues.buttons.push(<AboutModal key="about-dialog" />);
       // add update button in the bottom border
       if (electronCtx.updateAvailable) {
         renderValues.buttons.push(
@@ -629,11 +633,7 @@ function NodeManager() {
         //       v{packageJson.version}
         //     </Typography>,
         //   );
-      } else {
-        renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
       }
-      // add settings to bottom border
-      renderValues.buttons.push(<AboutModal key="about-dialog" />);
     }
   }
 
