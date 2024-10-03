@@ -204,6 +204,8 @@ function NodeManager() {
           } else if (node.getParent().getSelectedNode()?.isVisible()) {
             // activate already existing tab if the border is enabled.
             model.doAction(Actions.selectTab(data.id));
+          } else {
+            model.doAction(Actions.selectTab(data.id));
           }
         } else {
           // activate already existing tab.
@@ -286,7 +288,7 @@ function NodeManager() {
           result.location = DockLocation.RIGHT;
           break;
         default:
-          // it could be a tabset id
+          // it could be a tabSet id
           result.isBorder = false;
           break;
       }
