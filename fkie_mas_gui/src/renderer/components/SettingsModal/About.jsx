@@ -1,3 +1,4 @@
+import licenses from "@/renderer/deps-licenses.json";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { Box, Button, IconButton, Link, Stack, Typography } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -97,7 +98,7 @@ function About() {
   }, []);
 
   return (
-    <Stack paddingTop={2} spacing={0.2} overflow="auto">
+    <Stack paddingTop={2} spacing={0.2} overflow="hidden">
       <Stack spacing={1} direction="row">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Version:
@@ -198,6 +199,18 @@ function About() {
             </Link>
           </Stack>
         </Typography>
+      </Stack>
+      <h3>Licenses of {Object.entries(licenses).length} dependencies</h3>
+      <Stack>
+        {licenses && (
+          <ul>
+            {Object.entries(licenses).map(([pkg, info]) => (
+              <li key={pkg}>
+                <strong>{pkg}</strong>: {info.licenses}
+              </li>
+            ))}
+          </ul>
+        )}
       </Stack>
     </Stack>
   );
