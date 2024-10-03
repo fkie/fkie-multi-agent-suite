@@ -1,31 +1,17 @@
-import {
-  Button,
-  createTheme,
-  CssBaseline,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Stack,
-  ThemeOptions,
-} from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
+import { TFileRange, TLaunchArgs } from "@/types";
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
+import "../../App.scss";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { LoggingContext } from "../../context/LoggingContext";
-import { ModifiedTabsInfo, MonacoContext } from "../../context/MonacoContext";
+import { ModifiedTabsInfo, MonacoContext, MonacoProvider } from "../../context/MonacoContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { getBaseName, getFileName } from "../../models";
+import { EVENT_CLOSE_COMPONENT } from "../../pages/NodeManager/layout/events";
 import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
 import EditorProvider from "../../providers/EditorProvider";
-import { EVENT_CLOSE_COMPONENT } from "../../pages/NodeManager/layout/events";
-import { TFileRange, TLaunchArgs } from "@/types";
-// load default style for flexlayout-react. Dark/Light theme changes are in ./themes
-import "../../App.scss";
-import { darkThemeDef, lightThemeDef } from "../../themes";
 
 type TLaunchInfo = {
   id: string;
@@ -41,8 +27,6 @@ export default function EditorApp() {
   const monacoCtx = useContext(MonacoContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [lightTheme, setLightTheme] = useState(createTheme(lightThemeDef as ThemeOptions));
-  const [darkTheme, setDarkTheme] = useState(createTheme(darkThemeDef as ThemeOptions));
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
   const dialogRef = useRef(null);
@@ -126,60 +110,20 @@ export default function EditorApp() {
     }
   });
 
-  const handleWindowError = (e) => {
-    // fix "ResizeObserver loop limit exceeded" while change size of the editor
-    if (
-      ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications."].includes(
-        e.message
-      )
-    ) {
-      const resizeObserverErrDiv = document.getElementById("webpack-dev-server-client-overlay-div");
-      const resizeObserverErr = document.getElementById("webpack-dev-server-client-overlay");
-      if (resizeObserverErr) {
-        resizeObserverErr.setAttribute("style", "display: none");
-      }
-      if (resizeObserverErrDiv) {
-        resizeObserverErrDiv.setAttribute("style", "display: none");
-      }
-    }
-  };
-
-  useEffect(() => {
-    // update font size globally
-    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize") as number;
-    lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] =
-      settingsCtx.get("fontSize") as string;
-    setDarkTheme(createTheme(darkThemeDef as ThemeOptions));
-    setLightTheme(createTheme(lightThemeDef as ThemeOptions));
-  }, [settingsCtx, settingsCtx.changed]);
-
   useEffect(() => {
     // Anything in here is fired on component mount.
-    window.addEventListener("error", handleWindowError);
     initProvider();
     return () => {
       if (launchInfo) {
         launchInfo.provider.close();
       }
       // Anything in here is fired on component unmount.
-      window.removeEventListener("error", handleWindowError);
     };
   }, []);
 
   return (
-    <ThemeProvider theme={settingsCtx.get("useDarkMode") ? darkTheme : lightTheme}>
-      <CssBaseline />
-      <Stack
-        width="100%"
-        height="100vh"
-        // style={{
-        //   position: "absolute",
-        //   left: 2,
-        //   top: 2,
-        //   right: 2,
-        //   bottom: 2,
-        // }}
-      >
+    <MonacoProvider>
+      <Stack width="100%" height="100vh">
         {launchInfo && (
           <FileEditorPanel
             tabId={launchInfo.id}
@@ -268,6 +212,6 @@ export default function EditorApp() {
           </Dialog>
         )}
       </Stack>
-    </ThemeProvider>
+    </MonacoProvider>
   );
 }

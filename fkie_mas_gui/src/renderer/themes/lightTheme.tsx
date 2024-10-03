@@ -1,3 +1,5 @@
+import { ThemeOptionsExt } from "./ThemeOptionsExt";
+
 const background = "#F0F0F0";
 
 export const lightThemeJson = {
@@ -20,7 +22,7 @@ export const lightThemeJson = {
   base0F: "#85144b",
 };
 
-const lightThemeDef = {
+const lightThemeDef: ThemeOptionsExt = {
   backgroundColor: background,
   palette: {
     mode: "light",

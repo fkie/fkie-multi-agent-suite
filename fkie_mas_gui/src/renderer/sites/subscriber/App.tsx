@@ -1,15 +1,12 @@
-import { createTheme, CssBaseline, Stack, ThemeOptions } from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
+import { Stack } from "@mui/material";
 import { useCallback, useContext, useEffect, useState } from "react";
+import "../../App.scss";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { getFileName } from "../../models";
 import TopicEchoPanel from "../../pages/NodeManager/panels/TopicEchoPanel";
 import SubscriberProvider from "../../providers/SubscriberProvider";
-// load default style for flexlayout-react. Dark/Light theme changes are in ./themes
-import "../../App.scss";
-import { darkThemeDef, lightThemeDef } from "../../themes";
 
 interface ISubscriberInfo {
   id: string;
@@ -23,8 +20,6 @@ export default function SubscriberApp() {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [lightTheme, setLightTheme] = useState(createTheme(lightThemeDef as ThemeOptions));
-  const [darkTheme, setDarkTheme] = useState(createTheme(darkThemeDef as ThemeOptions));
   const [subInfo, setSubInfo] = useState<ISubscriberInfo | null>(null);
   const [stopRequested, setStopRequested] = useState<string>("");
 
@@ -81,33 +76,6 @@ export default function SubscriberApp() {
     window.subscriberManager?.close(stopRequested);
   };
 
-  const handleWindowError = (e) => {
-    // fix "ResizeObserver loop limit exceeded" while change size of the editor
-    if (
-      ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications."].includes(
-        e.message
-      )
-    ) {
-      const resizeObserverErrDiv = document.getElementById("webpack-dev-server-client-overlay-div");
-      const resizeObserverErr = document.getElementById("webpack-dev-server-client-overlay");
-      if (resizeObserverErr) {
-        resizeObserverErr.setAttribute("style", "display: none");
-      }
-      if (resizeObserverErrDiv) {
-        resizeObserverErrDiv.setAttribute("style", "display: none");
-      }
-    }
-  };
-
-  useEffect(() => {
-    // update font size globally
-    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize") as number;
-    lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] =
-      `${settingsCtx.get("fontSize") as number}`;
-    setDarkTheme(createTheme(darkThemeDef as ThemeOptions));
-    setLightTheme(createTheme(lightThemeDef as ThemeOptions));
-  }, [settingsCtx, settingsCtx.changed]);
-
   useEffect(() => {
     if (stopRequested) {
       if (subInfo) {
@@ -121,40 +89,25 @@ export default function SubscriberApp() {
 
   useEffect(() => {
     // Anything in here is fired on component mount.
-    window.addEventListener("error", handleWindowError);
     window.subscriberManager?.onClose((id: string) => {
       setStopRequested(id);
     });
     initProvider();
     return () => {
       // Anything in here is fired on component unmount.
-      window.removeEventListener("error", handleWindowError);
     };
   }, []);
 
   return (
-    <ThemeProvider theme={settingsCtx.get("useDarkMode") ? darkTheme : lightTheme}>
-      <CssBaseline />
-      <Stack
-        width="100%"
-        height="100vh"
-        // style={{
-        //   position: "absolute",
-        //   left: 2,
-        //   top: 2,
-        //   right: 2,
-        //   bottom: 2,
-        // }}
-      >
-        {subInfo && rosCtx.mapProviderRosNodes.size > 0 && (
-          <TopicEchoPanel
-            showOptions
-            defaultProvider={subInfo.provider.id}
-            defaultTopic={subInfo.topic}
-            defaultNoData={subInfo.noData}
-          />
-        )}
-      </Stack>
-    </ThemeProvider>
+    <Stack width="100%" height="100vh">
+      {subInfo && rosCtx.mapProviderRosNodes.size > 0 && (
+        <TopicEchoPanel
+          showOptions
+          defaultProvider={subInfo.provider.id}
+          defaultTopic={subInfo.topic}
+          defaultNoData={subInfo.noData}
+        />
+      )}
+    </Stack>
   );
 }

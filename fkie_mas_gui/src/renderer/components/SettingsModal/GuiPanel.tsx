@@ -1,3 +1,4 @@
+import { JSONValue } from "@/types";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
@@ -21,7 +22,7 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { SyntheticEvent, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ISettingsParam, SettingsContext } from "../../context/SettingsContext";
 import SearchBar from "../UI/SearchBar";
 
@@ -166,7 +167,7 @@ export default function GuiPanel() {
                                       // helperText={param.description}
                                     />
                                   )}
-                                  value={settingsCtx.get(name)}
+                                  value={settingsCtx.get(name) as JSONValue[]}
                                   onChange={(_event, newValue) => {
                                     settingsCtx.set(name, newValue);
                                   }}

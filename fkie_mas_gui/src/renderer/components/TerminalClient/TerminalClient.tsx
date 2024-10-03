@@ -71,7 +71,7 @@ function TerminalClient(props: ITerminalClient) {
   const { initialCommands, tokenUrl, wsUrl, name, errorHighlighting, onIncomingData, onCtrlD } = props;
   const settingsCtx = useContext(SettingsContext);
 
-  termOptions.fontSize = settingsCtx.get("fontSizeTerminal");
+  termOptions.fontSize = settingsCtx.get("fontSizeTerminal") as number;
   termOptions.theme = {
     foreground: "#d2d2d2",
     background: errorHighlighting ? "#4d0400" : "#2b2b2b",

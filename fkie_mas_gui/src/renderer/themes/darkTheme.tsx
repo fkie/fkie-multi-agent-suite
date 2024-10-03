@@ -1,4 +1,5 @@
 import darkScrollbar from "@mui/material/darkScrollbar";
+import { ThemeOptionsExt } from "./ThemeOptionsExt";
 
 const background = "#282828";
 
@@ -22,7 +23,7 @@ export const darkThemeJson = {
   base0F: "#85144b",
 };
 
-const darkThemeDef = {
+const darkThemeDef: ThemeOptionsExt = {
   backgroundColor: background,
   palette: {
     mode: "dark",

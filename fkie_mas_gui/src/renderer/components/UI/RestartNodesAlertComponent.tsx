@@ -1,5 +1,7 @@
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
+  Box,
   Button,
   Card,
   CardActions,
@@ -86,28 +88,33 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
 
   return (
     <SnackbarContent ref={ref}>
-      <Card sx={{ marginTop: 4, backgroundColor: "#fddc6c" }}>
+      <Card
+        sx={{
+          // marginTop: 7,
+          color: (theme) => theme.palette.getContrastText(theme.palette.warning.main),
+          backgroundColor: (theme) => theme.palette.warning.main,
+        }}
+      >
         <CardActions>
-          <Stack sx={{ width: "100%" }} direction="row" spacing={0.5} justifyContent="space-around" alignItems="center">
+          <Stack sx={{ width: "100%" }} direction="row" spacing="0.5em" alignItems="center">
+            <Box sx={{ flexGrow: 1 }} />
             <IconButton
               aria-label="Show more"
               sx={{
-                padding: "8px 8px",
+                color: (theme) => theme.palette.getContrastText(theme.palette.warning.main),
                 transform: "rotate(0deg)",
                 transition: "all .2s",
               }}
               style={expanded ? { transform: "rotate(180deg)" } : undefined}
               onClick={handleExpandClick}
             >
-              <ExpandMoreIcon />
+              <ExpandMoreIcon fontSize="inherit" />
             </IconButton>
 
-            <Typography variant="body2">{message}</Typography>
-            <Typography variant="subtitle2">{provider.name()}</Typography>
-
-            <Button size="small" onClick={handleDismiss}>
-              Dismiss
-            </Button>
+            <Typography variant="subtitle1">{message}</Typography>
+            <Typography variant="subtitle1" fontWeight="bold">
+              {provider.name()}
+            </Typography>
 
             <Button
               size="small"
@@ -120,6 +127,13 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
             >
               Restart
             </Button>
+            <IconButton
+              onClick={handleDismiss}
+              size="small"
+              sx={{ color: (theme) => theme.palette.getContrastText(theme.palette.warning.main) }}
+            >
+              <CloseOutlinedIcon fontSize="inherit" />
+            </IconButton>
           </Stack>
         </CardActions>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
@@ -129,13 +143,13 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                 width: "100%",
                 maxHeight: 400,
                 overflow: "auto",
-                bgcolor: "background.paper",
+                padding: 0,
+                margin: 0,
               }}
             >
               {currentNodeList &&
                 currentNodeList.map((node) => {
                   const labelId = `checkbox-list-label-${node}`;
-
                   return (
                     <ListItem key={node} disablePadding>
                       <ListItemButton role={undefined} onClick={handleToggle(node)} dense>
@@ -146,6 +160,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                             tabIndex={-1}
                             disableRipple
                             inputProps={{ "aria-labelledby": labelId }}
+                            sx={{ padding: 0 }}
                           />
                         </ListItemIcon>
                         <ListItemText id={labelId} primary={node} />

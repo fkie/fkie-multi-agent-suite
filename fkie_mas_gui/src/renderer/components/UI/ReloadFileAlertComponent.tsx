@@ -1,5 +1,7 @@
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
+  Box,
   Button,
   Card,
   CardActions,
@@ -89,11 +91,29 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
 
   return (
     <SnackbarContent ref={ref}>
-      <Card sx={{ marginTop: 4, backgroundColor: "#fddc6c" }}>
+      <Card
+        sx={{
+          // marginTop: 7,
+          color: (theme) => theme.palette.getContrastText(theme.palette.warning.main),
+          backgroundColor: (theme) => theme.palette.warning.main,
+        }}
+      >
         <CardActions>
-          <Stack sx={{ width: "100%" }} direction="row" spacing={0.5} justifyContent="space-around" alignItems="center">
+          <Stack
+            sx={{ width: "100%" }}
+            direction="row"
+            spacing="0.5em"
+            justifyContent="space-around"
+            alignItems="center"
+          >
+            <Box sx={{ flexGrow: 1 }} />
             <IconButton
               aria-label="Show more"
+              sx={{
+                color: (theme) => theme.palette.getContrastText(theme.palette.warning.main),
+                transform: "rotate(0deg)",
+                transition: "all .2s",
+              }}
               style={expanded ? { transform: "rotate(180deg)" } : undefined}
               onClick={handleExpandClick}
             >
@@ -109,17 +129,17 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
                     onChange={(event) => {
                       setRememberChange(event.target.checked);
                     }}
-                    sx={{ "& .MuiSvgIcon-root": { fontSize: "inherit" } }}
+                    sx={{
+                      "& .MuiSvgIcon-root": {
+                        fontSize: "inherit",
+                        color: (theme) => theme.palette.getContrastText(theme.palette.warning.main),
+                      },
+                    }}
                   />
                 }
                 label="remember the decision"
               />
             </Stack>
-
-            <Button size="small" onClick={handleDismiss}>
-              Dismiss
-            </Button>
-
             <Button
               size="small"
               color="success"
@@ -130,6 +150,13 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
             >
               Reload
             </Button>
+            <IconButton
+              onClick={handleDismiss}
+              size="small"
+              sx={{ color: (theme) => theme.palette.getContrastText(theme.palette.warning.main) }}
+            >
+              <CloseOutlinedIcon fontSize="inherit" />
+            </IconButton>
           </Stack>
         </CardActions>
         <Collapse in={expanded} timeout="auto" unmountOnExit>

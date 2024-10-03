@@ -2,7 +2,7 @@ import RosContext from "@/renderer/context/RosContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, TextField } from "@mui/material";
-import { useContext, useRef, useState } from "react";
+import { useContext, useState } from "react";
 import { ConnectConfig } from "ssh2";
 import { ConnectionState } from "../../providers";
 
