@@ -1,4 +1,4 @@
-import { TerminateCallback, TShutdownManager, ShutdownManagerEvents } from "@/types";
+import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "@/types";
 import { app, BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
 
@@ -22,7 +22,7 @@ class ShutdownManager implements TShutdownManager {
   };
 
   public emitTerminateSubprocesses: () => void = () => {
-    this.mainWindow?.webContents.send(ShutdownManagerEvents.emitTerminateSubprocesses);
+    this.mainWindow?.webContents.send(ShutdownManagerEvents.onTerminateSubprocesses);
   };
 
   /**
