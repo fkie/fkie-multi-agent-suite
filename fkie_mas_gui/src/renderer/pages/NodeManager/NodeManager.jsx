@@ -1,5 +1,4 @@
 import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
-import AboutModal from "@/renderer/components/SettingsModal/AboutModal";
 import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -35,7 +34,6 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import ExternalAppsModal from "../../components/ExternalAppsModal/ExternalAppsModal";
 import ProviderSelectionModal from "../../components/SelectionModal/ProviderSelectionModal";
-import SettingsModal from "../../components/SettingsModal/SettingsModal";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { ElectronContext } from "../../context/ElectronContext";
 import { LoggingContext } from "../../context/LoggingContext";
@@ -57,6 +55,7 @@ import {
   SETTING,
 } from "./layout/events";
 import "./NodeManager.css";
+import AboutPanel from "./panels/AboutPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
 import NodesDetailsPanel from "./panels/NodesDetailsPanel";
@@ -366,6 +365,8 @@ function NodeManager() {
         return <ServicesPanel key="services-panel" />;
       case LAYOUT_TABS.SETTINGS:
         return <SettingsPanel key="settings-panel" />;
+      case LAYOUT_TABS.ABOUT:
+        return <AboutPanel key="about-panel" />;
       case LAYOUT_TABS.PARAMETER:
         return <ParameterPanel key="parameter-panel" />;
       default:
@@ -386,7 +387,7 @@ function NodeManager() {
         "Parameter",
         "Logging",
         "Settings",
-        "Info",
+        "About",
       ].includes(renderValues.name)
     ) {
       renderValues.content = (
@@ -555,7 +556,7 @@ function NodeManager() {
     // renderValues.buttons.push(<img style={{width:"1em", height:"1em"}} src="images/folder.svg"/>);
   }
 
-  function pAddTabStickyButton(container, id, title, component, setId, icon, tooltipLoc = "right", force=false) {
+  function pAddTabStickyButton(container, id, title, component, setId, icon, tooltipLoc = "right", force = false) {
     if (force || !model.getNodeById(id)) {
       container.push(
         <Tooltip
@@ -618,7 +619,6 @@ function NodeManager() {
     });
     if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
       // add settings to bottom border
-      // renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
       pAddTabStickyButton(
         renderValues.buttons,
         LAYOUT_TABS.SETTINGS,
@@ -629,9 +629,17 @@ function NodeManager() {
         "top",
         true
       );
-      // renderValues.buttons.push(<SettingsIcon key="settings-dialog" />);
       // add about to bottom border
-      renderValues.buttons.push(<AboutModal key="about-dialog" />);
+      pAddTabStickyButton(
+        renderValues.buttons,
+        LAYOUT_TABS.ABOUT,
+        "About",
+        <AboutPanel />,
+        LAYOUT_TABS.NODES,
+        <InfoOutlinedIcon sx={{ fontSize: "inherit" }} />,
+        "top",
+        true
+      );
       // add update button in the bottom border
       if (electronCtx.updateAvailable) {
         renderValues.buttons.push(

@@ -9,6 +9,7 @@ const LAYOUT_TAB_SETS = {
 };
 
 const LAYOUT_TABS = {
+  ABOUT: "about_tab",
   NODES: "nodes_tab",
   PACKAGES: "packages_tab",
   HOSTS: "hosts_tab",
