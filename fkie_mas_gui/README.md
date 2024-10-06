@@ -151,6 +151,12 @@ cd fkie_mas_gui
 npm run build:linux
 ```
 
+- update licenses of dependencies
+```bash
+npm install -g license-checker
+license-checker --json --out src/renderer/deps-licenses.json
+```
+
 ## Known Issues
 
 - If you work behind a proxy, you might need to explicitly specify the `URL` and `PORT` before downloading the electron packages. The problem occurs when installing the package (`yarn install`).
