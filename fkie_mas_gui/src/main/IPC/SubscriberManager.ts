@@ -25,7 +25,7 @@ class SubscriberManager implements TSubscriberManager {
       return this.has(id);
     });
     ipcMain.handle(SubscriberManagerEvents.close, (_event: Electron.IpcMainInvokeEvent, id: string) => {
-      return this.has(id);
+      return this.close(id);
     });
     ipcMain.handle(
       SubscriberManagerEvents.open,
