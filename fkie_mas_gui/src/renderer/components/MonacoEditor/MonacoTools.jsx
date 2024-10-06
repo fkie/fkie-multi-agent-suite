@@ -101,7 +101,7 @@ const createXMLDependencyProposals = (monaco, range, clipText) => {
   ];
 };
 
-const createDocumentSymbols = (model, token) => {
+const createDocumentSymbols = (model/*, token*/) => {
   const parser = new DOMParser();
 
   const symbolList = [];

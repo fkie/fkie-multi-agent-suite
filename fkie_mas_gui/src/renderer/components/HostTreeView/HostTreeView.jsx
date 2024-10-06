@@ -14,10 +14,10 @@ import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { LaunchFile, RosNodeStatus, getFileName } from "../../models";
 import { LAYOUT_TAB_SETS } from "../../pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
 import { CmdType } from "../../providers";
 import { generateUniqueId, removeDDSuid } from "../../utils";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { colorFromHostname } from "../UI/Colors";
 import HostTreeViewItem from "./HostTreeViewItem";
 import { getGroupIcon, getGroupIconColor, getNodeIcon, getNodeIconColor } from "./HostTreeViewUtils";
@@ -383,7 +383,7 @@ function HostTreeView({
    * Callback when the event of reloading a launch file is triggered
    */
   const onReloadLaunch = useCallback(
-    async (providerId, path, _masteruri) => {
+    async (providerId, path /*, _masteruri */) => {
       await rosCtx.reloadLaunchFile(providerId, path);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

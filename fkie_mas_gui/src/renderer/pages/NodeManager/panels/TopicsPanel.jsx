@@ -13,9 +13,9 @@ import { emitCustomEvent } from "react-custom-events";
 import { SearchBar, TopicTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
 
 class TopicExtendedInfo {
@@ -171,7 +171,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     const groupKeys = [];
     const byPrefixP1 = new Map("", []);
     // create a map with simulated tree for the namespaces of the topic list
-    Object.entries(topicsGroup).forEach(([key, topicInfo]) => {
+    Object.entries(topicsGroup).forEach(([_key, topicInfo]) => {
       const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {

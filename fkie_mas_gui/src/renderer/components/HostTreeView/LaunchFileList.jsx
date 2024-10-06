@@ -11,13 +11,13 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import PropTypes from "prop-types";
 import { useCallback, useContext } from "react";
-import { emitCustomEvent } from "react-custom-events";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { getFileName } from "../../models";
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
-import LaunchFilePanel from "../../pages/NodeManager/panels/LaunchFilePanel";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
+// import { emitCustomEvent } from "react-custom-events";
+// import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../../pages/NodeManager/layout";
+// import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
+// import LaunchFilePanel from "../../pages/NodeManager/panels/LaunchFilePanel";
 
 const compareLaunchFiles = (a, b) => {
   if (getFileName(a.path) < getFileName(b.path)) {
@@ -53,24 +53,24 @@ function LaunchFileList({
   /**
    * Create and open a new panel with a [LaunchFilePanel]
    */
-  const createLaunchFilePanel = useCallback(
-    (provId, launchContent) => {
-      const provider = rosCtx.getProviderById(provId);
-      const launchName = getFileName(launchContent.path);
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `launchFileInfo-${launchName}@${provider.name()}`,
-          `${launchName}@${provider.name()}`,
-          <LaunchFilePanel launchContent={launchContent} />,
-          true,
-          LAYOUT_TAB_SETS.BORDER_CENTER,
-          new LayoutTabConfig(false, "info")
-        )
-      );
-    },
-    [rosCtx]
-  );
+  // const createLaunchFilePanel = useCallback(
+  //   (provId, launchContent) => {
+  //     const provider = rosCtx.getProviderById(provId);
+  //     const launchName = getFileName(launchContent.path);
+  //     emitCustomEvent(
+  //       EVENT_OPEN_COMPONENT,
+  //       eventOpenComponent(
+  //         `launchFileInfo-${launchName}@${provider.name()}`,
+  //         `${launchName}@${provider.name()}`,
+  //         <LaunchFilePanel launchContent={launchContent} />,
+  //         true,
+  //         LAYOUT_TAB_SETS.BORDER_CENTER,
+  //         new LayoutTabConfig(false, "info")
+  //       )
+  //     );
+  //   },
+  //   [rosCtx]
+  // );
 
   return (
     <List dense disablePadding onMouseOver={onMouseOver}>

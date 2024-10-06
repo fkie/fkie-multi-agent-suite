@@ -3,7 +3,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import InputIcon from "@mui/icons-material/Input";
 import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from "@mui/material";
 import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useReducer, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import LoggingContext from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";

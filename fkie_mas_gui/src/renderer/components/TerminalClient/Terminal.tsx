@@ -159,7 +159,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     terminal.loadAddon(searchAddon);
     terminal.loadAddon(new WebLinksAddon());
     terminal.loadAddon(unicode11Addon);
-    webglAddon.onContextLoss((_event) => {
+    webglAddon.onContextLoss((/*event*/) => {
       webglAddon.dispose();
     });
     terminal.loadAddon(webglAddon);
