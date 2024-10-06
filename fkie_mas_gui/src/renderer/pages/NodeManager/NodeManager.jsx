@@ -9,6 +9,7 @@ import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LaunchIcon from "@mui/icons-material/Launch";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import SettingsIcon from "@mui/icons-material/Settings";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import SyncAltOutlinedIcon from "@mui/icons-material/SyncAltOutlined";
 import TerminalIcon from "@mui/icons-material/Terminal";
@@ -64,6 +65,7 @@ import PackageExplorerPanel from "./panels/PackageExplorerPanel";
 import ParameterPanel from "./panels/ParameterPanel";
 import ProviderPanel from "./panels/ProviderPanel";
 import ServicesPanel from "./panels/ServicesPanel";
+import SettingsPanel from "./panels/SettingsPanel";
 import TopicsPanel from "./panels/TopicsPanel";
 
 function NodeManager() {
@@ -362,6 +364,8 @@ function NodeManager() {
         return <TopicsPanel key="topics-panel" />;
       case LAYOUT_TABS.SERVICES:
         return <ServicesPanel key="services-panel" />;
+      case LAYOUT_TABS.SETTINGS:
+        return <SettingsPanel key="settings-panel" />;
       case LAYOUT_TABS.PARAMETER:
         return <ParameterPanel key="parameter-panel" />;
       default:
@@ -372,9 +376,18 @@ function NodeManager() {
   function onRenderTab(node /* TabNode */, renderValues /* ITabRenderValues */) {
     // add tooltip to the abbreviations
     if (
-      !["Hosts", "Node Details", "Packages", "Nodes", "Topics", "Services", "Parameter", "Logging"].includes(
-        renderValues.name
-      )
+      ![
+        "Hosts",
+        "Node Details",
+        "Packages",
+        "Nodes",
+        "Topics",
+        "Services",
+        "Parameter",
+        "Logging",
+        "Settings",
+        "Info",
+      ].includes(renderValues.name)
     ) {
       renderValues.content = (
         <Tooltip title={renderValues.name} placement="bottom" disableInteractive>
@@ -542,13 +555,13 @@ function NodeManager() {
     // renderValues.buttons.push(<img style={{width:"1em", height:"1em"}} src="images/folder.svg"/>);
   }
 
-  function pAddTabStickyButton(container, id, title, component, setId, icon) {
-    if (!model.getNodeById(id)) {
+  function pAddTabStickyButton(container, id, title, component, setId, icon, tooltipLoc = "right", force=false) {
+    if (force || !model.getNodeById(id)) {
       container.push(
         <Tooltip
           key={`tooltip-${id}`}
           title={title}
-          placement="right"
+          placement={tooltipLoc}
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
           disableInteractive
@@ -605,7 +618,18 @@ function NodeManager() {
     });
     if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
       // add settings to bottom border
-      renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
+      // renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
+      pAddTabStickyButton(
+        renderValues.buttons,
+        LAYOUT_TABS.SETTINGS,
+        "Settings",
+        <SettingsPanel />,
+        LAYOUT_TABS.NODES,
+        <SettingsIcon sx={{ fontSize: "inherit" }} />,
+        "top",
+        true
+      );
+      // renderValues.buttons.push(<SettingsIcon key="settings-dialog" />);
       // add about to bottom border
       renderValues.buttons.push(<AboutModal key="about-dialog" />);
       // add update button in the bottom border

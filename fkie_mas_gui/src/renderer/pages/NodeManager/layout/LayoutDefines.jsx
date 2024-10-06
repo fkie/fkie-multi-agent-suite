@@ -16,6 +16,7 @@ const LAYOUT_TABS = {
   NODE_DETAILS: "node_details_tab",
   TOPICS: "topics_tab",
   SERVICES: "services_tab",
+  SETTINGS: "settings-tab",
   LOGGING: "logging_tab",
 };
 

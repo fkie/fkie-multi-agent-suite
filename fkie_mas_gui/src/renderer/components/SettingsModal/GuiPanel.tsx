@@ -5,6 +5,7 @@ import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import UndoIcon from "@mui/icons-material/Undo";
 import {
   Autocomplete,
+  Box,
   Button,
   Checkbox,
   FormControl,
@@ -61,6 +62,7 @@ const AccordionSummary = styled((props: AccordionSummaryProps) => (
 }));
 
 const AccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
+  backgroundColor: theme.backgroundColor,
   padding: theme.spacing(2),
   borderTop: "1px solid rgba(0, 0, 0, .125)",
 }));
@@ -105,330 +107,332 @@ export default function GuiPanel() {
 
   useEffect(() => {
     createGroups();
-  }, [settingsCtx.changed, filter]);
+  }, [settingsCtx, settingsCtx.changed, filter]);
 
   const generateContent = useMemo(() => {
     return (
-      <Stack overflow="hidden">
+      <Stack height="100%" width="99%">
         <SearchBar
           onSearch={(value) => setFilter(value.toLocaleLowerCase())}
           placeholder="Filter Parameter"
           defaultValue=""
         />
-        {grouped.map(({ group, params, forceExpanded }) => {
-          return (
-            <Accordion
-              key={`${group}-accordion`}
-              expanded={expanded.includes(group) || (forceExpanded && filter.length > 1)}
-              onChange={handleChange(group)}
-            >
-              <AccordionSummary aria-controls={`${group}-content`} id={`${group}-header`}>
-                <Typography style={{ fontWeight: "inherit" }}>{group}</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Stack margin={0} spacing={"0.7em"}>
-                  {params.map(({ name, param }) => {
-                    if (Array.isArray(param.options)) {
-                      return (
-                        <Stack
-                          key={`opt-${name}-array`}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: (theme) => theme.palette.action.hover,
-                            },
-                          }}
-                        >
-                          {param.type.endsWith("[]") ? (
-                            // multiple values can be selected
-                            <>
-                              <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
-                              {param.description && (
-                                <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
-                              )}
-                              <Stack direction="row" alignItems="center">
-                                <Autocomplete
-                                  key={name}
-                                  disablePortal={false}
-                                  handleHomeEndKeys={false}
-                                  multiple
-                                  id="auto-complete-debug"
-                                  size="small"
-                                  options={param.options}
-                                  freeSolo={param.freeSolo}
-                                  sx={{ margin: 0 }}
-                                  getOptionLabel={(option) => option as string}
-                                  renderInput={(params) => (
-                                    <TextField
-                                      {...params}
-                                      variant="outlined"
-                                      size="small"
-                                      // label={param.label}
-                                      placeholder={param.placeholder ? param.placeholder : "..."}
-                                      // helperText={param.description}
-                                    />
-                                  )}
-                                  value={settingsCtx.get(name) as JSONValue[]}
-                                  onChange={(_event, newValue) => {
-                                    settingsCtx.set(name, newValue);
-                                  }}
-                                  disableCloseOnSelect
-                                  renderOption={(props, option, { selected }) => {
-                                    return (
-                                      <li {...props} key={option as string} style={{ height: "1.5em" }}>
-                                        <Checkbox
-                                          icon={icon}
-                                          checkedIcon={checkedIcon}
-                                          checked={selected}
-                                          size="small"
-                                        />
-                                        {`${option}`}
-                                      </li>
-                                    );
-                                  }}
-                                />
-                                {param.default && param.default !== settingsCtx.get(name) && (
-                                  <Tooltip title="Restore default value" placement="bottom" disableInteractive>
-                                    <IconButton
-                                      onClick={() => {
-                                        settingsCtx.set(name, param.default);
-                                      }}
-                                    >
-                                      <UndoIcon fontSize="inherit" />
-                                    </IconButton>
-                                  </Tooltip>
+        <Box height="100%" width="100%" overflow="auto">
+          {grouped.map(({ group, params, forceExpanded }) => {
+            return (
+              <Accordion
+                key={`${group}-accordion`}
+                expanded={expanded.includes(group) || (forceExpanded && filter.length > 1)}
+                onChange={handleChange(group)}
+              >
+                <AccordionSummary aria-controls={`${group}-content`} id={`${group}-header`}>
+                  <Typography style={{ fontWeight: "inherit" }}>{group}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack margin={0} spacing={"0.7em"}>
+                    {params.map(({ name, param }) => {
+                      if (Array.isArray(param.options)) {
+                        return (
+                          <Stack
+                            key={`opt-${name}-array`}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: (theme) => theme.palette.action.hover,
+                              },
+                            }}
+                          >
+                            {param.type.endsWith("[]") ? (
+                              // multiple values can be selected
+                              <>
+                                <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
+                                {param.description && (
+                                  <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
                                 )}
-                              </Stack>
-                            </>
-                          ) : (
-                            // only one value
-                            <>
-                              <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
-                              <FormControlLabel
-                                control={
-                                  <Select
-                                    labelId={`label-${param.label}`}
-                                    id={param.label}
-                                    autoWidth={false}
-                                    value={settingsCtx.get(name)}
-                                    onChange={(event) => {
-                                      settingsCtx.set(name, event.target.value);
-                                    }}
+                                <Stack direction="row" alignItems="center">
+                                  <Autocomplete
+                                    key={name}
+                                    disablePortal={false}
+                                    handleHomeEndKeys={false}
+                                    multiple
+                                    id="auto-complete-debug"
                                     size="small"
-                                    sx={{ marginRight: "0.5em", minWidth: "15em" }}
-                                    displayEmpty
-                                  >
-                                    {param.options.map((name) => {
-                                      return (
-                                        <MenuItem key={name as string} value={name as string}>
-                                          {name as string}
-                                        </MenuItem>
-                                      );
-                                    })}
-                                  </Select>
-                                }
-                                sx={{ margin: 0 }}
-                                label={
-                                  <Stack direction="row" alignItems="center">
-                                    {param.default && param.default !== settingsCtx.get(name) && (
-                                      <Tooltip title="Restore default value" placement="bottom" disableInteractive>
-                                        <IconButton
-                                          onClick={() => {
-                                            settingsCtx.set(name, param.default);
-                                          }}
-                                        >
-                                          <UndoIcon fontSize="inherit" />
-                                        </IconButton>
-                                      </Tooltip>
+                                    options={param.options}
+                                    freeSolo={param.freeSolo}
+                                    sx={{ margin: 0 }}
+                                    getOptionLabel={(option) => option as string}
+                                    renderInput={(params) => (
+                                      <TextField
+                                        {...params}
+                                        variant="outlined"
+                                        size="small"
+                                        // label={param.label}
+                                        placeholder={param.placeholder ? param.placeholder : "..."}
+                                        // helperText={param.description}
+                                      />
                                     )}
-                                    <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
-                                  </Stack>
-                                }
-                              />
-                            </>
-                          )}
-                        </Stack>
-                      );
-                    }
-                    if (param.type === "boolean") {
-                      return (
-                        <Stack
-                          key={`opt-${name}-boolean`}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: (theme) => theme.palette.action.hover,
-                            },
-                          }}
-                        >
-                          {param.description ? (
-                            <>
-                              <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
-                              <FormControlLabel
-                                control={
-                                  <Checkbox
-                                    checked={settingsCtx.get(name) as boolean}
-                                    onChange={(event) => {
-                                      settingsCtx.set(name, event.target.checked);
+                                    value={settingsCtx.get(name) as JSONValue[]}
+                                    onChange={(_event, newValue) => {
+                                      settingsCtx.set(name, newValue);
+                                    }}
+                                    disableCloseOnSelect
+                                    renderOption={(props, option, { selected }) => {
+                                      return (
+                                        <li {...props} key={option as string} style={{ height: "1.5em" }}>
+                                          <Checkbox
+                                            icon={icon}
+                                            checkedIcon={checkedIcon}
+                                            checked={selected}
+                                            size="small"
+                                          />
+                                          {`${option}`}
+                                        </li>
+                                      );
                                     }}
                                   />
-                                }
-                                sx={{ margin: 0 }}
-                                label={<Typography sx={{ typography: "body2" }}>{param.description}</Typography>}
-                              />
-                            </>
-                          ) : (
-                            <FormControl key={name} component="fieldset" variant="standard" sx={{ margin: 0 }}>
-                              <FormControlLabel
-                                control={
-                                  <Switch
-                                    // color="primary"
-                                    checked={settingsCtx.get(name) as boolean}
-                                    onChange={(event) => {
-                                      settingsCtx.set(name, event.target.checked);
-                                    }}
-                                  />
-                                }
-                                label={param.label}
-                                labelPlacement="end"
-                                aria-label={param.label}
-                                id={`toggle-${param.label}`}
-                              />
-                            </FormControl>
-                          )}
-                        </Stack>
-                      );
-                    }
-                    if (param.type === "number") {
-                      return (
-                        <Stack
-                          key={`opt-${name}-number`}
-                          direction="column"
-                          spacing={0}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: (theme) => theme.palette.action.hover,
-                            },
-                          }}
-                          // alignItems={"center"}
-                        >
-                          <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
-                          <FormControlLabel
-                            control={
+                                  {param.default && param.default !== settingsCtx.get(name) && (
+                                    <Tooltip title="Restore default value" placement="bottom" disableInteractive>
+                                      <IconButton
+                                        onClick={() => {
+                                          settingsCtx.set(name, param.default);
+                                        }}
+                                      >
+                                        <UndoIcon fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                </Stack>
+                              </>
+                            ) : (
+                              // only one value
+                              <>
+                                <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
+                                <FormControlLabel
+                                  control={
+                                    <Select
+                                      labelId={`label-${param.label}`}
+                                      id={param.label}
+                                      autoWidth={false}
+                                      value={settingsCtx.get(name)}
+                                      onChange={(event) => {
+                                        settingsCtx.set(name, event.target.value);
+                                      }}
+                                      size="small"
+                                      sx={{ marginRight: "0.5em", minWidth: "15em" }}
+                                      displayEmpty
+                                    >
+                                      {param.options.map((name) => {
+                                        return (
+                                          <MenuItem key={name as string} value={name as string}>
+                                            {name as string}
+                                          </MenuItem>
+                                        );
+                                      })}
+                                    </Select>
+                                  }
+                                  sx={{ margin: 0 }}
+                                  label={
+                                    <Stack direction="row" alignItems="center">
+                                      {param.default && param.default !== settingsCtx.get(name) && (
+                                        <Tooltip title="Restore default value" placement="bottom" disableInteractive>
+                                          <IconButton
+                                            onClick={() => {
+                                              settingsCtx.set(name, param.default);
+                                            }}
+                                          >
+                                            <UndoIcon fontSize="inherit" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      )}
+                                      <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
+                                    </Stack>
+                                  }
+                                />
+                              </>
+                            )}
+                          </Stack>
+                        );
+                      }
+                      if (param.type === "boolean") {
+                        return (
+                          <Stack
+                            key={`opt-${name}-boolean`}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: (theme) => theme.palette.action.hover,
+                              },
+                            }}
+                          >
+                            {param.description ? (
+                              <>
+                                <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox
+                                      checked={settingsCtx.get(name) as boolean}
+                                      onChange={(event) => {
+                                        settingsCtx.set(name, event.target.checked);
+                                      }}
+                                    />
+                                  }
+                                  sx={{ margin: 0 }}
+                                  label={<Typography sx={{ typography: "body2" }}>{param.description}</Typography>}
+                                />
+                              </>
+                            ) : (
+                              <FormControl key={name} component="fieldset" variant="standard" sx={{ margin: 0 }}>
+                                <FormControlLabel
+                                  control={
+                                    <Switch
+                                      // color="primary"
+                                      checked={settingsCtx.get(name) as boolean}
+                                      onChange={(event) => {
+                                        settingsCtx.set(name, event.target.checked);
+                                      }}
+                                    />
+                                  }
+                                  label={param.label}
+                                  labelPlacement="end"
+                                  aria-label={param.label}
+                                  id={`toggle-${param.label}`}
+                                />
+                              </FormControl>
+                            )}
+                          </Stack>
+                        );
+                      }
+                      if (param.type === "number") {
+                        return (
+                          <Stack
+                            key={`opt-${name}-number`}
+                            direction="column"
+                            spacing={0}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: (theme) => theme.palette.action.hover,
+                              },
+                            }}
+                            // alignItems={"center"}
+                          >
+                            <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
+                            <FormControlLabel
+                              control={
+                                <TextField
+                                  type="number"
+                                  key={`number-${param.label}`}
+                                  // label={param.label}
+                                  size="small"
+                                  variant="outlined"
+                                  InputProps={{ inputProps: { min: param.min, max: param.max } }}
+                                  fullWidth={false}
+                                  onChange={(e) => settingsCtx.set(name, Number(`${e.target.value}`))}
+                                  value={settingsCtx.get(name)}
+                                  sx={{ margin: 0, marginRight: "0.5em" }}
+                                  // helperText={param.description}
+                                />
+                              }
+                              sx={{ margin: 0 }}
+                              label={
+                                <Stack direction="row" alignItems="center">
+                                  {param.default !== undefined && param.default !== settingsCtx.get(name) && (
+                                    <Tooltip title="Restore default value" placement="bottom" disableInteractive>
+                                      <IconButton
+                                        onClick={() => {
+                                          settingsCtx.set(name, param.default);
+                                        }}
+                                      >
+                                        <UndoIcon fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                  <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
+                                </Stack>
+                              }
+                            />
+                          </Stack>
+                        );
+                      }
+                      if (param.type === "button") {
+                        return (
+                          <Stack
+                            key={`opt-${name}-button`}
+                            direction="row"
+                            spacing={"1em"}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: (theme) => theme.palette.action.hover,
+                              },
+                            }}
+                            alignItems={"center"}
+                          >
+                            <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
+                            <Button
+                              key={`button-${param.label}`}
+                              // helperText={param.description}
+                              variant="contained"
+                              size="small"
+                              onClick={() => settingsCtx.set(name, true)}
+                            >
+                              {param.label}
+                            </Button>
+                          </Stack>
+                        );
+                      }
+                      if (param.type === "string") {
+                        return (
+                          <Stack
+                            key={`opt-${name}-array`}
+                            direction="column"
+                            spacing={0}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: (theme) => theme.palette.action.hover,
+                              },
+                            }}
+                            // alignItems={"center"}
+                          >
+                            <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
+                            {param.description && (
+                              <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
+                            )}
+                            <Stack direction="row">
                               <TextField
-                                type="number"
-                                key={`number-${param.label}`}
+                                key={`text-${param.label}`}
                                 // label={param.label}
                                 size="small"
                                 variant="outlined"
-                                InputProps={{ inputProps: { min: param.min, max: param.max } }}
-                                fullWidth={false}
-                                onChange={(e) => settingsCtx.set(name, Number(`${e.target.value}`))}
+                                fullWidth={true}
+                                onChange={(e) => {
+                                  const value = `${e.target.value}`;
+                                  settingsCtx.set(name, param.validate ? param.validate(value) : value);
+                                }}
                                 value={settingsCtx.get(name)}
-                                sx={{ margin: 0, marginRight: "0.5em" }}
+                                sx={{ marginRight: "0.5em" }}
                                 // helperText={param.description}
                               />
-                            }
-                            sx={{ margin: 0 }}
-                            label={
-                              <Stack direction="row" alignItems="center">
-                                {param.default !== undefined && param.default !== settingsCtx.get(name) && (
-                                  <Tooltip title="Restore default value" placement="bottom" disableInteractive>
-                                    <IconButton
-                                      onClick={() => {
-                                        settingsCtx.set(name, param.default);
-                                      }}
-                                    >
-                                      <UndoIcon fontSize="inherit" />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                                <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
-                              </Stack>
-                            }
-                          />
-                        </Stack>
-                      );
-                    }
-                    if (param.type === "button") {
-                      return (
-                        <Stack
-                          key={`opt-${name}-button`}
-                          direction="row"
-                          spacing={"1em"}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: (theme) => theme.palette.action.hover,
-                            },
-                          }}
-                          alignItems={"center"}
-                        >
-                          <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
-                          <Button
-                            key={`button-${param.label}`}
-                            // helperText={param.description}
-                            variant="contained"
-                            size="small"
-                            onClick={() => settingsCtx.set(name, true)}
-                          >
-                            {param.label}
-                          </Button>
-                        </Stack>
-                      );
-                    }
-                    if (param.type === "string") {
-                      return (
-                        <Stack
-                          key={`opt-${name}-array`}
-                          direction="column"
-                          spacing={0}
-                          sx={{
-                            "&:hover": {
-                              backgroundColor: (theme) => theme.palette.action.hover,
-                            },
-                          }}
-                          // alignItems={"center"}
-                        >
-                          <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
-                          {param.description && (
-                            <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
-                          )}
-                          <Stack direction="row">
-                            <TextField
-                              key={`text-${param.label}`}
-                              // label={param.label}
-                              size="small"
-                              variant="outlined"
-                              fullWidth={true}
-                              onChange={(e) => {
-                                const value = `${e.target.value}`;
-                                settingsCtx.set(name, param.validate ? param.validate(value) : value);
-                              }}
-                              value={settingsCtx.get(name)}
-                              sx={{ marginRight: "0.5em" }}
-                              // helperText={param.description}
-                            />
-                            {param.default && param.default !== settingsCtx.get(name) && (
-                              <Tooltip title="Restore default value" placement="bottom" disableInteractive>
-                                <IconButton
-                                  onClick={() => {
-                                    settingsCtx.set(name, param.default);
-                                  }}
-                                >
-                                  <UndoIcon fontSize="inherit" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
+                              {param.default && param.default !== settingsCtx.get(name) && (
+                                <Tooltip title="Restore default value" placement="bottom" disableInteractive>
+                                  <IconButton
+                                    onClick={() => {
+                                      settingsCtx.set(name, param.default);
+                                    }}
+                                  >
+                                    <UndoIcon fontSize="inherit" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </Stack>
                           </Stack>
-                        </Stack>
-                      );
-                    }
-                    // console.log(`Ignored PARAMETER: ${JSON.stringify(name)} of type ${param.type}`);
-                    return "";
-                  })}
-                </Stack>
-              </AccordionDetails>
-            </Accordion>
-          );
-        })}
+                        );
+                      }
+                      // console.log(`Ignored PARAMETER: ${JSON.stringify(name)} of type ${param.type}`);
+                      return "";
+                    })}
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
+        </Box>
       </Stack>
     );
   }, [grouped, expanded]);
