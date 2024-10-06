@@ -37,11 +37,15 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     // update font size globally
-    lightThemeDef.typography.fontSize = settingsCtx.get("fontSize") as number;
-    lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] =
-      `${settingsCtx.get("fontSize")}`;
-    setDarkTheme(createTheme(darkThemeDef));
-    setLightTheme(createTheme(lightThemeDef));
+    const fontSize = settingsCtx?.get("fontSize");
+    if (fontSize) {
+      lightThemeDef.typography.fontSize = fontSize as number;
+      lightThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] = fontSize;
+      darkThemeDef.typography.fontSize = fontSize as number;
+      darkThemeDef.components.MuiCssBaseline.styleOverrides.body["& .flexlayout__layout"]["--font-size"] = fontSize;
+      setDarkTheme(createTheme(darkThemeDef));
+      setLightTheme(createTheme(lightThemeDef));
+    }
   }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
