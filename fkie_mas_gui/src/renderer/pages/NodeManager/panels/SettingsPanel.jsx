@@ -1,12 +1,9 @@
 import GuiPanel from "../../../components/SettingsModal/GuiPanel";
 
 function SettingsPanel() {
-  return (
-    <GuiPanel/>
-  );
+  return <GuiPanel />;
 }
 
-SettingsPanel.propTypes = {
-};
+SettingsPanel.propTypes = {};
 
 export default SettingsPanel;

@@ -152,6 +152,7 @@ npm run build:linux
 ```
 
 - update licenses of dependencies
+
 ```bash
 npm install -g license-checker
 license-checker --json --out src/renderer/deps-licenses.json

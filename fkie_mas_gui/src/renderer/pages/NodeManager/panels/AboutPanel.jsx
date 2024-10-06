@@ -1,12 +1,9 @@
 import About from "../../../components/SettingsModal/About";
 
 function AboutPanel() {
-  return (
-    <About/>
-  );
+  return <About />;
 }
 
-AboutPanel.propTypes = {
-};
+AboutPanel.propTypes = {};
 
 export default AboutPanel;
