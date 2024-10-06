@@ -676,7 +676,13 @@ function NodeManager() {
       parent.selected = undefined;
     }
     parent.children = parent.children.filter((item) => {
-      if (item.type === "tab" && LAYOUT_TAB_LIST.includes(item.id)) {
+      // do not store Setting and About tabs
+      if (
+        item.type === "tab" &&
+        item.id !== LAYOUT_TABS.ABOUT &&
+        item.id !== LAYOUT_TABS.SETTINGS &&
+        LAYOUT_TAB_LIST.includes(item.id)
+      ) {
         return true;
       }
       if (item.children) {

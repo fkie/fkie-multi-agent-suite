@@ -98,7 +98,7 @@ function About() {
   }, []);
 
   return (
-    <Stack paddingTop={2} spacing={0.2} overflow="hidden">
+    <Stack height="100%" paddingTop={2} spacing={0.2}>
       <Stack spacing={1} direction="row">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Version:
@@ -200,8 +200,8 @@ function About() {
           </Stack>
         </Typography>
       </Stack>
-      <h3>Licenses of {Object.entries(licenses).length} dependencies</h3>
-      <Stack>
+      <h4>List of {Object.entries(licenses).length} dependencies:</h4>
+      <Stack height="100%" overflow="auto">
         {licenses && (
           <ul>
             {Object.entries(licenses).map(([pkg, info]) => (
