@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.6.0 - 07.10.2024
+
+Use ssh keys instead of store credentials in keyring
+Added copy button in connect dialog
+Added further connect configuration parameter
+On load launch file dialog: update the last open path each time the path is changed
+Open the parent file and go to the location where the file is included, differentiate between multiple includes of the same file
+Show all occurrences of included files in package explorer
+All notifications can now be closed
+Close launch file editor on double ESC
+Changed settings dialog to settings and about tab, moved the icons to bottom right
+Fixed: exception in package explorer with equal subdirectory names
+Fixed: parse NaN values in topic messages (use JSON5)
+
 ## 2.5.11 - 27.09.2024
 
 Added lint to configuration
