@@ -76,7 +76,6 @@ function ExplorerTree({
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!file) return <></>;
       const fileLaunchArgs = {};
-      file.args?.forEach((item) => (fileLaunchArgs[item.name] = item.value));
       return (
         <FileTreeItem
           key={`${file.inc_path}-${file.line_number + lineNumberCount}`}
@@ -98,7 +97,7 @@ function ExplorerTree({
           onLabelClick={(event) => {
             emitCustomEvent(
               EVENT_EDITOR_SELECT_RANGE,
-              eventEditorSelectRange(tabId, file.inc_path, null, fileLaunchArgs)
+              eventEditorSelectRange(tabId, file.inc_path, null, file.args?.forEach((item) => (fileLaunchArgs[item.name] = item.value)))
             );
             event.stopPropagation();
           }}
@@ -119,7 +118,7 @@ function ExplorerTree({
                   startColumn: 0,
                   endColumn: 0,
                 },
-                fileLaunchArgs
+                file.args?.forEach((item) => (fileLaunchArgs[item.name] = item.value))
               )
             );
             event.stopPropagation();
