@@ -60,6 +60,7 @@ function ExplorerTree({
         currentFile.children.push(file);
       }
     });
+    // TODO: expand all items from root to the selected item
     setExpandedExplorerResults([
       `${rootItem.inc_path}-${rootItem.line_number}`,
       ...includedFiles.map((item) => {
@@ -86,9 +87,12 @@ function ExplorerTree({
           modified={modifiedUriPaths.includes(file.uriPath)}
           selected={
             selectedUriPath === file.uriPath &&
-            (launchArgs.size === 0 ||
+            // compare launchArgs if there are several files with the same name
+            (selectedUriPath.endsWith(`:${rootFilePath}`) ||
+              !launchArgs ||
+              launchArgs?.size === 0 ||
               file.args?.filter((item) => {
-                return !(launchArgs[item.name] === item.value);
+                return !(launchArgs && launchArgs[item.name] === item.value);
               }).length === 0)
           }
           onLabelClick={(event) => {
@@ -127,7 +131,7 @@ function ExplorerTree({
         </FileTreeItem>
       );
     },
-    [logCtx, modifiedUriPaths, selectedUriPath, tabId]
+    [logCtx, modifiedUriPaths, selectedUriPath, tabId, launchArgs]
   );
 
   return (
