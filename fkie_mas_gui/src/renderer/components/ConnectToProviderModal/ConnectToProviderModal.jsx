@@ -381,13 +381,11 @@ function ConnectToProviderModal() {
 
     // start provider
     let successStart = true;
-    await Promise.all(
-      launchCfgs.map(async (launchCfg) => {
-        if (!(await rosCtx.startConfig(launchCfg))) {
-          successStart = false;
-        }
-      })
-    );
+    launchCfgs.map(async (launchCfg) => {
+      if (!(await rosCtx.startConfig(launchCfg))) {
+        successStart = false;
+      }
+    });
     if (successStart) {
       setStartProviderDescription("");
     }
