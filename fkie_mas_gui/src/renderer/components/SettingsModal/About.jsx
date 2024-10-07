@@ -98,8 +98,8 @@ function About() {
   }, []);
 
   return (
-    <Stack height="100%" paddingTop={2} spacing={0.2}>
-      <Stack spacing={1} direction="row">
+    <Stack height="100%" paddingTop={2} spacing="1em">
+      <Stack spacing={1} direction="row" justifyItems="center" alignItems="center">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Version:
         </Typography>
@@ -171,11 +171,11 @@ function About() {
         </Typography>
         <Typography variant="body">{packageJson.license}</Typography>
       </Stack>
-      <Stack spacing={1} direction="row">
+      <Stack spacing="0.2em" direction="column">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Contributors:
         </Typography>
-        <Typography variant="body">
+        <Typography variant="body" paddingLeft="1em">
           <Stack>
             {packageJson.contributors.map((item) => (
               <Typography key={`contributor-${item}`} variant="body">
@@ -185,11 +185,11 @@ function About() {
           </Stack>
         </Typography>
       </Stack>
-      <Stack spacing={1} direction="row">
+      <Stack spacing="0.2em" direction="column">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Required additional software:
         </Typography>
-        <Typography variant="body">
+        <Typography variant="body" paddingLeft="1em">
           <Stack>
             <Link href="https://github.com/tsl0922/ttyd" target="_blank" rel="noopener">
               https://github.com/tsl0922/ttyd
@@ -206,7 +206,7 @@ function About() {
           <ul>
             {Object.entries(licenses).map(([pkg, info]) => (
               <li key={pkg}>
-                <strong>{pkg}</strong>: {info.licenses}
+                {pkg}: {info.licenses}
               </li>
             ))}
           </ul>
