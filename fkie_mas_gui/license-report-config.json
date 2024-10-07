@@ -1,0 +1,5 @@
+{
+  "output": "json",
+  "fields": ["name", "licenseType", "installedVersion", "author"],
+  "only": "prod,dev,peer"
+}

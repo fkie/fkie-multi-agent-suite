@@ -204,9 +204,9 @@ function About() {
       <Stack height="100%" overflow="auto">
         {licenses && (
           <ul>
-            {Object.entries(licenses).map(([pkg, info]) => (
-              <li key={pkg}>
-                {pkg}: {info.licenses}
+            {licenses.map((item) => (
+              <li key={item.name}>
+                {item.name}@{item.installedVersion}: {item.licenseType}
               </li>
             ))}
           </ul>
