@@ -33,10 +33,7 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "../../../providers/eventTypes";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import {
-  EVENT_OPEN_COMPONENT,
-  eventOpenComponent,
-} from "../layout/events";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import SingleTerminalPanel from "./SingleTerminalPanel";
 import SystemInformationPanel from "./SystemInformationPanel";
 
@@ -125,6 +122,9 @@ function ProviderPanelRow({ provider }) {
         case ConnectionState.STATES.SERVER_CONNECTED:
         case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
         case ConnectionState.STATES.CONNECTING:
+          setTimeout(() => {
+            forceUpdate();
+          }, 3000);
           return (
             <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
               <Tooltip title="Connecting" placement="bottom" disableInteractive>
@@ -145,6 +145,9 @@ function ProviderPanelRow({ provider }) {
             </Stack>
           );
         case ConnectionState.STATES.STARTING:
+          setTimeout(() => {
+            forceUpdate();
+          }, 3000);
           return (
             <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
               <div style={{ color: "blue" }}>{provider.connectionState}</div>

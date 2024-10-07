@@ -292,18 +292,26 @@ class CommandExecutor implements TCommandExecutor {
           })
           .connect(connectionConfig);
         conn.on("error", async (error: Error & ClientErrorExtensions) => {
-          log.warn("CommandExecutor - connect error: ", error);
+          log.warn("CommandExecutor - connect error: ", JSON.stringify(error));
           connectionConfig.password = undefined;
           connectionConfig.privateKey = undefined;
-          if (keyIndex + 1 < this.privateSshKeys.length) {
-            const result = await this.execRemote(connectionConfig, command, keyIndex + 1);
-            resolve(result);
+          if (error.level === "client-authentication") {
+            if (keyIndex + 1 < this.privateSshKeys.length) {
+              const result = await this.execRemote(connectionConfig, command, keyIndex + 1);
+              resolve(result);
+            } else {
+              resolve({
+                result: false,
+                message: error.message,
+                command,
+                connectConfig: connectionConfig,
+              });
+            }
           } else {
             resolve({
               result: false,
               message: error.message,
               command,
-              connectConfig: connectionConfig,
             });
           }
         });
@@ -402,13 +410,14 @@ class CommandExecutor implements TCommandExecutor {
    */
   private generateConfig = (credential: ConnectConfig, keyIndex: number): ConnectConfig => {
     let privateKey: Buffer | undefined;
-    if (!credential.password && keyIndex < this.privateSshKeys.length) {
-      privateKey = this.privateSshKeys[keyIndex];
-    }
 
     const sshHost: string | undefined = credential.host ? this.sshUsers[credential.host] : undefined;
     const sshPort: number | undefined = credential.host ? this.sshPorts[credential.host] : undefined;
     const sshKey: Buffer | undefined = credential.host ? this.sshKeys[credential.host] : undefined;
+    if (!sshKey && !credential.password && keyIndex < this.privateSshKeys.length) {
+      // no key in configuration and no password, try find key
+      privateKey = this.privateSshKeys[keyIndex];
+    }
 
     const config: ConnectConfig = {
       host: credential.host,
