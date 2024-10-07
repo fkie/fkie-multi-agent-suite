@@ -55,7 +55,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   const [noArr, setNoArr] = useState(false);
   const [hz, setHz] = useState(1.0);
   // TODO add option to change window size to echo topics
-  const [windowSize/*, setWindowSize*/] = useState(0);
+  const [windowSize /*, setWindowSize*/] = useState(0);
   const [msgCount, setMsgCount] = useState(10);
   const [pause, setPause] = useState(false);
   // const [receivedIndex, setReceivedIndex] = useState(0);
