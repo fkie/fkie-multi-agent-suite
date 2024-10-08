@@ -342,15 +342,14 @@ function HostTreeViewItem({
                   event.stopPropagation();
                 }
               }}
-              variant="body2"
-              sx={{ fontWeight: "inherit", flexGrow: 1, userSelect: "none" }}
+              sx={{ flexGrow: 1, userSelect: "none" }}
             >
               {isNode ? (
                 <>
-                  <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                  <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
                     {namespacePart}
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: "bold", userSelect: "none" }}>
+                  <Typography variant="body2" sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}>
                     {labelText.slice(namespacePart.length)}
                   </Typography>
                 </>
