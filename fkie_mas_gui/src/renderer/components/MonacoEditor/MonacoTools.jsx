@@ -98,6 +98,21 @@ const createXMLDependencyProposals = (monaco, range, clipText) => {
       insertText: 'launch-prefix="gdb -ex run -ex bt -batch --args"',
       range,
     },
+
+    {
+      label: "nm/associations",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation: "Associated ROS-Nodes are started before the node itself and stopped after the node.",
+      insertText: 'param name="nm/associations" value="NODE1,NODE2" /',
+      range,
+    },
+    {
+      label: "nm/kill_on_stop",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation: "Kill the node after defined time in milliseconds",
+      insertText: 'param name="nm/kill_on_stop" value="300" /',
+      range,
+    },
   ];
 };
 

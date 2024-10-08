@@ -524,6 +524,21 @@ function HostTreeViewPanel() {
       } else {
         // store result for message
         const resultStopNode = await provider.stopNode(node.id);
+        if (node.pid) {
+          let killTime = -1;
+          node.parameters.forEach((params) => {
+            params.forEach((param) => {
+              if (param.name.endsWith("/nm/kill_on_stop")) {
+                if (killTime === -1) killTime = param.value;
+              }
+            });
+          });
+          if (killTime > -1) {
+            setTimeout(() => {
+              updateQueueMain([{ node, action: "KILL" }]);
+            }, killTime);
+          }
+        }
         if (!resultStopNode.result) {
           addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
         } else {
@@ -665,7 +680,7 @@ function HostTreeViewPanel() {
         if (!resultKillNode.result) {
           addStatusQueueMain("KILL", node.name, false, resultKillNode.message);
         } else {
-          addStatusQueueMain("UNREGISTER", node.name, true, "killed");
+          addStatusQueueMain("KILL", node.name, true, "killed");
         }
       }
     }
