@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.6.1 - 08.10.2024
+
+Load configuration files into the editor only on demand, show loading indicators
+Expand all items from root to the selected item in explorer of the editor
+Fixed: scrollbar in package explorer of the editor
+Fixed: read old start configurations
+
 ## 2.6.0 - 07.10.2024
 
 Use ssh keys instead of store credentials in keyring
