@@ -74,21 +74,23 @@ function ExplorerTree({
         currentFile.children.push(file);
       }
     });
-    // TODO: expand all items from root to the selected item
-    setExpandedExplorerResults([
-      `${rootItem.inc_path}-${rootItem.line_number}`,
-      ...includedFiles.map((item) => {
-        return `${item.inc_path}-${item.line_number}`;
-      }),
-    ]);
     setIncludeRoot(rootItem);
-  }, [createUriPath, includedFiles, providerId, rootFilePath, rosCtx]);
+  }, [includedFiles, providerId, rootFilePath, rosCtx]);
 
   /** Create from SimpleTreeView from given root item */
   const includeFilesToTree = useCallback(
-    (file, lineNumberCount) => {
+    (file, lineNumberCount, parentItems = []) => {
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!file) return <></>;
+      const pathList = [...parentItems, `${file.inc_path}-${file.line_number + lineNumberCount}`];
+      const selected =
+        selectedUriPath === file.uriPath &&
+        // compare launchArgs if there are several files with the same name
+        (selectedUriPath.endsWith(`:${rootFilePath}`) || equalLaunchArgs(launchArgs, file.args));
+      if (selected) {
+        // expand all items from root to the selected item
+        setExpandedExplorerResults(pathList);
+      }
       return (
         <FileTreeItem
           key={`${file.inc_path}-${file.line_number + lineNumberCount}`}
@@ -97,11 +99,7 @@ function ExplorerTree({
           labelLine={file.line_number}
           textColor={!file.exists ? "red" : ""}
           modified={modifiedUriPaths.includes(file.uriPath)}
-          selected={
-            selectedUriPath === file.uriPath &&
-            // compare launchArgs if there are several files with the same name
-            (selectedUriPath.endsWith(`:${rootFilePath}`) || equalLaunchArgs(launchArgs, file.args))
-          }
+          selected={selected}
           onLabelClick={(event) => {
             emitCustomEvent(
               EVENT_EDITOR_SELECT_RANGE,
@@ -141,7 +139,7 @@ function ExplorerTree({
           }}
         >
           {file.children.map((child) => {
-            return includeFilesToTree(child, lineNumberCount + file.line_number);
+            return includeFilesToTree(child, lineNumberCount + file.line_number, pathList);
           })}
         </FileTreeItem>
       );
