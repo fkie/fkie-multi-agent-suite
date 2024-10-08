@@ -116,6 +116,42 @@ const DEFAULT_PARAMETER = {
   ros1MasterUri: "default",
 };
 
+/**
+ * Simple is object check.
+ * @param item
+ * @returns {boolean}
+ */
+function isObject(item) {
+  return item && typeof item === "object" && !Array.isArray(item);
+}
+
+/**
+ * Deep merge modifier into org and returns new object
+ * @param org
+ * @param modifier
+ */
+function mergeDeepConfig(org, modifier) {
+  const result = {};
+  if (isObject(org)) {
+    for (const key in org) {
+      if (isObject(org[key])) {
+        if (isObject(modifier[key])) {
+          result[key] = mergeDeepConfig(org[key], modifier[key]);
+        }
+      } else {
+        if (modifier[key]) {
+          if (!isObject(modifier[key])) {
+            result[key] = modifier[key];
+          }
+        } else {
+          result[key] = org[key];
+        }
+      }
+    }
+  }
+  return result;
+}
+
 function ConnectToProviderModal() {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -354,7 +390,7 @@ function ConnectToProviderModal() {
     setStartProviderDescription("Starting nodes on selected hosts");
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
-      setStartConfigurationsDefault(startParameter);
+      setStartConfigurationsDefault(mergeDeepConfig(DEFAULT_PARAMETER, startParameter));
     }
 
     const launchCfgs = [];
@@ -401,7 +437,7 @@ function ConnectToProviderModal() {
   const handleJoinProvider = async () => {
     setStartProviderIsSubmitting(true);
     if (saveDefaultParameter) {
-      setStartConfigurationsDefault(startParameter);
+      setStartConfigurationsDefault(mergeDeepConfig(DEFAULT_PARAMETER, startParameter));
     }
     const hosts = hostValues;
     if (hostInputValue !== "" && !hosts.includes(hostInputValue)) {
@@ -471,7 +507,7 @@ function ConnectToProviderModal() {
                     hover
                     key={cfg.id}
                     onClick={() => {
-                      setStartParameter(cfg.params);
+                      setStartParameter(mergeDeepConfig(DEFAULT_PARAMETER, cfg.params));
                       setHostValues(cfg.hosts);
                       setHostInputValue("");
                       setSelectedHistory(cfg.id);
