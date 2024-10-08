@@ -446,6 +446,27 @@ function HostTreeViewPanel() {
     [rosCtx]
   );
 
+  const getNodeLetManager = (node) => {
+    if (!node) return null;
+    const composableParent = node.parent_id || node.launchInfo?.composable_container;
+    if (composableParent) {
+      const provider = rosCtx.getProviderById(node.providerId);
+      const nodeNms = provider?.rosNodes.filter((node) => node.name === composableParent);
+      const nodeNm = nodeNms.length > 0 ? nodeNms[0] : null;
+      if (
+        nodeNm &&
+        nodeNm.status !== RosNodeStatus.RUNNING &&
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === "START" && elem.node.name === nodeNm.name;
+        }) === undefined
+      ) {
+        return nodeNm;
+      }
+    }
+    return null;
+  };
+
   const startNodesWithLaunchCheck = useCallback(
     (nodes, ignoreRunState = false) => {
       const withMultiLaunch = [];
@@ -466,8 +487,18 @@ function HostTreeViewPanel() {
         ) {
           skippedNodes.set(node.name, "already in the start queue");
         } else if (node.launchPaths.size === 1) {
+          // prepend nodeLet manager to the start list
+          const managerNode = getNodeLetManager(node);
+          if (managerNode) {
+            node2Start.push(managerNode);
+          }
           node2Start.push(node);
         } else if (node.launchPaths.size > 1) {
+          // prepend nodeLet manager to the start list
+          const managerNode = getNodeLetManager(node);
+          if (managerNode) {
+            node2Start.push(managerNode);
+          }
           node2Start.push(node);
           // Multiple launch files available
           withMultiLaunch.push(node);
