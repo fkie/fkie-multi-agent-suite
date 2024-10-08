@@ -261,10 +261,10 @@ function NodesDetailsPanel() {
               )}
 
               {node.screens.length > 0 && (
-                <Stack direction="row" spacing={0.5}>
+                <Stack direction="column" spacing={0.5}>
                   {node.screens.map((screen) => (
                     <Tag
-                      key={`screen-${node.name}`}
+                      key={`screen-${screen}-`}
                       color="default"
                       title="Screen:"
                       text={screen}
