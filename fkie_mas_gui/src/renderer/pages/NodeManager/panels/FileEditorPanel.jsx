@@ -39,19 +39,13 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const infoRef = useRef(null);
   const resizeObserver = useRef(null);
   const componentWillUnmount = useRef(false);
-  const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage(
-    "Editor:sideBarWidth",
-    settingsCtx.get("fontSize") * 20
-  );
-  const [savedExplorerBarHight, setSavedExplorerBarHight] = useLocalStorage(
-    "Editor:explorerBarHight",
-    settingsCtx.get("fontSize") * 20
-  );
-  const [fontSize, setFontSize] = useState(16);
-  const [sideBarMinSize, setSideBarMinSize] = useState(settingsCtx.get("fontSize") * 2);
-  const [sideBarWidth, setSideBarWidth] = useState(settingsCtx.get("fontSize") * 2);
-  const [explorerBarMinSize, setExplorerBarMinSize] = useState(settingsCtx.get("fontSize") * 2);
-  const [explorerBarHeight, setExplorerBarHeight] = useState(settingsCtx.get("fontSize") * 2);
+  const [fontSize, setFontSize] = useState(settingsCtx.get("fontSize"));
+  const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage("Editor:sideBarWidth", fontSize * 20);
+  const [savedExplorerBarHight, setSavedExplorerBarHight] = useLocalStorage("Editor:explorerBarHight", fontSize * 20);
+  const [sideBarMinSize, setSideBarMinSize] = useState(fontSize * 2);
+  const [sideBarWidth, setSideBarWidth] = useState(fontSize * 2);
+  const [explorerBarMinSize, setExplorerBarMinSize] = useState(fontSize * 2);
+  const [explorerBarHeight, setExplorerBarHeight] = useState(fontSize * 2);
   const [editorHeight, setEditorHeight] = useState(20);
   const [editorWidth, setEditorWidth] = useState(20);
   const [panelHeight, setPanelHeight] = useState(0);
@@ -843,7 +837,12 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                   {enableExplorer && sideBarWidth > fontSize * 7 && <Typography fontSize="0.8em">Explorer</Typography>}
                 </Stack>
                 {enableExplorer && (
-                  <Stack overflow="auto" direction="column" height={explorerBarHeight} width={sideBarWidth}>
+                  <Stack
+                    overflow="auto"
+                    direction="column"
+                    height={explorerBarHeight - fontSize * 2 - 2}
+                    width={sideBarWidth}
+                  >
                     <ExplorerTree
                       tabId={tabId}
                       providerId={providerId}
