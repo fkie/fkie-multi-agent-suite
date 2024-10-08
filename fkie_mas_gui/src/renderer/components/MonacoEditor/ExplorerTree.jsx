@@ -10,6 +10,20 @@ import { getFileName } from "../../models";
 import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../pages/NodeManager/layout/events";
 import { FileTreeItem } from "./FileTreeItem";
 
+export const equalLaunchArgs = (launchArgs, argList) => {
+  if (launchArgs && launchArgs.size > 0) {
+    const notEqual = argList?.filter((item) => {
+      // ignore args with not resolved statements
+      return !(
+        (launchArgs && launchArgs[item.name] === item.value) ||
+        (item.value.find && item.value.find("$(") !== -1)
+      );
+    });
+    return notEqual.length === 0;
+  }
+  return true;
+};
+
 function ExplorerTree({
   tabId,
   providerId,
@@ -75,7 +89,6 @@ function ExplorerTree({
     (file, lineNumberCount) => {
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!file) return <></>;
-      const fileLaunchArgs = {};
       return (
         <FileTreeItem
           key={`${file.inc_path}-${file.line_number + lineNumberCount}`}
@@ -87,17 +100,20 @@ function ExplorerTree({
           selected={
             selectedUriPath === file.uriPath &&
             // compare launchArgs if there are several files with the same name
-            (selectedUriPath.endsWith(`:${rootFilePath}`) ||
-              !launchArgs ||
-              launchArgs?.size === 0 ||
-              file.args?.filter((item) => {
-                return !(launchArgs && launchArgs[item.name] === item.value);
-              }).length === 0)
+            (selectedUriPath.endsWith(`:${rootFilePath}`) || equalLaunchArgs(launchArgs, file.args))
           }
           onLabelClick={(event) => {
             emitCustomEvent(
               EVENT_EDITOR_SELECT_RANGE,
-              eventEditorSelectRange(tabId, file.inc_path, null, file.args?.forEach((item) => (fileLaunchArgs[item.name] = item.value)))
+              eventEditorSelectRange(
+                tabId,
+                file.inc_path,
+                null,
+                file.args.reduce((acc, { name, value }) => {
+                  acc[name] = value;
+                  return acc;
+                }, {})
+              )
             );
             event.stopPropagation();
           }}
@@ -118,7 +134,7 @@ function ExplorerTree({
                   startColumn: 0,
                   endColumn: 0,
                 },
-                file.args?.forEach((item) => (fileLaunchArgs[item.name] = item.value))
+                null
               )
             );
             event.stopPropagation();

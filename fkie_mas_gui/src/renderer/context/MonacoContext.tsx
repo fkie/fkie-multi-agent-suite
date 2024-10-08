@@ -1,7 +1,8 @@
 /* eslint-disable max-classes-per-file */
 import * as Monaco from "@monaco-editor/react";
+import { editor } from "monaco-editor";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { FileItem } from "../models";
+import { FileItem, FileLanguageAssociations } from "../models";
 import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 
@@ -45,6 +46,18 @@ export interface IMonacoContext {
   getModifiedTabs: () => ModifiedTabsInfo[];
   getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined;
   saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
+  createUriPath: (tabId: string, path: string) => string;
+  getModel: (
+    tabId: string,
+    providerId: string,
+    path: string,
+    forceReload: boolean
+  ) => Promise<{
+    model: editor.ITextModel | null;
+    file: FileItem | null;
+    error: string;
+  }>;
+  createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
 }
 
 export interface IMonacoProvider {
@@ -58,6 +71,14 @@ export const DEFAULT_MONACO = {
   saveModifiedFilesOfTabId: () => {
     return Promise.resolve([]);
   },
+  createUriPath: () => "",
+  getModel: () =>
+    Promise.resolve({
+      model: null,
+      file: null,
+      error: "",
+    }),
+  createModel: () => null,
 };
 
 export const MonacoContext = createContext<IMonacoContext>(DEFAULT_MONACO);
@@ -146,6 +167,81 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     [logCtx, modifiedFiles, monaco, rosCtx]
   );
 
+  const createUriPath = (tabId: string, path: string) => {
+    if (path.indexOf(":") !== -1) {
+      return path;
+    }
+    return `/${tabId}:${path}`;
+  };
+
+  /**
+   * Return a monaco model from a given path
+   */
+  const getModelFromPath = (tabId: string, path: string) => {
+    if (!monaco) return null;
+    if (!path || path.length === 0) return null;
+    let modelUri = path;
+    if (modelUri.indexOf(":") === -1) {
+      // create uriPath
+      modelUri = createUriPath(tabId, path);
+    }
+    return monaco.editor.getModel(monaco.Uri.file(modelUri));
+  };
+
+  /**
+   * Create a new monaco model from a given file
+   *
+   * @param {FileItem} file - Original file
+   */
+  const createModel = (tabId: string, file: FileItem) => {
+    if (!monaco) return null;
+    const pathUri = monaco.Uri.file(createUriPath(tabId, file.path));
+    // create monaco model, if it does not exists yet
+    const model = monaco.editor.getModel(pathUri);
+    if (model) {
+      if (model.modified) {
+        // TODO: ask the user how to proceed
+        return model;
+      }
+      model.dispose();
+    }
+    return monaco.editor.createModel(file.value, FileLanguageAssociations[file.extension], pathUri);
+  };
+
+  const getModel: (
+    tabId: string,
+    providerId: string,
+    path: string,
+    forceReload: boolean
+  ) => Promise<{
+    model: editor.ITextModel | null;
+    file: FileItem | null;
+    error: string;
+  }> = async (tabId, providerId, path, forceReload) => {
+    let model: editor.ITextModel | null = getModelFromPath(tabId, path);
+    if (!model || forceReload) {
+      const provider = rosCtx.getProviderById(providerId, false);
+      if (!provider) {
+        return Promise.resolve({ model: null, file: null, error: "" });
+      }
+      const filePath = path.indexOf(":") === -1 ? path : path.split(":")[1];
+      const { file, error } = await provider.getFileContent(filePath);
+      if (!error) {
+        model = createModel(tabId, file);
+        if (!model) {
+          logCtx.error(
+            `Could not create model for included file: [${file.fileName}]`,
+            `Host: ${provider.host()}, root file: ${file.path}`
+          );
+        }
+        return Promise.resolve({ model, file, error });
+      } else {
+        console.error(`Could not open included file: [${file.fileName}]: ${error}`);
+      }
+    }
+    return Promise.resolve({ model, file: null, error: "" });
+  };
+
   const attributesMemo = useMemo(
     () => ({
       monaco,
@@ -155,6 +251,9 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       updateModifiedFiles,
       getModifiedFilesByTab,
       saveModifiedFilesOfTabId,
+      createUriPath,
+      getModel,
+      createModel,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -165,6 +264,9 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       updateModifiedFiles,
       getModifiedFilesByTab,
       saveModifiedFilesOfTabId,
+      createUriPath,
+      getModel,
+      createModel,
     ]
   );
 

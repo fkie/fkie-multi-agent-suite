@@ -5,14 +5,14 @@ import FolderCopyOutlinedIcon from "@mui/icons-material/FolderCopyOutlined";
 import SaveAltOutlinedIcon from "@mui/icons-material/SaveAltOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
-import { Alert, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
+import { Alert, CircularProgress, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
-import ExplorerTree from "../../../components/MonacoEditor/ExplorerTree";
+import ExplorerTree, { equalLaunchArgs } from "../../../components/MonacoEditor/ExplorerTree";
 import { createDocumentSymbols, createXMLDependencyProposals } from "../../../components/MonacoEditor/MonacoTools";
 import SearchTree from "../../../components/MonacoEditor/SearchTree";
 import XmlBeautify from "../../../components/MonacoEditor/XmlBeautify";
@@ -22,13 +22,7 @@ import { LoggingContext } from "../../../context/LoggingContext";
 import { MonacoContext } from "../../../context/MonacoContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
-import {
-  FileItem,
-  FileLanguageAssociations,
-  LaunchIncludedFilesRequest,
-  getFileAbb,
-  getFileName,
-} from "../../../models";
+import { FileItem, LaunchIncludedFilesRequest, getFileAbb, getFileName } from "../../../models";
 import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
 import { EVENT_CLOSE_COMPONENT, EVENT_EDITOR_SELECT_RANGE, eventCloseComponent } from "../layout/events";
 
@@ -69,6 +63,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const [packageName, setPackageName] = useState("");
   const [initialized, setInitialized] = useState(false);
   const [activeModel, setActiveModel] = useState(null);
+  const [currentFile, setCurrentFile] = useState({ name: "", requesting: false });
   const [ownUriPaths, setOwnUriPaths] = useState([]);
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState([]);
@@ -90,51 +85,6 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const [savedFiles, setSavedFiles] = useState([]);
 
   let escapePressCount = 0;
-
-  const createUriPath = useCallback(
-    (path) => {
-      return `/${tabId}:${path}`;
-    },
-    [tabId]
-  );
-
-  /**
-   * Return a monaco model from a given path
-   * * @param {string} uriPath - file path (in the format <host>:<abs_path>)
-   */
-  const getModelFromPath = useCallback(
-    (path) => {
-      if (!monaco) return null;
-      if (!path || path.length === 0) return null;
-      let modelUri = path;
-      if (modelUri.indexOf(":") === -1) {
-        // create uriPath
-        modelUri = createUriPath(path);
-      }
-      return monaco.editor.getModel(monaco.Uri.file(modelUri));
-    },
-    [createUriPath, monaco]
-  );
-
-  /**
-   * Create a new monaco model from a given file
-   *
-   * @param {FileItem} file - Original file
-   */
-  const createModel = (file) => {
-    if (!monaco) return null;
-    const pathUri = monaco.Uri.file(createUriPath(file.path));
-    // create monaco model, if it does not exists yet
-    const model = monaco.editor.getModel(pathUri);
-    if (model) {
-      if (model.modified) {
-        // TODO: ask the user how to proceed
-        return model;
-      }
-      model.dispose();
-    }
-    return monaco.editor.createModel(file.value, FileLanguageAssociations[file.extension], pathUri);
-  };
 
   useEffect(() => {
     if (selectionRange) {
@@ -253,24 +203,13 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   const setEditorModel = useCallback(
     async (uriPath, range = null, launchArgs = null, forceReload = false) => {
       if (!uriPath) return false;
+      setCurrentFile({ name: getFileName(uriPath), requesting: true });
       // If model does not exist, try to fetch it
-      let model = getModelFromPath(uriPath);
-      if (!model || forceReload) {
-        const filePath = uriPath.indexOf(":") === -1 ? uriPath : uriPath.split(":")[1];
-        const provider = rosCtx.getProviderById(providerId);
-        if (provider) {
-          const result = await provider.getFileContent(filePath);
-          if (result && result.file) {
-            model = createModel(result.file);
-          } else {
-            logCtx.error(`Could not get file: ${filePath}`, `Provider: ${provider.name()}`);
-            return false;
-          }
-        }
-      }
+      let result = await monacoCtx.getModel(tabId, providerId, uriPath, forceReload);
+      setCurrentFile({ name: getFileName(uriPath), requesting: false });
 
       // get model from path if exists
-      if (!model) {
+      if (!result.model) {
         logCtx.error(`Could not get model for file: ${uriPath}`, "");
         return false;
       }
@@ -282,20 +221,20 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         monacoViewStates.set(currentModel.uri.path, editorRef.current.saveViewState());
       }
 
-      editorRef.current.setModel(model);
+      editorRef.current.setModel(result.model);
       // restore view state for current file
-      const viewState = monacoViewStates.get(model.uri.path);
+      const viewState = monacoViewStates.get(result.model.uri.path);
       if (viewState) {
         editorRef.current.restoreViewState(viewState);
       }
-      updateIncludeDecorations(model, includedFiles);
-      setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
+      updateIncludeDecorations(result.model, includedFiles);
+      setActiveModel({ path: result.model.uri.path, modified: result.model.modified, model: result.model });
 
       // update modified files for the user info in the info bar
       updateModifiedFiles();
 
       // set package name
-      const modelPackageName = ownUriToPackageDict[model.uri.path];
+      const modelPackageName = ownUriToPackageDict[result.model.uri.path];
       setPackageName(modelPackageName || "");
       // set range is available
       if (range) {
@@ -311,19 +250,16 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       includedFiles,
       providerId,
       providerHost,
+      monacoCtx.getModel,
       setActiveModel,
-      getModelFromPath,
       updateModifiedFiles,
     ]
   );
 
   /** select node definition on event. */
-  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, (data) => {
+  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data) => {
     if (data.tabId === tabId) {
-      const model = getModelFromPath(data.filePath);
-      if (model) {
-        setEditorModel(data.filePath, data.fileRange, data.launchArgs);
-      }
+      setEditorModel(data.filePath, data.fileRange, data.launchArgs);
     }
   });
 
@@ -333,7 +269,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       // ignore event from other provider
       return;
     }
-    const changedUri = createUriPath(data.path.srcPath);
+    const changedUri = monacoCtx.createUriPath(tabId, data.path.srcPath);
     if (ownUriPaths.includes(changedUri)) {
       // ignore if we saved the file
       if (savedFiles.includes(changedUri)) {
@@ -352,7 +288,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         if (currentModel) {
           monacoViewStates.set(currentModel.uri.path, editorRef.current.saveViewState());
         }
-        const model = createModel(result.file);
+        const model = monacoCtx.createModel(tabId, result.file);
         if (!model) {
           console.error(`Could not create model for: [${result.file.fileName}]`);
           setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
@@ -389,30 +325,32 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       const fileToSave = new FileItem("", path, "", "", editorModel.getValue());
       const providerObj = rosCtx.getProviderById(providerId);
       if (providerObj) {
-        const result = await providerObj.saveFileContent(fileToSave);
-        if (result.bytesWritten > 0) {
+        const saveResult = await providerObj.saveFileContent(fileToSave);
+        if (saveResult.bytesWritten > 0) {
           logCtx.success(`Successfully saved file`, `path: ${path}`);
           // unset modified flag of the current model
-          setActiveModel((prevModel) => {
-            const model = getModelFromPath(prevModel.path);
-            model.modified = false;
+          setActiveModel(async (prevModel) => {
+            setCurrentFile({ name: getFileName(prevModel.path), requesting: true });
+            const result = await monacoCtx.getModel(tabId, providerId, prevModel.path, false);
+            setCurrentFile({ name: getFileName(prevModel.path), requesting: false });
+            result.model.modified = false;
             const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
             window.editorManager?.changed(id, path, false);
-            if (!savedFiles.includes(model.uri.path)) {
-              setSavedFiles([...savedFiles, model.uri.path]);
+            if (!savedFiles.includes(result.model.uri.path)) {
+              setSavedFiles([...savedFiles, result.model.uri.path]);
             }
-            return { path: model.uri.path, modified: model.modified, model: model };
+            return { path: result.model.uri.path, modified: result.model.modified, model: result.model };
           });
           updateModifiedFiles();
         } else {
-          logCtx.error(`Error while save file ${path}`, `${result.error}`);
+          logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
         }
       } else {
         logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.getProviderById, monaco, setActiveModel, getModelFromPath]
+    [rosCtx.getProviderById, monaco, setActiveModel, monacoCtx.getModel]
   );
 
   const debouncedWidthUpdate = useDebounceCallback(
@@ -457,14 +395,16 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   };
 
   const handleEditorChange = useCallback(
-    (value, event) => {
+    async (value, event) => {
       // update activeModel modified flag only once
       cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
         if (!activeModel.modified) {
-          const model = getModelFromPath(activeModel.path);
-          model.modified = true;
-          setActiveModel({ path: model.uri.path, modified: model.modified, model: model });
+          setCurrentFile({ name: getFileName(activeModel.path), requesting: true });
+          const result = await monacoCtx.getModel(tabId, providerId, activeModel.path, false);
+          setCurrentFile({ name: getFileName(activeModel.path), requesting: false });
+          result.model.modified = true;
+          setActiveModel({ path: result.model.uri.path, modified: result.model.modified, model: result.model });
           updateModifiedFiles();
           const provider = rosCtx.getProviderById(providerId);
           if (provider) {
@@ -474,7 +414,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         }
       }
     },
-    [activeModel, setActiveModel, getModelFromPath, updateModifiedFiles]
+    [activeModel, setActiveModel, monacoCtx.getModel, updateModifiedFiles]
   );
 
   useEffect(() => {
@@ -510,11 +450,11 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     if (editorRef.current) {
       updateIncludeDecorations(editorRef.current.getModel(), includedFiles);
     }
-    const uriPath = createUriPath(rootFilePath);
+    const uriPath = monacoCtx.createUriPath(tabId, rootFilePath);
     const newOwnUris = [uriPath];
     ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
     includedFiles.forEach((file) => {
-      const incUriPath = createUriPath(file.inc_path);
+      const incUriPath = monacoCtx.createUriPath(tabId, file.inc_path);
       newOwnUris.push(incUriPath);
       ownUriToPackageDict[incUriPath] = provider.getPackageName(file.inc_path);
     });
@@ -600,7 +540,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
   //  - create a monaco model (file in editor) based on [currentFilePath]
   //  - check if include files are available (for xml and launch files for example)
   //  -   if available, download all include files and create their corresponding models
-  // TODO: Shall we download the models per request? the problem is then the recursive text search
+  // We download the models per request. On recursive text search all files will be downloaded
   const loadFiles = useCallback(() => {
     if (!editorRef.current) {
       return;
@@ -634,24 +574,20 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     setNotificationDescription("Getting file from provider...");
     // get file content from provider and create monaco model
     const getFileAndIncludesAsync = async () => {
-      const result = await provider.getFileContent(currentFilePath);
-      if (result.error) {
-        console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-        setNotificationDescription(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-        return;
-      }
-      const model = createModel(result.file);
-      if (!model) {
+      setCurrentFile({ name: getFileName(currentFilePath), requesting: true });
+      const result = await monacoCtx.getModel(tabId, providerId, currentFilePath, false);
+      setCurrentFile({ name: getFileName(currentFilePath), requesting: false });
+      if (!result.model && result.file) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
         setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
         return;
       }
       // setActiveModel({ path: model.uri.path, modified: model.modified });
-      setEditorModel(model.uri.path, fileRange, launchArgs);
+      setEditorModel(result.model.uri.path, fileRange, launchArgs);
 
       // Ignore "non-launch" files
       // TODO: Add parameter Here
-      if (!["launch", "xml", "xacro"].includes(result.file.extension)) {
+      if (!["launch", "xml", "xacro"].includes(result.file?.extension)) {
         setIncludedFiles([]);
         setNotificationDescription("");
         return;
@@ -670,26 +606,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         if (!uniqueIncludedFiles.includes(f.inc_path)) uniqueIncludedFiles.push(f.inc_path);
       });
 
-      // get file content and create corresponding monaco models
-      uniqueIncludedFiles.forEach(async (f) => {
-        // const includedFullPath = createUriPath(f)`${provider.host()}:${f}`;
-        if (getModelFromPath(f)) {
-          //  model already exist, ignore
-          return;
-        }
-        const { file, error } = await provider.getFileContent(f);
-        if (!error) {
-          const m = createModel(file);
-          if (!m) {
-            logCtx.error(
-              `Could not create model for included file: [${file.fileName}]`,
-              `Host: ${provider.host()}, root file: ${file.path}`
-            );
-          }
-        } else {
-          console.error(`Could not open included file: [${file.fileName}]: ${error}`);
-        }
-      });
+      // get file content and create corresponding monaco models on demand
+
       setIncludedFiles(includedFilesLocal);
       setNotificationDescription("");
     };
@@ -701,8 +619,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     currentFilePath,
     providerId,
     setEditorModel,
-    createModel,
-    getModelFromPath,
+    monacoCtx.getModel,
     setProviderHost,
     setProviderName,
     setNotificationDescription,
@@ -969,7 +886,12 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                   height={panelRef.current.getBoundingClientRect().height - explorerBarHeight - fontSize * 2 - 8}
                   overflow="auto"
                 >
-                  <SearchTree tabId={tabId} ownUriPaths={ownUriPaths} searchTerm={globalSearchTerm} />
+                  <SearchTree
+                    tabId={tabId}
+                    providerId={providerId}
+                    ownUriPaths={ownUriPaths}
+                    searchTerm={globalSearchTerm}
+                  />
                 </Stack>
               )}
             </Stack>
@@ -982,7 +904,6 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           }}
           overflow="none"
         >
-          {/* <AppBar position="static" color="transparent" elevation={0}> */}
           <Stack direction="row" spacing={0.5} alignItems="center" ref={infoRef} style={getHostStyle()}>
             <Tooltip title="Save File" disableInteractive>
               <span>
@@ -1007,13 +928,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                   const parentPaths = includedFiles.filter((item) => {
                     if (path === item.inc_path) {
                       // check args to select the correct file, if the same file included twice
-                      if (currentLaunchArgs) {
-                        const notEqual = item.args.filter((item) => {
-                          return !(currentLaunchArgs[item.name] === item.value);
-                        });
-                        return notEqual.length === 0;
-                      }
-                      return true;
+                      return equalLaunchArgs(currentLaunchArgs, item.args);
                     }
                     return false;
                   });
@@ -1054,7 +969,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                 <CloudSyncOutlinedIcon style={{ fontSize: "0.8em" }} />
               </IconButton>
             </Tooltip>
-            <Stack direction="row" width="100%">
+            <Stack direction="row" width="100%" spacing={0.4} alignItems="center">
+              {currentFile.requesting && <CircularProgress size="0.8em" />}
               <Typography
                 noWrap
                 style={{
@@ -1064,9 +980,9 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                 }}
               >
                 {activeModel?.modified ? "*" : ""}
-                {getFileName(activeModel?.path)}
+                {currentFile.name}
               </Typography>
-              <Stack direction="row" marginLeft={0.4} spacing={0.2}>
+              <Stack direction="row" spacing={0.2}>
                 {modifiedFiles
                   .filter((path) => path !== activeModel?.path)
                   .map((path) => {
