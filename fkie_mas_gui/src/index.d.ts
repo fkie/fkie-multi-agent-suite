@@ -1,5 +1,6 @@
 import { TRosInfo, TSystemInfo } from "@/types";
 import {
+  TAutoUpdateManager,
   TCommandExecutor,
   TDialogManager,
   TEditorManager,
@@ -17,7 +18,7 @@ declare global {
     shutdownManager?: TShutdownManager;
     subscriberManager?: TSubscriberManager;
     terminalManager?: TTerminalManager;
-    autoUpdate?: unknown;
+    autoUpdate?: TAutoUpdateManager;
     commandExecutor?: TCommandExecutor;
   }
 }

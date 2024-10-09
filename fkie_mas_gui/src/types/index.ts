@@ -1,3 +1,12 @@
+import {
+  AuCheckingForUpdateCallback,
+  AuDownloadProgressCallback,
+  AutoUpdateManagerEvents,
+  AuUpdateAvailableCallback,
+  AuUpdateDownloadedCallback,
+  AuUpdateErrorCallback,
+  TAutoUpdateManager,
+} from "./AutoUpdateManager";
 import { CommandExecutorEvents, TCommandExecutor } from "./CommandExecutor";
 import { DialogManagerEvents, TDialogManager } from "./DialogManager";
 import { EditorCloseCallback, EditorManagerEvents, FileRangeCallback, TEditorManager } from "./EditorManager";
@@ -13,6 +22,7 @@ import { TRosInfo } from "./TRosInfo";
 import { TSystemInfo } from "./TSystemInfo";
 
 export {
+  AutoUpdateManagerEvents,
   CommandExecutorEvents,
   DialogManagerEvents,
   EditorManagerEvents,
@@ -21,11 +31,17 @@ export {
   TerminalManagerEvents,
 };
 export type {
+  AuCheckingForUpdateCallback,
+  AuDownloadProgressCallback,
+  AuUpdateAvailableCallback,
+  AuUpdateDownloadedCallback,
+  AuUpdateErrorCallback,
   EditorCloseCallback,
   FileRangeCallback,
   JSONObject,
   JSONValue,
   SubscriberCloseCallback,
+  TAutoUpdateManager,
   TCommandExecutor,
   TDialogManager,
   TEditorManager,

@@ -1,8 +1,16 @@
 /* eslint-disable max-classes-per-file */
+import { TFileRange, TLaunchArgs } from "@/types";
 import * as Monaco from "@monaco-editor/react";
 import { editor } from "monaco-editor";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
 import { FileItem, FileLanguageAssociations } from "../models";
+import {
+  EVENT_CLOSE_COMPONENT,
+  EVENT_EDITOR_SELECT_RANGE,
+  eventCloseComponent,
+  eventEditorSelectRange,
+} from "../pages/NodeManager/layout/events";
 import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 
@@ -89,6 +97,19 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   const logCtx = useContext(LoggingContext);
 
   const [modifiedFiles, setModifiedFiles] = useState<ModifiedTabsInfo[]>([]);
+
+  useEffect(() => {
+    window.editorManager?.onFileRange(
+      (tabId: string, filePath: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => {
+        if (fileRange) {
+          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange, launchArgs));
+        }
+      }
+    );
+    window.editorManager?.onClose((tabId: string) => {
+      emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(tabId));
+    });
+  }, []);
 
   useEffect(() => {
     monaco?.languages.typescript.javascriptDefaults.setEagerModelSync(true);

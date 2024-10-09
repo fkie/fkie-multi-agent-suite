@@ -4,11 +4,9 @@ import { Box, Button, IconButton, Link, Stack, Typography } from "@mui/material"
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 import PropTypes from "prop-types";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import packageJson from "../../../../package.json";
-import { ElectronContext } from "../../context/ElectronContext";
-import { LoggingContext } from "../../context/LoggingContext";
-import { SettingsContext } from "../../context/SettingsContext";
+import { AutoUpdateContext } from "../../context/AutoUpdateContext";
 import CopyButton from "../UI/CopyButton";
 
 function LinearProgressWithLabel({ value, ...props }) {
@@ -28,150 +26,95 @@ LinearProgressWithLabel.propTypes = {
 };
 
 function About() {
-  const settingsCtx = useContext(SettingsContext);
-  const logCtx = useContext(LoggingContext);
-  const electronCtx = useContext(ElectronContext);
-  const [updateError, setUpdateError] = useState("");
-  const [checkingForUpdate, setCheckingForUpdate] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(null);
-  const [updateNotAvailable, setUpdateNotAvailable] = useState(null);
-  const [updateDownloaded, setUpdateDownloaded] = useState(false);
-  const [downloadedProgress, setDownloadedProgress] = useState(null);
+  const auCtx = useContext(AutoUpdateContext);
   const [openErrorTooltip, setOpenErrorTooltip] = useState(false);
 
-  function checkForUpdate(force) {
-    if (electronCtx.checkedForUpdates && !force) return;
-    logCtx.debug(`Check for new release on https://github.com/fkie/fkie-multi-agent-suite`);
-    electronCtx.setUpdateAvailable("");
-    electronCtx.setCheckedForUpdates(true);
-    setUpdateError("");
-    setCheckingForUpdate(false);
-    setUpdateAvailable(null);
-    setUpdateNotAvailable(null);
-    setUpdateDownloaded(null);
-    setDownloadedProgress(null);
-    window.autoUpdate.send("check-for-updates");
-  }
-
-  function installUpdate() {
-    setUpdateError("");
-    electronCtx.setRequestedInstallUpdate(true);
-    window.autoUpdate.send("quit-and-install");
-  }
-
-  // register icp events published by ICP/AutoUpdateManager
-  useEffect(() => {
-    if (!window.autoUpdate) return;
-
-    window.autoUpdate.receive("checking-for-update", () => {
-      setCheckingForUpdate(true);
-    });
-
-    window.autoUpdate.receive("update-available", (data) => {
-      setCheckingForUpdate(false);
-      setUpdateAvailable(data);
-      electronCtx.setUpdateAvailable(data.version);
-      logCtx.info(`New version ${data.version} available! Please update in 'About'-tab in settings dialog.`);
-    });
-
-    window.autoUpdate.receive("update-not-available", (data) => {
-      setCheckingForUpdate(false);
-      setUpdateNotAvailable(data);
-    });
-
-    window.autoUpdate.receive("download-progress", (data) => {
-      setCheckingForUpdate(false);
-      setDownloadedProgress(data);
-    });
-    window.autoUpdate.receive("update-downloaded", (data) => {
-      setUpdateDownloaded(data);
-    });
-
-    window.autoUpdate.receive("update-error", (data) => {
-      setCheckingForUpdate(false);
-      setUpdateError(data);
-      logCtx.debug("update failed", data);
-    });
-    if (settingsCtx.get("checkForUpdates")) {
-      checkForUpdate();
-    }
-  }, []);
-
   return (
-    <Stack height="100%" paddingTop={2} spacing="1em">
-      <Stack spacing={1} direction="row" justifyItems="center" alignItems="center">
-        <Typography variant="body" sx={{ fontWeight: "bold" }}>
-          Version:
-        </Typography>
-        <Typography variant="body">{packageJson.version}</Typography>
+    <Stack height="100%" padding="0.3em">
+      {/** Version */}
+      <Stack direction="column" justifyItems="center">
+        <Stack spacing={1} direction="row" justifyItems="center" alignItems="center">
+          <Typography variant="body" sx={{ fontWeight: "bold" }}>
+            Version:
+          </Typography>
+          <Typography variant="body">{packageJson.version}</Typography>
+          {!auCtx.checkingForUpdate && (
+            <Button color="primary" onClick={() => auCtx.checkForUpdate()} variant="text">
+              check for updates
+            </Button>
+          )}
+          {auCtx.updateError.length > 0 && (
+            <IconButton
+              edge="start"
+              aria-label="error message"
+              onClick={() => {
+                setOpenErrorTooltip(!openErrorTooltip);
+              }}
+            >
+              <ErrorOutlineIcon
+                sx={{
+                  fontSize: "inherit",
+                  color: "red",
+                }}
+              />
+            </IconButton>
+          )}
+        </Stack>
+        {auCtx.autoUpdateManager && (
+          <Stack ml="1em" direction="column">
+            {!auCtx.checkingForUpdate && !auCtx.updateAvailable && !auCtx.updateError && (
+              <Typography variant="body" color="green">
+                Your version is up to date!
+              </Typography>
+            )}
+          </Stack>
+        )}
+        {auCtx.autoUpdateManager && (
+          <Stack ml="1em" spacing={0.2} direction="row" alignItems="center">
+            {auCtx.checkingForUpdate && (
+              <Box sx={{ display: "flex" }}>
+                <CircularProgress size="1em" />
+              </Box>
+            )}
+            {auCtx.downloadProgress && (
+              <Stack spacing={0.2} direction="row">
+                <Typography variant="body">downloading {auCtx.updateAvailable.version}</Typography>
+                {auCtx.downloadProgress.percent < 100 && (
+                  <Box sx={{ width: "100%" }}>
+                    <LinearProgressWithLabel value={auCtx.downloadProgress.percent} />
+                  </Box>
+                )}
+              </Stack>
+            )}
 
-        {window.autoUpdate && (
-          <Stack spacing={0.2} direction="column">
-            <Stack spacing={0.2} direction="row">
-              {checkingForUpdate && (
-                <Box sx={{ display: "flex" }}>
-                  <CircularProgress size="1em" />
-                </Box>
-              )}
-              {updateAvailable && !updateDownloaded && (
-                <Stack spacing={0.2} direction="row">
-                  <Typography variant="body">downloading {updateAvailable.version}</Typography>
-                  {downloadedProgress && downloadedProgress.percent < 100 && (
-                    <Box sx={{ width: "100%" }}>
-                      <LinearProgressWithLabel value={downloadedProgress?.percent} />
-                    </Box>
-                  )}
-                </Stack>
-              )}
-              {updateNotAvailable && <Typography variant="body">Your version is up to date!</Typography>}
-              {updateDownloaded && (
-                <Stack spacing={0.2} direction="row">
-                  <Typography variant="body">Version {updateAvailable?.version} downloaded</Typography>
-                  <Button color="primary" onClick={() => installUpdate()} variant="text">
-                    Restart and Install
-                  </Button>
-                </Stack>
-              )}
-              {!checkingForUpdate && (
-                <Button color="primary" onClick={() => checkForUpdate(true)} variant="text">
-                  check for updates
+            {auCtx.updateAvailable?.downloadedFile && (
+              <Stack spacing={0.2} direction="row" alignItems="center">
+                <Typography variant="body" color="green">Version {auCtx.updateAvailable?.version} downloaded</Typography>
+                <Button color="primary" onClick={() => auCtx.requestInstallUpdate()} variant="text">
+                  Restart and Install
                 </Button>
-              )}
-              {updateError?.length > 0 && (
-                <IconButton
-                  edge="start"
-                  aria-label="error message"
-                  onClick={() => {
-                    setOpenErrorTooltip(!openErrorTooltip);
-                  }}
-                >
-                  <ErrorOutlineIcon
-                    sx={{
-                      fontSize: "inherit",
-                      color: "red",
-                    }}
-                  />
-                </IconButton>
-              )}
-            </Stack>
-            {openErrorTooltip && (
-              <Stack mt={1} direction="row" justifyContent="center">
-                <CopyButton value={updateError} />
-                <Typography variant="body" color="red">
-                  {updateError}
-                </Typography>
               </Stack>
             )}
           </Stack>
         )}
+        {openErrorTooltip && (
+          <Stack ml="1em" direction="row" alignItems="center">
+            <CopyButton value={auCtx.updateError} />
+            <Typography variant="body" color="red">
+              {auCtx.updateError}
+            </Typography>
+          </Stack>
+        )}
       </Stack>
-      <Stack spacing={1} direction="row">
+      {/** License */}
+      <Stack mt="0.6em" spacing={1} direction="row">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           License:
         </Typography>
         <Typography variant="body">{packageJson.license}</Typography>
       </Stack>
-      <Stack spacing="0.2em" direction="column">
+      {/** Contributors */}
+      <Stack mt="0.6em" spacing="0.2em" direction="column">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Contributors:
         </Typography>
@@ -185,7 +128,8 @@ function About() {
           </Stack>
         </Typography>
       </Stack>
-      <Stack spacing="0.2em" direction="column">
+      {/** additional software */}
+      <Stack mt="0.6em" spacing="0.2em" direction="column">
         <Typography variant="body" sx={{ fontWeight: "bold" }}>
           Required additional software:
         </Typography>
@@ -200,8 +144,11 @@ function About() {
           </Stack>
         </Typography>
       </Stack>
-      <h4>List of {Object.entries(licenses).length} dependencies:</h4>
-      <Stack height="100%" overflow="auto">
+      {/** dependencies */}
+      <Typography variant="body" mt="0.6em" sx={{ fontWeight: "bold" }}>
+        List of {Object.entries(licenses).length} dependencies:
+      </Typography>
+      <Stack overflow="auto">
         {licenses && (
           <ul>
             {licenses.map((item) => (

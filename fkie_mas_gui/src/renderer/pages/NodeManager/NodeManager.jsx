@@ -35,6 +35,7 @@ import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import ExternalAppsModal from "../../components/ExternalAppsModal/ExternalAppsModal";
 import ProviderSelectionModal from "../../components/SelectionModal/ProviderSelectionModal";
 import DraggablePaper from "../../components/UI/DraggablePaper";
+import { AutoUpdateContext } from "../../context/AutoUpdateContext";
 import { ElectronContext } from "../../context/ElectronContext";
 import { LoggingContext } from "../../context/LoggingContext";
 import { MonacoContext } from "../../context/MonacoContext";
@@ -68,6 +69,7 @@ import SettingsPanel from "./panels/SettingsPanel";
 import TopicsPanel from "./panels/TopicsPanel";
 
 function NodeManager() {
+  const auCtx = useContext(AutoUpdateContext);
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -641,13 +643,16 @@ function NodeManager() {
         true
       );
       // add update button in the bottom border
-      if (electronCtx.updateAvailable) {
+      if (auCtx.updateAvailable) {
         renderValues.buttons.push(
-          <Tooltip title={`new version ${electronCtx.updateAvailable} available`} placement="top">
+          <Tooltip title={`new version ${auCtx.updateAvailable.version} available`} placement="top">
             <Button
               style={{ textTransform: "none" }}
               onClick={() => {
-                emitCustomEvent(EVENT_OPEN_SETTINGS, eventOpenSettings(SETTING.IDS.ABOUT));
+                emitCustomEvent(
+                  EVENT_OPEN_COMPONENT,
+                  eventOpenComponent(LAYOUT_TABS.ABOUT, "About", <AboutPanel />, true, LAYOUT_TABS.NODES)
+                );
               }}
               variant="text"
               color="info"
@@ -719,8 +724,8 @@ function NodeManager() {
   }, [navCtx.selectedNodes]);
 
   const isInstallUpdateRequested = useCallback(() => {
-    return electronCtx.requestedInstallUpdate;
-  }, [electronCtx.requestedInstallUpdate]);
+    return auCtx.requestedInstallUpdate;
+  }, [auCtx.requestedInstallUpdate]);
 
   useEffect(() => {
     // do not ask for shutdown on some reasons

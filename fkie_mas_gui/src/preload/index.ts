@@ -1,5 +1,11 @@
 // import { electronAPI } from "@electron-toolkit/preload";
 import {
+  AuCheckingForUpdateCallback,
+  AuDownloadProgressCallback,
+  AutoUpdateManagerEvents,
+  AuUpdateAvailableCallback,
+  AuUpdateDownloadedCallback,
+  AuUpdateErrorCallback,
   CommandExecutorEvents,
   DialogManagerEvents,
   EditorCloseCallback,
@@ -8,6 +14,7 @@ import {
   ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
+  TAutoUpdateManager,
   TCommandExecutor,
   TEditorManager,
   TerminalCloseCallback,
@@ -37,32 +44,38 @@ if (process.contextIsolated) {
 
     // Expose protected methods that allow the renderer process to use
     // the ipcRenderer without exposing the entire object
-    // TODO: create autoUpdate type object
     contextBridge.exposeInMainWorld("autoUpdate", {
-      send: (channel: string, data: unknown) => {
-        // whitelist channels
-        const validChannels = ["check-for-updates", "quit-and-install"];
-        if (validChannels.includes(channel)) {
-          ipcRenderer.send(channel, data);
-        }
+      checkForUpdate: () => {
+        return ipcRenderer.invoke(AutoUpdateManagerEvents.checkForUpdate,);
       },
-      receive: (channel: string, func) => {
-        const validChannels = [
-          "checking-for-update",
-          "update-available",
-          "update-not-available",
-          "download-progress",
-          "update-downloaded",
-          "update-error",
-        ];
-        if (validChannels.includes(channel)) {
-          // Deliberately strip event as it includes `sender`
-          ipcRenderer.on(channel, (_event, ...args) => {
-            func(...args);
-          });
-        }
+      quitAndInstall: () => {
+        return ipcRenderer.invoke(AutoUpdateManagerEvents.quitAndInstall,);
       },
-    });
+      onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) =>
+        ipcRenderer.on(AutoUpdateManagerEvents.onCheckingForUpdate, (_event, state) => {
+          callback(state);
+        }),
+      onUpdateAvailable: (callback: AuUpdateAvailableCallback) =>
+        ipcRenderer.on(AutoUpdateManagerEvents.onUpdateAvailable, (_event, info) => {
+          callback(info);
+        }),
+      onUpdateNotAvailable: (callback: AuUpdateAvailableCallback) =>
+        ipcRenderer.on(AutoUpdateManagerEvents.onUpdateNotAvailable, (_event, info) => {
+          callback(info);
+        }),
+      onDownloadProgress: (callback: AuDownloadProgressCallback) =>
+        ipcRenderer.on(AutoUpdateManagerEvents.onDownloadProgress, (_event, info) => {
+          callback(info);
+        }),
+      onUpdateDownloaded: (callback: AuUpdateDownloadedCallback) =>
+        ipcRenderer.on(AutoUpdateManagerEvents.onUpdateDownloaded, (_event, info) => {
+          callback(info);
+        }),
+      onUpdateError: (callback: AuUpdateErrorCallback) =>
+        ipcRenderer.on(AutoUpdateManagerEvents.onUpdateError, (_event, message) => {
+          callback(message);
+        }),
+    } as TAutoUpdateManager);
 
     // Register Command Executor
     contextBridge.exposeInMainWorld("commandExecutor", {
