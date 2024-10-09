@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.4 - 09.10.2024
+
+Improved auto update
+Small style and naming changes
+
 ## 2.6.3 - 09.10.2024
 
 Fixed: host color for package explorer
