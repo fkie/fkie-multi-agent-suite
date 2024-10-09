@@ -107,10 +107,12 @@ function ExplorerTree({
                 tabId,
                 file.inc_path,
                 null,
-                file.args.reduce((acc, { name, value }) => {
-                  acc[name] = value;
-                  return acc;
-                }, {})
+                file.args
+                  ? file.args.reduce((acc, { name, value }) => {
+                      acc[name] = value;
+                      return acc;
+                    }, {})
+                  : {}
               )
             );
             event.stopPropagation();
