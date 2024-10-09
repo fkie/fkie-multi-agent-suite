@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.6.2 - 09.10.2024
+
+Start nodelet manager before nodelets also if not selected
+Added handling for nm/kill_on_stop parameter
+Force reload file and drop local changes
+Catch errors while read ssh configuration
+Fixed: selection of root item in explorer of the editor
+Fixed: display of multiple screens in details panel
+Fixed: font size of the node names with namespaces
+
 ## 2.6.1 - 08.10.2024
 
 Load configuration files into the editor only on demand, show loading indicators
