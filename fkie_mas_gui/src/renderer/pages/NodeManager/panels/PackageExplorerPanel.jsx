@@ -14,10 +14,6 @@ function PackageExplorerPanel() {
   const [selectedProvider, setSelectedProvider] = useState();
   const [packageList, setPackageList] = useState([]);
   const [showReloadButton, setShowReloadButton] = useState(false);
-  // const [hostColor, setHostColor] = useState(
-  //   settingsCtx.get('backgroundColor'),
-  // );
-  const [hostStyle, setHostStyle] = useState({});
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const updatePackageList = useCallback(
@@ -47,32 +43,6 @@ function PackageExplorerPanel() {
     if (selectedProvider.length === 0) return;
     updatePackageList(selectedProvider);
     setShowReloadButton(true);
-    // if (settingsCtx.get('colorizeHosts')) {
-    //   const provider = rosCtx.getProviderById(selectedProvider);
-    //   setHostColor(
-    //     `linear-gradient(${settingsCtx.get(
-    //       'backgroundColor',
-    //     )}, ${colorFromHostname(provider.name())}, ${settingsCtx.get(
-    //       'backgroundColor',
-    //     )} 15px)`,
-    //   );
-    // } else {
-    //   setHostColor(settingsCtx.get('backgroundColor'));
-    // }
-    if (settingsCtx.get("colorizeHosts")) {
-      const provider = rosCtx.getProviderById(selectedProvider);
-      const hColor = colorFromHostname(provider.name());
-      setHostStyle({
-        borderLeftStyle: "solid",
-        borderLeftColor: hColor,
-        borderLeftWidth: "0.6em",
-        borderBottomStyle: "solid",
-        borderBottomColor: hColor,
-        borderBottomWidth: "0.6em",
-      });
-    } else {
-      setHostStyle({});
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider, settingsCtx.config]);
 
@@ -87,6 +57,22 @@ function PackageExplorerPanel() {
     return <PackageExplorer selectedProvider={selectedProvider} packageList={packageList} />;
   }, [selectedProvider, packageList]);
 
+  const getHostStyle = () => {
+    if (selectedProvider && settingsCtx.get("colorizeHosts")) {
+      const provider = rosCtx.getProviderById(selectedProvider);
+      const hColor = colorFromHostname(provider?.name());
+      return {
+        borderLeftStyle: "solid",
+        borderLeftColor: hColor,
+        borderLeftWidth: "0.6em",
+        borderBottomStyle: "solid",
+        borderBottomColor: hColor,
+        borderBottomWidth: "0.6em",
+      };
+    }
+    return {};
+  };
+
   return (
     <Box
       width="100%"
@@ -98,7 +84,7 @@ function PackageExplorerPanel() {
     >
       <Stack direction="column" height="100%" width="100% ">
         {rosCtx.providers && rosCtx.providers.length > 0 && (
-          <Stack spacing={1} direction="row" width="100%" sx={hostStyle}>
+          <Stack spacing={1} direction="row" width="100%" sx={getHostStyle()}>
             <FormControl sx={{ m: 1, width: "100%" }} variant="standard">
               <ProviderSelector
                 defaultProvider={selectedProvider}
