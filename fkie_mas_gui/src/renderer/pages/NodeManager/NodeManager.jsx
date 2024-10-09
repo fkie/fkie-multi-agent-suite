@@ -659,7 +659,7 @@ function NodeManager() {
               size="small"
             >
               <Typography noWrap variant="body2">
-                update
+                update available
               </Typography>
             </Button>
           </Tooltip>
