@@ -96,7 +96,10 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
         });
 
         let endLineNumber = selectionRange.endLineNumber;
-        if (selectionRange.startColumn === selectionRange.endColumn && selectionRange.startLineNumber === selectionRange.endLineNumber) {
+        if (
+          selectionRange.startColumn === selectionRange.endColumn &&
+          selectionRange.startLineNumber === selectionRange.endLineNumber
+        ) {
           endLineNumber += 1;
         }
         editorRef.current.setSelection({

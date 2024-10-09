@@ -46,10 +46,10 @@ if (process.contextIsolated) {
     // the ipcRenderer without exposing the entire object
     contextBridge.exposeInMainWorld("autoUpdate", {
       checkForUpdate: () => {
-        return ipcRenderer.invoke(AutoUpdateManagerEvents.checkForUpdate,);
+        return ipcRenderer.invoke(AutoUpdateManagerEvents.checkForUpdate);
       },
       quitAndInstall: () => {
-        return ipcRenderer.invoke(AutoUpdateManagerEvents.quitAndInstall,);
+        return ipcRenderer.invoke(AutoUpdateManagerEvents.quitAndInstall);
       },
       onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) =>
         ipcRenderer.on(AutoUpdateManagerEvents.onCheckingForUpdate, (_event, state) => {

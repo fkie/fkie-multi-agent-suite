@@ -89,7 +89,9 @@ function About() {
 
             {auCtx.updateAvailable?.downloadedFile && (
               <Stack spacing={0.2} direction="row" alignItems="center">
-                <Typography variant="body" color="green">Version {auCtx.updateAvailable?.version} downloaded</Typography>
+                <Typography variant="body" color="green">
+                  Version {auCtx.updateAvailable?.version} downloaded
+                </Typography>
                 <Button color="primary" onClick={() => auCtx.requestInstallUpdate()} variant="text">
                   Restart and Install
                 </Button>
