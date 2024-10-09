@@ -95,9 +95,13 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           column: selectionRange.startColumn,
         });
 
+        let endLineNumber = selectionRange.endLineNumber;
+        if (selectionRange.startColumn === selectionRange.endColumn && selectionRange.startLineNumber === selectionRange.endLineNumber) {
+          endLineNumber += 1;
+        }
         editorRef.current.setSelection({
           startLineNumber: selectionRange.startLineNumber,
-          endLineNumber: selectionRange.endLineNumber,
+          endLineNumber: endLineNumber,
           startColumn: selectionRange.startColumn,
           endColumn: selectionRange.endColumn,
         });
