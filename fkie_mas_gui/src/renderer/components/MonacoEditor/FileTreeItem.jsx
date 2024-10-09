@@ -118,11 +118,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
               </Typography>
             )}
             {labelLine >= 0 && (
-              <Tooltip
-                title={"Show include definition in parent file"}
-                placement="right"
-                disableInteractive
-              >
+              <Tooltip title={"Show include definition in parent file"} placement="right" disableInteractive>
                 <Typography
                   variant="caption"
                   color="inherit"

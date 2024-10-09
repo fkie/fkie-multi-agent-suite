@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-
+import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -99,8 +99,9 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
 const DEFAULT_PARAMETER = {
   rosVersion: 1,
   networkId: 0,
-  daemon: {},
+  daemon: { enable: true },
   discovery: {
+    enable: true,
     robotHosts: [],
     heartbeatHz: 0.5,
   },
@@ -110,10 +111,18 @@ const DEFAULT_PARAMETER = {
     syncTopics: [],
   },
   ttyd: {
+    enable: true,
     path: "ttyd",
     port: 7681,
   },
-  ros1MasterUri: "default",
+  force: {
+    stop: false,
+    start: false,
+  },
+  ros1MasterUri: {
+    enable: false,
+    uri: "default",
+  },
 };
 
 /**
@@ -139,7 +148,7 @@ function mergeDeepConfig(org, modifier) {
           result[key] = mergeDeepConfig(org[key], modifier[key]);
         }
       } else {
-        if (modifier[key]) {
+        if (modifier[key] !== undefined) {
           if (!isObject(modifier[key])) {
             result[key] = modifier[key];
           }
@@ -176,15 +185,8 @@ function ConnectToProviderModal() {
     []
   );
   const [selectedHistory, setSelectedHistory] = useState("");
-  const [forceRestart, setForceRestart] = useState(true);
-  const [saveDefaultParameter, setSaveDefaultParameter] = useState(false);
-  const [enableMasterUri, setEnableMasterUri] = useState(false);
-  const [enableDaemonNode, setEnableDaemonNode] = useState(true);
-  const [enableDiscoveryNode, setEnableDiscoveryNode] = useState(true);
-  const [enableSyncNode, setEnableSyncNode] = useState(startParameter.sync.enable);
-  const [enableTerminalManager, setEnableTerminalManager] = useState(true);
-
-  const [inputMasterUri, setInputMasterUri] = useState(startParameter.ros1MasterUri);
+  const [forceRestart, setForceRestart] = useState(false);
+  const [inputMasterUri, setInputMasterUri] = useState(startParameter.ros1MasterUri?.uri);
   const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
     "http://{HOST}:11311",
   ]);
@@ -279,52 +281,56 @@ function ConnectToProviderModal() {
     return robotHosts;
   };
 
+  const updateStartParameter = () => {
+    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+  };
+
   const setRosVersion = useCallback(
     (rosVersion) => {
       startParameter.rosVersion = rosVersion;
-      setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+      updateStartParameter();
     },
     [startParameter]
   );
 
   const setMasterUri = (masterUri) => {
-    startParameter.ros1MasterUri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    startParameter.ros1MasterUri.uri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
+    updateStartParameter();
   };
 
   const setNetworkId = (networkId) => {
     startParameter.networkId = networkId;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const setHeartbeatHz = (hz) => {
     startParameter.discovery.heartbeatHz = hz;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const setRobotHostValues = (robotHosts) => {
     startParameter.discovery.robotHosts = robotHosts;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const setDoNotSync = (doNotSync) => {
     startParameter.sync.doNotSync = doNotSync;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const setSyncTopics = (syncTopics) => {
     startParameter.sync.syncTopics = syncTopics;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const setTtydPath = (path) => {
     startParameter.ttyd.path = path;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const setTtydPort = (port) => {
     startParameter.ttyd.port = port;
-    setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    updateStartParameter();
   };
 
   const stringifyStartConfig = (cfg) => {
@@ -347,8 +353,8 @@ function ConnectToProviderModal() {
 
   const createLaunchConfigFor = (host) => {
     const launchCfg = new ProviderLaunchConfiguration(host, startParameter.rosVersion);
-    launchCfg.daemon.enable = enableDaemonNode;
-    launchCfg.discovery.enable = enableDiscoveryNode;
+    launchCfg.daemon.enable = startParameter.daemon.enable;
+    launchCfg.discovery.enable = startParameter.discovery.enable;
     if (startParameter.networkId) launchCfg.networkId = startParameter.networkId;
     launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
     if (startParameter.discovery.robotHosts.length > 0)
@@ -356,15 +362,15 @@ function ConnectToProviderModal() {
     launchCfg.sync.enable = startParameter.sync.enable;
     launchCfg.sync.doNotSync = startParameter.sync.doNotSync;
     launchCfg.sync.syncTopics = startParameter.sync.syncTopics;
-    launchCfg.terminal.enable = enableTerminalManager;
+    launchCfg.terminal.enable = startParameter.ttyd.enable;
     launchCfg.terminal.port = startParameter.ttyd.port;
     launchCfg.terminal.path = startParameter.ttyd.path;
     launchCfg.autoConnect = true;
     launchCfg.autostart = rosCtx.isLocalHost(host);
-    launchCfg.forceStop = forceRestart;
-    launchCfg.forceStart = forceRestart;
-    if (startParameter.ros1MasterUri !== "default") {
-      launchCfg.ros1MasterUri = startParameter.ros1MasterUri.replace("{HOST}", host);
+    launchCfg.forceStop = startParameter.force.stop;
+    launchCfg.forceStart = startParameter.force.start;
+    if (startParameter.ros1MasterUri.enable && startParameter.ros1MasterUri.uri !== "default") {
+      launchCfg.ros1MasterUri = startParameter.ros1MasterUri.uri.replace("{HOST}", host);
     }
     return launchCfg;
   };
@@ -389,9 +395,6 @@ function ConnectToProviderModal() {
   const handleStartProvider = async () => {
     setStartProviderDescription("Starting nodes on selected hosts");
     setStartProviderIsSubmitting(true);
-    if (saveDefaultParameter) {
-      setStartConfigurationsDefault(mergeDeepConfig(DEFAULT_PARAMETER, startParameter));
-    }
 
     const launchCfgs = [];
     const hosts = getHosts();
@@ -436,16 +439,13 @@ function ConnectToProviderModal() {
 
   const handleJoinProvider = async () => {
     setStartProviderIsSubmitting(true);
-    if (saveDefaultParameter) {
-      setStartConfigurationsDefault(mergeDeepConfig(DEFAULT_PARAMETER, startParameter));
-    }
     const hosts = hostValues;
     if (hostInputValue !== "" && !hosts.includes(hostInputValue)) {
       hosts.push(hostInputValue);
     }
     const port = startParameter.port
       ? startParameter.port
-      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion, startParameter.ros1MasterUri) +
+      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion, startParameter.ros1MasterUri.uri) +
         startParameter.networkId;
     // join each host separately
     await Promise.all(
@@ -460,6 +460,18 @@ function ConnectToProviderModal() {
         await rosCtx.connectToProvider(newProvider);
       })
     );
+    // update recent start configurations
+    const startCfg = {
+      id: generateUniqueId(),
+      hosts: hosts.sort(),
+      params: startParameter,
+    };
+    const oldStartConfigurations = startConfigurations.filter(
+      (cfg) => stringifyStartConfig(cfg) !== stringifyStartConfig(startCfg)
+    );
+    if (startCfg.hosts.length > 0) {
+      setStartConfigurations([startCfg, ...oldStartConfigurations]);
+    }
     // remove loading message and close dialog
     handleClose();
     setTimeout(() => {
@@ -744,9 +756,10 @@ function ConnectToProviderModal() {
                       <FormControlLabel
                         control={
                           <Checkbox
-                            checked={enableDaemonNode}
+                            checked={startParameter.daemon.enable}
                             onChange={(event) => {
-                              setEnableDaemonNode(event.target.checked);
+                              startParameter.daemon.enable = event.target.checked;
+                              updateStartParameter();
                             }}
                           />
                         }
@@ -759,9 +772,10 @@ function ConnectToProviderModal() {
                         <FormControlLabel
                           control={
                             <Checkbox
-                              checked={enableDiscoveryNode}
+                              checked={startParameter.discovery.enable}
                               onChange={(event) => {
-                                setEnableDiscoveryNode(event.target.checked);
+                                startParameter.discovery.enable = event.target.checked;
+                                updateStartParameter();
                               }}
                             />
                           }
@@ -799,9 +813,10 @@ function ConnectToProviderModal() {
                                 <FormControlLabel
                                   control={
                                     <Checkbox
-                                      checked={enableDiscoveryNode}
+                                      checked={startParameter.discovery.enable}
                                       onChange={(event) => {
-                                        setEnableDiscoveryNode(event.target.checked);
+                                        startParameter.discovery.enable = event.target.checked;
+                                        updateStartParameter();
                                       }}
                                     />
                                   }
@@ -851,11 +866,11 @@ function ConnectToProviderModal() {
                               fullWidth
                               onChange={(e) => setHeartbeatHz(Number(`${e.target.value}`))}
                               value={startParameter.discovery.heartbeatHz}
-                              disabled={!enableDiscoveryNode}
+                              disabled={!startParameter.discovery.enable}
                             />
                             <Autocomplete
                               handleHomeEndKeys={false}
-                              disabled={!enableDiscoveryNode}
+                              disabled={!startParameter.discovery.enable}
                               disablePortal
                               multiple
                               id="auto-complete-robot-hosts"
@@ -930,9 +945,10 @@ function ConnectToProviderModal() {
                                   // disabled={!startSystemNodes}
                                   control={
                                     <Checkbox
-                                      checked={enableSyncNode}
+                                      checked={startParameter.sync.enable}
                                       onChange={(event) => {
-                                        setEnableSyncNode(event.target.checked);
+                                        startParameter.sync.enable = event.target.checked;
+                                        updateStartParameter();
                                       }}
                                     />
                                   }
@@ -1044,9 +1060,10 @@ function ConnectToProviderModal() {
                               <FormControlLabel
                                 control={
                                   <Checkbox
-                                    checked={enableTerminalManager}
+                                    checked={startParameter.ttyd.enable}
                                     onChange={(event) => {
-                                      setEnableTerminalManager(event.target.checked);
+                                      startParameter.ttyd.enable = event.target.checked;
+                                      updateStartParameter();
                                     }}
                                   />
                                 }
@@ -1141,7 +1158,7 @@ function ConnectToProviderModal() {
                           fullWidth
                           onChange={(e) => setTtydPath(Number(`${e.target.value}`))}
                           value={startParameter.ttyd.path}
-                          disabled={!enableTerminalManager}
+                          disabled={!startParameter.ttyd.enable}
                         />
                         <TextField
                           type="number"
@@ -1152,7 +1169,7 @@ function ConnectToProviderModal() {
                           fullWidth
                           onChange={(e) => setTtydPort(Number(`${e.target.value}`))}
                           value={startParameter.ttyd.port}
-                          disabled={!enableTerminalManager}
+                          disabled={!startParameter.ttyd.enable}
                         />
                       </AccordionDetails>
                     </Accordion>
@@ -1177,9 +1194,10 @@ function ConnectToProviderModal() {
                                   control={
                                     <Checkbox
                                       size="small"
-                                      checked={enableMasterUri}
+                                      checked={startParameter.ros1MasterUriEnable}
                                       onChange={(event) => {
-                                        setEnableMasterUri(event.target.checked);
+                                        startParameter.ros1MasterUriEnable = event.target.checked;
+                                        updateStartParameter();
                                       }}
                                     />
                                   }
@@ -1282,12 +1300,14 @@ function ConnectToProviderModal() {
                       sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
                     >
                       <FormControlLabel
-                        disabled={!(enableDaemonNode && enableDiscoveryNode)}
+                        disabled={!(startParameter.daemon.enable && startParameter.discovery.enable)}
                         control={
                           <Checkbox
                             size="small"
                             checked={forceRestart}
                             onChange={(event) => {
+                              startParameter.force = { stop: event.target.checked, start: event.target.checked };
+                              updateStartParameter();
                               setForceRestart(event.target.checked);
                             }}
                           />
@@ -1296,7 +1316,7 @@ function ConnectToProviderModal() {
                         labelPlacement="end"
                       />
                     </FormGroup>
-                    <FormGroup
+                    {/* <FormGroup
                       aria-label="position"
                       row
                       sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
@@ -1317,7 +1337,27 @@ function ConnectToProviderModal() {
                         label="save parameters as default"
                         labelPlacement="end"
                       />
-                    </FormGroup>
+                    </FormGroup> */}
+                    <Box mb="0.6em">
+                      <Button
+                        size="small"
+                        type="submit"
+                        variant="outlined"
+                        // display="flex"
+                        color="info"
+                        onClick={(event) => {
+                          setStartConfigurationsDefault(mergeDeepConfig(DEFAULT_PARAMETER, startParameter));
+                          event.stopPropagation();
+                        }}
+                        style={{
+                          height: "1.5em",
+                          textTransform: "none",
+                        }}
+                        startIcon={<BookmarkBorderOutlinedIcon />}
+                      >
+                        Save parameters as default
+                      </Button>
+                    </Box>
                     <Box>
                       <Button
                         size="small"
@@ -1327,8 +1367,7 @@ function ConnectToProviderModal() {
                         color="info"
                         onClick={(event) => {
                           setStartParameter(DEFAULT_PARAMETER);
-                          setForceRestart(true);
-                          setSaveDefaultParameter(false);
+                          setForceRestart(false);
                           setSelectedHistory("");
                           event.stopPropagation();
                         }}
@@ -1336,7 +1375,7 @@ function ConnectToProviderModal() {
                           height: "1.5em",
                           textTransform: "none",
                         }}
-                        endIcon={<RestartAltIcon />}
+                        startIcon={<RestartAltIcon />}
                       >
                         Reset advanced parameters to default
                       </Button>

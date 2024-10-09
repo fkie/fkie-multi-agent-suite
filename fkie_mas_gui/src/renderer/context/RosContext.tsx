@@ -588,7 +588,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           provider.setConnectionState(ConnectionState.STATES.STARTING, "");
           // Find running system nodes
           const systemNodes = provider.rosNodes.filter((n) => n.system_node);
-
           if (config.forceStop && systemNodes?.length > 0) {
             // stop all requested system nodes, daemon as last node
             let nodesToStop: RosNode[] = [];
@@ -605,19 +604,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               discoveryNode = systemNodes.find(
                 (n) => n.id.includes("mas_discovery") || n.id.includes("master_discovery")
               );
-              if (discoveryNode) {
-                if (config.rosVersion === "1") {
-                  nodesToStop.push(discoveryNode);
-                } else {
-                  nodesToStop.push(discoveryNode);
-                }
-              }
             }
             // we have to stop in right order to be able to use stop_node() method of the provider
             if (config.rosVersion === "1") {
               nodesToStop = [syncNode, daemonNode, discoveryNode];
             } else {
-              nodesToStop = [syncNode, discoveryNode, daemonNode];
+              nodesToStop = [discoveryNode, daemonNode];
             }
             await Promise.all(
               nodesToStop.map(async (node) => {
