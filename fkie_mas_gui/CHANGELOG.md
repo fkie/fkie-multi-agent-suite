@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.3 - 09.10.2024
+
+Fixed: host color for package explorer
+
 ## 2.6.2 - 09.10.2024
 
 Start nodelet manager before nodelets also if not selected
