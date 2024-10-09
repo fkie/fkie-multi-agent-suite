@@ -199,10 +199,10 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     // create monaco model, if it does not exists yet
     const model = monaco.editor.getModel(pathUri);
     if (model) {
-      if (model.modified) {
-        // TODO: ask the user how to proceed
-        return model;
-      }
+      // if (model.modified) {
+      //   // TODO: ask the user how to proceed
+      //   return model;
+      // }
       model.dispose();
     }
     return monaco.editor.createModel(file.value, FileLanguageAssociations[file.extension], pathUri);
