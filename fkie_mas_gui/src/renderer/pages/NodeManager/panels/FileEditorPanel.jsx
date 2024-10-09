@@ -198,9 +198,11 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     async (uriPath, range = null, launchArgs = null, forceReload = false) => {
       if (!uriPath) return false;
       setCurrentFile({ name: getFileName(uriPath), requesting: true });
+      setNotificationDescription("Getting file from provider...");
       // If model does not exist, try to fetch it
       let result = await monacoCtx.getModel(tabId, providerId, uriPath, forceReload);
       setCurrentFile({ name: getFileName(uriPath), requesting: false });
+      setNotificationDescription("");
 
       // get model from path if exists
       if (!result.model) {
@@ -325,8 +327,10 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
           // unset modified flag of the current model
           setActiveModel(async (prevModel) => {
             setCurrentFile({ name: getFileName(prevModel.path), requesting: true });
+            setNotificationDescription("Getting file from provider...");
             const result = await monacoCtx.getModel(tabId, providerId, prevModel.path, false);
             setCurrentFile({ name: getFileName(prevModel.path), requesting: false });
+            setNotificationDescription("");
             result.model.modified = false;
             const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
             window.editorManager?.changed(id, path, false);
@@ -395,8 +399,10 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       if (activeModel) {
         if (!activeModel.modified) {
           setCurrentFile({ name: getFileName(activeModel.path), requesting: true });
+          setNotificationDescription("Getting file from provider...");
           const result = await monacoCtx.getModel(tabId, providerId, activeModel.path, false);
           setCurrentFile({ name: getFileName(activeModel.path), requesting: false });
+          setNotificationDescription("");
           result.model.modified = true;
           setActiveModel({ path: result.model.uri.path, modified: result.model.modified, model: result.model });
           updateModifiedFiles();
@@ -953,7 +959,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                 <UpgradeIcon style={{ fontSize: "0.8em" }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Reload current file from host" disableInteractive>
+            <Tooltip title="Drop unsaved changes and reload current file from host" disableInteractive>
               <IconButton
                 edge="end"
                 aria-label="Reload file"
@@ -1035,7 +1041,6 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
               {notificationDescription}
             </Alert>
           )}
-          {/* {activeModel && ( */}
           <Monaco.Editor
             key="editor"
             height={editorHeight}
@@ -1067,7 +1072,6 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
               },
             }}
           />
-          {/* // )} */}
         </Stack>
       </SplitPane>
     </Stack>
