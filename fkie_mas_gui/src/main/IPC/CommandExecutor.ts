@@ -40,45 +40,57 @@ class CommandExecutor implements TCommandExecutor {
   constructor() {
     const sshPath = `${os.homedir()}/.ssh`;
 
-    // read host/user configuration from ssh config
-    fs.readFile(`${sshPath}/config`, "utf8", (err, data) => {
-      if (err) {
-        log.warn(`error while read ${sshPath}/config`);
-        return;
-      }
-      const configLines = data.split("\n");
-      let currentHost: string | null = null;
-
-      configLines.forEach((line) => {
-        line = line.trim();
-        if (line.startsWith("Host ")) {
-          currentHost = line.split(" ")[1];
-        } else if (line.startsWith("User ") && currentHost) {
-          const username = line.split(" ")[1];
-          this.sshUsers[currentHost] = username;
-        } else if (line.startsWith("Port ") && currentHost) {
-          const port = line.split(" ")[1];
-          this.sshPorts[currentHost] = parseInt(port);
-        } else if (line.startsWith("IdentityFile ") && currentHost) {
-          const path = line.split(" ")[1].replace("~", os.homedir());
-          this.sshKeys[currentHost] = fs.readFileSync(path);
+    try {
+      // read host/user configuration from ssh config
+      fs.readFile(`${sshPath}/config`, "utf8", (err, data) => {
+        if (err) {
+          log.warn(`error while read ${sshPath}/config`);
+          return;
         }
+        const configLines = data.split("\n");
+        let currentHost: string | null = null;
+
+        configLines.forEach((line) => {
+          line = line.trim();
+          if (line.startsWith("Host ")) {
+            currentHost = line.split(" ")[1];
+          } else if (line.startsWith("User ") && currentHost) {
+            const username = line.split(" ")[1];
+            this.sshUsers[currentHost] = username;
+          } else if (line.startsWith("Port ") && currentHost) {
+            const port = line.split(" ")[1];
+            this.sshPorts[currentHost] = parseInt(port);
+          } else if (line.startsWith("IdentityFile ") && currentHost) {
+            const identPath: string = line.split(" ")[1].replace("~", os.homedir());
+            try {
+              this.sshKeys[currentHost] = fs.readFileSync(identPath);
+            } catch (error) {
+              console.error(`error while read specified IdentityFile "${identPath}": ${error}`);
+            }
+          }
+        });
+        // log.info("SSH-configuration (host and username):", this.sshUsers);
       });
-      // log.info("SSH-configuration (host and username):", this.sshUsers);
-    });
+    } catch (error) {
+      console.error(`error while read ssh configuration file "${sshPath}/config": ${error}`);
+    }
 
-    // read private ssh keys
-    const files = fs.readdirSync(sshPath);
-    files.filter((item) => {
-      if (item.startsWith("id_")) {
-        const content = fs.readFileSync(`${sshPath}/${item}`);
-        if (content.includes("PRIVATE KEY---")) {
-          this.privateSshKeys.push(content);
-          return true;
+    try {
+      // read private ssh keys
+      const files = fs.readdirSync(sshPath);
+      files.filter((item) => {
+        if (item.startsWith("id_")) {
+          const content = fs.readFileSync(`${sshPath}/${item}`);
+          if (content.includes("PRIVATE KEY---")) {
+            this.privateSshKeys.push(content);
+            return true;
+          }
         }
-      }
-      return false;
-    });
+        return false;
+      });
+    } catch (error) {
+      console.error(`error while search .ssh directory for private keys: ${error}`);
+    }
 
     log.info(`found ${this.privateSshKeys.length} ssh keys`);
     const fetchSystemInfo = async (): Promise<void> => {
