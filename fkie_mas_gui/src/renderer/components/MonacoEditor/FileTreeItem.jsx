@@ -1,5 +1,5 @@
 import TurnSlightLeftIcon from "@mui/icons-material/TurnSlightLeft";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { alpha, styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 import PropTypes from "prop-types";
@@ -118,18 +118,24 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
               </Typography>
             )}
             {labelLine >= 0 && (
-              <Typography
-                variant="caption"
-                color="inherit"
-                onClick={(event) => {
-                  if (onLinenumberClick) {
-                    onLinenumberClick(event);
-                  }
-                }}
+              <Tooltip
+                title={"Show include definition in parent file"}
+                placement="right"
+                disableInteractive
               >
-                {/* [{labelLine}] */}
-                <TurnSlightLeftIcon fontSize="inherit" />
-              </Typography>
+                <Typography
+                  variant="caption"
+                  color="inherit"
+                  onClick={(event) => {
+                    if (onLinenumberClick) {
+                      onLinenumberClick(event);
+                    }
+                  }}
+                >
+                  {/* [{labelLine}] */}
+                  <TurnSlightLeftIcon fontSize="inherit" />
+                </Typography>
+              </Tooltip>
             )}
           </Stack>
         </Stack>
