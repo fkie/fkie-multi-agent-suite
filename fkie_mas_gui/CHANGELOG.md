@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.5 - 10.10.2024
+
+Changed connect dialog, replaced checkbox by button to save parameters
+Fixed: restart if kill_on_stop is set
+
 ## 2.6.4 - 09.10.2024
 
 Improved auto update
