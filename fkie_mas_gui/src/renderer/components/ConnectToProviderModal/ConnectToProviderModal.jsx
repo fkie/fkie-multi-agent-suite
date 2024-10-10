@@ -1,4 +1,3 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
@@ -46,6 +45,7 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary from "@mui/material/AccordionSummary";
 import { grey } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
@@ -1069,7 +1069,7 @@ function ConnectToProviderModal() {
                                 }
                                 label={
                                   <div>
-                                    Terminal Manager (ttyd)
+                                    Terminal Manager
                                     <Tooltip
                                       title={
                                         <>
