@@ -144,11 +144,13 @@ function mergeDeepConfig(org, modifier) {
   if (isObject(org)) {
     for (const key in org) {
       if (isObject(org[key])) {
-        if (isObject(modifier[key])) {
+        if (modifier && isObject(modifier[key])) {
           result[key] = mergeDeepConfig(org[key], modifier[key]);
+        } else {
+          result[key] = org[key];
         }
       } else {
-        if (modifier[key] !== undefined) {
+        if (modifier && modifier[key] !== undefined) {
           if (!isObject(modifier[key])) {
             result[key] = modifier[key];
           }
@@ -179,14 +181,14 @@ function ConnectToProviderModal() {
     "ConnectToProviderModal:startParameter",
     DEFAULT_PARAMETER
   );
-  const [startParameter, setStartParameter] = useState(startParameterDefault);
+  const [startParameter, setStartParameter] = useState(mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault));
   const [startConfigurations, setStartConfigurations] = useLocalStorage(
     "ConnectToProviderModal:startConfigurations",
     []
   );
   const [selectedHistory, setSelectedHistory] = useState("");
   const [forceRestart, setForceRestart] = useState(false);
-  const [inputMasterUri, setInputMasterUri] = useState(startParameter.ros1MasterUri?.uri);
+  const [inputMasterUri, setInputMasterUri] = useState(startParameter?.ros1MasterUri.uri ? startParameter?.ros1MasterUri.uri : "default");
   const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
     "http://{HOST}:11311",
   ]);
@@ -1226,7 +1228,7 @@ function ConnectToProviderModal() {
                                     ml: 0.5,
                                   }}
                                 >
-                                  {`${startParameter.ros1MasterUri}`}
+                                  {`${startParameter.ros1MasterUri.uri}`}
                                 </Typography>
                               </Stack>
                             </Grid>
