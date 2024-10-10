@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.6 - 10.10.2024
+
+Fixed: load start parameter of older version
+Fixed: wait until all kill_on_stop fired before start nodes to ensure the nodelet manager start first.
+
 ## 2.6.5 - 10.10.2024
 
 Changed connect dialog, replaced checkbox by button to save parameters
