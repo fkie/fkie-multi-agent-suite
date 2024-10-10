@@ -188,7 +188,9 @@ function ConnectToProviderModal() {
   );
   const [selectedHistory, setSelectedHistory] = useState("");
   const [forceRestart, setForceRestart] = useState(false);
-  const [inputMasterUri, setInputMasterUri] = useState(startParameter?.ros1MasterUri.uri ? startParameter?.ros1MasterUri.uri : "default");
+  const [inputMasterUri, setInputMasterUri] = useState(
+    startParameter?.ros1MasterUri.uri ? startParameter?.ros1MasterUri.uri : "default"
+  );
   const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
     "http://{HOST}:11311",
   ]);

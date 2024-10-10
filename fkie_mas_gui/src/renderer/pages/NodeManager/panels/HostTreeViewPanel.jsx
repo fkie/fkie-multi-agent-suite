@@ -446,7 +446,7 @@ function HostTreeViewPanel() {
     [rosCtx]
   );
 
-  const getNodeLetManager = (node) => {
+  const getNodeLetManager = (node, ignoreRunState = false) => {
     if (!node) return null;
     const composableParent = node.parent_id || node.launchInfo?.composable_container;
     if (composableParent) {
@@ -455,7 +455,7 @@ function HostTreeViewPanel() {
       const nodeNm = nodeNms.length > 0 ? nodeNms[0] : null;
       if (
         nodeNm &&
-        nodeNm.status !== RosNodeStatus.RUNNING &&
+        (ignoreRunState || nodeNm.status !== RosNodeStatus.RUNNING) &&
         queueItemsQueueMain &&
         queueItemsQueueMain.find((elem) => {
           return elem.action === "START" && elem.node.name === nodeNm.name;
@@ -475,6 +475,11 @@ function HostTreeViewPanel() {
       const skippedNodes = new Map();
       // check nodes for associations and extend start node list
       const nodeList = updateWithAssociations(nodes);
+      const add2start = (node) => {
+        if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
+          node2Start.push(node);
+        }
+      };
       nodeList.forEach((node) => {
         // ignore running and nodes already in the queue
         if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
@@ -486,22 +491,19 @@ function HostTreeViewPanel() {
           })
         ) {
           skippedNodes.set(node.name, "already in the start queue");
-        } else if (node.launchPaths.size === 1) {
-          // prepend nodeLet manager to the start list
-          const managerNode = getNodeLetManager(node);
-          if (managerNode) {
-            node2Start.push(managerNode);
+        } else if (node.launchPaths.size > 0) {
+          // prepend nodeLet manager to the start list if it is not already added
+          const managerNode = getNodeLetManager(node, ignoreRunState);
+          add2start(managerNode);
+          add2start(node);
+          if (managerNode?.launchPaths?.size > 1) {
+            // Multiple launch files available
+            withMultiLaunch.push(managerNode);
           }
-          node2Start.push(node);
-        } else if (node.launchPaths.size > 1) {
-          // prepend nodeLet manager to the start list
-          const managerNode = getNodeLetManager(node);
-          if (managerNode) {
-            node2Start.push(managerNode);
+          if (node.launchPaths.size > 1) {
+            // Multiple launch files available
+            withMultiLaunch.push(node);
           }
-          node2Start.push(node);
-          // Multiple launch files available
-          withMultiLaunch.push(node);
         } else if (!node.system_node) {
           // no launch files
           withNoLaunch.push(node.name);
@@ -603,7 +605,7 @@ function HostTreeViewPanel() {
           return { node, action: "STOP" };
         })
       );
-      let nodes2start = nodeList;
+      let maxKillTime = -1;
       // add kill on stop commands
       nodes2stop.forEach((node) => {
         if (node.pid) {
@@ -616,22 +618,25 @@ function HostTreeViewPanel() {
             });
           });
           if (killTime > -1) {
-            if (restart) {
-              // the start command should be executed only after kill command
-              nodes2start = nodes2start.filter((item) => node.id !== item.id);
+            if (maxKillTime < killTime) {
+              maxKillTime = killTime;
             }
             setTimeout(() => {
               updateQueueMain([{ node, action: "KILL" }]);
-              if (restart) {
-                startNodesWithLaunchCheck([node], true);
-              }
             }, killTime);
           }
         }
       });
 
       if (restart) {
-        startNodesWithLaunchCheck(nodes2start, true);
+        if (maxKillTime > -1) {
+          // wait until all timers are expired before start nodes if kill timer was used while stop nodes
+          setTimeout(() => {
+            startNodesWithLaunchCheck(nodeList, true);
+          }, maxKillTime + 500);
+        } else {
+          startNodesWithLaunchCheck(nodeList, true);
+        }
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
