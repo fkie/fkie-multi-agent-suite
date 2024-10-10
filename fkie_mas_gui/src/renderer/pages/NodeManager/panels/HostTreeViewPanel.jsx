@@ -622,7 +622,9 @@ function HostTreeViewPanel() {
             }
             setTimeout(() => {
               updateQueueMain([{ node, action: "KILL" }]);
-              startNodesWithLaunchCheck([node], true);
+              if (restart) {
+                startNodesWithLaunchCheck([node], true);
+              }
             }, killTime);
           }
         }
