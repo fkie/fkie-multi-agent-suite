@@ -42,9 +42,9 @@ import useQueue from "../../../hooks/useQueue";
 import { RosNode, RosNodeStatus } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
@@ -555,21 +555,6 @@ function HostTreeViewPanel() {
       } else {
         // store result for message
         const resultStopNode = await provider.stopNode(node.id);
-        if (node.pid) {
-          let killTime = -1;
-          node.parameters.forEach((params) => {
-            params.forEach((param) => {
-              if (param.name.endsWith("/nm/kill_on_stop")) {
-                if (killTime === -1) killTime = param.value;
-              }
-            });
-          });
-          if (killTime > -1) {
-            setTimeout(() => {
-              updateQueueMain([{ node, action: "KILL" }]);
-            }, killTime);
-          }
-        }
         if (!resultStopNode.result) {
           addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
         } else {
@@ -618,8 +603,33 @@ function HostTreeViewPanel() {
           return { node, action: "STOP" };
         })
       );
+      let nodes2start = nodeList;
+      // add kill on stop commands
+      nodes2stop.forEach((node) => {
+        if (node.pid) {
+          let killTime = -1;
+          node.parameters.forEach((params) => {
+            params.forEach((param) => {
+              if (param.name.endsWith("/nm/kill_on_stop")) {
+                if (killTime === -1) killTime = param.value;
+              }
+            });
+          });
+          if (killTime > -1) {
+            if (restart) {
+              // the start command should be executed only after kill command
+              nodes2start = nodes2start.filter((item) => node.id !== item.id);
+            }
+            setTimeout(() => {
+              updateQueueMain([{ node, action: "KILL" }]);
+              startNodesWithLaunchCheck([node], true);
+            }, killTime);
+          }
+        }
+      });
+
       if (restart) {
-        startNodesWithLaunchCheck(nodeList, true);
+        startNodesWithLaunchCheck(nodes2start, true);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -964,6 +974,17 @@ function HostTreeViewPanel() {
           console.log(`unknown item in the queue: ${JSON.stringify(queueItem)}`);
         }
       } else {
+        // queue is finished, print failed results
+        ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"].forEach((action) => {
+          const failed = failedQueueMain(action);
+          if (failed.length > 0) {
+            const infoDict = {};
+            failed.forEach((item) => {
+              infoDict[item.itemName] = item.message;
+            });
+            logCtx.warn(`Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`, infoDict, true);
+          }
+        });
         // queue is finished, print success results
         [
           ["STOP", "stopped"],
@@ -980,17 +1001,6 @@ function HostTreeViewPanel() {
               infoDict[item.itemName] = item.message;
             });
             logCtx.success(`${success.length} nodes ${action[1]}`, infoDict, true);
-          }
-        });
-        // queue is finished, print failed results
-        ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"].forEach((action) => {
-          const failed = failedQueueMain(action);
-          if (failed.length > 0) {
-            const infoDict = {};
-            failed.forEach((item) => {
-              infoDict[item.itemName] = item.message;
-            });
-            logCtx.warn(`Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`, infoDict, true);
           }
         });
         // clear queue and results

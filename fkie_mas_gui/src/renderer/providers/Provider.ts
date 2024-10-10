@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { TSystemInfo, JSONObject, TResultData } from "@/types";
+import { JSONObject, TResultData, TSystemInfo } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
 import { TagColors } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
@@ -1351,7 +1351,7 @@ export default class Provider implements IProvider {
         if (response.valid) {
           return response;
         }
-        this.logger?.error(`Can't parse message: ${request}`, parsed.error_msg);
+        this.logger?.error(`Provider [${this.name()}]: Can't parse message: ${request}`, parsed.error_msg);
         return null;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getMessageStruct()`, `${value.message}`);
@@ -1374,7 +1374,7 @@ export default class Provider implements IProvider {
         if (response.valid) {
           return response;
         }
-        this.logger?.error(`Can't parse service: ${request}`, parsed.error_msg);
+        this.logger?.error(`Provider [${this.name()}]: Can't parse service: ${request}`, parsed.error_msg);
         return null;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getServiceStruct()`, `${value.message}`);
@@ -1445,7 +1445,10 @@ export default class Provider implements IProvider {
         new EventProviderSubscriberEvent(this, msgParsed)
       );
     } catch (error) {
-      this.logger?.error(`[updateSubscribedMessage] Could not parse message ${msg}`, `Error: ${error}`);
+      this.logger?.error(
+        `Provider [${this.name()}]: [updateSubscribedMessage] Could not parse message ${msg}`,
+        `Error: ${error}`
+      );
     }
   };
 
@@ -1664,7 +1667,11 @@ export default class Provider implements IProvider {
       if (value.result) {
         const parsed = value.data as Result;
         if (!parsed.result) {
-          this.logger?.error(`Fail to kill the node [${name}]: ${parsed.message}`, parsed.message, false);
+          this.logger?.error(
+            `Provider [${this.name()}]: Fail to kill the node [${name}]: ${parsed.message}`,
+            parsed.message,
+            false
+          );
         }
         return parsed;
       }
