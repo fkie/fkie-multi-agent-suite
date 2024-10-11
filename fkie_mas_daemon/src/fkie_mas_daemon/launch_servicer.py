@@ -752,7 +752,7 @@ class LaunchServicer(LoggingEventHandler):
                 composable_container = None
                 if item.package == "nodelet" and item.type == "nodelet":
                     args = item.args.split(" ")
-                    if len(args) == 3 and args[0] == "load":
+                    if len(args) >= 3 and args[0] == "load":
                         composable_container = roslib.names.ns_join(
                             item.namespace, args[2]
                         )

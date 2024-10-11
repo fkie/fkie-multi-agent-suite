@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.2 (2024-10-11)
+------------------
+* fkie_mas_daemon: fixed detection of nodelet manager for nodelets.
+
 3.1.1 (2024-09-17)
 ------------------
 * fkie_mas_daemon: fixed system node determination in ROS2.
