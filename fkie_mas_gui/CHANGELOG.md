@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.7 - 11.10.2024
+Added script to bump version of the gui and daemon
+fkie_mas_daemon: fixed detection of nodelet manager for nodelets
+
 ## 2.6.6 - 10.10.2024
 
 Fixed: load start parameter of older version
