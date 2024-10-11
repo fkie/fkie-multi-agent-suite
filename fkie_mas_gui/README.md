@@ -78,13 +78,14 @@ Then open in browser <http://localhost:6274>
 
 ## Websocket communication
 
-| Action                      | Message Format                         | Description                                                                              |
-| --------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Subscribe to an URI         | {"sub", [str]}                         | Receive all messages published to this URI                                               |
-| Unsubscribe from an URI     | {"unsub", [str]}                       | Stop receiving messages send to this URI                                                 |
-| Remote procedure call (RPC) | {"uri": str, "id": number, params: []} | id is unique request. params is a is list with parameters for the remote procedure call. |
-| Reply for successful RPC    | {"id": number, "result": JSONObject }  | id is unique request id.                                                                 |
-| Reply for errored RPC       | {"id": number, "error": str }          | id is unique request id.                                                                 |
+| Action                      | Message Format                           | Description                                                                              |
+| --------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Message                     | {"uri": str, message: JSONObject }       | Publish messages to given topic (URI)                                                    |
+| Subscribe to an URI         | {"sub", [str]}                           | Receive all messages published to this URI                                               |
+| Unsubscribe from an URI     | {"unsub", [str]}                         | Stop receiving messages send to this URI                                                 |
+| Remote procedure call (RPC) | {"uri": str, "id": number, "params": []} | id is unique request. params is a is list with parameters for the remote procedure call. |
+| Reply for successful RPC    | {"id": number, "result": JSONObject }    | id is unique request id.                                                                 |
+| Reply with error while RPC  | {"id": number, "error": str }            | id is unique request id.                                                                 |
 
 ## Supported interface URIs
 
