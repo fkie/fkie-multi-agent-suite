@@ -1,6 +1,11 @@
 # Changelog
 
+## 2.6.8 - 14.10.2024
+
+fixed: computer name contains dash which is not allowed in node names, issue #3
+
 ## 2.6.7 - 11.10.2024
+
 Added script to bump version of the gui and daemon
 fkie_mas_daemon: fixed detection of nodelet manager for nodelets
 

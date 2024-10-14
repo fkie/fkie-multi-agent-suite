@@ -104,7 +104,7 @@ def bump_version(package_path, version_part):
         if json_updated:
             # Get git log since the last version
             log_since_last_release = get_git_log(current_version)
-            changelog_entry = f"## {new_version} - {datetime.now().strftime('%d.%m.%Y')}\n{log_since_last_release}\n\n"
+            changelog_entry = f"## {new_version} - {datetime.now().strftime('%d.%m.%Y')}\n\n{log_since_last_release}\n\n"
 
             # Insert entry in the 3rd line of CHANGELOG.md
             changelog_path = 'CHANGELOG.md'
