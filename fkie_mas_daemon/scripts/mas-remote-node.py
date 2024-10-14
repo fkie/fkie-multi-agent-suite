@@ -19,6 +19,7 @@ from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import is_local
 from fkie_mas_pylib.system.host import get_hostname
 from fkie_mas_pylib.system.host import get_ros_hostname
+from fkie_mas_pylib.system.host import ros_host_suffix
 from fkie_mas_pylib.system.url import get_port
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
 
@@ -326,7 +327,7 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     '''
 
     # get namespace and basename from name
-    namer = name.replace('{HOST}', socket.gethostname())
+    namer = name.replace('{HOST}', ros_host_suffix())
     arg_ns = names.namespace(
         namer, with_sep_suffix=False, raise_err_on_none=False)
     arg_name = names.basename(namer)

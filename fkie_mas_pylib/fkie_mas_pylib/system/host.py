@@ -73,7 +73,7 @@ def ros_host_suffix(hostname: str='') -> str:
     if not addr:
         addr = get_host_name()
     addr = subdomain(addr)
-    addr = addr.replace('.', '_')
+    addr = addr.replace('.', '_').replace('-', '_')
     return addr
 
 

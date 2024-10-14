@@ -11,6 +11,7 @@
 #include <chrono>
 #include <map>
 #include <mutex>
+#include <regex>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -268,8 +269,22 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     char hostname_chars[HOST_NAME_MAX];
     gethostname(hostname_chars, HOST_NAME_MAX);
+    std::string hostname(hostname_chars);
+    // remove domain suffix
+    std::regex const IP4_PATTERN{"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"};
+    std::smatch m;
+    if (!std::regex_match(hostname, m, IP4_PATTERN)) {
+        std::size_t found = hostname.find('.');
+        if (found != std::string::npos) {
+            hostname = hostname.substr(0, found);
+        }
+    }
+    // replace dots and - characters in the node name
+    hostname = std::regex_replace(hostname, std::regex("\\."), "_");
+    hostname = std::regex_replace(hostname, std::regex("-"), "_");
     // std::string ros_distro = getEnvironmentVariable("ROS_DISTRO");
-    std::string node_name = "_discovery_" + std::string(hostname_chars);
+
+    std::string node_name = "_discovery_" + hostname;
     auto listener = std::make_shared<CustomParticipantListener>(node_name, "/mas");
     RCLCPP_INFO(listener->get_logger(), "started");
     rclcpp::spin(listener);
