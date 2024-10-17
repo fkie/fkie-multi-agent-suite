@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.9 - 17.10.2024
+
+Added search bar to topic echo panel
+Fixed: do not force start nodelet manager if it is already running and not selected to restart
+
 ## 2.6.8 - 14.10.2024
 
 fixed: computer name contains dash which is not allowed in node names, issue #3
