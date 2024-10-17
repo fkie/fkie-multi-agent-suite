@@ -28,7 +28,6 @@
   <depend condition="$ROS_VERSION == 1">rosgraph</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-avahi</depend>
   <depend condition="$ROS_VERSION == 1">avahi-daemon</depend>
-  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
 
   <depend condition="$ROS_VERSION == 2">lifecycle_msgs</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
