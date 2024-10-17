@@ -23,9 +23,11 @@ export const lightThemeJson = {
 };
 
 const lightThemeDef: ThemeOptionsExt = {
-  backgroundColor: background,
   palette: {
     mode: "light",
+    background: {
+      default: background,
+    }
   },
   typography: {
     fontSize: 12,

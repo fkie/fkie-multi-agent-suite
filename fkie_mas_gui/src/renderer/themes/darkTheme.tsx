@@ -24,9 +24,11 @@ export const darkThemeJson = {
 };
 
 const darkThemeDef: ThemeOptionsExt = {
-  backgroundColor: background,
   palette: {
     mode: "dark",
+    background: {
+      default: background,
+    }
   },
   typography: {
     fontSize: 12,
