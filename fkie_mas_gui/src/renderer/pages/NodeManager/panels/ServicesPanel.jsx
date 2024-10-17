@@ -11,9 +11,9 @@ import { emitCustomEvent } from "react-custom-events";
 import { SearchBar, ServiceTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import ServiceCallerPanel from "./ServiceCallerPanel";
 
 class ServiceExtendedInfo {
@@ -405,7 +405,7 @@ function ServicesPanel({ initialSearchTerm = "" }) {
             </Tooltip>
             <SearchBar
               onSearch={onSearch}
-              placeholder="Filter Services (<space> for OR, + for AND)"
+              placeholder="Filter Services (OR: <space>, AND: +, NOT: !)"
               defaultValue={initialSearchTerm}
               fullWidth
             />

@@ -31,6 +31,7 @@ function SearchBar({
           onSearch(searched);
         }
         if (e.key === "Escape") {
+          setSearched("");
           if (onCloseRequest) onCloseRequest();
         }
       }}

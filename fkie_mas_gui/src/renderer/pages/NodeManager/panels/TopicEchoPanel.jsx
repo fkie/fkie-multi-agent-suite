@@ -1,4 +1,6 @@
+import { SearchBar } from "@/renderer/components";
 import { JSONTree } from "@/renderer/components/react-json-tree";
+import { findIn } from "@/renderer/utils";
 import AbcIcon from "@mui/icons-material/Abc";
 import DataArrayIcon from "@mui/icons-material/DataArray";
 import DataObjectIcon from "@mui/icons-material/DataObject";
@@ -7,6 +9,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import NotesIcon from "@mui/icons-material/Notes";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
+import SearchIcon from "@mui/icons-material/Search";
 import StopIcon from "@mui/icons-material/Stop";
 import {
   Alert,
@@ -50,6 +53,8 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
   const [collapsedKeys, setCollapsedKeys] = useState(["stamp", "covariance"]);
   const [history, setHistory] = useState([]);
   const [showStatistics, setShowStatistics] = useState(true);
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [filterText, setFilterText] = useState("");
   const [noData, setNoData] = useState(defaultNoData);
   const [noStr, setNoStr] = useState(false);
   const [noArr, setNoArr] = useState(false);
@@ -182,6 +187,32 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
     return `${size.toFixed(fixed)}B${per}`;
   }
 
+  function isObject(item) {
+    return (item && typeof item === "object") || Array.isArray(item);
+  }
+
+  function filterJson(data, filter) {
+    if (filter.length < 2) {
+      return data;
+    }
+    const result = {};
+    if (isObject(data)) {
+      for (const key in data) {
+        if (isObject(data[key])) {
+          const res = filterJson(data[key], filter);
+          if (Object.keys(res).length > 0) {
+            result[key] = res;
+          }
+        } else {
+          if (findIn(filter, [key, JSON.stringify(data[key])])) {
+            result[key] = data[key];
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   const generateJsonTopics = useMemo(() => {
     return history.map((event) => {
       return (
@@ -210,7 +241,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           )}
           <JSONTree
             key={`${event.key}`}
-            data={event?.data}
+            data={filterJson(event?.data, filterText)}
             sortObjectKeys={true}
             theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
             invertTheme={false}
@@ -229,7 +260,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
         // </Box>
       );
     });
-  }, [history, settingsCtx.changed, collapsedKeys]);
+  }, [history, settingsCtx.changed, collapsedKeys, filterText]);
 
   const generateOptions = useMemo(() => {
     return (
@@ -242,7 +273,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           disableInteractive
         >
           <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
-            <DataObjectIcon />
+            <DataObjectIcon sx={{ fontSize: "inherit" }} />
           </ToggleButton>
         </Tooltip>
         <Tooltip
@@ -253,7 +284,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           disableInteractive
         >
           <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
-            <DataArrayIcon />
+            <DataArrayIcon sx={{ fontSize: "inherit" }} />
           </ToggleButton>
         </Tooltip>
         <Tooltip
@@ -264,7 +295,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           disableInteractive
         >
           <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
-            <AbcIcon />
+            <AbcIcon sx={{ fontSize: "inherit" }} />
           </ToggleButton>
         </Tooltip>
         <Tooltip
@@ -275,7 +306,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           disableInteractive
         >
           <ToggleButton size="small" value="noStr" selected={hz === 1.0} onChange={() => setHz(hz === 1.0 ? 0.0 : 1.0)}>
-            <Filter1Icon />
+            <Filter1Icon sx={{ fontSize: "inherit" }} />
           </ToggleButton>
         </Tooltip>
         <Divider orientation="vertical" />
@@ -292,7 +323,27 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
             selected={showStatistics}
             onChange={() => setShowStatistics(!showStatistics)}
           >
-            <NotesIcon />
+            <NotesIcon sx={{ fontSize: "inherit" }} />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip
+          title="show search bar"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <ToggleButton
+            size="small"
+            value="search bar"
+            selected={showSearchBar}
+            onChange={() => {
+              setShowSearchBar(!showSearchBar);
+              setFilterText("");
+            }}
+            autoFocus
+          >
+            <SearchIcon sx={{ fontSize: "inherit" }} />
           </ToggleButton>
         </Tooltip>
         {currentProvider?.rosVersion === "X" && (
@@ -348,12 +399,12 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           disableInteractive
         >
           <IconButton
-            size="medium"
+            size="small"
             onClick={() => {
               setPause(!pause);
             }}
           >
-            {pause ? <PlayArrowIcon /> : <StopIcon />}
+            {pause ? <PlayArrowIcon sx={{ fontSize: "inherit" }} /> : <StopIcon sx={{ fontSize: "inherit" }} />}
           </IconButton>
         </Tooltip>
         <Tooltip
@@ -364,12 +415,12 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           disableInteractive
         >
           <IconButton
-            size="medium"
+            size="small"
             onClick={() => {
               setHistory([]);
             }}
           >
-            <PlaylistRemoveIcon />
+            <PlaylistRemoveIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
         <Divider orientation="vertical" />
@@ -388,10 +439,11 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
               setMsgCount(event.target.value);
             }}
             size="small"
+            sx={{ fontSize: "0.5em" }}
           >
             {[1, 10, 20, 50, 100].map((value) => {
               return (
-                <MenuItem key={`msg-count-${value}`} value={value}>
+                <MenuItem key={`msg-count-${value}`} value={value} sx={{ fontSize: "0.5em" }}>
                   {value.toString()}
                 </MenuItem>
               );
@@ -406,7 +458,20 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
       </FormControl> */}
       </Stack>
     );
-  }, [currentProvider, noArr, noData, noStr, hz, pause, tooltipDelay, msgCount, qosAnchorEl, openQos, showStatistics]);
+  }, [
+    currentProvider,
+    noArr,
+    noData,
+    noStr,
+    hz,
+    pause,
+    tooltipDelay,
+    msgCount,
+    qosAnchorEl,
+    openQos,
+    showStatistics,
+    showSearchBar,
+  ]);
 
   const getHostStyle = () => {
     const providerName = currentProvider?.name();
@@ -421,8 +486,21 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
     return { flexGrow: 1, alignItems: "center" };
   };
 
+  const onKeyDown = (event) => {
+    if (event.ctrlKey && event.key === "f") {
+      setShowSearchBar(!showSearchBar);
+      setFilterText("");
+    }
+  };
+
   return (
-    <Box height="100%" overflow="auto" backgroundColor={settingsCtx.get("backgroundColor")} style={getHostStyle()}>
+    <Stack
+      onKeyDown={(event) => onKeyDown(event)}
+      height="100%"
+      overflow="auto"
+      backgroundColor={settingsCtx.get("backgroundColor")}
+      style={getHostStyle()}
+    >
       <Stack spacing={1} height="100%">
         <Paper width="100%" elevation={1}>
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -459,6 +537,18 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
               </Stack>
             </Stack>
           )}
+          {showSearchBar && (
+            <Stack spacing={1} direction="row">
+              <SearchBar
+                onSearch={(value) => {
+                  setFilterText(value);
+                }}
+                placeholder="grep for (OR: <space>, AND: +, NOT: !)"
+                defaultValue={filterText}
+                // fullWidth
+              />
+            </Stack>
+          )}
         </Paper>
         <Stack width="100%" hight="100%" overflow="auto">
           {history && !noData && generateJsonTopics}
@@ -470,7 +560,7 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
           )}
         </Stack>
       </Stack>
-    </Box>
+    </Stack>
   );
 }
 

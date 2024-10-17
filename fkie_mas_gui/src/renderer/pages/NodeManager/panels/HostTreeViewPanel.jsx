@@ -1506,7 +1506,7 @@ function HostTreeViewPanel() {
               onSearch={(value) => {
                 setFilterText(value);
               }}
-              placeholder="Search nodes (<space> for OR, + for AND)"
+              placeholder="Search nodes (OR: <space>, AND: +, NOT: !)"
               defaultValue={filterText}
               fullWidth
             />

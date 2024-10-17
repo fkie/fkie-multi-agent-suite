@@ -230,7 +230,7 @@ function NodeLoggerPanel(node) {
           onSearch={(value) => {
             setFilterText(value);
           }}
-          placeholder="Filter loggers (<space> for OR, + for AND)"
+          placeholder="Filter loggers (OR: <space>, AND: +, NOT: !)"
           defaultValue={filterText}
           // fullWidth={true}
         />

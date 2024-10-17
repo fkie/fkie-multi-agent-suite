@@ -445,7 +445,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
             </Tooltip>
             <SearchBar
               onSearch={onSearch}
-              placeholder="Filter Topics (<space> for OR, + for AND)"
+              placeholder="Filter Topics (OR: <space>, AND: +, NOT: !)"
               defaultValue={initialSearchTerm}
               fullWidth
             />

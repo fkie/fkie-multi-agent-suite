@@ -434,7 +434,7 @@ export default function ParameterPanel({ nodes = null, providers = null }) {
           </Tooltip>
           <SearchBar
             onSearch={setSearched}
-            placeholder="Filter parameters (<space> for OR, + for AND)"
+            placeholder="Filter parameters (OR: <space>, AND: +, NOT: !)"
             // defaultValue={initialSearchTerm}
             fullWidth
           />
