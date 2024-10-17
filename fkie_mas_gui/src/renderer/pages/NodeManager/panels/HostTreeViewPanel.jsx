@@ -446,16 +446,19 @@ function HostTreeViewPanel() {
     [rosCtx]
   );
 
-  const getNodeLetManager = (node, ignoreRunState = false) => {
+  const getNodeLetManager = (node, ignoreRunState = false, nodes2start = []) => {
     if (!node) return null;
     const composableParent = node.parent_id || node.launchInfo?.composable_container;
     if (composableParent) {
       const provider = rosCtx.getProviderById(node.providerId);
       const nodeNms = provider?.rosNodes.filter((node) => node.name === composableParent);
       const nodeNm = nodeNms.length > 0 ? nodeNms[0] : null;
+      // not running or ignoreRunState and in the list with nodes to start
+      // and not already in the start queue
       if (
         nodeNm &&
-        (ignoreRunState || nodeNm.status !== RosNodeStatus.RUNNING) &&
+        (nodeNm.status !== RosNodeStatus.RUNNING ||
+          (ignoreRunState && nodes2start.filter((item) => item.id === nodeNm.id).length > 0)) &&
         queueItemsQueueMain &&
         queueItemsQueueMain.find((elem) => {
           return elem.action === "START" && elem.node.name === nodeNm.name;
@@ -476,6 +479,7 @@ function HostTreeViewPanel() {
       // check nodes for associations and extend start node list
       const nodeList = updateWithAssociations(nodes);
       const add2start = (node) => {
+        // add only valid node and if it is not already added
         if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
           node2Start.push(node);
         }
@@ -492,8 +496,9 @@ function HostTreeViewPanel() {
         ) {
           skippedNodes.set(node.name, "already in the start queue");
         } else if (node.launchPaths.size > 0) {
-          // prepend nodeLet manager to the start list if it is not already added
-          const managerNode = getNodeLetManager(node, ignoreRunState);
+          // prepend nodeLet manager to the start list if it is not already added,
+          // not running or in the list with started nodes
+          const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
           add2start(managerNode);
           add2start(node);
           if (managerNode?.launchPaths?.size > 1) {
