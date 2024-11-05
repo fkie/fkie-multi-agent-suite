@@ -132,7 +132,9 @@ def find_process_by_name(command: str, package: str, additional_args: List[str])
         # ignore self node
         if self_name in p.info['name']:
             continue
-        cmdline = ' '.join(p.info['cmdline'])
+        cmdline = ''
+        if p.info['cmdline'] is not None:
+            cmdline = ' '.join(p.info['cmdline'])
         if 'mas-remote-node.py' in cmdline:
             continue
 
