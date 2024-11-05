@@ -1123,7 +1123,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     ) => {
       const provider = getProviderById(providerId);
       if (provider) {
-        const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${node}`;
+        const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${screen ? screen : node}`;
         // open in external window depending on setting and key modifier and if no tab already existing
         const openExternal: boolean =
           type === CmdType.SCREEN

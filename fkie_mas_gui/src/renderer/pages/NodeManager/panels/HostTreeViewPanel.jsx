@@ -1289,7 +1289,15 @@ function HostTreeViewPanel() {
                         screens.push({
                           node: node.name,
                           screen: screen,
-                          external: event.nativeEvent.shiftKey,
+                          callback: () => {
+                            createSingleTerminalPanel(
+                              CmdType.SCREEN,
+                              node,
+                              screen,
+                              event.nativeEvent.shiftKey,
+                              event.nativeEvent.ctrlKey
+                            );
+                          }
                         });
                       });
                     } else {
