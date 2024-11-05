@@ -491,7 +491,7 @@ class XmlLoader(loader.Loader):
                                     output=output, cwd=cwd, launch_prefix=launch_prefix,
                                     required=required, filename=context.filename,
                                     launch_name=tag.attributes["name"].value,
-                                    launch_context_arg=context.resolve_dict["arg"])
+                                    launch_context_arg=context.resolve_dict["arg"] if "arg" in context.resolve_dict else {})
             else:
                 return Test(test_name, pkg, node_type, name=name, namespace=child_ns.ns,
                             machine_name=machine, args=args,
