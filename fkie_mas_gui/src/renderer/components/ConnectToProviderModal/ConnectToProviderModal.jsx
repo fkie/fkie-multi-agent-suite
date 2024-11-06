@@ -271,7 +271,7 @@ function ConnectToProviderModal() {
     if (hostInputValue !== "" && !hosts.includes(hostInputValue)) {
       hosts.push(hostInputValue);
     }
-    return hosts.map((h) => (h.host ? h.ip : h));
+    return hosts.map((h) => (h.host ? h.host : h));
   };
 
   const getRobotHosts = () => {
@@ -338,7 +338,7 @@ function ConnectToProviderModal() {
   };
 
   const stringifyStartConfig = (cfg) => {
-    let result = `${cfg.hosts.join()}; ros${cfg.params.rosVersion}`;
+    let result = `${cfg.hosts.map((item) => Object.keys(item).includes("host") ? `${item.host}(${item.ip})` : item).join()}; ros${cfg.params.rosVersion}`;
     if (cfg.params.rosVersion === "1") {
       result = `${result}; network id: ${cfg.params.networkId}`;
     } else {
