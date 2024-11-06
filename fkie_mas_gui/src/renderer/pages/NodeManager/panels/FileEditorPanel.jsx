@@ -180,19 +180,22 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     const newDecorators = [];
     if (includedFilesList) {
       includedFilesList.forEach((f) => {
-        const matches = model.findMatches(f.raw_inc_path);
-        if (matches.length > 0) {
-          matches.forEach((match) => {
-            // Add a different style to "clickable" definitions
-            newDecorators.push({
-              range: match.range,
-              options: { inlineClassName: "filePathDecoration" },
+        const path = model.uri.path.split(":")[1];
+        if (path !== f.inc_path) {
+          const matches = model.findMatches(f.raw_inc_path);
+          if (matches.length > 0) {
+            matches.forEach((match) => {
+              // Add a different style to "clickable" definitions
+              newDecorators.push({
+                range: match.range,
+                options: { inlineClassName: "filePathDecoration" },
+              });
+              newIncludeDecorations.push({
+                resource: f.inc_path,
+                range: match.range,
+              });
             });
-            newIncludeDecorations.push({
-              resource: f.inc_path,
-              range: match.range,
-            });
-          });
+          }
         }
       });
     }
