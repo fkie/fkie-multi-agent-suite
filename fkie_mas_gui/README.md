@@ -161,7 +161,7 @@ license-report --config=./license-report-config.json > src/renderer/deps-license
 
 ## Known Issues
 
-- If you work behind a proxy, you might need to explicitly specify the `URL` and `PORT` before downloading the electron packages. The problem occurs when installing the package (`yarn install`).
+- If you work behind a proxy, you might need to explicitly specify the `URL` and `PORT` before downloading the electron packages. The problem occurs when installing the package (`npm install`).
 
 ```bash
 export ELECTRON_GET_USE_PROXY=true
