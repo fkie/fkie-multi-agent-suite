@@ -277,6 +277,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       // ignore if we saved the file
       if (savedFiles.includes(changedUri)) {
         setSavedFiles(savedFiles.filter((uri) => uri !== changedUri));
+        // TODO: reload file content
         return;
       }
       const provider = rosCtx.getProviderById(providerId);
@@ -330,22 +331,13 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       if (providerObj) {
         const saveResult = await providerObj.saveFileContent(fileToSave);
         if (saveResult.bytesWritten > 0) {
+          const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
+          window.editorManager?.changed(id, path, false);
+          if (!savedFiles.includes(editorModel.uri.path)) {
+            setSavedFiles([...savedFiles, editorModel.uri.path]);
+          }
           logCtx.success(`Successfully saved file`, `path: ${path}`);
-          // unset modified flag of the current model
-          setActiveModel(async (prevModel) => {
-            setCurrentFile({ name: getFileName(prevModel.path), requesting: true });
-            setNotificationDescription("Getting file from provider...");
-            const result = await monacoCtx.getModel(tabId, providerId, prevModel.path, false);
-            setCurrentFile({ name: getFileName(prevModel.path), requesting: false });
-            setNotificationDescription("");
-            result.model.modified = false;
-            const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
-            window.editorManager?.changed(id, path, false);
-            if (!savedFiles.includes(result.model.uri.path)) {
-              setSavedFiles([...savedFiles, result.model.uri.path]);
-            }
-            return { path: result.model.uri.path, modified: result.model.modified, model: result.model };
-          });
+          setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
           updateModifiedFiles();
         } else {
           logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
