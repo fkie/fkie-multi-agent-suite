@@ -1,7 +1,16 @@
 import RosContext from "@/renderer/context/RosContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Link, TextField } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Link,
+  TextField,
+} from "@mui/material";
 import { useContext, useState } from "react";
 import { ConnectConfig } from "ssh2";
 import { ConnectionState } from "../../providers";
@@ -21,6 +30,7 @@ const PasswordDialog = ({
   const [username, setUsername] = useState(connectConfig.username);
   const [password, setPassword] = useState("");
   const [open, setOpen] = useState(true);
+  const [showSetup, setShowSetup] = useState(false);
 
   const handleSubmit = () => {
     console.log("Password:", password);
@@ -46,13 +56,39 @@ const PasswordDialog = ({
     }
   };
 
+  const codeSnippet = `
+  ssh-keygen -f ~/.ssh/id_${connectConfig.host}
+  ssh-copy-id -i ~/.ssh/id_${connectConfig.host} ${connectConfig.username}@${connectConfig.host}
+
+  Add to ~/.ssh/config:
+    Host ${connectConfig.host}
+      User ${connectConfig.username}
+      IdentityFile ~/.ssh/id_${connectConfig.host}
+      HostName ${connectConfig.host} (optional)
+  `;
+
   return (
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>SSH login @{connectConfig.host}</DialogTitle>
       <DialogContent>
-        <Link href="https://linuxize.com/post/using-the-ssh-config-file/" target="_blank" rel="noopener">
-          Setup ssh to avoid this dialog
-        </Link>
+        <Button
+          size="small"
+          style={{
+            marginLeft: 1,
+            textTransform: "none",
+            justifyContent: "left",
+          }}
+          onClick={() => setShowSetup((prev) => !prev)}
+        >
+          How to setup ssh to avoid this dialog
+        </Button>
+        {showSetup && (
+          <DialogContentText>
+            <pre>
+              <code>{codeSnippet}</code>
+            </pre>
+          </DialogContentText>
+        )}
         <TextField
           autoFocus
           margin="dense"
