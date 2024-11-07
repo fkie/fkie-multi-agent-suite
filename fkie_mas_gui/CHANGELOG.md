@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.6.10 - 07.11.2024
+
+Changed description for setup ssh config in password dialog
+Fixed: reporting changed paths for symlinks
+Fixed: crash on open self included files
+Fixed: save changes and not lost editor focus
+Fixed: open screens if exactly two screens are available for a node
+Fixed: load included files without arguments
+Fixed: error while run remote node
+Fixed: build error
+
 ## 2.6.9 - 17.10.2024
 
 Added search bar to topic echo panel
