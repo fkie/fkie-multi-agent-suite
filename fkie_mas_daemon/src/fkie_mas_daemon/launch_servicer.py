@@ -176,13 +176,13 @@ class LaunchServicer(LoggingEventHandler):
     def on_any_event(self, event: FileSystemEvent):
         if event.event_type in ['opened', 'closed']:
             return
-        path = ''
+        path = event.src_path
         if event.src_path in self._real_paths:
             path = self._real_paths[event.src_path]
         if path in self._included_files:
             affected_launch_files = []
             for launch_path, path_list in self._launch_includes.items():
-                if event.src_path in path_list:
+                if path in path_list:
                     affected_launch_files.append(launch_path)
             change_event = {
                 "eventType": event.event_type,
@@ -332,7 +332,7 @@ class LaunchServicer(LoggingEventHandler):
         real_path = os.path.realpath(path)
         self._real_paths[real_path] = path
         directory = os.path.dirname(real_path)
-        Log.debug("observe path: %s" % path)
+        Log.debug("observe path: %s, launch file: %s" % (path, launch_file))
         if directory not in self._observed_dirs:
             Log.debug("add directory to observer: %s" % directory)
             watch = self._watchdog_observer.schedule(self, directory)
