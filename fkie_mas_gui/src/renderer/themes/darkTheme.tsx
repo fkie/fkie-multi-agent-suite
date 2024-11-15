@@ -28,7 +28,7 @@ const darkThemeDef: ThemeOptionsExt = {
     mode: "dark",
     background: {
       default: background,
-    }
+    },
   },
   typography: {
     fontSize: 12,

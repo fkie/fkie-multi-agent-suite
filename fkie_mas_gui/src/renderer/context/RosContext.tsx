@@ -566,11 +566,19 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
           const port = config.port
             ? config.port
-            : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri) + config.networkId;
+            : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri, config.networkId);
           // check and add provider if new
           let provider = getProviderByHosts([config.host], port, null) as Provider;
           if (!provider) {
-            provider = new Provider(settingsCtx, config.host, config.rosVersion, port, config.useSSL, logCtx);
+            provider = new Provider(
+              settingsCtx,
+              config.host,
+              config.rosVersion,
+              port,
+              config.networkId,
+              config.useSSL,
+              logCtx
+            );
             provider.isLocalHost = isLocal;
             provider.startConfiguration = config;
             // add provider using add queue

@@ -160,6 +160,7 @@ class CommandExecutor implements TCommandExecutor {
       return new Promise((resolve) => {
         try {
           let errorString = "";
+          let resultString = "";
           log.info(`<cmd>${command}`);
           const child = spawn(command, [], {
             shell: true,
@@ -177,7 +178,7 @@ class CommandExecutor implements TCommandExecutor {
             } else {
               resolve({
                 result: true,
-                message: "",
+                message: resultString,
                 command,
               });
               // resolve(`Closed with code: ${code}`);
@@ -186,6 +187,7 @@ class CommandExecutor implements TCommandExecutor {
           child.stdout?.on("data", function (data) {
             if (parentOut) {
               console.log(`${data}`);
+              resultString += `${data}`;
               `${data}`.split("\n").forEach((item) => {
                 if (
                   item.includes("[rosrun] Couldn't find executable") ||

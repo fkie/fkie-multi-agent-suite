@@ -227,6 +227,7 @@ export default class Provider implements IProvider {
     host: string,
     rosVersion: string,
     port: number = 0,
+    networkId: number = 0,
     useSSL: boolean = false,
     logger: ILoggingContext | null = null
   ) {
@@ -240,6 +241,7 @@ export default class Provider implements IProvider {
         host,
         rosVersion,
         port,
+        networkId,
         useSSL,
         this.onCloseConnection,
         this.onOpenConnection,
@@ -250,6 +252,7 @@ export default class Provider implements IProvider {
         host,
         rosVersion,
         port,
+        networkId,
         useSSL,
         this.onCloseConnection,
         this.onOpenConnection,
@@ -536,6 +539,7 @@ export default class Provider implements IProvider {
             p.host,
             p.ros_version ? p.ros_version : "2",
             p.port,
+            0,
             false, // TODO get useSSL from settings
             this.logger
           );

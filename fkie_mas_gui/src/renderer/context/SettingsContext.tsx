@@ -3,20 +3,21 @@ import React, { createContext, useMemo, useReducer } from "react";
 import useLocalStorage from "../hooks/useLocalStorage";
 import URI from "../models/uris";
 
-export const getDefaultPortFromRos: (connectionType: string, rosVersion: string, ros1MasterUri: string) => number = (
-  connectionType,
-  rosVersion,
-  ros1MasterUri
-) => {
+export const getDefaultPortFromRos: (
+  connectionType: string,
+  rosVersion: string,
+  ros1MasterUri: string,
+  networkId: number
+) => number = (connectionType, rosVersion, ros1MasterUri, networkId) => {
   if (connectionType === "crossbar-wamp") {
-    return rosVersion === "2" ? 11811 : 11911;
+    return rosVersion === "2" ? 11811 + networkId : 11911 + networkId;
   }
   let uriShift = 0;
   if (ros1MasterUri && ros1MasterUri !== "default") {
     // shift port if ROS_MASTER_URI has not a default port
     uriShift = (parseInt(ros1MasterUri.split(":").slice(-1)[0]) - 11311) * 101;
   }
-  return rosVersion === "2" ? 35430 : 35685 + uriShift;
+  return rosVersion === "2" ? 35430 + networkId : 35685 + uriShift + networkId;
 };
 
 export interface ISettingsContext {

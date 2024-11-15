@@ -4,18 +4,66 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectToProviderModal, SearchBar } from "../../../components";
+import { LoggingContext } from "../../../context/LoggingContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
+import Provider from "../../../providers/Provider";
 import { EVENT_OPEN_CONNECT } from "../layout/events";
 import ProviderPanelRow from "./ProviderPanelRow";
 
 function ProviderPanel() {
+  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [providerRowsFiltered, setProviderRowsFiltered] = useState([]);
   const [filterText, setFilterText] = useState("");
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+
+  const getDomainId = async () => {
+    if (rosCtx.providers.length === 0) {
+      if (rosCtx.rosInfo?.version) {
+        try {
+          const result = await window.commandExecutor?.exec(
+            null, // we start the subscriber always local
+            "ps aux | grep ros.fkie/screens/ | grep mas-daemon"
+          );
+          if (result?.result) {
+            const lines = result.message.split("\n");
+            let domainId = -1;
+            lines.forEach((line) => {
+              if (!line.includes("grep") && line.includes("ros.fkie/screens/") && line.includes("mas-daemon")) {
+                const match = line.match(/screen_(\d+)\.cfg/);
+                if (match && match[1]) {
+                  domainId = parseInt(match[1], 10);
+                } else {
+                  domainId = 0;
+                }
+              }
+            });
+            if (domainId >= 0) {
+              const newProvider = new Provider(
+                settingsCtx,
+                "localhost",
+                rosCtx.rosInfo.version,
+                undefined,
+                domainId,
+                undefined,
+                logCtx
+              );
+              await rosCtx.connectToProvider(newProvider);
+              return;
+            }
+          }
+        } catch (error) {
+          console.log(`error while lookup for running daemons: ${error} `);
+        }
+      }
+      if (!window.commandExecutor || rosCtx.rosInfo?.version) {
+        emitCustomEvent(EVENT_OPEN_CONNECT, {});
+      }
+    }
+  };
 
   const debouncedCallbackFilterText = useDebounceCallback((providers, searchTerm) => {
     if (searchTerm.length > 1) {
@@ -41,9 +89,7 @@ function ProviderPanel() {
   }, [rosCtx.providers, filterText, debouncedCallbackFilterText]);
 
   useEffect(() => {
-    if (rosCtx.providers.length === 0) {
-      emitCustomEvent(EVENT_OPEN_CONNECT, {});
-    }
+    getDomainId();
   }, [rosCtx.rosInfo, rosCtx.providers]);
 
   const createProviderTable = useMemo(() => {

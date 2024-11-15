@@ -338,7 +338,7 @@ function ConnectToProviderModal() {
   };
 
   const stringifyStartConfig = (cfg) => {
-    let result = `${cfg.hosts.map((item) => Object.keys(item).includes("host") ? `${item.host}(${item.ip})` : item).join()}; ros${cfg.params.rosVersion}`;
+    let result = `${cfg.hosts.map((item) => (Object.keys(item).includes("host") ? `${item.host}(${item.ip})` : item)).join()}; ros${cfg.params.rosVersion}`;
     if (cfg.params.rosVersion === "1") {
       result = `${result}; network id: ${cfg.params.networkId}`;
     } else {
@@ -449,8 +449,12 @@ function ConnectToProviderModal() {
     }
     const port = startParameter.port
       ? startParameter.port
-      : getDefaultPortFromRos(Provider.type, startParameter.rosVersion, startParameter.ros1MasterUri.uri) +
-        startParameter.networkId;
+      : getDefaultPortFromRos(
+          Provider.type,
+          startParameter.rosVersion,
+          startParameter.ros1MasterUri.uri,
+          startParameter.networkId
+        );
     // join each host separately
     await Promise.all(
       hosts.map(async (remoteHost) => {
@@ -863,7 +867,7 @@ function ConnectToProviderModal() {
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>
                             <TextField
                               type="number"
-                              id="hearbeat-hz"
+                              id="heartbeat-hz"
                               label="Heartbeat Hz"
                               size="small"
                               variant="outlined"

@@ -1297,7 +1297,7 @@ function HostTreeViewPanel() {
                               event.nativeEvent.shiftKey,
                               event.nativeEvent.ctrlKey
                             );
-                          }
+                          },
                         });
                       });
                     } else {

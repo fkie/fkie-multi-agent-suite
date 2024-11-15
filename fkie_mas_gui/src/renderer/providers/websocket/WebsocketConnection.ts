@@ -1,5 +1,5 @@
-import JSON5 from "json5";
 import { JSONObject, TResult, TResultData } from "@/types";
+import JSON5 from "json5";
 import { ILoggingContext } from "../../context/LoggingContext";
 import { getDefaultPortFromRos } from "../../context/SettingsContext";
 import ProviderConnection from "../ProviderConnection";
@@ -47,6 +47,7 @@ export default class WebsocketConnection extends ProviderConnection {
     host: string,
     rosVersion: string,
     port: number = 0,
+    networkId: number = 0,
     useSSL: boolean = false,
     onClose: (reason: string, details: string) => void = () => {},
     onOpen: () => void = () => {},
@@ -57,7 +58,7 @@ export default class WebsocketConnection extends ProviderConnection {
     this.queue = {};
     this.rpcId = 0;
     this.logger = logger;
-    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion, "");
+    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion, "", networkId);
     this.uri = `ws://${host}:${providerPort}`;
 
     this.port = providerPort;

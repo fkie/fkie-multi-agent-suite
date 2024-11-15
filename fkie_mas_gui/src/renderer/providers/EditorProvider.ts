@@ -29,7 +29,7 @@ export default class EditorProvider extends Provider {
     useSSL: boolean = false,
     logger: ILoggingContext | null = null
   ) {
-    super(settings, host, rosVersion, port, useSSL, logger);
+    super(settings, host, rosVersion, port, 0, useSSL, logger);
     this.className = "EditorProvider";
   }
 

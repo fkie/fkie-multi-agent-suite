@@ -27,7 +27,7 @@ const lightThemeDef: ThemeOptionsExt = {
     mode: "light",
     background: {
       default: background,
-    }
+    },
   },
   typography: {
     fontSize: 12,
