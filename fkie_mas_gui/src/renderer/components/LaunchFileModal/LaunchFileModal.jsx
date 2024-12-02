@@ -407,7 +407,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                           );
                         }}
                         isOptionEqualToValue={(option, value) => {
-                          return value === undefined || value === "" || option.path === value.path;
+                          return value === undefined || value === "" || option?.path === value?.path;
                         }}
                         onWheel={(event) => {
                           // scroll through the options using mouse wheel
