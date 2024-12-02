@@ -314,8 +314,8 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
    */
   const createSingleTerminalPanel = useCallback(
-    async (type, node, screen, externalKeyModifier = false, openInTerminal = false) => {
-      rosCtx.openTerminal(type, node.providerId, node.name, screen, "", externalKeyModifier, openInTerminal);
+    async (type, providerId, nodeName, screen, externalKeyModifier = false, openInTerminal = false) => {
+      rosCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
     },
     [rosCtx]
   );
@@ -1257,7 +1257,8 @@ function HostTreeViewPanel() {
                     prov?.screens.forEach((screenMap) => {
                       screenMap.screens.forEach((screen) => {
                         screens.push({
-                          node: screenMap.name,
+                          nodeName: screenMap.name,
+                          providerId: prov?.id,
                           screen: screen,
                           external: event.nativeEvent.shiftKey,
                         });
@@ -1271,12 +1272,14 @@ function HostTreeViewPanel() {
                     if (node.screens.length === 1) {
                       // 1 screen available
                       screens.push({
-                        node: node.name,
+                        nodeName: node.name,
+                        providerId: node.providerId,
                         screen: node.screens[0],
                         callback: () => {
                           createSingleTerminalPanel(
                             CmdType.SCREEN,
-                            node,
+                            node.providerId,
+                            node.name,
                             node.screens[0],
                             event.nativeEvent.shiftKey,
                             event.nativeEvent.ctrlKey
@@ -1287,12 +1290,14 @@ function HostTreeViewPanel() {
                       // Multiple screens available
                       node.screens.map((screen) => {
                         screens.push({
-                          node: node.name,
+                          nodeName: node.name,
+                          providerId: node.providerId,
                           screen: screen,
                           callback: () => {
                             createSingleTerminalPanel(
                               CmdType.SCREEN,
-                              node,
+                              node.providerId,
+                              node.name,
                               screen,
                               event.nativeEvent.shiftKey,
                               event.nativeEvent.ctrlKey
@@ -1303,12 +1308,14 @@ function HostTreeViewPanel() {
                     } else {
                       // no screens, try to find by node name instead
                       screens.push({
-                        node: node.name,
+                        nodeName: node.name,
+                        providerId: node.providerId,
                         screen: "autodetect",
                         callback: () => {
                           createSingleTerminalPanel(
                             CmdType.SCREEN,
-                            node,
+                            node.providerId,
+                            node.name,
                             undefined,
                             event.nativeEvent.shiftKey,
                             event.nativeEvent.ctrlKey
@@ -1324,7 +1331,13 @@ function HostTreeViewPanel() {
                       if (item.callback) {
                         item.callback();
                       } else {
-                        createSingleTerminalPanel(CmdType.SCREEN, item.node, item.screen, item.external);
+                        createSingleTerminalPanel(
+                          CmdType.SCREEN,
+                          item.providerId,
+                          item.nodeName,
+                          item.screen,
+                          item.external
+                        );
                       }
                     });
                   }
@@ -1353,7 +1366,8 @@ function HostTreeViewPanel() {
                     callback: () => {
                       createSingleTerminalPanel(
                         CmdType.LOG,
-                        node,
+                        node.providerId,
+                        node.name,
                         undefined,
                         event.nativeEvent.shiftKey,
                         event.nativeEvent.ctrlKey
@@ -1442,14 +1456,10 @@ function HostTreeViewPanel() {
                 onClick={(event) => {
                   // open a new terminal for each selected provider
                   navCtx.selectedProviders.forEach((providerId) => {
-                    const prov = rosCtx.getProviderById(providerId);
-                    const emptyNode = new RosNode();
-                    emptyNode.name = "";
-                    emptyNode.providerId = providerId;
-                    emptyNode.providerName = prov?.name();
                     createSingleTerminalPanel(
                       CmdType.TERMINAL,
-                      emptyNode,
+                      providerId,
+                      "",
                       "",
                       event.nativeEvent.shiftKey,
                       event.nativeEvent.ctrlKey
@@ -1604,18 +1614,24 @@ function HostTreeViewPanel() {
         <ListSelectionModal
           title="Select screens to open"
           list={nodeScreens.reduce((prev, item) => {
-            prev.push(`${item.node} [${item.screen}]`);
+            prev.push(`${item.nodeName} [${item.screen}]`);
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
             items.forEach((item) => {
               const nodeWithOpt = nodeScreens.find(
-                (nodeScreen) => `${nodeScreen.node} [${nodeScreen.screen}]` === item
+                (nodeScreen) => `${nodeScreen.nodeName} [${nodeScreen.screen}]` === item
               );
               if (nodeWithOpt.callback) {
                 nodeWithOpt.callback();
               } else {
-                createSingleTerminalPanel(CmdType.SCREEN, nodeWithOpt.node, screen, nodeWithOpt.external);
+                createSingleTerminalPanel(
+                  CmdType.SCREEN,
+                  nodeWithOpt.providerId,
+                  nodeWithOpt.nodeName,
+                  nodeWithOpt.screen,
+                  nodeWithOpt.external
+                );
               }
             });
             setNodeScreens(null);
