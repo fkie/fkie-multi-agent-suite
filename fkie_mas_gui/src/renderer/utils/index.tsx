@@ -132,7 +132,9 @@ const getRosNameAbb: (name: string) => string = (name) => {
       if (midMatch) {
         name += midMatch[1];
         const index = base.indexOf(midMatch[1]);
-        name += base[index + 1];
+        if (base.length > index + 1) {
+          name += base[index + 1];
+        }
       }
     }
     if (name.length < 3) {
