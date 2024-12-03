@@ -76,6 +76,7 @@ export interface IRosProviderContext {
   reloadLaunchFile: (providerId: string, modifiedFile: string) => Promise<void>;
   getProviderById: (providerId: string, includeNotAvailable: boolean) => Provider | undefined;
   getProviderByHost: (hostName: string) => Provider | null;
+  getLocalProvider: () => Provider[];
   registerSubscriber: (providerId: string, topic: string, messageType: string, filter: SubscriberFilter) => void;
   unregisterSubscriber: (providerId: string, topic: string) => void;
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
@@ -105,6 +106,7 @@ export const DEFAULT = {
   updateLaunchList: () => {},
   getProviderById: () => undefined,
   getProviderByHost: () => null,
+  getLocalProvider: () => [],
   registerSubscriber: () => null,
   unregisterSubscriber: () => null,
   updateFilterRosTopic: () => null,
@@ -261,6 +263,16 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     },
     [providers]
   );
+
+  /**
+   * Search and return a provider it they are local
+   */
+  const getLocalProvider = useCallback(() => {
+    const p = providers.filter((provider) => {
+      return provider.isLocalHost;
+    });
+    return p;
+  }, [providers]);
 
   /**
    * Trigger updateLaunchContent() of the provider.
@@ -1471,6 +1483,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       reloadLaunchFile,
       getProviderById,
       getProviderByHost,
+      getLocalProvider,
       registerSubscriber,
       unregisterSubscriber,
       updateFilterRosTopic,

@@ -22,7 +22,6 @@ function ProviderPanel() {
   const [filterText, setFilterText] = useState("");
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
-
   useCustomEventListener(EVENT_OPEN_CONNECT, () => {
     setOpenConnect(true);
   });

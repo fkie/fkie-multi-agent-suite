@@ -5,6 +5,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import StopIcon from "@mui/icons-material/Stop";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
+import { CmdType } from "../../providers";
 import {
   Box,
   ClickAwayListener,
@@ -24,11 +25,14 @@ import { alpha, styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 import PropTypes from "prop-types";
 import { useContext, useEffect, useRef, useState } from "react";
+import { LoggingContext } from "../../context/LoggingContext";
+import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import ContentComponentItemTree from "../ContentComponentItemTree/ContentComponentItemTree";
 import OverflowMenu from "../UI/OverflowMenu";
 import Tag from "../UI/Tag";
 import SetNTPDateDialog from "./SetNTPDateDialog";
+import DateHelpDialog from "./DateHelpDialog";
 
 const StyledTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -108,11 +112,14 @@ function HostTreeViewItem({
   ...other
 }) {
   const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useContext(RosContext);
+  const logCtx = useContext(LoggingContext);
 
-  const optionsTimeButton = ["ntpdate", "set date"];
+  const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help"];
   const [focus, setFocus] = useState(false);
   const [openTimeButton, setOpenTimeButton] = useState(false);
   const anchorRef = useRef(null);
+  const [showHelpTime, setShowHelpTime] = useState(false);
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState(false);
   const [showFloatingButtons, setShowFloatingButtons] = useState(settingsCtx.get("showFloatingButtons"));
 
@@ -126,15 +133,51 @@ function HostTreeViewItem({
 
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
+  const updateTime = async (local = true) => {
+    if (provider) {
+      const localProviders = rosCtx.getLocalProvider();
+      if (localProviders.length === 0) {
+        logCtx.error("localhost provider not found", "", true);
+        return;
+      }
+      if (local) {
+        rosCtx.openTerminal(
+          CmdType.SET_TIME,
+          localProviders[0].id,
+          `set_date_localhost-${Date.now()}`,
+          "",
+          provider.id,
+          false,
+          false
+        );
+      } else {
+        rosCtx.openTerminal(
+          CmdType.SET_TIME,
+          provider.id,
+          `set_date_remote-${Date.now()}`,
+          "",
+          localProviders[0].id,
+          false,
+          false
+        );
+      }
+    }
+  };
+
   const handleMenuTimeItemClick = (event, index) => {
     if (index === 0) {
       // set time using ntpdate
       setOpenNtpdateDialog(true);
     } else if (index === 1) {
-      // set time using date
+      // set remote time using date
       if (provider) {
-        onTimeSync(`sudo /bin/date -s ${new Date(Date.now()).toISOString()}`);
+        updateTime(false);
       }
+    } else if (index === 2) {
+      // set local time using date
+      updateTime(true);
+    } else if (index === 3) {
+      setShowHelpTime(true);
     }
     setOpenTimeButton(false);
   };
@@ -245,6 +288,13 @@ function HostTreeViewItem({
                     setOpenNtpdateDialog(false);
                   }}
                   value="sudo ntpdate -v -u -t 1"
+                />
+                <DateHelpDialog
+                  id="show-time-help"
+                  open={showHelpTime}
+                  onClose={() => {
+                    setShowHelpTime(false);
+                  }}
                 />
               </Box>
             </Tooltip>

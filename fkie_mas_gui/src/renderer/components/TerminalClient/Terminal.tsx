@@ -19,6 +19,8 @@ import "@xterm/xterm/css/xterm.css";
 import React from "react";
 import { ISettingsContext } from "../../context/SettingsContext";
 import SearchBar from "../UI/SearchBar";
+import { CmdType } from "../../providers";
+import Provider from "../../providers/Provider";
 
 const enum Command {
   // server side
@@ -50,9 +52,11 @@ interface Props {
   termOptions: ITerminalOptions;
   initialCommands: string[];
   name: string;
+  type: CmdType;
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
   settingsCtx: ISettingsContext;
+  provider: Provider;
 }
 
 type XtermState = {
@@ -100,6 +104,10 @@ export class Terminal extends React.Component<Props, XtermState> {
     height: 0,
   };
 
+  private type: CmdType;
+
+  private provider: Provider;
+
   constructor(props: Props) {
     super(props);
 
@@ -125,6 +133,8 @@ export class Terminal extends React.Component<Props, XtermState> {
       },
     };
     // TODO Add setting for this parameter
+    this.type = props.type;
+    this.provider = props.provider;
     this.settingsCtx = props.settingsCtx;
     this.fontSize = this.settingsCtx?.get("fontSizeTerminal") as number;
     this.onSocketOpen = this.onSocketOpen.bind(this);
@@ -287,7 +297,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  private onSocketOpen() {
+  private async onSocketOpen() {
     const { socket, textEncoder, terminal, fitAddon, state } = this;
     const dims = fitAddon.proposeDimensions();
     this.setState({
@@ -322,6 +332,15 @@ export class Terminal extends React.Component<Props, XtermState> {
         this.socket?.send(textEncoder.encode(CommandClient.INPUT + command));
         // this.onTerminalData(command);
       });
+    }
+    if (this.type === CmdType.SET_TIME && this.provider) {
+      if (await this.provider.updateTimeDiff()) {
+        this.socket?.send(
+          textEncoder.encode(
+            CommandClient.INPUT + `sudo /bin/date -s ${new Date(this.provider.timestamp).toISOString()}\n\r`
+          )
+        );
+      }
     }
   }
 

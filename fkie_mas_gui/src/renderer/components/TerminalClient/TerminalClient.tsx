@@ -9,6 +9,8 @@ import { ITerminalOptions, ITheme } from "@xterm/xterm";
 import { useContext } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 import { ClientOptions, Terminal } from "./Terminal";
+import Provider from "../../providers/Provider";
+import { CmdType } from "../../providers";
 
 // TODO: Add parameter for this
 const clientOptions = {
@@ -58,17 +60,19 @@ const termOptions = {
 } as ITerminalOptions;
 
 interface ITerminalClient {
+  type: CmdType;
   initialCommands: string[];
   tokenUrl: string;
   wsUrl: string;
   name: string;
   errorHighlighting: boolean;
+  provider: Provider;
   onIncomingData: (data: string) => void | null;
   onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
 }
 
 function TerminalClient(props: ITerminalClient) {
-  const { initialCommands, tokenUrl, wsUrl, name, errorHighlighting, onIncomingData, onCtrlD } = props;
+  const { type, initialCommands, tokenUrl, wsUrl, name, errorHighlighting, provider, onIncomingData, onCtrlD } = props;
   const settingsCtx = useContext(SettingsContext);
 
   termOptions.fontSize = settingsCtx.get("fontSizeTerminal") as number;
@@ -98,6 +102,7 @@ function TerminalClient(props: ITerminalClient) {
     <Terminal
       key={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
       id={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
+      type={type}
       wsUrl={wsUrl}
       tokenUrl={tokenUrl}
       clientOptions={clientOptions}
@@ -107,6 +112,7 @@ function TerminalClient(props: ITerminalClient) {
       onIncomingData={onIncomingData}
       onCtrlD={onCtrlD}
       settingsCtx={settingsCtx}
+      provider={provider}
     />
   );
 }

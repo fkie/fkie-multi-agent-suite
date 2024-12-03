@@ -36,7 +36,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
       }
       setTokenUrl(tkUrl);
       const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd);
-      if (terminalCmd.cmd) {
+      if (type !== CmdType.SET_TIME && terminalCmd.cmd) {
         setInitialCommands([`${terminalCmd.cmd}\r`]);
       }
       if (type === CmdType.SCREEN) {
@@ -120,7 +120,7 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
           </Alert>
         )}
 
-        {currentHost && nodeName && initialCommands.length > 0 && (
+        {currentHost && nodeName && initialCommands.length > 0 && type !== CmdType.CMD && (
           <TerminalClient
             key={`term-${id}`}
             tokenUrl={tokenUrl}
@@ -154,6 +154,23 @@ function SingleTerminalPanel({ id, type, providerId = "", nodeName = "", screen 
           <TerminalClient
             key={`term-terminal-${id}`}
             tokenUrl={`${cmd.replaceAll("/", " ")}`}
+            wsUrl={`ws://${currentHost}:7681/ws`}
+            initialCommands={initialCommands}
+            width={width}
+            name={`bash`}
+            errorHighlighting={errorHighlighting}
+            onCtrlD={() => {
+              window.terminalManager?.close(id);
+              emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+            }}
+          />
+        )}
+        {currentHost && type === CmdType.SET_TIME && (
+          <TerminalClient
+            key={`set-time-${id}`}
+            type={type}
+            tokenUrl={tokenUrl}
+            provider={rosCtx.getProviderById(cmd)}
             wsUrl={`ws://${currentHost}:7681/ws`}
             initialCommands={initialCommands}
             width={width}

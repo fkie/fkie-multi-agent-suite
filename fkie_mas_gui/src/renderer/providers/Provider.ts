@@ -185,6 +185,9 @@ export default class Provider implements IProvider {
   /** Time difference in seconds calculated if daemon.ready received. */
   currentDelay: number = 0;
 
+  /** remote timestamp. */
+  timestamp: number = 0;
+
   /** Warnings reported by the provider. */
   warnings: SystemWarningGroup[] = [];
 
@@ -371,6 +374,9 @@ export default class Provider implements IProvider {
         break;
       case CmdType.TERMINAL:
         result.cmd = cmd ? `${cmd} \r` : ``;
+        break;
+      case CmdType.SET_TIME:
+        result.cmd = cmd;
         break;
       default:
         break;
@@ -709,6 +715,7 @@ export default class Provider implements IProvider {
       };
     });
     if (providerResponse.timestamp > 0) {
+      this.timestamp = providerResponse.timestamp;
       const endTs = Date.now();
       this.timeDiff = this.calcTimeDiff(startTs, endTs, providerResponse.timestamp);
       this.logger?.debug(

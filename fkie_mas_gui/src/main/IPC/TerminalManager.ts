@@ -134,7 +134,7 @@ class TerminalManager implements TTerminalManager {
     if (is.dev && process.env.ELECTRON_RENDERER_URL) {
       const nodeStr = node ? `&node=${node}` : "";
       const screenStr = screen ? `&screen=${screen}` : "";
-      const cmdStr = screen ? `&cmd=${cmd}` : "";
+      const cmdStr = cmd ? `&cmd=${cmd}` : "";
       window.loadURL(
         `${process.env.ELECTRON_RENDERER_URL}/terminal.html?id=${id}&host=${host}&port=${port}&info=${info}${nodeStr}${screenStr}${cmdStr}`
       );

@@ -438,7 +438,7 @@ function ProviderPanelRow({ provider }) {
         <TableCell style={{ padding: 0 }}>
           {isOlderVersion(provider) && (
             <Tooltip
-              title={`daemon has older version ${provider.getDaemonReleaseVersion()}, open terminal for update`}
+              title={`daemon has older version ${provider.getDaemonReleaseVersion()}, required: ${settingsCtx.MIN_VERSION_DAEMON}, open terminal for update`}
               placement="bottom-start"
               enterDelay={tooltipDelay}
               enterNextDelay={tooltipDelay}
