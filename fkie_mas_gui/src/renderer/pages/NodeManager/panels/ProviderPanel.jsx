@@ -1,4 +1,5 @@
 import RefreshIcon from "@mui/icons-material/Refresh";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -16,9 +17,15 @@ function ProviderPanel() {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
+  const [openConnect, setOpenConnect] = useState(false);
   const [providerRowsFiltered, setProviderRowsFiltered] = useState([]);
   const [filterText, setFilterText] = useState("");
   const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+
+
+  useCustomEventListener(EVENT_OPEN_CONNECT, () => {
+    setOpenConnect(true);
+  });
 
   const getDomainId = async () => {
     if (rosCtx.providers.length === 0) {
@@ -60,7 +67,7 @@ function ProviderPanel() {
         }
       }
       if (!window.commandExecutor || rosCtx.rosInfo?.version) {
-        emitCustomEvent(EVENT_OPEN_CONNECT, {});
+        setOpenConnect(true);
       }
     }
   };
@@ -126,7 +133,24 @@ function ProviderPanel() {
           defaultValue={filterText}
           // fullWidth={true}
         />
-        <ConnectToProviderModal />
+        {openConnect && (
+          <ConnectToProviderModal
+            onClose={() => {
+              setOpenConnect(false);
+            }}
+          />
+        )}
+        <Tooltip title="Start system nodes" placement="bottom" disableInteractive>
+          <IconButton
+            color="primary"
+            onClick={() => {
+              setOpenConnect(true);
+            }}
+            size="small"
+          >
+            <RocketLaunchIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
         <Tooltip
           title="Refresh hosts list"
           placement="bottom"

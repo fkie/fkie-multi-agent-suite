@@ -51,6 +51,7 @@ import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext, getDefaultPortFromRos } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
+import PropTypes from "prop-types";
 import ProviderLaunchConfiguration from "../../models/ProviderLaunchConfiguration";
 import { EVENT_OPEN_CONNECT } from "../../pages/NodeManager/layout/events";
 import Provider from "../../providers/Provider";
@@ -163,12 +164,12 @@ function mergeDeepConfig(org, modifier) {
   return result;
 }
 
-function ConnectToProviderModal() {
+function ConnectToProviderModal({ onClose = () => {} }) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const logCtx = useContext(LoggingContext);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [openTerminalTooltip, setOpenTerminalTooltip] = useState(false);
 
   const [hostList, setHostList] = useState([{ ip: "127.0.0.1", host: "localhost" }]);
@@ -201,11 +202,11 @@ function ConnectToProviderModal() {
   const [startProviderDescription, setStartProviderDescription] = useState("");
   const [startProviderIsSubmitting, setStartProviderIsSubmitting] = useState(false);
 
-  const handleOpen = () => setOpen(true);
   const handleClose = (event, reason) => {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
     setOpenTerminalTooltip(false);
+    onClose();
     // setStartProviderIsSubmitting(false);
   };
 
@@ -234,7 +235,7 @@ function ConnectToProviderModal() {
     setHostValues(["localhost"]);
   }, [rosCtx.systemInfo]);
 
-  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
+  const updateTopics = () => {
     // trigger add new provider
     const newAcTsSet = new Set();
     const newAcTopicSet = new Set();
@@ -260,10 +261,14 @@ function ConnectToProviderModal() {
     });
     setTSList(Array.from(newAcTsSet));
     setTopicList(Array.from(newAcTopicSet));
-  });
+  };
 
-  useCustomEventListener(EVENT_OPEN_CONNECT, () => {
-    handleOpen();
+  useEffect(() => {
+    updateTopics();
+  }, []);
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
+    updateTopics();
   });
 
   const getHosts = () => {
@@ -573,7 +578,7 @@ function ConnectToProviderModal() {
   return (
     <>
       <Dialog
-        keepMounted
+        // keepMounted
         id="connect-to-ros-modal"
         scroll="paper"
         ref={dialogRef}
@@ -1405,21 +1410,12 @@ function ConnectToProviderModal() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Tooltip title="Start system nodes" placement="bottom" disableInteractive>
-        <IconButton
-          color="primary"
-          onClick={() => {
-            handleOpen();
-          }}
-          size="small"
-        >
-          <RocketLaunchIcon fontSize="inherit" />
-        </IconButton>
-      </Tooltip>
     </>
   );
 }
 
-ConnectToProviderModal.propTypes = {};
+ConnectToProviderModal.propTypes = {
+  onClose: PropTypes.Func,
+};
 
 export default ConnectToProviderModal;
