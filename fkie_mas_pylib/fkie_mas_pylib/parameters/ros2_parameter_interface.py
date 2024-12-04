@@ -2,7 +2,11 @@ from typing import List
 import rclpy
 from rclpy.node import Node
 from ros2node.api import get_node_names
-from ros2param.api import call_describe_parameters, call_get_parameters, get_parameter_value, call_set_parameters
+from ros2param.api import call_describe_parameters, call_get_parameters, call_set_parameters
+try:
+    from ros2param.api import get_parameter_value as parameter_value_to_python
+except:
+    from rclpy.parameter import parameter_value_to_python
 from ros2service.api import get_service_names
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.msg import ParameterType
@@ -125,7 +129,7 @@ class ParameterInterface:
 
         parameter = Parameter()
         parameter.name = _parameter.name.replace(f'{node_name}/', '')
-        parameter.value = get_parameter_value(string_value=f'{_parameter.value}')
+        parameter.value = parameter_value_to_python(_parameter.value)
 
         response = call_set_parameters(
             node=self.global_node, node_name=node_name, parameters=[parameter])
