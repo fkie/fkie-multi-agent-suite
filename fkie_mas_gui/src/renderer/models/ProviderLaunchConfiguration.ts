@@ -78,7 +78,10 @@ class ProviderLaunchConfiguration {
   };
 
   public terminalStartCmd: () => TResult = () => {
-    const portNumber = this.terminal.port;
+    let portNumber = 7681
+    if (this.terminal.port) {
+      portNumber = this.terminal.port;
+    }
     const ttydCmd = `${this.terminal.path} --writable --port ${portNumber} bash`;
     let cmd = "";
     if (this.rosVersion === "1") {
