@@ -30,7 +30,7 @@ if (process.env.NODE_ENV === "production") {
   sourceMap.install();
 }
 
-// app.disableHardwareAcceleration();
+app.disableHardwareAcceleration();
 app.disableDomainBlockingFor3DAPIs();
 
 
