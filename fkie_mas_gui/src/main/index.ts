@@ -30,8 +30,8 @@ if (process.env.NODE_ENV === "production") {
   sourceMap.install();
 }
 
-app.disableHardwareAcceleration();
-app.disableDomainBlockingFor3DAPIs();
+// app.disableHardwareAcceleration();
+// app.disableDomainBlockingFor3DAPIs();
 
 
 // const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
