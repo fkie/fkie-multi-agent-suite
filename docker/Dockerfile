@@ -60,9 +60,6 @@ RUN echo "source ${ROS_WS}/install/setup.bash" >>/root/.bashrc
 
 ENV ROS_WS=${ROS_WS}
 
-RUN apt-get update && apt-get install --no-install-recommends -y \
-    mesa-utils \
-    && rm -rf /var/lib/apt/lists/*
 ADD files/entrypoint.sh /entrypoint.sh
 ADD files/start-mas.sh /start-mas.sh
 ADD files/start-mas-x.sh /start-mas-x.sh
