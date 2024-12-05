@@ -1,0 +1,35 @@
+services:
+  mas-web:
+    image: "fkie:humble_mas"
+    build: .
+    ports:
+      - "7681:7681"
+      - "6274:6274"
+      #- "35430-35460:35430-35460"
+      - "$MAS_DAEMON_PORT:$MAS_DAEMON_PORT"
+    environment:
+      ROS_DOMAIN_ID: $ROS_DOMAIN_ID
+      USE_PROXY: "$USE_PROXY"
+      HTTPS_PROXY: "$HTTPS_PROXY"
+
+  mas-x:
+    image: "fkie:humble_mas"
+    build: .
+    # network_mode: host
+    command: bash -c "/start-mas-x.sh"
+    privileged: true
+    environment:
+      DISPLAY: "$DISPLAY"
+#      X_FORWARD: "-x"
+      QT_X11_NO_MITSHM: 1
+#      LIBGL_ALWAYS_SOFTWARE: 1
+      ROS_DOMAIN_ID: $ROS_DOMAIN_ID
+      USE_PROXY: "$USE_PROXY"
+      HTTPS_PROXY: "$HTTPS_PROXY"
+    devices: 
+      - /dev/dri:/dev/dri
+    volumes:
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw"
+      - "$XAUTHORITY:$XAUTHORITY"
+    profiles:
+      - donotstart
