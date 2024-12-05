@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
     gethostname(hostname_chars, HOST_NAME_MAX);
     std::string hostname(hostname_chars);
     // remove domain suffix
-    std::regex const IP4_PATTERN{"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"};
+    std::regex const IP4_PATTERN{"^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"};
     std::smatch m;
     if (!std::regex_match(hostname, m, IP4_PATTERN)) {
         std::size_t found = hostname.find('.');

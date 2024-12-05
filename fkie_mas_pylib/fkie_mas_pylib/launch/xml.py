@@ -68,10 +68,10 @@ def _find_include_tuple(content: str) -> Dict[str, str]:
     Returns a dictionary with package name and path suffix.
     '''
     result = {}
-    pattern = ["\$\(find (.*?)\)/([^ \"']*)",
-               "\$\(find-pkg-share (.*?)\)/([^ \"']*)",
-               "pkg:\/\/(.*?)/([^ \"']*)",
-               "package:\/\/(.*?)/([^ \"']*)"]
+    pattern = [r"\$\(find (.*?)\)/([^ \"']*)",
+               r"\$\(find-pkg-share (.*?)\)/([^ \"']*)",
+               r"pkg:\/\/(.*?)/([^ \"']*)",
+               r"package:\/\/(.*?)/([^ \"']*)"]
     pkg_pattern = re.compile('|'.join(pattern))
     groups = pkg_pattern.findall(content)
     for group in groups:
@@ -319,14 +319,14 @@ def find_included_files(string: str,
     :rtype: iterator with IncludedFile
     '''
     re_filelist = EMPTY_PATTERN
-    pattern = ["\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
-               "\s*(\$\(find .*?\)[^\n\t\"]*)",
-               "\s*(\$\(dirname\)[^\n\t\"]*)",
-               "\s*(pkg:\/\/.*?/[^\n\t\"]*)",
-               "\s*(package:\/\/.*?/[^\n\t\"]*)",
-               "textfile=\"(.*?)\n\t\"",
-               "binfile=\"(.*?)\n\t\"",
-               "file=\"(.*?)\n\t\""]
+    pattern = [r"\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
+               r"\s*(\$\(find .*?\)[^\n\t\"]*)",
+               r"\s*(\$\(dirname\)[^\n\t\"]*)",
+               r"\s*(pkg:\/\/.*?/[^\n\t\"]*)",
+               r"\s*(package:\/\/.*?/[^\n\t\"]*)",
+               r"textfile=\"(.*?)\n\t\"",
+               r"binfile=\"(.*?)\n\t\"",
+               r"file=\"(.*?)\n\t\""]
     re_filelist = re.compile('|'.join(pattern))
     pwd = '.'
     content = string

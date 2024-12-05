@@ -769,7 +769,7 @@ class LaunchServicer(LoggingEventHandler):
             elif '[' in field_type:
                 # handle arrays defined with []
                 is_array = True
-                type_re = re.search('(.*)\[(\d*)\]', field_type)
+                type_re = re.search(r'(.*)\[(\d*)\]', field_type)
                 if type_re is not None:
                     base_type = type_re.group(1)
                     seq_length = type_re.group(2)
