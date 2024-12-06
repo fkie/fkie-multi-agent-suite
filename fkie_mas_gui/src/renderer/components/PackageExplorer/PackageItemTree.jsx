@@ -66,7 +66,8 @@ function PackageItemTree({
 }) {
   return (
     <StyledTreeItemRoot
-      ContentComponent={ContentComponentItemTree}
+      // ContentComponent={ContentComponentItemTree}
+      slots={{ item: ContentComponentItemTree }}
       itemId={itemId}
       label={
         <Box

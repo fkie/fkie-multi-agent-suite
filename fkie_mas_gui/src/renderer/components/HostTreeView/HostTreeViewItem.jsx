@@ -5,7 +5,6 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import StopIcon from "@mui/icons-material/Stop";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
-import { CmdType } from "../../providers";
 import {
   Box,
   ClickAwayListener,
@@ -28,11 +27,12 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
+import { CmdType } from "../../providers";
 import ContentComponentItemTree from "../ContentComponentItemTree/ContentComponentItemTree";
 import OverflowMenu from "../UI/OverflowMenu";
 import Tag from "../UI/Tag";
-import SetNTPDateDialog from "./SetNTPDateDialog";
 import DateHelpDialog from "./DateHelpDialog";
+import SetNTPDateDialog from "./SetNTPDateDialog";
 
 const StyledTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -194,7 +194,8 @@ function HostTreeViewItem({
 
   return (
     <StyledTreeItemRoot
-      ContentComponent={ContentComponentItemTree}
+      // ContentComponent={ContentComponentItemTree}
+      slots={{ item: ContentComponentItemTree }}
       itemId={itemId}
       // onDoubleClick={(event) => onDoubleClick(event, labelText, itemId)}
       onMouseOver={onHover}
