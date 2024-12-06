@@ -74,7 +74,14 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
           <ElectronProvider>
             <RosProviderReact>
               <NavigationProvider>
-                <BrowserRouter>{children}</BrowserRouter>
+                <BrowserRouter
+                  future={{
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true,
+                  }}
+                >
+                  {children}
+                </BrowserRouter>
               </NavigationProvider>
             </RosProviderReact>
           </ElectronProvider>
