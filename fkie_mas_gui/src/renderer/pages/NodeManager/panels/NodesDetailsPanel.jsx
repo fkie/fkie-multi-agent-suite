@@ -24,8 +24,8 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { RosNodeStatus, getDiagnosticLevelName, getFileName } from "../../../models";
 import { generateUniqueId } from "../../../utils";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import OverflowMenuService from "./OverflowMenuService";
 import OverflowMenuTopic from "./OverflowMenuTopic";
 import ServiceCallerPanel from "./ServiceCallerPanel";
@@ -261,7 +261,7 @@ function NodesDetailsPanel() {
               )}
 
               {node.screens.length > 0 && (
-                <Stack direction="column" spacing={0.5}>
+                <Stack direction="row" spacing={0.5}>
                   {node.screens.map((screen) => (
                     <Tag
                       key={`screen-${screen}-`}

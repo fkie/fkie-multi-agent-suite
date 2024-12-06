@@ -78,7 +78,7 @@ class ProviderLaunchConfiguration {
   };
 
   public terminalStartCmd: () => TResult = () => {
-    let portNumber = 7681
+    let portNumber = 7681;
     if (this.terminal.port) {
       portNumber = this.terminal.port;
     }

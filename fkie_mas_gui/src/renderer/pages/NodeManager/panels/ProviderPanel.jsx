@@ -3,7 +3,7 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { useCustomEventListener } from "react-custom-events";
 import { ConnectToProviderModal, SearchBar } from "../../../components";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { RosContext } from "../../../context/RosContext";
@@ -134,7 +134,7 @@ function ProviderPanel() {
         />
         {openConnect && (
           <ConnectToProviderModal
-            onClose={() => {
+            onCloseDialog={() => {
               setOpenConnect(false);
             }}
           />
