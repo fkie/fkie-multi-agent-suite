@@ -16,7 +16,7 @@ function DateHelpDialog({ onClose, open, ...other }) {
 
   return (
     <Dialog sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }} maxWidth="md" open={open} {...other}>
-      <DialogTitle className="handle" id="draggable-dialog-title">
+      <DialogTitle className="draggable-dialog-title" id="draggable-dialog-title">
         Set time
       </DialogTitle>
       <DialogContent dividers>

@@ -46,7 +46,7 @@ function AboutModal() {
         onClose={handleClose}
         // disableEscapeKeyDown
       >
-        <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
+        <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
           About
         </DialogTitle>
         <DialogContent sx={{ padding: "16px" }}>

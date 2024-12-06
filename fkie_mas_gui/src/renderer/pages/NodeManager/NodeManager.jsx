@@ -47,14 +47,7 @@ import { getBaseName } from "../../models";
 import { CmdType } from "../../providers";
 import { getRosNameAbb } from "../../utils";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
-import {
-  EVENT_CLOSE_COMPONENT,
-  EVENT_OPEN_COMPONENT,
-  EVENT_OPEN_SETTINGS,
-  eventOpenComponent,
-  eventOpenSettings,
-  SETTING,
-} from "./layout/events";
+import { EVENT_CLOSE_COMPONENT, EVENT_OPEN_COMPONENT, eventOpenComponent } from "./layout/events";
 import "./NodeManager.css";
 import AboutPanel from "./panels/AboutPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
@@ -842,7 +835,7 @@ function NodeManager() {
           }}
           aria-labelledby="draggable-dialog-title"
         >
-          <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
+          <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
             Changed Files
           </DialogTitle>
 

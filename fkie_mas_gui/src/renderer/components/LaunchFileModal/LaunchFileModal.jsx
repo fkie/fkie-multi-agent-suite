@@ -324,7 +324,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       }}
       aria-labelledby="draggable-dialog-title"
     >
-      <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
+      <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
         Launch file
       </DialogTitle>
       <DialogContent>

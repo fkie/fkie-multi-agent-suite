@@ -113,7 +113,7 @@ function ExternalAppsModal() {
         }}
         aria-labelledby="draggable-dialog-title"
       >
-        <DialogTitle className="handle" style={{ cursor: "move" }} id="draggable-dialog-title">
+        <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
           External Applications
         </DialogTitle>
 
