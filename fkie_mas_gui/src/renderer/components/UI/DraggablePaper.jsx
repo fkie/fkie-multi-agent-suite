@@ -6,7 +6,7 @@ import Draggable from "react-draggable";
 function DraggablePaper({ dialogRef = null, ...props }) {
   return (
     <Draggable nodeRef={dialogRef} handle="#draggable-dialog-title" cancel={'[class*="MuiDialogContent-root"]'}>
-      <Paper {...props} />
+      <Paper ref={dialogRef} {...props} />
     </Draggable>
   );
 }
