@@ -9,6 +9,8 @@ services:
       - "$MAS_DAEMON_PORT:$MAS_DAEMON_PORT"
     environment:
       ROS_DOMAIN_ID: $ROS_DOMAIN_ID
+      VITE_JOIN_ID: $ROS_DOMAIN_ID
+      VITE_ROS_VERSION: "2"
       USE_PROXY: "$USE_PROXY"
       HTTPS_PROXY: "$HTTPS_PROXY"
 
@@ -24,6 +26,8 @@ services:
       QT_X11_NO_MITSHM: 1
 #      LIBGL_ALWAYS_SOFTWARE: 1
       ROS_DOMAIN_ID: $ROS_DOMAIN_ID
+      VITE_JOIN_ID: $ROS_DOMAIN_ID
+      VITE_ROS_VERSION: "2"
       USE_PROXY: "$USE_PROXY"
       HTTPS_PROXY: "$HTTPS_PROXY"
     devices: 
