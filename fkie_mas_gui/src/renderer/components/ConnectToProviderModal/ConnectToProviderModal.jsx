@@ -53,7 +53,6 @@ import { RosContext } from "../../context/RosContext";
 import { SettingsContext, getDefaultPortFromRos } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import ProviderLaunchConfiguration from "../../models/ProviderLaunchConfiguration";
-import { EVENT_OPEN_CONNECT } from "../../pages/NodeManager/layout/events";
 import Provider from "../../providers/Provider";
 import { EVENT_PROVIDER_ROS_NODES } from "../../providers/eventTypes";
 import { generateUniqueId } from "../../utils";
@@ -99,7 +98,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 const DEFAULT_PARAMETER = {
   rosVersion: 1,
-  networkId: 0,
+  networkId: import.meta.env.VITE_ROS_DOMAIN_ID ? parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : 0,
   daemon: { enable: true },
   discovery: {
     enable: true,
@@ -178,7 +177,14 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
   const [hostInputValue, setHostInputValue] = useState("");
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
-  DEFAULT_PARAMETER.rosVersion = settingsCtx.get("rosVersion");
+  const [optionNetworkId, setOptionNetworkId] = useLocalStorage(
+    "ConnectToProviderModal:optionNetworkId",
+    DEFAULT_PARAMETER.networkId
+  );
+
+  DEFAULT_PARAMETER.rosVersion = import.meta.env.VITE_ROS_VERSION
+    ? import.meta.env.VITE_ROS_VERSION
+    : settingsCtx.get("rosVersion");
   const [startParameterDefault, setStartConfigurationsDefault] = useLocalStorage(
     "ConnectToProviderModal:startParameter",
     DEFAULT_PARAMETER
@@ -266,6 +272,9 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
 
   useEffect(() => {
     updateTopics();
+    if (!startParameter.networkId && import.meta.env.VITE_ROS_DOMAIN_ID) {
+      setNetworkId(import.meta.env.VITE_ROS_DOMAIN_ID);
+    }
   }, []);
 
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
@@ -310,6 +319,7 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
 
   const setNetworkId = (networkId) => {
     startParameter.networkId = networkId;
+    setOptionNetworkId(networkId);
     updateStartParameter();
   };
 
@@ -672,7 +682,7 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
                 InputProps={{ inputProps: { min: 0, max: 99 } }}
                 // fullWidth
                 onChange={(e) => setNetworkId(Number(`${e.target.value}`))}
-                value={startParameter.networkId}
+                value={optionNetworkId}
               />
             </Stack>
             <Stack spacing={2} direction="row">

@@ -134,7 +134,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   rosVersion: {
     label: "Default ROS version",
-    default: "1",
+    default: import.meta.env.VITE_ROS_VERSION ? import.meta.env.VITE_ROS_VERSION : "2",
     type: "string",
     options: ["1", "2"],
     readOnly: false,

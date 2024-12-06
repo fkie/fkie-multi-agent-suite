@@ -28,6 +28,28 @@ function ProviderPanel() {
 
   const getDomainId = async () => {
     if (rosCtx.providers.length === 0) {
+      // do we have a join environment parameter
+      if (import.meta.env.VITE_JOIN_ID) {
+        if (!rosCtx.rosInfo?.version && !import.meta.env.VITE_ROS_VERSION) {
+          console.warn(`can't join to ${import.meta.env.VITE_JOIN_ID}: unknown ROS_VERSION; use VITE_ROS_VERSION to set ros version`);
+          return;
+        }
+        const domainId = parseInt(import.meta.env.VITE_JOIN_ID);
+        if (domainId >= 0) {
+          const newProvider = new Provider(
+            settingsCtx,
+            "localhost",
+            rosCtx.rosInfo?.version || import.meta.env.VITE_ROS_VERSION,
+            undefined,
+            domainId,
+            undefined,
+            logCtx
+          );
+          await rosCtx.connectToProvider(newProvider);
+          return;
+        }
+      }
+      // try to get local domain id from running mas processes
       if (rosCtx.rosInfo?.version) {
         try {
           const result = await window.commandExecutor?.exec(
