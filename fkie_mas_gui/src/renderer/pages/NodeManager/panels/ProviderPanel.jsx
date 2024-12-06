@@ -95,6 +95,7 @@ function ProviderPanel() {
   }, [rosCtx.providers, filterText, debouncedCallbackFilterText]);
 
   useEffect(() => {
+    if (window.commandExecutor && !rosCtx.rosInfo) return;
     getDomainId();
   }, [rosCtx.rosInfo, rosCtx.providers]);
 

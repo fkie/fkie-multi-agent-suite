@@ -73,6 +73,7 @@ const createWindow = async (): Promise<void> => {
       preload: join(__dirname, "../preload/index.js"),
     },
   });
+  // mainWindow.webContents.openDevTools();
   // Track window state
   mainWindowStateKeeper.track(mainWindow);
   dialogManager = new DialogManager(mainWindow);

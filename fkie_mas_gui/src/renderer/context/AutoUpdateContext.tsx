@@ -1,5 +1,5 @@
-import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { TAutoUpdateManager } from "@/types";
+import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { LoggingContext } from "./LoggingContext";
 import { SettingsContext } from "./SettingsContext";
@@ -67,6 +67,7 @@ export function AutoUpdateProvider({
 
   // Effect to initialize the auto update callbacks
   useEffect(() => {
+    if (!autoUpdateManager) return;
     autoUpdateManager?.onCheckingForUpdate((state) => {
       setCheckingForUpdate(state);
     });
