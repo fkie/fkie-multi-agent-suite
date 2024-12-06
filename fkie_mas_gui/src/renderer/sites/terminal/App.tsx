@@ -1,6 +1,5 @@
 import { Stack } from "@mui/material";
 import { useCallback, useContext, useEffect, useState } from "react";
-import "../../App.scss";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";

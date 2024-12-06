@@ -1,4 +1,3 @@
-import "./App.scss";
 import { AutoUpdateProvider } from "./context/AutoUpdateContext";
 import { MonacoProvider } from "./context/MonacoContext";
 import NodeManager from "./pages/NodeManager/NodeManager";

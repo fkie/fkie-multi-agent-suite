@@ -2,7 +2,6 @@ import { TFileRange, TLaunchArgs } from "@/types";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import "../../App.scss";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { LoggingContext } from "../../context/LoggingContext";
 import { ModifiedTabsInfo, MonacoContext, MonacoProvider } from "../../context/MonacoContext";
