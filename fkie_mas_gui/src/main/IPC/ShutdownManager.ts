@@ -7,22 +7,33 @@ import log from "electron-log";
  */
 class ShutdownManager implements TShutdownManager {
   mainWindow: BrowserWindow | null = null;
+  closeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
     this.registerHandlers();
   }
 
-  onTerminateSubprocesses: (callback: TerminateCallback) => void = () => {
+  onCloseAppRequest: (callback: TerminateCallback) => void = () => {
     // implemented in preload script
   };
 
   public registerHandlers: () => void = () => {
+    ipcMain.handle(ShutdownManagerEvents.cancelCloseTimeout, this.cancelCloseTimeout);
     ipcMain.handle(ShutdownManagerEvents.quitGui, this.quitGui);
   };
 
-  public emitTerminateSubprocesses: () => void = () => {
-    this.mainWindow?.webContents.send(ShutdownManagerEvents.onTerminateSubprocesses);
+  public emitCloseAppRequest: () => void = () => {
+    this.closeTimeout = setTimeout(() => { log.info("Timeout reply quit dialog"); this.quitGui() }, 6000);
+    this.mainWindow?.webContents.send(ShutdownManagerEvents.onCloseAppRequest);
+  };
+
+  public cancelCloseTimeout = (): void => {
+    log.info("close timer canceled");
+    if (this.closeTimeout) {
+      clearTimeout(this.closeTimeout);
+      this.closeTimeout = null;
+    }
   };
 
   /**

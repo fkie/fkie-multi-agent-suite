@@ -1,13 +1,15 @@
 export const ShutdownManagerEvents = {
-  emitTerminateSubprocesses: "ShutdownManager:emitTerminateSubprocesses",
-  onTerminateSubprocesses: "ShutdownManager:onTerminateSubprocesses",
+  emitCloseAppRequest: "ShutdownManager:emitCloseAppRequest",
+  onCloseAppRequest: "ShutdownManager:onCloseAppRequest",
+  cancelCloseTimeout: "ShutdownManager:cancelCloseTimeout",
   quitGui: "ShutdownManager:quitGui",
 };
 
 export type TerminateCallback = () => void;
 
 export type TShutdownManager = {
-  onTerminateSubprocesses: (callback: TerminateCallback) => void;
-  emitTerminateSubprocesses: () => void;
+  onCloseAppRequest: (callback: TerminateCallback) => void;
+  emitCloseAppRequest: () => void;
+  cancelCloseTimeout: () => void;
   quitGui: () => void;
 };

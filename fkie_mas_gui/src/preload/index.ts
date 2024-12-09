@@ -98,9 +98,10 @@ if (process.contextIsolated) {
 
     // register shutdown interface
     contextBridge.exposeInMainWorld("shutdownManager", {
-      emitTerminateSubprocesses: () => ipcRenderer.invoke(ShutdownManagerEvents.emitTerminateSubprocesses),
-      onTerminateSubprocesses: (callback: TerminateCallback) =>
-        ipcRenderer.on(ShutdownManagerEvents.onTerminateSubprocesses, () => callback()),
+      emitCloseAppRequest: () => ipcRenderer.invoke(ShutdownManagerEvents.emitCloseAppRequest),
+      onCloseAppRequest: (callback: TerminateCallback) =>
+        ipcRenderer.on(ShutdownManagerEvents.onCloseAppRequest, () => callback()),
+      cancelCloseTimeout: () => ipcRenderer.invoke(ShutdownManagerEvents.cancelCloseTimeout),
       quitGui: () => ipcRenderer.invoke(ShutdownManagerEvents.quitGui),
     } as TShutdownManager);
 

@@ -817,7 +817,7 @@ function NodeManager() {
         <ProviderSelectionModal
           title="Select providers to shut down"
           providers={rosCtx.providers}
-          onCloseCallback={() => electronCtx.setTerminateSubprocesses(false)}
+          onCloseCallback={() => electronCtx.cancelCloseApp()}
           onConfirmCallback={(providers) => shutdownProviders(providers)}
           onForceCloseCallback={() => electronCtx.shutdownManager?.quitGui()}
         />
@@ -865,7 +865,7 @@ function NodeManager() {
               color="primary"
               onClick={() => {
                 setModifiedEditorTabs([]);
-                electronCtx.setTerminateSubprocesses(false);
+                electronCtx.cancelCloseApp();
               }}
             >
               Cancel
@@ -892,7 +892,7 @@ function NodeManager() {
                   }
                 });
                 if (failed) {
-                  electronCtx.setTerminateSubprocesses(false);
+                  electronCtx.cancelCloseApp();
                 }
                 setModifiedEditorTabs([]);
               }}

@@ -51,6 +51,8 @@ if (process.env.NODE_ENV === "production") {
 //   ).catch(console.log)
 // }
 
+
+
 const createWindow = async (): Promise<void> => {
   // if (isDebug) {
   //   await installExtensions()
@@ -98,7 +100,7 @@ const createWindow = async (): Promise<void> => {
 
   mainWindow.on("close", (e) => {
     e.preventDefault();
-    shutdownManager?.emitTerminateSubprocesses();
+    shutdownManager?.emitCloseAppRequest();
   });
 
   mainWindow.on("closed", () => {
