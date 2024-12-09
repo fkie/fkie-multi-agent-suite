@@ -182,6 +182,9 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
     DEFAULT_PARAMETER.networkId
   );
 
+  DEFAULT_PARAMETER.networkId = import.meta.env.VITE_ROS_DOMAIN_ID
+    ? import.meta.env.VITE_ROS_DOMAIN_ID
+    : optionNetworkId;
   DEFAULT_PARAMETER.rosVersion = import.meta.env.VITE_ROS_VERSION
     ? import.meta.env.VITE_ROS_VERSION
     : settingsCtx.get("rosVersion");
@@ -682,7 +685,7 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
                 InputProps={{ inputProps: { min: 0, max: 99 } }}
                 // fullWidth
                 onChange={(e) => setNetworkId(Number(`${e.target.value}`))}
-                value={optionNetworkId}
+                value={startParameter.networkId}
               />
             </Stack>
             <Stack spacing={2} direction="row">
@@ -1388,9 +1391,13 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
                       // display="flex"
                       color="info"
                       onClick={(event) => {
+                        setOptionNetworkId(0);
+                        DEFAULT_PARAMETER.networkId = 0;
                         setStartParameter(DEFAULT_PARAMETER);
                         setForceRestart(false);
                         setSelectedHistory("");
+                        window.localStorage.removeItem("ConnectToProviderModal:startParameter");
+                        window.localStorage.removeItem("ConnectToProviderModal:optionNetworkId");
                         event.stopPropagation();
                       }}
                       style={{
