@@ -24,7 +24,10 @@ class ShutdownManager implements TShutdownManager {
   };
 
   public emitCloseAppRequest: () => void = () => {
-    this.closeTimeout = setTimeout(() => { log.info("Timeout reply quit dialog"); this.quitGui() }, 6000);
+    this.closeTimeout = setTimeout(() => {
+      log.info("Timeout reply quit dialog");
+      this.quitGui();
+    }, 6000);
     this.mainWindow?.webContents.send(ShutdownManagerEvents.onCloseAppRequest);
   };
 

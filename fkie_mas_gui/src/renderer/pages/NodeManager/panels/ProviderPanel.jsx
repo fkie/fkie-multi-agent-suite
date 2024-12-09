@@ -31,7 +31,9 @@ function ProviderPanel() {
       // do we have a join environment parameter
       if (import.meta.env.VITE_JOIN_ID) {
         if (!rosCtx.rosInfo?.version && !import.meta.env.VITE_ROS_VERSION) {
-          console.warn(`can't join to ${import.meta.env.VITE_JOIN_ID}: unknown ROS_VERSION; use VITE_ROS_VERSION to set ros version`);
+          console.warn(
+            `can't join to ${import.meta.env.VITE_JOIN_ID}: unknown ROS_VERSION; use VITE_ROS_VERSION to set ros version`
+          );
           return;
         }
         const domainId = parseInt(import.meta.env.VITE_JOIN_ID);
