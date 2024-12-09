@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.7.0 - 09.12.2024
+
+Added: remember network id in connect dialog
+Added: environment VITE\_ variables to join at start
+Added: docker configuration files
+Added: option to adjust local time to the robot
+Added: auto-connect on start if daemon is running
+Changed: open behavior of the connect dialog
+Removed: sass dependency
+Fixed: warning "findDOMNode is deprecated"
+Fixed: X-Tree deprecation warning
+Fixed: multiple runs for update and domain id check
+Fixed: onClose warning
+Fixed: import error in jazzy
+Fixed: "invalid escape sequence" for python 3.12
+Fixed: undefined ttyd port
+Fixed: parameter handling for rolling
+Fixed: open screens of a provider
+
 ## 2.6.10 - 07.11.2024
 
 Changed description for setup ssh config in password dialog

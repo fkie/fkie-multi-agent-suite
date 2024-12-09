@@ -34,7 +34,7 @@ export const LOG_LEVEL_LIST = ["DEBUG", "INFO", "SUCCESS", "WARN", "ERROR"];
 export const LAUNCH_FILE_EXTENSIONS = [".launch", "launch.xml", "launch.py", "launch.yaml", "launch.yml"];
 
 export const DEFAULT_SETTINGS = {
-  MIN_VERSION_DAEMON: "3.1.4",
+  MIN_VERSION_DAEMON: "3.2.0",
   fgColor: "#1a73e8",
   bgColor: "#fafafa",
   fgColorForDarkMode: "#B8E7FB",

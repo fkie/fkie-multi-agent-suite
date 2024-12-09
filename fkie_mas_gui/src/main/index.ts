@@ -33,7 +33,6 @@ if (process.env.NODE_ENV === "production") {
 // app.disableHardwareAcceleration();
 // app.disableDomainBlockingFor3DAPIs();
 
-
 // const isDebug = process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
 
 // if (isDebug) {
@@ -50,8 +49,6 @@ if (process.env.NODE_ENV === "production") {
 //     forceDownload
 //   ).catch(console.log)
 // }
-
-
 
 const createWindow = async (): Promise<void> => {
   // if (isDebug) {
