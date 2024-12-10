@@ -798,7 +798,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       if (forceStartWithDefault) {
         // use default configuration to start the provider
-        const defaultCfg = new ProviderLaunchConfiguration(provider.host(), provider.rosVersion);
+        const defaultCfg = new ProviderLaunchConfiguration(provider.host(), provider.rosVersion, provider.connection?.port);
         defaultCfg.daemon.enable = true;
         defaultCfg.discovery.enable = true;
         defaultCfg.terminal.enable = true;
