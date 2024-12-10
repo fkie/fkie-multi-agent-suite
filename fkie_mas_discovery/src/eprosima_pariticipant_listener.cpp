@@ -17,6 +17,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <limits.h>
+#include <csignal>
 
 #include "rmw_fastrtps_shared_cpp/guid_utils.hpp"
 #include "rmw_fastrtps_shared_cpp/qos.hpp"
@@ -264,8 +265,17 @@ private:
     paricipant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
 };
 
+#include <iostream>
+
+void signalHandler( int signum ) {
+   std::cout << "Interrupt signal (" << signum << ") received.\n";
+   rclcpp::shutdown();
+}
+
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
     rclcpp::init(argc, argv);
     char hostname_chars[HOST_NAME_MAX];
     gethostname(hostname_chars, HOST_NAME_MAX);

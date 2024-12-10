@@ -9,6 +9,7 @@
 
 import argparse
 import os
+import signal
 import sys
 import threading
 
@@ -49,6 +50,8 @@ class RosNodeLauncher(object):
             self.ros_domain_id = int(os.environ['ROS_DOMAIN_ID'])
             # TODO: switch domain id
             # os.environ.pop('ROS_DOMAIN_ID')
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+        signal.signal(signal.SIGINT, self.exit_gracefully)
         rclpy.init(args=remaining_args)
         self.ros_node = rclpy.create_node(self.name, namespace=NM_NAMESPACE)
 
@@ -67,6 +70,11 @@ class RosNodeLauncher(object):
         self.server = Server(
             self.ros_node, default_domain_id=self.ros_domain_id)
         self.success_start = False
+
+    def exit_gracefully(self, signum, frame):
+        self.server.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
     def exception_handler(self, loop, error):
         pass
@@ -94,7 +102,8 @@ class RosNodeLauncher(object):
             # os.kill(os.getpid(), signal.SIGKILL)
         print('shutdown own server')
         self.server.shutdown()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
         print('bye!')
 
     def _run_tests(self):
