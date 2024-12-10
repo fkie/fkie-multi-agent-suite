@@ -168,11 +168,14 @@ export ELECTRON_GET_USE_PROXY=true
 export GLOBAL_AGENT_HTTPS_PROXY=http://XXX.XXX.XXX.XXX:XXXX
 ```
 
-- If you get the error: `release/app/node_modules/ssh2/lib/protocol/crypto/build/Release/sshcrypto.node: undefined symbol: ERR_set_mark`, you might need to force adding again the `ssh2` package on the `release/app` project:
+- `The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now.`: You can check [https://github.com/electron/electron/issues/42510](https://github.com/electron/electron/issues/42510) for more details. Use `--no-sandbox` argument as workaround, e.g.:
 
 ```bash
-cd release/app
-npm add ssh2 --force
+npm run dev -- --no-sandbox
+```
+or
+```bash
+mas-gui.appimage --no-sandbox
 ```
 
 - If you get the SFPT error: `getSftpChannel: Packet length XXXXXX exceeds max length of XXXXX`, it might be caused by an `echo` command on the `.bashrc` file. Make sure all `echo` commands are defined only for interactive shells. For instance in `.bashrc`:
