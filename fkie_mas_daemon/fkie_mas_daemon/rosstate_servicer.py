@@ -91,6 +91,7 @@ class RosStateServicer:
             f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
+        self._lock_check = threading.RLock()
         self._thread_check_discovery_node = threading.Thread(
             target=self._check_discovery_node, daemon=True)
         self._thread_check_discovery_node.start()
@@ -124,15 +125,18 @@ class RosStateServicer:
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
                     self.topic_state_publisher_count = 0
                     self.publish_discovery_state()
-                    self._ts_state_updated = time.time()
+                    with self._lock_check:
+                        self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
             # therefor the self._ts_state_updated was updated
-            if self._ts_state_updated > self._ts_state_notified:
-                if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
-                    self._ts_state_notified = self._ts_state_updated
-                    self.websocket.publish('ros.nodes.changed', {
-                        "timestamp": self._ts_state_updated})
-                    nmd.launcher.server.screen_servicer.system_change()
+            with self._lock_check:
+                if self._ts_state_updated > self._ts_state_notified:
+                    if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
+                        print(f"notify {time.time()}")
+                        self._ts_state_notified = self._ts_state_updated
+                        self.websocket.publish('ros.nodes.changed', {
+                            "timestamp": self._ts_state_updated})
+                        nmd.launcher.server.screen_servicer.system_change()
             time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
@@ -168,7 +172,9 @@ class RosStateServicer:
         self._ros_node_list = None
         # notify WebSocket clients, but not to often
         # notifications are sent from _check_discovery_node()
-        self._ts_state_updated = time.time()
+        with self._lock_check:
+            self._ts_state_updated = time.time()
+            print(f"update added {self._ts_state_updated}")
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
