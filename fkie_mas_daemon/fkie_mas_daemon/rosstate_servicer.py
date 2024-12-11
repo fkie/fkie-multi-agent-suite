@@ -132,7 +132,6 @@ class RosStateServicer:
             with self._lock_check:
                 if self._ts_state_updated > self._ts_state_notified:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
-                        print(f"notify {time.time()}")
                         self._ts_state_notified = self._ts_state_updated
                         self.websocket.publish('ros.nodes.changed', {
                             "timestamp": self._ts_state_updated})
@@ -174,7 +173,6 @@ class RosStateServicer:
         # notifications are sent from _check_discovery_node()
         with self._lock_check:
             self._ts_state_updated = time.time()
-            print(f"update added {self._ts_state_updated}")
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
