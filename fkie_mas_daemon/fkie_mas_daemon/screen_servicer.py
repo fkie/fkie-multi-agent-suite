@@ -106,23 +106,39 @@ class ScreenServicer:
             return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
         for session_name, node_name in screens.items():
             successCur = False
-            pid, session_name = screen.split_session_name(session_name)
+            pid_screen, session_name = screen.split_session_name(session_name)
             # try to determine the process id of the node inside the screen
-            nPid = pid + 1
-            for process in psutil.process_iter():
-                if (process.pid == nPid):
-                    cmdStr = ' '.join(process.cmdline())
-                    nodeName = os.path.basename(name)
-                    if cmdStr.find(f"__node:={nodeName}") > -1:
-                        successCur = True
-                        Log.info(
-                            f"{self.__class__.__name__}: Kill process '{nPid}', cmd: {cmdStr}")
-                        os.kill(nPid, sig)
-                        break
+            found_deep = -1
+            found_pid = -1
+            found_name = ""
+            try:
+                for process in psutil.process_iter():
+                    deep = -1
+                    found = False
+                    parents = process.parents()
+                    # search for parents with screen process id
+                    for p in parents:
+                        deep += 1
+                        if p.pid == pid_screen:
+                            found = True
+                            break
+                    # use the process with most parents
+                    if found and deep > found_deep:
+                        found_deep = deep
+                        found_pid = process.pid
+                        found_name = process.name()
+            except Exception as error:
+                Log.warn(
+                    f"{self.__class__.__name__}: can't find node process: {error}")
+            if found_pid > -1:
+                Log.info(
+                    f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig.name}")
+                os.kill(found_pid, sig)
+                successCur = True
             if not successCur:
                 Log.info(
-                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid}'")
-                os.kill(pid, signal.SIGKILL)
+                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid_screen}' using signal {sig.name}")
+                os.kill(pid_screen, sig)
                 successCur = True
             if successCur:
                 success = True
