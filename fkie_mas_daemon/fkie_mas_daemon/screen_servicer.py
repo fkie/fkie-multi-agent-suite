@@ -128,8 +128,19 @@ class ScreenServicer:
                         found_pid = process.pid
                         found_name = process.name()
             except Exception as error:
-                Log.warn(
-                    f"{self.__class__.__name__}: can't find node process: {error}")
+                # fallback for psutil versions (<5.6.0) without Process.parents()
+                current_pid = pid_screen
+                new_pid = current_pid
+                while new_pid == current_pid:
+                    new_pid = -1
+                    # search for process which has screen id as parent
+                    for process in psutil.process_iter():
+                        parent = process.parent()
+                        if parent and parent.pid == current_pid:
+                            new_pid = process.pid
+                            current_pid = process.pid
+                if current_pid != pid_screen:
+                    found_pid = current_pid
             if found_pid > -1:
                 Log.info(
                     f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig.name}")
