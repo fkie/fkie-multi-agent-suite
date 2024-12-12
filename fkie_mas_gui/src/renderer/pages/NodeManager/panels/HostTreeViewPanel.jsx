@@ -729,7 +729,7 @@ function HostTreeViewPanel() {
         addStatusQueueMain("KILL", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         // store result for message
-        const resultKillNode = await provider.screenKillNode(node.id);
+        const resultKillNode = await provider.screenKillNode(node.name);
         if (!resultKillNode.result) {
           addStatusQueueMain("KILL", node.name, false, resultKillNode.message);
         } else {
