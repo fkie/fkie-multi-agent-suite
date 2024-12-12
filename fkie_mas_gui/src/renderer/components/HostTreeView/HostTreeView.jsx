@@ -10,10 +10,11 @@ import { blue, green, grey, red } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
+import { NavigationContext } from "../../context/NavigationContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { LaunchFile, RosNodeStatus, getFileName } from "../../models";
-import { LAYOUT_TAB_SETS } from "../../pages/NodeManager/layout";
+import { getFileName, LaunchFile, RosNodeStatus } from "../../models";
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
 import { CmdType } from "../../providers";
@@ -53,6 +54,7 @@ function HostTreeView({
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
 
   const [expanded, setExpanded] = useState(groupKeys);
@@ -235,6 +237,8 @@ function HostTreeView({
         // add child items for selected groups
         return getParentAndChildrenIds(selectedIds);
       });
+      // inform details panel tab about selected nodes by user
+      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {}));
     },
     [getParentAndChildrenIds]
   );

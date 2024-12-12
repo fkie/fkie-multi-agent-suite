@@ -39,7 +39,7 @@ import { AutoUpdateContext } from "../../context/AutoUpdateContext";
 import { ElectronContext } from "../../context/ElectronContext";
 import { LoggingContext } from "../../context/LoggingContext";
 import { MonacoContext } from "../../context/MonacoContext";
-import { NavigationContext } from "../../context/NavigationContext";
+// import { NavigationContext } from "../../context/NavigationContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
@@ -67,7 +67,7 @@ function NodeManager() {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const monacoCtx = useContext(MonacoContext);
-  const navCtx = useContext(NavigationContext);
+  // const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const [layoutJson, setLayoutJson] = useLocalStorage("layout", DEFAULT_LAYOUT);
   const [model, setModel] = useState(Model.fromJson(layoutJson));
@@ -706,15 +706,15 @@ function NodeManager() {
     500
   );
 
-  useEffect(() => {
-    if (navCtx.selectedNodes.length > 0) {
-      // inform details panel tab about selected nodes by user
-      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {}));
-    } else {
-      // select package explorer if no nodes are selected
-      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.PACKAGES, "default", {}));
-    }
-  }, [navCtx.selectedNodes]);
+  // useEffect(() => {
+  //   if (navCtx.selectedNodes.length > 0) {
+  //     // inform details panel tab about selected nodes by user
+  //     emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {}));
+  //   } else {
+  //     // select package explorer if no nodes are selected
+  //     emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.PACKAGES, "default", {}));
+  //   }
+  // }, [navCtx.selectedNodes]);
 
   const isInstallUpdateRequested = useCallback(() => {
     return auCtx.requestedInstallUpdate;
