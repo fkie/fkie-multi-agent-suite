@@ -149,7 +149,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
 
     const value = settingsCtx.get("debugByUri");
     if (Array.isArray(value) && value.includes(uri)) {
-      debug(`[URI] ${providerName} (${uri}): ${parseDetails}}`, JSON.stringify(parsedMsg));
+      debug(`[URI] ${providerName} (${uri}): ${JSON.stringify(parseDetails)}}`, JSON.stringify(parsedMsg));
     }
   };
 

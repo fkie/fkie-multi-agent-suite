@@ -55,6 +55,9 @@ class LaunchIncludedFile {
    */
   size: number;
 
+  /** if True the included file is not loaded be current configuration. */
+  conditional_excluded: boolean;
+
   /**
    * Class Constructor
    *
@@ -68,6 +71,7 @@ class LaunchIncludedFile {
    * @param {LaunchArgument[]} args - A list with arguments forwarded within include tag for 'inc_path'.
    * @param {LaunchArgument[]} default_inc_args - A list with default arguments defined in 'inc_path'.
    * @param {number} size - Size of the included file in bytes.
+   * @param {boolean} conditional_excluded - If True the included file is not loaded be current configuration.
 
    */
   constructor(
@@ -80,7 +84,8 @@ class LaunchIncludedFile {
     rec_depth: number,
     args: LaunchArgument[],
     default_inc_args: LaunchArgument[],
-    size: number
+    size: number,
+    conditional_excluded: boolean
   ) {
     this.host = host;
     this.path = path;
@@ -92,6 +97,7 @@ class LaunchIncludedFile {
     this.args = args;
     this.default_inc_args = default_inc_args;
     this.size = size;
+    this.conditional_excluded = conditional_excluded;
   }
 }
 

@@ -35,7 +35,7 @@ NM_DISCOVERY_NAME = f'_discovery{nm_name_suffix}'
 NM_DAEMON_NAME = f'_daemon{nm_name_suffix}'
 NM_SUBSCRIBER_NAME = f'_subscriber{nm_name_suffix}'
 EMPTY_PATTERN = re.compile('\b', re.I)
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
+SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.py'
                  '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
 PACKAGE_FILE = 'package.xml'

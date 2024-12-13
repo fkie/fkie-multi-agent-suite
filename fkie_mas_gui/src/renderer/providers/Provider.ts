@@ -1320,6 +1320,7 @@ export default class Provider implements IProvider {
                 args: LaunchArgument[];
                 default_inc_args: LaunchArgument[];
                 size: number;
+                conditional_excluded: boolean;
               }) => {
                 launchList.push(
                   new LaunchIncludedFile(
@@ -1332,7 +1333,8 @@ export default class Provider implements IProvider {
                     lf.rec_depth,
                     lf.args,
                     lf.default_inc_args,
-                    lf.size
+                    lf.size,
+                    lf.conditional_excluded
                   )
                 );
               }

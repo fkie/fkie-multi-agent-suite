@@ -31,6 +31,7 @@ from launch.frontend.parser import Parser
 from launch.launch_description_sources import get_launch_description_from_frontend_launch_file
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.actions.include_launch_description import IncludeLaunchDescription
+import launch.utilities
 from launch_ros.utilities.evaluate_parameters import evaluate_parameters
 from launch_ros.utilities import to_parameters_list
 from launch.utilities import perform_substitutions
@@ -40,6 +41,7 @@ import composition_interfaces.srv
 
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
+from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFile
 from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib import names
@@ -57,6 +59,42 @@ class LaunchConfigException(Exception):
     pass
 
 
+def perform_to_string(context: launch.LaunchContext, value: Union[List[List], List[launch.Substitution], str, None]) -> Union[str, None]:
+    result = ''
+    if isinstance(value, str):
+        result = value
+    elif isinstance(value, List):
+        result += ' '.join([perform_to_string(context, val) for val in value])
+    elif value and isinstance(value, launch.Substitution):
+        try:
+            result += context.perform_substitution(value)
+        except:
+            import traceback
+            print(traceback.format_exc())
+        if ' ' in result and '{' in result:
+            result = f"'{result}'"
+    elif value and isinstance(value[0], launch.Substitution):
+        result += launch.utilities.perform_substitutions(context, value)
+        if ' ' in result and '{' in result:
+            result = f"'{result}'"
+    elif value is not None:
+        Log.warn("IGNORED while perform_to_string", value)
+    else:
+        result = None
+    return result
+
+
+def perform_to_tuple_list(context: launch.LaunchContext, value: Union[List[Tuple[List[launch.Substitution], List[launch.Substitution]]], None]) -> Union[List[Tuple[str, str]], None]:
+    result = []
+    if value is not None:
+        for val1, val2 in value:
+            result.append((launch.utilities.perform_substitutions(context, val1),
+                          launch.utilities.perform_substitutions(context, val2)))
+    else:
+        result = None
+    return result
+
+
 class LaunchNodeWrapper(LaunchNodeInfo):
 
     _unique_names: Set[str] = set()
@@ -66,10 +104,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self._entity = entity
         self._launch_description = launch_description
         self._launch_context = launch_context
-        print("  ***debug LaunchNodeWrapper: launch_context:", launch_context.locals,
-              dir(launch_context.locals))
-        print("  ***debug LaunchNodeWrapper: launch_context, current_launch_file_path,:",
-              getattr(launch_context.locals, "current_launch_file_path", 'NONE'))
         if isinstance(self._entity, launch_ros.actions.Node):
             # Prepare the ros_specific_arguments list and add it to the context so that the
             # LocalSubstitution placeholders added to the the cmd can be expanded using the contents.
@@ -104,30 +138,26 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.respawn_delay = self._get_respawn_delay()
         if isinstance(self._launch_description, launch.actions.IncludeLaunchDescription):
             self.file_name = self._launch_description._get_launch_file()
-            self.launch_name = getattr(
-                self._launch_context.locals, 'launch_file_path', None)
+            self.launch_name = getattr(self._launch_context.locals, 'launch_file_path', None)
             # add launch arguments used to load the included file
             if self._launch_description.launch_arguments:
                 self.launch_context_arg = []
             for arg_name, arg_value in self._launch_description.launch_arguments:
-                self.launch_context_arg.append(LaunchArgument(self._to_string(arg_name),
-                                                              self._to_string(arg_value)))
+                self.launch_context_arg.append(LaunchArgument(perform_to_string(self._launch_context, arg_name),
+                                                              perform_to_string(self._launch_context, arg_value)))
         else:
-            self.launch_name = getattr(
-                self._launch_description, 'launch_name', '')
-            self.launch_context_arg = getattr(
-                self._launch_context.locals, 'launch_arguments', None)
+            self.launch_name = getattr(self._launch_description, 'launch_name', '')
+            self.launch_context_arg = getattr(self._launch_context.locals, 'launch_arguments', None)
             self.file_name = self.launch_name
         self.composable_container: str = composable_container
         self.launch_prefix = self._get_launch_prefix()
         self.parameters = self._get_parameter_arguments()
         self.args = self._get_arguments()
-        self.cmd = self._to_string(getattr(self._entity, 'cmd', None))
-        self.cwd = self._to_string(getattr(self._entity, 'cwd', None))
-        self.env = self._to_tuple_list(getattr(self._entity, 'env', None))
-        self.additional_env = self._to_tuple_list(
-            getattr(self._entity, 'additional_env', None))
-        self.launch_prefix = self._to_string(self._get_launch_prefix())
+        self.cmd = perform_to_string(self._launch_context, getattr(self._entity, 'cmd', None))
+        self.cwd = perform_to_string(self._launch_context, getattr(self._entity, 'cwd', None))
+        self.env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'env', None))
+        self.additional_env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'additional_env', None))
+        self.launch_prefix = perform_to_string(self._launch_context, self._get_launch_prefix())
 
         #  remap_args: List[Tuple[str, str]] = None,
         #  output: str = '',
@@ -316,37 +346,41 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         result = os.path.basename(result.replace(' ', '_'))
         return result
 
-    def _to_string(self, value: Union[List[List], List[launch.Substitution], str, None]) -> Union[str, None]:
-        result = ''
-        if isinstance(value, str):
-            result = value
-        elif isinstance(value, List):
-            result += ' '.join([self._to_string(val) for val in value])
-        elif value and isinstance(value, launch.Substitution):
-            result += self._launch_context.perform_substitution(value)
-            if ' ' in result and '{' in result:
-                result = f"'{result}'"
-        elif value and isinstance(value[0], launch.Substitution):
-            result += launch.utilities.perform_substitutions(
-                self._launch_context, value)
-            if ' ' in result and '{' in result:
-                result = f"'{result}'"
-        elif value is not None:
-            Log.warn("IGNORED while _to_string", value)
-        else:
-            result = None
-        return result
+    # def _to_string(self, value: Union[List[List], List[launch.Substitution], str, None]) -> Union[str, None]:
+    #     result = ''
+    #     if isinstance(value, str):
+    #         result = value
+    #     elif isinstance(value, List):
+    #         result += ' '.join([perform_to_string(self._launch_context, val) for val in value])
+    #     elif value and isinstance(value, launch.Substitution):
+    #         try:
+    #             result += self._launch_context.perform_substitution(value)
+    #         except:
+    #             import traceback
+    #             print(traceback.format_exc())
+    #         if ' ' in result and '{' in result:
+    #             result = f"'{result}'"
+    #     elif value and isinstance(value[0], launch.Substitution):
+    #         result += launch.utilities.perform_substitutions(
+    #             self._launch_context, value)
+    #         if ' ' in result and '{' in result:
+    #             result = f"'{result}'"
+    #     elif value is not None:
+    #         Log.warn("IGNORED while _to_string", value)
+    #     else:
+    #         result = None
+    #     return result
 
-    def _to_tuple_list(self, value: Union[List[Tuple[List[launch.Substitution], List[launch.Substitution]]], None]) -> Union[List[Tuple[str, str]], None]:
-        result = []
-        if value is not None:
-            for val1, val2 in value:
-                result.append((launch.utilities.perform_substitutions(
-                    self._launch_context, val1), launch.utilities.perform_substitutions(
-                    self._launch_context, val2)))
-        else:
-            result = None
-        return result
+    # def _to_tuple_list(self, value: Union[List[Tuple[List[launch.Substitution], List[launch.Substitution]]], None]) -> Union[List[Tuple[str, str]], None]:
+    #     result = []
+    #     if value is not None:
+    #         for val1, val2 in value:
+    #             result.append((launch.utilities.perform_substitutions(
+    #                 self._launch_context, val1), launch.utilities.perform_substitutions(
+    #                 self._launch_context, val2)))
+    #     else:
+    #         result = None
+    #     return result
 
 
 class LaunchConfig(object):
@@ -369,8 +403,8 @@ class LaunchConfig(object):
         :param str daemonuri: daemon where to start the nodes of this launch file.
         :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
-        self.__launchfile = launch_file
-        self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
+        self.__launch_file = launch_file
+        self.__package = ros_pkg.get_name(os.path.dirname(self.__launch_file))[
             0] if package is None else package
         self._nodes: List[LaunchNodeWrapper] = []
         self.__nmduri = daemonuri
@@ -383,10 +417,25 @@ class LaunchConfig(object):
         if context is None:
             self.__launch_context = LaunchContext(argv=argv)
         for (name, value) in launch_arguments:
-            self.__launch_context.launch_configurations[name] = value
-            self.launch_arguments.append(LaunchArgument(name, value))
+            name_normalized = perform_substitutions(self.__launch_context,
+                                                    launch.utilities.normalize_to_list_of_substitutions(name))
+            self.__launch_context.launch_configurations[name_normalized] = value
+            self.launch_arguments.append(LaunchArgument(name_normalized, value))
         self.__launch_description = get_launch_description_from_any_launch_file(
             self.filename)
+        # check for valid arguments
+        declared_launch_arguments = self.__launch_description.get_launch_arguments()
+        for argument in declared_launch_arguments:
+            if argument._conditionally_included or argument.default_value is not None:
+                continue
+            if argument.name not in self.__launch_context.launch_configurations:
+                raise RuntimeError(
+                    f"Included launch description missing required argument '{argument.name}' (description: '{argument.description}'), given: {[name for name, value in launch_arguments]}"
+                )
+            elif not self.__launch_context.launch_configurations[argument.name]:
+                raise RuntimeError(
+                    f"Included launch description missing required value for argument '{argument.name}' (description: '{argument.description}'), given: '{self.__launch_context.launch_configurations[argument.name]}'")
+
         # self.__launch_description.visit(self.__launch_context)
         # self.ldsource = launch.LaunchDescriptionSource(launch_description=self.__launch_description, location=launch_file)
         # self.__launch_description = self.ldsource.get_launch_description(self.__launch_context)
@@ -407,7 +456,9 @@ class LaunchConfig(object):
         # print("frontend_parsers", launch.frontend.parser.Parser.frontend_parsers)
         # entity, parser = launch.frontend.parser.Parser.load(self.filename)
         # print("DIFFLOAD", entity, parser)
-        self._included_files: List[IncludeLaunchDescription] = []
+        # self._included_files: List[IncludeLaunchDescription] = []
+        self._included_files: List[LaunchIncludedFile] = []
+
         self.__launch_description.launch_name = self.filename
         self.load()
         self.argv = None
@@ -455,6 +506,28 @@ class LaunchConfig(object):
                     "not all argv are setted properly!")
             return self.__launch_description
 
+    def find_definition(self, content, identifier, start=0):
+        line_number = -1
+        end_position = -1
+        raw_text = ""
+        identifier_pattern = re.compile(rf"{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
+        match = identifier_pattern.search(content, start)
+        if match is not None:
+            open_brackets = 0
+            line_number = content[:match.start()].count('\n') + 1
+            end_position = match.end()
+            raw_text = content[match.start():match.end()]
+            for idx in range(match.end()+1, len(content)-1):
+                if content[idx] == '(':
+                    open_brackets += 1
+                if content[idx] == ')':
+                    open_brackets -= 1
+                    if open_brackets < 0:
+                        end_position = idx
+                        raw_text = content[match.start():idx]
+                        break
+        return line_number, end_position, raw_text
+
     def unload(self):
         Log.info(f"unload launch file: {self.filename}")
         self.launch_arguments.clear()
@@ -466,16 +539,19 @@ class LaunchConfig(object):
             f"load launch file: {self.filename}, arguments: {[f'{v.name}:={v.value}' for v in self.launch_arguments]}")
         self._load(current_file=self.filename)
 
-    def _load(self, sub_obj=None, launch_description=None, current_file: str = '', ident: str = '') -> None:
+    def _load(self, sub_obj=None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1) -> None:
+        print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
+        file_content = ""
         if sub_obj is None:
             sub_obj = self.__launch_description
-            self.context.extend_locals({
-                'launch_file_path': self.filename,
-            })
-            self.context.extend_locals({
-                'launch_arguments': self.launch_arguments,
-            })
+            self.context.extend_locals({'launch_file_path': self.filename})
+            self.context.extend_locals({'launch_arguments': self.launch_arguments})
+            self.context.extend_locals({v.name: v.value for v in self.launch_arguments})
+        if current_file:
+            self.context.extend_locals({'current_launch_file_path': current_file})
+            with open(current_file, 'r') as f:
+                file_content = f.read()
         if current_launch_description is None:
             current_launch_description = self.__launch_description
 
@@ -484,20 +560,47 @@ class LaunchConfig(object):
         # print("Launch arguments:")
         # for la in self.__launch_description.get_launch_arguments():
         #     print(la.name, launch.utilities.perform_substitutions(self.context, la.default_value))
-
+        include_end_position = 0
         entities = None
         if hasattr(sub_obj, 'get_sub_entities'):
-            print("  ***debug launch loading: ", ident, "GET SUB ENTITY")
+            print(f"  ***debug launch loading: {indent}GET SUB ENTITY")
             entities = getattr(sub_obj, 'get_sub_entities')()
         elif hasattr(sub_obj, 'entities'):
-            print("  ***debug launch loading: ", ident, "GET ENTITY")
+            print(f"  ***debug launch loading: {indent}GET ENTITY")
             entities = getattr(sub_obj, 'entities')
         if entities is not None:
             for entity in entities:
-                # if isinstance(entity, launch.launch_description.LaunchDescription):
-                #     current_launch_description = entity
-                print("  ***debug launch loading: ", ident,
-                      f"typeID: {type(entity)} {entity}")
+                print(f"  ***debug launch loading: {indent}perform entity: {entity}")
+                if hasattr(entity, "condition") and entity.condition:
+                    print(
+                        f"  ***debug launch loading: {indent} condition result: {entity.condition.evaluate(self.context)}")
+                    if not entity.condition.evaluate(self.context):
+                        # TODO: parse GroupAction with IncludeLaunchDescription
+                        if isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
+                            print(
+                                f"  ***debug launch loading: {indent} add not included file: {entity.launch_description_source.location}")
+                            # perform search
+                            inc_file_exists = False
+                            file_size = -1
+                            entity.execute(self.context)
+                            inc_file_name = perform_to_string(self.context, entity.launch_description_source.location)
+                            if os.path.exists(inc_file_name):
+                                inc_file_exists = True
+                                file_size = os.path.getsize(inc_file_name)
+                            include_line_number, include_end_position, raw_text = self.find_definition(
+                                file_content, 'IncludeLaunchDescription', include_end_position)
+                            launch_inc_file = LaunchIncludedFile(path=current_file,
+                                                                 line_number=include_line_number,
+                                                                 inc_path=inc_file_name,
+                                                                 exists=inc_file_exists,
+                                                                 raw_inc_path=raw_text,
+                                                                 rec_depth=depth+1,
+                                                                 args=[],
+                                                                 default_inc_args=[],
+                                                                 size=file_size,
+                                                                 conditional_excluded=True)
+                            self._included_files.append(launch_inc_file)
+                        continue
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:
                     #     for cmd in cmds:
@@ -516,122 +619,133 @@ class LaunchConfig(object):
                     #             # print('      + perform:', cmd.perform(self.__launch_context))
                     #         else:
                     #             print('      + CMD OTHER:', cmd, dir(cmd))
-                    entity._perform_substitutions(self.context)
-                    print("  ***debug launch loading: ", ident,
-                          "III", entity._Node__node_executable)
-                    # actions = entity.execute(self.context)
-                    node = LaunchNodeWrapper(
-                        entity, current_launch_description, self.context)
-                    self._nodes.append(node)
-                    # for action in actions:
-                    #    if isinstance(action, launch_ros.actions.LoadComposableNodes):
+                    try:
+                        print(f"  ***debug launch loading: {indent}  parse node: {entity._Node__node_executable}")
+                        entity._perform_substitutions(self.context)
+                        print(f"  ***debug launch loading: {indent}  node after subst: {entity._Node__node_executable}")
+                        # actions = entity.execute(self.context)
+                        node = LaunchNodeWrapper(
+                            entity, current_launch_description, self.context)
+                        self._nodes.append(node)
+                        # for action in actions:
+                        #    if isinstance(action, launch_ros.actions.LoadComposableNodes):
 
-                    if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
-                        for cn in entity._ComposableNodeContainer__composable_node_descriptions:
-                            self._nodes.append(LaunchNodeWrapper(
-                                cn, current_launch_description, self.context, composable_container=node.unique_name))
-                    # if entity.expanded_node_namespace == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-                    #     entity.__expanded_node_namespace = ''
-#                    if entity.condition is not None:
-#                        print("CONDITION: ",
-#                              entity.condition.evaluate(self.context))
+                        if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
+                            for cn in entity._ComposableNodeContainer__composable_node_descriptions:
+                                self._nodes.append(LaunchNodeWrapper(
+                                    cn, current_launch_description, self.context, composable_container=node.unique_name))
+                    except:
+                        import traceback
+                        print(traceback.format_exc())
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
-                    self._nodes.append(LaunchNodeWrapper(
-                        entity, current_launch_description, self.__launch_context))
-#                    print("EXEC", type(entity), dir(entity))
-                    # entity._perform_substitutions(self.context)
+                    print(f"  ***debug launch loading: {indent}  add execute process")
+                    self._nodes.append(LaunchNodeWrapper(entity, current_launch_description, self.__launch_context))
                 elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
-                    #                    print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
-                    #                        self.context, entity.default_value))
-                    cfg_actions = entity.execute(self.__launch_context)
-                    if cfg_actions is not None:
-                        for cac in cfg_actions:
-                            print("  ***debug launch loading: ",
-                                  ident, '->', type(cac), cac)
-#                    print('  perform ARG after execute:', entity.name, launch.utilities.perform_substitutions(
-#                        self.context, entity.default_value))
-                    self._load(entity, current_launch_description,
-                               current_file=current_file, ident=ident+'  ')
-                    if current_file:
-                        self.context.extend_locals({
-                            'current_launch_file_path': current_file,
-                        })
+                    # if entity.default_value is not None:
+                    #     print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
+                    #         self.context, entity.default_value))
+                    # cfg_actions = entity.execute(self.__launch_context)
+                    # if cfg_actions is not None:
+                    #     for cac in cfg_actions:
+                    #         print("  ***debug launch loading action: ", indent, '->', type(cac), cac)
+                    if launch_file_obj:
+                        print(f"  ***debug launch loading: {indent} add declared argument: {entity.name}")
+                        la = LaunchArgument(name=perform_to_string(self.context, entity.name),
+                                            value="",
+                                            default_value=perform_to_string(self.context, entity.default_value),
+                                            description=perform_to_string(self.context, entity.description),
+                                            choices=entity.choices)
+                        launch_file_obj.default_inc_args.append(la)
                 elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                     # launch.actions.declare_launch_argument.DeclareLaunchArgument
                     try:
                         cfg_actions = entity.execute(self.__launch_context)
+                        print(
+                            f"  ***debug launch loading: {indent} include file: {entity.launch_description_source.location}")
+                        inc_file_exists = False
+                        file_size = -1
+                        if os.path.exists(entity.launch_description_source.location):
+                            inc_file_exists = True
+                            file_size = os.path.getsize(entity.launch_description_source.location)
+                        include_line_number, include_end_position, raw_text = self.find_definition(
+                            file_content, 'IncludeLaunchDescription', include_end_position)
+                        inc_launch_arguments = []
                         if cfg_actions is not None:
                             for cac in cfg_actions:
-                                print("  ***debug launch loading: ",
-                                      ident, '>>', type(cac), cac)
-                            ild = entity.launch_description_source.get_launch_description(
-                                self.context)
-                            for cac in cfg_actions[:-1]:
-                                print("  ***debug launch loading: ",
-                                      ident, '++', type(cac), cac)
-                                ild.add_action(cac)
-                        # current_launch_description = entity
-                        self._included_files.append(entity)
-
-#                        print("IncludeLaunchDescription", dir(), entity)
-#                        for a in dir(entity):
-                        # if not a.startswith('_')
-#                            print(f"  {a}: {getattr(entity, a)}")
- #                       print("_get_launch_file", entity._get_launch_file())
-  #                      print("_get_launch_file_directory",
-   #                           entity._get_launch_file_directory())
-   #                     print("get_launch_arguments - ",
-   #                           entity.launch_arguments)
-    #                    print("launch_configurations - ",
-     #                         self.__launch_context.launch_configurations)
-#                        for (name, value) in entity.launch_arguments:
-#                            self.__launch_context.launch_configurations[name] = value
-      #                      print(name, value)
-                        self._load(
-                            entity, entity, current_file=entity._get_launch_file(), ident=ident+'  ')
+                                if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
+                                    cac.execute(self.context)
+                                    arg_name = cac.name
+                                    if isinstance(cac.name, List):
+                                        arg_name = cac.name[0].perform(self.context)
+                                    arg_value = cac.value
+                                    if isinstance(cac.value, List):
+                                        arg_value = cac.value[0].perform(self.context)
+                                    print(
+                                        f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
+                                    inc_launch_arguments.append(LaunchArgument(name=arg_name, value=arg_value))
+                        inc_launch_arguments_def = []
+                        # for name, value in entity.launch_arguments:
+                        #     arg_name = name
+                        #     if isinstance(name, List):
+                        #         arg_name = name[0].perform(self.context)
+                        #     arg_value = value
+                        #     if isinstance(value, List):
+                        #         arg_value = value[0].perform(self.context)
+                        #     if isinstance(value, (launch.substitutions.launch_configuration.LaunchConfiguration, launch.actions.set_launch_configuration.SetLaunchConfiguration)):
+                        #         arg_value = value.perform(self.context)
+                        #     print(f"ARG DEF: {arg_name}: {arg_value}")
+                        #     inc_launch_arguments_def.append(LaunchArgument(name=arg_name, value=arg_value))
+                        launch_inc_file = LaunchIncludedFile(path=current_file,
+                                                             line_number=include_line_number,
+                                                             inc_path=entity.launch_description_source.location,
+                                                             exists=inc_file_exists,
+                                                             raw_inc_path=raw_text,
+                                                             rec_depth=depth+1,
+                                                             args=inc_launch_arguments,
+                                                             default_inc_args=inc_launch_arguments_def,
+                                                             size=file_size
+                                                             )
+                        self._included_files.append(launch_inc_file)
+                        self._load(entity, launch_description=entity, current_file=entity._get_launch_file(),
+                                   indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1)
                         if current_file:
-                            self.context.extend_locals({
-                                'current_launch_file_path': current_file,
-                            })
+                            self.context.extend_locals({'current_launch_file_path': current_file})
                     except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
-                      #                  print('err', dir(err))
-                       #                 print('launch_description_source', dir(
-                       #                     entity.launch_description_source.location))
                         raise Exception('%s (%s)' % (
                             err, entity.launch_description_source.location))
-                elif hasattr(entity, 'execute'):
-                   #             print("TY2", type(entity), dir(entity))
-                    entity.execute(self.__launch_context)
-        #        else:
-        #            print("unknown entity:", entity, dir(entity))
-        #            for a in dir(entity):
-                    # if not a.startswith('_')
-        #                print(f"  {a}: {getattr(entity, a)}")
-                else:
-                    print("  ***debug launch loading: unknown entity:", entity)
-                    self._load(entity, current_launch_description,
-                               current_file=current_file, ident=ident+'  ')
+                elif isinstance(entity, launch.actions.group_action.GroupAction):
                     if current_file:
-                        self.context.extend_locals({
-                            'current_launch_file_path': current_file,
-                        })
-                if len(ident) > 10:
+                        self.context.extend_locals({'current_launch_file_path': current_file})
+                    self._load(entity, launch_description=current_launch_description,
+                               current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth)
+                elif hasattr(entity, 'execute'):
+                    print(f"  ***debug launch loading: {indent} parse execute entity: {entity}")
+                    try:
+                        entity.execute(self.__launch_context)
+                    except:
+                        import traceback
+                        print(traceback.format_exc())
+                else:
+                    print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
+                    self._load(entity, launch_description=current_launch_description,
+                               current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1)
+                    if current_file:
+                        self.context.extend_locals({'current_launch_file_path': current_file})
+                if len(indent) > 10:
                     raise
-#        print("get_launch_arguments", [launch.utilities.perform_substitutions(
-#            self.context, l.default_value) for l in self.__launch_description.get_launch_arguments()])
 
     def nodes(self) -> List[LaunchNodeWrapper]:
         return self._nodes
 
-    @property
+    @ property
     def filename(self) -> Text:
         '''
         Returns an existing path with file name or an empty string.
 
         :rtype: str
         '''
-        if os.path.isfile(self.__launchfile):
-            return self.__launchfile
+        if os.path.isfile(self.__launch_file):
+            return self.__launch_file
         elif self.packagename:
             try:
                 return roslib.packages.find_resource(self.packagename, self.launchname).pop()
@@ -639,18 +753,18 @@ class LaunchConfig(object):
                 raise LaunchConfigException(
                     'launch file %s not found!' % self.launchname)
         raise LaunchConfigException(
-            'launch file %s not found!' % self.__launchfile)
+            'launch file %s not found!' % self.__launch_file)
 
-    @property
+    @ property
     def launchname(self):
         '''
         Returns the name of the launch file with extension, e.g. 'test.launch'
 
         :rtype: str
         '''
-        return os.path.basename(self.__launchfile)
+        return os.path.basename(self.__launch_file)
 
-    @property
+    @ property
     def packagename(self):
         '''
         Returns the name of the package containing the launch file or None.
@@ -658,58 +772,58 @@ class LaunchConfig(object):
         '''
         return self.__package
 
-    @classmethod
-    def _index(cls, text, regexp_list):
-        '''
-        Searches in the given text for key indicates the including of a file and
-        return their index.
+    # @classmethod
+    # def _index(cls, text, regexp_list):
+    #     '''
+    #     Searches in the given text for key indicates the including of a file and
+    #     return their index.
 
-        :param str text:
-        :param regexp_list:
-        :type regexp_list: list(:class:`QRegExp` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QRegExp.html>})
-        :return: the index of the including key or -1
-        :rtype: int
-        '''
-        for pattern in regexp_list:
-            index = pattern.indexIn(text)
-            if index > -1:
-                return index
-        return -1
+    #     :param str text:
+    #     :param regexp_list:
+    #     :type regexp_list: list(:class:`QRegExp` <https://srinikom.github.io/pyside-docs/PySide/QtCore/QRegExp.html>})
+    #     :return: the index of the including key or -1
+    #     :rtype: int
+    #     '''
+    #     for pattern in regexp_list:
+    #         index = pattern.indexIn(text)
+    #         if index > -1:
+    #             return index
+    #     return -1
 
-    def _replace_arg(self, arg, argv_defaults, argv_values):
-        '''
-        Replace the arg-tags in the value in given argument recursively.
-        '''
-        rec_inc = 0
-        value = argv_defaults[arg]
-        arg_match = re.search(r"\$\(\s*arg\s*", value)
-        while arg_match is not None:
-            rec_inc += 1
-            endIndex = value.find(')', arg_match.end())
-            if endIndex > -1:
-                arg_name = value[arg_match.end():endIndex].strip()
-                if arg == arg_name:
-                    raise LaunchConfigException(
-                        "Can't resolve the argument `%s` argument: the argument referenced to itself!" % arg_name)
-                if rec_inc > 100:
-                    raise LaunchConfigException(
-                        "Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!" % (arg_name, arg))
-                if arg_name in argv_defaults:
-                    argv_defaults[arg] = value.replace(
-                        value[arg_match.start():endIndex + 1], argv_defaults[arg_name])
-                elif arg_name in argv_values:
-                    argv_defaults[arg] = value.replace(
-                        value[arg_match.start():endIndex + 1], argv_values[arg_name])
-                else:
-                    raise LaunchConfigException(
-                        "Can't resolve the argument `%s` in `%s` argument" % (arg_name, arg))
-            else:
-                raise LaunchConfigException(
-                    "Can't resolve the argument in `%s` argument: `)` not found" % arg)
-            value = argv_defaults[arg]
-            arg_match = re.search(r"\$\(\s*arg\s*", value)
+    # def _replace_arg(self, arg, argv_defaults, argv_values):
+    #     '''
+    #     Replace the arg-tags in the value in given argument recursively.
+    #     '''
+    #     rec_inc = 0
+    #     value = argv_defaults[arg]
+    #     arg_match = re.search(r"\$\(\s*arg\s*", value)
+    #     while arg_match is not None:
+    #         rec_inc += 1
+    #         endIndex = value.find(')', arg_match.end())
+    #         if endIndex > -1:
+    #             arg_name = value[arg_match.end():endIndex].strip()
+    #             if arg == arg_name:
+    #                 raise LaunchConfigException(
+    #                     "Can't resolve the argument `%s` argument: the argument referenced to itself!" % arg_name)
+    #             if rec_inc > 100:
+    #                 raise LaunchConfigException(
+    #                     "Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!" % (arg_name, arg))
+    #             if arg_name in argv_defaults:
+    #                 argv_defaults[arg] = value.replace(
+    #                     value[arg_match.start():endIndex + 1], argv_defaults[arg_name])
+    #             elif arg_name in argv_values:
+    #                 argv_defaults[arg] = value.replace(
+    #                     value[arg_match.start():endIndex + 1], argv_values[arg_name])
+    #             else:
+    #                 raise LaunchConfigException(
+    #                     "Can't resolve the argument `%s` in `%s` argument" % (arg_name, arg))
+    #         else:
+    #             raise LaunchConfigException(
+    #                 "Can't resolve the argument in `%s` argument: `)` not found" % arg)
+    #         value = argv_defaults[arg]
+    #         arg_match = re.search(r"\$\(\s*arg\s*", value)
 
-    @classmethod
+    @ classmethod
     def get_launch_arguments(cls, context: LaunchContext, filename: str, provided_args: list) -> List[LaunchArgument]:
         '''
         :param list(fkie_mas_pylib.interface.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args

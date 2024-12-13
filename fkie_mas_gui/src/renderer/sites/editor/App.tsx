@@ -1,4 +1,4 @@
-import { TFileRange, TLaunchArgs } from "@/types";
+import { TFileRange, TLaunchArg } from "@/types";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
@@ -18,7 +18,7 @@ type TLaunchInfo = {
   launch: string;
   rootLaunch: string;
   fileRange: TFileRange | null;
-  launchArgs: TLaunchArgs | null;
+  launchArgs: TLaunchArg[];
 };
 
 export default function EditorApp() {
@@ -43,7 +43,7 @@ export default function EditorApp() {
     const range = urlParams.get("range");
     const launchArgsStr = urlParams.get("launchArgs");
     let fileRange: TFileRange | null = null;
-    let launchArgs: TLaunchArgs | null = null;
+    let launchArgs: TLaunchArg[] = [];
     if (range) {
       fileRange = JSON.parse(range);
     }

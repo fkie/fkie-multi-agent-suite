@@ -4,7 +4,7 @@ import {
   FileRangeCallback,
   TEditorManager,
   TFileRange,
-  TLaunchArgs,
+  TLaunchArg,
 } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
@@ -45,7 +45,7 @@ class EditorManager implements TEditorManager {
         rootLaunch: string,
         launchFile: string,
         fileRange: TFileRange,
-        launchArgs: TLaunchArgs
+        launchArgs: TLaunchArg[]
       ) => {
         return this.open(id, host, port, rootLaunch, launchFile, fileRange, launchArgs);
       }
@@ -66,7 +66,7 @@ class EditorManager implements TEditorManager {
         id: string,
         launchFile: string,
         fileRange: TFileRange,
-        launchArgs: TLaunchArgs
+        launchArgs: TLaunchArg[]
       ) => {
         return this.emitFileRange(id, launchFile, fileRange, launchArgs);
       }
@@ -80,7 +80,7 @@ class EditorManager implements TEditorManager {
     return Promise.resolve(false);
   };
 
-  public emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => Promise<boolean> =
+  public emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => Promise<boolean> =
     async (id, path, fileRange, launchArgs) => {
       if (this.editors[id]) {
         this.editors[id].window.focus();
@@ -120,7 +120,7 @@ class EditorManager implements TEditorManager {
     path: string,
     launchFile: string,
     fileRange: TFileRange,
-    launchArgs: TLaunchArgs
+    launchArgs: TLaunchArg[]
   ) => Promise<string | null> = async (id, host, port, path, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();

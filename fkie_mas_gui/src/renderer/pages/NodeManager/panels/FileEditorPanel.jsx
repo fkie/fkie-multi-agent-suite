@@ -205,7 +205,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
 
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
-    async (uriPath, range = null, launchArgs = null, forceReload = false) => {
+    async (uriPath, range = null, launchArgs = [], forceReload = false) => {
       if (!uriPath) return false;
       setCurrentFile({ name: getFileName(uriPath), requesting: true });
       setNotificationDescription("Getting file from provider...");
@@ -589,7 +589,8 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
 
       // Ignore "non-launch" files
       // TODO: Add parameter Here
-      if (!["launch", "xml", "xacro"].includes(result.file?.extension)) {
+      if (!["launch", "xml", "xacro", "py"].includes(result.file?.extension)) {
+        console.log(`wrong extension: ${result.file?.extension} of ${result.file}`);
         setIncludedFiles([]);
         setNotificationDescription("");
         return;
@@ -943,7 +944,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
                     const result = await setEditorModel(
                       `${activeModel?.path.split(":")[0]}:${item.path}`,
                       null,
-                      null,
+                      [],
                       false
                     );
                     if (result) {
@@ -1086,7 +1087,7 @@ FileEditorPanel.propTypes = {
   rootFilePath: PropTypes.string.isRequired,
   currentFilePath: PropTypes.string.isRequired,
   fileRange: PropTypes.any,
-  launchArgs: PropTypes.any,
+  launchArgs: PropTypes.array,
 };
 
 export default FileEditorPanel;

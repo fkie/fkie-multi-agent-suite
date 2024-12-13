@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { TFileRange, TLaunchArgs } from "@/types";
+import { TFileRange, TLaunchArg } from "@/types";
 import * as Monaco from "@monaco-editor/react";
 import { editor } from "monaco-editor";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -100,7 +100,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
 
   useEffect(() => {
     window.editorManager?.onFileRange(
-      (tabId: string, filePath: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => {
+      (tabId: string, filePath: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => {
         if (fileRange) {
           emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange, launchArgs));
         }

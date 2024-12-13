@@ -409,7 +409,8 @@ class LaunchIncludedFile:
                  rec_depth: int,
                  args: List[LaunchArgument],
                  default_inc_args: List[LaunchArgument],
-                 size: int = 0):
+                 size: int = 0,
+                 conditional_excluded: bool = False):
         '''
         Representation of an included file found in given string or path of a file.
 
@@ -422,6 +423,7 @@ class LaunchIncludedFile:
         :param [LaunchArgument] args: a list with arguments forwarded within include tag for 'inc_path'.
         :param [LaunchArgument] default_inc_args: a list with default arguments defined in 'inc_path'.
         :param int size: size of the file in bytes.
+        :param bool conditional_excluded: if True the included file is not loaded be current configuration.
         '''
         self.path = path
         self.line_number = line_number
@@ -432,6 +434,7 @@ class LaunchIncludedFile:
         self.args = args
         self.default_inc_args = default_inc_args
         self.size = size
+        self.conditional_excluded = conditional_excluded
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

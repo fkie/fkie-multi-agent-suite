@@ -11,13 +11,11 @@ import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "../../pages/N
 import { FileTreeItem } from "./FileTreeItem";
 
 export const equalLaunchArgs = (launchArgs, argList) => {
-  if (launchArgs && launchArgs.size > 0) {
+  if (launchArgs && launchArgs.length > 0) {
     const notEqual = argList?.filter((item) => {
       // ignore args with not resolved statements
-      return !(
-        (launchArgs && launchArgs[item.name] === item.value) ||
-        (item.value.find && item.value.find("$(") !== -1)
-      );
+      const found = launchArgs.filter((li) => li.name === item.name && li.value === item.value);
+      return !(found.length > 0 || (item.value.find && item.value.find("$(") !== -1));
     });
     return notEqual.length === 0;
   }
@@ -56,6 +54,7 @@ function ExplorerTree({
       rec_depth: -1,
       line_number: -1,
       children: [],
+      conditional_excluded: false,
     };
     let currentFile = rootItem;
     includedFiles.forEach((file) => {
@@ -96,8 +95,9 @@ function ExplorerTree({
           key={`${file.inc_path}-${file.line_number + lineNumberCount}`}
           itemId={`${file.inc_path}-${file.line_number + lineNumberCount}`}
           labelText={`${getFileName(file.inc_path)}`}
+          toolTip={!file.exists ? "file not found" : file.conditional_excluded ? "file conditional not loaded" : ""}
           labelLine={file.line_number}
-          textColor={!file.exists ? "red" : ""}
+          textColor={!file.exists ? "red" : file.conditional_excluded ? "orange" : ""}
           modified={modifiedUriPaths.includes(file.uriPath)}
           selected={selected}
           onLabelClick={(event) => {
@@ -108,11 +108,11 @@ function ExplorerTree({
                 file.inc_path,
                 null,
                 file.args
-                  ? file.args.reduce((acc, { name, value }) => {
-                      acc[name] = value;
-                      return acc;
-                    }, {})
-                  : {}
+                // ? file.args.reduce((acc, { name, value }) => {
+                //     acc[name] = value;
+                //     return acc;
+                //   }, {})
+                // : {}
               )
             );
             event.stopPropagation();
@@ -179,7 +179,7 @@ ExplorerTree.propTypes = {
   rootFilePath: PropTypes.string.isRequired,
   includedFiles: PropTypes.array.isRequired,
   selectedUriPath: PropTypes.string,
-  launchArgs: PropTypes.object,
+  launchArgs: PropTypes.array,
   modifiedUriPaths: PropTypes.array,
 };
 

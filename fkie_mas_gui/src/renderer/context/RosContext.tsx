@@ -1,4 +1,4 @@
-import { TFileRange, TLaunchArgs, TRosInfo, TSystemInfo } from "@/types";
+import { TFileRange, TLaunchArg, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
@@ -984,7 +984,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       rootLaunch: string,
       path: string,
       fileRange: TFileRange,
-      launchArgs: TLaunchArgs,
+      launchArgs: TLaunchArg[],
       externalKeyModifier: boolean
     ) => {
       const provider = getProviderById(providerId);
@@ -1348,6 +1348,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       });
       setNodeMap(newNodeMap);
       logCtx.debug(`ros nodes updated for ${data.provider.id}: ${data.nodes.length} nodes`, "");
+      // logCtx.debug(`ros nodes updated for ${data.provider.id}: ${JSON.stringify(data.nodes)}`, "");
 
       setMapProviderRosNodes(newMap);
     },

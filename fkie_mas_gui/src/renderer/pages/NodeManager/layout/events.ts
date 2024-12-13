@@ -1,4 +1,4 @@
-import { TFileRange, TLaunchArgs } from "@/types";
+import { TFileRange, TLaunchArg } from "@/types";
 import LayoutTabConfig from "./LayoutTabConfig";
 
 export const EVENT_CLOSE_COMPONENT = "EVENT_CLOSE_COMPONENT" as const;
@@ -51,7 +51,7 @@ export function eventEditorSelectRange(
   tabId: string,
   filePath: string,
   fileRange: TFileRange,
-  launchArgs: TLaunchArgs
-): { tabId: string; filePath: string; fileRange: TFileRange; launchArgs: TLaunchArgs } {
+  launchArgs: TLaunchArg[]
+): { tabId: string; filePath: string; fileRange: TFileRange; launchArgs: TLaunchArg[] } {
   return { tabId, filePath, fileRange, launchArgs };
 }

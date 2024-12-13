@@ -1,4 +1,4 @@
-import { TFileRange, TLaunchArgs } from "@/types";
+import { TFileRange, TLaunchArg } from "@/types";
 
 export interface IExtTerminalConfig {
   type: string;
@@ -16,7 +16,7 @@ export interface IEditorConfig {
   rootLaunch: string;
   path: string;
   fileRange: TFileRange;
-  launchArgs: TLaunchArgs;
+  launchArgs: TLaunchArg[];
 }
 
 export interface ISubscriberConfig {

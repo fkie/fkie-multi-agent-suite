@@ -144,8 +144,7 @@ class LaunchServicer(LoggingEventHandler):
         websocket.register("ros.launch.get_list", self.get_list)
         websocket.register("ros.launch.start_node", self.start_node)
         websocket.register("ros.launch.start_nodes", self.start_nodes)
-        websocket.register("ros.launch.get_included_files",
-                           self.get_included_files)
+        websocket.register("ros.launch.get_included_files", self.get_included_files)
         websocket.register("ros.launch.interpret_path", self.interpret_path)
         websocket.register("ros.launch.get_msg_struct", self.get_msg_struct)
         websocket.register("ros.launch.publish_message", self.publish_message)
@@ -226,8 +225,8 @@ class LaunchServicer(LoggingEventHandler):
             self._add_file_to_observe(launch_config.filename)
             added.append(launch_config.filename)
             for inc_discription in launch_config._included_files:
-                self._add_file_to_observe(inc_discription._get_launch_file())
-                added.append(inc_discription._get_launch_file())
+                self._add_file_to_observe(inc_discription.inc_path)
+                added.append(inc_discription.inc_path)
         except Exception as e:
             Log.error(
                 f"{self.__class__.__name__}: _add_launch_to_observer {launch_config.filename}: \n {e}")
@@ -632,9 +631,14 @@ class LaunchServicer(LoggingEventHandler):
         # Convert input dictionary into a proper python object
         request = request_json
         path = request.path
-        Log.debug(
+        Log.info(
             f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{path}]")
         result = []
+        try:
+            return self._loaded_files[CfgId(request.path, '')]._included_files
+        except:
+            pass
+        # TODO add parser for python launch files
         try:
             search_in_ext = SEARCH_IN_EXT
             if request.search_in_ext:

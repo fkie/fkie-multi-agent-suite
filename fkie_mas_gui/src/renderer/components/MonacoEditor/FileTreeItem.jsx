@@ -52,6 +52,7 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
     textColor = "",
     labelText = "",
     labelInfo = "",
+    toolTip = "",
     labelLine = -1,
     modified = false,
     selected = false,
@@ -91,26 +92,28 @@ const FileTreeItem = React.forwardRef(function FileTreeItem(
           <Stack spacing={1} direction="row" alignItems="center" marginLeft={1}>
             {labelIcon && <Box component={labelIcon} color="inherit" sx={{ mr: 1 }} />}
 
-            <Typography
-              flexGrow={1}
-              noWrap
-              variant="body2"
-              sx={getLabelSx()}
-              onClick={(event) => {
-                if (onLabelClick) {
-                  onLabelClick(event);
-                }
-              }}
-              onDoubleClick={(event) => {
-                if (onLabelDoubleClick) {
-                  onLabelDoubleClick(event);
-                }
-              }}
-              color={textColor}
-            >
-              {modified && "* "}
-              {labelText}
-            </Typography>
+            <Tooltip title={toolTip} placement="top" disableInteractive>
+              <Typography
+                flexGrow={1}
+                noWrap
+                variant="body2"
+                sx={getLabelSx()}
+                onClick={(event) => {
+                  if (onLabelClick) {
+                    onLabelClick(event);
+                  }
+                }}
+                onDoubleClick={(event) => {
+                  if (onLabelDoubleClick) {
+                    onLabelDoubleClick(event);
+                  }
+                }}
+                color={textColor}
+              >
+                {modified && "* "}
+                {labelText}
+              </Typography>
+            </Tooltip>
 
             {labelInfo && (
               <Typography noWrap flexGrow={1} variant="caption" color="inherit">
@@ -152,6 +155,7 @@ FileTreeItem.propTypes = {
   labelText: PropTypes.string,
   textColor: PropTypes.string,
   labelInfo: PropTypes.string,
+  toolTip: PropTypes.string,
   labelLine: PropTypes.number,
   modified: PropTypes.bool,
   selected: PropTypes.bool,

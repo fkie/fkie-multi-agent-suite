@@ -1,5 +1,5 @@
 import { TFileRange } from "./FileRange";
-import { TLaunchArgs } from "./LaunchArgs";
+import { TLaunchArg } from "./LaunchArg";
 
 export const EditorManagerEvents = {
   has: "editor:has",
@@ -15,7 +15,7 @@ export type FileRangeCallback = (
   tabId: string,
   filePath: string,
   fileRange: TFileRange,
-  launchArgs: TLaunchArgs
+  launchArgs: TLaunchArg[]
 ) => void;
 
 export type EditorCloseCallback = (tabId: string) => void;
@@ -28,7 +28,7 @@ export type TEditorManager = {
     path: string,
     rootLaunch: string,
     fileRange: TFileRange,
-    launchArgs: TLaunchArgs
+    launchArgs: TLaunchArg[]
   ) => Promise<string | null>;
 
   close: (id: string) => Promise<boolean>;
@@ -37,7 +37,7 @@ export type TEditorManager = {
 
   has: (id: string) => Promise<boolean>;
 
-  emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => Promise<boolean>;
+  emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => Promise<boolean>;
 
   onFileRange: (callback: FileRangeCallback) => void;
 

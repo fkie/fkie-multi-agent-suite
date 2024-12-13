@@ -21,7 +21,7 @@ import {
   TerminalManagerEvents,
   TerminateCallback,
   TFileRange,
-  TLaunchArgs,
+  TLaunchArg,
   TRosInfo,
   TShutdownManager,
   TSubscriberManager,
@@ -114,7 +114,7 @@ if (process.contextIsolated) {
         path: string,
         rootLaunch: string,
         fileRange: TFileRange,
-        launchArgs: TLaunchArgs
+        launchArgs: TLaunchArg[]
       ) => {
         return ipcRenderer.invoke(EditorManagerEvents.open, id, host, port, rootLaunch, path, fileRange, launchArgs);
       },
@@ -124,7 +124,7 @@ if (process.contextIsolated) {
       changed: (id: string, path: string, changed: boolean) => {
         return ipcRenderer.invoke(EditorManagerEvents.changed, id, path, changed);
       },
-      emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArgs) => {
+      emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => {
         return ipcRenderer.invoke(EditorManagerEvents.emitFileRange, id, path, fileRange, launchArgs);
       },
       has: (id: string) => {

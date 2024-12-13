@@ -12,7 +12,7 @@ import { DialogManagerEvents, TDialogManager } from "./DialogManager";
 import { EditorCloseCallback, EditorManagerEvents, FileRangeCallback, TEditorManager } from "./EditorManager";
 import { TFileRange } from "./FileRange";
 import JSONObject, { JSONValue } from "./JsonObject";
-import { TLaunchArgs } from "./LaunchArgs";
+import { TLaunchArg } from "./LaunchArg";
 import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "./SubscriberManager";
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "./TerminalManager";
@@ -28,7 +28,7 @@ export {
   EditorManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
-  TerminalManagerEvents,
+  TerminalManagerEvents
 };
 export type {
   AuCheckingForUpdateCallback,
@@ -48,12 +48,13 @@ export type {
   TerminalCloseCallback,
   TerminateCallback,
   TFileRange,
-  TLaunchArgs,
+  TLaunchArg,
   TResult,
   TResultData,
   TRosInfo,
   TShutdownManager,
   TSubscriberManager,
   TSystemInfo,
-  TTerminalManager,
+  TTerminalManager
 };
+

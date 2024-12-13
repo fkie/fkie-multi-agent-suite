@@ -50,8 +50,8 @@ class LaunchConfig(object):
         :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
         self._monitor_servicer = monitor_servicer
-        self.__launchfile = launch_file
-        self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
+        self.__launch_file = launch_file
+        self.__package = ros_pkg.get_name(os.path.dirname(self.__launch_file))[
             0] if package is None else package
         self.__masteruri = masteruri if masteruri else ros1_masteruri.from_master(
             True)
@@ -104,8 +104,8 @@ class LaunchConfig(object):
 
         :rtype: str
         '''
-        if os.path.isfile(self.__launchfile):
-            return self.__launchfile
+        if os.path.isfile(self.__launch_file):
+            return self.__launch_file
         elif self.__package:
             try:
                 return roslib.packages.find_resource(self.packagename, self.launchname).pop()
@@ -113,7 +113,7 @@ class LaunchConfig(object):
                 raise LaunchConfigException(
                     'launch file %s not found!' % self.launchname)
         raise LaunchConfigException(
-            'launch file %s not found!' % self.__launchfile)
+            'launch file %s not found!' % self.__launch_file)
 
     @property
     def launchname(self):
@@ -122,7 +122,7 @@ class LaunchConfig(object):
 
         :rtype: str
         '''
-        return os.path.basename(self.__launchfile)
+        return os.path.basename(self.__launch_file)
 
     @property
     def packagename(self):
