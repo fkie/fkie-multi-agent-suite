@@ -188,6 +188,8 @@ class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
         self.parent_id = None
+        self.is_container = False
+        self.container_name = ""
         self.name = name
         self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = "running"
@@ -195,6 +197,7 @@ class RosNode:
         self.node_API_URI = None
         self.masteruri = None
         self.location = "local"
+        self.is_local = True
         self.publishers: List[RosTopic] = []
         self.subscribers: List[RosTopic] = []
         self.services: List[RosService] = []

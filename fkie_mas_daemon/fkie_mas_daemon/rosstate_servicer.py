@@ -48,6 +48,17 @@ from fkie_mas_msgs.msg import Endpoint
 import fkie_mas_daemon as nmd
 
 
+class ComposedNodeInfo:
+    container_name: str
+    container_id: str
+    unique_id_in_container: int
+
+    def __init__(self, container_name: str, unique_id_in_container: int, container_id: str=""):
+        self.container_name = container_name
+        self.container_id = container_id
+        self.unique_id_in_container = unique_id_in_container
+
+
 class RosStateServicer:
 
     def __init__(self, websocket: WebSocketServer, test_env=False):
@@ -55,6 +66,8 @@ class RosStateServicer:
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
+        self._composed_done = []  # list of composed node ids with done requests
+        self._composed_nodes: Dict[str, ComposedNodeInfo] = {}
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/rosstate"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
@@ -230,7 +243,7 @@ class RosStateServicer:
         result = json.dumps(
             {'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
         if node is not None:
-            if node.parent_id:
+            if node.container_name:
                 unloaded = self.stop_composed_node(node)
             if not unloaded:
                 result = nmd.launcher.server.screen_servicer.kill_node(
@@ -260,36 +273,33 @@ class RosStateServicer:
         # try to unload node from container
         node_name = ns_join(node.namespace, node.name)
         Log.info(
-            f"{self.__class__.__name__}: -> unload '{node_name}' from '{node.parent_id}'")
-        container_node: RosNode = self.get_ros_node_by_id(node.parent_id)
-        if container_node is not None:
-            container_name = ns_join(
-                container_node.namespace, container_node.name)
-            try:
-                node_unique_id = self.get_composed_node_id(
-                    container_name, node_name)
-            except Exception as err:
-                print(f"{self.__class__.__name__}: unload ERR {err}")
-                # return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
-                return False
+            f"{self.__class__.__name__}: -> unload '{node_name}' from '{node.container_name}'")
+        # TODO: shutdown lifecycle nodes before unload
+        try:
+            composed_node_info = self._composed_nodes[node.name]
+            container_node: RosNode = self.get_ros_node_by_id(composed_node_info.container_id)
+            if container_node is not None:
+                service_unload_node = f'{container_node.name}/_container/unload_node'
+                Log.info(
+                    f"{self.__class__.__name__}: -> unload '{node.name}' with id '{composed_node_info.unique_id_in_container}' using service '{service_unload_node}'")
 
-            service_unload_node = f'{container_name}/_container/unload_node'
-            Log.info(
-                f"{self.__class__.__name__}:-> unload '{node_name}' with id '{node_unique_id}' from '{service_unload_node}'")
-
-            request = UnloadNode.Request()
-            request.unique_id = node_unique_id
-            response = nmd.launcher.call_service(
-                service_unload_node, UnloadNode, request)
-            if not response.success:
-                Log.warn(
-                    f"{self.__class__.__name__}:-> unload '{node_name}' error '{response.error_message}'")
-                return False
-            return True
-        else:
-            Log.warn(
-                f"{self.__class__.__name__}:-> {node.parent_id} not found!")
-            return False
+                request = UnloadNode.Request()
+                request.unique_id = composed_node_info.unique_id_in_container
+                response = nmd.launcher.call_service(
+                    service_unload_node, UnloadNode, request)
+                if hasattr(response, "success") and response.success:
+                    return True
+                elif not hasattr(response, "success"):
+                    Log.warn(
+                        f"{self.__class__.__name__}: -> unload '{node_name}' error while call unload_node service")
+                    return False
+                else:
+                    Log.warn(
+                        f"{self.__class__.__name__}: -> unload '{node_name}' error '{response.error_message}'")
+                    return False
+        except Exception as err:
+            print(f"{err}")
+        return False
 
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
         service_list_nodes = f'{container_name}/_container/list_nodes'
@@ -374,15 +384,22 @@ class RosStateServicer:
                 Log.debug(
                     f"{self.__class__.__name__}:   create node: {full_name}")
                 ros_node = RosNode(f"{full_name}-{node_guid}", full_name)
-                # search node with same guid, we assume it is the manager
-                for (_ns, _name, _guid), _node in node_dict.items():
-                    if node_guid == _guid and _node.parent_id is None:
-                        ros_node.parent_id = _node.id
+                try:
+                    ros_node.container_name = self._composed_nodes[full_name].container_name
+                except:
+                    # otherwise we have two nodes with same id (e.g. transformer node)
+                    for (_ns, _name, _guid), _node in node_dict.items():
+                        if node_guid == _guid:
+                            ros_node.parent_id = _node.id
 
                 node_dict[key] = ros_node
                 if node_guid in self._ros_state:
                     participant = self._ros_state[node_guid]
                     ros_node.location = participant.unicast_locators
+                    ros_node.is_local = False
+                    for loc in ros_node.location:
+                        if 'SHM' in loc:
+                            ros_node.is_local = True
                     Log.debug(
                         f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators}")
                     ros_node.namespace = node_ns
@@ -467,7 +484,6 @@ class RosStateServicer:
                                 tp.requester.append(ros_node.id)
                             if not is_request:
                                 ros_node.services.append(tp)
-
                     if is_new:
                         result.append(ros_node)
             sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(
@@ -495,6 +511,27 @@ class RosStateServicer:
                                     Log.debug(
                                         f"{self.__class__.__name__}:      add provider {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
                                     tp.provider.append(ros_node.id)
+                                    if tp.name.endswith('/_container/list_nodes') and ros_node.is_local:
+                                        # check only local nodes
+                                        ros_node.is_container = True
+                                        if ros_node.id not in self._composed_done:
+                                            # get composed nodes
+                                            request = ListNodes.Request()
+                                            response = nmd.launcher.call_service(tp.name, ListNodes, request)
+                                            if response:
+                                                self._composed_done.append(ros_node.id)
+                                                for cn_name, cn_unique_id in zip(response.full_node_names, response.unique_ids):
+                                                    self._composed_nodes[cn_name] = ComposedNodeInfo(ros_node.name, cn_unique_id, ros_node.id)
+                                                # update composable nodes found previously
+                                                for (_ns, _name, _guid), _node in node_dict.items():
+                                                    try:
+                                                        node_dict[(_ns, _name, _guid)].container_name = self._composed_nodes[_node.name].container_name
+                                                        node_dict[(_ns, _name, _guid)].parent_id = None
+                                                    except:
+                                                        pass
+                                            else:
+                                                Log.warn(
+                                                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{ros_node.name}': '{response.error_message}'")
                                 elif not is_request and ros_node.id not in tp.requester:
                                     Log.debug(
                                         f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")

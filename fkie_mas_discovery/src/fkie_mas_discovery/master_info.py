@@ -1371,7 +1371,7 @@ class MasterInfo(object):
                         if name.endswith('/bond'):
                             parent_id = name[:-5]
                             if n != parent_id:
-                                node.parent_id = parent_id
+                                node.container_name = parent_id
                         node.system_node |= discover_state_publisher
                         ros_nodes[n] = node
                 for n in topic.subscriberNodes:

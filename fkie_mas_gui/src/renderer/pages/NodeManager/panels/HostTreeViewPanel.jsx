@@ -448,7 +448,7 @@ function HostTreeViewPanel() {
 
   const getNodeLetManager = (node, ignoreRunState = false, nodes2start = []) => {
     if (!node) return null;
-    const composableParent = node.parent_id || node.launchInfo?.composable_container;
+    const composableParent = node.parent_id || node.container_name || node.launchInfo?.composable_container;
     if (composableParent) {
       const provider = rosCtx.getProviderById(node.providerId);
       const nodeNms = provider?.rosNodes.filter((node) => node.name === composableParent);

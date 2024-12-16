@@ -949,13 +949,16 @@ class LaunchConfig(object):
             #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
             respawn_prefix = f"{RESPAWN_SCRIPT}"
 
+        launch_prefix = ''
+        if node.launch_prefix:
+            launch_prefix = node.launch_prefix
         # TODO: check for HOSTNAME
         # start
         executable_path = ''
         if node.cmd:
             executable_path = node.cmd.split()[0]
         Log.info(
-            f"{screen_prefix} {respawn_prefix} {node.launch_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
+            f"{screen_prefix} {respawn_prefix} {launch_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
         Log.debug(
             f"environment while run node '{node.unique_name}': '{new_env}'")
         SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, node.cmd])), cwd=node.cwd, env=new_env,

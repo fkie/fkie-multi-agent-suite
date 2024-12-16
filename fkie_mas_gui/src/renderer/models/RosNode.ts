@@ -154,9 +154,19 @@ class RosNode {
   rosLoggers: { [id: string]: string } = {};
 
   /**
-   * ID of the composable/nodelet's parent
+   * ID of the node the same discovered guid
    */
   parent_id?: string;
+
+  /**
+   * True if the node is a container
+   */
+
+  is_container?: boolean;
+  /**
+   * The node name of the composable/nodelet's parent
+   */
+  container_name?: string;
 
   dynamicReconfigureServices: string[] = [];
 

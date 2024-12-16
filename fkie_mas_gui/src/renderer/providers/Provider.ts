@@ -749,6 +749,8 @@ export default class Provider implements IProvider {
       screens: string[];
       system_node: boolean;
       parent_id: string | null;
+      is_container: boolean | null;
+      container_name: string | null;
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true).then((value: TResultData) => {
       if (value.result) {
@@ -788,6 +790,12 @@ export default class Provider implements IProvider {
 
             if (n.parent_id) {
               rn.parent_id = n.parent_id;
+            }
+            if (n.is_container) {
+              rn.is_container = n.is_container;
+            }
+            if (n.container_name) {
+              rn.container_name = n.container_name;
             }
 
             // Add Array elements
@@ -1249,7 +1257,7 @@ export default class Provider implements IProvider {
         const composableManagers: string[] = [];
         this.rosNodes.forEach((n) => {
           // Check if this is a nodelet/composable and assign tags accordingly.
-          let composableParent = n?.parent_id || n.launchInfo?.composable_container;
+          let composableParent = n?.container_name || n.launchInfo?.composable_container;
           if (composableParent) {
             composableParent = composableParent.split("|").slice(-1).at(0);
             if (composableParent) {
@@ -2003,6 +2011,8 @@ export default class Provider implements IProvider {
         n.group = oldNode.group;
         n.launchInfo = oldNode.launchInfo;
         n.rosLoggers = oldNode.rosLoggers;
+        n.is_container = oldNode.is_container;
+        n.container_name = oldNode.container_name;
         if (oldNode.pid !== n.pid) {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
         }
