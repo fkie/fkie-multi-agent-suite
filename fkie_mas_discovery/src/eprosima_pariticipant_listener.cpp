@@ -121,7 +121,7 @@ public:
 
     void onSubscriberDiscovery(
         eprosima::fastrtps::Participant *participant,
-        eprosima::fastrtps::rtps::ReaderDiscoveryInfo && /*info*/) override
+        eprosima::fastrtps::rtps::ReaderDiscoveryInfo &&info) override
     {
         (void)participant;
 
@@ -137,12 +137,16 @@ public:
         //     }
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_READER);
         // }
-        publish_notification();
+        std::string name = info.info.topicName().c_str();
+        if (name.rfind("rq/", 0) != 0)
+        {
+            publish_notification();
+        }
     }
 
     void onPublisherDiscovery(
         eprosima::fastrtps::Participant *participant,
-        eprosima::fastrtps::rtps::WriterDiscoveryInfo && /*info*/) override
+        eprosima::fastrtps::rtps::WriterDiscoveryInfo &&info) override
     {
         (void)participant;
 
@@ -160,7 +164,11 @@ public:
         //     }
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_WRITER);
         // }
-        publish_notification();
+        std::string name = info.info.topicName().c_str();
+        if (name.rfind("rq/", 0) != 0)
+        {
+            publish_notification();
+        }
     }
 
     template <class T>
@@ -267,9 +275,10 @@ private:
 
 #include <iostream>
 
-void signalHandler( int signum ) {
-   std::cout << "Interrupt signal (" << signum << ") received.\n";
-   rclcpp::shutdown();
+void signalHandler(int signum)
+{
+    std::cout << "Interrupt signal (" << signum << ") received.\n";
+    rclcpp::shutdown();
 }
 
 int main(int argc, char *argv[])
@@ -283,9 +292,11 @@ int main(int argc, char *argv[])
     // remove domain suffix
     std::regex const IP4_PATTERN{"^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"};
     std::smatch m;
-    if (!std::regex_match(hostname, m, IP4_PATTERN)) {
+    if (!std::regex_match(hostname, m, IP4_PATTERN))
+    {
         std::size_t found = hostname.find('.');
-        if (found != std::string::npos) {
+        if (found != std::string::npos)
+        {
             hostname = hostname.substr(0, found);
         }
     }
