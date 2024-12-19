@@ -235,31 +235,52 @@ function NodesDetailsPanel() {
                   <Tag color="default" title="PID:" text={`${node.pid}`} wrap />
                 </Stack>
               )}
-
               {node.id && node.id !== node.name && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="ID:" text={`${node.id}`} wrap />
                 </Stack>
               )}
-
               {node.node_API_URI && node.node_API_URI.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="URI:" text={node.node_API_URI} wrap />
                 </Stack>
               )}
-
               {node.masteruri && node.masteruri.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="MASTERURI:" text={node.masteruri} wrap />
                 </Stack>
               )}
-
               {node.location && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="Location:" text={`${node.location} - ${node.providerName}`} wrap />
                 </Stack>
               )}
-
+              {node.container_name ? (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="Composable Container:" text={`${node.container_name}`} wrap />
+                </Stack>
+              ) : (
+                node.launchInfo?.composable_container && (
+                  <Stack direction="row" spacing={0.5}>
+                    <Tag
+                      color="default"
+                      title="Composable Container:"
+                      text={`${node.launchInfo?.composable_container}`}
+                      wrap
+                    />
+                  </Stack>
+                )
+              )}
+              {node.parent_id && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="Parent ID:" text={`${node.parent_id}`} wrap />
+                </Stack>
+              )}
+              {node.guid && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="GID:" text={`${node.guid}`} wrap />
+                </Stack>
+              )}
               {node.screens.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   {node.screens.map((screen) => (
@@ -274,7 +295,6 @@ function NodesDetailsPanel() {
                   ))}
                 </Stack>
               )}
-
               {node.launchPaths.size > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   {node.launchPaths &&

@@ -158,6 +158,8 @@ class RosNode {
    */
   parent_id?: string;
 
+  guid?: string;
+
   /**
    * True if the node is a container
    */

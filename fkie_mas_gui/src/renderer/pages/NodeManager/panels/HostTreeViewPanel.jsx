@@ -139,7 +139,7 @@ function HostTreeViewPanel() {
         nodeItemMap.set(node.idGlobal, node);
         // filter nodes by user text
         if (searchTerm.length > 0) {
-          const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName]);
+          const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName, node.guid]);
           if (!isMatch) return;
         }
 

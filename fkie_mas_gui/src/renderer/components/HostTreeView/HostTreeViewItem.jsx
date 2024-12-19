@@ -410,7 +410,21 @@ function HostTreeViewItem({
             </Stack>
             {(!focus || !showFloatingButtons || (!onStartClick && !onStopClick && !onRestartClick)) &&
               tags.map((tag) => (
-                <Tag key={tag.text} text={tag.text} color={tag.color} style={{ pointerEvents: "none" }} />
+                <Tooltip
+                  key={tag.id}
+                  title={`${tag.tooltip}`}
+                  placement="left"
+                  disableInteractive
+                  onClick={tag.onClick ? (event) => tag.onClick(event) : () => {}}
+                >
+                  {typeof tag.data === "string" ? (
+                    <div>
+                      <Tag text={tag.data} color={tag.color} style={{ pointerEvents: "none" }} />
+                    </div>
+                  ) : (
+                    tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
+                  )}
+                </Tooltip>
               ))}
           </ListItem>
 

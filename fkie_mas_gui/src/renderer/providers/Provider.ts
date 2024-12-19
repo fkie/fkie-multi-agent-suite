@@ -1,6 +1,8 @@
 /* eslint-disable max-classes-per-file */
 import { JSONObject, TResultData, TSystemInfo } from "@/types";
+import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
+import { colorFromHostname } from "../components";
 import { TagColors } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
@@ -90,6 +92,14 @@ type TProviderDiscoveryReady = {
   status: boolean;
 };
 
+type TTag = {
+  id: string;
+  data: string | object;
+  color: string;
+  tooltip?: string;
+  onClick?: (event: React.MouseEvent) => void
+};
+
 export type TConCallback = {
   uri: string;
   callback: (msg: JSONObject) => void;
@@ -159,6 +169,9 @@ export default class Provider implements IProvider {
   launchFiles: LaunchContent[] = [];
 
   rosNodes: RosNode[] = [];
+
+  /** List of nodes with same GUID */
+  sameIdDict: { [guid: string]: string[] } = {};
 
   /**
    * Package list
@@ -749,6 +762,7 @@ export default class Provider implements IProvider {
       screens: string[];
       system_node: boolean;
       parent_id: string | null;
+      guid: string | null;
       is_container: boolean | null;
       container_name: string | null;
     }
@@ -788,6 +802,11 @@ export default class Provider implements IProvider {
               n.system_node
             );
 
+            // determine GUID of ROS2 nodes. It is the UUID after last '-' in id
+            const idSplitted = n.id.split("-");
+            if (idSplitted.length > 1) {
+              rn.guid = idSplitted[idSplitted.length - 1];
+            }
             if (n.parent_id) {
               rn.parent_id = n.parent_id;
             }
@@ -1258,31 +1277,56 @@ export default class Provider implements IProvider {
         this.rosNodes.forEach((n) => {
           // Check if this is a nodelet/composable and assign tags accordingly.
           let composableParent = n?.container_name || n.launchInfo?.composable_container;
+          const tags: TTag[] = [];
           if (composableParent) {
             composableParent = composableParent.split("|").slice(-1).at(0);
             if (composableParent) {
               if (!composableManagers.includes(composableParent)) {
                 composableManagers.push(composableParent);
               }
-              n.tags = [
-                {
-                  text: "Nodelet",
-                  color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
-                },
-              ];
+              tags.push({
+                id: "Nodelet",
+                data: "Nodelet",
+                color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
+                tooltip: `Composable node, container: ${composableParent}`,
+              });
             }
+          }
+          // mark nodes with same GUID
+          if (n.guid && this.sameIdDict[n.guid]?.length > 1) {
+            tags.push({
+              id: n.guid,
+              data: FingerprintIcon,
+              color: colorFromHostname(n.guid),
+              tooltip: `Nodes with same id ${n.guid}`,
+              onClick: (event: React.MouseEvent) => {
+                console.log(`CLICK ${n.guid}, ${this.logger}`);
+                if (n.guid) navigator.clipboard.writeText(n.guid);
+                this.logger?.success(`${n.guid} copied!`, "", true);
+                event?.stopPropagation();
+              },
+            });
+          }
+
+          if (tags.length > 0) {
+            n.tags = tags;
           }
         });
         // Assign tags to the found nodelet/composable managers.
         composableManagers.forEach((managerId) => {
           const node = this.rosNodes.find((n) => n.id === managerId || n.name === managerId);
           if (node) {
-            node.tags = [
-              {
-                text: "Manager",
-                color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
-              },
-            ];
+            const tag: TTag = {
+              id: "Manager",
+              data: "Manager",
+              color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
+              tooltip: "Manager of a composable nodes",
+            };
+            if (!node.tags) {
+              node.tags = [tag];
+            } else {
+              node.tags.unshift(tag);
+            }
           }
         });
 
@@ -1969,6 +2013,7 @@ export default class Provider implements IProvider {
 
     // get nodes from remote provider
     const nlUnfiltered = await this.getNodeList();
+    const sameIdDict = {};
     const nl = nlUnfiltered.filter((n) => {
       let ignored = false;
 
@@ -1984,6 +2029,15 @@ export default class Provider implements IProvider {
         }
       }
 
+      // update the list with same GUIDs
+      if (n.guid) {
+        const sameIdEntry = sameIdDict[n.guid];
+        if (sameIdEntry) {
+          sameIdEntry.push(n.id);
+        } else {
+          sameIdDict[n.guid] = [n.id];
+        }
+      }
       // exclude ignored nodes
       this.IGNORED_NODES.forEach((ignoredNode) => {
         if (n.name.indexOf(ignoredNode) !== -1) ignored = true;
@@ -2055,6 +2109,7 @@ export default class Provider implements IProvider {
       }
     });
     this.rosNodes = nl;
+    this.sameIdDict = sameIdDict;
     // emitCustomEvent(
     //   EVENT_PROVIDER_ROS_NODES,
     //   new EventProviderRosNodes(this, nl),

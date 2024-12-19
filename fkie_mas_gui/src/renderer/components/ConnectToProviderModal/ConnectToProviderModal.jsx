@@ -481,7 +481,15 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
         if (remoteHost.ip) host = remoteHost.ip;
         setStartProviderDescription(`Connecting to ${host} ...`);
         console.log(`connecting to ${host}:${port}`);
-        const newProvider = new Provider(settingsCtx, host, startParameter.rosVersion, port, undefined, logCtx);
+        const newProvider = new Provider(
+          settingsCtx,
+          host,
+          startParameter.rosVersion,
+          port,
+          undefined,
+          undefined,
+          logCtx
+        );
         const launchCfg = createLaunchConfigFor(host);
         newProvider.startConfiguration = launchCfg;
         await rosCtx.connectToProvider(newProvider);
