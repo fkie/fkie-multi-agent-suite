@@ -109,7 +109,7 @@ def get_active_screens(nodename: str = '') -> Dict[str, List[str]]:
     result = {}
     start_time = time.time()
     ps = SupervisedPopen(
-        [SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
+        [SCREEN, '-ls'], stdout=subprocess.PIPE, object_id=f'get_active_screens for {nodename}')
     output = ps.stdout.read() if sys.version_info[0] <= 2 else str(
         ps.stdout.read(), 'utf-8')
     if output:

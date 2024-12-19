@@ -96,8 +96,9 @@ class RosQos:
         liveliness: int = LIVELINESS.SYSTEM_DEFAULT,
         reliability: int = RELIABILITY.RELIABLE,
         deadline: RosDuration = RosDuration(),
-        lease_duration: RosDuration = RosDuration(),
+        liveliness_lease_duration: RosDuration = RosDuration(),
         lifespan: RosDuration = RosDuration(),
+        avoid_ros_namespace_conventions: bool = False,
     ) -> None:
         self.durability = durability
         self.history = history
@@ -105,8 +106,9 @@ class RosQos:
         self.liveliness = liveliness
         self.reliability = reliability
         self.deadline = deadline
-        self.lease_duration = lease_duration
+        self.liveliness_lease_duration = liveliness_lease_duration
         self.lifespan = lifespan
+        self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions
 
 
 class RosTopic:
@@ -190,7 +192,7 @@ class RosNode:
         self.parent_id = None
         self.is_container = False
         self.container_name = ""
-        self.name = name
+        self.name = name  # with namespace
         self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = "running"
         self.pid = -1

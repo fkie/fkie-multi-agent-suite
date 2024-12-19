@@ -32,11 +32,8 @@ from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
 from fkie_mas_pylib.interface.launch_interface import LaunchContent
 from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
 from fkie_mas_pylib.defines import NM_NAMESPACE
-from fkie_mas_pylib.defines import NMD_DEFAULT_PORT
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.names import ns_join
-from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import get_hostname
 from fkie_mas_pylib.system.url import get_port
 from fkie_mas_pylib.websocket.server import WebSocketServer
@@ -46,17 +43,8 @@ from fkie_mas_msgs.msg import ParticipantEntitiesInfo
 from fkie_mas_msgs.msg import Endpoint
 
 import fkie_mas_daemon as nmd
-
-
-class ComposedNodeInfo:
-    container_name: str
-    container_id: str
-    unique_id_in_container: int
-
-    def __init__(self, container_name: str, unique_id_in_container: int, container_id: str=""):
-        self.container_name = container_name
-        self.container_id = container_id
-        self.unique_id_in_container = unique_id_in_container
+from fkie_mas_daemon.rosstate_jsonify import ParticipantGid
+from fkie_mas_daemon.rosstate_jsonify import RosStateJsonify
 
 
 class RosStateServicer:
@@ -64,10 +52,8 @@ class RosStateServicer:
     def __init__(self, websocket: WebSocketServer, test_env=False):
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
-        self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
+        self._participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
-        self._composed_done = []  # list of composed node ids with done requests
-        self._composed_nodes: Dict[str, ComposedNodeInfo] = {}
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/rosstate"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
@@ -76,6 +62,7 @@ class RosStateServicer:
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
         self._on_shutdown = False
+        self._state_jsonify = RosStateJsonify()
         self.websocket = websocket
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
@@ -96,17 +83,14 @@ class RosStateServicer:
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                           # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
-        Log.info(
-            f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
+        Log.info(f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
         self.sub_discovered_state = nmd.ros_node.create_subscription(
             DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
-        Log.info(
-            f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
+        Log.info(f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
         self._lock_check = threading.RLock()
-        self._thread_check_discovery_node = threading.Thread(
-            target=self._check_discovery_node, daemon=True)
+        self._thread_check_discovery_node = threading.Thread(target=self._check_discovery_node, daemon=True)
         self._thread_check_discovery_node.start()
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
@@ -114,7 +98,11 @@ class RosStateServicer:
         for uri, endpoint in endpoints.items():
             origin = uri == nmd.launcher.server.uri
             provider = RosProvider(
-                name=endpoint.name, host=get_hostname(endpoint.uri), port=get_port(endpoint.uri), origin=origin, hostnames=[get_hostname(endpoint.uri)])
+                name=endpoint.name,
+                host=get_hostname(endpoint.uri),
+                port=get_port(endpoint.uri),
+                origin=origin,
+                hostnames=[get_hostname(endpoint.uri)])
             result.append(provider)
         return result
 
@@ -146,8 +134,7 @@ class RosStateServicer:
                 if self._ts_state_updated > self._ts_state_notified:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                         self._ts_state_notified = self._ts_state_updated
-                        self.websocket.publish('ros.nodes.changed', {
-                            "timestamp": self._ts_state_updated})
+                        self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_updated})
                         nmd.launcher.server.screen_servicer.system_change()
             time.sleep(1.0 / self._rate_check_discovery_node)
 
@@ -180,7 +167,7 @@ class RosStateServicer:
         for participant in msg.participants:
             guid = self._guid_to_str(participant.guid)
             new_ros_state[guid] = participant
-        self._ros_state = new_ros_state
+        self._participant_infos = new_ros_state
         self._ros_node_list = None
         # notify WebSocket clients, but not to often
         # notifications are sent from _check_discovery_node()
@@ -213,25 +200,21 @@ class RosStateServicer:
             self._publish_masters()
 
     def get_provider_list(self) -> str:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     def get_node_list(self, forceRefresh: bool = True) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
         node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
-
         return json.dumps(node_list, cls=SelfEncoder)
 
     def get_loggers(self, name: str) -> str:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', not implemented")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', not implemented")
         loggerConfigs: List[LoggerConfig] = []
         return json.dumps({'result': False, 'logger': loggerConfigs, 'message': 'not implemented'}, cls=SelfEncoder)
 
     def set_logger_level(self, name: str, logger: List[LoggerConfig]) -> str:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}', not implemented")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}', not implemented")
         return json.dumps({'result': False, 'message': 'not implemented'}, cls=SelfEncoder)
 
     def stop_node(self, name: str) -> bool:
@@ -240,74 +223,62 @@ class RosStateServicer:
         if node is None:
             node = self.get_ros_node_by_id(name)
         unloaded = False
-        result = json.dumps(
-            {'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
+        result = json.dumps({'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
         if node is not None:
             if node.container_name:
                 unloaded = self.stop_composed_node(node)
             if not unloaded:
-                result = nmd.launcher.server.screen_servicer.kill_node(
-                    os.path.join(node.namespace, node.name), signal.SIGTERM)
+                result = nmd.launcher.server.screen_servicer.kill_node(node.name, signal.SIGTERM)
         if unloaded:
-            result = json.dumps(
-                {'result': True, 'message': ''}, cls=SelfEncoder)
+            result = json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
         nmd.launcher.server.screen_servicer.system_change()
         if node is not None:
-            nmd.launcher.server.launch_servicer.node_stopped(
-                os.path.join(node.namespace, node.name))
+            nmd.launcher.server.launch_servicer.node_stopped(node.name)
         return result
 
     def stop_subscriber(self, topic_name: str) -> bool:
-        Log.debug(
-            f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
         ns, name = ros2_subscriber_nodename_tuple(topic_name)
         return self.stop_node(os.path.join(ns, name))
 
     def get_provider_timestamp(self, timestamp) -> str:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
-        # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
 
     def stop_composed_node(self, node: RosNode) -> bool:
         # try to unload node from container
-        node_name = ns_join(node.namespace, node.name)
-        Log.info(
-            f"{self.__class__.__name__}: -> unload '{node_name}' from '{node.container_name}'")
+        Log.info(f"{self.__class__.__name__}: -> unload '{node.name}' from '{node.container_name}'")
         # TODO: shutdown lifecycle nodes before unload
         try:
-            composed_node_info = self._composed_nodes[node.name]
-            container_node: RosNode = self.get_ros_node_by_id(composed_node_info.container_id)
+            container_node: RosNode = self.get_ros_node(node.container_name)
             if container_node is not None:
-                service_unload_node = f'{container_node.name}/_container/unload_node'
-                Log.info(
-                    f"{self.__class__.__name__}: -> unload '{node.name}' with id '{composed_node_info.unique_id_in_container}' using service '{service_unload_node}'")
-
-                request = UnloadNode.Request()
-                request.unique_id = composed_node_info.unique_id_in_container
-                response = nmd.launcher.call_service(
-                    service_unload_node, UnloadNode, request)
-                if hasattr(response, "success") and response.success:
-                    return True
-                elif not hasattr(response, "success"):
-                    Log.warn(
-                        f"{self.__class__.__name__}: -> unload '{node_name}' error while call unload_node service")
-                    return False
-                else:
-                    Log.warn(
-                        f"{self.__class__.__name__}: -> unload '{node_name}' error '{response.error_message}'")
-                    return False
+                unique_id_in_container = self.get_composed_node_id(node.container_name, node.name)
+                if unique_id_in_container > -1:
+                    service_unload_node = f'{container_node.name}/_container/unload_node'
+                    Log.info(
+                        f"{self.__class__.__name__}: -> unload '{node.name}' with id '{unique_id_in_container}' using service '{service_unload_node}'")
+                    request = UnloadNode.Request()
+                    request.unique_id = unique_id_in_container
+                    response = nmd.launcher.call_service(
+                        service_unload_node, UnloadNode, request)
+                    if hasattr(response, "success") and response.success:
+                        return True
+                    elif not hasattr(response, "success"):
+                        Log.warn(f"{self.__class__.__name__}: -> unload '{node.name}' error while call unload_node service")
+                    else:
+                        Log.warn(f"{self.__class__.__name__}: -> unload '{node.name}' error '{response.error_message}'")
+                return False
+            else:
+                Log.warn(f"{self.__class__.__name__}: -> Container node '{node.container_name}' not found")
         except Exception as err:
             print(f"{err}")
         return False
 
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
         service_list_nodes = f'{container_name}/_container/list_nodes'
-        Log.debug(
-            f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
+        Log.debug(f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
         request_list = ListNodes.Request()
-        response_list = nmd.launcher.call_service(
-            service_list_nodes, ListNodes, request_list)
+        response_list = nmd.launcher.call_service(service_list_nodes, ListNodes, request_list)
         for name, unique_id in zip(response_list.full_node_names, response_list.unique_ids):
             if name == node_name:
                 return unique_id
@@ -317,13 +288,13 @@ class RosStateServicer:
         # self._ros_node_list is cleared on updates in _on_msg_state()
         # otherwise we use a cached list
         if self._ros_node_list is None or forceRefresh:
-            self._ros_node_list = self.node_list_to_json()
+            self._ros_node_list = self._state_jsonify.get_nodes_as_json(self._participant_infos)
         return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
         node_list: List[RosNode] = self._get_ros_node_list()
         for node in node_list:
-            if node_name == ns_join(node.namespace, node.name):
+            if node_name == node.name:
                 return node
         return None
 
@@ -334,241 +305,5 @@ class RosStateServicer:
                 return node
         return None
 
-    def _guid_to_str(self, guid):
+    def _guid_to_str(self, guid: List[int]) -> ParticipantGid:
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist()[0:12])
-
-    def _guid_arr_to_str(self, guid):
-        return '.'.join('{:02X}'.format(c) for c in guid)
-
-    @classmethod
-    def get_message_type(cls, dds_type: Text) -> Text:
-        result = dds_type
-        if result:
-            result = result.replace('::', '/')
-            result = result.replace('/dds_', '')
-            # result = result.replace('/msg/dds_', '')
-            # result = result.replace('/srv/dds_', '')
-            result = result.rstrip('_')
-        return result
-
-    @classmethod
-    def get_service_type(cls, dds_service_type: Text) -> Text:
-        result = dds_service_type
-        for suffix in ['_Response_', '_Request_']:
-            if result[-len(suffix):] == suffix:
-                result = result[:-len(suffix)+1]
-                break
-        return cls.get_message_type(result)
-
-    @classmethod
-    def get_service_name(cls, dds_service_name: Text) -> Text:
-        result = dds_service_name
-        for suffix in ['Reply', 'Request']:
-            if result[-len(suffix):] == suffix:
-                result = result[:-len(suffix)]
-                break
-        return cls.get_message_type(result)
-
-    def node_list_to_json(self) -> List[RosNode]:
-        node_dict = {}
-        topic_by_id = {}
-        topic_objs = {}
-        service_by_id = {}
-        service_objs = {}
-        Log.debug(f"{self.__class__.__name__}: create graph for websocket")
-
-        def _get_node_from(node_ns, node_name, node_guid):
-            key = (node_ns, node_name, node_guid)
-            if key not in node_dict:
-                full_name = os.path.join(node_ns, node_name)
-                Log.debug(
-                    f"{self.__class__.__name__}:   create node: {full_name}")
-                ros_node = RosNode(f"{full_name}-{node_guid}", full_name)
-                try:
-                    ros_node.container_name = self._composed_nodes[full_name].container_name
-                except:
-                    # otherwise we have two nodes with same id (e.g. transformer node)
-                    for (_ns, _name, _guid), _node in node_dict.items():
-                        if node_guid == _guid:
-                            ros_node.parent_id = _node.id
-
-                node_dict[key] = ros_node
-                if node_guid in self._ros_state:
-                    participant = self._ros_state[node_guid]
-                    ros_node.location = participant.unicast_locators
-                    ros_node.is_local = False
-                    for loc in ros_node.location:
-                        if 'SHM' in loc:
-                            ros_node.is_local = True
-                    Log.debug(
-                        f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators}")
-                    ros_node.namespace = node_ns
-                    ros_node.enclave = participant.enclave
-                # Add active screens for a given node
-                screens = screen.get_active_screens(full_name)
-                for session_name, _ in screens.items():
-                    Log.debug(
-                        f"{self.__class__.__name__}:     append screen: {session_name}")
-                    ros_node.screens.append(session_name)
-                ros_node.system_node = os.path.basename(
-                    full_name).startswith('_') or full_name in ['/rosout']
-                ros_node.system_node |= node_ns == '/mas' or node_ns.startswith('/mas/')
-
-                return node_dict[key], True
-            return node_dict[key], False
-
-        def _get_topic_from(topic_name, topic_type):
-            t_guid = self._guid_arr_to_str(pub_info.endpoint_gid)
-            if topic_name.startswith('rt/'):
-                if (topic_name[2:], topic_type) not in topic_objs:
-                    topic_type_res = self.get_message_type(topic_type)
-                    Log.debug(
-                        f"{self.__class__.__name__}:   create topic {topic_name[2:]} ({topic_type_res})")
-                    tp = RosTopic(topic_name[2:], topic_type_res)
-                    topic_objs[(topic_name[2:], topic_type)] = tp
-                    topic_by_id[t_guid] = tp
-                else:
-                    topic_by_id[t_guid] = topic_objs[(
-                        topic_name[2:], topic_type)]
-                return topic_by_id[t_guid], True, False
-            elif topic_name[:2] in ['rr', 'rq', 'rs']:
-                srv_type = self.get_service_type(topic_type)
-                # TODO: distinction between Reply/Request? Currently it is removed.
-                srv_name = self.get_service_name(topic_name[2:])
-                if (srv_name, srv_type) not in service_objs:
-                    srv_type_res = self.get_service_type(srv_type)
-                    Log.debug(
-                        f"{self.__class__.__name__}:   create service {srv_name} ({srv_type_res})")
-                    srv = RosService(srv_name, srv_type_res)
-                    service_objs[(srv_name, srv_type)] = srv
-                    service_by_id[t_guid] = srv
-                else:
-                    service_by_id[t_guid] = service_objs[(
-                        srv_name, srv_type)]
-                return service_by_id[t_guid], False, topic_name[:2] == 'rq'
-        result = []
-
-        topic_list = nmd.ros_node.get_topic_names_and_types(True)
-        for topic_name, topic_types in topic_list:
-            pub_infos = nmd.ros_node.get_publishers_info_by_topic(
-                topic_name, True)
-            if pub_infos:
-                for pub_info in pub_infos:
-                    if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
-                        continue
-                    n_guid = self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
-                    ros_node, is_new = _get_node_from(
-                        pub_info.node_namespace, pub_info.node_name, n_guid)
-                    for topic_type in topic_types:
-                        tp, is_topic, is_request = _get_topic_from(
-                            topic_name, topic_type)
-                        # add tp.qos_profile
-                        if is_topic:
-                            discover_state_publisher = False
-                            endpoint_publisher = False
-                            Log.debug(
-                                f"{self.__class__.__name__}:      add publisher {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
-                            tp.publisher.append(ros_node.id)
-                            ros_node.publishers.append(tp)
-                            discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in topic_type
-                            endpoint_publisher = 'fkie_mas_msgs::msg::dds_::Endpoint_' in topic_type
-                            ros_node.system_node |= ros_node.system_node or discover_state_publisher or endpoint_publisher
-                        else:
-                            if not is_request and ros_node.id not in tp.provider:
-                                Log.debug(
-                                    f"{self.__class__.__name__}:      add provider {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
-                                tp.provider.append(ros_node.id)
-                            elif is_request and ros_node.id not in tp.requester:
-                                Log.debug(
-                                    f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
-                                tp.requester.append(ros_node.id)
-                            if not is_request:
-                                ros_node.services.append(tp)
-                    if is_new:
-                        result.append(ros_node)
-            sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(
-                topic_name, True)
-
-            if sub_infos:
-                for sub_info in sub_infos:
-                    if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
-                        continue
-                    n_guid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
-                    ros_node, is_new = _get_node_from(
-                        sub_info.node_namespace, sub_info.node_name, n_guid)
-                    for topic_type in topic_types:
-                        try:
-                            tp, is_topic, is_request = _get_topic_from(
-                                topic_name, topic_type)
-                            # add tp.qos_profile
-                            if is_topic:
-                                Log.debug(
-                                    f"{self.__class__.__name__}:      add subscriber {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
-                                tp.subscriber.append(ros_node.id)
-                                ros_node.subscribers.append(tp)
-                            else:
-                                if is_request and ros_node.id not in tp.provider:
-                                    Log.debug(
-                                        f"{self.__class__.__name__}:      add provider {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
-                                    tp.provider.append(ros_node.id)
-                                    if tp.name.endswith('/_container/list_nodes') and ros_node.is_local:
-                                        # check only local nodes
-                                        ros_node.is_container = True
-                                        if ros_node.id not in self._composed_done:
-                                            # get composed nodes
-                                            request = ListNodes.Request()
-                                            response = nmd.launcher.call_service(tp.name, ListNodes, request)
-                                            if response:
-                                                self._composed_done.append(ros_node.id)
-                                                for cn_name, cn_unique_id in zip(response.full_node_names, response.unique_ids):
-                                                    self._composed_nodes[cn_name] = ComposedNodeInfo(ros_node.name, cn_unique_id, ros_node.id)
-                                                # update composable nodes found previously
-                                                for (_ns, _name, _guid), _node in node_dict.items():
-                                                    try:
-                                                        node_dict[(_ns, _name, _guid)].container_name = self._composed_nodes[_node.name].container_name
-                                                        node_dict[(_ns, _name, _guid)].parent_id = None
-                                                    except:
-                                                        pass
-                                            else:
-                                                Log.warn(
-                                                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{ros_node.name}': '{response.error_message}'")
-                                elif not is_request and ros_node.id not in tp.requester:
-                                    Log.debug(
-                                        f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
-                                    tp.requester.append(ros_node.id)
-                                if is_request:
-                                    ros_node.services.append(tp)
-                        except Exception as err:
-                            print(err)
-                    if is_new:
-                        result.append(ros_node)
-        return result
-
-    @classmethod
-    def get_message_type(cls, dds_type: Text) -> Text:
-        result = dds_type
-        if result:
-            result = result.replace('::', '/')
-            result = result.replace('/dds_', '')
-            # result = result.replace('/msg/dds_', '')
-            # result = result.replace('/srv/dds_', '')
-            result = result.rstrip('_')
-        return result
-
-    @classmethod
-    def get_service_type(cls, dds_service_type: Text) -> Text:
-        result = dds_service_type
-        for suffix in ['_Response_', '_Request_']:
-            if result[-len(suffix):] == suffix:
-                result = result[:-len(suffix)+1]
-                break
-        return cls.get_message_type(result)
-
-    @classmethod
-    def get_service_name(cls, dds_service_name: Text) -> Text:
-        result = dds_service_name
-        for suffix in ['Reply', 'Request']:
-            if result[-len(suffix):] == suffix:
-                result = result[:-len(suffix)]
-                break
-        return cls.get_message_type(result)

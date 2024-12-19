@@ -548,12 +548,11 @@ class LaunchServicer(LoggingEventHandler):
         return json.dumps(reply, cls=SelfEncoder)
 
     def start_node(self, request_json: LaunchNode, return_as_json: bool = True) -> LaunchNodeReply:
-        Log.debug(
+        Log.info(
             f"{self.__class__.__name__}: Request to [ros.launch.start_node]")
 
         # Covert input dictionary into a proper python object
         request = request_json
-
         result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
 
         try:
@@ -614,12 +613,12 @@ class LaunchServicer(LoggingEventHandler):
             del self._node_exec[name]
 
     def start_nodes(self, request_json: List[LaunchNode], continue_on_error: bool = True) -> List[LaunchNodeReply]:
-        Log.debug(
+        Log.info(
             f"{self.__class__.__name__}: Request to [ros.launch.start_nodes]")
 
         result = []
         for request in request_json:
-            node_result = self.start_nodes(request, return_as_json=False)
+            node_result = self.start_node(request, return_as_json=False)
             result.append(node_result)
             if not continue_on_error:
                 if result.status.code != 'OK':

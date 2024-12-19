@@ -72,9 +72,11 @@ class RosNodeLauncher(object):
         self.success_start = False
 
     def exit_gracefully(self, signum, frame):
+        print('shutdown own server')
         self.server.shutdown()
         if rclpy.ok():
             rclpy.shutdown()
+        print('bye!')
 
     def exception_handler(self, loop, error):
         pass
@@ -89,7 +91,7 @@ class RosNodeLauncher(object):
                 self.executor.spin()
                 # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
-            pass
+            self.exit_gracefully(-1, None)
         except Exception:
             import traceback
             # on load error the process will be killed to notify user
@@ -100,11 +102,7 @@ class RosNodeLauncher(object):
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-        print('shutdown own server')
-        self.server.shutdown()
-        if rclpy.ok():
-            rclpy.shutdown()
-        print('bye!')
+        self.exit_gracefully(-1, None)
 
     def _run_tests(self):
         try:

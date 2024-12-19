@@ -109,11 +109,10 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             # LocalSubstitution placeholders added to the the cmd can be expanded using the contents.
             ros_specific_arguments: Dict[str, Union[str, List[str]]] = {}
             if self._entity._Node__node_name is not None:
-                ros_specific_arguments['name'] = '__node:={}'.format(
-                    self._entity._Node__expanded_node_name)
+                ros_specific_arguments['name'] = f'__node:={self._entity._Node__expanded_node_name}'
             if self._entity._Node__expanded_node_namespace != '':
-                ros_specific_arguments['ns'] = '__ns:={}'.format(
-                    self._entity._Node__expanded_node_namespace)
+                print(f"self._entity._Node__expanded_node_namespace: {self._entity._Node__expanded_node_namespace}")
+                ros_specific_arguments['ns'] = f'__ns:={self._entity._Node__expanded_node_namespace}'
 
             # Give extensions a chance to prepare for execution
             for extension in self._entity._Node__extensions.values():
@@ -274,9 +273,13 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         return result
 
     def _get_namespace(self) -> str:
-        result = getattr(self._entity, 'expanded_node_namespace', SEP)
-        if result == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
+        result = getattr(self._entity, 'expanded_node_namespace', None)
+        if result is None:
+            result = perform_to_string(self._launch_context, getattr(self._entity, 'node_namespace', SEP))
+        if result is None or result == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
             result = SEP
+        if not result.startswith(SEP):
+            result = SEP + result
         return result
 
     def _get_name(self) -> Tuple[str, str]:
@@ -345,42 +348,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                 self._launch_context, cmd_list[0])
         result = os.path.basename(result.replace(' ', '_'))
         return result
-
-    # def _to_string(self, value: Union[List[List], List[launch.Substitution], str, None]) -> Union[str, None]:
-    #     result = ''
-    #     if isinstance(value, str):
-    #         result = value
-    #     elif isinstance(value, List):
-    #         result += ' '.join([perform_to_string(self._launch_context, val) for val in value])
-    #     elif value and isinstance(value, launch.Substitution):
-    #         try:
-    #             result += self._launch_context.perform_substitution(value)
-    #         except:
-    #             import traceback
-    #             print(traceback.format_exc())
-    #         if ' ' in result and '{' in result:
-    #             result = f"'{result}'"
-    #     elif value and isinstance(value[0], launch.Substitution):
-    #         result += launch.utilities.perform_substitutions(
-    #             self._launch_context, value)
-    #         if ' ' in result and '{' in result:
-    #             result = f"'{result}'"
-    #     elif value is not None:
-    #         Log.warn("IGNORED while _to_string", value)
-    #     else:
-    #         result = None
-    #     return result
-
-    # def _to_tuple_list(self, value: Union[List[Tuple[List[launch.Substitution], List[launch.Substitution]]], None]) -> Union[List[Tuple[str, str]], None]:
-    #     result = []
-    #     if value is not None:
-    #         for val1, val2 in value:
-    #             result.append((launch.utilities.perform_substitutions(
-    #                 self._launch_context, val1), launch.utilities.perform_substitutions(
-    #                 self._launch_context, val2)))
-    #     else:
-    #         result = None
-    #     return result
 
 
 class LaunchConfig(object):
@@ -899,19 +866,16 @@ class LaunchConfig(object):
                 f"Node '{name}' in '{self.filename}' not found!")
         if node.composable_container:
             # load plugin in container
-            Log.debug(
+            Log.info(
                 f"Load node='{node.unique_name}'; as plugin into container='{node.composable_container}';")
-            # check if container is running
-            container_node: RosNode = nmd.launcher.server.rosstate_servicer.get_ros_node(
-                node.composable_container)
-            if container_node is None:
-                Log.debug(
-                    f"Run container node='{node.composable_container}'")
-                self.run_node(node.composable_container)
-            print("  ***debug launch run: lok")
-            print("  ***debug launch run: put into quee")
+            # skip check if container is running, it is done by the GUI
+            # container_node: RosNode = nmd.launcher.server.rosstate_servicer.get_ros_node(
+            #     node.composable_container)
+            # if container_node is None:
+            #     Log.debug(
+            #         f"Run container node='{node.composable_container}'")
+            #     # self.run_node(node.composable_container)
             self.run_composed_node(node)
-            print("  ***debug launch run: put into quee done")
             return ''
 
         # run on local host
@@ -968,23 +932,17 @@ class LaunchConfig(object):
     def run_composed_node(self, node: LaunchNodeWrapper):
         # Create a client to load nodes in the target container.
         client_load_node = nmd.ros_node.create_client(
-            composition_interfaces.srv.LoadNode, '%s/_container/load_node' % node.composable_container)
+            composition_interfaces.srv.LoadNode, f'{node.composable_container}/_container/load_node')
         composable_node_description: launch_ros.descriptions.ComposableNode = node._entity
         request = composition_interfaces.srv.LoadNode.Request()
-        request.package_name = perform_substitutions(
-            self.context, composable_node_description.package
-        )
-        request.plugin_name = perform_substitutions(
-            self.context, composable_node_description.node_plugin
-        )
+        request.package_name = perform_substitutions(self.context, composable_node_description.package)
+        request.plugin_name = perform_substitutions(self.context, composable_node_description.node_plugin)
         if composable_node_description.node_name is not None:
-            request.node_name = perform_substitutions(
-                self.context, composable_node_description.node_name
-            )
+            request.node_name = perform_substitutions(self.context, composable_node_description.node_name)
         if composable_node_description.node_namespace is not None:
-            request.node_namespace = perform_substitutions(
-                self.context, composable_node_description.node_namespace
-            )
+            request.node_namespace = perform_substitutions(self.context, composable_node_description.node_namespace)
+            if request.node_namespace and not request.node_namespace.startswith(SEP):
+                request.node_namespace = SEP + request.node_namespace
         # request.log_level = perform_substitutions(context, node_description.log_level)
         if composable_node_description.remappings is not None:
             for from_, to in composable_node_description.remappings:
@@ -992,6 +950,7 @@ class LaunchConfig(object):
                     perform_substitutions(self.context, list(from_)),
                     perform_substitutions(self.context, list(to)),
                 ))
+            print(f"request.remap_rules: {request.remap_rules}")
         if composable_node_description.parameters is not None:
             request.parameters = [
                 param.to_parameter_msg() for param in to_parameters_list(
@@ -1000,6 +959,7 @@ class LaunchConfig(object):
                     )
                 )
             ]
+            print(f"request.parameters: {request.parameters}")
         if composable_node_description.extra_arguments is not None:
             request.extra_arguments = [
                 param.to_parameter_msg() for param in to_parameters_list(
@@ -1008,11 +968,16 @@ class LaunchConfig(object):
                     )
                 )
             ]
+            print(f"request.extra_arguments: {request.extra_arguments}")
         service_load_node_name = f'{node.composable_container}/_container/load_node'
         Log.debug(f"-> load composed node to '{service_load_node_name}'")
         response = nmd.launcher.call_service(
             service_load_node_name, composition_interfaces.srv.LoadNode, request)
-        print("  ***debug launch run: response received")
+        if response is None:
+            error_msg = f"Failed to load service '{request.node_name}' of type '{request.plugin_name}' in container '{node.composable_container}': None as service response"
+            Log.error(error_msg)
+            raise exceptions.StartException(error_msg)
+        print(f"  ***debug launch run: response received: {response} {dir(response)}")
         node_name = response.full_node_name if response.full_node_name else request.node_name
         nmd.ros_node.destroy_client(client_load_node)
         if response.success:
@@ -1028,10 +993,7 @@ class LaunchConfig(object):
             Log.info(
                 f"Loaded node '{response.full_node_name}' in container '{node.composable_container}'")
         else:
-            error_msg = "Failed to load node '{}' of type '{}' in container '{}': {}".format(
-                node_name, request.plugin_name, node.composable_container,
-                response.error_message
-            )
+            error_msg = f"Failed to load node '{node_name}' of type '{request.plugin_name}' in container '{node.composable_container}': {response.error_message}"
             Log.error(error_msg)
             raise exceptions.StartException(error_msg)
         print("  ***debug launch run: LOADED")
