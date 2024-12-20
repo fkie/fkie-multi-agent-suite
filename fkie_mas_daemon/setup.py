@@ -22,10 +22,10 @@ else:
     from setuptools import setup
 
     resource_files = [
-        'tests/resources/description_example.launch.xml',
-        'tests/resources/include_dummy.launch.xml',
-        'tests/resources/included1.launch.xml',
-        'tests/resources/included2.launch.xml',
+        'tests/resources/description_example.launch',
+        'tests/resources/include_dummy.launch',
+        'tests/resources/included1.launch',
+        'tests/resources/included2.launch',
     ]
 
     version = "0.0.0"
@@ -51,6 +51,8 @@ else:
             (f'share/{package_name}', ['package.xml']),
             (f'share/{package_name}/launch',
              ['launch/autostart.launch.xml', 'launch/diff_drive.launch.py']),
+            (f'share/{package_name}/test/launch',
+             ['tests/launch/test_composable_launch.py', 'tests/launch/test_included_launch.py']),
             # (f'share/{package_name}/tests/resources', resource_files),
             (f'lib/{package_name}',
              ['scripts/mas-remote-node.py', 'scripts/mas-respawn'])

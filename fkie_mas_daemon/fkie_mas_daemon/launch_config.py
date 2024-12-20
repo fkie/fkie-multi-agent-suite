@@ -6,6 +6,7 @@
 #
 # ****************************************************************************
 
+from pathlib import Path
 
 from typing import Dict
 from typing import Iterable
@@ -32,12 +33,18 @@ from launch.launch_description_sources import get_launch_description_from_fronte
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.actions.include_launch_description import IncludeLaunchDescription
 import launch.utilities
+from launch.utilities import normalize_to_list_of_substitutions
 from launch_ros.utilities.evaluate_parameters import evaluate_parameters
 from launch_ros.utilities import to_parameters_list
 from launch.utilities import perform_substitutions
 from launch.launch_description import LaunchDescription
 import launch_ros
 import composition_interfaces.srv
+from launch_ros.parameter_descriptions import ParameterFile
+
+from launch_ros.utilities import make_namespace_absolute
+from launch_ros.utilities import prefix_namespace
+from launch_ros.utilities.normalize_parameters import normalize_parameter_dict
 
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
@@ -100,7 +107,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
     _unique_names: Set[str] = set()
     _remapped_names: Dict[str, Set[str]] = {}
 
-    def __init__(self, entity: launch.actions.ExecuteProcess, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext, composable_container: str = None) -> None:
+    def __init__(self, entity: launch.actions.ExecuteProcess, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext, composable_container: str = None, position_in_file=0) -> None:
         self._entity = entity
         self._launch_description = launch_description
         self._launch_context = launch_context
@@ -111,7 +118,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             if self._entity._Node__node_name is not None:
                 ros_specific_arguments['name'] = f'__node:={self._entity._Node__expanded_node_name}'
             if self._entity._Node__expanded_node_namespace != '':
-                print(f"self._entity._Node__expanded_node_namespace: {self._entity._Node__expanded_node_namespace}")
                 ros_specific_arguments['ns'] = f'__ns:={self._entity._Node__expanded_node_namespace}'
 
             # Give extensions a chance to prepare for execution
@@ -157,6 +163,9 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'env', None))
         self.additional_env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'additional_env', None))
         self.launch_prefix = perform_to_string(self._launch_context, self._get_launch_prefix())
+        self._load_node_request = None
+        if self.composable_container:
+            self._load_node_request = self._create_composed_load_request(self._launch_context)
 
         #  remap_args: List[Tuple[str, str]] = None,
         #  output: str = '',
@@ -179,16 +188,19 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             name_select_len = len(node_base_name) + 7
             lines_with_node_name = []
             with open(self.file_name, "r") as launch_file:
+                current_position = 0
                 for line_number, line_text in enumerate(launch_file):
-                    start_column = line_text.find(f'name="{node_base_name}"')
-                    if start_column < 0:
-                        start_column = line_text.find(
-                            f"name='{node_base_name}'")
-                    if start_column > -1:
-                        start_column += 1
-                        lines_with_node_name.append(
-                            [line_number + 1, line_text, start_column, start_column + name_select_len])
-
+                    # search only after given position
+                    if current_position >= position_in_file:
+                        start_column = line_text.find(f'name="{node_base_name}"')
+                        if start_column < 0:
+                            start_column = line_text.find(
+                                f"name='{node_base_name}'")
+                        if start_column > -1:
+                            start_column += 1
+                            lines_with_node_name.append(
+                                [line_number + 1, line_text, start_column, start_column + name_select_len])
+                    current_position += len(line_text) + 1
             line_number = -1
             start_column = 0
             end_column = 0
@@ -196,7 +208,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             if len(lines_with_node_name) == 0:
                 # no line found. TODO: Report error?
                 line_number = 0
-            elif len(lines_with_node_name) == 1:
+            elif len(lines_with_node_name) >= 1:
                 line_number = lines_with_node_name[0][0]
                 line_text = lines_with_node_name[0][1]
                 start_column = lines_with_node_name[0][2]
@@ -275,11 +287,11 @@ class LaunchNodeWrapper(LaunchNodeInfo):
     def _get_namespace(self) -> str:
         result = getattr(self._entity, 'expanded_node_namespace', None)
         if result is None:
-            result = perform_to_string(self._launch_context, getattr(self._entity, 'node_namespace', SEP))
+            result = perform_to_string(self._launch_context, getattr(self._entity, 'node_namespace', ''))
         if result is None or result == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-            result = SEP
-        if not result.startswith(SEP):
-            result = SEP + result
+            result = ''
+        base_ns = self._launch_context.launch_configurations.get('ros_namespace', None)
+        result = make_namespace_absolute(prefix_namespace(base_ns, result))
         return result
 
     def _get_name(self) -> Tuple[str, str]:
@@ -349,6 +361,67 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         result = os.path.basename(result.replace(' ', '_'))
         return result
 
+    def get_composed_load_request(self):
+        return self._load_node_request
+
+    def _create_composed_load_request(self, context):
+        composable_node_description: launch_ros.descriptions.ComposableNode = self._entity
+        request = composition_interfaces.srv.LoadNode.Request()
+        request.package_name = perform_substitutions(context, composable_node_description.package)
+        request.plugin_name = perform_substitutions(context, composable_node_description.node_plugin)
+        if composable_node_description.node_name is not None:
+                request.node_name = perform_substitutions(context, composable_node_description.node_name)
+        expanded_ns = composable_node_description.node_namespace
+        if expanded_ns is not None:
+            expanded_ns = perform_substitutions(context, expanded_ns)
+        base_ns = context.launch_configurations.get('ros_namespace', None)
+        combined_ns = make_namespace_absolute(prefix_namespace(base_ns, expanded_ns))
+        if combined_ns is not None:
+            request.node_namespace = combined_ns
+        # request.log_level = perform_substitutions(context, node_description.log_level)
+        remappings = []
+        global_remaps = context.launch_configurations.get('ros_remaps', None)
+        if global_remaps:
+            remappings.extend([f'{src}:={dst}' for src, dst in global_remaps])
+        if composable_node_description.remappings:
+            remappings.extend([
+                f'{perform_substitutions(context, src)}:={perform_substitutions(context, dst)}'
+                for src, dst in composable_node_description.remappings
+            ])
+        if remappings:
+            request.remap_rules = remappings
+        params_container = context.launch_configurations.get('global_params', None)
+        parameters = []
+        if params_container is not None:
+            for param in params_container:
+                if isinstance(param, tuple):
+                    subs = normalize_parameter_dict({param[0]: param[1]})
+                    parameters.append(subs)
+                else:
+                    param_file_path = Path(param).resolve()
+                    assert param_file_path.is_file()
+                    subs = ParameterFile(param_file_path)
+                    parameters.append(subs)
+        if composable_node_description.parameters is not None:
+            parameters.extend(list(composable_node_description.parameters))
+        if parameters:
+            request.parameters = [
+                param.to_parameter_msg() for param in to_parameters_list(
+                    context, request.node_name, expanded_ns,
+                    evaluate_parameters(context, parameters)
+                )
+            ]
+        if composable_node_description.extra_arguments is not None:
+            request.extra_arguments = [
+                param.to_parameter_msg() for param in to_parameters_list(
+                    context, request.node_name, expanded_ns,
+                    evaluate_parameters(
+                        context, composable_node_description.extra_arguments
+                    )
+                )
+            ]
+        return request
+
 
 class LaunchConfig(object):
     '''
@@ -403,29 +476,7 @@ class LaunchConfig(object):
                 raise RuntimeError(
                     f"Included launch description missing required value for argument '{argument.name}' (description: '{argument.description}'), given: '{self.__launch_context.launch_configurations[argument.name]}'")
 
-        # self.__launch_description.visit(self.__launch_context)
-        # self.ldsource = launch.LaunchDescriptionSource(launch_description=self.__launch_description, location=launch_file)
-        # self.__launch_description = self.ldsource.get_launch_description(self.__launch_context)
-        # ild = IncludeLaunchDescription(launch_description_source=self.ldsource, launch_arguments=launch_arguments)
-        # rr = ild.execute(self.__launch_context)
-        # for key in rr:
-        #    print("r", key, type(key))
-        #    if isinstance(key, launch.launch_description.LaunchDescription):
-        #        print("apply ld")
-        #        self.__launch_description = key
-#        for key, val in self.__launch_context.launch_configurations.items():
-#            print("KK", key, val)
-
-        # print("LD", dir(self.__launch_description))
-        # print("frontend_parsers", launch.frontend.parser.Parser.frontend_parsers)
-        # launch.frontend.parser.Parser.load_launch_extensions()
-        # launch.frontend.parser.Parser.load_parser_implementations()
-        # print("frontend_parsers", launch.frontend.parser.Parser.frontend_parsers)
-        # entity, parser = launch.frontend.parser.Parser.load(self.filename)
-        # print("DIFFLOAD", entity, parser)
-        # self._included_files: List[IncludeLaunchDescription] = []
         self._included_files: List[LaunchIncludedFile] = []
-
         self.__launch_description.launch_name = self.filename
         self.load()
         self.argv = None
@@ -473,7 +524,7 @@ class LaunchConfig(object):
                     "not all argv are setted properly!")
             return self.__launch_description
 
-    def find_definition(self, content, identifier, start=0):
+    def find_definition(self, content, identifier, start=0, include_close_bracket=True):
         line_number = -1
         end_position = -1
         raw_text = ""
@@ -484,15 +535,16 @@ class LaunchConfig(object):
             line_number = content[:match.start()].count('\n') + 1
             end_position = match.end()
             raw_text = content[match.start():match.end()]
-            for idx in range(match.end()+1, len(content)-1):
-                if content[idx] == '(':
-                    open_brackets += 1
-                if content[idx] == ')':
-                    open_brackets -= 1
-                    if open_brackets < 0:
-                        end_position = idx
-                        raw_text = content[match.start():idx]
-                        break
+            if include_close_bracket:
+                for idx in range(match.end()+1, len(content)-1):
+                    if content[idx] == '(':
+                        open_brackets += 1
+                    if content[idx] == ')':
+                        open_brackets -= 1
+                        if open_brackets < 0:
+                            end_position = idx
+                            raw_text = content[match.start():idx]
+                            break
         return line_number, end_position, raw_text
 
     def unload(self):
@@ -506,7 +558,7 @@ class LaunchConfig(object):
             f"load launch file: {self.filename}, arguments: {[f'{v.name}:={v.value}' for v in self.launch_arguments]}")
         self._load(current_file=self.filename)
 
-    def _load(self, sub_obj=None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1) -> None:
+    def _load(self, sub_obj=None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0) -> None:
         print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
         file_content = ""
@@ -527,7 +579,7 @@ class LaunchConfig(object):
         # print("Launch arguments:")
         # for la in self.__launch_description.get_launch_arguments():
         #     print(la.name, launch.utilities.perform_substitutions(self.context, la.default_value))
-        include_end_position = 0
+        position_in_file = start_position_in_file
         entities = None
         if hasattr(sub_obj, 'get_sub_entities'):
             print(f"  ***debug launch loading: {indent}GET SUB ENTITY")
@@ -554,8 +606,8 @@ class LaunchConfig(object):
                             if os.path.exists(inc_file_name):
                                 inc_file_exists = True
                                 file_size = os.path.getsize(inc_file_name)
-                            include_line_number, include_end_position, raw_text = self.find_definition(
-                                file_content, 'IncludeLaunchDescription', include_end_position)
+                            include_line_number, position_in_file, raw_text = self.find_definition(
+                                file_content, 'IncludeLaunchDescription', position_in_file)
                             launch_inc_file = LaunchIncludedFile(path=current_file,
                                                                  line_number=include_line_number,
                                                                  inc_path=inc_file_name,
@@ -567,6 +619,10 @@ class LaunchConfig(object):
                                                                  size=file_size,
                                                                  conditional_excluded=True)
                             self._included_files.append(launch_inc_file)
+                        elif isinstance(entity, launch.actions.group_action.GroupAction):
+                            include_line_number, position_in_file, raw_text = self.find_definition(
+                                file_content, 'GroupAction', position_in_file)
+                            print(f"GROUPACTION: {position_in_file}")
                         continue
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:
@@ -592,7 +648,7 @@ class LaunchConfig(object):
                         print(f"  ***debug launch loading: {indent}  node after subst: {entity._Node__node_executable}")
                         # actions = entity.execute(self.context)
                         node = LaunchNodeWrapper(
-                            entity, current_launch_description, self.context)
+                            entity, current_launch_description, self.context, position_in_file=position_in_file)
                         self._nodes.append(node)
                         # for action in actions:
                         #    if isinstance(action, launch_ros.actions.LoadComposableNodes):
@@ -600,13 +656,29 @@ class LaunchConfig(object):
                         if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
                             for cn in entity._ComposableNodeContainer__composable_node_descriptions:
                                 self._nodes.append(LaunchNodeWrapper(
-                                    cn, current_launch_description, self.context, composable_container=node.unique_name))
+                                    cn, current_launch_description, self.context, composable_container=node.unique_name, position_in_file=position_in_file))
                     except:
                         import traceback
                         print(traceback.format_exc())
+                elif isinstance(entity, launch_ros.actions.load_composable_nodes.LoadComposableNodes):
+                    print(
+                        f"  ***debug launch loading: {indent}  load composable nodes: {len(entity._LoadComposableNodes__composable_node_descriptions)}")
+                    for cn in entity._LoadComposableNodes__composable_node_descriptions:
+                        container_name = ""
+                        if isinstance(entity._LoadComposableNodes__target_container, launch_ros.actions.ComposableNodeContainer):
+                            node = LaunchNodeWrapper(
+                                entity._LoadComposableNodes__target_container, current_launch_description, self.context, position_in_file=position_in_file)
+                            self._nodes.append(node)
+                            container_name = node.node_name
+                        else:
+                            subs = normalize_to_list_of_substitutions(entity._LoadComposableNodes__target_container)
+                            container_name = make_namespace_absolute(perform_substitutions(self.context, subs))
+                        self._nodes.append(LaunchNodeWrapper(
+                            cn, current_launch_description, self.context, composable_container=container_name, position_in_file=position_in_file))
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
                     print(f"  ***debug launch loading: {indent}  add execute process")
-                    self._nodes.append(LaunchNodeWrapper(entity, current_launch_description, self.__launch_context))
+                    self._nodes.append(LaunchNodeWrapper(entity, current_launch_description,
+                                       self.__launch_context, position_in_file=position_in_file))
                 elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
                     # if entity.default_value is not None:
                     #     print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
@@ -634,8 +706,8 @@ class LaunchConfig(object):
                         if os.path.exists(entity.launch_description_source.location):
                             inc_file_exists = True
                             file_size = os.path.getsize(entity.launch_description_source.location)
-                        include_line_number, include_end_position, raw_text = self.find_definition(
-                            file_content, 'IncludeLaunchDescription', include_end_position)
+                        include_line_number, position_in_file, raw_text = self.find_definition(
+                            file_content, 'IncludeLaunchDescription', position_in_file)
                         inc_launch_arguments = []
                         if cfg_actions is not None:
                             for cac in cfg_actions:
@@ -674,7 +746,7 @@ class LaunchConfig(object):
                                                              )
                         self._included_files.append(launch_inc_file)
                         self._load(entity, launch_description=entity, current_file=entity._get_launch_file(),
-                                   indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1)
+                                   indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1, start_position_in_file=0)
                         if current_file:
                             self.context.extend_locals({'current_launch_file_path': current_file})
                     except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
@@ -683,8 +755,10 @@ class LaunchConfig(object):
                 elif isinstance(entity, launch.actions.group_action.GroupAction):
                     if current_file:
                         self.context.extend_locals({'current_launch_file_path': current_file})
+                    include_line_number, position_in_file, raw_text = self.find_definition(
+                        file_content, 'GroupAction', position_in_file, include_close_bracket=False)
                     self._load(entity, launch_description=current_launch_description,
-                               current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth)
+                               current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file)
                 elif hasattr(entity, 'execute'):
                     print(f"  ***debug launch loading: {indent} parse execute entity: {entity}")
                     try:
@@ -695,7 +769,7 @@ class LaunchConfig(object):
                 else:
                     print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                     self._load(entity, launch_description=current_launch_description,
-                               current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1)
+                               current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file)
                     if current_file:
                         self.context.extend_locals({'current_launch_file_path': current_file})
                 if len(indent) > 10:
@@ -933,42 +1007,7 @@ class LaunchConfig(object):
         # Create a client to load nodes in the target container.
         client_load_node = nmd.ros_node.create_client(
             composition_interfaces.srv.LoadNode, f'{node.composable_container}/_container/load_node')
-        composable_node_description: launch_ros.descriptions.ComposableNode = node._entity
-        request = composition_interfaces.srv.LoadNode.Request()
-        request.package_name = perform_substitutions(self.context, composable_node_description.package)
-        request.plugin_name = perform_substitutions(self.context, composable_node_description.node_plugin)
-        if composable_node_description.node_name is not None:
-            request.node_name = perform_substitutions(self.context, composable_node_description.node_name)
-        if composable_node_description.node_namespace is not None:
-            request.node_namespace = perform_substitutions(self.context, composable_node_description.node_namespace)
-            if request.node_namespace and not request.node_namespace.startswith(SEP):
-                request.node_namespace = SEP + request.node_namespace
-        # request.log_level = perform_substitutions(context, node_description.log_level)
-        if composable_node_description.remappings is not None:
-            for from_, to in composable_node_description.remappings:
-                request.remap_rules.append('{}:={}'.format(
-                    perform_substitutions(self.context, list(from_)),
-                    perform_substitutions(self.context, list(to)),
-                ))
-            print(f"request.remap_rules: {request.remap_rules}")
-        if composable_node_description.parameters is not None:
-            request.parameters = [
-                param.to_parameter_msg() for param in to_parameters_list(
-                    self.context, evaluate_parameters(
-                        self.context, composable_node_description.parameters
-                    )
-                )
-            ]
-            print(f"request.parameters: {request.parameters}")
-        if composable_node_description.extra_arguments is not None:
-            request.extra_arguments = [
-                param.to_parameter_msg() for param in to_parameters_list(
-                    self.context, evaluate_parameters(
-                        self.context, composable_node_description.extra_arguments
-                    )
-                )
-            ]
-            print(f"request.extra_arguments: {request.extra_arguments}")
+        request = node.get_composed_load_request()
         service_load_node_name = f'{node.composable_container}/_container/load_node'
         Log.debug(f"-> load composed node to '{service_load_node_name}'")
         response = nmd.launcher.call_service(
