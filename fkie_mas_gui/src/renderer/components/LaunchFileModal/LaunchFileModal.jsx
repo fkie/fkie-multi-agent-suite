@@ -333,7 +333,8 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
             <Tag class="not-draggable" color="info" text={selectedLaunch.paths[0]} wrap />
             <Stack>
               {currentArgs.map((arg) => {
-                const options = arg.choices ? arg.choices : arg.history;
+                const optionsTmp = arg.choices ? arg.choices : arg.history;
+                const options = optionsTmp.map((value) => value ? value : "");
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
                     {options.length > 1 && (
@@ -347,7 +348,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                         disableListWrap
                         handleHomeEndKeys={false}
                         // noOptionsText="Package not found"
-                        options={arg.choices ? arg.choices : arg.history}
+                        options={options}
                         getOptionLabel={(option) => option}
                         // This prevents warnings on invalid autocomplete values
                         value={arg.value}
@@ -411,7 +412,6 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                         }}
                         onWheel={(event) => {
                           // scroll through the options using mouse wheel
-                          const options = arg.choices ? arg.choices : arg.history;
                           let newIndex = -1;
                           options.forEach((value, index) => {
                             if (value === event.target.value) {
