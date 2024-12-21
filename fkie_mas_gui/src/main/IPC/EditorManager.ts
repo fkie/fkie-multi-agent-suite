@@ -80,15 +80,19 @@ class EditorManager implements TEditorManager {
     return Promise.resolve(false);
   };
 
-  public emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => Promise<boolean> =
-    async (id, path, fileRange, launchArgs) => {
-      if (this.editors[id]) {
-        this.editors[id].window.focus();
-        this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
-        return Promise.resolve(true);
-      }
-      return Promise.resolve(false);
-    };
+  public emitFileRange: (
+    id: string,
+    path: string,
+    fileRange: TFileRange,
+    launchArgs: TLaunchArg[]
+  ) => Promise<boolean> = async (id, path, fileRange, launchArgs) => {
+    if (this.editors[id]) {
+      this.editors[id].window.focus();
+      this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
+      return Promise.resolve(true);
+    }
+    return Promise.resolve(false);
+  };
 
   public close: (id: string) => Promise<boolean> = async (id) => {
     if (this.editors[id]) {

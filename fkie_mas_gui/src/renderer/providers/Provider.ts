@@ -97,7 +97,7 @@ type TTag = {
   data: string | object;
   color: string;
   tooltip?: string;
-  onClick?: (event: React.MouseEvent) => void
+  onClick?: (event: React.MouseEvent) => void;
 };
 
 export type TConCallback = {

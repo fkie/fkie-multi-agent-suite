@@ -654,7 +654,7 @@ function HostTreeView({
         selectedItems={selectedItems}
         onExpandedItemsChange={handleToggle}
         onSelectedItemsChange={handleSelect}
-        expansionTrigger={'iconContainer'}
+        expansionTrigger={"iconContainer"}
       >
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           const { providerId, nodeTree } = item;

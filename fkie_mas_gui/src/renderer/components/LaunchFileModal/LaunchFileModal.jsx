@@ -334,7 +334,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
             <Stack>
               {currentArgs.map((arg) => {
                 const optionsTmp = arg.choices ? arg.choices : arg.history;
-                const options = optionsTmp.map((value) => value ? value : "");
+                const options = optionsTmp.map((value) => (value ? value : ""));
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
                     {options.length > 1 && (

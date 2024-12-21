@@ -173,7 +173,9 @@ export GLOBAL_AGENT_HTTPS_PROXY=http://XXX.XXX.XXX.XXX:XXXX
 ```bash
 npm run dev -- --no-sandbox
 ```
+
 or
+
 ```bash
 mas-gui.appimage --no-sandbox
 ```
