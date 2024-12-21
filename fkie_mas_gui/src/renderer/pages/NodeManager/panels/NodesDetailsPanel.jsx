@@ -565,6 +565,11 @@ function NodesDetailsPanel() {
                   )}
                 </Stack>
               )}
+              {node.launchInfo?.cmd && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="CMD:" text={`${node.launchInfo?.cmd}`} wrap />
+                </Stack>
+              )}
               {showLaunchParameter && (
                 <>
                   <Typography variant="caption">

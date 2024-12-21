@@ -77,7 +77,12 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         try:
             result += context.perform_substitution(value)
         except SubstitutionFailure as err:
-            raise err
+            if isinstance(value, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
+                executable = perform_substitutions(context, value.executable)
+                package = perform_substitutions(context, value.package)
+                result += f"ros2 run {package} {executable}"
+            else:
+                raise err
         except Exception as err:
             import traceback
             print(traceback.format_exc())
@@ -85,7 +90,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         if ' ' in result and '{' in result:
             result = f"'{result}'"
     elif value and isinstance(value[0], launch.Substitution):
-        result += launch.utilities.perform_substitutions(context, value)
+        result += perform_substitutions(context, value)
         if ' ' in result and '{' in result:
             result = f"'{result}'"
     elif value is not None:
@@ -99,8 +104,8 @@ def perform_to_tuple_list(context: launch.LaunchContext, value: Union[List[Tuple
     result = []
     if value is not None:
         for val1, val2 in value:
-            result.append((launch.utilities.perform_substitutions(context, val1),
-                          launch.utilities.perform_substitutions(context, val2)))
+            result.append((perform_substitutions(context, val1),
+                          perform_substitutions(context, val2)))
     else:
         result = None
     return result
@@ -374,7 +379,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         request.package_name = perform_substitutions(context, composable_node_description.package)
         request.plugin_name = perform_substitutions(context, composable_node_description.node_plugin)
         if composable_node_description.node_name is not None:
-                request.node_name = perform_substitutions(context, composable_node_description.node_name)
+            request.node_name = perform_substitutions(context, composable_node_description.node_name)
         expanded_ns = composable_node_description.node_namespace
         if expanded_ns is not None:
             expanded_ns = perform_substitutions(context, expanded_ns)
