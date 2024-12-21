@@ -189,7 +189,6 @@ class RosParameter:
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
-        self.parent_id = None
         self.is_container = False
         self.container_name = ""
         self.name = name  # with namespace

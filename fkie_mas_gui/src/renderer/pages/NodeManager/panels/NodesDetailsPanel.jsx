@@ -271,11 +271,6 @@ function NodesDetailsPanel() {
                   </Stack>
                 )
               )}
-              {node.parent_id && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="Parent ID:" text={`${node.parent_id}`} wrap />
-                </Stack>
-              )}
               {node.guid && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="GID:" text={`${node.guid}`} wrap />

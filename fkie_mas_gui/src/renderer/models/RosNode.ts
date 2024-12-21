@@ -153,11 +153,6 @@ class RosNode {
    */
   rosLoggers: { [id: string]: string } = {};
 
-  /**
-   * ID of the node the same discovered guid
-   */
-  parent_id?: string;
-
   guid?: string;
 
   /**

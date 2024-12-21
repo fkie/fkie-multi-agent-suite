@@ -761,7 +761,6 @@ export default class Provider implements IProvider {
       services: RosService[];
       screens: string[];
       system_node: boolean;
-      parent_id: string | null;
       guid: string | null;
       is_container: boolean | null;
       container_name: string | null;
@@ -806,9 +805,6 @@ export default class Provider implements IProvider {
             const idSplitted = n.id.split("-");
             if (idSplitted.length > 1) {
               rn.guid = idSplitted[idSplitted.length - 1];
-            }
-            if (n.parent_id) {
-              rn.parent_id = n.parent_id;
             }
             if (n.is_container) {
               rn.is_container = n.is_container;
