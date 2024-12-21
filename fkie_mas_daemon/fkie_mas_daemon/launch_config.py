@@ -32,6 +32,7 @@ from launch.frontend.parser import Parser
 from launch.launch_description_sources import get_launch_description_from_frontend_launch_file
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.actions.include_launch_description import IncludeLaunchDescription
+from launch.substitutions.substitution_failure import SubstitutionFailure
 import launch.utilities
 from launch.utilities import normalize_to_list_of_substitutions
 from launch_ros.utilities.evaluate_parameters import evaluate_parameters
@@ -75,9 +76,12 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
     elif value and isinstance(value, launch.Substitution):
         try:
             result += context.perform_substitution(value)
-        except:
+        except SubstitutionFailure as err:
+            raise err
+        except Exception as err:
             import traceback
             print(traceback.format_exc())
+            raise LaunchConfigException(err)
         if ' ' in result and '{' in result:
             result = f"'{result}'"
     elif value and isinstance(value[0], launch.Substitution):
@@ -657,6 +661,8 @@ class LaunchConfig(object):
                             for cn in entity._ComposableNodeContainer__composable_node_descriptions:
                                 self._nodes.append(LaunchNodeWrapper(
                                     cn, current_launch_description, self.context, composable_container=node.unique_name, position_in_file=position_in_file))
+                    except SubstitutionFailure as err:
+                        raise err
                     except:
                         import traceback
                         print(traceback.format_exc())
