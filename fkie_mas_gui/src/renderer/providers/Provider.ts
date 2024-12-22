@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { JSONObject, TResultData, TSystemInfo } from "@/types";
+import { JSONObject, TResultData, TSystemInfo, TTag } from "@/types";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
 import { colorFromHostname } from "../components";
@@ -92,20 +92,12 @@ type TProviderDiscoveryReady = {
   status: boolean;
 };
 
-type TTag = {
-  id: string;
-  data: string | object;
-  color: string;
-  tooltip?: string;
-  onClick?: (event: React.MouseEvent) => void;
-};
-
 export type TConCallback = {
   uri: string;
   callback: (msg: JSONObject) => void;
 };
 
-interface IProvider {
+export interface IProvider {
   className: string;
   getCallbacks: () => TConCallback[];
   updateDaemonInit: () => void;

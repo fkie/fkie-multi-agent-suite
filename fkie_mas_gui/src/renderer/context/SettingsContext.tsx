@@ -96,13 +96,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "Display buttons for additional functions that are otherwise accessible via key modifiers",
     group: "Appearance",
   },
-  showFloatingButtons: {
-    label: "Show floating buttons",
-    default: false,
-    type: "boolean",
-    description: "Show control buttons for each node",
-    group: "Appearance",
-  },
   checkForUpdates: {
     label: "Check for updates on start",
     default: true,

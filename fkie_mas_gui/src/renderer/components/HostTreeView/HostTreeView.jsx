@@ -1,28 +1,22 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
-import ComputerIcon from "@mui/icons-material/Computer";
-import HideSourceIcon from "@mui/icons-material/HideSource";
 import PropTypes from "prop-types";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 // import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import { blue, green, grey, red } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
-import { NavigationContext } from "../../context/NavigationContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { getFileName, LaunchFile, RosNodeStatus } from "../../models";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "../../pages/NodeManager/layout";
+import { getFileName, LaunchFile } from "../../models";
+import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
-import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
 import { CmdType } from "../../providers";
 import { generateUniqueId, removeDDSuid } from "../../utils";
-import { colorFromHostname } from "../UI/Colors";
-import HostTreeViewItem from "./HostTreeViewItem";
-import { getGroupIcon, getGroupIconColor, getNodeIcon, getNodeIconColor } from "./HostTreeViewUtils";
+import GroupItem, { getGroupIcon, getNodesCount } from "./GroupItem";
+import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
+import NodeItem from "./NodeItem";
 
 const compareTreeItems = (a, b) => {
   // place system groups are at the end
@@ -54,7 +48,6 @@ function HostTreeView({
 }) {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
-  const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
 
   const [expanded, setExpanded] = useState(groupKeys);
@@ -105,6 +98,7 @@ function HostTreeView({
    */
   const handleDoubleClickOnNode = useCallback(
     (event, label, id) => {
+      console.log(`DOUBLE ON NODE`);
       const nodeIds = getNodeIdsFromTreeIds([id]);
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
@@ -424,80 +418,6 @@ function HostTreeView({
   );
 
   /**
-   * Create and open a new panel with a [SingleTerminalPanel] for a given node
-   */
-  const createSingleTerminalCmdPanel = useCallback(
-    (providerId, cmd) => {
-      const provider = rosCtx.getProviderById(providerId);
-      const id = `cmd-${generateUniqueId()}`;
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          id,
-          `${provider?.name()}`,
-          <SingleTerminalPanel id={id} type={CmdType.CMD} providerId={providerId} cmd={cmd} />,
-          true,
-          LAYOUT_TAB_SETS.BORDER_BOTTOM
-        )
-      );
-    },
-    [rosCtx]
-  );
-
-  /**
-   * Get provider tags
-   */
-  const getProviderTags = useCallback((provider) => {
-    const tags = [];
-    if (!provider?.daemon) {
-      tags.push({ text: "No Daemon", color: "red" });
-    }
-    if (!provider?.discovery) {
-      tags.push({ text: "No Discovery", color: "red" });
-    }
-    return tags;
-  }, []);
-
-  /**
-   * Check if provider has master sync on
-   */
-  const getMasterSyncNode = useCallback(
-    (providerId) => {
-      const foundSyncNode = rosCtx.mapProviderRosNodes.get(providerId)?.find((node) => {
-        return node.id.includes(`/mas_sync`);
-      });
-      return foundSyncNode;
-    },
-    [rosCtx.mapProviderRosNodes]
-  );
-
-  const toggleMasterSync = useCallback(
-    (provider) => {
-      const syncNode = getMasterSyncNode(provider.id);
-      if (syncNode) {
-        stopNodes([syncNode.idGlobal]);
-      } else {
-        rosCtx.startMasterSync(provider.connection.host, provider.rosVersion);
-      }
-    },
-    [getMasterSyncNode, rosCtx, stopNodes]
-  );
-
-  /** Returns count of nodes for given group */
-  const getNodesCount = useCallback((children) => {
-    let result = 0;
-    let itemsCount = 0;
-    children.forEach((treeItem) => {
-      if (treeItem.children && treeItem.children.length > 0) {
-        result += getNodesCount(treeItem.children);
-      } else {
-        itemsCount += 1;
-      }
-    });
-    return result + itemsCount;
-  }, []);
-
-  /**
    * Create elements of the tree view component
    */
   const buildHostTreeViewItem = useCallback(
@@ -513,43 +433,24 @@ function HostTreeView({
         children = child.children;
         treePath = child.treePath;
         node = child.node;
-        namespacePart = `${name}/`;
+        namespacePart = `${namespacePart}${name}/`;
         name = `${name}/${child.name}`;
       }
       const itemId = `${providerId}#${treePath}`;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
-        let label = name; // node.name.replace(node.namespace, "");
-        label = label[0] === "/" ? label.slice(1) : label;
         newKeyNodeList.push({
           key: `${itemId}#${node.id}`,
           idGlobal: node.idGlobal,
         });
         return (
-          <HostTreeViewItem
+          <NodeItem
             key={`${itemId}#${node.id}`}
             itemId={`${itemId}#${node.id}`}
-            isNode={true}
+            node={node}
+            treePath={treePath}
             namespacePart={namespacePart}
-            labelText={label}
-            labelIcon={getNodeIcon(node.status)}
-            iconColor={getNodeIconColor(node, settingsCtx.get("useDarkMode"))}
-            color={blue[700]}
-            bgColor={blue[200]}
-            paddingLeft={0.0}
-            showMultipleScreen={node.status === RosNodeStatus.RUNNING && node.screens?.length > 1}
-            showLoggers={node?.getRosLoggersCount() > 0}
-            showNoScreen={node.status === RosNodeStatus.RUNNING && node.screens?.length < 1}
-            showGhostScreen={node.status !== RosNodeStatus.RUNNING && node.screens?.length > 0}
-            onDoubleClick={handleDoubleClickOnNode}
-            onShowLoggersClick={onShowLoggersClick}
-            onStartClick={node.status !== RosNodeStatus.RUNNING ? onStartClick : null}
-            onStopClick={node.status !== RosNodeStatus.INACTIVE ? onStopClick : null}
-            onRestartClick={node.launchInfo ? onRestartClick : null}
-            startTooltipText={selectedItems.includes(itemId) ? "Start selected nodes" : "Start this node"}
-            stopTooltipText={selectedItems.includes(itemId) ? "Stop selected nodes" : "Stop this node"}
-            restartTooltipText={selectedItems.includes(itemId) ? "Restart selected nodes" : "Restart this node"}
-            tags={node.tags}
+            onDoubleClick={(itemId) => handleDoubleClickOnNode(itemId)}
           />
         );
       }
@@ -557,53 +458,20 @@ function HostTreeView({
       const groupName = name; // treePath.split("/").pop();
       newKeyNodeList.push({ key: itemId });
       return (
-        <HostTreeViewItem
+        <GroupItem
           key={itemId}
           itemId={itemId}
-          labelText={groupName}
-          labelIcon={node ? getNodeIcon(node.status) : getGroupIcon(children)}
-          iconColor={
-            node
-              ? getNodeIconColor(node, settingsCtx.get("useDarkMode"))
-              : getGroupIconColor(children, settingsCtx.get("useDarkMode"))
-          }
-          color={blue[700]}
-          bgColor={blue[200]}
-          paddingLeft={0.0}
-          showMultipleScreen={node ? node.screens && node.screens.length > 1 : false}
-          showLoggers={node?.getRosLoggersCount() > 0}
-          showNoScreen={node ? node.screens && node.screens.length < 1 : false}
-          onDoubleClick={handleDoubleClick}
-          onShowLoggersClick={onShowLoggersClick}
-          onStartClick={
-            onStartClick
-            // (node && node.status !== RosNodeStatus.RUNNING) ||
-            // getGroupStatus(children) !== GroupStatus.ALL_RUNNING
-            //   ? onStartClick
-            //   : null
-          }
-          onStopClick={
-            onStopClick
-            // (node && node.status !== RosNodeStatus.INACTIVE) ||
-            // getGroupStatus(children) !== GroupStatus.ALL_INACTIVE
-            //   ? onStopClick
-            //   : null
-          }
-          onRestartClick={
-            (node && node.launchInfo && node.status !== RosNodeStatus.INACTIVE) ||
-            groupName !== settingsCtx.get("namespaceSystemNodes").replace("/", "")
-              ? onRestartClick
-              : null
-          }
-          startTooltipText={selectedItems.includes(itemId) ? "Start selected nodes" : "Start this group"}
-          stopTooltipText={selectedItems.includes(itemId) ? "Stop selected nodes" : "Stop this group"}
-          restartTooltipText={selectedItems.includes(itemId) ? "Restart selected nodes" : "Restart this group"}
-          countChildren={node ? 0 : getNodesCount(children)}
+          groupName={groupName}
+          icon={getGroupIcon(children, settingsCtx.get("useDarkMode"))}
+          countChildren={getNodesCount(children)}
+          onDoubleClick={(event, name, id) => {
+            handleDoubleClick(event, name, id);
+          }}
         >
           {children.sort(compareTreeItems).map((tItem) => {
             return buildHostTreeViewItem(providerId, tItem, newKeyNodeList);
           })}
-        </HostTreeViewItem>
+        </GroupItem>
       );
     },
     [
@@ -618,24 +486,6 @@ function HostTreeView({
       getNodesCount,
     ]
   );
-
-  const getHostStyle = (provider) => {
-    if (settingsCtx.get("colorizeHosts")) {
-      // borderLeft: `3px dashed`,
-      // borderColor: colorFromHostname(provider.name()),
-      return {
-        borderLeftStyle: "solid",
-        borderLeftColor: colorFromHostname(provider.name()),
-        borderLeftWidth: "0.6em",
-      };
-    }
-    return {};
-  };
-
-  function formatTime(milliseconds) {
-    const sec = (milliseconds / 1000.0).toFixed(3);
-    return `${sec}s`;
-  }
 
   /**
    * Memoize the generation of the tree to improve render performance
@@ -668,37 +518,15 @@ function HostTreeView({
           }
           // loop through available hosts
           return (
-            <HostTreeViewItem
-              key={providerId}
-              itemId={providerId}
-              sx={getHostStyle(p)}
-              buttonIcon={p?.rosState.ros_version === "1" ? ChangeCircleOutlinedIcon : null}
-              buttonIconColor={getMasterSyncNode(providerId) ? green[500] : grey[700]}
-              buttonIconText="Toggle Master Sync"
-              onButtonIconClick={() => {
-                toggleMasterSync(p);
+            <HostItem
+              key={p.id}
+              provider={p}
+              stopNodes={(idGlobalNodes) => {
+                stopNodes(idGlobalNodes);
               }}
-              timeSyncActive={Math.abs(p.timeDiff) > settingsCtx.get("timeDiffThreshold")}
-              timeSyncText={`Time not in sync for approx. ${formatTime(p.timeDiff)}`}
-              onTimeSync={(cmd) => {
-                createSingleTerminalCmdPanel(p.id, cmd);
+              onDoubleClick={(event, name, id) => {
+                handleDoubleClick(event, name, id);
               }}
-              labelText={p.name()}
-              labelIcon={providerIsAvailable ? ComputerIcon : HideSourceIcon}
-              iconColor={providerIsAvailable ? grey[700] : red[700]}
-              color={providerIsAvailable ? grey[700] : red[700]}
-              bgColor={providerIsAvailable ? grey[200] : red[200]}
-              paddingLeft={0.5}
-              provider={p || null}
-              onDoubleClick={handleDoubleClick}
-              onShowLoggersClick={onShowLoggersClick}
-              onStartClick={onStartClick}
-              onStopClick={onStopClick}
-              onRestartClick={onRestartClick}
-              startTooltipText="Start all nodes"
-              stopTooltipText="Stop all nodes"
-              restartTooltipText="Restart all nodes"
-              tags={providerIsAvailable ? getProviderTags(p) : []}
             >
               {/* Show launch files if host is available (have children) */}
               {providerIsAvailable && (
@@ -718,7 +546,7 @@ function HostTreeView({
                 nodeTree.children.sort(compareTreeItems).map((sortItem) => {
                   return buildHostTreeViewItem(providerId, sortItem, newKeyNodeList);
                 })}
-            </HostTreeViewItem>
+            </HostItem>
           );
         })}
 

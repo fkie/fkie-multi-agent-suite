@@ -20,6 +20,7 @@ import { TResult } from "./TResult";
 import { TResultData } from "./TResultData";
 import { TRosInfo } from "./TRosInfo";
 import { TSystemInfo } from "./TSystemInfo";
+import { TTag } from "./TTag";
 
 export {
   AutoUpdateManagerEvents,
@@ -28,7 +29,7 @@ export {
   EditorManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
-  TerminalManagerEvents,
+  TerminalManagerEvents
 };
 export type {
   AuCheckingForUpdateCallback,
@@ -55,5 +56,7 @@ export type {
   TShutdownManager,
   TSubscriberManager,
   TSystemInfo,
-  TTerminalManager,
+  TTag,
+  TTerminalManager
 };
+

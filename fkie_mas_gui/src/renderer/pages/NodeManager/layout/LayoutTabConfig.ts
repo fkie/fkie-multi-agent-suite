@@ -1,3 +1,4 @@
+import { CmdType } from "@/renderer/providers";
 import { TFileRange, TLaunchArg } from "@/types";
 
 export interface IExtTerminalConfig {
@@ -32,7 +33,7 @@ export interface ITerminalConfig {
   id: string;
   host: string;
   port: number;
-  cmdType: string;
+  cmdType: CmdType;
   node: string;
   screen: string;
   cmd: string;
@@ -41,7 +42,7 @@ export interface ITerminalConfig {
 export default class LayoutTabConfig {
   openExternal: boolean;
 
-  tabType: string;
+  tabType: CmdType;
 
   extTerminalConfig: IExtTerminalConfig | null;
 
@@ -53,7 +54,7 @@ export default class LayoutTabConfig {
 
   constructor(
     openExternal: boolean = false,
-    tabType: string = "",
+    tabType: CmdType = "",
     extTerminalConfig: IExtTerminalConfig | null = null,
     editorConfig: IEditorConfig | null = null,
     subscriberConfig: ISubscriberConfig | null = null,

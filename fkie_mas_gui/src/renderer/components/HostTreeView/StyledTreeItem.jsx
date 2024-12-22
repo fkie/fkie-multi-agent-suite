@@ -1,0 +1,46 @@
+import { grey } from "@mui/material/colors";
+import { alpha, styled } from "@mui/material/styles";
+import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
+
+const StyledTreeItem = styled(TreeItem)(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  [`& .${treeItemClasses.content}`]: {
+    color: theme.palette.text.secondary,
+    minHeight: 25,
+    borderRadius: theme.spacing(0.9),
+    paddingRight: theme.spacing(1),
+    fontWeight: theme.typography.fontWeightMedium,
+    "&.Mui-expanded": {
+      fontWeight: theme.typography.fontWeightRegular,
+    },
+    "&:hover": {
+      backgroundColor: theme.palette.action.hover,
+    },
+    "&.Mui-selected": {
+      // backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
+      // color: 'var(--tree-view-color)',
+    },
+    [`& .${treeItemClasses.label}`]: {
+      fontWeight: "inherit",
+      color: "inherit",
+      padding: theme.spacing(0),
+    },
+    [`& .${treeItemClasses.iconContainer}`]: {
+      marginLeft: 0,
+      marginRight: 0,
+      padding: theme.spacing(0),
+      width: 18,
+    },
+  },
+  [`& .${treeItemClasses.group}`]: {
+    marginLeft: 16,
+    paddingLeft: 5,
+    // [`& .${treeItemClasses.content}`]: {
+    //   paddingLeft: theme.spacing(0),
+    // },
+    borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
+    borderColor: grey[800],
+  },
+}));
+
+export default StyledTreeItem;
