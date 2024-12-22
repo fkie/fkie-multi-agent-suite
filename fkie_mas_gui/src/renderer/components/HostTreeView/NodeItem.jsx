@@ -4,13 +4,7 @@ import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import ReportIcon from "@mui/icons-material/Report";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import WarningIcon from "@mui/icons-material/Warning";
-import {
-  Box,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import PropTypes from "prop-types";
 import { useContext, useEffect, useState } from "react";
@@ -23,20 +17,14 @@ import StyledTreeItem from "./StyledTreeItem";
 function NodeItem({
   itemId = "",
   node,
-  treePath,
+  namespacePart = "",
   onDoubleClick = () => {},
   onShowLoggersClick = () => {},
   ...other
 }) {
-  const prefix = treePath.split("#")[0];
-  const prefixNs = prefix && prefix.length > 1 ? `${prefix}/` : "/";
-  console.log(`treePath: ${treePath.split("#")}`);
   const settingsCtx = useContext(SettingsContext);
-  const [labelText, setLabelText] = useState(node.name.startsWith(prefixNs) ? node.name.slice(prefixNs.length) : node.name);
-  const [namespacePart, setNamespacePart] = useState("");
-  console.log(`namespacePart: ${namespacePart}`);
+  const [labelText, setLabelText] = useState(node.name[0] === "/" ? node.name.slice(1) : node.name);
 
-  console.log(labelText);
   const getNodeIconColor = (node, isDarkMode = false) => {
     switch (node.status) {
       case RosNodeStatus.RUNNING:
@@ -94,20 +82,18 @@ function NodeItem({
 
   useEffect(() => {
     setNodeIcon(getNodeIcon(node, isDarkMode));
-    setLabelText(node.name.startsWith(prefixNs) ? node.name.slice(prefixNs.length) : node.name)
+    setLabelText(node.name[0] === "/" ? node.name.slice(1) : node.name);
   }, [node, isDarkMode]);
 
-  useEffect(() => {
-    const sepIdx = labelText.lastIndexOf("/");
-    if (sepIdx >= 0) {
-      setNamespacePart(labelText.substring(0, sepIdx));
-    } else {
-      setNamespacePart("");
-    }
-  }, [labelText])
+  // useEffect(() => {
+  //   const sepIdx = labelText.lastIndexOf("/");
+  //   if (sepIdx >= 0) {
+  //     setNamespacePart(labelText.substring(0, sepIdx));
+  //   } else {
+  //     setNamespacePart("");
+  //   }
+  // }, [labelText]);
 
-  console.log(`namespacePart: ${namespacePart}`);
-  console.log(`prefixNs: ${prefixNs}`);
   return (
     <StyledTreeItem
       // ContentComponent={ContentComponentItemTree}
@@ -198,7 +184,7 @@ function NodeItem({
 NodeItem.propTypes = {
   itemId: PropTypes.string.isRequired,
   node: PropTypes.object.isRequired,
-  treePath: PropTypes.string,
+  namespacePart: PropTypes.string,
   onDoubleClick: PropTypes.func,
   onShowLoggersClick: PropTypes.func,
 };

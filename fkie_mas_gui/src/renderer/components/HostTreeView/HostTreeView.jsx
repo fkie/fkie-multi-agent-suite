@@ -448,7 +448,6 @@ function HostTreeView({
             key={`${itemId}#${node.id}`}
             itemId={`${itemId}#${node.id}`}
             node={node}
-            treePath={treePath}
             namespacePart={namespacePart}
             onDoubleClick={(itemId) => handleDoubleClickOnNode(itemId)}
           />
