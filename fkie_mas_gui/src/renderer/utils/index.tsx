@@ -1,3 +1,5 @@
+import { RosNode } from "../models";
+
 const generateUniqueId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
@@ -154,4 +156,20 @@ const xor: (a1: boolean, a2: boolean) => boolean = (a1, a2) => {
   return (a1 && !a2) || (!a1 && a2);
 };
 
-export { delay, extractSubstring, findIn, generateUniqueId, getRosNameAbb, pathJoin, removeDDSuid, xor };
+const nameWithoutNamespace = (node: RosNode) => {
+  const name = node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
+  return name[0] === "/" ? name.slice(1) : name;
+};
+
+export {
+  delay,
+  extractSubstring,
+  findIn,
+  generateUniqueId,
+  getRosNameAbb,
+  nameWithoutNamespace,
+  pathJoin,
+  removeDDSuid,
+  xor
+};
+

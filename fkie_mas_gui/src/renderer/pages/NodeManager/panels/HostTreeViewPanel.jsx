@@ -61,23 +61,18 @@ function HostTreeViewPanel() {
   const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState(
     settingsCtx.get("showButtonsForKeyModifiers")
   );
+  const [tooltipDelay, setTooltipDelay] = useState(settingsCtx.get("tooltipEnterDelay"));
+
   const [filterText, setFilterText] = useState("");
   // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState([]);
-  // updated and filtered node tree
-  // providerNodeTree: list of {providerId: string, nodeTree: object}
-  const [providerNodeTree, setProviderNodeTree] = useState([]);
-  const [rosCleanPurge, setRosCleanPurge] = useState(false);
-  const [nodeScreens, setNodeScreens] = useState(null);
-  const [nodeParams, setNodeParams] = useState(null);
-  const [nodeLogs, setNodeLogs] = useState(null);
-  const [nodeLoggers, setNodeLoggers] = useState(null);
-  const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
-  const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState(null);
-  const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
+  // visibleNodes: RosNode[]
+  const [visibleNodes, setVisibleNodes] = useState([]);
+  // // updated and filtered node tree
+  // // providerNodeTree: list of {providerId: string, nodeTree: object}
+  // const [providerNodeTree, setProviderNodeTree] = useState([]);
   const [nodesToStart, setNodesToStart] = useState(null);
   const [progressQueueMain, setProgressQueueMain] = useState(null);
-  const [groupKeys, setGroupKeys] = useState([]);
   const {
     update: updateQueueMain,
     clear: clearQueueMain,
@@ -88,11 +83,21 @@ function HostTreeViewPanel() {
     failed: failedQueueMain,
     addStatus: addStatusQueueMain,
   } = useQueue(setProgressQueueMain);
-  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+
+  // variables with show dialog actions
+  const [rosCleanPurge, setRosCleanPurge] = useState(false);
+  const [nodeScreens, setNodeScreens] = useState(null);
+  const [nodeParams, setNodeParams] = useState(null);
+  const [nodeLogs, setNodeLogs] = useState(null);
+  const [nodeLoggers, setNodeLoggers] = useState(null);
+  const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
+  const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState(null);
+  const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
 
   useEffect(() => {
     setShowRemoteNodes(settingsCtx.get("showRemoteNodes"));
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers"));
+    setTooltipDelay(settingsCtx.get("tooltipEnterDelay"));
   }, [settingsCtx, settingsCtx.changed]);
 
   /**
@@ -116,96 +121,43 @@ function HostTreeViewPanel() {
     return getNodesFromIds(navCtx.selectedNodes);
   }, [getNodesFromIds, navCtx.selectedNodes]);
 
-  const nameWithoutNamespace = (node) => {
-    const name = node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
-    return name[0] === "/" ? name.slice(1) : name;
-  };
 
   // debounced search callback
   // search in the origin node list and create a new tree
   const onSearch = useDebounceCallback((searchTerm) => {
-    const newProvidersTree = [];
-    const newGroupKeys = [];
+    const newVisibleNodes = [];
     providerNodes.forEach((item) => {
       const { providerId, nodes } = item;
-      // generate node tree structure based on node list
-      // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
-      const nodeTree = [];
-      const level = { nodeTree };
-      // ...and keep a list of the tree nodes
-      // const nodeTreeList = [];
-      const nodeItemMap = new Map();
       nodes.forEach((node) => {
-        nodeItemMap.set(node.idGlobal, node);
         // filter nodes by user text
         if (searchTerm.length > 0) {
           const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName, node.guid]);
           if (!isMatch) return;
         }
-
-        const pathPrefix = node.group ? node.group : node.namespace && node.namespace !== "/" ? node.namespace : "";
-        const nodePath = `${pathPrefix}/${node.idGlobal}`;
-        nodePath.split("/").reduce((r, name, i, a) => {
-          if (!r[name]) {
-            r[name] = { nodeTree: [] };
-
-            // Meaning of [name]:
-            //    In case of a node: corresponds to the uniqueId
-            //    In case of group: corresponds to group name
-            if (nodeItemMap.has(name)) {
-              // create a node
-              const treePath = `${a.slice(0, -1).join("/")}#${nameWithoutNamespace(node)}`;
-              r.nodeTree.push({
-                treePath,
-                children: r[name].nodeTree,
-                node,
-                name: nameWithoutNamespace(node),
-              });
-              // nodeTreeList.push(`${providerId}#${treePath}`);
-            } else {
-              // create a (sub)group
-
-              const treePath = name ? a.slice(0, i + 1).join("/") : "";
-              r.nodeTree.push({
-                treePath,
-                children: r[name].nodeTree,
-                node: null,
-                name: a.slice(i, i + 1).join("/"),
-              });
-              // nodeTreeList.push(treePath ? `${providerId}#${treePath}` : providerId);
-              newGroupKeys.push(treePath ? `${providerId}#${treePath}` : providerId);
-            }
-          }
-          return r[name];
-        }, level);
-      });
-      const p = rosCtx.getProviderById(providerId);
-      // providerNodeTree[providerId] = nodeTree[0];
-      newProvidersTree.push({
-        providerId,
-        providerName: p?.name(),
-        nodeTree: nodeTree[0],
+        newVisibleNodes.push(node);
       });
     });
-    setProviderNodeTree(newProvidersTree);
-    if (filterText.length >= EXPAND_ON_SEARCH_MIN_CHARS) {
-      setGroupKeys(newGroupKeys);
-    } else if (groupKeys.length > 0) {
-      setGroupKeys([]);
-    }
+    setVisibleNodes(newVisibleNodes);
   }, 300);
 
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data) => {
+      // node of the provider are updated
+      // generate group labels for each node
+      // and put in our providerNodes list
       const { provider, nodes } = data;
       const namespaceSystemNodes = settingsCtx.get("namespaceSystemNodes");
-      // create new node list with updated group labels
       const newNodes = [];
       nodes.forEach((node) => {
-        if (node.system_node) {
+        if (node.system_node && namespaceSystemNodes) {
+          // for system nodes, e.g.: /{SYSTEM}/ns
           node.group = namespaceSystemNodes;
+          if (node.namespace != "/") {
+            node.group += node.namespace;
+          }
         } else {
+          // for nodes, e.g.: /robot_ns/{CAP_GROUP}/sub_ns
           let groupNamespace = "";
           let groupName = "";
           let nodeRestNamespace = "";
@@ -220,7 +172,7 @@ function HostTreeViewPanel() {
         }
         newNodes.push(node);
       });
-      // update state
+      // update state only for this provider
       // TODO: should we remove closed/lost provider infos
       setProviderNodes((oldValues) => [
         ...oldValues.filter((item) => {
@@ -231,7 +183,6 @@ function HostTreeViewPanel() {
           nodes: newNodes,
         },
       ]);
-      // setSelectedTreeItems((prevValues) => [...prevValues]);
     },
     [setProviderNodes, settingsCtx]
   );
@@ -911,44 +862,16 @@ function HostTreeViewPanel() {
   }, [rosCtx.providersConnected]);
 
   useEffect(() => {
-    // filter nodes by user text
+    // apply filter to nodes if search text was changed by user or nodes are updated by provider
     onSearch(filterText);
-  }, [filterText, onSearch, providerNodes]);
+  }, [filterText, providerNodes]);
 
   useEffect(() => {
-    // filter nodes by user text
-    let removed = false;
-    const newNodeMap = [];
-    providerNodes.forEach((item) => {
-      if (rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0) {
-        newNodeMap.push(item);
-      } else {
-        removed = true;
-      }
-    });
-    if (removed) {
-      setProviderNodes(newNodeMap);
-    }
-  }, [rosCtx.providers, providerNodes]);
-
-  // useEffect(() => {
-  //   // each time selected items are changed (user select, nodes or launch changes)
-  //   // set the selected nodes
-  //   navCtx.setSelectedNodes(selectedTreeItems);
-
-  //   // clear selected provider
-  //   navCtx.setSelectedProviders([]);
-  //   const selectedProvidersLocal = [];
-  //   // update setSelectedNodes based on trees selectedItems
-  //   selectedTreeItems.forEach((item) => {
-  //     // search selected host
-  //     if (rosCtx.getProviderById(item)) {
-  //       selectedProvidersLocal.push(item);
-  //     }
-  //   });
-  //   navCtx.setSelectedProviders(selectedProvidersLocal);
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [selectedTreeItems, getNodesFromIds, rosCtx]);
+    // remove provider from our list if provider was removed in rosCtx
+    setProviderNodes((prev) => [
+      ...prev.filter((item) => rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0),
+    ]);
+  }, [rosCtx.providers]);
 
   useEffect(() => {
     if (nodesToStart) {
@@ -1562,8 +1485,9 @@ function HostTreeViewPanel() {
               </Alert>
             )}
             <HostTreeView
-              providerNodeTree={providerNodeTree}
-              groupKeys={groupKeys}
+              // providerNodeTree={providerNodeTree}
+              visibleNodes={visibleNodes}
+              isFiltered={filterText.length > 0}
               onNodeSelect={handleNodesSelect}
               onProviderSelect={handleProviderSelect}
               showLoggers={createLoggerPanelFromId}

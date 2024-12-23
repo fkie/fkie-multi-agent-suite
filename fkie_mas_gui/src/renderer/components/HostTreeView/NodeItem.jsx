@@ -1,3 +1,4 @@
+import { nameWithoutNamespace } from "@/renderer/utils";
 import CircleIcon from "@mui/icons-material/Circle";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
@@ -23,7 +24,7 @@ function NodeItem({
   ...other
 }) {
   const settingsCtx = useContext(SettingsContext);
-  const [labelText, setLabelText] = useState(node.name[0] === "/" ? node.name.slice(1) : node.name);
+  const [labelText, setLabelText] = useState(nameWithoutNamespace(node));
 
   const getNodeIconColor = (node, isDarkMode = false) => {
     switch (node.status) {
@@ -82,17 +83,8 @@ function NodeItem({
 
   useEffect(() => {
     setNodeIcon(getNodeIcon(node, isDarkMode));
-    setLabelText(node.name[0] === "/" ? node.name.slice(1) : node.name);
+    setLabelText(nameWithoutNamespace(node));
   }, [node, isDarkMode]);
-
-  // useEffect(() => {
-  //   const sepIdx = labelText.lastIndexOf("/");
-  //   if (sepIdx >= 0) {
-  //     setNamespacePart(labelText.substring(0, sepIdx));
-  //   } else {
-  //     setNamespacePart("");
-  //   }
-  // }, [labelText]);
 
   return (
     <StyledTreeItem
@@ -121,7 +113,7 @@ function NodeItem({
               {namespacePart}
             </Typography>
             <Typography variant="body2" sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}>
-              {labelText.slice(namespacePart.length)}
+              {labelText}
             </Typography>
           </Stack>
           {node.tags.map((tag) => (

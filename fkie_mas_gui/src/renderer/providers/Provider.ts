@@ -1181,7 +1181,8 @@ export default class Provider implements IProvider {
             let nodeGroup: { namespace?: string; name?: string } = {};
             let groupParameterFound = false;
             let nodesParametersFound = false;
-            const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
+            // const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
+            const uniqueNodeName = launchNode.node_name ? launchNode.node_name : launchNode.unique_name;
             if (uniqueNodeName) {
               const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
@@ -1239,7 +1240,7 @@ export default class Provider implements IProvider {
                 const n = new RosNode(
                   uniqueNodeName,
                   uniqueNodeName,
-                  launchNode.node_namespace ? launchNode.node_namespace : "",
+                  launchNode.node_namespace ? launchNode.node_namespace : "/",
                   "",
                   RosNodeStatus.INACTIVE
                 );
@@ -1247,7 +1248,7 @@ export default class Provider implements IProvider {
                 n.parameters.set(launchFile.path, nodeParameters);
                 n.launchInfo = launchNode;
                 // idGlobal should be the same for life of the node on remote host
-                n.idGlobal = `${this.id}${n.id.replaceAll("/", ".")}`;
+                n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
                 n.providerName = this.name();
                 n.providerId = this.id;
                 n.associations = associations;
@@ -2038,7 +2039,7 @@ export default class Provider implements IProvider {
     // check if nodes are not available or run in other host (not monitoring)
     nl.forEach((n) => {
       // idGlobal should be the same for life of the node on remote host
-      n.idGlobal = `${this.id}${n.id.replaceAll("/", ".")}`;
+      n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
       n.providerName = this.name();
       n.providerId = this.id;
 

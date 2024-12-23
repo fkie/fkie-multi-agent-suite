@@ -12,7 +12,7 @@ import { getFileName, LaunchFile } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { CmdType } from "../../providers";
-import { generateUniqueId, removeDDSuid } from "../../utils";
+import { generateUniqueId, nameWithoutNamespace, removeDDSuid } from "../../utils";
 import GroupItem, { getGroupIcon, getNodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
@@ -36,8 +36,8 @@ const compareTreeProvider = (a, b) => {
 };
 
 function HostTreeView({
-  providerNodeTree = [],
-  groupKeys = [],
+  visibleNodes,
+  isFiltered = false,
   onNodeSelect = () => {},
   onProviderSelect = () => {},
   showLoggers = () => {},
@@ -50,9 +50,90 @@ function HostTreeView({
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
 
-  const [expanded, setExpanded] = useState(groupKeys);
+  // providerNodeTree: list of {providerId: string, nodeTree: object}
+  const [providerNodeTree, setProviderNodeTree] = useState([]);
+  const [expanded, setExpanded] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [keyNodeList, setKeyNodeList] = useState([]); // <= keyNodeList: {key: string, idGlobal: string}[]
+
+  const createTreeFromNodes = (nodes) => {
+    const namespaceSystemNodes = settingsCtx.get("namespaceSystemNodes");
+    const expandedGroups = [];
+    const nodeItemMap = new Map();
+    // generate node tree structure based on node list
+    // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
+    // ...and keep a list of the tree nodes
+    const nodeTree = [];
+    const level = { nodeTree };
+    nodes.forEach((node) => {
+      let nodePath = node.providerId;
+      if (node.system_node && namespaceSystemNodes) {
+        // for system nodes, e.g.: /{SYSTEM}/ns
+        nodePath += namespaceSystemNodes;
+        if (node.namespace != "/") {
+          nodePath += node.namespace;
+        }
+      } else {
+        // for nodes, e.g.: /robot_ns/{CAP_GROUP}/sub_ns
+        let groupNamespace = "";
+        let groupName = "";
+        let nodeRestNamespace = node.namespace !== "/" ? node.namespace : "";
+        if (node.capabilityGroup.namespace) {
+          groupNamespace = `${node.capabilityGroup.namespace}`;
+          nodeRestNamespace = node.namespace.replace(groupNamespace, "");
+        }
+        if (node.capabilityGroup.name) {
+          groupName = `/${node.capabilityGroup.name}`;
+        }
+        nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;
+      }
+      nodePath += "/" + node.idGlobal;
+      if (!nodeItemMap.has(node.idGlobal)) {
+        nodeItemMap.set(node.idGlobal, node);
+        nodePath.split("/").reduce((r, name, idx, a) => {
+          if (!r[name]) {
+            r[name] = { nodeTree: [] };
+
+            // Meaning of [name]:
+            //    In case of a node: corresponds to the uniqueId
+            //    In case of group: corresponds to group name
+            if (nodeItemMap.has(name)) {
+              // create a node
+              const treePath = `${a.slice(0, -1).join("/")}#${nameWithoutNamespace(node)}`;
+              r.nodeTree.push({
+                treePath,
+                children: r[name].nodeTree,
+                node,
+                name: nameWithoutNamespace(node),
+              });
+              // nodeTreeList.push(`${providerId}#${treePath}`);
+            } else {
+              // create a (sub)group
+
+              const treePath = name ? a.slice(0, idx + 1).join("/") : "";
+              r.nodeTree.push({
+                treePath,
+                children: r[name].nodeTree,
+                node: null,
+                providerId: idx === 0 ? node.providerId : undefined,
+                name: idx === 0 ? node.providerName : a.slice(idx, idx + 1).join("/"), // top level is the provider
+              });
+              expandedGroups.push(treePath);
+            }
+          }
+          return r[name];
+        }, level);
+      }
+    });
+    setProviderNodeTree(nodeTree);
+    if (isFiltered) {
+      setExpanded(expandedGroups);
+    }
+  };
+
+  useEffect(() => {
+    createTreeFromNodes(visibleNodes);
+  }, [visibleNodes]);
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -60,10 +141,6 @@ function HostTreeView({
   const handleToggle = useCallback((event, nodeIds) => {
     setExpanded(nodeIds);
   }, []);
-
-  useEffect(() => {
-    setExpanded(groupKeys);
-  }, [groupKeys]);
 
   /**
    * Callback when items on the tree are double clicked
@@ -98,7 +175,6 @@ function HostTreeView({
    */
   const handleDoubleClickOnNode = useCallback(
     (event, label, id) => {
-      console.log(`DOUBLE ON NODE`);
       const nodeIds = getNodeIdsFromTreeIds([id]);
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
@@ -436,17 +512,17 @@ function HostTreeView({
         namespacePart = `${namespacePart}${name}/`;
         name = `${name}/${child.name}`;
       }
-      const itemId = `${providerId}#${treePath}`;
+      const itemId = treePath;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
         newKeyNodeList.push({
-          key: `${itemId}#${node.id}`,
+          key: itemId,
           idGlobal: node.idGlobal,
         });
         return (
           <NodeItem
-            key={`${itemId}#${node.id}`}
-            itemId={`${itemId}#${node.id}`}
+            key={itemId}
+            itemId={itemId}
             node={node}
             namespacePart={namespacePart}
             onDoubleClick={(itemId) => handleDoubleClickOnNode(itemId)}
@@ -506,7 +582,7 @@ function HostTreeView({
         expansionTrigger={"iconContainer"}
       >
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
-          const { providerId, nodeTree } = item;
+          const { providerId, children } = item;
           let providerIsAvailable = false;
           const p = rosCtx.getProviderById(providerId);
           if (p && p.isAvailable()) {
@@ -541,16 +617,12 @@ function HostTreeView({
                 />
               )}
 
-              {nodeTree &&
-                nodeTree.children.sort(compareTreeItems).map((sortItem) => {
-                  return buildHostTreeViewItem(providerId, sortItem, newKeyNodeList);
-                })}
+              {children.sort(compareTreeItems).map((sortItem) => {
+                return buildHostTreeViewItem(providerId, sortItem, newKeyNodeList);
+              })}
             </HostItem>
           );
         })}
-
-        {/* this box creates an empty space at the end, to prevent items to be covered by app bar */}
-        {/* <Box sx={{ height: 130, width: '100%' }} /> */}
       </SimpleTreeView>
     );
     setKeyNodeList(newKeyNodeList);
@@ -580,8 +652,8 @@ function HostTreeView({
 }
 
 HostTreeView.propTypes = {
-  providerNodeTree: PropTypes.array,
-  groupKeys: PropTypes.array,
+  visibleNodes: PropTypes.array.isRequired,
+  isFiltered: PropTypes.bool,
   onNodeSelect: PropTypes.func,
   onProviderSelect: PropTypes.func,
   showLoggers: PropTypes.func,
