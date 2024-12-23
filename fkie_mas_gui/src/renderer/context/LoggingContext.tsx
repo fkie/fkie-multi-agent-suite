@@ -1,7 +1,7 @@
 import { JSONObject, TResult } from "@/types";
 import Fade from "@mui/material/Fade";
 import { VariantType, useSnackbar } from "notistack";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import LoggingDetailsComponent from "../components/UI/LoggingDetailsComponent";
 import { LogEvent, LoggingLevel } from "../models";
@@ -51,7 +51,13 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
   const settingsCtx = useContext(SettingsContext);
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [countErrors, setCountErrors] = useState<number>(0);
+  const [debugByUri, setDebugByUri] = useState<string[]>(settingsCtx.get("debugByUri") as string[]);
+
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    setDebugByUri(settingsCtx.get("debugByUri") as string[]);
+  }, [settingsCtx, settingsCtx.changed]);
 
   const createLog = (
     level: LoggingLevel,
@@ -147,8 +153,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
       }
     }
 
-    const value = settingsCtx.get("debugByUri");
-    if (Array.isArray(value) && value.includes(uri)) {
+    if (Array.isArray(debugByUri) && debugByUri.includes(uri)) {
       debug(`[URI] ${providerName} (${uri}): ${JSON.stringify(parseDetails)}}`, JSON.stringify(parsedMsg));
     }
   };
