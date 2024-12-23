@@ -170,6 +170,5 @@ export {
   nameWithoutNamespace,
   pathJoin,
   removeDDSuid,
-  xor
+  xor,
 };
-

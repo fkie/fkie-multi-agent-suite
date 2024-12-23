@@ -29,7 +29,7 @@ export {
   EditorManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
-  TerminalManagerEvents
+  TerminalManagerEvents,
 };
 export type {
   AuCheckingForUpdateCallback,
@@ -57,6 +57,5 @@ export type {
   TSubscriberManager,
   TSystemInfo,
   TTag,
-  TTerminalManager
+  TTerminalManager,
 };
-

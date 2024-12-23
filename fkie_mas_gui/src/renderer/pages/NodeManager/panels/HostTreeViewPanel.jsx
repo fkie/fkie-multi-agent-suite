@@ -121,7 +121,6 @@ function HostTreeViewPanel() {
     return getNodesFromIds(navCtx.selectedNodes);
   }, [getNodesFromIds, navCtx.selectedNodes]);
 
-
   // debounced search callback
   // search in the origin node list and create a new tree
   const onSearch = useDebounceCallback((searchTerm) => {
