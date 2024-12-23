@@ -129,7 +129,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
       });
       setTopics(newTopics);
     }
-  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes, setTopics]);
+  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
 
   // debounced search callback
   const onSearch = useDebounceCallback((newSearchTerm) => {
@@ -157,7 +157,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
   useEffect(() => {
     getTopicList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rosCtx.mapProviderRosNodes]);
+  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
 
   // Initial filter when setting the topics
   useEffect(() => {
