@@ -146,7 +146,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self, unique_name=unique_name, node_name=node_name, name_configured=name_configured)
         print("  ***debug LaunchNodeWrapper: name_configured", name_configured)
         self.node_namespace = self._get_namespace()
-        self.package = self._get_node_package()
+        self.package_name = self._get_node_package()
         self.executable = self._get_node_executable()
         self.respawn = self._get_respawn()
         self.respawn_delay = self._get_respawn_delay()

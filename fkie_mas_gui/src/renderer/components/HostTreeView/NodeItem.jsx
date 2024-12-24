@@ -2,6 +2,7 @@ import { nameWithoutNamespace } from "@/renderer/utils";
 import CircleIcon from "@mui/icons-material/Circle";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
+import NewReleasesTwoToneIcon from "@mui/icons-material/NewReleasesTwoTone";
 import ReportIcon from "@mui/icons-material/Report";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -26,51 +27,59 @@ function NodeItem({
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nameWithoutNamespace(node));
 
-  const getNodeIconColor = (node, isDarkMode = false) => {
-    switch (node.status) {
-      case RosNodeStatus.RUNNING:
-        switch (node.diagnosticLevel) {
-          case DiagnosticLevel.OK:
-            return isDarkMode ? green[600] : green[500];
-          case DiagnosticLevel.WARN:
-            return isDarkMode ? orange[600] : orange[400];
-          case DiagnosticLevel.ERROR:
-            return isDarkMode ? red[600] : red[500];
-          case DiagnosticLevel.STALE:
-            return isDarkMode ? yellow[700] : yellow[600];
-          default:
-            return isDarkMode ? blue[600] : blue[500];
-        }
-      case RosNodeStatus.DEAD:
+  const getColorFromDiagnostic = (diagnosticLevel, isDarkMode = false) => {
+    switch (diagnosticLevel) {
+      case DiagnosticLevel.OK:
+        return isDarkMode ? green[600] : green[500];
+      case DiagnosticLevel.WARN:
         return isDarkMode ? orange[600] : orange[400];
-
-      case RosNodeStatus.NOT_MONITORED:
-        return isDarkMode ? blue[700] : blue[500];
-
-      case RosNodeStatus.INACTIVE:
-        return isDarkMode ? grey[600] : grey[500];
-
-      default:
+      case DiagnosticLevel.ERROR:
         return isDarkMode ? red[600] : red[500];
+      case DiagnosticLevel.STALE:
+        return isDarkMode ? yellow[700] : yellow[600];
+      default:
+        return isDarkMode ? blue[600] : blue[500];
     }
   };
 
   const getNodeIcon = (node, isDarkMode = false) => {
     switch (node.status) {
-      case RosNodeStatus.RUNNING:
-        return <CircleIcon style={{ mr: 0.5, width: 20, color: getNodeIconColor(node, isDarkMode) }} />;
+      case RosNodeStatus.RUNNING: {
+        const color = getColorFromDiagnostic(node.diagnosticLevel, isDarkMode);
+        return <CircleIcon style={{ mr: 0.5, width: 20, color: color }} />;
+      }
 
-      case RosNodeStatus.DEAD:
-        return <WarningIcon style={{ mr: 0.5, width: 20, color: getNodeIconColor(node, isDarkMode) }} />;
+      case RosNodeStatus.DEAD: {
+        const color = isDarkMode ? orange[600] : orange[400];
+        return <WarningIcon style={{ mr: 0.5, width: 20, color: color }} />;
+      }
 
-      case RosNodeStatus.NOT_MONITORED:
-        return <ReportIcon style={{ mr: 0.5, width: 20, color: getNodeIconColor(node, isDarkMode) }} />;
+      case RosNodeStatus.NOT_MONITORED: {
+        const color = isDarkMode ? blue[700] : blue[500];
+        return <ReportIcon style={{ mr: 0.5, width: 20, color: color }} />;
+      }
 
-      case RosNodeStatus.INACTIVE:
-        return <CircleIcon style={{ mr: 0.5, width: 20, color: getNodeIconColor(node, isDarkMode) }} />;
+      case RosNodeStatus.INACTIVE: {
+        const color = isDarkMode ? grey[600] : grey[500];
+        if (node.launchInfo?.cmd?.includes("ros2 run")) {
+          return (
+            <Tooltip
+              key={`icon-${node.id}`}
+              title={`Executable '${node.launchInfo?.executable}' or package '${node.launchInfo?.package_name}' not found`}
+              placement="left"
+              disableInteractive
+            >
+              <NewReleasesTwoToneIcon style={{ mr: 0.5, width: 20, color: color }} />
+            </Tooltip>
+          );
+        }
+        return <CircleIcon style={{ mr: 0.5, width: 20, color: color }} />;
+      }
 
-      default:
-        return <CircleIcon style={{ mr: 0.5, width: 20, color: getNodeIconColor(node, isDarkMode) }} />;
+      default: {
+        const color = isDarkMode ? red[600] : red[500];
+        return <CircleIcon style={{ mr: 0.5, width: 20, color: color }} />;
+      }
     }
   };
 
