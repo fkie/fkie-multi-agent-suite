@@ -280,18 +280,18 @@ function HostTreeViewPanel() {
         logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
         return;
       }
-      const rootLaunch = [...node.launchPaths][0];
-      if (node.launchPaths.size > 1) {
-        // TODO: select
+      const rootLaunch = [...node.launchInfo.values()][0];
+      if (node.launchInfo.size > 1) {
+        // TODO: select launch file to edit
       }
-      const id = `${node.providerId}-${rootLaunch}`;
+      const id = `${node.providerId}-${rootLaunch.file_name}`;
       if (!openIds.includes(id)) {
         rosCtx.openEditor(
           node.providerId,
-          rootLaunch,
-          node.launchInfo.file_name,
-          node.launchInfo.file_range,
-          node.launchInfo.launch_context_arg,
+          rootLaunch.launch_name,
+          rootLaunch.file_name,
+          rootLaunch.file_range,
+          rootLaunch.launch_context_arg,
           external
         );
         openIds.push(id);
@@ -373,22 +373,26 @@ function HostTreeViewPanel() {
       if (depth > 10) return [nodes];
       const newNodeList = [];
       nodes.forEach((node) => {
-        if (node.associations.length > 0) {
-          const provider = rosCtx.getProviderById(node.providerId);
-          if (provider) {
-            node.associations.forEach((asNodeName) => {
-              const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
-              const asNodesRec = updateWithAssociations(asNodes, depth + 1);
-              asNodesRec.forEach((asNode) => {
-                if (!newNodeList.find((n) => n.name === asNode.name)) {
-                  newNodeList.push(asNode);
-                }
+        if (node.launchInfo.size > 0) {
+          const associations =
+            node.launchInfo.size === 1 ? node.launchInfo.values().next().value : node.launchInfo.get(node.launchPath);
+          if (associations?.length > 0) {
+            const provider = rosCtx.getProviderById(node.providerId);
+            if (provider) {
+              associations.forEach((asNodeName) => {
+                const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
+                const asNodesRec = updateWithAssociations(asNodes, depth + 1);
+                asNodesRec.forEach((asNode) => {
+                  if (!newNodeList.find((n) => n.name === asNode.name)) {
+                    newNodeList.push(asNode);
+                  }
+                });
               });
-            });
+            }
           }
-        }
-        if (!newNodeList.find((n) => n.name === node.name)) {
-          newNodeList.push(node);
+          if (!newNodeList.find((n) => n.name === node.name)) {
+            newNodeList.push(node);
+          }
         }
       });
       return newNodeList;
@@ -398,7 +402,7 @@ function HostTreeViewPanel() {
 
   const getNodeLetManager = (node, ignoreRunState = false, nodes2start = []) => {
     if (!node) return null;
-    const composableParent = node.container_name || node.launchInfo?.composable_container;
+    const composableParent = node.getLaunchComposableContainer();
     if (composableParent) {
       const provider = rosCtx.getProviderById(node.providerId);
       const nodeNms = provider?.rosNodes.filter((node) => node.name === composableParent);
@@ -421,13 +425,18 @@ function HostTreeViewPanel() {
   };
 
   const startNodesWithLaunchCheck = useCallback(
-    (nodes, ignoreRunState = false) => {
+    (nodes, ignoreRunState = false, useLaunchFiles = {}) => {
       const withMultiLaunch = [];
       const node2Start = [];
       const withNoLaunch = [];
       const skippedNodes = new Map();
+      // update nodes with launchFile if they are provided (on multiple launch files for a node)
+      let nodeList = nodes.map((node) => {
+        node.launchPath = useLaunchFiles[node.name];
+        return node;
+      });
       // check nodes for associations and extend start node list
-      const nodeList = updateWithAssociations(nodes);
+      nodeList = updateWithAssociations(nodeList);
       const add2start = (node) => {
         // add only valid node and if it is not already added
         if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
@@ -445,17 +454,16 @@ function HostTreeViewPanel() {
           })
         ) {
           skippedNodes.set(node.name, "already in the start queue");
-        } else if (node.launchPaths.size > 0) {
+        } else if (node.launchInfo.size > 0) {
           // prepend nodeLet manager to the start list if it is not already added,
           // not running or in the list with started nodes
           const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
+          if (managerNode) {
+            managerNode.launchPath = node.launchPath;
+          }
           add2start(managerNode);
           add2start(node);
-          if (managerNode?.launchPaths?.size > 1) {
-            // Multiple launch files available
-            withMultiLaunch.push(managerNode);
-          }
-          if (node.launchPaths.size > 1) {
+          if (node.launchInfo.size > 1 && !node.launchPath) {
             // Multiple launch files available
             withMultiLaunch.push(node);
           }
@@ -534,7 +542,7 @@ function HostTreeViewPanel() {
         if (node.system_node && nodeList.length > 1) {
           // skip system nodes
           skippedNodes.set(node.name, "system node");
-        } else if (onlyWithLaunch && node.launchPaths.length === 0) {
+        } else if (onlyWithLaunch && node.launchInfo.length === 0) {
           skippedNodes.set(node.name, "stop only with launch files");
         } else if (
           queueItemsQueueMain &&
@@ -565,13 +573,14 @@ function HostTreeViewPanel() {
       nodes2stop.forEach((node) => {
         if (node.pid) {
           let killTime = -1;
-          node.parameters.forEach((params) => {
-            params.forEach((param) => {
+          node.launchInfo.forEach((launchInfo) => {
+            launchInfo.params.forEach((param) => {
               if (param.name.endsWith("/nm/kill_on_stop")) {
                 if (killTime === -1) killTime = param.value;
               }
             });
           });
+
           if (killTime > -1) {
             if (maxKillTime < killTime) {
               maxKillTime = killTime;
@@ -1098,7 +1107,7 @@ function HostTreeViewPanel() {
               onClick={(event) => {
                 createFileEditorPanel(getSelectedNodes(), event.nativeEvent.shiftKey);
               }}
-              disabled={selectedNodes.filter((node) => node.launchPaths.size > 0).length === 0}
+              disabled={selectedNodes.filter((node) => node.launchInfo.size > 0).length === 0}
             >
               <BorderColorIcon fontSize="inherit" />
             </IconButton>
@@ -1609,18 +1618,20 @@ function HostTreeViewPanel() {
       {nodeMultiLaunches && (
         <MapSelectionModal
           list={nodeMultiLaunches.reduce((prev, node) => {
-            prev.push({ title: node.name, list: [...node.launchPaths] });
+            prev.push({ title: node.name, list: Array.from(node.launchInfo.keys()) });
             return prev;
           }, [])}
           useRadioGroup
           onConfirmCallback={(items) => {
+            const useLaunchFiles = {};
             items.forEach((item) => {
               item.list.forEach((launch) => {
-                const node = nodesAwaitModal.find((n) => n.name.includes(item.title));
-                node.launchPath = launch;
+                const node = nodeMultiLaunches.find((n) => n.name.includes(item.title));
+                useLaunchFiles[node.name] = launch;
               });
             });
-            setNodesToStart(nodesAwaitModal);
+            // setNodesToStart(nodesAwaitModal);
+            startNodesWithLaunchCheck(nodesAwaitModal, false, useLaunchFiles);
             setNodeMultiLaunches(null);
             setNodesAwaitModal(null);
           }}

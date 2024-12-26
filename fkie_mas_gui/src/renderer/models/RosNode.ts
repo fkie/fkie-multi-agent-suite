@@ -89,11 +89,6 @@ class RosNode {
   providerId?: string;
 
   /**
-   * path of loaded the launch files
-   */
-  launchPaths: Set<string>;
-
-  /**
    * (optional) path of the launch file if available
    */
   launchPath: string;
@@ -133,7 +128,7 @@ class RosNode {
   /**
    * Map of launch files and list of parameters
    */
-  parameters: Map<string, RosParameter[]>;
+  // parameters: Map<string, RosParameter[]>;
 
   /**
    * group used for visualization
@@ -142,11 +137,9 @@ class RosNode {
   group: string = "";
 
   /**
-   * Info given on launch file
+   * Map of launch files and launch info
    */
-  launchInfo?: LaunchNodeInfo;
-
-  associations: string[] = [];
+  launchInfo: Map<string, LaunchNodeInfo> = new Map();
 
   /** Used to store by user changed logger configuration.
    * type: { name: string; level: string }
@@ -183,7 +176,6 @@ class RosNode {
    * @param {Map<string, RosTopic>} actions - List of actions registered by the node
    * @param {Map<string, RosService>} services - List of services available in the node
    * @param {string[]} screens - List of screens associated to the node
-   * @param {Set<string>} launchPaths - A unique list of launch files associated to the node
    * @param {boolean} system_node - Flag to signal a system's relevant node
    *
    */
@@ -201,8 +193,6 @@ class RosNode {
     publishers = new Map<string, RosTopic>(),
     services = new Map<string, RosService>(),
     screens = [],
-    launchPaths = new Set<string>(),
-    parameters = new Map<string, RosParameter[]>(),
     launchPath = ""
   ) {
     this.id = id;
@@ -218,13 +208,39 @@ class RosNode {
     this.publishers = publishers;
     this.services = services;
     this.screens = screens;
-    this.launchPaths = launchPaths;
     this.launchPath = launchPath;
-    this.parameters = parameters;
   }
 
   getRosLoggersCount: () => number = () => {
     return Object.keys(this.rosLoggers).length;
+  };
+
+  getLaunchComposableContainer: () => string | null = () => {
+    if (this.launchPath) {
+      const launchInfo = this.launchInfo.get(this.launchPath);
+      if (launchInfo?.composable_container) {
+        return launchInfo?.composable_container;
+      }
+    } else if (this.launchInfo.size === 1) {
+      const launchInfo = this.launchInfo.values().next().value;
+      if (launchInfo?.composable_container) {
+        return launchInfo?.composable_container;
+      }
+    }
+    return null;
+  };
+
+  getAllContainers: () => string[] = () => {
+    const result: string[] = [];
+    if (this.container_name) {
+      result.push(this.container_name);
+    }
+    this.launchInfo.forEach((launchInfo) => {
+      if (launchInfo.composable_container && !result.includes(launchInfo.composable_container)) {
+        result.push(launchInfo.composable_container);
+      }
+    });
+    return result;
   };
 
   /**

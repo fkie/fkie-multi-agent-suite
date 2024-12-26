@@ -61,11 +61,17 @@ function NodeItem({
 
       case RosNodeStatus.INACTIVE: {
         const color = isDarkMode ? grey[600] : grey[500];
-        if (node.launchInfo?.cmd?.includes("ros2 run")) {
+        let cmdWithRos2 = null;
+        node.launchInfo.forEach((launchInfo) => {
+          if (launchInfo.cmd?.includes("ros2 run")) {
+            cmdWithRos2 = launchInfo;
+          }
+        })
+        if (cmdWithRos2) {
           return (
             <Tooltip
               key={`icon-${node.id}`}
-              title={`Executable '${node.launchInfo?.executable}' or package '${node.launchInfo?.package_name}' not found`}
+              title={`Executable '${cmdWithRos2.executable}' or package '${cmdWithRos2.package_name}' not found`}
               placement="left"
               disableInteractive
             >

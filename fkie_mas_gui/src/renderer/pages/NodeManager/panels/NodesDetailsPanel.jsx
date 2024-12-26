@@ -260,14 +260,9 @@ function NodesDetailsPanel() {
                   <Tag color="default" title="Composable Container:" text={`${node.container_name}`} wrap />
                 </Stack>
               ) : (
-                node.launchInfo?.composable_container && (
+                node.getAllContainers().length > 0 && (
                   <Stack direction="row" spacing={0.5}>
-                    <Tag
-                      color="default"
-                      title="Composable Container:"
-                      text={`${node.launchInfo?.composable_container}`}
-                      wrap
-                    />
+                    <Tag color="default" title="Composable Container:" text={`${JSON.stringify(node.getAllContainers())}`} wrap />
                   </Stack>
                 )
               )}
@@ -290,19 +285,18 @@ function NodesDetailsPanel() {
                   ))}
                 </Stack>
               )}
-              {node.launchPaths.size > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  {node.launchPaths &&
-                    [...node.launchPaths].map((launchPath) => (
-                      <Tag
-                        key={launchPath}
-                        color="info"
-                        title={`${launchPath === node.launchPath ? "*" : ""}Launch:`}
-                        text={getFileName(launchPath)}
-                        wrap
-                        copyButton={launchPath}
-                      />
-                    ))}
+              {node.launchInfo.size > 0 && (
+                <Stack direction="column" spacing={0.5}>
+                  {Array.from(node.launchInfo.keys()).map((launchPath) => (
+                    <Tag
+                      key={launchPath}
+                      color="info"
+                      title={`${launchPath === node.launchPath ? "*" : ""}Launch:`}
+                      text={getFileName(launchPath)}
+                      wrap
+                      copyButton={launchPath}
+                    />
+                  ))}
                 </Stack>
               )}
             </Stack>
@@ -507,7 +501,7 @@ function NodesDetailsPanel() {
 
               {showPaths && (
                 <Stack direction="column" spacing={0.5}>
-                  {[...node.launchPaths].map((launchPath) => (
+                  {Array.from(node.launchInfo.keys()).map((launchPath) => (
                     <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
                       <Tag
                         key={launchPath}
@@ -565,34 +559,42 @@ function NodesDetailsPanel() {
                   )}
                 </Stack>
               )}
-              {node.launchInfo?.cmd && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="CMD:" text={`${node.launchInfo?.cmd}`} wrap />
-                </Stack>
-              )}
               {showLaunchParameter && (
                 <>
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>Launch Parameter:</Box>
                   </Typography>
-                  {[...node.launchPaths].map((launchPath) => {
-                    const launchParameters = node.parameters.get(launchPath);
-                    if (launchParameters) {
+                  {Array.from(node.launchInfo.keys()).map((launchPath) => {
+                    const launchInfo = node.launchInfo.get(launchPath);
+                    if (launchInfo) {
                       return (
                         <Stack key={launchPath} marginTop={"0.5em"}>
                           <Typography variant="caption">
                             <Box sx={{ fontWeight: "bold" }}>
-                              {`${launchPath.split("/").slice(-1)} [${launchParameters.length}]`}
+                              {`${launchPath.split("/").slice(-1)} [${launchInfo.parameters.length}]`}
                             </Box>
                           </Typography>
-                          {launchParameters.length > 0 && (
+                          {launchInfo.cmd && (
+                            <Stack direction="row" spacing={0.5}>
+                              <Tag
+                                color="default"
+                                title="CMD:"
+                                text={`${launchInfo.cmd}`}
+                                wrap
+                                copyButton={`${launchInfo.cmd}`}
+                              />
+                            </Stack>
+                          )}
+                          {launchInfo.parameters.length > 0 && (
                             <TableContainer component={Paper}>
                               <Table size="small" aria-label="a dense table">
                                 <TableBody>
-                                  {launchParameters.map((parameter) => (
+                                  {launchInfo.parameters.map((parameter) => (
                                     <TableRow key={parameter.name}>
                                       <TableCell style={{ padding: 0 }}>
-                                        {parameter.name.slice(node.name.length + 1)}
+                                        {parameter.name.startsWith(node.name)
+                                          ? parameter.name.slice(node.name.length + 1)
+                                          : parameter.name}
                                       </TableCell>
                                       <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
                                     </TableRow>

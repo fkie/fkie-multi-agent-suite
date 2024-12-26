@@ -1162,7 +1162,13 @@ export default class Provider implements IProvider {
                 parsed.masteruri,
                 parsed.host,
                 parsed.nodes,
-                parsed.parameters.map((p) => new RosParameter(p.name, p.value, p.type, this.id)),
+                parsed.parameters.map((p) => {
+                  if (this.rosVersion === "1") {
+                    return new RosParameter(p.name, p.value, p.type, this.id);
+                  } else {
+                    return new RosParameter(p[0], p[1], "", this.id);
+                  }
+                }),
                 parsed.associations
               )
             );
@@ -1186,31 +1192,39 @@ export default class Provider implements IProvider {
             if (uniqueNodeName) {
               const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
-              launchFile.parameters.forEach((p: RosParameter) => {
-                if (nodesParametersFound) {
-                  // skip parse further parameter if we found one and next was not in node namespace
-                  // assumption: parameters are sorted
-                  return;
-                } else if (p.name.startsWith(uniqueNodeName)) {
-                  nodeParameters.push(p);
-                  if (p.name === capabilityGroupOfNode) {
-                    // update capability group
-                    groupParameterFound = true;
-                    const ns = launchNode.node_namespace ? launchNode.node_namespace : "";
-                    nodeGroup = { namespace: ns, name: `{${p.value}}` };
+              if (this.rosVersion == "1") {
+                launchFile.parameters.forEach((p: RosParameter) => {
+                  console.log(`paramter: ${JSON.stringify(p)}`);
+                  if (nodesParametersFound) {
+                    // skip parse further parameter if we found one and next was not in node namespace
+                    // assumption: parameters are sorted
+                    return;
+                  } else if (p.name.startsWith(uniqueNodeName)) {
+                    nodeParameters.push(p);
+                    if (p.name === capabilityGroupOfNode) {
+                      // update capability group
+                      groupParameterFound = true;
+                      const ns = launchNode.node_namespace ? launchNode.node_namespace : "";
+                      nodeGroup = { namespace: ns, name: `{${p.value}}` };
+                    }
+                  } else if (nodeParameters.length > 0) {
+                    // we found one parameter of the node, but current parameter is not in node namespace => skip all further parameter
+                    // assumption: parameters are sorted
+                    nodesParametersFound = true;
+                  } else if (!groupParameterFound && p.name.endsWith(capabilityGroupParamName)) {
+                    // use capability group parameter in the higher level namespace until we found one in the node namespace
+                    const { namespace } = this.toNamespace(p.name);
+                    if (uniqueNodeName.startsWith(namespace)) {
+                      nodeGroup = { namespace: namespace, name: `{${p.value}}` };
+                    }
                   }
-                } else if (nodeParameters.length > 0) {
-                  // we found one parameter of the node, but current parameter is not in node namespace => skip all further parameter
-                  // assumption: parameters are sorted
-                  nodesParametersFound = true;
-                } else if (!groupParameterFound && p.name.endsWith(capabilityGroupParamName)) {
-                  // use capability group parameter in the higher level namespace until we found one in the node namespace
-                  const { namespace } = this.toNamespace(p.name);
-                  if (uniqueNodeName.startsWith(namespace)) {
-                    nodeGroup = { namespace: namespace, name: `{${p.value}}` };
-                  }
-                }
-              });
+                });
+              } else {
+                launchNode.parameters?.forEach((p) => {
+                  if (Array.isArray(p))
+                  nodeParameters.push(new RosParameter(p[0], p[1], "", this.id));
+                });
+              }
 
               let associations: string[] = [];
               launchFile.associations.forEach((item) => {
@@ -1218,17 +1232,18 @@ export default class Provider implements IProvider {
                   associations = item.nodes;
                 }
               });
+              launchNode.associations = associations;
+              launchNode.parameters = nodeParameters;
 
+              //launchPaths
+              //parameters
               // if node exist (it is running), only update the associated launch file
               let nodeIsRunning = false;
               const iNode = this.rosNodes.findIndex((n) => {
                 return n.name === uniqueNodeName;
               });
               if (iNode >= 0) {
-                this.rosNodes[iNode].launchPaths.add(launchFile.path);
-                this.rosNodes[iNode].parameters.set(launchFile.path, nodeParameters);
-                this.rosNodes[iNode].launchInfo = launchNode;
-                this.rosNodes[iNode].associations = associations;
+                this.rosNodes[iNode].launchInfo.set(launchFile.path, launchNode);
                 if (nodeGroup.name) {
                   this.rosNodes[iNode].capabilityGroup = nodeGroup;
                 }
@@ -1244,14 +1259,11 @@ export default class Provider implements IProvider {
                   "",
                   RosNodeStatus.INACTIVE
                 );
-                n.launchPaths.add(launchFile.path);
-                n.parameters.set(launchFile.path, nodeParameters);
-                n.launchInfo = launchNode;
+                n.launchInfo.set(launchFile.path, launchNode);
                 // idGlobal should be the same for life of the node on remote host
                 n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
                 n.providerName = this.name();
                 n.providerId = this.id;
-                n.associations = associations;
                 if (nodeGroup.name) {
                   n.capabilityGroup = nodeGroup;
                 }
@@ -1265,22 +1277,22 @@ export default class Provider implements IProvider {
         const composableManagers: string[] = [];
         this.rosNodes.forEach((n) => {
           // Check if this is a nodelet/composable and assign tags accordingly.
-          let composableParent = n?.container_name || n.launchInfo?.composable_container;
+          const composableParents = n.getAllContainers();
           const tags: TTag[] = [];
-          if (composableParent) {
-            composableParent = composableParent.split("|").slice(-1).at(0);
+          composableParents.forEach((item) => {
+            const composableParent = item.split("|").slice(-1).at(0);
             if (composableParent) {
               if (!composableManagers.includes(composableParent)) {
                 composableManagers.push(composableParent);
               }
               tags.push({
-                id: "Nodelet",
+                id: `nodelet-${composableParent}`,
                 data: "Nodelet",
                 color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
                 tooltip: `Composable node, container: ${composableParent}`,
               });
             }
-          }
+          });
           // mark nodes with same GUID
           if (n.guid && this.sameIdDict[n.guid]?.length > 1) {
             tags.push({
@@ -1289,7 +1301,6 @@ export default class Provider implements IProvider {
               color: colorFromHostname(n.guid),
               tooltip: `Nodes with same id ${n.guid}`,
               onClick: (event: React.MouseEvent) => {
-                console.log(`CLICK ${n.guid}, ${this.logger}`);
                 if (n.guid) navigator.clipboard.writeText(n.guid);
                 this.logger?.success(`${n.guid} copied!`, "", true);
                 event?.stopPropagation();
@@ -2049,7 +2060,6 @@ export default class Provider implements IProvider {
         n.diagnosticStatus = oldNode.diagnosticStatus;
         n.diagnosticLevel = oldNode.diagnosticLevel;
         n.diagnosticMessage = oldNode.diagnosticMessage;
-        n.launchPaths = oldNode.launchPaths;
         n.launchPath = oldNode.launchPath;
         n.group = oldNode.group;
         n.launchInfo = oldNode.launchInfo;

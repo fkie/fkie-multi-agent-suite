@@ -286,7 +286,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         return getattr(self._entity, '_Node__expanded_parameter_arguments', [])
 
     def _get_arguments(self):
-        return getattr(self._entity, '_Nodes__arguments', [])
+        return getattr(self._entity, '_Node__arguments', [])
 
     def _get_node_package(self) -> str:
         """Getter for node_package."""

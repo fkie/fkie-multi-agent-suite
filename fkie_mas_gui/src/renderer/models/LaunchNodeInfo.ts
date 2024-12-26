@@ -57,6 +57,8 @@ class LaunchNodeInfo {
 
   composable_container: string | null;
 
+  associations: string[] = [];
+
   /**
    * Class Constructor
    *
