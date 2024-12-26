@@ -141,7 +141,6 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
 
   const getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined = useCallback(
     (tabId) => {
-      console.log(`MOD files: ${tabId} ${JSON.stringify(modifiedFiles)}`);
       return modifiedFiles.filter((item) => item.tabId === tabId)[0];
     },
     [modifiedFiles]

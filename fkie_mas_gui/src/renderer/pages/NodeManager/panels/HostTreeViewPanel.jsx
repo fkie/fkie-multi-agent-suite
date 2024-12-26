@@ -39,7 +39,7 @@ import { NavigationContext } from "../../../context/NavigationContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useQueue from "../../../hooks/useQueue";
-import { RosNode, RosNodeStatus } from "../../../models";
+import { RosNodeStatus } from "../../../models";
 import { CmdType } from "../../../providers";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
 import { findIn } from "../../../utils/index";
@@ -49,7 +49,6 @@ import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
 function HostTreeViewPanel() {
-  const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   // context objects
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -93,6 +92,7 @@ function HostTreeViewPanel() {
   const [nodeMultiLaunches, setNodeMultiLaunches] = useState(null);
   const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState(null);
   const [nodesAwaitModal, setNodesAwaitModal] = useState(null);
+  const [editNodeWithMultipleLaunchInfos, setEditNodeWithMultipleLaunchInfos] = useState(null);
 
   useEffect(() => {
     setShowRemoteNodes(settingsCtx.get("showRemoteNodes"));
@@ -274,18 +274,19 @@ function HostTreeViewPanel() {
    * Create and open a new panel with a [createFileEditorPanel] for selected nodes
    */
   const createFileEditorPanel = (nodes, external) => {
-    const openIds = [];
-    nodes.forEach(async (node) => {
-      if (!node.launchInfo) {
+    if (nodes.length > 0) {
+      // open only for first node
+      const node = nodes[0];
+      if (node.launchInfo.size === 0) {
         logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
         return;
       }
-      const rootLaunch = [...node.launchInfo.values()][0];
-      if (node.launchInfo.size > 1) {
-        // TODO: select launch file to edit
-      }
-      const id = `${node.providerId}-${rootLaunch.file_name}`;
-      if (!openIds.includes(id)) {
+      const launchInfos = Array.from(node.launchInfo.values());
+      if (launchInfos.length > 1) {
+        // select launch file to edit
+        setEditNodeWithMultipleLaunchInfos({ node: node, external: external });
+      } else {
+        const rootLaunch = launchInfos[0];
         rosCtx.openEditor(
           node.providerId,
           rootLaunch.launch_name,
@@ -294,9 +295,8 @@ function HostTreeViewPanel() {
           rootLaunch.launch_context_arg,
           external
         );
-        openIds.push(id);
       }
-    });
+    }
   };
 
   /**
@@ -1638,6 +1638,36 @@ function HostTreeViewPanel() {
           onCancelCallback={() => {
             setNodeMultiLaunches(null);
             setNodesAwaitModal(null);
+          }}
+        />
+      )}
+      {editNodeWithMultipleLaunchInfos && (
+        <MapSelectionModal
+          list={[
+            {
+              title: editNodeWithMultipleLaunchInfos.node.name,
+              list: Array.from(editNodeWithMultipleLaunchInfos.node.launchInfo.keys()),
+            },
+          ]}
+          useRadioGroup
+          onConfirmCallback={(items) => {
+            items.forEach((item) => {
+              item.list.forEach((launch) => {
+                const launchInfo = editNodeWithMultipleLaunchInfos.node.launchInfo.get(launch);
+                rosCtx.openEditor(
+                  editNodeWithMultipleLaunchInfos.node.providerId,
+                  launchInfo.launch_name,
+                  launchInfo.file_name,
+                  launchInfo.file_range,
+                  launchInfo.launch_context_arg,
+                  editNodeWithMultipleLaunchInfos.external
+                );
+              });
+            });
+            setEditNodeWithMultipleLaunchInfos(null);
+          }}
+          onCancelCallback={() => {
+            setEditNodeWithMultipleLaunchInfos(null);
           }}
         />
       )}
