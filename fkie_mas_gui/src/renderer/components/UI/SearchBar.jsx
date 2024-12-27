@@ -17,7 +17,11 @@ function SearchBar({
 
   useEffect(() => {
     onSearch(searched);
-  }, [onSearch, searched]);
+  }, [searched]);
+
+  useEffect(() => {
+    setSearched(defaultValue);
+  }, [defaultValue]);
 
   return (
     <TextField

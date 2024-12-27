@@ -42,6 +42,7 @@ import {
   SystemWarningGroup,
   URI,
 } from "../models";
+import { EVENT_FILTER_NODES, eventFilterNodes } from "../pages/NodeManager/layout/events";
 import { delay, generateUniqueId } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";
@@ -1299,8 +1300,9 @@ export default class Provider implements IProvider {
               color: colorFromHostname(n.guid),
               tooltip: `Nodes with same id ${n.guid}`,
               onClick: (event: React.MouseEvent) => {
-                if (n.guid) navigator.clipboard.writeText(n.guid);
-                this.logger?.success(`${n.guid} copied!`, "", true);
+                // if (n.guid) navigator.clipboard.writeText(n.guid);
+                // this.logger?.success(`${n.guid} copied!`, "", true);
+                emitCustomEvent(EVENT_FILTER_NODES, eventFilterNodes(n.guid as string));
                 event?.stopPropagation();
               },
             });

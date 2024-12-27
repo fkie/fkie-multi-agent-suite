@@ -6,6 +6,7 @@ export const EVENT_OPEN_COMPONENT = "EVENT_OPEN_COMPONENT" as const;
 export const EVENT_OPEN_SETTINGS = "EVENT_OPEN_SETTINGS" as const;
 export const EVENT_OPEN_CONNECT = "EVENT_OPEN_CONNECT" as const;
 export const EVENT_EDITOR_SELECT_RANGE = "EVENT_EDITOR_SELECT_RANGE" as const;
+export const EVENT_FILTER_NODES = "EVENT_FILTER_NODES" as const;
 
 export function eventOpenComponent(
   id: string,
@@ -54,4 +55,8 @@ export function eventEditorSelectRange(
   launchArgs: TLaunchArg[]
 ): { tabId: string; filePath: string; fileRange: TFileRange; launchArgs: TLaunchArg[] } {
   return { tabId, filePath, fileRange, launchArgs };
+}
+
+export function eventFilterNodes(id: string): { id: string } {
+  return { id };
 }

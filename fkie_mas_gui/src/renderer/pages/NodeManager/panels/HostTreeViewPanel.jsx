@@ -44,7 +44,7 @@ import { CmdType } from "../../../providers";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
+import { EVENT_FILTER_NODES, EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
@@ -190,6 +190,9 @@ function HostTreeViewPanel() {
     restartNodes(data.nodes);
   });
 
+  useCustomEventListener(EVENT_FILTER_NODES, (data) => {
+    setFilterText(data.id);
+  });
   // Register Callbacks ----------------------------------------------------------------------------------
 
   /**
@@ -1452,6 +1455,7 @@ function HostTreeViewPanel() {
               </IconButton>
             </Tooltip>
             <SearchBar
+              key={"search-bar-host"}
               onSearch={(value) => {
                 setFilterText(value);
               }}
