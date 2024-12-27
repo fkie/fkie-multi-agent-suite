@@ -222,8 +222,8 @@ function HostTreeView({
       let allIds = parentIds;
       parentIds.forEach((id) => {
         const parsedId = id.split("#");
-        // a group (with children) must have 2 substrings separated by #
-        if (parsedId.length === 2) {
+        // a group (with children) must have 1 substring
+        if (parsedId.length === 1) {
           // get the children IDs
           const childrenIds = keyNodeList.filter((node) => node.key.startsWith(id)).map((node) => node.key);
           if (childrenIds) {
@@ -248,6 +248,9 @@ function HostTreeView({
           ...nodeList,
           ...keyNodeList
             .filter((entry) => {
+              if (entry.key.includes("#")) {
+                return entry.key === item;
+              }
               return entry.key.startsWith(item);
             })
             .map((entry) => {
@@ -304,6 +307,7 @@ function HostTreeView({
             }
           });
         }
+
         // add child items for selected groups
         return getParentAndChildrenIds(selectedIds);
       });
