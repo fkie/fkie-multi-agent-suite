@@ -757,6 +757,8 @@ export default class Provider implements IProvider {
       guid: string | null;
       is_container: boolean | null;
       container_name: string | null;
+      lifecycle_state: string | null;
+      lifecycle_available_transitions: [string, number][] | null;
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true).then((value: TResultData) => {
       if (value.result) {
@@ -805,7 +807,14 @@ export default class Provider implements IProvider {
             if (n.container_name) {
               rn.container_name = n.container_name;
             }
-
+            if (n.lifecycle_state) {
+              rn.lifecycle_state = n.lifecycle_state;
+            }
+            if (n.lifecycle_available_transitions) {
+              rn.lifecycle_available_transitions = n.lifecycle_available_transitions.map((item) => {
+                return { label: item[0], id: item[1] };
+              });
+            }
             // Add Array elements
             n.publishers.forEach((s: RosTopic) => {
               rn.publishers.set(s.name, new RosTopic(s.name, s.msgtype, s.publisher, s.subscriber));

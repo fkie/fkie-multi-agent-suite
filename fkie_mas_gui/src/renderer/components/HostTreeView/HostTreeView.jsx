@@ -370,62 +370,6 @@ function HostTreeView({
   }, [selectedItems]);
 
   /**
-   * Callback when the show loggers floating button of a HostTreeViewItem is clicked
-   */
-  const onShowLoggersClick = useCallback(
-    (itemId) => {
-      showLoggers(getNodeIdsFromTreeIds([itemId]));
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList]
-  );
-
-  /**
-   * Callback when the start floating button of a HostTreeViewItem is clicked
-   */
-  const onStartClick = useCallback(
-    (itemId) => {
-      if (selectedItems.includes(itemId)) {
-        startNodes(getNodeIdsFromTreeIds(selectedItems));
-      } else {
-        startNodes(getNodeIdsFromTreeIds([itemId]));
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList]
-  );
-
-  /**
-   * Callback when the stop floating button of a HostTreeViewItem is clicked
-   */
-  const onStopClick = useCallback(
-    (itemId) => {
-      if (selectedItems.includes(itemId)) {
-        stopNodes(getNodeIdsFromTreeIds(selectedItems));
-      } else {
-        stopNodes(getNodeIdsFromTreeIds([itemId]));
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList]
-  );
-
-  /**
-   * Callback when the restart floating button of a HostTreeViewItem is clicked
-   */
-  const onRestartClick = useCallback(
-    (itemId) => {
-      if (selectedItems.includes(itemId)) {
-        restartNodes(getNodeIdsFromTreeIds(selectedItems));
-      } else {
-        restartNodes(getNodeIdsFromTreeIds([itemId]));
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedItems, keyNodeList]
-  );
-
-  /**
    * Callback when the event of removing a launch file is triggered
    */
   const onRemoveLaunch = useCallback(
@@ -557,10 +501,6 @@ function HostTreeView({
       // do not include keyNodeList
       settingsCtx,
       handleDoubleClick,
-      onShowLoggersClick,
-      onStartClick,
-      onStopClick,
-      onRestartClick,
       selectedItems,
       getNodesCount,
     ]

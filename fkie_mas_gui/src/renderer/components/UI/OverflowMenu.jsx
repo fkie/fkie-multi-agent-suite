@@ -61,12 +61,14 @@ function OverflowMenu({
       //   vertical: 'bottom',
       //   horizontal: 'right',
       // }}
+
       onClick={(event) => event.stopPropagation()}
     >
       <IconButton
         aria-label={`${id}-icon`}
         id={`${id}-icon`}
         size="small"
+        sx={{ padding: 0, margin: 0 }}
         aria-controls={open ? "long-menu" : undefined}
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"

@@ -138,7 +138,7 @@ public:
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_READER);
         // }
         std::string name = info.info.topicName().c_str();
-        if (name.rfind("rq/", 0) != 0)
+        if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
         {
             publish_notification();
         }
@@ -165,7 +165,7 @@ public:
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_WRITER);
         // }
         std::string name = info.info.topicName().c_str();
-        if (name.rfind("rq/", 0) != 0)
+        if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
         {
             publish_notification();
         }

@@ -160,6 +160,9 @@ class RosNode {
 
   dynamicReconfigureServices: string[] = [];
 
+  lifecycle_state?: string;
+  lifecycle_available_transitions?: { label: string; id: number }[];
+
   /**
    * Class Constructor
    *

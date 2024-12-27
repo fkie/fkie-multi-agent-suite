@@ -243,6 +243,21 @@ function NodesDetailsPanel() {
                   <Tag color="default" title="PID:" text={`${node.pid}`} wrap />
                 </Stack>
               )}
+              {node.lifecycle_state && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag color="default" title="Lifecycle:" text={`${node.lifecycle_state}`} wrap />
+                </Stack>
+              )}
+              {node.lifecycle_available_transitions && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag
+                    color="default"
+                    title="Lifecycle transitions:"
+                    text={`${JSON.stringify(node.lifecycle_available_transitions)}`}
+                    wrap
+                  />
+                </Stack>
+              )}
               {node.id && node.id !== node.name && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="ID:" text={`${node.id}`} wrap />

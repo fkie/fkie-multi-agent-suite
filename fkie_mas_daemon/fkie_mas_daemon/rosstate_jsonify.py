@@ -15,12 +15,12 @@ from typing import Tuple
 from typing import Union
 
 import os
-#import json
 
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from composition_interfaces.srv import ListNodes
+from lifecycle_msgs.srv import GetState
+from lifecycle_msgs.srv import GetAvailableTransitions
 
-#from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
 from fkie_mas_pylib.interface.runtime_interface import RosQos
@@ -130,6 +130,8 @@ class RosStateJsonify:
         node_ids: List[NodeId] = []
         new_nodes_detected: bool = False
         composable_services: List[str] = []
+        lifecycle_state_services: List[str] = []
+        lifecycle_transition_services: List[str] = []
         result: List[RosNode] = []
 
         topic_list = nmd.ros_node.get_topic_names_and_types(True)
@@ -163,6 +165,10 @@ class RosStateJsonify:
                         tp.provider.append(ros_node.id)
                         if self._is_local_composable_service(tp.name, ros_node):
                             composable_services.append(tp.name)
+                        if self._is_local_lifecycle_state_service(tp.name, tp.srvtype, ros_node):
+                            lifecycle_state_services.append(tp.name)
+                        if self._is_local_lifecycle_transitions_service(tp.name, tp.srvtype, ros_node):
+                            lifecycle_transition_services.append(tp.name)
                     elif is_request and ros_node.id not in tp.requester:
                         Log.debug(
                             f"{self.__class__.__name__}:      add requester {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
@@ -199,6 +205,10 @@ class RosStateJsonify:
                             tp.provider.append(ros_node.id)
                             if self._is_local_composable_service(tp.name, ros_node):
                                 composable_services.append(tp.name)
+                            if self._is_local_lifecycle_state_service(tp.name, tp.srvtype, ros_node):
+                                lifecycle_state_services.append(tp.name)
+                            if self._is_local_lifecycle_transitions_service(tp.name, tp.srvtype, ros_node):
+                                lifecycle_transition_services.append(tp.name)
                         elif not is_request and ros_node.id not in tp.requester:
                             Log.debug(
                                 f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
@@ -215,6 +225,9 @@ class RosStateJsonify:
         # update composable nodes
         if new_nodes_detected:
             self._composable_nodes = self._update_composable_nodes(composable_services, result)
+        # update lifecycle states
+        self._update_lifecycle_states(lifecycle_state_services, result)
+        self._update_lifecycle_transitions(lifecycle_transition_services, result)
         # apply composable nodes to the result
         for composable_name, container_name in self._composable_nodes.items():
             for idx in range(len(result)):
@@ -290,6 +303,20 @@ class RosStateJsonify:
             return True
         return False
 
+    def _is_local_lifecycle_state_service(self, service_name, service_type, ros_node: RosNode) -> bool:
+        if ros_node.is_local and service_name.endswith('/get_state') and service_type == "lifecycle_msgs/srv/GetState":
+            # check only local nodes
+            ros_node.lifecycle_state = "unknown"
+            return True
+        return False
+
+    def _is_local_lifecycle_transitions_service(self, service_name, service_type, ros_node: RosNode) -> bool:
+        if ros_node.is_local and service_name.endswith('/get_available_transitions') and service_type == "lifecycle_msgs/srv/GetAvailableTransitions":
+            # check only local nodes
+            ros_node.lifecycle_available_transitions = []
+            return True
+        return False
+
     def _update_composable_nodes(self, composable_services: List[str], nodes: List[RosNode]) -> Dict[NodeFullName, NodeFullName]:
         composable_nodes: Dict[NodeFullName, NodeFullName] = {}
         for service_name in composable_services:
@@ -309,6 +336,53 @@ class RosStateJsonify:
                 Log.warn(
                     f"{self.__class__.__name__}:-> failed to update composable nodes of '{container_name}': '{response}'")
         return composable_nodes
+
+    def _update_lifecycle_states(self, lifecycle_state_services: List[str], nodes: List[RosNode]) -> None:
+        for service_name in lifecycle_state_services:
+            try:
+                Log.info(f"{self.__class__.__name__}:  update lifecycle state {service_name}")
+                # get composed nodes
+                request = GetState.Request()
+                response = nmd.launcher.call_service(service_name, GetState, request)
+                node_name = service_name.replace('/get_state', '')
+                if response:
+                    for idx in range(len(nodes)):
+                        if nodes[idx].name == node_name:
+                            nodes[idx].lifecycle_state = response.current_state.label
+                elif response is not None:
+                    Log.warn(
+                        f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{response.error_message}'")
+                else:
+                    Log.warn(
+                        f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{response}'")
+            except:
+                import traceback
+                print(traceback.format_exc())
+
+    def _update_lifecycle_transitions(self, lifecycle_transition_services: List[str], nodes: List[RosNode]) -> None:
+        for service_name in lifecycle_transition_services:
+            try:
+                Log.info(f"{self.__class__.__name__}:  update lifecycle transitions {service_name}")
+                # get composed nodes
+                request = GetAvailableTransitions.Request()
+                response = nmd.launcher.call_service(service_name, GetAvailableTransitions, request)
+                node_name = service_name.replace('/get_available_transitions', '')
+                if response:
+                    for idx in range(len(nodes)):
+                        if nodes[idx].name == node_name:
+                            nodes[idx].lifecycle_available_transitions = []
+                            for transition in response.available_transitions:
+                                nodes[idx].lifecycle_available_transitions.append(
+                                    (transition.transition.label, transition.transition.id))
+                elif response is not None:
+                    Log.warn(
+                        f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{response.error_message}'")
+                else:
+                    Log.warn(
+                        f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{response}'")
+            except:
+                import traceback
+                print(traceback.format_exc())
 
     def _get_qos(self, tp: TopicEndpointInfo) -> RosQos:
         return RosQos(tp.durability,

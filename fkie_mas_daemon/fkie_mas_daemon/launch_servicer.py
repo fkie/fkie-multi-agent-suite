@@ -13,6 +13,7 @@ import re
 import rclpy
 import shlex
 import sys
+import threading
 import traceback
 from importlib import import_module
 from launch.launch_context import LaunchContext
@@ -947,8 +948,17 @@ class LaunchServicer(LoggingEventHandler):
                 cli.wait_for_service()
             Log.debug(
                 f"{self.__class__.__name__}: requester: making request: {service_request}")
+            event = threading.Event()
+
+            def unblock(future):
+                nonlocal event
+                event.set()
+
             future = cli.call_async(service_request)
-            rclpy.spin_until_future_complete(nmd.ros_node, future, None, 30.)
+            future.add_done_callback(unblock)
+
+            # rclpy.spin_until_future_complete(nmd.ros_node, future, None, 30.)
+            event.wait(timeout=30.)
             try:
                 response = future.result()
             except Exception as e:
@@ -959,6 +969,8 @@ class LaunchServicer(LoggingEventHandler):
         except Exception as err:
             import traceback
             result.error_msg = repr(err)
+        finally:
+            nmd.ros_node.destroy_client(request.service_name)
         return json.dumps(result, cls=SelfEncoder)
 
     def start_subscriber(self, request_json: SubscriberNode) -> bool:

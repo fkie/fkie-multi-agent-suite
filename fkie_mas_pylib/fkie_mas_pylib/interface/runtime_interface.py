@@ -2,7 +2,7 @@ import json
 import os
 import platform
 import psutil
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 import re
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib import names
@@ -206,6 +206,8 @@ class RosNode:
         self.parameters: List[RosParameter] = []
         self.system_node = False
         self.enclave = ""
+        self.lifecycle_state: str = None
+        self.lifecycle_available_transitions: List[Tuple[str, int]] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
