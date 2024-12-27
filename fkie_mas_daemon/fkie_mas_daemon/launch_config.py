@@ -18,6 +18,7 @@ from typing import Text
 from typing import Tuple
 from typing import Union
 
+import ruamel.yaml
 from xml.dom.minidom import parse  # , parseString
 import os
 import re
@@ -47,7 +48,7 @@ from launch_ros.utilities import make_namespace_absolute
 from launch_ros.utilities import prefix_namespace
 from launch_ros.utilities.normalize_parameters import normalize_parameter_dict
 
-from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
 from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFile
 from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
@@ -165,7 +166,24 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self.file_name = self.launch_name
         self.composable_container: str = composable_container
         self.launch_prefix = self._get_launch_prefix()
-        self.parameters = self._get_parameter_arguments()
+        self.parameters_tmp = self._get_parameter_arguments()
+        self.parameters = []
+        for p in self.parameters_tmp:
+            if isinstance(p, tuple) and p[0].startswith("/"):
+                if os.path.exists(p[0]):
+                    print(f"open: {p[0]}")
+                    with open(p[0]) as tmp_param_file:
+                        try:
+                            yaml = ruamel.yaml.YAML(typ='rt')
+                            self.parameters.append(RosParameter(p[0], yaml.load(tmp_param_file)))
+                            continue
+                        except ruamel.yaml.YAMLError as exc:
+                            pass
+                self.parameters.append(RosParameter(p[0], p[1]))
+                continue
+            print(f"new parameter type: {type(p)}: {p}")
+            self.parameters.append(p)
+
         self.args = self._get_arguments()
         self.cmd = perform_to_string(self._launch_context, getattr(self._entity, 'cmd', None))
         self.cwd = perform_to_string(self._launch_context, getattr(self._entity, 'cwd', None))
@@ -631,7 +649,6 @@ class LaunchConfig(object):
                         elif isinstance(entity, launch.actions.group_action.GroupAction):
                             include_line_number, position_in_file, raw_text = self.find_definition(
                                 file_content, 'GroupAction', position_in_file)
-                            print(f"GROUPACTION: {position_in_file}")
                         continue
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:

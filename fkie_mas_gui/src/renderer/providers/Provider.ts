@@ -1193,8 +1193,7 @@ export default class Provider implements IProvider {
               const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
               if (this.rosVersion == "1") {
-                launchFile.parameters.forEach((p: RosParameter) => {
-                  console.log(`paramter: ${JSON.stringify(p)}`);
+                launchFile.parameters?.forEach((p: RosParameter) => {
                   if (nodesParametersFound) {
                     // skip parse further parameter if we found one and next was not in node namespace
                     // assumption: parameters are sorted
@@ -1220,9 +1219,8 @@ export default class Provider implements IProvider {
                   }
                 });
               } else {
-                launchNode.parameters?.forEach((p) => {
-                  if (Array.isArray(p))
-                  nodeParameters.push(new RosParameter(p[0], p[1], "", this.id));
+                launchNode.parameters?.forEach((p: RosParameter) => {
+                  nodeParameters.push(new RosParameter(p.name, p.value, "", this.id));
                 });
               }
 

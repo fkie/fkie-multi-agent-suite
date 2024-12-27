@@ -1,4 +1,7 @@
 /* eslint-disable camelcase */
+
+import RosParameter from "./RosParameter";
+
 /**
  * LaunchNodeInfo models info for ROS nodes that comes from launch file.
  */
@@ -23,7 +26,7 @@ class LaunchNodeInfo {
 
   remap_args: unknown[] | null;
 
-  parameters: unknown[] | null;
+  parameters: RosParameter[] | null;
 
   env: unknown[] | null;
 
@@ -74,7 +77,7 @@ class LaunchNodeInfo {
     respawn_delay: number | null = null,
     args: string | null = null,
     remap_args: unknown[] | null = null,
-    parameters: unknown[] | null = null,
+    parameters: RosParameter[] | null = null,
     env: unknown[] | null = null,
     additional_env: unknown[] | null = null,
     launch_prefix: string | null = null,

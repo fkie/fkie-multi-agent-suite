@@ -198,7 +198,7 @@ class LaunchNodeInfo:
                  respawn_delay: Number = 0,
                  args: str = None,
                  remap_args: List[Tuple[str, str]] = None,
-                 parameters: Tuple[str, bool] = None,
+                 parameters: List[RosParameter] = None,
                  env: List[Tuple[str, str]] = None,
                  additional_env: List[Tuple[str, str]] = None,
                  launch_prefix: str = None,

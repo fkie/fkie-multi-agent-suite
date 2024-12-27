@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
+import { JSONTree } from "react-json-tree";
 import { CopyButton, Tag, colorFromHostname, getDiagnosticStyle } from "../../../components";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { NavigationContext } from "../../../context/NavigationContext";
@@ -23,6 +24,8 @@ import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { RosNodeStatus, getDiagnosticLevelName, getFileName } from "../../../models";
+import { darkThemeJson } from "../../../themes/darkTheme";
+import { lightThemeJson } from "../../../themes/lightTheme";
 import { generateUniqueId } from "../../../utils";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
@@ -51,6 +54,7 @@ function NodesDetailsPanel() {
 
   const [nodesShow, setNodesShow] = useState([]);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
+  const [currentTheme, setCurrentTheme] = useState(settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson);
 
   const [showNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);
   const [showPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
@@ -59,6 +63,10 @@ function NodesDetailsPanel() {
   const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
   const [showPaths] = useLocalStorage("NodesDetailsPanel:showPaths", true);
   const [showLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
+
+  useEffect(() => {
+    setCurrentTheme(settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson);
+  }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
     // TODO: Make a parameter or config for [maxNodes]
@@ -262,7 +270,12 @@ function NodesDetailsPanel() {
               ) : (
                 node.getAllContainers().length > 0 && (
                   <Stack direction="row" spacing={0.5}>
-                    <Tag color="default" title="Composable Container:" text={`${JSON.stringify(node.getAllContainers())}`} wrap />
+                    <Tag
+                      color="default"
+                      title="Composable Container:"
+                      text={`${JSON.stringify(node.getAllContainers())}`}
+                      wrap
+                    />
                   </Stack>
                 )
               )}
@@ -575,7 +588,7 @@ function NodesDetailsPanel() {
                             </Box>
                           </Typography>
                           {launchInfo.cmd && (
-                            <Stack direction="row" spacing={0.5}>
+                            <Stack direction="row" paddingBottom={0.5}>
                               <Tag
                                 color="default"
                                 title="CMD:"
@@ -595,8 +608,24 @@ function NodesDetailsPanel() {
                                         {parameter.name.startsWith(node.name)
                                           ? parameter.name.slice(node.name.length + 1)
                                           : parameter.name}
+                                        {typeof parameter.value === "object" && (
+                                          <JSONTree
+                                            data={parameter.value}
+                                            sortObjectKeys={true}
+                                            theme={currentTheme}
+                                            invertTheme={false}
+                                            hideRoot={false}
+                                            shouldExpandNodeInitially={() => {
+                                              return true;
+                                            }}
+                                          />
+                                        )}
                                       </TableCell>
-                                      <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
+                                      {typeof parameter.value !== "object" ? (
+                                        <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
+                                      ) : (
+                                        <TableCell style={{ padding: 0 }}></TableCell>
+                                      )}
                                     </TableRow>
                                   ))}
                                 </TableBody>
