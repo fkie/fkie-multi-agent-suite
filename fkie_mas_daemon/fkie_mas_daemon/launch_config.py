@@ -555,7 +555,7 @@ class LaunchConfig(object):
         line_number = -1
         end_position = -1
         raw_text = ""
-        identifier_pattern = re.compile(rf"{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
+        identifier_pattern = re.compile(rf"[^#]\s{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
         match = identifier_pattern.search(content, start)
         if match is not None:
             open_brackets = 0
