@@ -13,9 +13,13 @@ import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 import ExplorerTree, { equalLaunchArgs } from "../../../components/MonacoEditor/ExplorerTree";
-import { createDocumentSymbols, createXMLDependencyProposals } from "../../../components/MonacoEditor/MonacoTools";
+import { createPythonLaunchProposals } from "../../../components/MonacoEditor/PythonLaunchProposals";
 import SearchTree from "../../../components/MonacoEditor/SearchTree";
 import XmlBeautify from "../../../components/MonacoEditor/XmlBeautify";
+import {
+  createDocumentSymbols,
+  createXMLDependencyProposals,
+} from "../../../components/MonacoEditor/XmlLaunchProposals";
 import { colorFromHostname } from "../../../components/UI/Colors";
 import SearchBar from "../../../components/UI/SearchBar";
 import { LoggingContext } from "../../../context/LoggingContext";
@@ -652,7 +656,7 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
     // !=> the goto functionality is provided by clickRequest
 
     // personalize launch file objects
-    ["xml", "launch"].forEach((e) => {
+    ["xml", "launch", "python"].forEach((e) => {
       // Add Completion provider for XML and launch files
       addMonacoDisposable(
         monaco.languages.registerCompletionItemProvider(e, {
@@ -668,7 +672,10 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
             if (clipTextReadyForSuggest) {
               clipTextReadyForSuggest = false;
               return {
-                suggestions: createXMLDependencyProposals(monaco, range, clipTextSuggest),
+                suggestions:
+                  e === "python"
+                    ? createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue())
+                    : createXMLDependencyProposals(monaco, range, clipTextSuggest),
               };
             }
             getClipboardTextForSuggest();
@@ -690,26 +697,28 @@ function FileEditorPanel({ tabId, providerId, rootFilePath, currentFilePath, fil
       // !=> the goto functionality is provided by clickRequest
 
       // Add symbols XML and launch files
-      addMonacoDisposable(
-        monaco.languages.registerDocumentSymbolProvider(e, {
-          displayName: "ROS Symbols",
-          provideDocumentSymbols: (model, token) => {
-            return createDocumentSymbols(model, token);
-          },
-        })
-      );
-      addMonacoDisposable(
-        monaco.languages.registerDocumentFormattingEditProvider("xml", {
-          async provideDocumentFormattingEdits(model, options, token) {
-            return [
-              {
-                range: model.getFullModelRange(),
-                text: formatXml(model.getValue()),
-              },
-            ];
-          },
-        })
-      );
+      if (e !== "python") {
+        addMonacoDisposable(
+          monaco.languages.registerDocumentSymbolProvider(e, {
+            displayName: "ROS Symbols",
+            provideDocumentSymbols: (model, token) => {
+              return createDocumentSymbols(model, token);
+            },
+          })
+        );
+        addMonacoDisposable(
+          monaco.languages.registerDocumentFormattingEditProvider("xml", {
+            async provideDocumentFormattingEdits(model, options, token) {
+              return [
+                {
+                  range: model.getFullModelRange(),
+                  text: formatXml(model.getValue()),
+                },
+              ];
+            },
+          })
+        );
+      }
     });
 
     addMonacoDisposable(
