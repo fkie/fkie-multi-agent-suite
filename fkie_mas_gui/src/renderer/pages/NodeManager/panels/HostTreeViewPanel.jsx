@@ -393,11 +393,11 @@ function HostTreeViewPanel() {
               });
             }
           }
-          if (!newNodeList.find((n) => n.name === node.name)) {
-            newNodeList.push(node);
-          }
         }
-      });
+        if (!newNodeList.find((n) => n.name === node.name)) {
+          newNodeList.push(node);
+        }
+    });
       return newNodeList;
     },
     [rosCtx]
@@ -577,7 +577,8 @@ function HostTreeViewPanel() {
         if (node.pid) {
           let killTime = -1;
           node.launchInfo.forEach((launchInfo) => {
-            launchInfo.params.forEach((param) => {
+            launchInfo.parameters.forEach((param) => {
+              // TODO: search for kill parameter in ros2 
               if (param.name.endsWith("/nm/kill_on_stop")) {
                 if (killTime === -1) killTime = param.value;
               }
@@ -594,7 +595,6 @@ function HostTreeViewPanel() {
           }
         }
       });
-
       if (restart) {
         if (maxKillTime > -1) {
           // wait until all timers are expired before start nodes if kill timer was used while stop nodes
