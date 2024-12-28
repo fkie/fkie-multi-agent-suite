@@ -99,7 +99,7 @@ function HostTreeView({
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const treePath = `${a.slice(0, -1).join("/")}#${nameWithoutNamespace(node)}`;
+              const treePath = `${a.slice(0, -1).join("/")}#${nameWithoutNamespace(node)}-${node.guid}`;
               r.nodeTree.push({
                 treePath,
                 children: r[name].nodeTree,
