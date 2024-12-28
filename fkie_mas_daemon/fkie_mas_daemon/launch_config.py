@@ -77,7 +77,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
     elif value and isinstance(value, launch.Substitution):
         try:
             result += context.perform_substitution(value)
-        except SubstitutionFailure as err:
+        except (SubstitutionFailure, LookupError) as err:
             if isinstance(value, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
                 executable = perform_substitutions(context, value.executable)
                 package = perform_substitutions(context, value.package)
