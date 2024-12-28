@@ -111,6 +111,7 @@ class ScreenServicer:
             found_deep = -1
             found_pid = -1
             found_name = ""
+            parents2kill = []
             try:
                 for process in psutil.process_iter():
                     deep = -1
@@ -127,6 +128,7 @@ class ScreenServicer:
                         found_deep = deep
                         found_pid = process.pid
                         found_name = process.name()
+                        parents2kill = parents
             except Exception as error:
                 # fallback for psutil versions (<5.6.0) without Process.parents()
                 current_pid = pid_screen
@@ -138,6 +140,7 @@ class ScreenServicer:
                         parent = process.parent()
                         if parent and parent.pid == current_pid:
                             new_pid = process.pid
+                            parents2kill.append(current_pid)
                             current_pid = process.pid
                 if current_pid != pid_screen:
                     found_pid = current_pid
@@ -145,6 +148,12 @@ class ScreenServicer:
                 Log.info(
                     f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig.name}")
                 os.kill(found_pid, sig)
+                # kill all parents, to handle the case if respawn script is used
+                if sig == signal.SIGKILL:
+                    Log.info(
+                        f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig.name}")
+                    for parent_pid in reversed(parents2kill):
+                        os.kill(parent_pid, sig)
                 successCur = True
             if not successCur:
                 Log.info(
