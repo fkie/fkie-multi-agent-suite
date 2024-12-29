@@ -615,7 +615,7 @@ export default class Provider implements IProvider {
       this.logger?.error(`Provider [${this.name()}]: can not save content to ${file.path}: `, `${error}`, false);
       return -1;
     });
-    if (bitesWritten) {
+    if (bitesWritten > 0) {
       return Promise.resolve({
         bytesWritten: bitesWritten,
         error: "",
