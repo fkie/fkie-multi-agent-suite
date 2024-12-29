@@ -110,6 +110,12 @@ class RosQos:
         self.lifespan = lifespan
         self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions
 
+class IncompatibleQos:
+    def __init__(self, node_id: str, compatibility: str, reason: str) -> None:
+        self.node_id = node_id
+        self.compatibility = compatibility
+        self.reason = reason
+
 
 class RosTopic:
     def __init__(self, name: str, msgtype: str) -> None:
@@ -118,6 +124,7 @@ class RosTopic:
         self.publisher: List[str] = []
         self.subscriber: List[str] = []
         self.qos = RosQos()
+        self.incompatible_qos: List[IncompatibleQos] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

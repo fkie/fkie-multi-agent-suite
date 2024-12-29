@@ -1,4 +1,5 @@
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
+import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { alpha, styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 import PropTypes from "prop-types";
@@ -157,6 +158,11 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 {label}
               </Typography>
               {/* {requestData && <CircularProgress size="1em" />} */}
+              {topicInfo && Object.keys(topicInfo.incompatibleQos).length > 0 && (
+                <Tooltip title={`Some subscribers have incompatible QoS`} placement="right" disableInteractive>
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                </Tooltip>
+              )}
             </Stack>
             <Stack
               direction="row"
@@ -220,7 +226,7 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", ".")}`]);
+                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", "#")}`]);
                       }}
                     >
                       {pubNodeName}
@@ -235,15 +241,31 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
               {topicInfo.subscribers.map((item) => {
                 const subNodeName = removeDDSuid(item);
                 return (
-                  <Stack key={item} paddingLeft={3} direction="row">
+                  <Stack
+                    key={item}
+                    paddingLeft={3}
+                    spacing={1}
+                    direction="row"
+                    justifyItems="center"
+                    alignItems="center"
+                  >
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", ".")}`]);
+                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", "#")}`]);
                       }}
                     >
                       {subNodeName}
                     </Typography>
+                    {topicInfo.incompatibleQos[item] && (
+                      <Tooltip
+                        title={`Incompatible QoS: ${JSON.stringify(topicInfo.incompatibleQos[item])}`}
+                        placement="right"
+                        disableInteractive
+                      >
+                        <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                      </Tooltip>
+                    )}
                     {/* <CopyButton value={subNodeName} fontSize="0.7em" /> */}
                   </Stack>
                 );

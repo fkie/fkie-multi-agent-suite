@@ -33,6 +33,8 @@ class TopicExtendedInfo {
 
   subscribers = [];
 
+  incompatibleQos = {};
+
   // providers = {}; // {providerId: string, providerName: string}
   // nodes = {}; //{(providerId: string, itemId: string): nodeName: string}
 
@@ -43,7 +45,7 @@ class TopicExtendedInfo {
     this.providerId = providerId;
     this.providerName = providerName;
     this.addPublishers(topic.publisher);
-    this.addSubscribers(topic.subscriber);
+    this.addSubscribers(topic.subscriber, topic.incompatible_qos);
   }
 
   addPublishers(publishers) {
@@ -54,17 +56,20 @@ class TopicExtendedInfo {
     });
   }
 
-  addSubscribers(subscribers) {
+  addSubscribers(subscribers, incompatible_qos) {
     subscribers.forEach((sub) => {
       if (!this.subscribers.includes(sub)) {
         this.subscribers.push(sub);
+        if (incompatible_qos.length > 0) {
+          this.incompatibleQos[sub] = incompatible_qos;
+        }
       }
     });
   }
 
   add(topic) {
     this.addPublishers(topic.publisher);
-    this.addSubscribers(topic.subscriber);
+    this.addSubscribers(topic.subscriber, topic.incompatible_qos);
   }
 }
 
@@ -114,10 +119,10 @@ function TopicsPanel({ initialSearchTerm = "" }) {
             }
           };
 
-          node.subscribers.forEach((topic) => {
+          node.publishers.forEach((topic) => {
             addTopic(topic, node);
           });
-          node.publishers.forEach((topic) => {
+          node.subscribers.forEach((topic) => {
             addTopic(topic, node);
           });
         });

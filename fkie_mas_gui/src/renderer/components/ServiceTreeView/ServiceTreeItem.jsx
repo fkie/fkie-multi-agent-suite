@@ -207,7 +207,7 @@ const ServiceTreeItem = React.forwardRef(function ServiceTreeItem(
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", ".")}`]);
+                        navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`]);
                       }}
                     >
                       {item.nodeName}
@@ -227,7 +227,7 @@ const ServiceTreeItem = React.forwardRef(function ServiceTreeItem(
                         <Typography
                           fontSize="small"
                           onClick={() => {
-                            navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", ".")}`]);
+                            navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`]);
                           }}
                         >
                           {item.nodeName}

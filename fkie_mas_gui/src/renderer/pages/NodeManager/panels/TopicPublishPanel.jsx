@@ -101,7 +101,7 @@ function TopicPublishPanel({ topicName = null, providerId = "" }) {
         if (field.value || withEmptyFields) {
           if (field.value || typeof field.value === "boolean" || field.type.startsWith("bool")) {
             if (field.is_array) {
-              const values = field.value.split(/\s*,\s*/);
+              const values = field.value?.split(/\s*,\s*/) || [];
               // TODO: add check for arrays with constant length
               result[field.name] = values.map((element) => {
                 return str2typedValue(element, field.type);
