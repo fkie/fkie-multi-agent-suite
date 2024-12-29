@@ -16,11 +16,13 @@ from typing import Union
 
 import os
 
+from rclpy.qos import QoSCompatibility, qos_check_compatible
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from composition_interfaces.srv import ListNodes
 from lifecycle_msgs.srv import GetState
 from lifecycle_msgs.srv import GetAvailableTransitions
 
+from fkie_mas_pylib.interface.runtime_interface import IncompatibleQos
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
 from fkie_mas_pylib.interface.runtime_interface import RosQos
@@ -50,6 +52,14 @@ IsNew = bool
 IsService = bool
 IsRequest = bool
 
+
+class QosPub:
+    node: RosNode
+    qos_profile: any
+
+    def __init__(self, node: RosNode, qos_profile: any):
+        self.node = node
+        self.qos_profile = qos_profile
 
 class ComposedNodeInfo:
     container_name: NodeFullName
@@ -136,6 +146,7 @@ class RosStateJsonify:
 
         topic_list = nmd.ros_node.get_topic_names_and_types(True)
         for topic_name, topic_types in topic_list:
+            pub_qos: List[QosPub] = []
             pub_infos = nmd.ros_node.get_publishers_info_by_topic(topic_name, True)
             for pub_info in pub_infos:
                 if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
@@ -158,6 +169,7 @@ class RosStateJsonify:
                     discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in pub_info.topic_type
                     endpoint_publisher = 'fkie_mas_msgs::msg::dds_::Endpoint_' in pub_info.topic_type
                     ros_node.system_node |= ros_node.system_node or discover_state_publisher or endpoint_publisher
+                    pub_qos.append(QosPub(ros_node, pub_info.qos_profile))
                 else:
                     if not is_request and ros_node.id not in tp.provider:
                         Log.debug(
@@ -197,6 +209,13 @@ class RosStateJsonify:
                         Log.debug(
                             f"{self.__class__.__name__}:      add subscriber {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
                         tp.subscriber.append(ros_node.id)
+                        # check for compatibility with publisher nodes
+                        tp.incompatible_qos = []
+                        for qp in pub_qos:
+                            compatibility, reason = qos_check_compatible(qp.qos_profile, sub_info.qos_profile)
+                            if compatibility != QoSCompatibility.OK:
+                                tp.incompatible_qos.append(IncompatibleQos(
+                                    qp.node.id, self._qos_compatibility2str(compatibility), reason))
                         ros_node.subscribers.append(tp)
                     else:
                         if is_request and ros_node.id not in tp.provider:
@@ -394,3 +413,10 @@ class RosStateJsonify:
                       tp.liveliness_lease_duration,
                       tp.lifespan,
                       tp.avoid_ros_namespace_conventions)
+
+    def _qos_compatibility2str(self, qc: QoSCompatibility) -> str:
+        if qc == QoSCompatibility.OK:
+            return "ok"
+        elif qc == QoSCompatibility.Warning:
+            return "warning"
+        return "error"
