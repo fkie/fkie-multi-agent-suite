@@ -11,7 +11,7 @@ class RosService {
   /**
    * List of types, in case of ROS1 the list only contains one element.
    */
-  srvtype: string;
+  srv_type: string;
 
   /**
    * ROS serice API URI (where the service is running)
@@ -42,7 +42,7 @@ class RosService {
    * Class Constructor
    *
    * @param {string} name - Topic name including namespace
-   * @param {string} srvtype - Service type.
+   * @param {string} srv_type - Service type.
    * @param {string} service_API_URI - ROS serice API URI (where the service is running)
    * @param {string} masteruri - The ROS_MASTER_URI the service was originaly registered
    * @param {string[]} provider - List of ROS nodes provide this service.
@@ -50,7 +50,7 @@ class RosService {
    */
   constructor(
     name: string,
-    srvtype: string,
+    srv_type: string,
     service_API_URI: string,
     masteruri = "",
     provider: string[] = [],
@@ -58,7 +58,7 @@ class RosService {
     requester: string[] = []
   ) {
     this.name = name;
-    this.srvtype = srvtype;
+    this.srv_type = srv_type;
     this.service_API_URI = service_API_URI;
     this.masteruri = masteruri;
     this.provider = provider;
@@ -72,7 +72,7 @@ class RosService {
    * @return {string} Node description
    */
   toString: () => string = () => {
-    return `${this.name} - ${this.srvtype}`;
+    return `${this.name} - ${this.srv_type}`;
   };
 }
 

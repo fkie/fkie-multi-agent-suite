@@ -140,13 +140,13 @@ function TopicEchoPanel({ showOptions = true, defaultProvider = "", defaultTopic
     nodeList.forEach((node) => {
       node.subscribers.forEach((topic) => {
         if (msgType === "" && topicName === topic.name) {
-          msgType = topic.msgtype;
+          msgType = topic.msg_type;
         }
       });
       if (msgType === "") {
         node.publishers.forEach((topic) => {
           if (msgType === "" && topicName === topic.name) {
-            msgType = topic.msgtype;
+            msgType = topic.msg_type;
           }
         });
       }

@@ -198,7 +198,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
         nodeList.forEach((node) => {
           node.services.forEach((service) => {
             if (srvType === "" && serviceName === service.name) {
-              srvType = service.srvtype;
+              srvType = service.srv_type;
             }
           });
         });

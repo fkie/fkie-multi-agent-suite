@@ -37,7 +37,7 @@ class ServiceExtendedInfo {
   constructor(service, providerId, providerName) {
     this.id = `${service.name}/${providerName}`;
     this.name = service.name;
-    this.srvType = service.srvtype;
+    this.srvType = service.srv_type;
     this.providerId = providerId;
     this.providerName = providerName;
   }
@@ -75,7 +75,7 @@ function ServicesPanel({ initialSearchTerm = "" }) {
     rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
       nodeList.forEach((node) => {
         node.services.forEach((service) => {
-          const key = genKey([node.providerId, service.name, service.srvtype]);
+          const key = genKey([node.providerId, service.name, service.srv_type]);
           const serviceInfo = newServicesMap.get(key);
           if (serviceInfo) {
             service.provider.map((item) => {

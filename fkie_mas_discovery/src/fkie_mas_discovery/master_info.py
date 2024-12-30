@@ -17,6 +17,7 @@ import rospy
 from .common import get_hostname
 from .filter_interface import FilterInterface
 from fkie_mas_pylib import names
+from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosService
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
@@ -1364,7 +1365,7 @@ class MasterInfo(object):
                     discover_state_publisher = topic.type in [
                         'fkie_mas_msgs/MasterState']
                     if not iffilter.is_ignored_publisher(n, name, topic.type):
-                        ros_topic.publisher.append(n)
+                        ros_topic.publisher.append(EndpointInfo(n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
                         node.publishers.append(ros_topic)
                         # check if it is a nodlet
@@ -1376,7 +1377,7 @@ class MasterInfo(object):
                         ros_nodes[n] = node
                 for n in topic.subscriberNodes:
                     if not iffilter.is_ignored_subscriber(n, name, topic.type):
-                        ros_topic.subscriber.append(n)
+                        ros_topic.subscriber.append(EndpointInfo(n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
                         node.subscribers.append(ros_topic)
                         ros_nodes[n] = node

@@ -110,6 +110,7 @@ class RosQos:
         self.lifespan = lifespan
         self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions
 
+
 class IncompatibleQos:
     def __init__(self, node_id: str, compatibility: str, reason: str) -> None:
         self.node_id = node_id
@@ -117,23 +118,29 @@ class IncompatibleQos:
         self.reason = reason
 
 
+class EndpointInfo:
+    def __init__(self, node_id: str, qos: Union[RosQos, None], incompatible_qos: List[IncompatibleQos]) -> None:
+        self.node_id = node_id
+        self.qos = qos
+        self.incompatible_qos = incompatible_qos
+
+
 class RosTopic:
-    def __init__(self, name: str, msgtype: str) -> None:
+    def __init__(self, name: str, msg_type: str) -> None:
+        self.id = name
         self.name = name
-        self.msgtype = msgtype
-        self.publisher: List[str] = []
-        self.subscriber: List[str] = []
-        self.qos = RosQos()
-        self.incompatible_qos: List[IncompatibleQos] = []
+        self.msg_type = msg_type
+        self.publisher: List[EndpointInfo] = []
+        self.subscriber: List[EndpointInfo] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
 
 
 class RosService:
-    def __init__(self, name: str, srvtype: str) -> None:
+    def __init__(self, name: str, srv_type: str) -> None:
         self.name = name
-        self.srvtype = srvtype
+        self.srv_type = srv_type
         self.masteruri = ""
         self.service_API_URI = ""
         self.provider: List[str] = []
@@ -539,7 +546,7 @@ class DiagnosticArray:
 
     """
 
-    def __init__(self, timestamp: float, status: []) -> None:
+    def __init__(self, timestamp: float, status: List[any]) -> None:
         self.timestamp = timestamp
         self.status = status
 

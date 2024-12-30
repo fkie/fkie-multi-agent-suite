@@ -22,6 +22,7 @@ from composition_interfaces.srv import ListNodes
 from lifecycle_msgs.srv import GetState
 from lifecycle_msgs.srv import GetAvailableTransitions
 
+from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
 from fkie_mas_pylib.interface.runtime_interface import IncompatibleQos
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
@@ -60,6 +61,7 @@ class QosPub:
     def __init__(self, node: RosNode, qos_profile: any):
         self.node = node
         self.qos_profile = qos_profile
+
 
 class ComposedNodeInfo:
     container_name: NodeFullName
@@ -156,15 +158,14 @@ class RosStateJsonify:
                 ros_node, is_new = self._get_node_from(
                     pub_info.node_namespace, pub_info.node_name, gid, cached_data)
                 tp, is_topic, is_request = self._get_topic_from(topic_name, pub_info.topic_type, t_gid, cached_data)
-                # add qos
-                tp.qos = self._get_qos(pub_info.qos_profile)
                 # topic or service ?
                 if is_topic:
                     discover_state_publisher = False
                     endpoint_publisher = False
                     Log.debug(
-                        f"{self.__class__.__name__}:      add publisher {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
-                    tp.publisher.append(ros_node.id)
+                        f"{self.__class__.__name__}:      add publisher {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name} for {tp.name}")
+                    endpoint_info = EndpointInfo(ros_node.id, self._get_qos(pub_info.qos_profile), [])
+                    tp.publisher.append(endpoint_info)
                     ros_node.publishers.append(tp)
                     discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in pub_info.topic_type
                     endpoint_publisher = 'fkie_mas_msgs::msg::dds_::Endpoint_' in pub_info.topic_type
@@ -177,9 +178,9 @@ class RosStateJsonify:
                         tp.provider.append(ros_node.id)
                         if self._is_local_composable_service(tp.name, ros_node):
                             composable_services.append(tp.name)
-                        if self._is_local_lifecycle_state_service(tp.name, tp.srvtype, ros_node):
+                        if self._is_local_lifecycle_state_service(tp.name, tp.srv_type, ros_node):
                             lifecycle_state_services.append(tp.name)
-                        if self._is_local_lifecycle_transitions_service(tp.name, tp.srvtype, ros_node):
+                        if self._is_local_lifecycle_transitions_service(tp.name, tp.srv_type, ros_node):
                             lifecycle_transition_services.append(tp.name)
                     elif is_request and ros_node.id not in tp.requester:
                         Log.debug(
@@ -202,20 +203,19 @@ class RosStateJsonify:
                 ros_node, is_new = self._get_node_from(sub_info.node_namespace, sub_info.node_name, gid, cached_data)
                 try:
                     tp, is_topic, is_request = self._get_topic_from(topic_name, sub_info.topic_type, t_gid, cached_data)
-                    # add qos
-                    tp.qos = self._get_qos(sub_info.qos_profile)
                     # topic or service ?
                     if is_topic:
                         Log.debug(
-                            f"{self.__class__.__name__}:      add subscriber {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
-                        tp.subscriber.append(ros_node.id)
+                            f"{self.__class__.__name__}:      add subscriber {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name} for {tp.name}")
                         # check for compatibility with publisher nodes
-                        tp.incompatible_qos = []
+                        incompatible_qos = []
                         for qp in pub_qos:
                             compatibility, reason = qos_check_compatible(qp.qos_profile, sub_info.qos_profile)
                             if compatibility != QoSCompatibility.OK:
-                                tp.incompatible_qos.append(IncompatibleQos(
+                                incompatible_qos.append(IncompatibleQos(
                                     qp.node.id, self._qos_compatibility2str(compatibility), reason))
+                        endpoint_info = EndpointInfo(ros_node.id, self._get_qos(sub_info.qos_profile), incompatible_qos)
+                        tp.subscriber.append(endpoint_info)
                         ros_node.subscribers.append(tp)
                     else:
                         if is_request and ros_node.id not in tp.provider:
@@ -224,9 +224,9 @@ class RosStateJsonify:
                             tp.provider.append(ros_node.id)
                             if self._is_local_composable_service(tp.name, ros_node):
                                 composable_services.append(tp.name)
-                            if self._is_local_lifecycle_state_service(tp.name, tp.srvtype, ros_node):
+                            if self._is_local_lifecycle_state_service(tp.name, tp.srv_type, ros_node):
                                 lifecycle_state_services.append(tp.name)
-                            if self._is_local_lifecycle_transitions_service(tp.name, tp.srvtype, ros_node):
+                            if self._is_local_lifecycle_transitions_service(tp.name, tp.srv_type, ros_node):
                                 lifecycle_transition_services.append(tp.name)
                         elif not is_request and ros_node.id not in tp.requester:
                             Log.debug(
@@ -296,6 +296,7 @@ class RosStateJsonify:
                 topic_type_res = self.get_message_type(topic_type)
                 Log.debug(f"{self.__class__.__name__}:   create topic {topic_name[2:]} ({topic_type_res})")
                 tp = RosTopic(topic_name[2:], topic_type_res)
+                tp.id = gid
                 data.topic_objs[(topic_name[2:], topic_type)] = tp
                 data.topic_by_id[gid] = tp
             else:

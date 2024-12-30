@@ -255,17 +255,17 @@ function ConnectToProviderModal({ onCloseDialog = () => {} }) {
         newAcTopicSet.add(`${node.name}/*`);
         node.publishers.forEach((topic) => {
           newAcTsSet.add(topic.name);
-          newAcTsSet.add(topic.msgtype);
+          newAcTsSet.add(topic.msg_type);
           newAcTopicSet.add(topic.name);
         });
         node.subscribers.forEach((topic) => {
           newAcTsSet.add(topic.name);
-          newAcTsSet.add(topic.msgtype);
+          newAcTsSet.add(topic.msg_type);
           newAcTopicSet.add(topic.name);
         });
         node.services.forEach((service) => {
           newAcTsSet.add(service.name);
-          newAcTsSet.add(service.srvtype);
+          newAcTsSet.add(service.srv_type);
         });
       });
     });

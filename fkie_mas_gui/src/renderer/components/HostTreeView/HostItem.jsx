@@ -184,7 +184,7 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
                 edge="start"
                 aria-label="Toggle Master Sync"
                 onClick={() => {
-                  toggleMasterSync();
+                  toggleMasterSync(provider);
                 }}
               >
                 <ChangeCircleOutlinedIcon

@@ -4,9 +4,12 @@ import { alpha, styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 import PropTypes from "prop-types";
 import React, { useContext, useEffect, useState } from "react";
+import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { NavigationContext } from "../../context/NavigationContext";
 import { SettingsContext } from "../../context/SettingsContext";
+import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { removeDDSuid } from "../../utils/index";
 import { colorFromHostname } from "../UI/Colors";
 
@@ -158,8 +161,8 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 {label}
               </Typography>
               {/* {requestData && <CircularProgress size="1em" />} */}
-              {topicInfo && Object.keys(topicInfo.incompatibleQos).length > 0 && (
-                <Tooltip title={`Some subscribers have incompatible QoS`} placement="right" disableInteractive>
+              {topicInfo && topicInfo.subscribers.filter((sub) => sub.incompatible_qos?.length > 0).length > 0 && (
+                <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
                   <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
                 </Tooltip>
               )}
@@ -220,13 +223,18 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 Publisher [{topicInfo.publishers.length}]:
               </Typography>
               {topicInfo.publishers.map((item) => {
-                const pubNodeName = removeDDSuid(item);
+                const pubNodeName = removeDDSuid(item.node_id || item);
                 return (
-                  <Stack key={item} paddingLeft={3} direction="row">
+                  <Stack key={item.node_id || item} paddingLeft={3} direction="row">
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", "#")}`]);
+                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.node_id?.replaceAll("/", "#")}`]);
+                        // inform details panel tab about selected nodes by user
+                        emitCustomEvent(
+                          EVENT_OPEN_COMPONENT,
+                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {})
+                        );
                       }}
                     >
                       {pubNodeName}
@@ -239,10 +247,10 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                 Subscriber [{topicInfo.subscribers.length}]:
               </Typography>
               {topicInfo.subscribers.map((item) => {
-                const subNodeName = removeDDSuid(item);
+                const subNodeName = removeDDSuid(item.node_id || item);
                 return (
                   <Stack
-                    key={item}
+                    key={item.node_id || item}
                     paddingLeft={3}
                     spacing={1}
                     direction="row"
@@ -252,14 +260,19 @@ const TopicTreeItem = React.forwardRef(function TopicTreeItem(
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.replaceAll("/", "#")}`]);
+                        navCtx.setSelectedNodes([`${topicInfo.providerId}${item.node_id?.replaceAll("/", "#")}`]);
+                        // inform details panel tab about selected nodes by user
+                        emitCustomEvent(
+                          EVENT_OPEN_COMPONENT,
+                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {})
+                        );
                       }}
                     >
                       {subNodeName}
                     </Typography>
-                    {topicInfo.incompatibleQos[item] && (
+                    {item.incompatible_qos.length > 0 && (
                       <Tooltip
-                        title={`Incompatible QoS: ${JSON.stringify(topicInfo.incompatibleQos[item])}`}
+                        title={`Incompatible QoS: ${JSON.stringify(item.incompatible_qos)}`}
                         placement="right"
                         disableInteractive
                       >

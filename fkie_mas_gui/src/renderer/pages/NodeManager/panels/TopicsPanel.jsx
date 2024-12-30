@@ -23,7 +23,7 @@ class TopicExtendedInfo {
 
   name;
 
-  msgtype = "";
+  msgType = "";
 
   providerId = "";
 
@@ -33,43 +33,38 @@ class TopicExtendedInfo {
 
   subscribers = [];
 
-  incompatibleQos = {};
-
   // providers = {}; // {providerId: string, providerName: string}
   // nodes = {}; //{(providerId: string, itemId: string): nodeName: string}
 
   constructor(topic, providerId, providerName) {
     this.id = `${topic.name}/${providerName}`;
     this.name = topic.name;
-    this.msgtype = topic.msgtype;
+    this.msgType = topic.msg_type;
     this.providerId = providerId;
     this.providerName = providerName;
     this.addPublishers(topic.publisher);
-    this.addSubscribers(topic.subscriber, topic.incompatible_qos);
+    this.addSubscribers(topic.subscriber);
   }
 
   addPublishers(publishers) {
     publishers.forEach((pub) => {
-      if (!this.publishers.includes(pub)) {
+      if (this.publishers.filter((item) => item.node_id === pub.node_id).length === 0) {
         this.publishers.push(pub);
       }
     });
   }
 
-  addSubscribers(subscribers, incompatible_qos) {
+  addSubscribers(subscribers) {
     subscribers.forEach((sub) => {
-      if (!this.subscribers.includes(sub)) {
+      if (this.subscribers.filter((item) => item.node_id === sub.node_id).length === 0) {
         this.subscribers.push(sub);
-        if (incompatible_qos.length > 0) {
-          this.incompatibleQos[sub] = incompatible_qos;
-        }
       }
     });
   }
 
   add(topic) {
     this.addPublishers(topic.publisher);
-    this.addSubscribers(topic.subscriber, topic.incompatible_qos);
+    this.addSubscribers(topic.subscriber);
   }
 }
 
@@ -96,24 +91,19 @@ function TopicsPanel({ initialSearchTerm = "" }) {
   const getTopicList = useCallback(async () => {
     if (!rosCtx.initialized) return;
 
-    const newProviderKeyName = {};
-    const newNodeKeyName = {};
     const newTopicsMap = new Map();
 
     if (rosCtx.mapProviderRosNodes) {
       // Get topics from the ros node list of each provider.
       rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
         nodeList.forEach((node) => {
-          newNodeKeyName[genKey([providerId, node.id])] = node.name;
-          newProviderKeyName[node.providerId] = node.providerName;
-
           const addTopic = (rosTopic, rosNode) => {
-            const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msgtype, providerId]));
+            const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type, providerId]));
             if (topicInfo) {
               topicInfo.add(rosTopic);
             } else {
               newTopicsMap.set(
-                genKey([rosTopic.name, rosTopic.msgtype, rosNode.providerId]),
+                genKey([rosTopic.name, rosTopic.msg_type, rosNode.providerId]),
                 new TopicExtendedInfo(rosTopic, rosNode.providerId, rosNode.providerName)
               );
             }
@@ -147,7 +137,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     const newFilteredTopics = topics.filter((topic) => {
       const isMatch = findIn(newSearchTerm, [
         topic.name,
-        topic.msgtype,
+        topic.msgType,
         topic.providerName,
         topic.publishers,
         topic.subscribers,
@@ -217,8 +207,8 @@ function TopicsPanel({ initialSearchTerm = "" }) {
         let msgType = undefined;
         value.map((item) => {
           if (msgType === undefined) {
-            msgType = item.topicInfo.msgtype;
-          } else if (msgType !== item.topicInfo.msgtype) {
+            msgType = item.topicInfo.msgType;
+          } else if (msgType !== item.topicInfo.msgType) {
             if (msgType !== "") {
               msgType = "";
             }
@@ -300,11 +290,11 @@ function TopicsPanel({ initialSearchTerm = "" }) {
     }
     return (
       <TopicTreeItem
-        key={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
-        itemId={genKey([treeItem.name, treeItem.msgtype, treeItem.providerId])}
+        key={genKey([treeItem.name, treeItem.msgType, treeItem.providerId])}
+        itemId={genKey([treeItem.name, treeItem.msgType, treeItem.providerId])}
         labelRoot={rootPath}
         labelText={`${treeItem.name}`}
-        labelInfo={treeItem.msgtype}
+        labelInfo={treeItem.msgType}
         color="#1a73e8"
         bgColor="#e8f0fe"
         colorForDarkMode="#B8E7FB"
@@ -317,7 +307,7 @@ function TopicsPanel({ initialSearchTerm = "" }) {
 
   useEffect(() => {
     const selectedTopics = filteredTopics.filter((item) => {
-      return genKey([item.name, item.msgtype, item.providerId]) === selectedItem;
+      return genKey([item.name, item.msgType, item.providerId]) === selectedItem;
     });
     if (selectedTopics?.length >= 0) {
       setTopicForSelected(selectedTopics[0]);

@@ -5,7 +5,13 @@ type IncompatibleQos = {
   node_id: string;
   compatibility: string;
   reason: string;
-}
+};
+
+type EndpointInfo = {
+  node_id: string;
+  qos: RosQos | undefined;
+  incompatible_qos: IncompatibleQos[] | undefined;
+};
 
 /**
  * RosTopic models topics in a ROS system
@@ -24,45 +30,38 @@ class RosTopic {
   /**
    * List of types, in case of ROS1 the list only contains one element.
    */
-  msgtype: string;
+  msg_type: string;
 
   /**
    * List of ROS nodes publish to this topic.
    */
-  publisher: string[];
+  publisher: EndpointInfo[];
 
   /**
    * List of ROS nodes subscribe to this topic.
    */
-  subscriber: string[];
-
-  qos: RosQos;
-
-  incompatible_qos: IncompatibleQos[];
+  subscriber: EndpointInfo[];
 
   /**
    * Class Constructor
    *
    * @param {string} name - Topic name including namespace
-   * @param {string} msgtype - Message type.
+   * @param {string} msg_type - Message type.
    * @param {string[]} publisher - List of ROS nodes publish to this topic.
    * @param {string[]} subscriber - List of ROS nodes subscribe to this topic.
    */
   constructor(
     name: string,
-    msgtype: string,
-    publisher: string[] = [],
-    subscriber: string[] = [],
-    qos: RosQos = new RosQos(),
-    incompatibleQos: IncompatibleQos[] | undefined = undefined
+    msg_type: string,
+    publisher: EndpointInfo[] = [],
+    subscriber: EndpointInfo[] = [],
+    id: string | undefined = undefined
   ) {
-    this.id = generateUniqueId();
+    this.id = id || generateUniqueId();
     this.name = name;
-    this.msgtype = msgtype;
+    this.msg_type = msg_type;
     this.publisher = publisher;
     this.subscriber = subscriber;
-    this.qos = qos;
-    this.incompatible_qos = incompatibleQos ? incompatibleQos : [];
   }
 
   /**
@@ -71,7 +70,7 @@ class RosTopic {
    * @return {string} Node description
    */
   toString: () => string = () => {
-    return `${this.name} - ${this.msgtype}`;
+    return `${this.name} - ${this.msg_type}`;
   };
 }
 
