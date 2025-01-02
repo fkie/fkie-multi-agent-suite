@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
+import { TTag } from "@/types";
 import { DiagnosticLevel, DiagnosticStatus } from "./Diagnostics";
 import LaunchNodeInfo from "./LaunchNodeInfo";
-import RosParameter from "./RosParameter";
 import RosService from "./RosService";
 import RosTopic from "./RosTopic";
 
@@ -36,7 +36,7 @@ class RosNode {
   /** ID used on the UI side across all provider. idGlobal should be the same for life of the node on remote host */
   idGlobal: string = "";
 
-  tags: unknown[] = []; // used on gui side
+  tags: TTag[] = []; // used on gui side
 
   /**
    * Unique identifier

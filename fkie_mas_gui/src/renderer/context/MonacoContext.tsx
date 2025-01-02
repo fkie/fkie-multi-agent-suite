@@ -100,7 +100,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
 
   useEffect(() => {
     window.editorManager?.onFileRange(
-      (tabId: string, filePath: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => {
+      (tabId: string, filePath: string, fileRange: TFileRange | null, launchArgs: TLaunchArg[]) => {
         if (fileRange) {
           emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, filePath, fileRange, launchArgs));
         }

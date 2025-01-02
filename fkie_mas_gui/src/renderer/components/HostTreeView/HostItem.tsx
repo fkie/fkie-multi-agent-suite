@@ -1,3 +1,5 @@
+import { RosNode } from "@/renderer/models";
+import { TTag } from "@/types";
 import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
 import ComputerIcon from "@mui/icons-material/Computer";
 import HideSourceIcon from "@mui/icons-material/HideSource";
@@ -15,8 +17,12 @@ import {
   Tooltip,
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
-import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  TreeItem2SlotProps,
+  UseTreeItem2ContentSlotOwnProps,
+  UseTreeItem2IconContainerSlotOwnProps,
+} from "@mui/x-tree-view";
+import React, { forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
@@ -27,14 +33,21 @@ import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPa
 import { CmdType } from "../../providers";
 import Provider from "../../providers/Provider";
 import { generateUniqueId } from "../../utils";
-import ContentComponentItemTree from "../ContentComponentItemTree/ContentComponentItemTree";
 import { colorFromHostname } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import DateHelpDialog from "./DateHelpDialog";
 import SetNTPDateDialog from "./SetNTPDateDialog";
-import StyledTreeItem from "./StyledTreeItem";
+import StyledRootTreeItem from "./StyledRootTreeItem";
 
-function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ...other }) {
+interface HostItemProps {
+  provider: Provider;
+  stopNodes: (nodeIdGlobals: string[]) => void;
+  onDoubleClick: (event: React.MouseEvent, id: string) => void;
+  children: React.ReactNode;
+}
+
+const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(props, ref) {
+  const { provider, stopNodes = () => {}, onDoubleClick = () => {}, ...children } = props;
   const settingsCtx = useContext(SettingsContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -42,15 +55,15 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
   const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help"];
   const [openTimeButton, setOpenTimeButton] = useState(false);
   const anchorRef = useRef(null);
-  const [showHelpTime, setShowHelpTime] = useState(false);
-  const [openNtpdateDialog, setOpenNtpdateDialog] = useState(false);
-  const [timeDiffThreshold, setTimeDiffThreshold] = useState(settingsCtx.get("timeDiffThreshold"));
+  const [showHelpTime, setShowHelpTime] = useState<boolean>(false);
+  const [openNtpdateDialog, setOpenNtpdateDialog] = useState<boolean>(false);
+  const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [timeDiffThreshold, setTimeDiffThreshold] = useState<number>(settingsCtx.get("timeDiffThreshold") as number);
 
   useEffect(() => {
-    setTimeDiffThreshold(settingsCtx.get("timeDiffThreshold"));
+    setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+    setTimeDiffThreshold(settingsCtx.get("timeDiffThreshold") as number);
   }, [settingsCtx, settingsCtx.changed]);
-
-  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
 
   const updateTime = async (local = true) => {
     if (provider) {
@@ -83,7 +96,7 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
     }
   };
 
-  const handleMenuTimeItemClick = (event, index) => {
+  const handleMenuTimeItemClick = (_event, index) => {
     if (index === 0) {
       // set time using ntpdate
       setOpenNtpdateDialog(true);
@@ -100,8 +113,9 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
     }
     setOpenTimeButton(false);
   };
-  const handleCloseTimeButton = (event) => {
-    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+
+  const handleCloseTimeButton = (event: MouseEvent | TouchEvent) => {
+    if (anchorRef.current && anchorRef.current === event.target) {
       return;
     }
     setOpenTimeButton(false);
@@ -111,7 +125,7 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
    * Check if provider has master sync on
    */
   const getMasterSyncNode = useCallback(
-    (providerId) => {
+    (providerId: string) => {
       const foundSyncNode = rosCtx.mapProviderRosNodes.get(providerId)?.find((node) => {
         return node.id.includes(`/mas_sync`);
       });
@@ -121,8 +135,8 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
   );
 
   const toggleMasterSync = useCallback(
-    (provider) => {
-      const syncNode = getMasterSyncNode(provider.id);
+    (provider: Provider) => {
+      const syncNode: RosNode | undefined = getMasterSyncNode(provider.id);
       if (syncNode) {
         stopNodes([syncNode.idGlobal]);
       } else {
@@ -135,8 +149,8 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
   /**
    * Get provider tags
    */
-  const getProviderTags = useCallback((provider) => {
-    const tags = [];
+  const getProviderTags = useCallback((provider: Provider) => {
+    const tags: TTag[] = [];
     if (!provider.daemon) {
       tags.push({ id: "no-daemon", data: "No Daemon", tooltip: "", color: "red" });
     }
@@ -151,7 +165,7 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
     return `${sec}s`;
   }
 
-  const getHostStyle = (provider) => {
+  const getHostStyle = (provider: Provider) => {
     if (settingsCtx.get("colorizeHosts")) {
       // borderLeft: `3px dashed`,
       // borderColor: colorFromHostname(provider.name()),
@@ -164,15 +178,33 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
     return {};
   };
 
+  // avoid selection if collapse icon was clicked
+  let toggled = false;
+  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+    event.defaultMuiPrevented = toggled;
+    toggled = false;
+  };
+
+  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+
+  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+    toggled = true;
+  };
+
   return (
-    <StyledTreeItem
-      // ContentComponent={ContentComponentItemTree}
-      slots={{ item: ContentComponentItemTree }}
+    <StyledRootTreeItem
       itemId={provider.id}
+      slotProps={
+        {
+          label: { onClick: handleLabelClick },
+          content: { onClick: handleContentClick },
+          iconContainer: { onClick: handleIconContainerClick },
+        } as TreeItem2SlotProps
+      }
       sx={getHostStyle(provider)}
-      onDoubleClick={(event) => onDoubleClick(event, provider.name(), provider.id)}
+      onDoubleClick={(event) => onDoubleClick(event, provider.id)}
       label={
-        <Box display="flex" alignItems="center" paddingLeft={0.0}>
+        <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
           {provider.rosState.ros_version === "1" && (
             <Tooltip
               title="Toggle Master Sync"
@@ -183,8 +215,9 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
               <IconButton
                 edge="start"
                 aria-label="Toggle Master Sync"
-                onClick={() => {
+                onClick={(event) => {
                   toggleMasterSync(provider);
+                  event.stopPropagation();
                 }}
               >
                 <ChangeCircleOutlinedIcon
@@ -244,10 +277,9 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
                   )}
                 </Popper>
                 <SetNTPDateDialog
-                  id="sync-time-menu"
-                  keepMounted
+                  key="sync-time-menu"
                   open={openNtpdateDialog}
-                  onClose={(value) => {
+                  onClose={(value: string) => {
                     if (value) {
                       // execute the command in own terminal
                       const id = `cmd-${generateUniqueId()}`;
@@ -264,10 +296,10 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
                     }
                     setOpenNtpdateDialog(false);
                   }}
-                  value="sudo ntpdate -v -u -t 1"
+                  defaultCmd="sudo ntpdate -v -u -t 1"
                 />
                 <DateHelpDialog
-                  id="show-time-help"
+                  key="show-time-help"
                   open={showHelpTime}
                   onClose={() => {
                     setShowHelpTime(false);
@@ -282,43 +314,42 @@ function HostItem({ provider, stopNodes = () => {}, onDoubleClick = () => {}, ..
             <HideSourceIcon sx={{ mr: 0.5, width: 20, color: red[700] }} />
           )}
 
-          <Stack direction="row" sx={{ flexGrow: 1, userSelect: "none" }}>
+          <Stack
+            direction="row"
+            sx={{ flexGrow: 1, userSelect: "none" }}
+            // style={{ pointerEvents: "none" }}
+          >
             {provider.name()}
-            {getProviderTags(provider).map((tag) => (
-              <Tooltip
-                key={tag.id}
-                title={`${tag.tooltip}`}
-                placement="left"
-                disableInteractive
-                onClick={(event) => {
-                  if (tag.onClick) {
-                    tag.onClick(event);
-                  }
-                }}
-              >
-                {typeof tag.data === "string" ? (
-                  <Tag text={tag.data} color={tag.color} style={{ pointerEvents: "none" }} />
-                ) : (
-                  tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
-                )}
-              </Tooltip>
+
+            {getProviderTags(provider).map((tag: TTag) => (
+              <Stack key={tag.id}>
+                <Tooltip key={tag.id} title={`${tag.tooltip}`} placement="left" disableInteractive>
+                  {typeof tag.data === "string" ? (
+                    <Tag
+                      text={tag.data}
+                      color={tag.color}
+                      onClick={(event) => {
+                        if (tag.onClick) {
+                          tag.onClick(event);
+                        }
+                        event.stopPropagation();
+                      }}
+                      onDoubleClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                    />
+                  ) : (
+                    tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
+                  )}
+                </Tooltip>
+              </Stack>
             ))}
           </Stack>
         </Box>
       }
-      style={{
-        "--tree-view-color": provider.isAvailable() ? grey[700] : red[700],
-        "--tree-view-bg-color": provider.isAvailable() ? grey[200] : red[200],
-      }}
-      {...other}
+      {...children}
     />
   );
-}
-
-HostItem.propTypes = {
-  provider: PropTypes.object.isRequired,
-  onDoubleClick: PropTypes.func,
-  stopNodes: PropTypes.func,
-};
+});
 
 export default HostItem;

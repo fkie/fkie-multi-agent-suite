@@ -1,10 +1,29 @@
-import { Chip } from "@mui/material";
-import PropTypes from "prop-types";
+import { Chip, ChipPropsColorOverrides } from "@mui/material";
+import { OverridableStringUnion } from "@mui/types";
+import { forwardRef } from "react";
 import CopyButton from "./CopyButton";
 
 const chipDefaultColors = ["default", "primary", "secondary", "error", "info", "success", "warning"];
 
-function Tag({ title = "", text = "", color = "info", copyButton = "", wrap = true }) {
+type TagColor =
+  | OverridableStringUnion<
+      "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning",
+      ChipPropsColorOverrides
+    >
+  | undefined;
+
+interface TagProps {
+  title?: string | undefined;
+  text: string;
+  color?: string;
+  copyButton?: string;
+  wrap?: boolean;
+  onClick?: (event: React.MouseEvent) => void;
+  onDoubleClick?: (event: React.MouseEvent) => void;
+}
+
+const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
+  const { title = "", text = "", color = "info", copyButton = "", wrap = true } = props;
   const isDefaultColor = chipDefaultColors.includes(color);
 
   const chipSX = {
@@ -27,8 +46,9 @@ function Tag({ title = "", text = "", color = "info", copyButton = "", wrap = tr
 
   return (
     <Chip
+      ref={ref}
       size="small"
-      color={isDefaultColor ? color : "default"}
+      color={isDefaultColor ? (color as TagColor) : "default"}
       style={isDefaultColor ? {} : { backgroundColor: color }}
       label={
         <>
@@ -40,14 +60,6 @@ function Tag({ title = "", text = "", color = "info", copyButton = "", wrap = tr
       sx={chipSX}
     />
   );
-}
-
-Tag.propTypes = {
-  title: PropTypes.string,
-  text: PropTypes.string,
-  color: PropTypes.string,
-  copyButton: PropTypes.string,
-  wrap: PropTypes.bool,
-};
+});
 
 export default Tag;

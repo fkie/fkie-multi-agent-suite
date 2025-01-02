@@ -83,7 +83,7 @@ class EditorManager implements TEditorManager {
   public emitFileRange: (
     id: string,
     path: string,
-    fileRange: TFileRange,
+    fileRange: TFileRange | null,
     launchArgs: TLaunchArg[]
   ) => Promise<boolean> = async (id, path, fileRange, launchArgs) => {
     if (this.editors[id]) {
@@ -123,7 +123,7 @@ class EditorManager implements TEditorManager {
     port: number,
     path: string,
     launchFile: string,
-    fileRange: TFileRange,
+    fileRange: TFileRange | null,
     launchArgs: TLaunchArg[]
   ) => Promise<string | null> = async (id, host, port, path, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {

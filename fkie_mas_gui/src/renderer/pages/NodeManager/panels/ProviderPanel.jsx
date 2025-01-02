@@ -121,7 +121,7 @@ function ProviderPanel() {
   useEffect(() => {
     if (window.commandExecutor && !rosCtx.rosInfo) return;
     getDomainId();
-  }, [rosCtx.rosInfo, rosCtx.providers]);
+  }, [rosCtx.rosInfo, rosCtx.providers, window.commandExecutor]);
 
   const createProviderTable = useMemo(() => {
     const result = (

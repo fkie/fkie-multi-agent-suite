@@ -51,9 +51,9 @@ export function eventCloseComponent(id: string): { id: string } {
 export function eventEditorSelectRange(
   tabId: string,
   filePath: string,
-  fileRange: TFileRange,
+  fileRange: TFileRange | null,
   launchArgs: TLaunchArg[]
-): { tabId: string; filePath: string; fileRange: TFileRange; launchArgs: TLaunchArg[] } {
+): { tabId: string; filePath: string; fileRange: TFileRange | null; launchArgs: TLaunchArg[] } {
   return { tabId, filePath, fileRange, launchArgs };
 }
 

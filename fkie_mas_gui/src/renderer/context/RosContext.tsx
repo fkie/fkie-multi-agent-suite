@@ -89,7 +89,7 @@ export interface IRosProviderContext {
     providerId: string,
     rootLaunch: string,
     path: string,
-    fileRange: TFileRange,
+    fileRange: TFileRange | null,
     launchArgs: TLaunchArg[],
     externalKeyModifier: boolean
   ) => void;
@@ -1018,7 +1018,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     providerId: string,
     rootLaunch: string,
     path: string,
-    fileRange: TFileRange,
+    fileRange: TFileRange | null,
     launchArgs: TLaunchArg[],
     externalKeyModifier: boolean
   ) => {

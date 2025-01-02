@@ -17,7 +17,7 @@ class LaunchCallService {
   /**
    * Dictionary structure of the ROS request service as JSON string.
    */
-  data: JSONObject | null;
+  data: string;
 
   /**
    * Class Constructor
@@ -29,7 +29,7 @@ class LaunchCallService {
   constructor(service_name: string, srv_type: string, data: JSONObject | null) {
     this.service_name = service_name;
     this.srv_type = srv_type;
-    this.data = data;
+    this.data = JSON.stringify(data);
   }
 
   /**

@@ -16,7 +16,7 @@ export interface IEditorConfig {
   port: number;
   rootLaunch: string;
   path: string;
-  fileRange: TFileRange;
+  fileRange: TFileRange | null;
   launchArgs: TLaunchArg[];
 }
 

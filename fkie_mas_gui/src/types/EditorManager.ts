@@ -14,7 +14,7 @@ export const EditorManagerEvents = {
 export type FileRangeCallback = (
   tabId: string,
   filePath: string,
-  fileRange: TFileRange,
+  fileRange: TFileRange | null,
   launchArgs: TLaunchArg[]
 ) => void;
 
@@ -27,7 +27,7 @@ export type TEditorManager = {
     port: number,
     path: string,
     rootLaunch: string,
-    fileRange: TFileRange,
+    fileRange: TFileRange | null,
     launchArgs: TLaunchArg[]
   ) => Promise<string | null>;
 
@@ -37,7 +37,7 @@ export type TEditorManager = {
 
   has: (id: string) => Promise<boolean>;
 
-  emitFileRange: (id: string, path: string, fileRange: TFileRange, launchArgs: TLaunchArg[]) => Promise<boolean>;
+  emitFileRange: (id: string, path: string, fileRange: TFileRange | null, launchArgs: TLaunchArg[]) => Promise<boolean>;
 
   onFileRange: (callback: FileRangeCallback) => void;
 

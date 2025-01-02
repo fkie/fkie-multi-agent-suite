@@ -1,24 +1,25 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-// import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import { Box } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
+import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
-import { getFileName, LaunchFile } from "../../models";
+import { getFileName, LaunchContent, LaunchFile, RosNode } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
-import { CmdType } from "../../providers";
+import { CmdType, Provider } from "../../providers";
 import { generateUniqueId, nameWithoutNamespace, removeDDSuid } from "../../utils";
-import GroupItem, { getGroupIcon, getNodesCount } from "./GroupItem";
+import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
 import NodeItem from "./NodeItem";
+import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
+// import { useTreeViewApiRef } from "@mui/x-tree-view";
 
-const compareTreeItems = (a, b) => {
+const compareTreeItems = (a: NodeTreeItem, b: NodeTreeItem) => {
   // place system groups are at the end
   const aSystem = a.treePath.includes("{SYSTEM}");
   const bSystem = b.treePath.includes("{SYSTEM}");
@@ -31,42 +32,59 @@ const compareTreeItems = (a, b) => {
   return a.treePath.localeCompare(b.treePath);
 };
 
-const compareTreeProvider = (a, b) => {
-  return a.providerName?.localeCompare(b.providerName);
+const compareTreeProvider = (a: NodeTreeItem, b: NodeTreeItem) => {
+  if (a.providerName && b.providerName) {
+    return a.providerName?.localeCompare(b.providerName);
+  } else if (a.providerName) {
+    return -1;
+  } else if (b.providerName) {
+    return 1;
+  }
+  return 0;
 };
 
-function HostTreeView({
-  visibleNodes,
-  isFiltered = false,
-  onNodeSelect = () => {},
-  onProviderSelect = () => {},
-  showLoggers = () => {},
-  startNodes = () => {},
-  stopNodes = () => {},
-  restartNodes = () => {},
-  createSingleTerminalPanel = () => {},
-}) {
+type HostTreeViewProps = {
+  visibleNodes: RosNode[];
+  isFiltered: boolean;
+  onNodeSelect: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
+  onProviderSelect: (providerIds: string[]) => void; // id of the providers in rosCtx
+  startNodes: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
+  stopNodes: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
+  showLoggers: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
+};
+
+const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function HostTreeView(props, ref) {
+  const {
+    visibleNodes,
+    isFiltered = false,
+    onNodeSelect = () => {},
+    onProviderSelect = () => {},
+    startNodes = () => {},
+    stopNodes = () => {},
+    showLoggers = () => {},
+  } = props;
+  // const apiRef = useTreeViewApiRef();
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
 
   // providerNodeTree: list of {providerId: string, nodeTree: object}
-  const [providerNodeTree, setProviderNodeTree] = useState([]);
-  const [expanded, setExpanded] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [keyNodeList, setKeyNodeList] = useState([]); // <= keyNodeList: {key: string, idGlobal: string}[]
+  const [providerNodeTree, setProviderNodeTree] = useState<NodeTreeItem[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [keyNodeList, setKeyNodeList] = useState<KeyTreeItem[]>([]);
 
-  const createTreeFromNodes = (nodes) => {
-    const namespaceSystemNodes = settingsCtx.get("namespaceSystemNodes");
-    const expandedGroups = [];
+  const createTreeFromNodes = (nodes: RosNode[]) => {
+    const namespaceSystemNodes: string = settingsCtx.get("namespaceSystemNodes") as string;
+    const expandedGroups: string[] = [];
     const nodeItemMap = new Map();
     // generate node tree structure based on node list
     // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
     // ...and keep a list of the tree nodes
-    const nodeTree = [];
-    const level = { nodeTree };
-    nodes.forEach((node) => {
-      let nodePath = node.providerId;
+    const nodeTree: NodeTreeItem[] = [];
+    const level: NodeTree = { nodeTree };
+    nodes.forEach((node: RosNode) => {
+      let nodePath = node.providerId || "";
       if (node.system_node && namespaceSystemNodes) {
         // for system nodes, e.g.: /{SYSTEM}/ns
         nodePath += namespaceSystemNodes;
@@ -90,7 +108,7 @@ function HostTreeView({
       nodePath += "/" + node.idGlobal;
       if (!nodeItemMap.has(node.idGlobal)) {
         nodeItemMap.set(node.idGlobal, node);
-        nodePath.split("/").reduce((r, name, idx, a) => {
+        nodePath.split("/").reduce((r: NodeTree, name, idx, a) => {
           if (!r[name]) {
             r[name] = { nodeTree: [] };
 
@@ -105,8 +123,9 @@ function HostTreeView({
                 children: r[name].nodeTree,
                 node,
                 name: nameWithoutNamespace(node),
+                providerId: undefined,
+                providerName: undefined,
               });
-              // nodeTreeList.push(`${providerId}#${treePath}`);
             } else {
               // create a (sub)group
 
@@ -116,7 +135,8 @@ function HostTreeView({
                 children: r[name].nodeTree,
                 node: null,
                 providerId: idx === 0 ? node.providerId : undefined,
-                name: idx === 0 ? node.providerName : a.slice(idx, idx + 1).join("/"), // top level is the provider
+                providerName: idx === 0 ? node.providerName : undefined,
+                name: idx === 0 ? node.providerName || "" : a.slice(idx, idx + 1).join("/"), // top level is the provider
               });
               expandedGroups.push(treePath);
             }
@@ -125,7 +145,14 @@ function HostTreeView({
         }, level);
       }
     });
-    setProviderNodeTree(nodeTree);
+    setProviderNodeTree((prevTree) => {
+      if (prevTree.length === 0) {
+        // use either the expanded state or the key of the node tree (expand the first layer)
+        // only at first load
+        setExpanded(nodeTree?.map((item) => item.providerId as string));
+      }
+      return nodeTree;
+    });
     if (isFiltered) {
       setExpanded(expandedGroups);
     }
@@ -138,7 +165,7 @@ function HostTreeView({
   /**
    * Callback when items on the tree are expanded/retracted
    */
-  const handleToggle = useCallback((event, nodeIds) => {
+  const handleToggle = useCallback((_event: React.SyntheticEvent, nodeIds: string[]) => {
     setExpanded(nodeIds);
   }, []);
 
@@ -146,14 +173,14 @@ function HostTreeView({
    * Callback when items on the tree are double clicked
    */
   const handleDoubleClick = useCallback(
-    (event, label, id) => {
+    (_event: React.MouseEvent, id: string) => {
       if (!expanded || !id) {
         return;
       }
 
       // check if providers exists on expanded items
       if (expanded.length === 0) {
-        setExpanded([...providerNodeTree.map((item) => item.providerId), id]);
+        setExpanded([...providerNodeTree.map((item) => item.providerId as string), id]);
         return;
       }
 
@@ -174,7 +201,7 @@ function HostTreeView({
    * Callback when items on the tree are double clicked
    */
   const handleDoubleClickOnNode = useCallback(
-    (event, label, id) => {
+    (event: React.MouseEvent, id: string) => {
       const nodeIds = getNodeIdsFromTreeIds([id]);
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
@@ -185,10 +212,12 @@ function HostTreeView({
               stopNodes([node.idGlobal]);
             } else {
               node.screens.forEach((screen) => {
-                createSingleTerminalPanel(
+                rosCtx.openTerminal(
                   CmdType.SCREEN,
-                  node,
+                  node.providerId as string,
+                  node.name,
                   screen,
+                  "",
                   event.nativeEvent.shiftKey,
                   event.nativeEvent.ctrlKey
                 );
@@ -199,10 +228,12 @@ function HostTreeView({
               // stop node
               startNodes([node.idGlobal]);
             } else {
-              createSingleTerminalPanel(
+              rosCtx.openTerminal(
                 CmdType.LOG,
-                node,
-                undefined,
+                node.providerId as string,
+                node.name,
+                "",
+                "",
                 event.nativeEvent.shiftKey,
                 event.nativeEvent.ctrlKey
               );
@@ -214,11 +245,21 @@ function HostTreeView({
     [rosCtx.nodeMap]
   );
 
+  const handleClickOnLoggers = useCallback(
+    (_event: React.MouseEvent, id: string) => {
+      if (showLoggers) {
+        const nodeIds = getNodeIdsFromTreeIds([id]);
+        showLoggers(nodeIds);
+      }
+    },
+    [rosCtx.nodeMap]
+  );
+
   /**
    * Function to get all the IDs belonging to a list of parent IDs
    */
   const getParentAndChildrenIds = useCallback(
-    (parentIds) => {
+    (parentIds: string[]) => {
       let allIds = parentIds;
       parentIds.forEach((id) => {
         const parsedId = id.split("#");
@@ -241,8 +282,8 @@ function HostTreeView({
    * Get nodes for selected ids
    */
   const getNodeIdsFromTreeIds = useCallback(
-    (itemIds) => {
-      let nodeList = [];
+    (itemIds: string[]) => {
+      let nodeList: string[] = [];
       itemIds.forEach((item) => {
         nodeList = [
           ...nodeList,
@@ -254,7 +295,7 @@ function HostTreeView({
               return entry.key.startsWith(item);
             })
             .map((entry) => {
-              return entry.idGlobal;
+              return entry.idGlobal ? entry.idGlobal : "";
             }),
         ];
       });
@@ -267,8 +308,8 @@ function HostTreeView({
   /**
    * Get providers for selected ids
    */
-  const getProvidersFromIds = useCallback((itemIds) => {
-    const provList = [];
+  const getProvidersFromIds = useCallback((itemIds: string[]) => {
+    const provList: string[] = [];
     itemIds.forEach((item) => {
       if (!item.includes("#")) {
         provList.push(item);
@@ -281,7 +322,7 @@ function HostTreeView({
    * Callback when items on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (event, itemIds) => {
+    (_event: React.SyntheticEvent, itemIds: string[]) => {
       // update selected state
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
@@ -373,11 +414,11 @@ function HostTreeView({
    * Callback when the event of removing a launch file is triggered
    */
   const onRemoveLaunch = useCallback(
-    async (providerId, path, masteruri) => {
-      const provider = rosCtx.getProviderById(providerId);
+    async (providerId: string, path: string, masteruri: string) => {
+      const provider: Provider | undefined = rosCtx.getProviderById(providerId, true);
       if (!provider || !provider.launchUnloadFile) return;
 
-      const request = new LaunchFile(path, masteruri, provider.host);
+      const request = new LaunchFile(path, masteruri, provider.host());
       const resultLaunchUnloadFile = await provider.launchUnloadFile(request);
 
       if (resultLaunchUnloadFile) {
@@ -405,7 +446,7 @@ function HostTreeView({
    * Callback when the event of reloading a launch file is triggered
    */
   const onReloadLaunch = useCallback(
-    async (providerId, path /*, _masteruri */) => {
+    async (providerId: string, path: string, _masteruri: string) => {
       await rosCtx.reloadLaunchFile(providerId, path);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -416,8 +457,8 @@ function HostTreeView({
    * Select all nodes on the tree, that belongs to a given launch file and provider
    */
   const selectNodesFromLaunch = useCallback(
-    (providerId, launch) => {
-      let treeNodes = [];
+    (providerId: string, launch: LaunchContent) => {
+      let treeNodes: string[] = [];
       // launch file contains the names of the nodes
       // find ros nodes with this name
       const providerNodes = rosCtx.mapProviderRosNodes.get(providerId);
@@ -433,7 +474,7 @@ function HostTreeView({
       // get the tree ids for the nodes ids
       const newSelItems = keyNodeList
         .filter((kNode) => {
-          return treeNodes.includes(kNode.idGlobal);
+          return kNode.idGlobal && treeNodes.includes(kNode.idGlobal);
         })
         .map((kNode) => kNode.key);
       setSelectedItems(newSelItems);
@@ -445,7 +486,7 @@ function HostTreeView({
    * Create elements of the tree view component
    */
   const buildHostTreeViewItem = useCallback(
-    (providerId, treeItem, newKeyNodeList) => {
+    (providerId: string, treeItem: NodeTreeItem, newKeyNodeList: KeyTreeItem[]) => {
       if (!treeItem) {
         console.error("Invalid item ", providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
@@ -473,22 +514,23 @@ function HostTreeView({
             itemId={itemId}
             node={node}
             namespacePart={namespacePart}
-            onDoubleClick={(itemId) => handleDoubleClickOnNode(itemId)}
+            onDoubleClick={(event: React.MouseEvent, itemId: string) => handleDoubleClickOnNode(event, itemId)}
+            onShowLoggersClick={(event: React.MouseEvent, itemId: string) => handleClickOnLoggers(event, itemId)}
           />
         );
       }
       // valid children means that item is a group
       const groupName = name; // treePath.split("/").pop();
-      newKeyNodeList.push({ key: itemId });
+      newKeyNodeList.push({ key: itemId, idGlobal: undefined });
       return (
         <GroupItem
           key={itemId}
           itemId={itemId}
           groupName={groupName}
-          icon={getGroupIcon(children, settingsCtx.get("useDarkMode"))}
-          countChildren={getNodesCount(children)}
-          onDoubleClick={(event, name, id) => {
-            handleDoubleClick(event, name, id);
+          icon={GroupIcon(children, settingsCtx.get("useDarkMode") as boolean)}
+          countChildren={NodesCount(children)}
+          onDoubleClick={(event: React.MouseEvent, id: string) => {
+            handleDoubleClick(event, id);
           }}
         >
           {children.sort(compareTreeItems).map((tItem) => {
@@ -502,7 +544,7 @@ function HostTreeView({
       settingsCtx,
       handleDoubleClick,
       selectedItems,
-      getNodesCount,
+      // NodesCount,
     ]
   );
 
@@ -511,63 +553,70 @@ function HostTreeView({
    * The idea is to prevent rerendering when scrolling/focusing the component
    */
   const generateTree = useMemo(() => {
-    const newKeyNodeList = [];
+    const newKeyNodeList: { key: string; idGlobal: string }[] = [];
     const tree = (
-      <SimpleTreeView
-        aria-label="node list"
-        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-        multiSelect
-        // use either the expanded state or the key of the node tree (expand the first layer)
-        expandedItems={expanded.length > 0 ? expanded : providerNodeTree?.map((item) => item.providerId)}
-        // sx={{ height: '100%' }}
-        selectedItems={selectedItems}
-        onExpandedItemsChange={handleToggle}
-        onSelectedItemsChange={handleSelect}
-        expansionTrigger={"iconContainer"}
-      >
-        {providerNodeTree?.sort(compareTreeProvider).map((item) => {
-          const { providerId, children } = item;
-          let providerIsAvailable = false;
-          const p = rosCtx.getProviderById(providerId);
-          if (p && p.isAvailable()) {
-            providerIsAvailable = true;
-          }
-          if (!p) {
-            return "";
-          }
-          // loop through available hosts
-          return (
-            <HostItem
-              key={p.id}
-              provider={p}
-              stopNodes={(idGlobalNodes) => {
-                stopNodes(idGlobalNodes);
-              }}
-              onDoubleClick={(event, name, id) => {
-                handleDoubleClick(event, name, id);
-              }}
-            >
-              {/* Show launch files if host is available (have children) */}
-              {providerIsAvailable && (
-                <LaunchFileList
-                  onMouseOver={(event) => {
-                    event.stopPropagation();
-                  }}
-                  providerId={providerId}
-                  launchContentList={p.launchFiles}
-                  selectNodesFromLaunch={selectNodesFromLaunch}
-                  onRemoveLaunch={onRemoveLaunch}
-                  onReloadLaunch={onReloadLaunch}
-                />
-              )}
+      <Box ref={ref}>
+        <SimpleTreeView
+          // apiRef={apiRef}
+          aria-label="node list"
+          slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
+          multiSelect
+          expandedItems={expanded}
+          // sx={{ height: '100%' }}
+          selectedItems={selectedItems}
+          onExpandedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleToggle(event, itemIds)}
+          onSelectedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleSelect(event, itemIds)}
+          expansionTrigger={"iconContainer"}
+        >
+          {providerNodeTree?.sort(compareTreeProvider).map((item) => {
+            let providerIsAvailable = false;
+            const p = rosCtx.getProviderById(item.providerId as string, true);
+            if (p && p.isAvailable()) {
+              providerIsAvailable = true;
+            }
+            if (!p) {
+              return "";
+            }
+            // loop through available hosts
+            return (
+              <HostItem
+                key={p.id}
+                provider={p}
+                stopNodes={(idGlobalNodes: string[]) => {
+                  stopNodes(idGlobalNodes);
+                }}
+                onDoubleClick={(event: React.MouseEvent, id: string) => {
+                  handleDoubleClick(event, id);
+                }}
+              >
+                {/* Show launch files if host is available (have children) */}
+                {providerIsAvailable && (
+                  <LaunchFileList
+                    onMouseOver={(event: React.MouseEvent) => {
+                      event.stopPropagation();
+                    }}
+                    providerId={item.providerId as string}
+                    launchContentList={p.launchFiles}
+                    selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
+                      selectNodesFromLaunch(providerId, launch)
+                    }
+                    onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
+                      onRemoveLaunch(providerId, path, masteruri)
+                    }
+                    onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
+                      onReloadLaunch(providerId, path, masteruri)
+                    }
+                  />
+                )}
 
-              {children.sort(compareTreeItems).map((sortItem) => {
-                return buildHostTreeViewItem(providerId, sortItem, newKeyNodeList);
-              })}
-            </HostItem>
-          );
-        })}
-      </SimpleTreeView>
+                {item.children.sort(compareTreeItems).map((sortItem) => {
+                  return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
+                })}
+              </HostItem>
+            );
+          })}
+        </SimpleTreeView>
+      </Box>
     );
     setKeyNodeList(newKeyNodeList);
     return tree;
@@ -593,18 +642,6 @@ function HostTreeView({
   ]);
 
   return generateTree;
-}
-
-HostTreeView.propTypes = {
-  visibleNodes: PropTypes.array.isRequired,
-  isFiltered: PropTypes.bool,
-  onNodeSelect: PropTypes.func,
-  onProviderSelect: PropTypes.func,
-  showLoggers: PropTypes.func,
-  startNodes: PropTypes.func,
-  stopNodes: PropTypes.func,
-  restartNodes: PropTypes.func,
-  createSingleTerminalPanel: PropTypes.func,
-};
+});
 
 export default HostTreeView;

@@ -43,15 +43,14 @@ const TopicTreeItemRoot = styled(TreeItem)(({ theme }) => ({
       width: 10,
     },
   },
-  [`& .${treeItemClasses.group}`]: {
+  [`& .${treeItemClasses.groupTransition}`]: {
     marginLeft: 12,
     paddingLeft: 5,
-    // [`& .${treeItemClasses.content}`]: {
-    //   paddingLeft: theme.spacing(0),
-    // },
     borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
-    // borderColor: black[50],
   },
+  ...theme.applyStyles("light", {
+    color: theme.palette.grey[800],
+  }),
 }));
 
 const TopicTreeItem = React.forwardRef(function TopicTreeItem(

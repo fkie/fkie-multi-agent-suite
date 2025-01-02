@@ -1,8 +1,7 @@
 import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
-import { Badge, Fade, IconButton, Menu, MenuItem } from "@mui/material";
+import { Badge, Fade, IconButton, ListItemText, Menu, MenuItem } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import PropTypes from "prop-types";
-import { useContext, useState } from "react";
+import React, { forwardRef, useContext, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 import { colorFromHostname } from "./Colors";
 
@@ -18,13 +17,29 @@ const StyledBadge = styled(Badge)((/*{ theme }*/) => ({
   },
 }));
 
-function OverflowMenu({
-  icon = <MoreVertSharpIcon sx={{ fontSize: "inherit" }} />,
-  options = [],
-  id = "overflow-menu",
-  showBadge = false,
-  colorizeItems = false,
-}) {
+export type OverflowMenuItem = {
+  key: string;
+  name: string;
+  onClick: () => void;
+};
+
+interface OverflowMenuProps {
+  id: string;
+  icon: React.ReactNode;
+  options: OverflowMenuItem[];
+  showBadge?: boolean;
+  colorizeItems?: boolean;
+}
+
+const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function OverflowMenu(props, ref) {
+  const {
+    id = "overflow-menu",
+    icon = <MoreVertSharpIcon sx={{ fontSize: "inherit" }} />,
+    options = [],
+    showBadge = false,
+    colorizeItems = false,
+  } = props;
+
   const settingsCtx = useContext(SettingsContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -39,7 +54,7 @@ function OverflowMenu({
   };
 
   /** create style to colorize the menu item depends on the provider name */
-  const getSxPropByName = (name) => {
+  const getSxPropByName = (name: string) => {
     if (colorizeItems && settingsCtx.get("colorizeHosts")) {
       return {
         borderLeftStyle: "solid",
@@ -52,16 +67,11 @@ function OverflowMenu({
 
   return (
     <StyledBadge
+      ref={ref}
       color="default"
       badgeContent={`${options.length}`}
       invisible={!showBadge || options.length === 0}
-      fontSize="inherit"
-      // variant="dot"
-      // anchorOrigin={{
-      //   vertical: 'bottom',
-      //   horizontal: 'right',
-      // }}
-
+      sx={{ fontSize: "inherit" }}
       onClick={(event) => event.stopPropagation()}
     >
       <IconButton
@@ -79,47 +89,32 @@ function OverflowMenu({
       </IconButton>
       <Menu
         id={`${id}-menu`}
-        size="small"
+        // size="small"
         MenuListProps={{
           "aria-labelledby": "long-button",
         }}
         anchorEl={anchorEl}
         open={open}
-        onClose={handleClose}
+        onClose={(event) => handleClose(event)}
         TransitionComponent={Fade}
-        // PaperProps={{
-        //   style: {
-        //     maxHeight: 10 * 4.5,
-        //     width: '20ch',
-        //   },
-        // }}
       >
-        {options.map((option) => {
+        {options.map((option: OverflowMenuItem) => {
           return (
             <MenuItem
-              size="small"
               key={option.key}
+              sx={getSxPropByName(option.name)}
               onClick={(event) => {
                 option.onClick();
                 handleClose(event);
               }}
-              sx={getSxPropByName(option.name)}
             >
-              {option.name}
+              <ListItemText>{option.name}</ListItemText>
             </MenuItem>
           );
         })}
       </Menu>
     </StyledBadge>
   );
-}
-
-OverflowMenu.propTypes = {
-  icon: PropTypes.object,
-  options: PropTypes.array,
-  id: PropTypes.string,
-  showBadge: PropTypes.bool,
-  colorizeItems: PropTypes.bool,
-};
+});
 
 export default OverflowMenu;

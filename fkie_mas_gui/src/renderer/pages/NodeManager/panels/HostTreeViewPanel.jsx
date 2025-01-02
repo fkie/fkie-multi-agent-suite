@@ -397,7 +397,7 @@ function HostTreeViewPanel() {
         if (!newNodeList.find((n) => n.name === node.name)) {
           newNodeList.push(node);
         }
-    });
+      });
       return newNodeList;
     },
     [rosCtx]
@@ -578,7 +578,7 @@ function HostTreeViewPanel() {
           let killTime = -1;
           node.launchInfo.forEach((launchInfo) => {
             launchInfo.parameters.forEach((param) => {
-              // TODO: search for kill parameter in ros2 
+              // TODO: search for kill parameter in ros2
               if (param.name.endsWith("/nm/kill_on_stop")) {
                 if (killTime === -1) killTime = param.value;
               }

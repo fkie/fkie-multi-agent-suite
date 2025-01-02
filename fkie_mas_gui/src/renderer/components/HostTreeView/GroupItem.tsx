@@ -3,10 +3,14 @@ import MuiContrastIcon from "@mui/icons-material/Contrast";
 import { Box, Stack, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
-import PropTypes from "prop-types";
-import { DiagnosticLevel, RosNodeStatus, getMaxDiagnosticLevel } from "../../models";
-import ContentComponentItemTree from "../ContentComponentItemTree/ContentComponentItemTree";
+import { SvgIconProps } from "@mui/material/SvgIcon";
+import { TreeItem2SlotProps } from "@mui/x-tree-view/TreeItem2";
+import { UseTreeItem2ContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem2";
+import { UseTreeItem2IconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem2/useTreeItem2.types";
+import { forwardRef } from "react";
+import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "../../models";
 import StyledTreeItem from "./StyledTreeItem";
+import { NodeTreeItem } from "./types";
 
 const GroupStatus = {
   ALL_INACTIVE: 0,
@@ -14,11 +18,11 @@ const GroupStatus = {
   ALL_RUNNING: 2,
 };
 
-const ContrastIcon = styled((props) => <MuiContrastIcon {...props} />)(() => ({
+const ContrastIcon = styled((props: SvgIconProps) => <MuiContrastIcon {...props} />)(() => ({
   transform: "rotate(-90deg)",
 }));
 
-const getGroupStatus = (treeItems) => {
+const getGroupStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
   let groupStatus = GroupStatus.ALL_INACTIVE;
   let allRunning = true;
   treeItems.forEach((treeItem) => {
@@ -43,7 +47,7 @@ const getGroupStatus = (treeItems) => {
   return groupStatus;
 };
 
-const getGroupDiagnosticLevel = (treeItems) => {
+const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = (treeItems) => {
   let groupLevel = DiagnosticLevel.OK;
   treeItems.forEach((treeItem) => {
     if (treeItem.children && treeItem.children.length > 0) {
@@ -57,7 +61,7 @@ const getGroupDiagnosticLevel = (treeItems) => {
   return groupLevel;
 };
 
-const getGroupIconColor = (treeItems, isDarkMode = false) => {
+const getGroupIconColor = (treeItems: NodeTreeItem[], isDarkMode: boolean = false) => {
   const groupStatus = getGroupStatus(treeItems);
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
@@ -85,30 +89,30 @@ const getGroupIconColor = (treeItems, isDarkMode = false) => {
   }
 };
 
-export const getGroupIcon = (treeItems, isDarkMode = false) => {
+export const GroupIcon = (treeItems: NodeTreeItem[], isDarkMode = false) => {
   const groupStatus = getGroupStatus(treeItems);
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
-      return <CircleIcon style={{ mr: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+      return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
 
     case GroupStatus.SOME_RUNNING:
-      return <ContrastIcon style={{ mr: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+      return <ContrastIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
 
     case GroupStatus.ALL_INACTIVE:
-      return <CircleIcon style={{ mr: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+      return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
 
     default:
-      return <CircleIcon style={{ mr: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+      return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
   }
 };
 
 /** Returns count of nodes for given group */
-export const getNodesCount = (children) => {
+export const NodesCount = (children: NodeTreeItem[]) => {
   let result = 0;
   let itemsCount = 0;
-  children.forEach((treeItem) => {
+  children.forEach((treeItem: NodeTreeItem) => {
     if (treeItem.children && treeItem.children.length > 0) {
-      result += getNodesCount(treeItem.children);
+      result += NodesCount(treeItem.children);
     } else {
       itemsCount += 1;
     }
@@ -116,20 +120,50 @@ export const getNodesCount = (children) => {
   return result + itemsCount;
 };
 
-function GroupItem({ itemId, groupName, icon = <></>, countChildren = 0, onDoubleClick = () => {}, ...other }) {
+interface GroupItemProps {
+  itemId: string;
+  groupName: string;
+  icon: React.ReactNode;
+  countChildren: number;
+  children: React.ReactNode;
+  onDoubleClick: (event: React.MouseEvent, id: string) => void;
+}
+
+const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(props, ref) {
+  const { itemId, groupName, icon = <></>, countChildren = 0, onDoubleClick = () => {}, ...children } = props;
+
+  // avoid selection if collapse icon was clicked
+  let toggled = false;
+  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+    event.defaultMuiPrevented = toggled;
+    toggled = false;
+  };
+
+  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+
+  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+    toggled = true;
+  };
+
   return (
     <StyledTreeItem
-      slots={{ item: ContentComponentItemTree }}
       itemId={itemId}
-      // onDoubleClick={(event) => onDoubleClick(event, groupName, itemId)}
+      slotProps={
+        {
+          label: { onClick: handleLabelClick },
+          content: { onClick: handleContentClick },
+          iconContainer: { onClick: handleIconContainerClick },
+        } as TreeItem2SlotProps
+      }
+      onDoubleClick={(event) => onDoubleClick(event, itemId)}
       label={
-        <Box display="flex" alignItems="center" paddingLeft={0.0}>
+        <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
           {icon}
           <Stack
             direction="row"
             onDoubleClick={(event) => {
               if (onDoubleClick) {
-                onDoubleClick(event, groupName, itemId);
+                onDoubleClick(event, itemId);
                 event.stopPropagation();
               }
             }}
@@ -143,21 +177,9 @@ function GroupItem({ itemId, groupName, icon = <></>, countChildren = 0, onDoubl
           {countChildren > 0 && <Typography variant="body2">[{countChildren}]</Typography>}
         </Box>
       }
-      style={{
-        "--tree-view-color": blue[700],
-        "--tree-view-bg-color": blue[200],
-      }}
-      {...other}
+      {...children}
     />
   );
-}
-
-GroupItem.propTypes = {
-  itemId: PropTypes.string.isRequired,
-  groupName: PropTypes.string.isRequired,
-  icon: PropTypes.object,
-  countChildren: PropTypes.number,
-  onDoubleClick: PropTypes.func,
-};
+});
 
 export default GroupItem;

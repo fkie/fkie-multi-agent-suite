@@ -1,5 +1,6 @@
 import RosContext from "@/renderer/context/RosContext";
 import { nameWithoutNamespace } from "@/renderer/utils";
+import { TTag } from "@/types";
 import CircleIcon from "@mui/icons-material/Circle";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
@@ -9,28 +10,29 @@ import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInpu
 import WarningIcon from "@mui/icons-material/Warning";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
-import PropTypes from "prop-types";
-import { useContext, useEffect, useState } from "react";
+import { forwardRef, useContext, useEffect, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
-import { DiagnosticLevel, LaunchCallService, RosNodeStatus } from "../../models";
-import ContentComponentItemTree from "../ContentComponentItemTree/ContentComponentItemTree";
+import { DiagnosticLevel, LaunchCallService, RosNode, RosNodeStatus } from "../../models";
 import { OverflowMenu } from "../UI";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";
 
-function NodeItem({
-  itemId = "",
-  node,
-  namespacePart = "",
-  onDoubleClick = () => {},
-  onShowLoggersClick = () => {},
-  ...other
-}) {
+interface NodeItemProps {
+  itemId: string;
+  node: RosNode;
+  namespacePart: string;
+  onDoubleClick: (event: React.MouseEvent, id: string) => void;
+  onShowLoggersClick: (event: React.MouseEvent, itemId: string) => void;
+}
+
+const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(props, ref) {
+  const { itemId, node, namespacePart = "", onDoubleClick = () => {}, onShowLoggersClick = () => {}, ...other } = props;
+
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nameWithoutNamespace(node));
 
-  const getColorFromDiagnostic = (diagnosticLevel, isDarkMode = false) => {
+  const getColorFromDiagnostic = (diagnosticLevel: DiagnosticLevel, isDarkMode: boolean = false) => {
     switch (diagnosticLevel) {
       case DiagnosticLevel.OK:
         return isDarkMode ? green[600] : green[500];
@@ -45,7 +47,7 @@ function NodeItem({
     }
   };
 
-  const getColorFromLifecycle = (state, isDarkMode = false) => {
+  const getColorFromLifecycle = (state: string, isDarkMode: boolean = false) => {
     switch (state) {
       case "unconfigured":
         return isDarkMode ? blue[600] : blue[500];
@@ -59,12 +61,12 @@ function NodeItem({
         return isDarkMode ? yellow[600] : yellow[500];
     }
   };
-  const getNodeIcon = (node, isDarkMode = false) => {
+  const getNodeIcon = (node: RosNode, isDarkMode: boolean = false) => {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
         const color = getColorFromDiagnostic(node.diagnosticLevel, isDarkMode);
         if (!node.lifecycle_state) {
-          return <CircleIcon style={{ mr: 0.5, width: 20, color: color }} />;
+          return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
         } else {
           const colorBorder = getColorFromLifecycle(node.lifecycle_state, isDarkMode);
           const iconState = (
@@ -75,7 +77,7 @@ function NodeItem({
               disableInteractive
             >
               <CircleIcon
-                style={{ mr: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
+                style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
                 sx={{
                   border: 3,
                   borderRadius: "100%",
@@ -85,7 +87,7 @@ function NodeItem({
             </Tooltip>
           );
           // add menu to change the lifecycle state
-          return node.lifecycle_available_transitions?.length > 0 ? (
+          return node.lifecycle_available_transitions && node.lifecycle_available_transitions?.length > 0 ? (
             <OverflowMenu
               icon={iconState}
               options={node.lifecycle_available_transitions?.map((item) => {
@@ -93,27 +95,23 @@ function NodeItem({
                   name: item.label,
                   key: item.label,
                   onClick: async () => {
-                    const provider = rosCtx.getProviderById(node.providerId);
+                    const provider = rosCtx.getProviderById(node.providerId as string, true);
                     await provider?.callService(
-                      new LaunchCallService(
-                        `${node.name}/change_state`,
-                        "lifecycle_msgs/srv/ChangeState",
-                        JSON.stringify({
-                          type: "lifecycle_msgs/srv/ChangeState",
-                          name: "",
-                          def: [
-                            {
-                              name: "transition",
-                              def: [
-                                { name: "id", def: [], type: "uint8", is_array: false, value: `${item.id}` },
-                                { name: "label", def: [], type: "string", is_array: false },
-                              ],
-                              type: "lifecycle_msgs/Transition",
-                              is_array: false,
-                            },
-                          ],
-                        })
-                      )
+                      new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
+                        type: "lifecycle_msgs/srv/ChangeState",
+                        name: "",
+                        def: [
+                          {
+                            name: "transition",
+                            def: [
+                              { name: "id", def: [], type: "uint8", is_array: false, value: `${item.id}` },
+                              { name: "label", def: [], type: "string", is_array: false },
+                            ],
+                            type: "lifecycle_msgs/Transition",
+                            is_array: false,
+                          },
+                        ],
+                      })
                     );
                   },
                 };
@@ -128,49 +126,46 @@ function NodeItem({
 
       case RosNodeStatus.DEAD: {
         const color = isDarkMode ? orange[600] : orange[400];
-        return <WarningIcon style={{ mr: 0.5, width: 20, color: color }} />;
+        return <WarningIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
       }
 
       case RosNodeStatus.NOT_MONITORED: {
         const color = isDarkMode ? blue[700] : blue[500];
-        return <ReportIcon style={{ mr: 0.5, width: 20, color: color }} />;
+        return <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
       }
 
       case RosNodeStatus.INACTIVE: {
         const color = isDarkMode ? grey[600] : grey[500];
-        let cmdWithRos2 = null;
+        let icon = <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
         node.launchInfo.forEach((launchInfo) => {
           if (launchInfo.cmd?.includes("ros2 run")) {
-            cmdWithRos2 = launchInfo;
+            icon = (
+              <Tooltip
+                key={`icon-${node.id}`}
+                title={`Executable '${launchInfo.executable}' or package '${launchInfo.package_name}' not found`}
+                placement="left"
+                disableInteractive
+              >
+                <NewReleasesTwoToneIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+              </Tooltip>
+            );
           }
         });
-        if (cmdWithRos2) {
-          return (
-            <Tooltip
-              key={`icon-${node.id}`}
-              title={`Executable '${cmdWithRos2.executable}' or package '${cmdWithRos2.package_name}' not found`}
-              placement="left"
-              disableInteractive
-            >
-              <NewReleasesTwoToneIcon style={{ mr: 0.5, width: 20, color: color }} />
-            </Tooltip>
-          );
-        }
-        return <CircleIcon style={{ mr: 0.5, width: 20, color: color }} />;
+        return icon;
       }
 
       default: {
         const color = isDarkMode ? red[600] : red[500];
-        return <CircleIcon style={{ mr: 0.5, width: 20, color: color }} />;
+        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
       }
     }
   };
 
-  const [isDarkMode, setIsDarkMode] = useState(settingsCtx.get("useDarkMode"));
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
   const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
 
   useEffect(() => {
-    setIsDarkMode(settingsCtx.get("useDarkMode"));
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
   }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
@@ -180,12 +175,10 @@ function NodeItem({
 
   return (
     <StyledTreeItem
-      // ContentComponent={ContentComponentItemTree}
-      slots={{ item: ContentComponentItemTree }}
       itemId={itemId}
       // onDoubleClick={(event) => onDoubleClick(event, labelText, itemId)}
       label={
-        <Box display="flex" alignItems="center" paddingLeft={0.0}>
+        <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
           {nodeIcon}
 
           <Stack
@@ -193,7 +186,7 @@ function NodeItem({
             // onClick={onClick}
             onDoubleClick={(event) => {
               if (onDoubleClick) {
-                onDoubleClick(event, labelText, itemId);
+                onDoubleClick(event, itemId);
                 event.stopPropagation();
               }
             }}
@@ -208,17 +201,21 @@ function NodeItem({
               {labelText}
             </Typography>
           </Stack>
-          {node.tags.map((tag) => (
+          {node.tags.map((tag: TTag) => (
             <Tooltip
               key={tag.id}
               title={`${tag.tooltip}`}
               placement="left"
               disableInteractive
-              onClick={tag.onClick ? (event) => tag.onClick(event) : () => {}}
+              onClick={(event) => {
+                if (tag.onClick) {
+                  tag.onClick(event);
+                }
+              }}
             >
               {typeof tag.data === "string" ? (
                 <div>
-                  <Tag text={tag.data} color={tag.color} style={{ pointerEvents: "none" }} />
+                  <Tag text={tag.data} color={tag.color} />
                 </div>
               ) : (
                 tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
@@ -229,9 +226,9 @@ function NodeItem({
             <Tooltip title="User changed logging level" placement="left">
               <IconButton
                 size="small"
-                onClick={() => {
+                onClick={(event) => {
                   if (onShowLoggersClick) {
-                    onShowLoggersClick(itemId);
+                    onShowLoggersClick(event, itemId);
                   }
                 }}
               >
@@ -256,21 +253,9 @@ function NodeItem({
           )}
         </Box>
       }
-      style={{
-        "--tree-view-color": blue[700],
-        "--tree-view-bg-color": blue[200],
-      }}
       {...other}
     />
   );
-}
-
-NodeItem.propTypes = {
-  itemId: PropTypes.string.isRequired,
-  node: PropTypes.object.isRequired,
-  namespacePart: PropTypes.string,
-  onDoubleClick: PropTypes.func,
-  onShowLoggersClick: PropTypes.func,
-};
+});
 
 export default NodeItem;

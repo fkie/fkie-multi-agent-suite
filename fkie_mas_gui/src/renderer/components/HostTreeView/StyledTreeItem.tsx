@@ -1,8 +1,7 @@
-import { grey } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
-import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
+import { TreeItem2, treeItemClasses } from "@mui/x-tree-view";
 
-const StyledTreeItem = styled(TreeItem)(({ theme }) => ({
+const StyledTreeItem = styled(TreeItem2)(({ theme }) => ({
   color: theme.palette.text.secondary,
   [`& .${treeItemClasses.content}`]: {
     color: theme.palette.text.secondary,
@@ -29,18 +28,17 @@ const StyledTreeItem = styled(TreeItem)(({ theme }) => ({
       marginLeft: 0,
       marginRight: 0,
       padding: theme.spacing(0),
-      width: 18,
+      width: 15,
     },
   },
-  [`& .${treeItemClasses.group}`]: {
-    marginLeft: 16,
+  [`& .${treeItemClasses.groupTransition}`]: {
+    marginLeft: 15,
     paddingLeft: 5,
-    // [`& .${treeItemClasses.content}`]: {
-    //   paddingLeft: theme.spacing(0),
-    // },
     borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
-    borderColor: grey[800],
   },
+  ...theme.applyStyles("light", {
+    color: theme.palette.grey[800],
+  }),
 }));
 
 export default StyledTreeItem;

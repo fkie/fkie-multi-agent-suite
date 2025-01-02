@@ -1,36 +1,49 @@
 import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import PropTypes from "prop-types";
-import { useContext, useEffect, useState } from "react";
+import { forwardRef, useContext, useEffect, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 
-function SetNTPDateDialog({ onClose, value: valueProp, open, ...other }) {
+interface SetNTPDateDialogProps {
+  open: boolean;
+  defaultCmd: string;
+  onClose: (cmd: string) => void;
+}
+
+const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(function SetNTPDateDialog(props, ref) {
+  const { open, defaultCmd, onClose = () => {} } = props;
+
   const settingsCtx = useContext(SettingsContext);
-  const [value, setValue] = useState(valueProp);
-  const [timerServer, setTimerServer] = useState(settingsCtx.get("ntpServer"));
-  const [timerServerValue, setTimerServerValue] = useState(settingsCtx.get("ntpServer")[0]);
+  const [value, setValue] = useState<string>(defaultCmd);
+  const [timerServer, setTimerServer] = useState<string[]>(settingsCtx.get("ntpServer") as string[]);
+  const [timerServerValue, setTimerServerValue] = useState(timerServer?.length > 0 ? timerServer[0] : "");
 
   useEffect(() => {
     if (!open) {
-      setValue(valueProp);
+      setValue(defaultCmd);
     }
-  }, [valueProp, open]);
+  }, [defaultCmd, open]);
 
   const handleCancel = () => {
-    onClose();
+    onClose("");
   };
 
   const handleOk = () => {
     if (timerServerValue) {
-      if (!settingsCtx.get("ntpServer").includes(timerServerValue)) {
-        setTimerServer([timerServerValue, ...settingsCtx.get("ntpServer")]);
-        settingsCtx.set("ntpServer", [timerServerValue, ...settingsCtx.get("ntpServer")]);
+      if (!(settingsCtx.get("ntpServer") as string[])?.includes(timerServerValue)) {
+        setTimerServer([timerServerValue, ...(settingsCtx.get("ntpServer") as string[])]);
+        settingsCtx.set("ntpServer", [timerServerValue, ...(settingsCtx.get("ntpServer") as string[])]);
       }
       onClose(timerServerValue ? `${value} ${timerServerValue}` : "");
     }
   };
 
   return (
-    <Dialog sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }} maxWidth="xs" open={open} {...other}>
+    <Dialog
+      ref={ref}
+      sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }}
+      maxWidth="xs"
+      open={open}
+      keepMounted
+    >
       <DialogTitle className="draggable-dialog-title" id="draggable-dialog-title">
         Update system time
       </DialogTitle>
@@ -48,10 +61,10 @@ function SetNTPDateDialog({ onClose, value: valueProp, open, ...other }) {
             renderInput={(params) => <TextField {...params} variant="outlined" label="Time Server" />}
             value={timerServer[0]}
             // inputValue={timerServerValue}
-            onChange={(event, newValue) => {
-              setTimerServerValue(newValue);
+            onChange={(_event, newValue) => {
+              setTimerServerValue(newValue ? newValue : "");
             }}
-            onInputChange={(event, newInputValue) => {
+            onInputChange={(_event, newInputValue) => {
               setTimerServerValue(newInputValue);
             }}
           />
@@ -65,12 +78,6 @@ function SetNTPDateDialog({ onClose, value: valueProp, open, ...other }) {
       </DialogActions>
     </Dialog>
   );
-}
-
-SetNTPDateDialog.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  open: PropTypes.bool.isRequired,
-  value: PropTypes.string.isRequired,
-};
+});
 
 export default SetNTPDateDialog;

@@ -7,15 +7,28 @@ import {
   DialogTitle,
   Typography,
 } from "@mui/material";
-import PropTypes from "prop-types";
+import { forwardRef } from "react";
 
-function DateHelpDialog({ onClose, open, ...other }) {
+interface DateHelpDialogProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+const DateHelpDialog = forwardRef<HTMLDivElement, DateHelpDialogProps>(function DateHelpDialog(props, ref) {
+  const { open, onClose = () => {}, ...other } = props;
+
   const codeSnippet = `
   USER  ALL=NOPASSWD: /bin/date
   `;
 
   return (
-    <Dialog sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }} maxWidth="md" open={open} {...other}>
+    <Dialog
+      ref={ref}
+      sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }}
+      maxWidth="md"
+      open={open}
+      {...other}
+    >
       <DialogTitle className="draggable-dialog-title" id="draggable-dialog-title">
         Set time
       </DialogTitle>
@@ -52,11 +65,6 @@ function DateHelpDialog({ onClose, open, ...other }) {
       </DialogActions>
     </Dialog>
   );
-}
-
-DateHelpDialog.propTypes = {
-  onClose: PropTypes.func.isRequired,
-  open: PropTypes.bool.isRequired,
-};
+});
 
 export default DateHelpDialog;

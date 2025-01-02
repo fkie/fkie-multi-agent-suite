@@ -817,10 +817,7 @@ export default class Provider implements IProvider {
             }
             // Add Array elements
             n.publishers.forEach((s: RosTopic) => {
-              rn.publishers.set(
-                s.name,
-                new RosTopic(s.name, s.msg_type, s.publisher, s.subscriber, s.id)
-              );
+              rn.publishers.set(s.name, new RosTopic(s.name, s.msg_type, s.publisher, s.subscriber, s.id));
             });
 
             n.subscribers.forEach((s: RosTopic) => {

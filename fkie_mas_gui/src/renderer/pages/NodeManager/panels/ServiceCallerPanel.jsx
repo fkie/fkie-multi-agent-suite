@@ -257,9 +257,7 @@ function ServiceCallerPanel({ serviceName = null, providerId = "" }) {
 
     console.log(`Call service with: ${messageStr}`);
 
-    const srvResult = await provider.callService(
-      new LaunchCallService(serviceName, serviceType, JSON.stringify(serviceStruct))
-    );
+    const srvResult = await provider.callService(new LaunchCallService(serviceName, serviceType, serviceStruct));
     if (srvResult) {
       if (srvResult.error_msg) {
         setResultError(srvResult.error_msg);
