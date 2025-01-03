@@ -19,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useContext, useRef, useState } from "react";
+import { ForwardedRef, useCallback, useContext, useRef, useState } from "react";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { generateUniqueId } from "../../utils";
@@ -82,13 +82,13 @@ const applicationRows = [
   },
 ];
 
-function ExternalAppsModal() {
+function ExternalAppsModal(ref) {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
-  const handleClose = (event, reason) => {
+  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
   };
@@ -97,16 +97,17 @@ function ExternalAppsModal() {
     await window.commandExecutor?.exec(null, command);
   }, []);
 
-  const dialogRef = useRef(null);
+  const dialogRef = useRef(ref);
 
   return (
     <Stack padding={0}>
       <Dialog
         open={open}
-        onClose={handleClose}
+        onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
         fullWidth
+        scroll="paper"
         maxWidth="md"
-        ref={dialogRef}
+        ref={dialogRef as ForwardedRef<HTMLDivElement>}
         PaperProps={{
           component: DraggablePaper,
           dialogRef: dialogRef,
@@ -117,7 +118,7 @@ function ExternalAppsModal() {
           External Applications
         </DialogTitle>
 
-        <DialogContent scroll="paper">
+        <DialogContent dividers={true}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -131,7 +132,7 @@ function ExternalAppsModal() {
               </TableHead>
               <TableBody>
                 {applicationRows.map((row) => {
-                  let command = null;
+                  let command: string | null = null;
 
                   if (rosCtx.rosInfo) {
                     if (rosCtx.rosInfo.version === "1" && row.commandROS1) command = row.commandROS1;
@@ -150,7 +151,7 @@ function ExternalAppsModal() {
                             color="inherit"
                             onClick={() => {
                               runApp(command);
-                              handleClose();
+                              handleClose("confirmed");
                             }}
                           >
                             <Typography variant="body2">{row.application}</Typography>
@@ -163,7 +164,7 @@ function ExternalAppsModal() {
                             size="small"
                             onClick={() => {
                               runApp(command);
-                              handleClose();
+                              handleClose("confirmed");
                             }}
                           >
                             <PlayArrowIcon />
@@ -184,7 +185,7 @@ function ExternalAppsModal() {
           </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button autoFocus onClick={handleClose}>
+          <Button autoFocus onClick={() => handleClose("cancel")}>
             Close
           </Button>
         </DialogActions>
@@ -192,7 +193,7 @@ function ExternalAppsModal() {
       <Tooltip
         title="External Apps"
         placement="right"
-        enterDelay={settingsCtx.get("tooltipEnterDelay")}
+        enterDelay={settingsCtx.get("tooltipEnterDelay") as number}
         disableInteractive
       >
         <IconButton

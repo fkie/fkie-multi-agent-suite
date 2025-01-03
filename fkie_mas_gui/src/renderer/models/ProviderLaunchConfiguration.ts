@@ -21,35 +21,39 @@ class ProviderLaunchConfiguration {
   useSSL: boolean = false;
 
   /** ROS version as string of {'1', '2'} */
-  rosVersion: string;
+  rosVersion: string = "1";
 
-  networkId: number = 0;
+  networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : 0;
 
   daemon: {
     enable: boolean;
-  } = { enable: false };
+  } = { enable: true };
 
   discovery: {
     enable: boolean;
     group?: string;
     heartbeatHz?: number;
     robotHosts?: string[];
-  } = { enable: false };
+  } = { enable: true, robotHosts: [], heartbeatHz: 0.5 };
 
   sync: {
     enable: boolean;
-    doNotSync?: string[];
-    syncTopics?: string[];
-  } = { enable: false };
+    doNotSync: string[];
+    syncTopics: string[];
+  } = { enable: false, doNotSync: [], syncTopics: [] };
 
   terminal: {
     enable: boolean;
     port?: number;
     path?: string;
-  } = { enable: false };
+  } = { enable: true, path: "ttyd", port: 7681 };
 
-  forceStop = false;
-  forceStart = false;
+  force: {
+    stop: boolean;
+    start: boolean;
+  } = { stop: false, start: false };
+  // forceStop = false;
+  // forceStart = false;
 
   /** Try to connect on start. */
   autoConnect: boolean = true;
@@ -57,7 +61,10 @@ class ProviderLaunchConfiguration {
   /** Start system nodes on failed connection */
   autostart: boolean = false;
 
-  ros1MasterUri: string = "";
+  ros1MasterUri: {
+    enable: boolean;
+    uri: string;
+  } = { enable: false, uri: "default" };
 
   respawn: boolean = false;
 
@@ -95,10 +102,10 @@ class ProviderLaunchConfiguration {
     return { result: true, message: cmd } as TResult;
   };
 
-  public toRos1MasterUriPrefix: (ros1MasterUri: string | undefined) => string = (ros1MasterUri) => {
+  public toRos1MasterUriPrefix: (ros1MasterUri: { enable: boolean; uri: string }) => string = (ros1MasterUri) => {
     let rosMasterUriPrefix = "";
-    if (ros1MasterUri && ros1MasterUri.length > 0 && ros1MasterUri !== "default") {
-      rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.replace("{HOST}", this.host)} `;
+    if (ros1MasterUri && ros1MasterUri.enable && ros1MasterUri.uri.length > 0 && ros1MasterUri.uri !== "default") {
+      rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.uri.replace("{HOST}", this.host)} `;
     }
     return rosMasterUriPrefix;
   };
@@ -122,7 +129,7 @@ class ProviderLaunchConfiguration {
     if (this.networkId !== undefined && this.networkId !== 0) {
       domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
     }
-    const forceArg = this.forceStart ? "--force " : "";
+    const forceArg = this.force.start ? "--force " : "";
     if (this.rosVersion === "1") {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
       // networkId shift the default multicast port (11511)
@@ -166,7 +173,7 @@ class ProviderLaunchConfiguration {
           ? `_sync_topics:=[${this.sync.syncTopics?.toString()}]`
           : " ";
       let cmdMasterSync = "";
-      const forceArg = this.forceStart ? "--force " : "";
+      const forceArg = this.force.start ? "--force " : "";
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
       cmdMasterSync = `${ros1MasterUriPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${
         this.respawn ? "--respawn" : ""
@@ -196,7 +203,7 @@ class ProviderLaunchConfiguration {
     if (this.rosVersion === "2") {
       daemonType = "mas-daemon";
     }
-    const forceArg = this.forceStart ? "--force " : "";
+    const forceArg = this.force.start ? "--force " : "";
     // uses ROS1 method
     let cmdDaemon = `fkie_mas_daemon mas-remote-node.py ${
       this.respawn ? "--respawn" : ""

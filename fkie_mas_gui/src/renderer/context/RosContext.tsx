@@ -68,7 +68,7 @@ export interface IRosProviderContext {
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string) => void;
   startDynamicReconfigureClient: (nodeName: string, masteruri: string) => void;
-  startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig) => Promise<boolean>;
+  startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null) => Promise<boolean>;
   removeProvider: (providerId: string) => void;
   getProviderName: (providerId: string) => string;
   refreshProviderList: () => void;
@@ -82,7 +82,7 @@ export interface IRosProviderContext {
   registerSubscriber: (providerId: string, topic: string, messageType: string, filter: SubscriberFilter) => void;
   unregisterSubscriber: (providerId: string, topic: string) => void;
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
-  isLocalHost: (host: string) => void;
+  isLocalHost: (host: string) => boolean;
   addProvider: (provider: Provider) => void;
   setLayoutModel: (model: Model) => void;
   openEditor: (
@@ -139,7 +139,7 @@ export const DEFAULT = {
   registerSubscriber: () => null,
   unregisterSubscriber: () => null,
   updateFilterRosTopic: () => null,
-  isLocalHost: () => null,
+  isLocalHost: () => false,
   addProvider: () => null,
   setLayoutModel: () => null,
   openEditor: () => null,
@@ -610,7 +610,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
           const port = config.port
             ? config.port
-            : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri, config.networkId);
+            : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri.uri, config.networkId);
           // check and add provider if new
           let provider = getProviderByHosts([config.host], port, null) as Provider;
           if (!provider) {
@@ -640,7 +640,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           provider.setConnectionState(ConnectionState.STATES.STARTING, "");
           // Find running system nodes
           const systemNodes = provider.rosNodes.filter((n) => n.system_node);
-          if (config.forceStop && systemNodes?.length > 0) {
+          if (config.force.stop && systemNodes?.length > 0) {
             // stop all requested system nodes, daemon as last node
             let nodesToStop: RosNode[] = [];
             let syncNode;
@@ -673,7 +673,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             );
             // wait a little bit until the ros node is unregistered
             // await delay(1000);
-            config.forceStop = false;
+            config.force.stop = false;
           }
           // Start Daemon
           if (config.daemon.enable) {
@@ -868,7 +868,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       launchCfg.sync.doNotSync = [];
       launchCfg.sync.syncTopics = [];
       launchCfg.terminal.enable = false;
-      launchCfg.forceStop = true;
+      launchCfg.force.stop = true;
       const cmd = launchCfg.masterSyncStartCmd();
       if (cmd.result) {
         const resultStartSync = await window.commandExecutor?.exec(credential, cmd.message);
@@ -903,7 +903,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return { result: false, message: msg };
       }
       const config = new ProviderLaunchConfiguration("localhost", "1");
-      config.ros1MasterUri = masteruri;
+      config.ros1MasterUri = { enable: true, uri: masteruri };
       const cmd = config.dynamicReconfigureClientCmd(nodeName, masteruri);
       if (cmd.result) {
         const resultStartSync = await window.commandExecutor?.exec(null, cmd.message);
