@@ -44,7 +44,7 @@ function PackageExplorerPanel() {
     updatePackageList(selectedProvider);
     setShowReloadButton(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvider, settingsCtx.config]);
+  }, [selectedProvider, rosCtx.initialized]);
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data) => {
     if (!selectedProvider) return;

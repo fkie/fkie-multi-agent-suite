@@ -52,10 +52,8 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
 
   // inform about new provider
   useEffect(() => {
-    if (setSelectedProvider) {
-      setSelectedProvider(currentProvider);
-    }
-  }, [currentProvider, setSelectedProvider]);
+    setSelectedProvider(currentProvider);
+  }, [currentProvider]);
 
   return (
     <Select
