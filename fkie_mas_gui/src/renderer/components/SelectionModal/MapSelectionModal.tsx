@@ -15,28 +15,42 @@ import {
   Radio,
   RadioGroup,
 } from "@mui/material";
-import PropTypes from "prop-types";
-import { useRef, useState } from "react";
+import { ForwardedRef, forwardRef, useRef, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 
-function MapSelectionModal({
-  title = "Confirm Selection",
-  list,
-  onConfirmCallback,
-  onCancelCallback = null,
-  useRadioGroup = false,
-}) {
-  const [open, setOpen] = useState(true);
-  const [selectedItems, setSelectedItems] = useState(
+export type MapSelectionItem = {
+  title: string;
+  list: string[];
+};
+
+interface MapSelectionModalProps {
+  title: string;
+  list: MapSelectionItem[];
+  onConfirmCallback: (items: MapSelectionItem[]) => void;
+  onCancelCallback: () => void;
+  useRadioGroup?: boolean;
+}
+
+const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(function MapSelectionModal(props, ref) {
+  const {
+    title = "Confirm Selection",
+    list,
+    onConfirmCallback = () => {},
+    onCancelCallback = () => {},
+    useRadioGroup = false,
+  } = props;
+
+  const [open, setOpen] = useState<boolean>(true);
+  const [selectedItems, setSelectedItems] = useState<MapSelectionItem[]>(
     list.map((o) => {
       return { title: o.title, list: o.list.length <= 3 ? o.list : [] };
     })
   );
 
-  const initRadioMap = (initList) => {
+  const initRadioMap = (initList: MapSelectionItem[]) => {
     // convert list to map the 'title' as key and first list element as item
     const result = {};
-    initList.forEach((o) => {
+    initList.forEach((o: MapSelectionItem) => {
       [result[o.title]] = o.list;
     });
     return result;
@@ -44,9 +58,9 @@ function MapSelectionModal({
 
   const [selectedRadioItems, setSelectedRadioItems] = useState(initRadioMap(list));
 
-  const handleToggle = (title, value) => {
+  const handleToggle = (title: string, value: string) => {
     const newSelectedItems = structuredClone(selectedItems);
-    const item = newSelectedItems.find((o) => title.localeCompare(o.title) === 0);
+    const item = newSelectedItems.find((o: MapSelectionItem) => title.localeCompare(o.title) === 0);
     if (item) {
       const currentIndex = item.list.indexOf(value);
       if (currentIndex === -1) {
@@ -58,13 +72,13 @@ function MapSelectionModal({
     setSelectedItems(newSelectedItems);
   };
 
-  const handleRadio = (title, value) => {
+  const handleRadio = (title: string, value: string) => {
     const newSelectedItems = { ...selectedRadioItems };
     newSelectedItems[title] = value;
     setSelectedRadioItems(newSelectedItems);
   };
 
-  const handleClose = (event, reason) => {
+  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
     if (reason && reason === "backdropClick") return;
     setSelectedItems([]);
     setOpen(false);
@@ -76,26 +90,27 @@ function MapSelectionModal({
   const onConfirm = () => {
     if (useRadioGroup) {
       // convert map state to list of maps with 'title' and 'list' keys
-      const result = Object.keys(selectedRadioItems).map((key) => {
+      const result: MapSelectionItem[] = Object.keys(selectedRadioItems).map((key) => {
         return { title: key, list: [selectedRadioItems[key]] };
       });
       onConfirmCallback(result);
     } else {
       onConfirmCallback(selectedItems);
     }
-    handleClose(null, "confirmed");
+    handleClose("confirmed");
   };
 
-  const dialogRef = useRef(null);
+  const dialogRef = useRef(ref);
 
   return (
     <Dialog
       key="map-selection"
       open={open}
-      onClose={handleClose}
+      onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
       fullWidth
+      scroll="paper"
       maxWidth="md"
-      ref={dialogRef}
+      ref={dialogRef as ForwardedRef<HTMLDivElement>}
       PaperProps={{
         component: DraggablePaper,
         dialogRef: dialogRef,
@@ -107,7 +122,7 @@ function MapSelectionModal({
       </DialogTitle>
 
       {list && (
-        <DialogContent scroll="paper" aria-label="list" sx={{ paddingBottom: 0 }}>
+        <DialogContent dividers={true} aria-label="list" sx={{ paddingBottom: 0 }}>
           <List
             sx={{
               width: "100%",
@@ -181,24 +196,16 @@ function MapSelectionModal({
       )}
 
       <DialogActions>
-        <Button color="primary" onClick={handleClose}>
+        <Button color="primary" onClick={() => handleClose("cancel")}>
           Cancel
         </Button>
 
-        <Button autoFocus color="success" variant="contained" onClick={onConfirm}>
+        <Button autoFocus color="success" variant="contained" onClick={() => onConfirm()}>
           Confirm
         </Button>
       </DialogActions>
     </Dialog>
   );
-}
-
-MapSelectionModal.propTypes = {
-  list: PropTypes.array.isRequired, // [{'title': 'ab', 'list': ['a', 'b']}]
-  title: PropTypes.string,
-  onConfirmCallback: PropTypes.func.isRequired,
-  onCancelCallback: PropTypes.func,
-  useRadioGroup: PropTypes.bool,
-};
+});
 
 export default MapSelectionModal;

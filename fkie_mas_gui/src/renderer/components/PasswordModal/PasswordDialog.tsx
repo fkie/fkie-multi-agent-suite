@@ -2,21 +2,20 @@ import RosContext from "@/renderer/context/RosContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material";
-import { useContext, useState } from "react";
+import { forwardRef, useContext, useState } from "react";
 import { ConnectConfig } from "ssh2";
 import { ConnectionState } from "../../providers";
 
-const PasswordDialog = ({
-  provider,
-  connectConfig,
-  launchConfig,
-  onClose,
-}: {
+interface PasswordDialogProps {
   provider: Provider;
   connectConfig: ConnectConfig;
   launchConfig: ProviderLaunchConfiguration;
   onClose: (provider: Provider) => void;
-}) => {
+}
+
+const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function PasswordDialog(props, ref) {
+  const { provider, connectConfig, launchConfig, onClose = () => {} } = props;
+
   const rosCtx = useContext(RosContext);
   const [username, setUsername] = useState(connectConfig.username);
   const [password, setPassword] = useState("");
@@ -24,19 +23,17 @@ const PasswordDialog = ({
   const [showSetup, setShowSetup] = useState(false);
 
   const handleSubmit = () => {
-    console.log("Password:", password);
     connectConfig.username = username;
     connectConfig.password = password;
     rosCtx.startConfig(launchConfig, connectConfig);
-    handleClose(null, "confirm");
+    handleClose("confirmed");
   };
 
   const handleCancel = () => {
-    handleClose(null, "cancel");
+    handleClose("cancel");
   };
 
-  const handleClose = (_event, reason) => {
-    console.log(`close: ${reason}`);
+  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
     if (reason && reason === "backdropClick") return;
     if (reason === "cancel" || reason === "escapeKeyDown") {
       provider.setConnectionState(ConnectionState.STATES.AUTHZ, "");
@@ -59,7 +56,7 @@ const PasswordDialog = ({
   `;
 
   return (
-    <Dialog open={open} onClose={handleClose}>
+    <Dialog ref={ref} open={open} onClose={handleClose}>
       <DialogTitle>SSH login @{connectConfig.host}</DialogTitle>
       <DialogContent>
         <Button
@@ -121,6 +118,6 @@ const PasswordDialog = ({
       </DialogActions>
     </Dialog>
   );
-};
+});
 
 export default PasswordDialog;

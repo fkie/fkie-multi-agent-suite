@@ -14,7 +14,6 @@ import ProviderSelector from "./UI/ProviderSelector";
 import ReloadFileAlertComponent from "./UI/ReloadFileAlertComponent";
 import RestartNodesAlertComponent from "./UI/RestartNodesAlertComponent";
 import SearchBar from "./UI/SearchBar";
-import TabPanel from "./UI/TabPanel";
 import Tag from "./UI/Tag";
 
 export {
@@ -32,12 +31,12 @@ export {
   RestartNodesAlertComponent,
   SearchBar,
   ServiceTreeItem,
-  TabPanel,
   Tag,
   TagColors,
   TopicTreeItem,
   colorFromHostname,
   getDiagnosticStyle,
   levelColors,
-  levelColorsWbg,
+  levelColorsWbg
 };
+

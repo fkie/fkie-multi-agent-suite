@@ -1,8 +1,7 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import { Box } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
@@ -128,7 +127,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
               });
             } else {
               // create a (sub)group
-
               const treePath = name ? a.slice(0, idx + 1).join("/") : "";
               r.nodeTree.push({
                 treePath,
@@ -555,68 +553,67 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   const generateTree = useMemo(() => {
     const newKeyNodeList: { key: string; idGlobal: string }[] = [];
     const tree = (
-      <Box ref={ref}>
-        <SimpleTreeView
-          // apiRef={apiRef}
-          aria-label="node list"
-          slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-          multiSelect
-          expandedItems={expanded}
-          // sx={{ height: '100%' }}
-          selectedItems={selectedItems}
-          onExpandedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleToggle(event, itemIds)}
-          onSelectedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleSelect(event, itemIds)}
-          expansionTrigger={"iconContainer"}
-        >
-          {providerNodeTree?.sort(compareTreeProvider).map((item) => {
-            let providerIsAvailable = false;
-            const p = rosCtx.getProviderById(item.providerId as string, true);
-            if (p && p.isAvailable()) {
-              providerIsAvailable = true;
-            }
-            if (!p) {
-              return "";
-            }
-            // loop through available hosts
-            return (
-              <HostItem
-                key={p.id}
-                provider={p}
-                stopNodes={(idGlobalNodes: string[]) => {
-                  stopNodes(idGlobalNodes);
-                }}
-                onDoubleClick={(event: React.MouseEvent, id: string) => {
-                  handleDoubleClick(event, id);
-                }}
-              >
-                {/* Show launch files if host is available (have children) */}
-                {providerIsAvailable && (
-                  <LaunchFileList
-                    onMouseOver={(event: React.MouseEvent) => {
-                      event.stopPropagation();
-                    }}
-                    providerId={item.providerId as string}
-                    launchContentList={p.launchFiles}
-                    selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
-                      selectNodesFromLaunch(providerId, launch)
-                    }
-                    onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
-                      onRemoveLaunch(providerId, path, masteruri)
-                    }
-                    onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
-                      onReloadLaunch(providerId, path, masteruri)
-                    }
-                  />
-                )}
+      <SimpleTreeView
+        // apiRef={apiRef}
+        ref={ref as LegacyRef<HTMLUListElement>}
+        aria-label="node list"
+        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
+        multiSelect
+        expandedItems={expanded}
+        // sx={{ height: '100%' }}
+        selectedItems={selectedItems}
+        onExpandedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleToggle(event, itemIds)}
+        onSelectedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleSelect(event, itemIds)}
+        expansionTrigger={"iconContainer"}
+      >
+        {providerNodeTree?.sort(compareTreeProvider).map((item) => {
+          let providerIsAvailable = false;
+          const p = rosCtx.getProviderById(item.providerId as string, true);
+          if (p && p.isAvailable()) {
+            providerIsAvailable = true;
+          }
+          if (!p) {
+            return "";
+          }
+          // loop through available hosts
+          return (
+            <HostItem
+              key={p.id}
+              provider={p}
+              stopNodes={(idGlobalNodes: string[]) => {
+                stopNodes(idGlobalNodes);
+              }}
+              onDoubleClick={(event: React.MouseEvent, id: string) => {
+                handleDoubleClick(event, id);
+              }}
+            >
+              {/* Show launch files if host is available (have children) */}
+              {providerIsAvailable && (
+                <LaunchFileList
+                  onMouseOver={(event: React.MouseEvent) => {
+                    event.stopPropagation();
+                  }}
+                  providerId={item.providerId as string}
+                  launchContentList={p.launchFiles}
+                  selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
+                    selectNodesFromLaunch(providerId, launch)
+                  }
+                  onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
+                    onRemoveLaunch(providerId, path, masteruri)
+                  }
+                  onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
+                    onReloadLaunch(providerId, path, masteruri)
+                  }
+                />
+              )}
 
-                {item.children.sort(compareTreeItems).map((sortItem) => {
-                  return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
-                })}
-              </HostItem>
-            );
-          })}
-        </SimpleTreeView>
-      </Box>
+              {item.children.sort(compareTreeItems).map((sortItem) => {
+                return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
+              })}
+            </HostItem>
+          );
+        })}
+      </SimpleTreeView>
     );
     setKeyNodeList(newKeyNodeList);
     return tree;

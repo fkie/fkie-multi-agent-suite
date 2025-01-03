@@ -1,12 +1,20 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
-import PropTypes from "prop-types";
-import { useRef, useState } from "react";
+import { ForwardedRef, forwardRef, useRef, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 
-function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
+interface ConfirmModalProps {
+  title: string;
+  message: string;
+  onConfirmCallback: () => void;
+  onCancelCallback: () => void;
+}
+
+const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function ConfirmModal(props, ref) {
+  const { title, message, onConfirmCallback = () => {}, onCancelCallback = () => {} } = props;
+
   const [open, setOpen] = useState(true);
 
-  const handleClose = (event, reason) => {
+  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
     // if (reason && reason === 'backdropClick') return;
     setOpen(false);
     if (reason !== "confirmed" && onCancelCallback) {
@@ -16,18 +24,19 @@ function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
 
   const onConfirm = () => {
     onConfirmCallback();
-    handleClose(null, "confirmed");
+    handleClose("confirmed");
   };
 
-  const dialogRef = useRef(null);
+  const dialogRef = useRef(ref);
 
   return (
     <Dialog
+      ref={dialogRef as ForwardedRef<HTMLDivElement>}
       open={open}
-      onClose={handleClose}
+      onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
       fullWidth
+      scroll="paper"
       maxWidth="sm"
-      ref={dialogRef}
       PaperProps={{
         component: DraggablePaper,
         dialogRef: dialogRef,
@@ -38,28 +47,21 @@ function ConfirmModal({ title, message, onConfirmCallback, onCancelCallback }) {
         {title}
       </DialogTitle>
 
-      <DialogContent scroll="paper" aria-label="list">
+      <DialogContent dividers={false} aria-label="list">
         <DialogContentText id="alert-dialog-description">{message}</DialogContentText>
       </DialogContent>
 
       <DialogActions>
-        <Button autoFocus color="primary" onClick={handleClose}>
+        <Button autoFocus color="primary" onClick={() => handleClose("cancel")}>
           Cancel
         </Button>
 
-        <Button color="warning" onClick={onConfirm}>
+        <Button color="warning" onClick={() => onConfirm()}>
           Ok
         </Button>
       </DialogActions>
     </Dialog>
   );
-}
-
-ConfirmModal.propTypes = {
-  title: PropTypes.string.isRequired,
-  message: PropTypes.string.isRequired,
-  onConfirmCallback: PropTypes.func.isRequired,
-  onCancelCallback: PropTypes.func.isRequired,
-};
+});
 
 export default ConfirmModal;

@@ -14,29 +14,41 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { ForwardedRef, forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
-import { LaunchArgument, LaunchLoadRequest, getFileName } from "../../models";
+import { LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem, getFileName } from "../../models";
 import DraggablePaper from "../UI/DraggablePaper";
 import Tag from "../UI/Tag";
 
-function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = () => {} }) {
+interface LaunchArgumentWithHistory extends LaunchArgument {
+  history: string[];
+}
+
+interface LaunchFileModalProps {
+  selectedProvider: string;
+  selectedLaunchFile: PathItem;
+  setSelectedLaunchFile: (path: PathItem | undefined) => void;
+  onLaunchCallback: () => void;
+}
+
+const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(function LaunchFileModal(props, ref) {
+  const { selectedProvider, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = () => {} } = props;
+
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const [open, setOpen] = useState(false);
-  const [selectedLaunch, setSelectedLaunch] = useState(null);
+  const [selectedLaunch, setSelectedLaunch] = useState<LaunchLoadReply | null>(null);
   const [messageLaunchLoaded, setMessageLaunchLoaded] = useState("");
-  const [argHistory, setArgHistory] = useLocalStorage("history:loadLaunchArgs", {});
+  const [argHistory, setArgHistory] = useLocalStorage<{ [key: string]: string[] }>("history:loadLaunchArgs", {});
   const [lastOpenPath, setLastOpenPath] = useLocalStorage("lastOpenPath", "");
-  const [currentArgs, setCurrentArgs] = useState([]);
+  const [currentArgs, setCurrentArgs] = useState<LaunchArgumentWithHistory[]>([]);
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
   const getLaunchFile = useCallback(
-    async (file) => {
-      const provider = rosCtx.getProviderById(selectedProvider);
+    async (file: string) => {
+      const provider = rosCtx.getProviderById(selectedProvider, true);
       if (!provider || !provider.isAvailable()) return;
 
       if (provider.launchLoadFile) {
@@ -68,7 +80,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
           masteruri,
           host
         );
-        const result = await provider.launchLoadFile(request);
+        const result: LaunchLoadReply | null = await provider.launchLoadFile(request, false);
         if (!result) return;
         if (result.status.code === "ALREADY_OPEN") {
           logCtx.warn(`Launch file [${getFileName(path)}] was already loaded`, `File: ${path}`);
@@ -83,9 +95,9 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
           setSelectedLaunch(() => result);
 
           // set default values to arguments in form
-          const argList = [];
+          const argList: LaunchArgumentWithHistory[] = [];
           result.args.forEach((arg) => {
-            const argValue = !arg.value ? arg.default_value : arg.value;
+            const argValue: string = !arg.value ? (arg.default_value as string) : arg.value;
             let historyList = argHistory[arg.name];
             if (historyList === undefined) {
               historyList = [];
@@ -150,7 +162,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
   const launchSelectedFile = useCallback(async () => {
     if (!selectedLaunch) return;
 
-    const provider = rosCtx.getProviderById(selectedProvider);
+    const provider = rosCtx.getProviderById(selectedProvider, true);
     if (!provider || !provider.isAvailable()) return;
 
     if (provider.launchLoadFile) {
@@ -171,12 +183,12 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       const requestArgs = false;
 
       // fill arguments
-      const args = [];
+      const args: LaunchArgument[] = [];
 
       currentArgs.forEach((arg) => {
         args.push(new LaunchArgument(arg.name, arg.value));
         // update history
-        let hList = argHistory[arg.name];
+        let hList: string[] = argHistory[arg.name];
         if (hList !== undefined) {
           hList = hList.filter((value) => value !== arg.value);
         } else {
@@ -195,11 +207,11 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
         args,
         forceFirstFile,
         requestArgs,
-        provider.rosState.masteruri,
+        provider.rosState.masteruri ? provider.rosState.masteruri : "",
         provider.host()
       );
 
-      const resultLaunchLoadFile = await provider.launchLoadFile(request);
+      const resultLaunchLoadFile = await provider.launchLoadFile(request, false);
 
       if (!resultLaunchLoadFile) {
         logCtx.error(
@@ -224,7 +236,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
 
     // clear launch objects
     setSelectedLaunch(null);
-    setSelectedLaunchFile(null);
+    setSelectedLaunchFile(undefined);
 
     onLaunchCallback();
 
@@ -240,7 +252,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLaunchFile]);
 
-  const handleClose = (event, reason) => {
+  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
   };
@@ -310,14 +322,15 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
     return Number.isNaN(Number(value));
   };
 
-  const dialogRef = useRef(null);
+  const dialogRef = useRef(ref);
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
+      fullWidth
       scroll="paper"
-      ref={dialogRef}
+      ref={dialogRef as ForwardedRef<HTMLDivElement>}
       PaperProps={{
         component: DraggablePaper,
         dialogRef: dialogRef,
@@ -330,7 +343,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       <DialogContent>
         {selectedLaunch && (
           <Stack>
-            <Tag class="not-draggable" color="info" text={selectedLaunch.paths[0]} wrap />
+            <Tag className="not-draggable" color="info" text={selectedLaunch.paths[0]} wrap />
             <Stack>
               {currentArgs.map((arg) => {
                 const optionsTmp = arg.choices ? arg.choices : arg.history;
@@ -363,8 +376,8 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                             // autoFocus
                           />
                         )}
-                        renderOption={(props, option) => (
-                          <Stack {...props} key={option} direction="row">
+                        renderOption={(_props, option) => (
+                          <Stack /*{...props}*/ key={option} direction="row">
                             <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
                               {option}
                             </Typography>
@@ -375,15 +388,15 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                                 event.stopPropagation();
                               }}
                             >
-                              <DeleteIcon fontSize="1em" />
+                              <DeleteIcon sx={{ fontSize: "1em" }} />
                             </IconButton>
                           </Stack>
                         )}
-                        onChange={(event, newArgValue) => {
+                        onChange={(_event, newArgValue) => {
                           setCurrentArgs(
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
-                                item.value = newArgValue;
+                                item.value = newArgValue as string;
                                 // update last path
                                 if (isPathParam(item.name, item.value)) {
                                   setLastOpenPath(item.value);
@@ -393,7 +406,7 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                             })
                           );
                         }}
-                        onInputChange={(event, newInputValue) => {
+                        onInputChange={(_event, newInputValue) => {
                           setCurrentArgs(
                             currentArgs.map((item) => {
                               if (item.name === arg.name) {
@@ -408,13 +421,13 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
                           );
                         }}
                         isOptionEqualToValue={(option, value) => {
-                          return value === undefined || value === "" || option?.path === value?.path;
+                          return value === undefined || value === "" || option === value;
                         }}
                         onWheel={(event) => {
                           // scroll through the options using mouse wheel
                           let newIndex = -1;
                           options.forEach((value, index) => {
-                            if (value === event.target.value) {
+                            if (value === (event.target as HTMLInputElement).value) {
                               if (event.deltaY > 0) {
                                 newIndex = index + 1;
                               } else {
@@ -504,13 +517,6 @@ function LaunchFileModal({ selectedProvider, selectedLaunchFile, setSelectedLaun
       </DialogActions>
     </Dialog>
   );
-}
-
-LaunchFileModal.propTypes = {
-  selectedProvider: PropTypes.string.isRequired,
-  selectedLaunchFile: PropTypes.object.isRequired,
-  setSelectedLaunchFile: PropTypes.func.isRequired,
-  onLaunchCallback: PropTypes.func,
-};
+});
 
 export default LaunchFileModal;

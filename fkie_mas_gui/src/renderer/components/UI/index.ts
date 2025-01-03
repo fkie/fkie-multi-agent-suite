@@ -5,7 +5,6 @@ import OverflowMenu from "./OverflowMenu";
 import ReloadFileAlertComponent from "./ReloadFileAlertComponent";
 import RestartNodesAlertComponent from "./RestartNodesAlertComponent";
 import SearchBar from "./SearchBar";
-import TabPanel from "./TabPanel";
 import Tag from "./Tag";
 
 export {
@@ -15,11 +14,11 @@ export {
   ReloadFileAlertComponent,
   RestartNodesAlertComponent,
   SearchBar,
-  TabPanel,
   Tag,
   TagColors,
   colorFromHostname,
   getDiagnosticStyle,
   levelColors,
-  levelColorsWbg,
+  levelColorsWbg
 };
+

@@ -13,15 +13,23 @@ import {
   ListItemText,
   Stack,
 } from "@mui/material";
-import PropTypes from "prop-types";
-import { useRef, useState } from "react";
+import { ForwardedRef, forwardRef, useRef, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 
-function ListSelectionModal({ title = "Confirm Selection", list, onConfirmCallback, onCancelCallback = null }) {
-  const [open, setOpen] = useState(true);
-  const [selectedItems, setSelectedItems] = useState(list.length < 5 ? list : []);
+interface ListSelectionModalProps {
+  title: string;
+  list: string[];
+  onConfirmCallback: (items: string[]) => void;
+  onCancelCallback?: () => void;
+}
 
-  const handleToggle = (value) => () => {
+const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(function ListSelectionModal(props, ref) {
+  const { title = "Confirm Selection", list, onConfirmCallback = () => {}, onCancelCallback = () => {} } = props;
+
+  const [open, setOpen] = useState<boolean>(true);
+  const [selectedItems, setSelectedItems] = useState<string[]>(list.length < 5 ? list : []);
+
+  const handleToggle = (value: string) => () => {
     const currentIndex = selectedItems.indexOf(value);
     const newSelectedItems = [...selectedItems];
 
@@ -34,7 +42,7 @@ function ListSelectionModal({ title = "Confirm Selection", list, onConfirmCallba
     setSelectedItems(newSelectedItems);
   };
 
-  const handleClose = (event, reason) => {
+  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
     if (reason && reason === "backdropClick") return;
     setSelectedItems([]);
     setOpen(false);
@@ -45,18 +53,19 @@ function ListSelectionModal({ title = "Confirm Selection", list, onConfirmCallba
 
   const onConfirm = () => {
     onConfirmCallback(selectedItems);
-    handleClose(null, "confirmed");
+    handleClose("confirmed");
   };
 
-  const dialogRef = useRef(null);
+  const dialogRef = useRef(ref);
 
   return (
     <Dialog
+      ref={dialogRef as ForwardedRef<HTMLDivElement>}
       open={open}
-      onClose={handleClose}
+      onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
       fullWidth
+      scroll="paper"
       maxWidth="md"
-      ref={dialogRef}
       PaperProps={{
         component: DraggablePaper,
         dialogRef: dialogRef,
@@ -69,7 +78,7 @@ function ListSelectionModal({ title = "Confirm Selection", list, onConfirmCallba
 
       {selectedItems && (
         <Stack spacing={0}>
-          <DialogContent scroll="paper" aria-label="list">
+          <DialogContent dividers={true} aria-label="list">
             <List
               sx={{
                 width: "100%",
@@ -123,23 +132,16 @@ function ListSelectionModal({ title = "Confirm Selection", list, onConfirmCallba
       )}
 
       <DialogActions>
-        <Button color="primary" onClick={handleClose}>
+        <Button color="primary" onClick={() => handleClose("cancel")}>
           Cancel
         </Button>
 
-        <Button autoFocus color="success" variant="contained" onClick={onConfirm}>
+        <Button autoFocus color="success" variant="contained" onClick={() => onConfirm()}>
           Confirm
         </Button>
       </DialogActions>
     </Dialog>
   );
-}
-
-ListSelectionModal.propTypes = {
-  title: PropTypes.string,
-  list: PropTypes.array.isRequired,
-  onConfirmCallback: PropTypes.func.isRequired,
-  onCancelCallback: PropTypes.func,
-};
+});
 
 export default ListSelectionModal;

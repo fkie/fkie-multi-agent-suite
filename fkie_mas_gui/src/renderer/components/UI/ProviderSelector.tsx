@@ -1,17 +1,22 @@
 import { MenuItem, Select } from "@mui/material";
-import PropTypes from "prop-types";
-import { useContext, useEffect, useState } from "react";
+import { forwardRef, useContext, useEffect, useState } from "react";
 import { RosContext } from "../../context/RosContext";
 
-function ProviderSelector({ defaultProvider = "", setSelectedProvider }) {
+interface ProviderSelectorProps {
+  defaultProvider: string;
+  setSelectedProvider: (providerId: string) => void;
+}
+
+const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(function ProviderSelector(props, ref) {
+  const { defaultProvider = "", setSelectedProvider = () => {} } = props;
   const rosCtx = useContext(RosContext);
-  const [currentProvider, setCurrentProvider] = useState(defaultProvider);
-  const [providerNames, setProviderNames] = useState(
+  const [currentProvider, setCurrentProvider] = useState<string>(defaultProvider);
+  const [providerNames, setProviderNames] = useState<{ name: string; id: string }[]>(
     defaultProvider ? [{ name: rosCtx.getProviderName(defaultProvider), id: defaultProvider }] : []
   );
 
   useEffect(() => {
-    const provNames = [];
+    const provNames: { name: string; id: string }[] = [];
     let hasLocal = false;
     let newSelectedProvider = "";
     if (rosCtx.providersConnected.length === 1) {
@@ -54,6 +59,7 @@ function ProviderSelector({ defaultProvider = "", setSelectedProvider }) {
 
   return (
     <Select
+      ref={ref}
       autoWidth={false}
       value={currentProvider}
       onChange={(event) => {
@@ -75,11 +81,6 @@ function ProviderSelector({ defaultProvider = "", setSelectedProvider }) {
       })}
     </Select>
   );
-}
-
-ProviderSelector.propTypes = {
-  defaultProvider: PropTypes.string,
-  setSelectedProvider: PropTypes.func.isRequired,
-};
+});
 
 export default ProviderSelector;

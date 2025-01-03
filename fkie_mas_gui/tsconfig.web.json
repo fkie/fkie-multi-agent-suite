@@ -10,6 +10,7 @@
     "src/renderer/**/**/*.jsx",
     "src/renderer/**/*.tsx",
     "src/renderer/**/**/*.tsx",
+    "src/renderer/**/**/**/*.tsx",
     "src/types/**/*.ts"
   ],
   "compilerOptions": {

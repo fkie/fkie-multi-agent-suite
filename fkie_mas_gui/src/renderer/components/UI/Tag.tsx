@@ -13,6 +13,7 @@ type TagColor =
   | undefined;
 
 interface TagProps {
+  className?: string | undefined;
   title?: string | undefined;
   text: string;
   color?: string;
@@ -23,7 +24,7 @@ interface TagProps {
 }
 
 const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
-  const { title = "", text = "", color = "info", copyButton = "", wrap = true } = props;
+  const { className, title = "", text = "", color = "info", copyButton = "", wrap = true } = props;
   const isDefaultColor = chipDefaultColors.includes(color);
 
   const chipSX = {
@@ -46,6 +47,7 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
 
   return (
     <Chip
+      className={className}
       ref={ref}
       size="small"
       color={isDefaultColor ? (color as TagColor) : "default"}

@@ -1,14 +1,20 @@
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { IconButton } from "@mui/material";
-import PropTypes from "prop-types";
-import { useContext } from "react";
+import { forwardRef, useContext } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 
-function CopyButton({ value, fontSize = "inherit" }) {
+interface CopyButtonProps {
+  value: string;
+  fontSize?: string;
+}
+
+const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>(function CopyButton(props, ref) {
+  const { value, fontSize = "inherit" } = props;
   const logCtx = useContext(LoggingContext);
 
   return (
     <IconButton
+      ref={ref}
       sx={{ color: (theme) => theme.palette.text.disabled, paddingTop: 0, paddingBottom: 0 }}
       size="small"
       component="span"
@@ -20,11 +26,6 @@ function CopyButton({ value, fontSize = "inherit" }) {
       <ContentCopyIcon sx={{ fontSize: { fontSize } }} />
     </IconButton>
   );
-}
-
-CopyButton.propTypes = {
-  value: PropTypes.string.isRequired,
-  fontSize: PropTypes.string,
-};
+});
 
 export default CopyButton;

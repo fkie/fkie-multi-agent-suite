@@ -12,11 +12,11 @@ import { SettingsContext } from "./SettingsContext";
 export interface ILoggingContext {
   logs: LogEvent[];
   countErrors: number;
-  debug: (description: string, details: string, showSnackbar?: boolean) => void;
-  info: (description: string, details: string, showSnackbar?: boolean) => void;
-  success: (description: string, details: string, showSnackbar?: boolean) => void;
-  warn: (description: string, details: string, showSnackbar?: boolean) => void;
-  error: (description: string, details: string, showSnackbar?: boolean) => void;
+  debug: (description: string, details?: string, showSnackbar?: boolean) => void;
+  info: (description: string, details?: string, showSnackbar?: boolean) => void;
+  success: (description: string, details?: string, showSnackbar?: boolean) => void;
+  warn: (description: string, details?: string, showSnackbar?: boolean) => void;
+  error: (description: string, details?: string, showSnackbar?: boolean) => void;
   clearLogs?: () => void;
   debugInterface: (
     uri: string,
@@ -100,23 +100,23 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     }
   };
 
-  const debug = (description: string, details = "", showSnackbar = false) => {
+  const debug = (description: string, details: string = "", showSnackbar: boolean = false) => {
     createLog(LoggingLevel.DEBUG, description, details, showSnackbar, "default");
   };
 
-  const info = (description: string, details = "", showSnackbar = true) => {
+  const info = (description: string, details: string = "", showSnackbar: boolean = true) => {
     createLog(LoggingLevel.INFO, description, details, showSnackbar, "info");
   };
 
-  const success = (description: string, details = "", showSnackbar = true) => {
+  const success = (description: string, details: string = "", showSnackbar: boolean = true) => {
     createLog(LoggingLevel.SUCCESS, description, details, showSnackbar, "success");
   };
 
-  const warn = (description: string, details = "", showSnackbar = true) => {
+  const warn = (description: string, details: string = "", showSnackbar: boolean = true) => {
     createLog(LoggingLevel.WARN, description, details, showSnackbar, "warning");
   };
 
-  const error = (description: string, details = "", showSnackbar = true) => {
+  const error = (description: string, details: string = "", showSnackbar: boolean = true) => {
     createLog(LoggingLevel.ERROR, description, details, showSnackbar, "error");
   };
 

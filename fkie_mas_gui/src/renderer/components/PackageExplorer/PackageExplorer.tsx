@@ -2,28 +2,29 @@ import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import InputIcon from "@mui/icons-material/Input";
 import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from "@mui/material";
-import PropTypes from "prop-types";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import LoggingContext from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
-import { getFileExtension, getFileName } from "../../models";
+import { getFileExtension, getFileName, PathItem, RosPackage } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import LaunchFileModal from "../LaunchFileModal/LaunchFileModal";
 import Tag from "../UI/Tag";
 import TreeDirectory from "./TreeDirectory";
+import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "./types";
 
 /**
  * Sorting function used for comparing two package objects
  */
-const comparePackages = (a, b) => {
-  if (a.name < b.name) {
+const comparePathItems = (a: PathItem, b: PathItem) => {
+  if (a.name && b.name) {
+    return a.name?.localeCompare(b.name);
+  } else if (a.name) {
     return -1;
-  }
-  if (a.name > b.name) {
+  } else if (b.name) {
     return 1;
   }
   return 0;
@@ -32,7 +33,7 @@ const comparePackages = (a, b) => {
 /**
  * Sorting function used for comparing two package items (files/directories)
  */
-const comparePackageItems = (a, b) => {
+const comparePackageItems = (a: RosPackage, b: RosPackage) => {
   if (a.path < b.path) {
     return -1;
   }
@@ -42,33 +43,46 @@ const comparePackageItems = (a, b) => {
   return 0;
 };
 
-function PackageExplorer({ packageList, selectedProvider }) {
+interface PackageExplorerProps {
+  packageList: RosPackage[];
+  selectedProvider?: string;
+}
+
+const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(function PackageExplorer(props, ref) {
+  const { packageList = [], selectedProvider = "" } = props;
+
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+  const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [launchFileHistory, setLaunchFileHistory] = useLocalStorage<PathItem[]>(
+    "PackageExplorer:launchFileHistory",
+    []
+  );
 
-  const [launchFileHistory, setLaunchFileHistory] = useLocalStorage("PackageExplorer:launchFileHistory", []);
+  const [selectedFile, setSelectedFile] = useState<PathItem | undefined>(undefined);
+  const [selectedLaunchFile, setSelectedLaunchFile] = useState<PathItem | undefined>();
+  const [selectedPackage, setSelectedPackage] = useState<RosPackage | null>(null);
 
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedLaunchFile, setSelectedLaunchFile] = useState(null);
-  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [packageListFiltered, setPackageListFiltered] = useState<RosPackage[]>([]);
+  const [packageItemsTree, setPackageItemsTree] = useState<TPackageItemsTree>({});
 
-  const [packageListFiltered, setPackageListFiltered] = useState([]);
-  const [packageItemsTree, setPackageItemsTree] = useState({});
+  const [packageItemList, setPackageItemList] = useState<PathItem[]>([]);
+  const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] = useState<boolean>(false);
 
-  const [packageItemList, setPackageItemList] = useState([]);
-  const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] = useState(false);
+  useEffect(() => {
+    setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+  }, [settingsCtx.changed]);
 
   /**
    * Keep history of latest launched files.
    */
   const onLaunchCallback = useCallback(() => {
-    const provider = rosCtx.getProviderById(selectedProvider);
+    const provider = rosCtx.getProviderById(selectedProvider, true);
     if (!provider) {
       return;
     }
-    setLaunchFileHistory((prevHistory) => {
+    setLaunchFileHistory((prevHistory: PathItem[]) => {
       const launchFile = selectedLaunchFile;
       if (launchFile) {
         // Separate the history of the selected host from the rest.
@@ -84,7 +98,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         hostHistory.unshift(launchFile);
         // Cap host history length and return the merged histories.
         // TODO: Make the history length a parameter.
-        return [...hostHistory.slice(0, settingsCtx.get("launchHistoryLength")), ...otherHistory];
+        return [...hostHistory.slice(0, settingsCtx.get("launchHistoryLength") as number), ...otherHistory];
       }
       return prevHistory;
     });
@@ -96,25 +110,28 @@ function PackageExplorer({ packageList, selectedProvider }) {
    * Reset all states considering launch file history.
    */
   const updateStates = useCallback(() => {
-    const provider = rosCtx.getProviderById(selectedProvider);
-    let hostLaunchFileHistory = [];
+    const provider = rosCtx.getProviderById(selectedProvider, true);
+    let hostLaunchFileHistory: PathItem[] = [];
     if (provider) {
       hostLaunchFileHistory = launchFileHistory.filter((file) => file.host === provider.host());
     }
     if (selectedPackage) return;
-    const pit = hostLaunchFileHistory.reduce((prev, curr) => {
-      prev[curr.name] = {
-        fileName: curr.name,
-        children: [],
-        file: curr,
-      };
+    const pit: TPackageItemsTree = hostLaunchFileHistory.reduce((prev, curr) => {
+      prev[curr.name as string] = [
+        {
+          name: curr.name,
+          children: [],
+          file: curr,
+          isDirectory: false,
+        } as TPackageTreeItem,
+      ];
       return prev;
     }, {});
     setPackageItemsTree(pit);
     setPackageItemList(hostLaunchFileHistory);
     setIgnoringNonRelevantPackageFiles(false);
 
-    const sortedPackages = packageList.sort(comparePackages);
+    const sortedPackages = packageList.sort(comparePackageItems);
     setPackageListFiltered(sortedPackages);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageList, rosCtx, selectedProvider, selectedPackage, launchFileHistory]);
@@ -122,14 +139,14 @@ function PackageExplorer({ packageList, selectedProvider }) {
   // Reset states upon packageList or history modification.
   useEffect(() => {
     updateStates();
-    setSelectedFile(null);
+    setSelectedFile(undefined);
   }, [packageList, selectedPackage, launchFileHistory, updateStates]);
 
   /**
    * Callback function when a package is selected.
    */
   const handleOnSelectPackage = useCallback(
-    async (newSelectedPackage) => {
+    async (newSelectedPackage: RosPackage | null) => {
       if (!newSelectedPackage) return;
 
       const packagePath = newSelectedPackage.path;
@@ -139,10 +156,10 @@ function PackageExplorer({ packageList, selectedProvider }) {
       if (!selectedProvider) return;
       if (selectedProvider.length === 0) return;
 
-      const provider = rosCtx.getProviderById(selectedProvider);
+      const provider = rosCtx.getProviderById(selectedProvider, false);
       if (!provider || !provider.getPathList) return;
 
-      let fl = await provider.getPathList(`${packagePath}/`);
+      let fl: PathItem[] = await provider.getPathList(`${packagePath}/`);
 
       // if file list is too large, we will have render problems
       // filter files to consider only relevant ones
@@ -173,10 +190,10 @@ function PackageExplorer({ packageList, selectedProvider }) {
         setIgnoringNonRelevantPackageFiles(false);
       }
 
-      const pathItemMap = new Map("", "");
+      const pathItemMap = new Map<string, PathItem>();
 
       // Add extra properties to file object.
-      const itemList = fl.map((f) => {
+      const itemList: PathItem[] = fl.map((f) => {
         f.name = getFileName(f.path);
         f.package = packageName;
         // remove the package path from the file path
@@ -186,31 +203,33 @@ function PackageExplorer({ packageList, selectedProvider }) {
         return f;
       });
 
-      itemList.sort(comparePackageItems);
+      itemList.sort(comparePathItems);
 
-      const treeFile = [];
-      const level = { treeFile };
+      const packageTree: TPackageTreeItem[] = [];
+      const level: TPackageTree = { packageTree };
 
       // create a tree structure
       // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
       itemList.forEach((item) => {
-        item.relativePath.split("/").reduce((r, name, i, a) => {
-          if (!r[name]) {
-            r[name] = { treeFile: [] };
+        item.relativePath?.split("/").reduce((prev: TPackageTree, name, i, a) => {
+          if (!prev[name]) {
+            prev[name] = { packageTree: [] };
 
             if (pathItemMap.has(name)) {
               // file
-              r.treeFile.push({
-                fileName: pathItemMap.get(name).name,
-                children: r[name].treeFile,
+              prev.packageTree.push({
+                name: pathItemMap.get(name)?.name as string,
+                children: [],
                 file: pathItemMap.get(name),
+                isDirectory: false,
               });
             } else {
               // directory
-              r.treeFile.push({
-                directoryName: name,
-                children: r[name].treeFile,
-                file: null,
+              prev.packageTree.push({
+                name: name,
+                children: prev[name].packageTree,
+                file: undefined,
+                isDirectory: true,
               });
             }
           } else if (i === a.length - 1) {
@@ -219,13 +238,13 @@ function PackageExplorer({ packageList, selectedProvider }) {
             // r.treeFile.push({ name, children: [] });
           }
 
-          return r[name];
+          return prev[name];
         }, level);
       });
 
-      const pit = {};
+      const pit: TPackageItemsTree = {};
       // eslint-disable-next-line prefer-destructuring
-      pit[`${packageName}`] = treeFile[0];
+      pit[`${packageName}`] = packageTree;
 
       setPackageItemsTree(pit);
       setPackageItemList(itemList);
@@ -238,15 +257,15 @@ function PackageExplorer({ packageList, selectedProvider }) {
    * Callback function when the search box is used.
    */
   const searchCallback = useCallback(
-    (searchText) => {
+    (searchText: string) => {
       if (!searchText || (searchText && searchText.length === 0)) {
-        const sortedPackages = packageList.sort(comparePackages);
+        const sortedPackages = packageList.sort(comparePackageItems);
         setPackageListFiltered(sortedPackages);
         return;
       }
 
-      const searchResult = [];
-      const includedPackages = [];
+      const searchResult: RosPackage[] = [];
+      const includedPackages: string[] = [];
       packageList.forEach((p) => {
         if (
           p.name.indexOf(searchText) !== -1 &&
@@ -257,7 +276,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
         }
       });
 
-      const sortedPackages = searchResult.sort(comparePackages);
+      const sortedPackages = searchResult.sort(comparePackageItems);
       setPackageListFiltered(sortedPackages);
     },
     [packageList]
@@ -267,20 +286,22 @@ function PackageExplorer({ packageList, selectedProvider }) {
    * Callback when files on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (event, itemId) => {
-      const callbackFile = packageItemList.find((item) => item.id === itemId);
+    (itemId: string) => {
+      const callbackFile: PathItem | undefined = packageItemList.find((item) => item.id === itemId);
       if (callbackFile) {
         setSelectedFile(callbackFile);
       } else {
-        setSelectedFile(null);
+        setSelectedFile(undefined);
       }
     },
     [packageItemList]
   );
 
   const onEditFile = useCallback(
-    async (fileObj, external) => {
-      rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, null, external);
+    async (fileObj: PathItem | undefined, external: boolean) => {
+      if (fileObj) {
+        rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, [], external);
+      }
     },
     [selectedProvider, rosCtx]
   );
@@ -289,7 +310,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
    * Callback when files are double-clicked by the user
    */
   const onFileDoubleClick = useCallback(
-    (label, itemId, ctrlKey, shiftKey) => {
+    (_label: string, itemId: string, _ctrlKey: boolean, shiftKey: boolean) => {
       const callbackFile = packageItemList.find((item) => item.id === itemId);
       if (!callbackFile) return;
 
@@ -303,11 +324,11 @@ function PackageExplorer({ packageList, selectedProvider }) {
           setSelectedPackage({
             name: callbackFile.package,
             path: packages[0].path,
-          });
+          } as RosPackage);
           handleOnSelectPackage({
             name: callbackFile.package,
             path: packages[0].path,
-          });
+          } as RosPackage);
           return;
         } else {
           logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`);
@@ -327,7 +348,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
   );
 
   return (
-    <>
+    <Stack ref={ref}>
       <Stack>
         <Stack direction="row" justifyItems="expand" alignItems="center">
           <Autocomplete
@@ -357,14 +378,14 @@ function PackageExplorer({ packageList, selectedProvider }) {
                 sx={{ fontSize: "inherit" }}
               />
             )}
-            onChange={(event, newSelectedPackage) => {
+            onChange={(_event, newSelectedPackage: RosPackage | null) => {
               if (!newSelectedPackage) {
                 setSelectedPackage(null);
               }
               setSelectedPackage(newSelectedPackage);
               handleOnSelectPackage(newSelectedPackage);
             }}
-            onInputChange={(event, newInputValue) => {
+            onInputChange={(_event, newInputValue) => {
               searchCallback(newInputValue);
             }}
             // isOptionEqualToValue={(option, value) => {
@@ -410,7 +431,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   size="small"
                   aria-label="load"
                   onClick={() => {
-                    setSelectedLaunchFile({ ...selectedFile });
+                    setSelectedLaunchFile(selectedFile ? { ...selectedFile } : undefined);
                   }}
                 >
                   <InputIcon fontSize="inherit" />
@@ -430,7 +451,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
                   size="small"
                   aria-label="copy"
                   onClick={() => {
-                    if (selectedFile.path) {
+                    if (selectedFile?.path) {
                       navigator.clipboard.writeText(selectedFile.path);
                       logCtx.success(`${selectedFile.path} copied!`);
                     }
@@ -474,65 +495,16 @@ function PackageExplorer({ packageList, selectedProvider }) {
             <TreeDirectory
               selectedPackage={selectedPackage}
               packageItemsTree={packageItemsTree}
-              onNodeSelect={handleSelect}
-              onFileDoubleClick={onFileDoubleClick}
+              onNodeSelect={(itemId: string) => handleSelect(itemId)}
+              onFileDoubleClick={(
+                label: string,
+                itemId: string,
+                ctrlKey: boolean,
+                shiftKey: boolean
+              ) => onFileDoubleClick(label, itemId, ctrlKey, shiftKey)}
             />
           )}
         </Box>
-        {/* <Box>
-          <Paper elevation={2}>
-            <ButtonGroup
-              orientation="vertical"
-              aria-label="launch file control group"
-            >
-              <Tooltip
-                title="Edit File"
-                placement="left"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-              >
-                <span>
-                  <IconButton
-                    disabled={!selectedFile}
-                    size="medium"
-                    aria-label="Edit File"
-                    onClick={() => {
-                      onEditFile(selectedFile);
-                    }}
-                  >
-                    <BorderColorIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip
-                title="Load"
-                placement="left"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-              >
-                <span>
-                  <IconButton
-                    disabled={
-                      !(
-                        selectedFile &&
-                        LAUNCH_FILE_EXTENSIONS.find(
-                          (fe) => selectedFile.path.indexOf(fe) !== -1,
-                        )
-                      )
-                    }
-                    size="medium"
-                    aria-label="load"
-                    onClick={() => {
-                      setSelectedLaunchFile({ ...selectedFile });
-                    }}
-                  >
-                    <InputIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </ButtonGroup>
-          </Paper>
-        </Box> */}
       </Stack>
       {selectedLaunchFile && (
         <LaunchFileModal
@@ -542,13 +514,7 @@ function PackageExplorer({ packageList, selectedProvider }) {
           onLaunchCallback={onLaunchCallback}
         />
       )}
-    </>
+    </Stack>
   );
-}
-
-PackageExplorer.propTypes = {
-  packageList: PropTypes.arrayOf(PropTypes.any).isRequired,
-  selectedProvider: PropTypes.string,
-};
-
+});
 export default PackageExplorer;

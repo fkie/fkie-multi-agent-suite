@@ -14,9 +14,9 @@ class LaunchArgument {
    */
   value: string;
 
-  default_value: unknown;
+  default_value?: unknown;
 
-  description: string;
+  description?: string;
 
   choices: string[];
 

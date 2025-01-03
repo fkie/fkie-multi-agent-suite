@@ -14,6 +14,11 @@ class PathItem {
 
   host: string;
 
+  // these values are updated in package explorer after the item is received
+  name?: string;
+  package?: string;
+  relativePath?: string;
+
   /**
    * Class Constructor
    *
