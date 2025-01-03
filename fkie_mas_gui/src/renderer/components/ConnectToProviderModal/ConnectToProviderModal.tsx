@@ -603,7 +603,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                             color="error"
                             onClick={(event) => {
                               setStartConfigurations((prev) => prev.filter((pCfg) => pCfg.id !== cfg.id));
-                              event?.stopPropagation()
+                              event?.stopPropagation();
                             }}
                             size="small"
                           >

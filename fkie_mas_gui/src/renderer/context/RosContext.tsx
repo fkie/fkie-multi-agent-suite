@@ -610,7 +610,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
           const port = config.port
             ? config.port
-            : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri.uri, config.networkId);
+            : getDefaultPortFromRos(
+                Provider.defaultType,
+                config.rosVersion,
+                config.ros1MasterUri.uri,
+                config.networkId
+              );
           // check and add provider if new
           let provider = getProviderByHosts([config.host], port, null) as Provider;
           if (!provider) {

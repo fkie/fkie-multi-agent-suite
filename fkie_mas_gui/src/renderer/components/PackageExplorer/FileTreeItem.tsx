@@ -52,7 +52,8 @@ const FileTreeItem = forwardRef<HTMLDivElement, PackageItemTreeProps>(function F
               variant="body2"
               sx={{ fontWeight: "inherit", flexGrow: 1, ml: 0.5 }}
             >
-              {file.name?.replace("/", "")}{showPackage ? ` [${file.package}]` : ""}
+              {file.name?.replace("/", "")}
+              {showPackage ? ` [${file.package}]` : ""}
             </Typography>
           </Tooltip>
           {file.path && enableCopy && <CopyButton value={file.path} />}

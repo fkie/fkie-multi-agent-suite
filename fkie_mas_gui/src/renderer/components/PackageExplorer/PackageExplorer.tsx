@@ -496,12 +496,9 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
               selectedPackage={selectedPackage}
               packageItemsTree={packageItemsTree}
               onNodeSelect={(itemId: string) => handleSelect(itemId)}
-              onFileDoubleClick={(
-                label: string,
-                itemId: string,
-                ctrlKey: boolean,
-                shiftKey: boolean
-              ) => onFileDoubleClick(label, itemId, ctrlKey, shiftKey)}
+              onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
+                onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
+              }
             />
           )}
         </Box>
