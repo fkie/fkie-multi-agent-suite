@@ -1,9 +1,9 @@
-/* eslint-disable camelcase */
+import { TLaunchArg } from "@/types";
 
 /**
  * LaunchArgument models arguments for launch files.
  */
-class LaunchArgument {
+class LaunchArgument implements TLaunchArg {
   /**
    * Name of the argument.
    */
@@ -14,11 +14,11 @@ class LaunchArgument {
    */
   value: string;
 
-  default_value?: unknown;
+  default_value?: string;
 
   description?: string;
 
-  choices: string[];
+  choices?: string[];
 
   /**
    * Class Constructor
@@ -29,13 +29,7 @@ class LaunchArgument {
    * @param {string} description - argument description.
    * @param {string[]} choices - possible values.
    */
-  constructor(
-    name: string,
-    value: string,
-    default_value: unknown = undefined,
-    description: string = "",
-    choices: string[] = []
-  ) {
+  constructor(name: string, value: string, default_value?: string, description?: string, choices?: string[]) {
     this.name = name;
     this.value = value;
     this.default_value = default_value;

@@ -18,9 +18,9 @@ import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import React from "react";
 import { ISettingsContext } from "../../context/SettingsContext";
-import SearchBar from "../UI/SearchBar";
 import { CmdType } from "../../providers";
 import Provider from "../../providers/Provider";
+import SearchBar from "../UI/SearchBar";
 
 const enum Command {
   // server side
@@ -53,10 +53,10 @@ interface Props {
   initialCommands: string[];
   name: string;
   type: CmdType;
-  onIncomingData: (data: string) => void | null;
-  onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
+  onIncomingData?: (data: string) => void | null;
+  onCtrlD?: (wsUrl: string, tokenUrl: string) => void | null;
   settingsCtx: ISettingsContext;
-  provider: Provider;
+  provider?: Provider;
 }
 
 type XtermState = {
@@ -106,7 +106,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private type: CmdType;
 
-  private provider: Provider;
+  private provider: Provider | undefined;
 
   constructor(props: Props) {
     super(props);

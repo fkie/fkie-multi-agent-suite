@@ -4,6 +4,7 @@ export enum LogLevelType {
   WARN = "WARN",
   ERROR = "ERROR",
   FATAL = "FATAL",
+  UNKNOWN = "",
 }
 
 export class LoggerConfig {

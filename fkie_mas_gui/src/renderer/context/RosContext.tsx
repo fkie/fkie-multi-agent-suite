@@ -76,7 +76,7 @@ export interface IRosProviderContext {
   updateNodeList: (providerId: string) => void;
   updateLaunchList: (providerId: string) => void;
   reloadLaunchFile: (providerId: string, modifiedFile: string) => Promise<void>;
-  getProviderById: (providerId: string, includeNotAvailable: boolean) => Provider | undefined;
+  getProviderById: (providerId: string, includeNotAvailable?: boolean) => Provider | undefined;
   getProviderByHost: (hostName: string) => Provider | null;
   getLocalProvider: () => Provider[];
   registerSubscriber: (providerId: string, topic: string, messageType: string, filter: SubscriberFilter) => void;
@@ -1066,7 +1066,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               launchArgs={launchArgs}
             />,
             true,
-            LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation")],
+            LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation") as string],
             new LayoutTabConfig(true, "editor", null, {
               id: id,
               host: provider.connection.host,
@@ -1136,7 +1136,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               defaultNoData={defaultNoData}
             />,
             true,
-            LAYOUT_TAB_SETS[settingsCtx.get("subscriberOpenLocation")],
+            LAYOUT_TAB_SETS[settingsCtx.get("subscriberOpenLocation") as string],
             new LayoutTabConfig(
               true,
               `${CmdType.ECHO}`,

@@ -2,7 +2,7 @@ import { CmdType } from "@/renderer/providers";
 import { TFileRange, TLaunchArg } from "@/types";
 
 export interface IExtTerminalConfig {
-  type: string;
+  type: CmdType;
   providerId: string;
   nodeName: string;
   topicName: string;

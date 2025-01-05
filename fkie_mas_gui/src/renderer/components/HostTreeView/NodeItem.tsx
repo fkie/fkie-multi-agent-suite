@@ -1,4 +1,5 @@
 import RosContext from "@/renderer/context/RosContext";
+import { TRosMessageStruct } from "@/renderer/models/TRosMessageStruct";
 import { nameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
 import CircleIcon from "@mui/icons-material/Circle";
@@ -111,7 +112,8 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                             is_array: false,
                           },
                         ],
-                      })
+                        is_array: false,
+                      } as TRosMessageStruct)
                     );
                   },
                 };

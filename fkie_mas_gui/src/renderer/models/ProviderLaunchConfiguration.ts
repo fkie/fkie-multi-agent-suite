@@ -14,7 +14,7 @@ class ProviderLaunchConfiguration {
   /** If zero the port is depending on ROS version. */
   port: number = 0;
 
-  /** Currently support websocket and 'crossbar-wamp' */
+  /** Currently support websocket */
   type: string = "websocket";
 
   /** Use secure connection */

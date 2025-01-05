@@ -17,7 +17,7 @@ export interface ILoggingContext {
   success: (description: string, details?: string, showSnackbar?: boolean) => void;
   warn: (description: string, details?: string, showSnackbar?: boolean) => void;
   error: (description: string, details?: string, showSnackbar?: boolean) => void;
-  clearLogs?: () => void;
+  clearLogs: () => void;
   debugInterface: (
     uri: string,
     result: TResult | JSONObject | string,
@@ -37,6 +37,7 @@ export const DEFAULT_LOGGING = {
   success: () => {},
   warn: () => {},
   error: () => {},
+  clearLogs: () => {},
   debugInterface: () => {},
 };
 

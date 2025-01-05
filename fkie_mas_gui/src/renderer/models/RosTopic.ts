@@ -1,13 +1,13 @@
 import { generateUniqueId } from "../utils";
 import RosQos from "./RosQos";
 
-type IncompatibleQos = {
+export type IncompatibleQos = {
   node_id: string;
   compatibility: string;
   reason: string;
 };
 
-type EndpointInfo = {
+export type EndpointInfo = {
   node_id: string;
   qos: RosQos | undefined;
   incompatible_qos: IncompatibleQos[] | undefined;

@@ -114,12 +114,6 @@
     "author": "n/a"
   },
   {
-    "name": "autobahn-browser",
-    "licenseType": "MIT",
-    "installedVersion": "22.11.1",
-    "author": "Crossbar.io Technologies GmbH"
-  },
-  {
     "name": "electron-log",
     "licenseType": "MIT",
     "installedVersion": "5.2.4",

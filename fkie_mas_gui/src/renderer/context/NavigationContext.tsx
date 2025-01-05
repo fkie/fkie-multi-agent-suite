@@ -2,15 +2,17 @@ import React, { createContext, useMemo, useState } from "react";
 
 export interface INavigationContext {
   selectedNodes: string[];
-  setSelectedNodes?: (nodes: string[]) => void;
+  setSelectedNodes: (nodes: string[]) => void;
   selectedProviders: string[];
-  setSelectedProviders?: (providers: string[]) => void;
+  setSelectedProviders: (providers: string[]) => void;
 }
 
 export const DEFAULT = {
   selectedNodes: [],
   selectedProviders: [],
   modifiedFiles: [],
+  setSelectedNodes: () => {},
+  setSelectedProviders: () => {},
 };
 
 interface INavigationProvider {

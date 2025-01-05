@@ -18,7 +18,7 @@ class LaunchPublishMessage {
   /**
    * Dictionary structure of the ROS message as JSON string.
    */
-  data: JSONObject | null;
+  data: string;
 
   /**
    * Publishing rate (hz), only if once and latched is False.
@@ -76,7 +76,7 @@ class LaunchPublishMessage {
   ) {
     this.topic_name = topic_name;
     this.msg_type = msg_type;
-    this.data = data;
+    this.data = JSON.stringify(data);
     this.rate = rate;
     this.once = once;
     this.latched = latched;

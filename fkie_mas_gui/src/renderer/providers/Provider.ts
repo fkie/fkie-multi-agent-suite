@@ -49,7 +49,6 @@ import CmdType from "./CmdType";
 import { ConnectionState } from "./ConnectionState";
 import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
 import { RosProviderState } from "./RosProviderState";
-import CrossbarIOConnection from "./crossbar_io/CrossbarIOConnection";
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
@@ -245,18 +244,7 @@ export default class Provider implements IProvider {
     this.rosVersion = rosVersion;
     this.hostnames = [host];
     this.id = `${host}-${generateUniqueId()}`;
-    if (this.type === CrossbarIOConnection.type) {
-      this.connection = new CrossbarIOConnection(
-        host,
-        rosVersion,
-        port,
-        networkId,
-        useSSL,
-        this.onCloseConnection,
-        this.onOpenConnection,
-        logger
-      );
-    } else {
+    if (this.type === WebsocketConnection.type) {
       this.connection = new WebsocketConnection(
         host,
         rosVersion,
@@ -405,8 +393,7 @@ export default class Provider implements IProvider {
     emitCustomEvent(EVENT_PROVIDER_STATE, new EventProviderState(this, state, oldState, details));
     // get provider details depending on new state
     if (state === ConnectionState.STATES.CONNECTING && oldState === ConnectionState.STATES.STARTING) {
-      // TODO: delay if use crossbar-wamp server
-      // delay(3000);
+      //
     } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
       this.registerCallbacks()
         .then(() => {
@@ -662,7 +649,7 @@ export default class Provider implements IProvider {
   public getProviderSystemInfo: () => Promise<object> = async () => {
     const systemInfo = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_INFO, [], true).then((value: TResultData) => {
       if (value.result) {
-        this.systemInfo = value.data as object;
+        this.systemInfo = (value.data as { system_info: object }).system_info;
         return this.systemInfo;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemInfo()`, `${value.message}`);
@@ -679,7 +666,7 @@ export default class Provider implements IProvider {
   public getProviderSystemEnv: () => Promise<object> = async () => {
     const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: TResultData) => {
       if (value.result) {
-        this.systemEnv = value.data as object;
+        this.systemEnv = (value.data as { environment: object }).environment;
         return this.systemEnv;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemEnv()`, `${value.message}`);

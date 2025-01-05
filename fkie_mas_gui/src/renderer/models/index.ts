@@ -17,7 +17,10 @@ import RosPackage from "./RosPackage";
 import RosParameter from "./RosParameter";
 import RosQos from "./RosQos";
 import RosService from "./RosService";
-import RosTopic from "./RosTopic";
+import RosTopic, { EndpointInfo, IncompatibleQos } from "./RosTopic";
+import ServiceExtendedInfo, { TServiceNodeInfo } from "./ServiceExtendedInfo";
+import TopicExtendedInfo from "./TopicExtendedInfo";
+import { TRosMessageStruct, rosMessageStructToString } from "./TRosMessageStruct";
 // Launch related imports
 import LaunchArgument from "./LaunchArgument";
 import LaunchAssociations from "./LaunchAssociations";
@@ -41,8 +44,8 @@ import ProviderLaunchConfiguration from "./ProviderLaunchConfiguration";
 import ScreensMapping from "./ScreensMapping";
 // Other structs
 import LogEvent, { LoggingLevel } from "./LogEvent";
-import LogPathItem from "./LogPathItem";
 import { LogLevelType, LoggerConfig } from "./LoggerConfig";
+import LogPathItem from "./LogPathItem";
 import Result from "./Result";
 import SubscriberEvent from "./SubscriberEvent";
 import SubscriberFilter from "./SubscriberFilter";
@@ -96,11 +99,13 @@ export {
   RosService,
   RosTopic,
   ScreensMapping,
+  ServiceExtendedInfo,
   SubscriberEvent,
   SubscriberFilter,
   SubscriberNode,
   SystemWarning,
   SystemWarningGroup,
+  TopicExtendedInfo,
   URI,
   getBaseName,
   getDiagnosticLevelName,
@@ -108,4 +113,7 @@ export {
   getFileExtension,
   getFileName,
   getMaxDiagnosticLevel,
+  rosMessageStructToString,
 };
+
+export type { EndpointInfo, IncompatibleQos, TRosMessageStruct, TServiceNodeInfo };

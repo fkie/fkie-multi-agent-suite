@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { JSONObject } from "@/types";
+import { TRosMessageStruct } from "./TRosMessageStruct";
 /**
  * LaunchMessageStruct models the message struct for a ROS message type.
  */
@@ -12,7 +12,7 @@ class LaunchMessageStruct {
   /**
    * Dictionary structure of the ROS message as JSON.
    */
-  data: JSONObject | null;
+  data: TRosMessageStruct;
 
   /**
    * True if the data for the message type was loaded successfully.
@@ -28,11 +28,11 @@ class LaunchMessageStruct {
    * Class Constructor
    *
    * @param {string} msg_type - Type of the message.
-   * @param {JSONObject | null} data - Dictionary structure of the ROS message as JSON string.
+   * @param {TRosMessageStruct} data - Dictionary structure of the ROS message as JSON string.
    * @param {boolean} valid - True if the data for the message type was loaded successfully.
    * @param {string} error_msg - Error message if valid is False.
    */
-  constructor(msg_type: string, data: JSONObject | null, valid: boolean, error_msg: string) {
+  constructor(msg_type: string, data: TRosMessageStruct, valid: boolean, error_msg: string) {
     this.msg_type = msg_type;
     this.data = data;
     this.valid = valid;

@@ -19,7 +19,7 @@ const StyledBadge = styled(Badge)((/*{ theme }*/) => ({
 
 export type OverflowMenuItem = {
   key: string;
-  name: string;
+  name: string | React.ReactNode;
   onClick: () => void;
 };
 
@@ -54,8 +54,8 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
   };
 
   /** create style to colorize the menu item depends on the provider name */
-  const getSxPropByName = (name: string) => {
-    if (colorizeItems && settingsCtx.get("colorizeHosts")) {
+  const getSxPropByName = (name: string | React.ReactNode) => {
+    if (colorizeItems && typeof name === "string" && (settingsCtx.get("colorizeHosts") as boolean)) {
       return {
         borderLeftStyle: "solid",
         borderLeftColor: colorFromHostname(name),

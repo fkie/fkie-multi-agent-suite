@@ -1,0 +1,18 @@
+.sash-wrap-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 1s;
+  .line {
+    display: block;
+    height: 100%;
+    width: 2px;
+    background-color: rgba(#000, 0.2);
+  }
+  &.active {
+    background-color: lightgray;
+  }
+  &.inactive {
+    transition: none;
+  }
+}

@@ -14,6 +14,16 @@ import {
 import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 
+export interface TTextModelExt extends editor.ITextModel {
+  modified: boolean;
+}
+
+export type TModelResult = {
+  model: TTextModelExt | null;
+  file: FileItem | null;
+  error: string;
+};
+
 export class ModifiedTabsInfo {
   tabId: string = "";
 
@@ -55,16 +65,7 @@ export interface IMonacoContext {
   getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined;
   saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
   createUriPath: (tabId: string, path: string) => string;
-  getModel: (
-    tabId: string,
-    providerId: string,
-    path: string,
-    forceReload: boolean
-  ) => Promise<{
-    model: editor.ITextModel | null;
-    file: FileItem | null;
-    error: string;
-  }>;
+  getModel: (tabId: string, providerId: string, path: string, forceReload: boolean) => Promise<TModelResult>;
   createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
 }
 
@@ -85,7 +86,7 @@ export const DEFAULT_MONACO = {
       model: null,
       file: null,
       error: "",
-    }),
+    } as TModelResult),
   createModel: () => null,
 };
 
@@ -121,7 +122,6 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       if (uriPaths.length > 0) {
         // add to the list
         const newFilesInfo: ModifiedTabsInfo = new ModifiedTabsInfo(tabId, providerId, uriPaths);
-        console.log(`MOD files..: ${JSON.stringify(newFilesInfo)}`);
         setModifiedFiles((prev) => {
           return [...prev.filter((item) => item.tabId !== tabId), newFilesInfo];
         });
@@ -234,7 +234,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     path: string,
     forceReload: boolean
   ) => Promise<{
-    model: editor.ITextModel | null;
+    model: TTextModelExt | null;
     file: FileItem | null;
     error: string;
   }> = async (tabId, providerId, path, forceReload) => {
@@ -254,12 +254,12 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
             `Host: ${provider.host()}, root file: ${file.path}`
           );
         }
-        return Promise.resolve({ model, file, error });
+        return Promise.resolve({ model: model as TTextModelExt, file, error });
       } else {
         console.error(`Could not open included file: [${file.fileName}]: ${error}`);
       }
     }
-    return Promise.resolve({ model, file: null, error: "" });
+    return Promise.resolve({ model: model as TTextModelExt, file: null, error: "" });
   };
 
   const attributesMemo = useMemo(

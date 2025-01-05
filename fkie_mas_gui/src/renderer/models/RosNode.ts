@@ -76,17 +76,17 @@ class RosNode {
   /**
    * Describes whether the node is running on the same host as the ROS master. Possible values: local, remote
    */
-  location: string | unknown;
+  location: string | string[];
 
   /**
    * (optional) name of the provider that returned the node
    */
-  providerName?: string;
+  providerName: string;
 
   /**
    * (optional) id of the provider that returned the node
    */
-  providerId?: string;
+  providerId: string;
 
   /**
    * (optional) path of the launch file if available
@@ -212,6 +212,8 @@ class RosNode {
     this.services = services;
     this.screens = screens;
     this.launchPath = launchPath;
+    this.providerName = "";
+    this.providerId = "";
   }
 
   getRosLoggersCount: () => number = () => {

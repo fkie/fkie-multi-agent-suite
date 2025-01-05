@@ -8,9 +8,9 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 import { ITerminalOptions, ITheme } from "@xterm/xterm";
 import { useContext } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
-import { ClientOptions, Terminal } from "./Terminal";
-import Provider from "../../providers/Provider";
 import { CmdType } from "../../providers";
+import Provider from "../../providers/Provider";
+import { ClientOptions, Terminal } from "./Terminal";
 
 // TODO: Add parameter for this
 const clientOptions = {
@@ -66,9 +66,9 @@ interface ITerminalClient {
   wsUrl: string;
   name: string;
   errorHighlighting: boolean;
-  provider: Provider;
-  onIncomingData: (data: string) => void | null;
-  onCtrlD: (wsUrl: string, tokenUrl: string) => void | null;
+  provider?: Provider;
+  onIncomingData?: (data: string) => void | null;
+  onCtrlD?: (wsUrl: string, tokenUrl: string) => void | null;
 }
 
 function TerminalClient(props: ITerminalClient) {

@@ -7,7 +7,7 @@ import { SvgIconProps } from "@mui/material/SvgIcon";
 import { TreeItem2SlotProps } from "@mui/x-tree-view/TreeItem2";
 import { UseTreeItem2ContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem2";
 import { UseTreeItem2IconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem2/useTreeItem2.types";
-import { forwardRef } from "react";
+import { forwardRef, LegacyRef } from "react";
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "../../models";
 import StyledTreeItem from "./StyledTreeItem";
 import { NodeTreeItem } from "./types";
@@ -148,6 +148,7 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
   return (
     <StyledTreeItem
       itemId={itemId}
+      ref={ref as LegacyRef<HTMLLIElement>}
       slotProps={
         {
           label: { onClick: handleLabelClick },
@@ -157,7 +158,7 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
       }
       onDoubleClick={(event) => onDoubleClick(event, itemId)}
       label={
-        <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
+        <Box display="flex" alignItems="center" paddingLeft={0.0}>
           {icon}
           <Stack
             direction="row"

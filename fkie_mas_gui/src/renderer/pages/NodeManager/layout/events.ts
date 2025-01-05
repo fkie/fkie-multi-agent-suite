@@ -40,21 +40,28 @@ export class SETTING extends String {
   };
 }
 
-export function eventOpenSettings(id: SETTING): { id: SETTING } {
+export function eventOpenSettings(id: SETTING) {
   return { id };
 }
 
-export function eventCloseComponent(id: string): { id: string } {
+export function eventCloseComponent(id: string) {
   return { id };
 }
+
+export type TEditorSelectRange = {
+  tabId: string;
+  filePath: string;
+  fileRange: TFileRange | null;
+  launchArgs?: TLaunchArg[];
+};
 
 export function eventEditorSelectRange(
   tabId: string,
   filePath: string,
   fileRange: TFileRange | null,
-  launchArgs: TLaunchArg[]
-): { tabId: string; filePath: string; fileRange: TFileRange | null; launchArgs: TLaunchArg[] } {
-  return { tabId, filePath, fileRange, launchArgs };
+  launchArgs?: TLaunchArg[]
+) {
+  return { tabId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] } as TEditorSelectRange;
 }
 
 export function eventFilterNodes(id: string): { id: string } {
