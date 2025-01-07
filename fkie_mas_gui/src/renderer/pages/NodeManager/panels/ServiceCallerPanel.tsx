@@ -1,5 +1,4 @@
 import { Provider } from "@/renderer/providers";
-import { JSONObject } from "@/types";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
@@ -53,11 +52,6 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   const [resultMessage, setResultMessage] = useState<TRosMessageStruct>();
   const [timeoutObj, setTimeoutObj] = useState<NodeJS.Timeout | null>(null);
 
-  // The message struct is converted into a human-readable string.
-  const messageStructToString = useCallback((msgStruct, asDict, withEmptyFields) => {
-    return rosMessageStructToString(msgStruct, asDict, withEmptyFields);
-  }, []);
-
   // get item history after the history was loaded
   const fromHistory = useDebounceCallback((index) => {
     const historyInStruct = history[serviceType];
@@ -104,7 +98,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   // create string from message struct and copy it to clipboard
   const onCopyToClipboard = useDebounceCallback(() => {
     if (!serviceStruct) return;
-    const json = messageStructToString(serviceStruct, false, true);
+    const json = rosMessageStructToString(serviceStruct, false, true);
     navigator.clipboard.writeText(`${serviceType} ${json}`);
   }, 300);
 
@@ -166,21 +160,18 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     setCallServiceIsSubmitting(true);
 
     // store struct to history if new message
-    const messageStr = messageStructToString(serviceStruct, false, false);
+    const messageStr = rosMessageStructToString(serviceStruct, false, false);
     const historyInStruct = history[serviceType];
     if (messageStr !== "{}" && (!historyInStruct || historyInStruct?.length === 0)) {
       updateHistory();
     } else if (historyInStruct) {
-      if (historyInStruct.length === 0 || messageStr !== messageStructToString(historyInStruct[0].msg, false, false)) {
+      if (historyInStruct.length === 0 || messageStr !== rosMessageStructToString(historyInStruct[0].msg, false, false)) {
         updateHistory();
       }
     }
 
-    console.log(`Call service with: ${messageStr}`);
     if (provider) {
-      const srvResult = await provider.callService(
-        new LaunchCallService(serviceName, serviceType, serviceStruct as JSONObject)
-      );
+      const srvResult = await provider.callService(new LaunchCallService(serviceName, serviceType, serviceStruct));
       if (srvResult) {
         if (srvResult.error_msg) {
           setResultError(srvResult.error_msg);
@@ -359,7 +350,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
           {callServiceIsSubmitting ? (
             <Stack direction="row" spacing={1}>
               <CircularProgress size="1em" />
-              <div>{`${callServiceDescription} with arguments ${messageStructToString(
+              <div>{`${callServiceDescription} with arguments ${rosMessageStructToString(
                 serviceStruct,
                 false,
                 false

@@ -72,6 +72,13 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   const [expanded, setExpanded] = useState<string[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [keyNodeList, setKeyNodeList] = useState<KeyTreeItem[]>([]);
+  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
+    settingsCtx.get("avoidGroupWithOneItem") as string
+  );
+
+  useEffect(() => {
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
+  }, [settingsCtx.changed]);
 
   const createTreeFromNodes = (nodes: RosNode[]) => {
     const namespaceSystemNodes: string = settingsCtx.get("namespaceSystemNodes") as string;
@@ -158,7 +165,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
 
   useEffect(() => {
     createTreeFromNodes(visibleNodes);
-  }, [visibleNodes]);
+  }, [visibleNodes, avoidGroupWithOneItem]);
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -491,7 +498,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       }
       let { children, treePath, node, name } = treeItem;
       let namespacePart = "";
-      while (children && children.length === 1) {
+      while (avoidGroupWithOneItem && children && children.length === 1) {
         const child = children[0];
         children = child.children;
         treePath = child.treePath;
@@ -623,7 +630,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     providerNodeTree,
     selectedItems,
     rosCtx,
-    settingsCtx,
+    settingsCtx.changed,
     // handleToggle, <= causes too many re-renders
     // handleSelect, <= causes too many re-renders
     // getMasterSyncNode,     <= causes too many re-renders

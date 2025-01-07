@@ -10,7 +10,7 @@ export type TRosMessageStruct = {
 };
 
 export function rosMessageStructToString(
-  msgStruct: TRosMessageStruct | TRosMessageStruct[],
+  msgStruct: TRosMessageStruct | TRosMessageStruct[] | undefined,
   asDict: boolean,
   withEmptyFields: boolean
 ) {

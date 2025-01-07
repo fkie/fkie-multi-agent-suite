@@ -4,7 +4,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
+import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -16,6 +16,7 @@ import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import ServiceCallerPanel from "./ServiceCallerPanel";
+import { grey } from "@mui/material/colors";
 
 type TTreeItem = {
   groupKey: string;
@@ -158,7 +159,6 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   // create tree based on service namespace
   // services are grouped only if more then one is in the group
   const fillTree = (fullPrefix: string, serviceGroup: ServiceExtendedInfo[], itemId: string) => {
-    const groupKeys: string[] = [];
     const byPrefixP1 = new Map<string, { restNameSuffix: string; serviceInfo: ServiceExtendedInfo }[]>();
     // create a map with simulated tree for the namespaces of the service list
     serviceGroup.forEach((serviceInfo) => {
@@ -178,12 +178,13 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
 
     let count = 0;
     // create result
+    const groupKeys: string[] = [];
     const newFilteredServices: TTreeItem[] = [];
     byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
-      const groupKey = itemId ? `${itemId}-${groupName}` : groupName;
       const newFullPrefix = `${fullPrefix}/${groupName}`;
       if (value.length > 1) {
+        const groupKey = itemId ? `${itemId}-${groupName}` : groupName;
         groupKeys.push(groupKey);
         const groupServices = value.map((item) => {
           return item.serviceInfo;
@@ -289,6 +290,17 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     }
   }, [filteredServices, selectedItem]);
 
+  const handleToggle = useCallback(
+    (itemIds: string[]) => {
+      if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+        setExpanded(itemIds);
+      } else {
+        setExpandedFiltered(itemIds);
+      }
+    },
+    [searchTerm]
+  );
+
   const createButtonBox = useMemo(() => {
     return (
       <ButtonGroup orientation="vertical" aria-label="service control group">
@@ -346,19 +358,22 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
         expansionTrigger={"iconContainer"}
-        onExpandedItemsChange={(_event, itemIds: string[]) => setExpanded(itemIds)}
+        onExpandedItemsChange={(_event, itemIds: string[]) => handleToggle(itemIds)}
         onSelectedItemsChange={(_event, itemId: string | null) => {
-          const itemIdStr: string = itemId ? itemId : "";
-          setSelectedItem(itemIdStr);
-          const index =
-            searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
-              ? expanded.indexOf(itemIdStr)
-              : expandedFiltered.indexOf(itemIdStr);
+          setSelectedItem(itemId || "");
           const copyExpanded = [...(searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
-          if (index === -1) {
-            copyExpanded.push(itemIdStr);
-          } else {
-            copyExpanded.splice(index, 1);
+          if (itemId) {
+            const index =
+              searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
+                ? expanded.indexOf(itemId)
+                : expandedFiltered.indexOf(itemId);
+            if (index === -1) {
+              if (itemId) {
+                copyExpanded.push(itemId);
+              }
+            } else {
+              copyExpanded.splice(index, 1);
+            }
           }
           if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
             setExpanded(copyExpanded);
@@ -404,7 +419,8 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
             />
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
-            <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1 }}>
+            <Box height="100%" sx={{ boxShadow: `0px 0px 5px ${alpha(grey[600], 0.4)}` }}>
+              {/* <Box height="100%" sx={{ borderRight: "solid", borderColor: `${alpha(grey[600], 0.4)}`, borderWidth: 1 }}> */}
               {/* <Paper elevation={0} sx={{ border: 1 }} height="100%"> */}
               {createButtonBox}
               {/* </Paper> */}
@@ -416,7 +432,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         </Stack>
       </Box>
     );
-  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, serviceForSelected]);
+  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, serviceForSelected, settingsCtx.changed]);
   return createPanel;
 });
 

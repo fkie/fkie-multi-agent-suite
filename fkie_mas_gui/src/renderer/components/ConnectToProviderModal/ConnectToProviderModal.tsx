@@ -1158,6 +1158,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                         onClick={() => {
                                           setOpenTerminalTooltip(!openTerminalTooltip);
                                         }}
+                                        autoFocus
                                       >
                                         <InfoOutlinedIcon
                                           sx={{

@@ -61,14 +61,6 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   const [startPublisherDescription, setStartPublisherDescription] = useState("");
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
 
-  // The message struct is converted into a human-readable string.
-  const messageStructToString = useCallback(
-    (msgStruct: TRosMessageStruct | TRosMessageStruct[], asDict: boolean, withEmptyFields: boolean) => {
-      return rosMessageStructToString(msgStruct, asDict, withEmptyFields);
-    },
-    []
-  );
-
   // get item history after the history was loaded
   const fromHistory = useDebounceCallback((index) => {
     const historyInStruct = history[messageType];
@@ -119,7 +111,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   // create string from message struct and copy it to clipboard
   const onCopyToClipboard = useDebounceCallback(() => {
     if (!messageStruct) return;
-    const json: string = messageStructToString(messageStruct, false, true) as string;
+    const json: string = rosMessageStructToString(messageStruct, false, true) as string;
     navigator.clipboard.writeText(json);
     logCtx.success(`${json} copied!`);
   }, 300);
@@ -219,12 +211,12 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     setStartPublisherIsSubmitting(true);
 
     // store struct to history if new message
-    const messageStr = messageStructToString(messageStruct, false, false);
+    const messageStr = rosMessageStructToString(messageStruct, false, false);
     const historyInStruct = history[messageType];
     if (messageStr !== "{}" && (!historyInStruct || historyInStruct?.length === 0)) {
       updateHistory();
     } else if (historyInStruct) {
-      if (historyInStruct.length === 0 || messageStr !== messageStructToString(historyInStruct[0].msg, false, false)) {
+      if (historyInStruct.length === 0 || messageStr !== rosMessageStructToString(historyInStruct[0].msg, false, false)) {
         updateHistory();
       }
     }
@@ -403,7 +395,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
           {startPublisherIsSubmitting ? (
             <Stack direction="row" spacing={1}>
               <CircularProgress size="1em" />
-              <div>{`${startPublisherDescription} ${messageStruct ? messageStructToString(messageStruct, false, false) : ""}`}</div>
+              <div>{`${startPublisherDescription} ${messageStruct ? rosMessageStructToString(messageStruct, false, false) : ""}`}</div>
             </Stack>
           ) : (
             <Button

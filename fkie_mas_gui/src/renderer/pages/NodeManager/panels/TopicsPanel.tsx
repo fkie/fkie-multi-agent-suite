@@ -6,7 +6,7 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DvrIcon from "@mui/icons-material/Dvr";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
+import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -18,6 +18,7 @@ import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
+import { grey } from "@mui/material/colors";
 
 type TTreeItem = {
   groupKey: string;
@@ -47,7 +48,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedFiltered, setExpandedFiltered] = useState<string[]>([]);
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | null>(null);
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<string>("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
 
   useEffect(() => {
@@ -134,7 +135,6 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
   const fillTree = (fullPrefix: string, topicsGroup: TopicExtendedInfo[], itemId: string) => {
-    const groupKeys: string[] = [];
     const byPrefixP1 = new Map<string, { restNameSuffix: string; topicInfo: TopicExtendedInfo }[]>();
     // create a map with simulated tree for the namespaces of the topic list
     topicsGroup.forEach((topicInfo) => {
@@ -152,14 +152,15 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
       }
     });
 
-    let count = 0;
     // create result
+    let count = 0;
+    const groupKeys: string[] = [];
     const newFilteredTopics: TTreeItem[] = [];
     byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
-      const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
       const newFullPrefix: string = `${fullPrefix}/${groupName}`;
       if (value.length > 1) {
+        const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
         groupKeys.push(groupKey);
         const groupTopics = value.map((item) => {
           return item.topicInfo;
@@ -290,9 +291,16 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     }
   }, [filteredTopics, selectedItem]);
 
-  const handleToggle = useCallback((_event, itemIds) => {
-    setExpanded(itemIds);
-  }, []);
+  const handleToggle = useCallback(
+    (itemIds: string[]) => {
+      if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+        setExpanded(itemIds);
+      } else {
+        setExpandedFiltered(itemIds);
+      }
+    },
+    [searchTerm]
+  );
 
   const createButtonBox = useMemo(() => {
     return (
@@ -369,20 +377,22 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
         expansionTrigger={"iconContainer"}
-        onExpandedItemsChange={(event, itemIds) => handleToggle(event, itemIds)}
+        onExpandedItemsChange={(_event, itemIds) => handleToggle(itemIds)}
         onSelectedItemsChange={(_event, itemId) => {
-          setSelectedItem(itemId);
-          const index =
-            searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
-              ? expanded.indexOf(itemId as string)
-              : expandedFiltered.indexOf(itemId as string);
+          setSelectedItem(itemId || "");
           const copyExpanded = [...(searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
-          if (index === -1) {
-            if (itemId) {
-              copyExpanded.push(itemId);
+          if (itemId) {
+            const index =
+              searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
+                ? expanded.indexOf(itemId)
+                : expandedFiltered.indexOf(itemId);
+            if (index === -1) {
+              if (itemId) {
+                copyExpanded.push(itemId);
+              }
+            } else {
+              copyExpanded.splice(index, 1);
             }
-          } else {
-            copyExpanded.splice(index, 1);
           }
           if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
             setExpanded(copyExpanded);
@@ -433,7 +443,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             />
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
-            <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1 }}>
+            <Box height="100%" sx={{ boxShadow: `0px 0px 5px ${alpha(grey[600], 0.4)}` }}>
+              {/* <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1 }}> */}
               {/* <Paper elevation={0} sx={{ border: 1 }} height="100%"> */}
               {createButtonBox}
               {/* </Paper> */}
@@ -445,7 +456,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         </Stack>
       </Box>
     );
-  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, topicForSelected]);
+  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, topicForSelected, settingsCtx.changed]);
   return createPanel;
 });
 

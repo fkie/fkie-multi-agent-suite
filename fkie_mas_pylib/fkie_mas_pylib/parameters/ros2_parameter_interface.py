@@ -102,7 +102,8 @@ class ParameterInterface:
                 parameter_names=sorted_names)
 
             for (index, parameter) in enumerate(resp.values):
-                param_name = f'{node_name.full_name}/{sorted_names[index]}'
+                param_name = f'{node_name.full_name}{sorted_names[index]}'
+                print(f"param: ${param_name}")
                 param_list.append(
                     RosParameter(param_name, self._get_value(parameter), self._get_type(parameter)))
 

@@ -61,21 +61,21 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
               }}
             >
               <Stack spacing={1} direction="row" sx={getHostStyle()}>
-                <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
-                  {rootPath}
-                </Typography>{" "}
+                {/* <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                {rootPath}
+              </Typography> */}
                 <Typography
                   variant="body2"
-                  sx={{ fontWeight: "inherit" }}
+                  sx={{ fontWeight: "inherit", userSelect: "none" }}
                   onClick={(e) => {
                     if (e.detail === 2) {
-                      navigator.clipboard.writeText(groupName);
-                      logCtx.success(`${groupName} copied!`);
+                      navigator.clipboard.writeText(`${rootPath}${groupName}`);
+                      logCtx.success(`${rootPath}${groupName} copied!`);
                       e.stopPropagation();
                     }
                   }}
                 >
-                  {groupName}
+                  {groupName.startsWith("/") ? groupName.slice(1) : groupName}
                 </Typography>
                 {/* {requestData && <CircularProgress size="1em" />} */}
               </Stack>
@@ -88,7 +88,7 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
               >
                 {countChildren > 0 && (
                   // <Tag text={countChildren} color="default" copyButton={false}></Tag>
-                  <Typography variant="caption" color="inherit" padding={0.5}>
+                  <Typography variant="caption" color="inherit" padding={0}>
                     [{countChildren}]
                   </Typography>
                 )}

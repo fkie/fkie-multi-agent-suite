@@ -112,8 +112,11 @@ const findIn: (searchTerms: string, words: string[]) => boolean = (searchTerms, 
 };
 
 const removeDDSuid: (item: string) => string = (item) => {
-  const lastIndex = item.lastIndexOf("-");
-  return lastIndex === -1 ? item : item.substring(0, lastIndex);
+  if (item) {
+    const lastIndex = item.lastIndexOf("-");
+    return lastIndex === -1 ? item : item.substring(0, lastIndex);
+  }
+  return item;
 };
 
 /**

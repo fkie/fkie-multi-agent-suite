@@ -20,9 +20,6 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
   const { itemId, rootPath, groupName, countChildren, ...children } = props;
 
   const logCtx = useContext(LoggingContext);
-  const getHostStyle = () => {
-    return { flexGrow: 1, alignItems: "center" };
-  };
 
   // avoid selection if collapse icon was clicked
   let toggled = false;
@@ -58,26 +55,26 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
               pr: 0,
             }}
           >
-            <Stack direction="row" sx={getHostStyle()}>
-              <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
+            <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+              {/* <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
                 {rootPath}
-              </Typography>
+              </Typography> */}
               <Typography
                 variant="body2"
-                sx={{ fontWeight: "inherit" }}
+                sx={{ fontWeight: "inherit", userSelect: "none" }}
                 onClick={(e) => {
                   if (e.detail === 2) {
-                    navigator.clipboard.writeText(groupName);
-                    logCtx.success(`${groupName} copied!`);
+                    navigator.clipboard.writeText(`${rootPath}${groupName}`);
+                    logCtx.success(`${rootPath}${groupName} copied!`);
                     e.stopPropagation();
                   }
                 }}
               >
-                {groupName}
+                {groupName.startsWith("/") ? groupName.slice(1) : groupName}
               </Typography>
               {/* {topicInfo && topicInfo.subscribers.filter((sub) => sub.incompatible_qos?.length > 0).length > 0 && (
                 <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
-                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                  <LinkOffIcon style={{ fontWeight: "inherit", color: "red" }} />
                 </Tooltip>
               )} */}
             </Stack>
@@ -90,7 +87,7 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
             >
               {countChildren > 0 && (
                 // <Tag text={countChildren} color="default" copyButton={false}></Tag>
-                <Typography variant="caption" color="inherit" padding={0.5}>
+                <Typography variant="caption" color="inherit" padding={0.2}>
                   [{countChildren}]
                 </Typography>
               )}

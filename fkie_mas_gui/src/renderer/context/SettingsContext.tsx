@@ -268,6 +268,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "none",
     description: "Each host shows all nodes visible to it",
   },
+  avoidGroupWithOneItem: {
+    label: "Avoid groups with one item",
+    default: true,
+    type: "boolean",
+    description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",
+  },
   editorOpenExternal: {
     label: "Open editor in external window by default",
     default: false,

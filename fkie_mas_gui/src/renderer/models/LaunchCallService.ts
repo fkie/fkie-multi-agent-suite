@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 import { JSONObject } from "@/types";
+import { TRosMessageStruct } from "./TRosMessageStruct";
 /**
  * LaunchCallService models the service to call a ROS service.
  */
@@ -26,7 +27,7 @@ class LaunchCallService {
    * @param {string} srv_type - Type of the request service.
    * @param {JSONObject | null} data - Dictionary structure of the ROS request service as JSON string.
    */
-  constructor(service_name: string, srv_type: string, data: JSONObject | null) {
+  constructor(service_name: string, srv_type: string, data: TRosMessageStruct | TRosMessageStruct[] | undefined) {
     this.service_name = service_name;
     this.srv_type = srv_type;
     this.data = JSON.stringify(data);

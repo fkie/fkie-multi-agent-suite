@@ -125,7 +125,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                 <Typography
                   variant="caption"
                   color="inherit"
-                  padding={0.5}
+                  padding={0.2}
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(topicInfo.msgType);

@@ -1,3 +1,4 @@
+import { grey } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
 import { TreeItem2, treeItemClasses } from "@mui/x-tree-view";
 
@@ -34,7 +35,7 @@ const StyledTreeItem = styled(TreeItem2)(({ theme }) => ({
   [`& .${treeItemClasses.groupTransition}`]: {
     marginLeft: 15,
     paddingLeft: 5,
-    borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
+    borderLeft: `1px dashed ${alpha(grey[600], 0.4)}`,
   },
   ...theme.applyStyles("light", {
     color: theme.palette.grey[800],
