@@ -103,7 +103,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
       return prevHistory;
     });
     // inform host panel tab about loaded launch file
-    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODES, "default", {}));
+    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODES, "default"));
   }, [rosCtx, selectedProvider, setLaunchFileHistory, selectedLaunchFile, settingsCtx]);
 
   /**

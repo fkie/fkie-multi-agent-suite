@@ -1,5 +1,4 @@
 /* eslint-disable camelcase */
-import { JSONObject } from "@/types";
 import { TRosMessageStruct } from "./TRosMessageStruct";
 /**
  * LaunchCallService models the service to call a ROS service.

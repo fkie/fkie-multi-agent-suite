@@ -33,7 +33,7 @@ import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_EDITOR_SELECT_RANGE,
-  TEditorSelectRange,
+  TEventEditorSelectRange,
   eventCloseComponent,
 } from "../layout/events";
 import "./FileEditorPanel.css";
@@ -316,7 +316,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
   );
 
   /** select node definition on event. */
-  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data: TEditorSelectRange) => {
+  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data: TEventEditorSelectRange) => {
     if (data.tabId === tabId) {
       setEditorModel(data.filePath, data.fileRange, data.launchArgs);
     }

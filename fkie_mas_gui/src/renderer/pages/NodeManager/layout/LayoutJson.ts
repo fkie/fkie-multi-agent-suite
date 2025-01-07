@@ -1,4 +1,9 @@
+import { IJsonBorderNode, IJsonModel } from "flexlayout-react";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "./LayoutDefines";
+
+interface IJsonBorderNodeExt extends IJsonBorderNode {
+  id: string;
+}
 
 const DEFAULT_LAYOUT = {
   global: {
@@ -61,7 +66,7 @@ const DEFAULT_LAYOUT = {
       enableClose: false,
       enableAutoHide: true,
       children: [],
-    },
+    } as IJsonBorderNodeExt,
   ],
   layout: {
     type: "row",
@@ -117,7 +122,6 @@ const DEFAULT_LAYOUT = {
         id: LAYOUT_TAB_SETS.CENTER,
         type: "tabset",
         weight: 70,
-        tabSetEnableClose: false,
         children: [
           {
             id: LAYOUT_TABS.NODES,
@@ -131,5 +135,5 @@ const DEFAULT_LAYOUT = {
       },
     ],
   },
-};
+} as IJsonModel;
 export { DEFAULT_LAYOUT };

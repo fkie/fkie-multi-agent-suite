@@ -1,5 +1,3 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-// mui imports
 import { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
 import { EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
@@ -35,6 +33,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConfirmModal, HostTreeView, MapSelectionModal, SearchBar } from "../../../components";
 import ListSelectionModal from "../../../components/SelectionModal/ListSelectionModal";
@@ -326,18 +325,18 @@ function HostTreeViewPanel() {
         logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
         return;
       }
-      const launchInfos = Array.from(node.launchInfo.values());
+      const launchInfos = Array.from(node.launchInfo.entries());
       if (launchInfos.length > 1) {
         // select launch file to edit
         setEditNodeWithMultipleLaunchInfos({ node: node, external: external });
       } else {
-        const rootLaunch = launchInfos[0];
+        const [rootLaunch, launchInfo] = launchInfos[0];
         rosCtx.openEditor(
           node.providerId,
-          rootLaunch.launch_name || "",
-          rootLaunch.file_name || "",
-          rootLaunch.file_range,
-          rootLaunch.launch_context_arg || [],
+          rootLaunch,
+          launchInfo.file_name || "",
+          launchInfo.file_range,
+          launchInfo.launch_context_arg || [],
           external
         );
       }
@@ -1033,7 +1032,7 @@ function HostTreeViewPanel() {
   }, [indexQueueMain]);
 
   const showRemoteOnAllProvider = useCallback(
-    (state) => {
+    (state: boolean) => {
       rosCtx.providersConnected.forEach((p) => {
         p.showRemoteNodes = state;
       });
@@ -1601,7 +1600,7 @@ function HostTreeViewPanel() {
           }}
         />
       )}
-      {nodeScreens.length && (
+      {nodeScreens.length > 0 && (
         <ListSelectionModal
           title="Select screens to open"
           list={nodeScreens.reduce((prev: string[], item) => {
@@ -1721,7 +1720,7 @@ function HostTreeViewPanel() {
                 const launchInfo = editNodeWithMultipleLaunchInfos.node.launchInfo.get(launch);
                 rosCtx.openEditor(
                   editNodeWithMultipleLaunchInfos.node.providerId,
-                  launchInfo?.launch_name || "",
+                  launch,
                   launchInfo?.file_name || "",
                   launchInfo?.file_range as TFileRange,
                   launchInfo?.launch_context_arg as TLaunchArg[],

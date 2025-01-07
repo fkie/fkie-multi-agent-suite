@@ -12,17 +12,33 @@ export type TEventId = {
   id: string;
 };
 
+export type TEventOpenComponent = {
+  id: string;
+  title: string;
+  component: React.ReactNode | undefined;
+  closable: boolean;
+  panelGroup: string; // panel or tab id where to place the new tab
+  config: LayoutTabConfig; // a place to hold json config for the hosted component
+};
+
+export type TEventEditorSelectRange = {
+  tabId: string;
+  filePath: string;
+  fileRange: TFileRange | null;
+  launchArgs?: TLaunchArg[];
+};
+
 export function eventOpenComponent(
   id: string,
   title: string,
-  component: object,
+  component: React.ReactNode | undefined = undefined,
   closable: boolean = true,
   panelGroup: string = "", // panel or tab id where to place the new tab
   config: LayoutTabConfig = new LayoutTabConfig(false, panelGroup) // a place to hold json config for the hosted component
 ): {
   id: string;
   title: string;
-  component: object;
+  component: React.ReactNode;
   closable: boolean;
   panelGroup: string; // panel or tab id where to place the new tab
   config: LayoutTabConfig;
@@ -34,7 +50,7 @@ export function eventOpenComponent(
     component,
     panelGroup,
     config,
-  };
+  } as TEventOpenComponent;
 }
 
 export class SETTING extends String {
@@ -45,19 +61,12 @@ export class SETTING extends String {
 }
 
 export function eventOpenSettings(id: SETTING) {
-  return { id };
+  return { id } as TEventId;
 }
 
 export function eventCloseComponent(id: string) {
-  return { id };
+  return { id } as TEventId;
 }
-
-export type TEditorSelectRange = {
-  tabId: string;
-  filePath: string;
-  fileRange: TFileRange | null;
-  launchArgs?: TLaunchArg[];
-};
 
 export function eventEditorSelectRange(
   tabId: string,
@@ -65,9 +74,9 @@ export function eventEditorSelectRange(
   fileRange: TFileRange | null,
   launchArgs?: TLaunchArg[]
 ) {
-  return { tabId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] } as TEditorSelectRange;
+  return { tabId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] } as TEventEditorSelectRange;
 }
 
 export function eventFilterNodes(id: string): { id: string } {
-  return { id };
+  return { id } as TEventId;
 }

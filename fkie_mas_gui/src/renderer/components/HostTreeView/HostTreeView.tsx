@@ -358,7 +358,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         return getParentAndChildrenIds(selectedIds);
       });
       // inform details panel tab about selected nodes by user
-      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {}));
+      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
     },
     [getParentAndChildrenIds]
   );

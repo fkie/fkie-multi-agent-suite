@@ -1,4 +1,5 @@
 import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
+import { EventProviderAuthRequest } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -29,7 +30,22 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { Actions, DockLocation, Layout, Model } from "flexlayout-react";
+import {
+  Action,
+  Actions,
+  BorderNode,
+  DockLocation,
+  IJsonBorderNode,
+  IJsonModel,
+  IJsonRowNode,
+  IJsonTabSetNode,
+  ITabAttributes,
+  ITabSetRenderValues,
+  Layout,
+  Model,
+  TabNode,
+  TabSetNode,
+} from "flexlayout-react";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import ExternalAppsModal from "../../components/ExternalAppsModal/ExternalAppsModal";
@@ -38,16 +54,22 @@ import DraggablePaper from "../../components/UI/DraggablePaper";
 import { AutoUpdateContext } from "../../context/AutoUpdateContext";
 import { ElectronContext } from "../../context/ElectronContext";
 import { LoggingContext } from "../../context/LoggingContext";
-import { MonacoContext } from "../../context/MonacoContext";
-// import { NavigationContext } from "../../context/NavigationContext";
+import { ModifiedTabsInfo, MonacoContext } from "../../context/MonacoContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import { getBaseName } from "../../models";
-import { CmdType } from "../../providers";
+import { CmdType, Provider } from "../../providers";
 import { getRosNameAbb } from "../../utils";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
-import { EVENT_CLOSE_COMPONENT, EVENT_OPEN_COMPONENT, eventOpenComponent } from "./layout/events";
+import {
+  EVENT_CLOSE_COMPONENT,
+  EVENT_OPEN_COMPONENT,
+  eventOpenComponent,
+  TEventId,
+  TEventOpenComponent,
+} from "./layout/events";
+import { IExtTerminalConfig } from "./layout/LayoutTabConfig";
 import "./NodeManager.css";
 import AboutPanel from "./panels/AboutPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
@@ -61,6 +83,10 @@ import ServicesPanel from "./panels/ServicesPanel";
 import SettingsPanel from "./panels/SettingsPanel";
 import TopicsPanel from "./panels/TopicsPanel";
 
+interface ITabAttributesExt extends ITabAttributes {
+  panelGroup: string;
+}
+
 function NodeManager() {
   const auCtx = useContext(AutoUpdateContext);
   const electronCtx = useContext(ElectronContext);
@@ -69,15 +95,18 @@ function NodeManager() {
   const monacoCtx = useContext(MonacoContext);
   // const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
-  const [layoutJson, setLayoutJson] = useLocalStorage("layout", DEFAULT_LAYOUT);
-  const [model, setModel] = useState(Model.fromJson(layoutJson));
+  const [layoutJson, setLayoutJson] = useLocalStorage<IJsonModel>("layout", DEFAULT_LAYOUT);
+  const [model, setModel] = useState<Model>(Model.fromJson(layoutJson));
   const layoutRef = useRef(null);
   const [layoutComponents] = useState({});
-  const [addToLayout, setAddToLayout] = useState([]);
-  const [modifiedEditorTabs, setModifiedEditorTabs] = useState([]);
-  const [passwordRequests, setPasswordRequests] = useState([]);
+  const [addToLayout, setAddToLayout] = useState<ITabAttributesExt[]>([]);
+  const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
+  const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
+  const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
 
-  const tooltipDelay = settingsCtx.get("tooltipEnterDelay");
+  useEffect(() => {
+    setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+  }, [settingsCtx.changed]);
 
   const hasTab = useCallback((layout, tabId) => {
     if (!layout.children) return false;
@@ -94,7 +123,7 @@ function NodeManager() {
   }, []);
 
   // disable float button if the gui is not running in the browser
-  const updateFloatButton = useCallback((layout) => {
+  const updateFloatButton = useCallback((layout: IJsonRowNode | IJsonBorderNode | IJsonTabSetNode) => {
     if (!layout.children) return false;
     let result = false;
     layout.children.forEach((item) => {
@@ -119,9 +148,14 @@ function NodeManager() {
 
   useEffect(() => {
     // check on load if float button should be enabled or not
-    let changed = updateFloatButton(layoutJson.layout);
-    layoutJson.border?.forEach((border) => {
-      if (updateFloatButton(border.layout)) {
+    let changed: boolean = updateFloatButton(layoutJson.layout);
+    layoutJson.borders?.forEach((border) => {
+      if (updateFloatButton(border)) {
+        changed = true;
+      }
+    });
+    layoutJson.layout.children?.forEach((layout) => {
+      if (updateFloatButton(layout)) {
         changed = true;
       }
     });
@@ -129,7 +163,7 @@ function NodeManager() {
       setLayoutJson(layoutJson);
       setModel(Model.fromJson(layoutJson));
     }
-  }, [layoutJson, setLayoutJson, setModel, updateFloatButton]);
+  }, [layoutJson]);
 
   useEffect(() => {
     if (settingsCtx.get("resetLayout") || !hasTab(layoutJson.layout, LAYOUT_TABS.NODES)) {
@@ -141,41 +175,47 @@ function NodeManager() {
   }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel, settingsCtx, hasTab, logCtx]);
 
   /** Hide bottom panel on close of last terminal */
-  const deleteTab = useCallback(
+  const deleteTab: (tabId: string) => void = useCallback(
     (tabId) => {
       // check if it is an editor with modified files
       if (tabId.startsWith("editor")) {
         const mTab = monacoCtx.getModifiedFilesByTab(tabId);
         if (mTab) {
           const editorTab = model.getNodeById(tabId);
-          model.doAction(Actions.selectTab(editorTab));
-          setModifiedEditorTabs([mTab]);
-          return;
+          if (editorTab) {
+            model.doAction(Actions.selectTab(editorTab.getId()));
+            setModifiedEditorTabs([mTab]);
+            return;
+          }
         }
       }
       // handle tabs in bottom border
       const nodeBId = model.getNodeById(tabId);
       if (
-        nodeBId.getParent().getType() === "border" &&
-        nodeBId.getParent()?.getLocation().name === DockLocation.BOTTOM.name
+        nodeBId &&
+        nodeBId.getParent()?.getType() === "border" &&
+        (nodeBId.getParent() as BorderNode)?.getLocation().getName() === DockLocation.BOTTOM.getName()
       ) {
         // on close of last bottom tab hide the border if it currently visible
         const shouldSelectNewTab =
-          nodeBId.getParent().getChildren().length === 2 && nodeBId.getParent().getSelectedNode()?.isVisible();
+          nodeBId.getParent()?.getChildren().length === 2 &&
+          (nodeBId.getParent() as BorderNode)?.getSelectedNode()?.isVisible();
         if (shouldSelectNewTab) {
           model.doAction(Actions.selectTab(tabId));
         }
       } else {
         // select nodes tab it is in the same set as closed tab
         const nodeBId = model.getNodeById(tabId);
-        nodeBId
-          ?.getParent()
-          .getChildren()
-          .filter((tab) => {
-            if (tab.getId() === LAYOUT_TABS.NODES) {
-              model.doAction(Actions.selectTab(tab.getId()));
-            }
-          });
+        if (nodeBId) {
+          nodeBId
+            .getParent()
+            ?.getChildren()
+            .filter((tab) => {
+              if (tab.getId() === LAYOUT_TABS.NODES) {
+                model.doAction(Actions.selectTab(tab.getId()));
+              }
+            });
+        }
       }
       model.doAction(Actions.deleteTab(tabId));
     },
@@ -184,20 +224,21 @@ function NodeManager() {
 
   useCustomEventListener(
     EVENT_OPEN_COMPONENT,
-    (data) => {
+    (data: TEventOpenComponent) => {
       const node = model.getNodeById(data.id);
       if (node) {
-        if (node.getParent().getType() === "border") {
-          if (node.getParent().getSelectedNode()?.getId() === node.getId()) {
+        if (node.getParent()?.getType() === "border") {
+          const selectedNode = (node.getParent() as BorderNode)?.getSelectedNode();
+          if (selectedNode?.getId() === node.getId()) {
             // it is border and current tab is selected => nothing to do
-          } else if (node.getParent().getSelectedNode()?.getId() === LAYOUT_TABS.HOSTS) {
+          } else if (selectedNode?.getId() === LAYOUT_TABS.HOSTS) {
             // it is border and current tab is HOSTS => nothing to do
           } else if (node.getId() === LAYOUT_TABS.LOGGING) {
-            if (!node.getParent().getSelectedNode()?.isVisible()) {
+            if (!selectedNode?.isVisible()) {
               // activate logging tab if not visible.
               model.doAction(Actions.selectTab(data.id));
             }
-          } else if (node.getParent().getSelectedNode()?.isVisible()) {
+          } else if (selectedNode?.isVisible()) {
             // activate already existing tab if the border is enabled.
             model.doAction(Actions.selectTab(data.id));
           } else {
@@ -209,11 +250,10 @@ function NodeManager() {
         }
       } else {
         // create a new tab
-        const tab = {
+        const tab: ITabAttributesExt = {
           id: data.id,
           type: "tab",
           name: data.title,
-          content: `${data.title}bal`,
           component: data.id,
           panelGroup: data.panelGroup,
           enableClose: data.closable,
@@ -231,7 +271,7 @@ function NodeManager() {
   /** close tabs on signals from tab itself (e.g. ctrl+d) */
   useCustomEventListener(
     EVENT_CLOSE_COMPONENT,
-    (data) => {
+    (data: TEventId) => {
       deleteTab(data.id);
     },
     [deleteTab]
@@ -239,7 +279,7 @@ function NodeManager() {
 
   useCustomEventListener(
     EVENT_PROVIDER_AUTH_REQUEST,
-    (data) => {
+    (data: EventProviderAuthRequest) => {
       setPasswordRequests((prev) => [
         ...prev,
         <PasswordDialog
@@ -250,7 +290,8 @@ function NodeManager() {
           onClose={(prov) => {
             setPasswordRequests((prev) =>
               prev.filter((item) => {
-                return prov.id !== item.key;
+                // hack to remove closed dialog from our list
+                return prov.id !== (item as { key: string })?.key;
               })
             );
           }}
@@ -260,7 +301,14 @@ function NodeManager() {
     [setPasswordRequests]
   );
 
-  const getPanelId = useCallback(
+  const getPanelId: (
+    id: string,
+    panelGroup: string
+  ) => {
+    id: string;
+    isBorder: boolean;
+    location: DockLocation;
+  } = useCallback(
     (id, panelGroup) => {
       const result = {
         id: panelGroup,
@@ -289,15 +337,16 @@ function NodeManager() {
           break;
       }
       if (result.isBorder) {
-        result.id = model
-          .getBorderSet()
-          .getBorders()
-          .find((b) => b.getLocation() === result.location)
-          ?.getId();
+        result.id =
+          model
+            .getBorderSet()
+            .getBorders()
+            .find((b) => b.getLocation() === result.location)
+            ?.getId() || id;
       } else {
         const nodeBId = model.getNodeById(panelGroup);
         if (nodeBId && LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
-          result.id = nodeBId.getParent().getId();
+          result.id = nodeBId.getParent()?.getId() || id;
         }
       }
       return result;
@@ -309,39 +358,40 @@ function NodeManager() {
   useEffect(() => {
     if (addToLayout.length > 0) {
       const tab = addToLayout.pop();
-      const panelId = getPanelId(tab.id, tab.panelGroup);
-      const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, 1);
-      model.doAction(action);
-      if (panelId.isBorder && panelId.id) {
-        // If a tab in the same border is visible,
-        // selectTab causes the new tab to hide
-        const shouldSelectNewTab = !model
-          .getBorderSet()
-          .getBorders()
-          .find((b) => b.getLocation() === panelId.location)
-          .getChildren()
-          .map((c) => c.isVisible())
-          .includes(true);
+      if (tab) {
+        const panelId = getPanelId(tab.id || "", tab.panelGroup);
+        const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, 1);
+        model.doAction(action);
+        if (model && panelId.isBorder && panelId.id) {
+          // If a tab in the same border is visible,
+          // selectTab causes the new tab to hide
+          const shouldSelectNewTab = !model
+            .getBorderSet()
+            .getBorders()
+            .find((b) => b.getLocation() === panelId.location)
+            ?.getChildren()
+            .map((c) => c.isVisible())
+            .includes(true);
 
-        if (shouldSelectNewTab) {
-          model.doAction(
-            Actions.selectTab(
-              model
-                .getBorderSet()
-                .getBorders()
-                .find((b) => b.getLocation() === panelId.location)
-                .getChildren()
-                .slice(-1)[0] // Get last children === new tab
-                .getId()
-            )
-          );
+          if (shouldSelectNewTab) {
+            const tabId: string | undefined = model
+              .getBorderSet()
+              .getBorders()
+              .find((b) => b.getLocation() === panelId.location)
+              ?.getChildren()
+              .slice(-1)[0] // Get last children === new tab
+              .getId();
+            if (tabId) {
+              model.doAction(Actions.selectTab(tabId));
+            }
+          }
         }
       }
       setAddToLayout([...addToLayout]);
     }
   }, [addToLayout, getPanelId, model]);
 
-  const factory = (node) => {
+  const factory = (node: TabNode) => {
     const component = node.getComponent();
     switch (component) {
       case LAYOUT_TABS.NODES:
@@ -363,9 +413,11 @@ function NodeManager() {
       case LAYOUT_TABS.ABOUT:
         return <AboutPanel key="about-panel" />;
       case LAYOUT_TABS.PARAMETER:
-        return <ParameterPanel key="parameter-panel" />;
+        return <ParameterPanel key="parameter-panel" nodes={[]} providers={[]} />;
       default:
-        return layoutComponents[component];
+        if (component) {
+          return layoutComponents[component];
+        }
     }
   };
 
@@ -474,9 +526,10 @@ function NodeManager() {
                 onMouseDown={(event) => {
                   if (event?.button === 1) return;
                   if (node.getConfig().extTerminalConfig) {
-                    const openExternalTerminal = async (config, tabNodeId) => {
+                    const openExternalTerminal = async (config: IExtTerminalConfig, tabNodeId: string) => {
                       // create a terminal command
                       const provider = rosCtx.getProviderById(config.providerId);
+                      if (!provider) return;
                       const terminalCmd = await provider.cmdForType(
                         config.type,
                         config.nodeName,
@@ -493,7 +546,11 @@ function NodeManager() {
                         );
                         deleteTab(tabNodeId);
                       } catch (error) {
-                        logCtx.error(`Can't open external terminal for ${config.nodeName}`, error, true);
+                        logCtx.error(
+                          `Can't open external terminal for ${config.nodeName}`,
+                          JSON.stringify(error),
+                          true
+                        );
                       }
                     };
                     openExternalTerminal(node.getConfig().extTerminalConfig, node.getId());
@@ -551,7 +608,29 @@ function NodeManager() {
     // renderValues.buttons.push(<img style={{width:"1em", height:"1em"}} src="images/folder.svg"/>);
   }
 
-  function pAddTabStickyButton(container, id, title, component, setId, icon, tooltipLoc = "right", force = false) {
+  function pAddTabStickyButton(
+    container: React.ReactNode[],
+    id: string,
+    title: string,
+    component: React.ReactNode,
+    setId: string,
+    icon: React.ReactNode,
+    tooltipLoc:
+      | "right"
+      | "top"
+      | "bottom"
+      | "bottom-end"
+      | "bottom-start"
+      | "left-end"
+      | "left-start"
+      | "left"
+      | "right-end"
+      | "right-start"
+      | "top-end"
+      | "top-start"
+      | undefined = "right",
+    force: boolean = false
+  ) {
     if (force || !model.getNodeById(id)) {
       container.push(
         <Tooltip
@@ -576,7 +655,7 @@ function NodeManager() {
     }
   }
 
-  function onRenderTabSet(node /* TabSetNode */, renderValues /* ITabSetRenderValues */) {
+  function onRenderTabSet(node: TabSetNode | BorderNode, renderValues: ITabSetRenderValues) {
     const children = node.getChildren();
     children.forEach((child) => {
       if (child.getId() === LAYOUT_TABS.NODES) {
@@ -600,7 +679,7 @@ function NodeManager() {
           renderValues.stickyButtons,
           LAYOUT_TABS.PARAMETER,
           "Parameter",
-          <ParameterPanel nodes={null} providers={null} />,
+          <ParameterPanel nodes={[]} providers={[]} />,
           node.getId(),
           <TuneIcon sx={{ fontSize: "inherit" }} />
         );
@@ -696,7 +775,7 @@ function NodeManager() {
   const cleanAndSaveLayout = useDebounceCallback(
     (/* model */) => {
       const modelJson = model.toJson();
-      modelJson.borders.forEach((item) => {
+      modelJson.borders?.forEach((item) => {
         item.selected = -1;
         removeGenericTabs(item);
       });
@@ -705,16 +784,6 @@ function NodeManager() {
     },
     500
   );
-
-  // useEffect(() => {
-  //   if (navCtx.selectedNodes.length > 0) {
-  //     // inform details panel tab about selected nodes by user
-  //     emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {}));
-  //   } else {
-  //     // select package explorer if no nodes are selected
-  //     emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.PACKAGES, "default", {}));
-  //   }
-  // }, [navCtx.selectedNodes]);
 
   const isInstallUpdateRequested = useCallback(() => {
     return auCtx.requestedInstallUpdate;
@@ -740,7 +809,7 @@ function NodeManager() {
   ]);
 
   const shutdownProviders = useCallback(
-    async (providers) => {
+    async (providers: Provider[]) => {
       if (providers && providers.length > 0) {
         await Promise.all(
           providers.map(async (prov) => {
@@ -756,15 +825,16 @@ function NodeManager() {
     [electronCtx]
   );
 
-  const onKeyDown = (event) => {
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    const currFontSize = settingsCtx.get("fontSize") as number;
     if (event.ctrlKey && event.key === "+") {
-      settingsCtx.set("fontSize", settingsCtx.get("fontSize") + 1);
+      settingsCtx.set("fontSize", currFontSize + 1);
     }
     if (event.ctrlKey && event.key === "-") {
-      settingsCtx.set("fontSize", settingsCtx.get("fontSize") - 1);
+      settingsCtx.set("fontSize", currFontSize - 1);
     }
     if (event.ctrlKey && event.key === "0") {
-      settingsCtx.set("fontSize", settingsCtx.getDefault("fontSize"));
+      settingsCtx.set("fontSize", currFontSize);
     }
   };
 
@@ -782,24 +852,23 @@ function NodeManager() {
       }}
     >
       <Layout
-        margin="1em"
         key="node-manager-layout"
         ref={layoutRef}
         model={model}
         factory={factory}
-        onAction={(action) => {
+        onAction={(action: Action) => {
           // hide bottom panel on close of last terminal
           if (action.type === Actions.DELETE_TAB) {
             deleteTab(action.data.node);
-          } else {
-            model.doAction(action);
+            return undefined;
           }
+          return action;
         }}
         onRenderTab={(node, renderValues) => onRenderTab(node, renderValues)}
         onRenderTabSet={(node, renderValues) => onRenderTabSet(node, renderValues)}
         onModelChange={(_model, _action) => {
           if (![Actions.SELECT_TAB, Actions.SET_ACTIVE_TABSET].includes(_action.type)) {
-            cleanAndSaveLayout(_model);
+            cleanAndSaveLayout();
           }
         }}
         onContextMenu={(node) => {
@@ -807,7 +876,7 @@ function NodeManager() {
         }}
         onAuxMouseClick={(node, event) => {
           // close tabs with middle mouse click
-          if (event?.button === 1 && node.getType() === "tab" && node.isEnableClose()) {
+          if (event?.button === 1 && node.getType() === "tab" && (node as TabSetNode | TabNode).isEnableClose()) {
             deleteTab(node.getId());
           }
         }}
@@ -827,6 +896,7 @@ function NodeManager() {
           open={modifiedEditorTabs.length > 0}
           onClose={() => setModifiedEditorTabs([])}
           fullWidth
+          scroll="paper"
           maxWidth="sm"
           ref={dialogRef}
           PaperProps={{
@@ -839,7 +909,7 @@ function NodeManager() {
             Changed Files
           </DialogTitle>
 
-          <DialogContent scroll="paper" aria-label="list">
+          <DialogContent aria-label="list">
             {modifiedEditorTabs.map((tab) => {
               return (
                 <DialogContentText key={tab.tabId} id="alert-dialog-description">
