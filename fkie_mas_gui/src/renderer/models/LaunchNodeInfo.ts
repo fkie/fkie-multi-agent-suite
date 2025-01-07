@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 
+import { TFileRange, TLaunchArg } from "@/types";
 import RosParameter from "./RosParameter";
 
 /**
@@ -52,9 +53,9 @@ class LaunchNodeInfo {
 
   file_name: string | null;
 
-  file_range: unknown | null;
+  file_range: TFileRange | null;
 
-  launch_context_arg: unknown[] | null;
+  launch_context_arg: TLaunchArg[] | null;
 
   launch_name: string | null;
 
@@ -90,8 +91,8 @@ class LaunchNodeInfo {
     on_exit: unknown[] | null,
     required: boolean | null = null,
     file_name: string | null = null,
-    file_range: unknown | null = null,
-    launch_context_arg: unknown[] | null = null,
+    file_range: TFileRange | null = null,
+    launch_context_arg: TLaunchArg[] | null = null,
     launch_name: string | null = null,
     composable_container: string | null
   ) {

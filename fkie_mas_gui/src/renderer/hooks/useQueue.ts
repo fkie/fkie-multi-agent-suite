@@ -7,11 +7,11 @@ interface StatusItem {
   message: string;
 }
 
-const useQueue = (onProgress: (progress: number) => void) => {
+function useQueue<T>(onProgress: (progress: number) => void) {
   // offers variable to store success and failed results
   const [resultStatus, setResultStatus] = useState<StatusItem[]>([]);
-  const [queue, setQueue] = useState<[]>([]);
-  const [addToQueue, setAddToQueue] = useState<[]>([]);
+  const [queue, setQueue] = useState<T[]>([]);
+  const [addToQueue, setAddToQueue] = useState<T[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ const useQueue = (onProgress: (progress: number) => void) => {
    * @param list List with items.
    */
   const update = useCallback(
-    (list: []) => {
+    (list: T[]) => {
       setAddToQueue(list);
     },
     [setAddToQueue]
@@ -93,6 +93,6 @@ const useQueue = (onProgress: (progress: number) => void) => {
     failed,
     addStatus,
   };
-};
+}
 
 export default useQueue;

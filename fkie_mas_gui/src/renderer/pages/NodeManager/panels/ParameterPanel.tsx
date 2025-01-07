@@ -558,7 +558,7 @@ export default function ParameterPanel(props: ParameterPanelProps) {
               />
             );
           })} */}
-          {/* <Box width="100%" height="100%" overflow="auto">
+        {/* <Box width="100%" height="100%" overflow="auto">
             <SimpleTreeView
               aria-label="parameters"
               expandedItems={searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}

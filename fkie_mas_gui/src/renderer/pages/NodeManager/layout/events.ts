@@ -8,6 +8,10 @@ export const EVENT_OPEN_CONNECT = "EVENT_OPEN_CONNECT" as const;
 export const EVENT_EDITOR_SELECT_RANGE = "EVENT_EDITOR_SELECT_RANGE" as const;
 export const EVENT_FILTER_NODES = "EVENT_FILTER_NODES" as const;
 
+export type TEventId = {
+  id: string;
+};
+
 export function eventOpenComponent(
   id: string,
   title: string,

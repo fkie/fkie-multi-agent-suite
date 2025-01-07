@@ -165,7 +165,10 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     if (messageStr !== "{}" && (!historyInStruct || historyInStruct?.length === 0)) {
       updateHistory();
     } else if (historyInStruct) {
-      if (historyInStruct.length === 0 || messageStr !== rosMessageStructToString(historyInStruct[0].msg, false, false)) {
+      if (
+        historyInStruct.length === 0 ||
+        messageStr !== rosMessageStructToString(historyInStruct[0].msg, false, false)
+      ) {
         updateHistory();
       }
     }

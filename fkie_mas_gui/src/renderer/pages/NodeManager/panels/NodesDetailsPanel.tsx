@@ -23,7 +23,7 @@ import { NavigationContext } from "../../../context/NavigationContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
-import { RosNode, RosNodeStatus, getDiagnosticLevelName, getFileName } from "../../../models";
+import { RosNode, RosNodeStatus, RosTopic, getDiagnosticLevelName, getFileName } from "../../../models";
 import { darkThemeJson } from "../../../themes/darkTheme";
 import { lightThemeJson } from "../../../themes/lightTheme";
 import { generateUniqueId } from "../../../utils";
@@ -36,7 +36,7 @@ import ServicesPanel from "./ServicesPanel";
 import TopicPublishPanel from "./TopicPublishPanel";
 import TopicsPanel from "./TopicsPanel";
 
-const compareTopics = (a, b) => {
+const compareTopics = (a: RosTopic, b: RosTopic) => {
   if (a.name < b.name) {
     return -1;
   }

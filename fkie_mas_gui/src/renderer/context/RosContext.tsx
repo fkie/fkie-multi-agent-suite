@@ -1,4 +1,4 @@
-import { TFileRange, TLaunchArg, TRosInfo, TSystemInfo } from "@/types";
+import { TFileRange, TLaunchArg, TResult, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
@@ -67,7 +67,7 @@ export interface IRosProviderContext {
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string) => void;
-  startDynamicReconfigureClient: (nodeName: string, masteruri: string) => void;
+  startDynamicReconfigureClient: (nodeName: string, masteruri: string) => Promise<TResult>;
   startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null) => Promise<boolean>;
   removeProvider: (providerId: string) => void;
   getProviderName: (providerId: string) => string;
@@ -125,7 +125,7 @@ export const DEFAULT = {
   startProvider: () => new Promise<boolean>(() => {}),
   startConfig: () => new Promise<boolean>(() => {}),
   startMasterSync: () => null,
-  startDynamicReconfigureClient: () => null,
+  startDynamicReconfigureClient: () => new Promise<TResult>(() => {}),
   removeProvider: () => null,
   getProviderName: () => "",
   refreshProviderList: () => {},
@@ -898,14 +898,15 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     [isLocalHost, logCtx, getProviderByHosts]
   );
 
-  const startDynamicReconfigureClient = useCallback(
-    async (nodeName: string, masteruri: string) => {
-      if (!window.commandExecutor) return { result: false, message: "dynamic reconfigure not available in Browser" };
+  const startDynamicReconfigureClient: (nodeName: string, masteruri: string) => Promise<TResult> = useCallback(
+    async (nodeName, masteruri) => {
+      if (!window.commandExecutor)
+        return Promise.resolve({ result: false, message: "dynamic reconfigure not available in Browser" });
       logCtx.debug(`Starting Dynamic Reconfigure GUI for '${nodeName}'`, "");
       if (!masteruri) {
         const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${nodeName}`;
         logCtx.error(msg, "");
-        return { result: false, message: msg };
+        return Promise.resolve({ result: false, message: msg });
       }
       const config = new ProviderLaunchConfiguration("localhost", "1");
       config.ros1MasterUri = { enable: true, uri: masteruri };
@@ -924,20 +925,23 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                   resultStartSync.connectConfig
                 )
               );
-              return false;
+              return Promise.resolve({ result: false, message: "password requested" });
             } else {
               logCtx.error(
                 `Failed to start dynamic reconfigure node on host '${config.host}'`,
                 resultStartSync.message
               );
-              return false;
+              return Promise.resolve({
+                result: false,
+                message: `Failed to start dynamic reconfigure node on host '${config.host}'`,
+              });
             }
           } else {
-            return true;
+            return Promise.resolve({ result: true, message: "" });
           }
         }
       }
-      return false;
+      return Promise.resolve({ result: false, message: cmd.message });
     },
     [logCtx]
   );
