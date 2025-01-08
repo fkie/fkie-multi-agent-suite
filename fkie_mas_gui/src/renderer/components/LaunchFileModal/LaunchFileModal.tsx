@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { ForwardedRef, forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { ForwardedRef, forwardRef, HTMLAttributes, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
@@ -376,22 +376,24 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
                             // autoFocus
                           />
                         )}
-                        renderOption={(_props, option) => (
-                          <Stack /*{...props}*/ key={option} direction="row">
-                            <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
-                              {option}
-                            </Typography>
-                            <IconButton
-                              component="label"
-                              onClick={(event) => {
-                                deleteHistoryOption(arg.name, option);
-                                event.stopPropagation();
-                              }}
-                            >
-                              <DeleteIcon sx={{ fontSize: "1em" }} />
-                            </IconButton>
-                          </Stack>
-                        )}
+                        renderOption={(props, option) => {
+                          return (
+                            <Stack {...(props as HTMLAttributes<HTMLDivElement>)} key={option} direction="row">
+                              <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
+                                {option}
+                              </Typography>
+                              <IconButton
+                                component="label"
+                                onClick={(event) => {
+                                  deleteHistoryOption(arg.name, option);
+                                  event.stopPropagation();
+                                }}
+                              >
+                                <DeleteIcon sx={{ fontSize: "1em" }} />
+                              </IconButton>
+                            </Stack>
+                          );
+                        }}
                         onChange={(_event, newArgValue) => {
                           setCurrentArgs(
                             currentArgs.map((item) => {

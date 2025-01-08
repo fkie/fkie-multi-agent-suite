@@ -102,13 +102,8 @@ function HostTreeViewPanel() {
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
 
   const [filterText, setFilterText] = useState("");
-  // providerNodes: list of {providerId: string, nodes: RosNode[]}
   const [providerNodes, setProviderNodes] = useState<TProviderNodes[]>([]);
-  // visibleNodes: RosNode[]
   const [visibleNodes, setVisibleNodes] = useState<RosNode[]>([]);
-  // // updated and filtered node tree
-  // // providerNodeTree: list of {providerId: string, nodeTree: object}
-  // const [providerNodeTree, setProviderNodeTree] = useState([]);
   const [nodesToStart, setNodesToStart] = useState<RosNode[]>();
   const [progressQueueMain, setProgressQueueMain] = useState<number>(0);
   const {

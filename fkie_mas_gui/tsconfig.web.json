@@ -6,8 +6,6 @@
     "src/preload/**/*.ts",
     "src/preload/*.d.ts",
     "src/renderer/**/*",
-    "src/renderer/**/*.jsx",
-    "src/renderer/**/**/*.jsx",
     "src/renderer/**/*.tsx",
     "src/renderer/**/**/*.tsx",
     "src/renderer/**/**/**/*.tsx",
@@ -15,13 +13,10 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
-    "allowJs": true,
-    "lib": ["ES2021"],
     "skipLibCheck": false
   }
 }

@@ -97,8 +97,8 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                 sx={{ fontWeight: "inherit" }}
                 onClick={(e) => {
                   if (e.detail === 2) {
-                    navigator.clipboard.writeText(label);
-                    logCtx.success(`${label} copied!`);
+                    navigator.clipboard.writeText(topicInfo.name);
+                    logCtx.success(`${topicInfo.name} copied!`);
                     e.stopPropagation();
                   }
                 }}
@@ -173,10 +173,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                         const id: string = `${topicInfo.providerId}${item.node_id.replaceAll("/", "#")}`;
                         navCtx.setSelectedNodes([id]);
                         // inform details panel tab about selected nodes by user
-                        emitCustomEvent(
-                          EVENT_OPEN_COMPONENT,
-                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default")
-                        );
+                        emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                       }}
                     >
                       {pubNodeName}
@@ -205,10 +202,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                         const id: string = `${topicInfo.providerId}${item.node_id.replaceAll("/", "#")}`;
                         navCtx.setSelectedNodes([id]);
                         // inform details panel tab about selected nodes by user
-                        emitCustomEvent(
-                          EVENT_OPEN_COMPONENT,
-                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default")
-                        );
+                        emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                       }}
                     >
                       {subNodeName}

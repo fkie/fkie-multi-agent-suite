@@ -7,8 +7,6 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    },
-    "allowJs": true,
-    "lib": ["ES2021"]
+    }
   }
 }

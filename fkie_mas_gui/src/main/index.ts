@@ -65,7 +65,7 @@ const createWindow = async (): Promise<void> => {
     y: mainWindowStateKeeper.y,
     width: mainWindowStateKeeper.width,
     height: mainWindowStateKeeper.height,
-    icon: join(__dirname, "../../icon/crystal_clear_app_clicknrun_256x256.png"),
+    icon: join(__dirname, "../../icon/mas.png"),
     webPreferences: {
       sandbox: false,
       nodeIntegration: true,

@@ -38,7 +38,7 @@ linux:
   maintainer: fkie.cms
   category: Development
   synopsis: Manage and control ROS nodes
-  icon: "icon/"
+  icon: "icon/mas.png"
 appImage:
   artifactName: mas-gui.${ext}
 npmRebuild: false

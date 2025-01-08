@@ -136,7 +136,12 @@ export default function ParameterPanel(props: ParameterPanelProps) {
     <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
       <Stack spacing={1} height="100%">
         <Stack direction="row" spacing={0.5} alignItems="center">
-          <Tooltip title="Delete selected ROS1 parameter" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+          <Tooltip
+            title="Delete selected ROS1 parameter"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            disableInteractive
+          >
             <span>
               <IconButton
                 disabled={!selectedParameter}
