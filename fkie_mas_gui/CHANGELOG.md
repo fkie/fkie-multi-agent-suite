@@ -1,5 +1,32 @@
 # Changelog
 
+## 3.0.0 - 08.01.2025
+
+Changed: app icon and removed js build options
+Changed: translated JavaScript to TypeScript
+Changed: parameter panel
+Changed: topic info structure
+Added: show incompatible qos information in topics panel
+Added: kill all parents, to handle the case if respawn script is used
+Added: visualization and control for lifecycle ros2 nodes
+Added: show the content of the parameter file in ros2 configuration details
+Added: file selection dialog if a node is defined in multiple launch files
+Added: warning if executable for a loaded node was not found
+Added: parsing for included files for loaded ros2 python launch files
+Added: search for child processes of the screen to kill the correct process
+Added: signal handling to ros2 nodes
+Updated: visualization of composable node and nodes with same GUID
+Updated: the determination of the composable node for ROS2
+Updated: readme and depended licenses
+Fixed: call ros2 service
+Fixed: error visualization if save file failed
+Fixed: wheel scroll in parameter selection dialog
+Fixed: reduced forced updates after ros service calls in ros2
+Fixed: expand/collapse node groups only on icon or double click
+Fixed: do not switch to node details panel on node updates
+Fixed: start daemon nodes with default configuration
+Bump version of systeminformation dependency
+
 ## 2.7.0 - 09.12.2024
 
 Added: remember network id in connect dialog
