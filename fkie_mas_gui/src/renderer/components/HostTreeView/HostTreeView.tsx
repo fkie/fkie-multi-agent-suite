@@ -10,7 +10,7 @@ import { getFileName, LaunchContent, LaunchFile, RosNode } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { CmdType, Provider } from "../../providers";
-import { generateUniqueId, nameWithoutNamespace, removeDDSuid } from "../../utils";
+import { generateUniqueId, nodeNameWithoutNamespace, removeDDSuid } from "../../utils";
 import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
@@ -123,12 +123,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const treePath = `${a.slice(0, -1).join("/")}#${nameWithoutNamespace(node)}-${node.guid}`;
+              const treePath = `${a.slice(0, -1).join("/")}#${nodeNameWithoutNamespace(node)}-${node.guid}`;
               r.nodeTree.push({
                 treePath,
                 children: r[name].nodeTree,
                 node,
-                name: nameWithoutNamespace(node),
+                name: nodeNameWithoutNamespace(node),
                 providerId: undefined,
                 providerName: undefined,
               });

@@ -159,9 +159,22 @@ const xor: (a1: boolean, a2: boolean) => boolean = (a1, a2) => {
   return (a1 && !a2) || (!a1 && a2);
 };
 
-const nameWithoutNamespace = (node: RosNode) => {
+const nodeNameWithoutNamespace = (node: RosNode) => {
   const name = node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
   return name[0] === "/" ? name.slice(1) : name;
+};
+
+const basename = (name: string) => {
+  const result: string = name.split("/").slice(-1)[0];
+  return result;
+};
+
+const normalizeNameWithPrefix: (name: string, prefix: string) => string = (name, prefix) => {
+  if (!prefix) return name;
+  if (name.startsWith(prefix)) {
+    return name.slice(prefix.length + 1);
+  }
+  return name.startsWith("/") ? name.slice(1) : name;
 };
 
 export {
@@ -170,7 +183,9 @@ export {
   findIn,
   generateUniqueId,
   getRosNameAbb,
-  nameWithoutNamespace,
+  nodeNameWithoutNamespace,
+  basename,
+  normalizeNameWithPrefix,
   pathJoin,
   removeDDSuid,
   xor,

@@ -4,32 +4,26 @@ import { LoggingContext } from "../../context/LoggingContext";
 import OverflowMenu from "../UI/OverflowMenu";
 import { RosParameter } from "@/renderer/models";
 import StyledTreeItem from "./StyledTreeItem";
+import { basename, normalizeNameWithPrefix } from "@/renderer/utils";
 
 interface ParameterTreeItemProps {
   itemId: string;
-  rootPath: string;
+  namespacePart: string;
   paramInfo: RosParameter;
   updateParameter: (param: RosParameter, value: string | boolean | number | string[], valueType?: string) => void;
   rosVersion?: string;
 }
 
 const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(function ParameterTreeItem(props, ref) {
-  const { itemId, rootPath, paramInfo, updateParameter = () => {}, rosVersion = "" } = props;
+  const { itemId, namespacePart, paramInfo, updateParameter = () => {}, rosVersion = "" } = props;
 
   const logCtx = useContext(LoggingContext);
-  const [label, setLabel] = useState<string>(paramInfo.name);
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
+  const [label, setLabel] = useState<string>(normalizeNameWithPrefix(basename(paramInfo.name), namespacePart));
 
   useEffect(() => {
-    if (!rootPath) return;
-    if (!paramInfo) return;
-
-    if (paramInfo.name === rootPath) {
-      setLabel(paramInfo.name);
-    } else {
-      setLabel(paramInfo.name.slice(rootPath.length + 1));
-    }
-  }, [rootPath, paramInfo.name, paramInfo]);
+    setLabel(normalizeNameWithPrefix(basename(paramInfo.name), namespacePart));
+  }, [namespacePart, paramInfo.name]);
 
   const typeOptions = [
     {
@@ -145,13 +139,15 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
           }}
         >
           <Stack
-            spacing={1}
             direction="row"
             sx={{
               flexGrow: 1,
               alignItems: "center",
             }}
           >
+            <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+              {namespacePart}
+            </Typography>{" "}
             <Typography
               variant="body2"
               sx={{ fontWeight: "inherit" }}

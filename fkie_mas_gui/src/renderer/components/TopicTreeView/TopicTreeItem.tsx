@@ -175,7 +175,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                         // inform details panel tab about selected nodes by user
                         emitCustomEvent(
                           EVENT_OPEN_COMPONENT,
-                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {})
+                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default")
                         );
                       }}
                     >
@@ -207,7 +207,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                         // inform details panel tab about selected nodes by user
                         emitCustomEvent(
                           EVENT_OPEN_COMPONENT,
-                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default", {})
+                          eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default")
                         );
                       }}
                     >

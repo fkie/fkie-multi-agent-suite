@@ -1,6 +1,6 @@
 import RosContext from "@/renderer/context/RosContext";
 import { TRosMessageStruct } from "@/renderer/models/TRosMessageStruct";
-import { nameWithoutNamespace } from "@/renderer/utils";
+import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
 import CircleIcon from "@mui/icons-material/Circle";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
@@ -31,7 +31,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
 
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [labelText, setLabelText] = useState(nameWithoutNamespace(node));
+  const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
 
   const getColorFromDiagnostic = (diagnosticLevel: DiagnosticLevel, isDarkMode: boolean = false) => {
     switch (diagnosticLevel) {
@@ -172,7 +172,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
 
   useEffect(() => {
     setNodeIcon(getNodeIcon(node, isDarkMode));
-    setLabelText(nameWithoutNamespace(node));
+    setLabelText(nodeNameWithoutNamespace(node));
   }, [node, isDarkMode]);
 
   return (

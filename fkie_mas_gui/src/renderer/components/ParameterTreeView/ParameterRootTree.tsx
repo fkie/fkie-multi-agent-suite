@@ -1,22 +1,19 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ComputerIcon from "@mui/icons-material/Computer";
-import DeleteIcon from "@mui/icons-material/Delete";
 import Label from "@mui/icons-material/Label";
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import RosContext from "@/renderer/context/RosContext";
-import SettingsContext from "@/renderer/context/SettingsContext";
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
 import { findIn } from "@/renderer/utils";
 import ParameterTreeItem from "./ParameterTreeItem";
 import ParameterGroupTreeItem from "./ParameterGroupTreeItem";
-import { SearchBar } from "../UI";
+import SettingsContext from "@/renderer/context/SettingsContext";
 
 type TTreeItem = {
   groupKey: string;
@@ -33,10 +30,19 @@ interface ParameterRootTreeProps {
   rosNode?: RosNode;
   updateOnCreate?: boolean;
   filterText: string;
+  forceReload: number;
+  onSelectParams: (provider: Provider, params: RosParameter[]) => void;
 }
 
 const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(function ParameterRootTree(props, ref) {
-  const { provider, rosNode = undefined, updateOnCreate = false, filterText = "" } = props;
+  const {
+    provider,
+    rosNode = undefined,
+    updateOnCreate = false,
+    filterText = "",
+    forceReload,
+    onSelectParams = () => {},
+  } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const rosCtx = useContext(RosContext);
@@ -51,21 +57,12 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   const [expandedFiltered, setExpandedFiltered] = useState<string[]>([itemId]);
   const [searched, setSearched] = useState<string>(filterText);
   const [selectedItem, setSelectedItem] = useState<string>("");
-
-  // const [roots, setRoots] = useState<TParamRootItem[]>([]);
-  // const [rootData, setRootData] = useState<TRootData[]>([]);
-  // const [receivedData, setReceivedData] = useState<TRootData>();
-  // const [rootDataFiltered, setRootDataFiltered] = useState<TRootData[]>([]);
-  // const [rootDataTree, setRootDataTree] = useState<TRootTree[]>([]);
-  // const [nodeFilter, setNodeFilter] = useState<boolean>(false);
-  // const [searched, setSearched] = useState<string>("");
-  // const [selectedItem, setSelectedItem] = useState<string>("");
-  const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
-  const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
+    settingsCtx.get("avoidGroupWithOneItem") as string
+  );
 
   useEffect(() => {
-    setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
-    setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
   }, [settingsCtx.changed]);
 
   useEffect(() => {
@@ -100,7 +97,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       return;
     }
     setRosParameters(undefined);
-    console.log(`GET rootId: ${rosNode ? rosNode.idGlobal : provider.id}`);
     const paramList: RosParameter[] = await (rosNode
       ? provider.getNodeParameters([rosNode.name])
       : provider.getParameterList());
@@ -109,22 +105,25 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       return a.name.localeCompare(b.name);
     });
     paramList.map((p) => {
-      console.log(`pp: ${JSON.stringify(p)}`);
       return p;
     });
-    // setRootData((prev) => [...prev, { rootId: root.id, params: paramList }]);
-    // newData.push({ rootId: root.id, params: paramList });
     setRosParameters(paramList);
-    console.log(`GET done rootId: ${rosNode ? rosNode.idGlobal : provider.id}`);
     setRosParametersFiltered(filterParameters(searched, paramList));
   }, [provider, rosNode, searched, setRosParameters, setRosParametersFiltered, filterParameters]);
 
   useEffect(() => {
-    // update the parameter on create this component
+    setTree(undefined);
     if (updateOnCreate) {
       getParameterList();
     }
-  }, []);
+  }, [forceReload]);
+
+  // useEffect(() => {
+  //   // update the parameter on create this component
+  //   if (updateOnCreate) {
+  //     getParameterList();
+  //   }
+  // }, []);
 
   // debounced callback when updating a parameter
   const updateParameter = useCallback(
@@ -138,7 +137,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         );
         return;
       }
-      console.log(`update parameter: ${JSON.stringify(parameter)}`);
       parameter.value = newValue;
       if (newType) {
         parameter.type = newType;
@@ -153,41 +151,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     },
     [provider]
   );
-
-  const deleteParameters = useCallback(
-    async (params: RosParameter[]) => {
-      if (params.length > 0) {
-        if (!provider.deleteParameters) {
-          logCtx.error(`Provider ${provider.name()} does not support [deleteParameters] method`, DEFAULT_BUG_TEXT);
-          return;
-        }
-
-        const result = await provider.deleteParameters(params.map((p) => p.name));
-
-        if (result) {
-          logCtx.success(`Parameter deleted successfully from ${provider.name()}`, `${JSON.stringify(params)}`);
-        } else {
-          logCtx.error(`Could not delete parameters from ${provider.name()}`, DEFAULT_BUG_TEXT);
-        }
-      }
-      // TODO: update only involved provider / nodes
-      getParameterList();
-    },
-    [getParameterList, logCtx]
-  );
-
-  // callback when deleting parameters
-  const onDeleteParameters = useCallback(async () => {
-    if (!rosParametersFiltered || rosParametersFiltered.length === 0) {
-      logCtx.warn("No parameters to be deleted", "");
-      return;
-    }
-
-    deleteParameters(rosParametersFiltered);
-
-    // Do we need to get the whole list of parameters again?
-    // getParameterList();
-  }, [rosParametersFiltered, deleteParameters, logCtx]);
 
   // create tree based on parameter namespace
   // parameters are grouped only if more then one is in the group
@@ -218,7 +181,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       // don't create group with one parameter
       const newFullPrefix = `${fullPrefix}/${groupName}`;
       if (value.length > 1) {
-        const groupKey = `${itemId}-${groupName}`;
+        const groupKey = `${itemId}/${groupName}`;
         groupKeys.push(groupKey);
         const groupParams: RosParameter[] = value.map((item) => {
           return item.paramInfo;
@@ -235,7 +198,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         }
         filteredParams.push({
           groupKey: groupKey,
-          groupName: `/${groupName}`,
+          groupName: groupName,
           params: subResult.params,
           count: subResult.count,
           fullPrefix: newFullPrefix,
@@ -260,21 +223,26 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
 
   // create parameter tree from filtered parameter list
   useEffect(() => {
-    const subtree = fillTree(rosNode ? rosNode.name : "", rosParametersFiltered || [], itemId);
+    const subtree = fillTree(rosNode ? rosNode.name : "", rosParametersFiltered || [], rosNode ? rosNode.name : "");
     setTree(subtree.params);
     setExpandedFiltered([itemId, ...subtree.groupKeys]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosParametersFiltered]);
 
-  const paramTreeToStyledItems = (rootPath: string, treeItems: TTreeItem[]) => {
+  const paramTreeToStyledItems = (treeItems: TTreeItem[]) => {
     return treeItems.map((param) => {
+      let namespacePart = "";
+      while (avoidGroupWithOneItem && param.params.length === 1) {
+        const child = param.params[0];
+        param.params = child.params;
+        namespacePart = `${namespacePart}${param.groupName}/`;
+      }
       if (param.paramInfo) {
-        console.log(`param.paramInfo.id: ${param.paramInfo.id}`);
         return (
           <ParameterTreeItem
             key={param.paramInfo.id}
             itemId={param.paramInfo.id}
-            rootPath={rootPath}
+            namespacePart={namespacePart}
             paramInfo={param.paramInfo}
             updateParameter={(param: RosParameter, value: string | boolean | number | string[], valueType?: string) =>
               updateParameter(param, value, valueType)
@@ -283,41 +251,38 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           />
         );
       } else {
-        console.log(`param.groupKey: ${param.groupKey}`);
         return (
           <ParameterGroupTreeItem
             key={param.groupKey}
             itemId={param.groupKey}
-            rootPath={rootPath}
+            namespacePart={namespacePart}
             groupName={param.groupName}
             icon={null}
             countChildren={param.count}
             requestData={false}
           >
-            {paramTreeToStyledItems(param.fullPrefix, param.params)}
+            {paramTreeToStyledItems(param.params)}
           </ParameterGroupTreeItem>
         );
       }
     });
   };
 
-  const deleteParamsFromId = (treeItemId: string) => {
-    // Sort parameter by provider
-    deleteParameters(
+  useEffect(() => {
+    const params: RosParameter[] =
       rosParameters?.filter((p) => {
         let addParam = false;
-        if (itemId === treeItemId) {
+        if (itemId === selectedItem) {
           addParam = true;
-        } else if (p.id === treeItemId) {
+        } else if (p.id === selectedItem) {
           addParam = true;
-        } else if (treeItemId.endsWith("#")) {
-          const trimmed = treeItemId.slice(0, treeItemId.length - 2);
-          addParam = p.name.startsWith(trimmed);
+        } else if (p.name.startsWith(selectedItem)) {
+          addParam = true;
         }
         return addParam;
-      }) || []
-    );
-  };
+      }) || [];
+    onSelectParams(provider, params);
+  }, [selectedItem, rosParameters]);
 
   const handleToggle = useCallback(
     (itemIds: string[]) => {
@@ -331,119 +296,67 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   );
 
   const createParameterItems = useMemo(() => {
-    console.log(`CREATE PARAM TREE: ${tree?.length}`);
     return (
       <ParameterGroupTreeItem
         key={itemId}
         itemId={itemId}
-        rootPath={rosNode ? rosNode.name : ""}
+        namespacePart={""}
         groupName={rosNode ? rosNode.name : provider.name()}
         icon={rosNode ? Label : ComputerIcon}
         providerName={provider.name()}
         countChildren={rosParameters ? rosParameters.length : 0}
         requestData={rosParameters === undefined}
       >
-        {paramTreeToStyledItems(rosNode ? rosNode.name : "", tree || [])}
+        {paramTreeToStyledItems(tree || [])}
       </ParameterGroupTreeItem>
     );
   }, [tree]);
 
   return (
-    <Box>
-      <Stack
-        spacing={1}
-        // sx={{
-        //   height: '100%',
-        //   display: 'flex',
-        // }}
-      >
-        {/* <Stack direction="row" spacing={0.5} alignItems="center">
-          <Tooltip title="Delete selected parameter" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
-            <span>
-              <IconButton
-                disabled={!selectedItem}
-                size="small"
-                aria-label="Delete selected parameter"
-                onClick={() => {
-                  if (selectedItem) {
-                    deleteParamsFromId(selectedItem);
-                  }
-                }}
-              >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Reload parameter list" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
-            <IconButton
-              size="small"
-              onClick={() => {
-                getParameterList();
-              }}
-            >
-              <RefreshIcon sx={{ fontSize: "inherit" }} />
-            </IconButton>
-          </Tooltip>
-          <SearchBar
-            onSearch={setSearched}
-            placeholder="Filter parameters (OR: <space>, AND: +, NOT: !)"
-            // defaultValue={initialSearchTerm}
-            fullWidth
-          />
-          {searched && (
-            <Tooltip title="Delete filtered parameters" placement="bottom" disableInteractive>
-              <IconButton size="small" onClick={onDeleteParameters} color="warning">
-                <DeleteIcon sx={{ fontSize: "inherit" }} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Stack> */}
-        <Stack direction="row" sx={{ flexGrow: 1 }}>
-          {/* <Box width="100%" height="100%" overflow="auto"> */}
-          {(searched.length < EXPAND_ON_SEARCH_MIN_CHARS || (tree && tree.length > 0)) && (
-            <SimpleTreeView
-              aria-label="parameters"
-              expandedItems={searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
-              slots={{
-                collapseIcon: ArrowDropDownIcon,
-                expandIcon: ArrowRightIcon,
-              }}
-              sx={{ flexGrow: 1 }}
-              // defaultEndIcon={<div style={{ width: 24 }} />}
-              onExpandedItemsChange={(_event, itemIds: string[]) => handleToggle(itemIds)}
-              onSelectedItemsChange={(_event, itemId) => {
-                setSelectedItem(itemId || "");
-                const copyExpanded = [...(searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
-                if (itemId) {
-                  const index =
-                    searched.length < EXPAND_ON_SEARCH_MIN_CHARS
-                      ? expanded.indexOf(itemId)
-                      : expandedFiltered.indexOf(itemId);
-                  if (index === -1) {
-                    copyExpanded.push(itemId);
-                  } else {
-                    copyExpanded.splice(index, 1);
-                  }
-                }
-                if (searched.length < EXPAND_ON_SEARCH_MIN_CHARS) {
-                  setExpanded(copyExpanded);
+    <Box ref={ref}>
+      <Stack direction="row" sx={{ flexGrow: 1 }}>
+        {(searched.length < EXPAND_ON_SEARCH_MIN_CHARS || (tree && tree.length > 0)) && (
+          <SimpleTreeView
+            aria-label="parameters"
+            expandedItems={searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
+            slots={{
+              collapseIcon: ArrowDropDownIcon,
+              expandIcon: ArrowRightIcon,
+            }}
+            sx={{ flexGrow: 1 }}
+            expansionTrigger={"iconContainer"}
+            onExpandedItemsChange={(_event, itemIds: string[]) => handleToggle(itemIds)}
+            onSelectedItemsChange={(_event, itemId) => {
+              setSelectedItem(itemId || "");
+              const copyExpanded = [...(searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
+              if (itemId) {
+                const index =
+                  searched.length < EXPAND_ON_SEARCH_MIN_CHARS
+                    ? expanded.indexOf(itemId)
+                    : expandedFiltered.indexOf(itemId);
+                if (index === -1) {
+                  copyExpanded.push(itemId);
                 } else {
-                  setExpandedFiltered(copyExpanded);
+                  copyExpanded.splice(index, 1);
                 }
-              }}
-              // workaround for https://github.com/mui/mui-x/issues/12622
-              onItemFocus={(_event, itemId) => {
-                const input = document.getElementById(`input-${itemId}`);
-                if (input) {
-                  input.focus();
-                }
-              }}
-            >
-              {createParameterItems}
-            </SimpleTreeView>
-          )}
-          {/* </Box> */}
-        </Stack>
+              }
+              if (searched.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+                setExpanded(copyExpanded);
+              } else {
+                setExpandedFiltered(copyExpanded);
+              }
+            }}
+            // workaround for https://github.com/mui/mui-x/issues/12622
+            onItemFocus={(_event, itemId) => {
+              const input = document.getElementById(`input-${itemId}`);
+              if (input) {
+                input.focus();
+              }
+            }}
+          >
+            {createParameterItems}
+          </SimpleTreeView>
+        )}
       </Stack>
     </Box>
   );

@@ -4,16 +4,16 @@ import {
   UseTreeItem2ContentSlotOwnProps,
   UseTreeItem2IconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, LegacyRef, useContext } from "react";
-import { LoggingContext } from "../../context/LoggingContext";
+import React, { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
 import StyledTreeItem from "./StyledTreeItem";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import SettingsContext from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "../UI";
+import { normalizeNameWithPrefix } from "@/renderer/utils";
 
 interface ParameterGroupTreeItemProps {
   itemId: string;
-  rootPath: string;
+  namespacePart: string;
   groupName: string;
   icon?: OverridableComponent<SvgIconTypeMap> | null;
   countChildren: number;
@@ -24,10 +24,23 @@ interface ParameterGroupTreeItemProps {
 
 const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItemProps>(
   function ParameterGroupTreeItem(props, ref) {
-    const { itemId, rootPath, groupName, countChildren, icon = null, requestData, providerName, ...children } = props;
+    const {
+      itemId,
+      namespacePart,
+      groupName,
+      countChildren,
+      icon = null,
+      requestData,
+      providerName,
+      ...children
+    } = props;
 
-    const logCtx = useContext(LoggingContext);
     const settingsCtx = useContext(SettingsContext);
+    const [label, setLabel] = useState<string>(normalizeNameWithPrefix(groupName, namespacePart));
+
+    useEffect(() => {
+      setLabel(normalizeNameWithPrefix(groupName, namespacePart));
+    }, [namespacePart, groupName]);
 
     const getHostStyle = () => {
       if (providerName && settingsCtx.get("colorizeHosts")) {
@@ -75,7 +88,6 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
             }}
           >
             <Stack
-              spacing={1}
               direction="row"
               sx={{
                 flexGrow: 1,
@@ -83,21 +95,11 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
               }}
             >
               {icon && <Box component={icon} color="inherit" sx={{ mr: 1 }} />}
-              {/* <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                {rootPath}
-              </Typography> */}
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: "inherit" }}
-                onClick={(e) => {
-                  if (e.detail === 2) {
-                    navigator.clipboard.writeText(groupName);
-                    logCtx.success(`${groupName} copied!`);
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                {groupName.startsWith("/") ? groupName.slice(1) : groupName}
+              <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                {namespacePart}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                {label}
               </Typography>
               {requestData && <CircularProgress size="1em" />}
             </Stack>

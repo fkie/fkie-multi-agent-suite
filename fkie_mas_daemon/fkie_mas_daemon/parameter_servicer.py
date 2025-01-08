@@ -62,7 +62,7 @@ class ParameterServicer:
         '''
         parameter = _parameter
         Log.info(
-            f'ros.parameters.set_parameter: [{parameter.name}] to {parameter.value}')
+            f'ros.parameters.set_parameter: [{parameter.name}] to {parameter.value} [typeof: {type(parameter.value)}|type:{parameter.type}]')
         result = None
         result = self._handler.setParameter(parameter)
         return json.dumps(result, cls=SelfEncoder)

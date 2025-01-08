@@ -1,12 +1,10 @@
+import json
 from typing import List
 import rclpy
 from rclpy.node import Node
 from ros2node.api import get_node_names
 from ros2param.api import call_describe_parameters, call_get_parameters, call_set_parameters
-try:
-    from ros2param.api import get_parameter_value as parameter_value_to_python
-except:
-    from rclpy.parameter import parameter_value_to_python
+from rclpy.parameter import parameter_value_to_python, get_parameter_value
 from ros2service.api import get_service_names
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.msg import ParameterType
@@ -102,8 +100,7 @@ class ParameterInterface:
                 parameter_names=sorted_names)
 
             for (index, parameter) in enumerate(resp.values):
-                param_name = f'{node_name.full_name}{sorted_names[index]}'
-                print(f"param: ${param_name}")
+                param_name = f'{node_name.full_name}/{sorted_names[index]}'
                 param_list.append(
                     RosParameter(param_name, self._get_value(parameter), self._get_type(parameter)))
 
@@ -130,7 +127,7 @@ class ParameterInterface:
 
         parameter = Parameter()
         parameter.name = _parameter.name.replace(f'{node_name}/', '')
-        parameter.value = parameter_value_to_python(_parameter.value)
+        parameter.value = get_parameter_value(json.dumps(_parameter.value, ensure_ascii=False))
 
         response = call_set_parameters(
             node=self.global_node, node_name=node_name, parameters=[parameter])
