@@ -33,6 +33,7 @@ echo "use daemon port: ${MAS_DAEMON_PORT}"
 
 xhost +local:
 docker compose down
-docker compose up --force-recreate --build $*
+docker compose up
+# --force-recreate --build $* --build-arg USE_PROXY=${USE_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY}
 docker compose down
 xhost -local:

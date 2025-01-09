@@ -1,6 +1,6 @@
 services:
   mas-web:
-    image: "fkie:humble_mas"
+    image: "fkie:jazzy_mas"
     build: .
     ports:
       - "7681:7681"
@@ -15,7 +15,7 @@ services:
       HTTPS_PROXY: "$HTTPS_PROXY"
 
   mas-x:
-    image: "fkie:humble_mas"
+    image: "fkie:jazzy_mas"
     build: .
     # network_mode: host
     command: bash -c "/start-mas-x.sh"

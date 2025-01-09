@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     git \
     libfuse2 \
     libglib2.0-0 \
+    xterm \
     && rm -rf /var/lib/apt/lists/*
 
 # add nodejs 20.x
