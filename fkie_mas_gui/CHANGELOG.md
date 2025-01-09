@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.1 - 09.01.2025
+
+Added dependecy python3-netifaces for mas_pylib
+Updated docker files
+Fixed: show screens of not running nodes e.g. ExecuteProcess, see issue #4
+Fixed: daemon for galactic
+
 ## 3.0.0 - 08.01.2025
 
 Changed: app icon and removed js build options
