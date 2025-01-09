@@ -31,7 +31,6 @@ import {
   Result,
   RosNode,
   RosNodeStatus,
-  RosNodeStatusInfo,
   RosPackage,
   RosParameter,
   RosService,
