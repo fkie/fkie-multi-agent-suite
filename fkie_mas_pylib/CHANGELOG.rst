@@ -2,6 +2,14 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (09.01.2025)
+------------------
+* Changed RosTopic structure
+* Added IncompatibleQos to topic information
+* Added LifeCycle to RosNode
+* Added python3-netifaces dependency
+* Fixed RosParameter
+
 3.0.0 (2024-07-05)
 ------------------
 * fkie_mas_pylib: replaced crossbar by websocket

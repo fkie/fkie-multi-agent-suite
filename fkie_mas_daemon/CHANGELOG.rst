@@ -2,6 +2,14 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.1 (09.01.2025)
+------------------
+* fixed daemon for galactic
+
+3.3.0 (08.01.2025)
+------------------
+* fixed call ros2 service
+
 3.1.2 (2024-10-11)
 ------------------
 * fkie_mas_daemon: fixed detection of nodelet manager for nodelets.
