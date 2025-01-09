@@ -14,13 +14,13 @@
   {
     "name": "@emotion/react",
     "licenseType": "MIT",
-    "installedVersion": "11.13.5",
+    "installedVersion": "11.14.0",
     "author": "Emotion Contributors"
   },
   {
     "name": "@emotion/styled",
     "licenseType": "MIT",
-    "installedVersion": "11.13.5",
+    "installedVersion": "11.14.0",
     "author": "n/a"
   },
   {
@@ -38,19 +38,19 @@
   {
     "name": "@mui/icons-material",
     "licenseType": "MIT",
-    "installedVersion": "6.1.10",
+    "installedVersion": "6.3.1",
     "author": "MUI Team"
   },
   {
     "name": "@mui/material",
     "licenseType": "MIT",
-    "installedVersion": "6.1.10",
+    "installedVersion": "6.3.1",
     "author": "MUI Team"
   },
   {
     "name": "@mui/x-tree-view",
     "licenseType": "MIT",
-    "installedVersion": "7.23.0",
+    "installedVersion": "7.23.6",
     "author": "MUI Team"
   },
   {
@@ -62,7 +62,7 @@
   {
     "name": "@types/ssh2",
     "licenseType": "MIT",
-    "installedVersion": "1.15.1",
+    "installedVersion": "1.15.3",
     "author": "n/a"
   },
   {
@@ -134,7 +134,7 @@
   {
     "name": "eslint-plugin-react-hooks",
     "licenseType": "MIT",
-    "installedVersion": "4.6.2",
+    "installedVersion": "5.1.0",
     "author": "n/a"
   },
   {
@@ -160,12 +160,6 @@
     "licenseType": "ISC",
     "installedVersion": "0.0.1",
     "author": "Jeffrey Liu"
-  },
-  {
-    "name": "license-report",
-    "licenseType": "MIT",
-    "installedVersion": "6.7.0",
-    "author": "Yaniv Kessler"
   },
   {
     "name": "notistack",
@@ -206,7 +200,7 @@
   {
     "name": "react-router-dom",
     "licenseType": "MIT",
-    "installedVersion": "6.28.0",
+    "installedVersion": "6.28.1",
     "author": "Remix Software <hello@remix.run>"
   },
   {
@@ -218,7 +212,7 @@
   {
     "name": "react-window",
     "licenseType": "MIT",
-    "installedVersion": "1.8.10",
+    "installedVersion": "1.8.11",
     "author": "Brian Vaughn <brian.david.vaughn@gmail.com> (https://github.com/bvaughn/)"
   },
   {
@@ -236,13 +230,13 @@
   {
     "name": "systeminformation",
     "licenseType": "MIT",
-    "installedVersion": "5.23.5",
+    "installedVersion": "5.25.8",
     "author": "Sebastian Hildebrandt <hildebrandt@plus-innovations.com> (https://plus-innovations.com)"
   },
   {
     "name": "uuid",
     "licenseType": "MIT",
-    "installedVersion": "10.0.0",
+    "installedVersion": "11.0.4",
     "author": "n/a"
   },
   {
@@ -266,25 +260,25 @@
   {
     "name": "@eslint/js",
     "licenseType": "MIT",
-    "installedVersion": "9.16.0",
+    "installedVersion": "9.17.0",
     "author": "n/a"
   },
   {
     "name": "@types/node",
     "licenseType": "MIT",
-    "installedVersion": "20.17.9",
+    "installedVersion": "20.17.12",
     "author": "n/a"
   },
   {
     "name": "@types/react",
     "licenseType": "MIT",
-    "installedVersion": "18.3.14",
+    "installedVersion": "18.3.18",
     "author": "n/a"
   },
   {
     "name": "@types/react-dom",
     "licenseType": "MIT",
-    "installedVersion": "18.3.2",
+    "installedVersion": "18.3.5",
     "author": "n/a"
   },
   {
@@ -302,7 +296,7 @@
   {
     "name": "electron-builder",
     "licenseType": "MIT",
-    "installedVersion": "24.13.3",
+    "installedVersion": "25.1.8",
     "author": "Vladimir Krivosheev"
   },
   {
@@ -320,13 +314,13 @@
   {
     "name": "eslint-plugin-react",
     "licenseType": "MIT",
-    "installedVersion": "7.37.2",
+    "installedVersion": "7.37.3",
     "author": "Yannick Croissant <yannick.croissant+npm@gmail.com>"
   },
   {
     "name": "globals",
     "licenseType": "MIT",
-    "installedVersion": "15.13.0",
+    "installedVersion": "15.14.0",
     "author": "Sindre Sorhus sindresorhus@gmail.com https://sindresorhus.com"
   },
   {
@@ -350,13 +344,13 @@
   {
     "name": "typescript",
     "licenseType": "Apache-2.0",
-    "installedVersion": "5.7.2",
+    "installedVersion": "5.7.3",
     "author": "Microsoft Corp."
   },
   {
     "name": "typescript-eslint",
     "licenseType": "MIT",
-    "installedVersion": "8.17.0",
+    "installedVersion": "8.19.1",
     "author": "n/a"
   },
   {
