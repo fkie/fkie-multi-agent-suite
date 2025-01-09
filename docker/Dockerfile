@@ -23,9 +23,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     xterm \
     && rm -rf /var/lib/apt/lists/*
 
-# add nodejs 20.x
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-# install nodejs 20.x and dependencies for mas gui
+# add nodejs 22.x
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+# install nodejs 22.x and dependencies for mas gui
 RUN apt-get update && apt-get install --no-install-recommends -y \
     nodejs \
     less \
@@ -40,7 +40,13 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # websockets v12 required by mas daemon, use --break-system-packages due to https://peps.python.org/pep-0668/
 RUN pip install "websockets>=12.0" --break-system-packages
 
-# get mas source code
+# install ttyd
+RUN git clone https://github.com/tsl0922/ttyd.git && mkdir -p ttyd/build && cd ttyd/build && cmake .. && make && make install
+
+# FIX: install newer npm version to avoid ERR_INSUFFICIENT_RESOURCES for docked windows of MAS
+RUN npm install -g npm@11.0.0
+
+# get MAS source code
 RUN mkdir -p ${ROS_WS}/src && cd ${ROS_WS}/src && git clone https://github.com/fkie/fkie-multi-agent-suite.git
 # install ros mas dependencies
 RUN apt-get update && rosdep install --from-paths ${ROS_WS}/src/fkie-multi-agent-suite --ignore-src --rosdistro ${ROS_DISTRO} -y && rm -rf /var/lib/apt/lists/*
@@ -48,13 +54,10 @@ RUN apt-get update && rosdep install --from-paths ${ROS_WS}/src/fkie-multi-agent
 RUN ["/bin/bash", "-c", "source ${ROS_PATH}/setup.bash && cd ${ROS_WS} && colcon build --continue-on-error --packages-up-to fkie_mas_meta"]
 
 # build mas gui using npm
-RUN cd ${ROS_WS}/src/fkie-multi-agent-suite/fkie_mas_gui && npm install && npm audit fix && npm run build
+RUN cd ${ROS_WS}/src/fkie-multi-agent-suite/fkie_mas_gui && npm install && npm audit fix && npm run build:linux
 
 # download gui as AppImage
 #RUN curl -s https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest | grep "browser_download_url.*mas-gui.AppImage" | cut -d : -f 2,3 | tr -d '"' | wget --no-verbose --show-progress --progress=bar:force:noscroll -i - && chmod +x ./mas-gui.AppImage
-
-# install ttyd
-RUN git clone https://github.com/tsl0922/ttyd.git && mkdir -p ttyd/build && cd ttyd/build && cmake .. && make && make install
 
 # setup ROS if open only bash
 RUN echo "source ${ROS_WS}/install/setup.bash" >>/root/.bashrc

@@ -1,3 +1,3 @@
 provider: generic
-url: https://example.com/auto-updates
-updaterCacheDirName: fkie_mas_gui_vite-updater
+url: https://github.com/fkie/fkie-multi-agent-suite/releases
+updaterCacheDirName: fkie-mas-gui-updater

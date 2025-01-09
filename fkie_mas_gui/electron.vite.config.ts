@@ -30,7 +30,7 @@ export default defineConfig({
     },
     plugins: [
       react({
-        jsxImportSource: "@emotion/react",
+        // jsxImportSource: "@emotion/react",
         include: "**/*.tsx",
       }),
     ],
