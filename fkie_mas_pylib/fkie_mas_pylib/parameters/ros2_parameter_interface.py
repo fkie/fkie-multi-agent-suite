@@ -1,10 +1,59 @@
 import json
+import yaml
 from typing import List
 import rclpy
 from rclpy.node import Node
 from ros2node.api import get_node_names
 from ros2param.api import call_describe_parameters, call_get_parameters, call_set_parameters
-from rclpy.parameter import parameter_value_to_python, get_parameter_value
+try:
+    # for jazzy
+    from rclpy.parameter import get_parameter_value
+except:
+    from rclpy.parameter import ParameterValue, ParameterType
+    # for galactic
+    def get_parameter_value(string_value: str) -> ParameterValue:
+        """
+        Guess the desired type of the parameter based on the string value.
+
+        :param string_value: The string value to be converted to a ParameterValue.
+        :return: The ParameterValue.
+        """
+        value = ParameterValue()
+        try:
+            yaml_value = yaml.safe_load(string_value)
+        except yaml.parser.ParserError:
+            yaml_value = string_value
+
+        if isinstance(yaml_value, bool):
+            value.type = ParameterType.PARAMETER_BOOL
+            value.bool_value = yaml_value
+        elif isinstance(yaml_value, int):
+            value.type = ParameterType.PARAMETER_INTEGER
+            value.integer_value = yaml_value
+        elif isinstance(yaml_value, float):
+            value.type = ParameterType.PARAMETER_DOUBLE
+            value.double_value = yaml_value
+        elif isinstance(yaml_value, list):
+            if all((isinstance(v, bool) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_BOOL_ARRAY
+                value.bool_array_value = yaml_value
+            elif all((isinstance(v, int) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_INTEGER_ARRAY
+                value.integer_array_value = yaml_value
+            elif all((isinstance(v, float) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+                value.double_array_value = yaml_value
+            elif all((isinstance(v, str) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_STRING_ARRAY
+                value.string_array_value = yaml_value
+            else:
+                value.type = ParameterType.PARAMETER_STRING
+                value.string_value = string_value
+        else:
+            value.type = ParameterType.PARAMETER_STRING
+            value.string_value = yaml_value if yaml_value is not None else string_value
+        return value
+
 from ros2service.api import get_service_names
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.msg import ParameterType
@@ -127,7 +176,7 @@ class ParameterInterface:
 
         parameter = Parameter()
         parameter.name = _parameter.name.replace(f'{node_name}/', '')
-        parameter.value = get_parameter_value(json.dumps(_parameter.value, ensure_ascii=False))
+        parameter.value = get_parameter_value.from_parameter_value(_parameter.value).get_parameter_value()
 
         response = call_set_parameters(
             node=self.global_node, node_name=node_name, parameters=[parameter])
