@@ -6,4 +6,4 @@ ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-7681 --command
 
 cd ${ROS_WS}/src/fkie-multi-agent-suite/fkie_mas_gui
 #ELECTRON_ENABLE_LOGGING=1 npm run dev -- --no-sandbox
-ELECTRON_ENABLE_LOGGING=1 ./dist/mas-gui.AppImage --no-sandbox
+ELECTRON_ENABLE_LOGGING=1 /mas-gui.AppImage --no-sandbox

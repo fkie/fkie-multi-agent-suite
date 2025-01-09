@@ -57,7 +57,7 @@ RUN ["/bin/bash", "-c", "source ${ROS_PATH}/setup.bash && cd ${ROS_WS} && colcon
 RUN cd ${ROS_WS}/src/fkie-multi-agent-suite/fkie_mas_gui && npm install && npm audit fix && npm run build:linux
 
 # download gui as AppImage
-#RUN curl -s https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest | grep "browser_download_url.*mas-gui.AppImage" | cut -d : -f 2,3 | tr -d '"' | wget --no-verbose --show-progress --progress=bar:force:noscroll -i - && chmod +x ./mas-gui.AppImage
+RUN curl -s https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest | grep "browser_download_url.*mas-gui.AppImage" | cut -d : -f 2,3 | tr -d '"' | wget --no-verbose --show-progress --progress=bar:force:noscroll -i - && chmod +x ./mas-gui.AppImage
 
 # setup ROS if open only bash
 RUN echo "source ${ROS_WS}/install/setup.bash" >>/root/.bashrc
