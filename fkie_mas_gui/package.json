@@ -55,7 +55,7 @@
     "electron-log": "^5.2.4",
     "electron-settings": "^4.0.4",
     "electron-updater": "^6.3.9",
-    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
     "flexlayout-react": "^0.7.15",
     "hostile": "^1.4.0",
     "json5": "^2.2.3",
@@ -71,8 +71,8 @@
     "react-window": "^1.8.11",
     "split-pane-react": "^0.1.3",
     "ssh2": "^1.16.0",
-    "systeminformation": "^5.25.6",
-    "uuid": "^10.0.0"
+    "systeminformation": "^5.25.7",
+    "uuid": "^11.0.4"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^2.0.0",
