@@ -515,7 +515,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         });
         return (
           <NodeItem
-            key={itemId}
+            // add all relevant infos to key to update the TreeItem visualization
+            key={`${itemId}-${JSON.stringify(node.screens)}`}
             itemId={itemId}
             node={node}
             namespacePart={namespacePart}

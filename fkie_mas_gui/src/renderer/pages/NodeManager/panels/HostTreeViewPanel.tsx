@@ -128,7 +128,6 @@ function HostTreeViewPanel() {
   const [nodesAwaitModal, setNodesAwaitModal] = useState<RosNode[]>([]);
   const [editNodeWithMultipleLaunchInfos, setEditNodeWithMultipleLaunchInfos] = useState<TMenuOptionsEditor>();
 
-  useEffect(() => {}, [settingsCtx.changed]);
   useEffect(() => {
     setShowRemoteNodes(settingsCtx.get("showRemoteNodes") as boolean);
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers") as boolean);
@@ -229,6 +228,7 @@ function HostTreeViewPanel() {
   useCustomEventListener(EVENT_FILTER_NODES, (data: TEventId) => {
     setFilterText(data.id);
   });
+
   // Register Callbacks ----------------------------------------------------------------------------------
 
   /**

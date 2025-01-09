@@ -43,7 +43,7 @@ export default class TerminalProvider extends Provider {
           this.daemonVersion = dv;
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.updateRosNodes({});
-          this.updateScreens(null);
+          this.updateScreens();
           this.updateProviderList();
           return true;
         }

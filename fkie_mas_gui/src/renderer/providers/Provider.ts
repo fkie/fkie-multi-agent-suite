@@ -31,6 +31,7 @@ import {
   Result,
   RosNode,
   RosNodeStatus,
+  RosNodeStatusInfo,
   RosPackage,
   RosParameter,
   RosService,
@@ -284,7 +285,7 @@ export default class Provider implements IProvider {
           // this.updateRosNodes({});
           this.updateDiagnostics(null);
           // this.getPackageList();  <- this request is done by package explorer
-          this.updateScreens(null);
+          this.updateScreens();
           // this.launchGetList();
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.updateProviderList();
@@ -1065,29 +1066,42 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
+  public applyScreens: (screens: ScreensMapping[] | null) => void = (screens = null) => {
+    this.screens = screens ? screens : [];
+    let nodesUpdated: boolean = false;
+    // update nodes
+    this.rosNodes.forEach((node: RosNode, idx: number) => {
+      const screenMapping = this.screens.find((s) => node.id === s.name);
+      if (screenMapping) {
+        if (JSON.stringify(node.screens.sort()) !== JSON.stringify(screenMapping.screens.sort())) {
+          nodesUpdated = true;
+        }
+        this.rosNodes[idx].screens = screenMapping.screens;
+      } else if (node.status !== RosNodeStatus.RUNNING) {
+        if (node.screens.length > 0) {
+          nodesUpdated = true;
+        }
+        this.rosNodes[idx].screens = [];
+      }
+    });
+    emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
+    if (nodesUpdated) {
+      emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
+    }
+    return Promise.resolve(true);
+  };
+
   /**
    * Updates the screens. This is called on message received by subscribed topic and also by request.
    * On request the msgs list should be null. In this case the list is requested by this method.
    */
-  public updateScreens: (msgs: ScreensMapping[] | null) => Promise<boolean> = async (msgs = null) => {
-    let screens = msgs;
-    if (screens === null) {
-      screens = await this.getScreenList();
-      if (screens === null) {
-        return Promise.resolve(false);
-      }
+  public updateScreens: () => Promise<boolean> = async () => {
+    const result = await this.getScreenList();
+    if (result) {
+      this.applyScreens(result);
+      return Promise.resolve(true);
     }
-    this.screens = screens;
-    // update the screens
-    this.screens.forEach((s) => {
-      const matchingNode = this.rosNodes.find((node) => node.id === s.name);
-      if (matchingNode) {
-        // update = true;
-        matchingNode.screens = s.screens;
-      }
-    });
-    emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, screens));
-    return Promise.resolve(true);
+    return Promise.resolve(false);
   };
 
   /**
@@ -1262,6 +1276,10 @@ export default class Provider implements IProvider {
                 if (nodeGroup.name) {
                   n.capabilityGroup = nodeGroup;
                 }
+                const screens = this.screens.filter((screen) => {
+                  return screen.name === n.name;
+                });
+                n.screens = screens.length > 0 ? screens[0].screens : [];
                 this.rosNodes.push(n);
               }
             }
@@ -1999,6 +2017,7 @@ export default class Provider implements IProvider {
    */
   public updateRosNodes: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
+    await this.updateScreens();
     const msgObj = msg as unknown as { path: string; action: string };
     if (msgObj?.path) {
       emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path));
@@ -2132,7 +2151,7 @@ export default class Provider implements IProvider {
       return;
     }
 
-    this.updateScreens(msg as unknown as ScreensMapping[]);
+    this.applyScreens(msg.screens as unknown as ScreensMapping[]);
   };
 
   /**

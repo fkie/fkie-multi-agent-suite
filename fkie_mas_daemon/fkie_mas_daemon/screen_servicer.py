@@ -55,7 +55,8 @@ class ScreenServicer:
                 if self._screen_do_check:
                     self._screen_check_force_after = self._screen_check_force_after_default
                 else:
-                    self._screen_check_force_after += self._screen_check_force_after
+                    if self._screen_check_force_after < 60:
+                        self._screen_check_force_after += self._screen_check_force_after
                 self._screen_do_check = False
                 new_screens_set = set()
                 new_screen_nodes_set = set()
@@ -85,7 +86,7 @@ class ScreenServicer:
                 if div_screen_nodes or div_screens:
                     Log.debug(
                         f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
-                    self.websocket.publish('ros.screen.list', json_msg)
+                    self.websocket.publish('ros.screen.list', {"screens": json_msg})
                     self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
@@ -167,4 +168,5 @@ class ScreenServicer:
     def get_screen_list(self) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
+        self._screen_do_check = True
         return json.dumps(self._screen_json_msg, cls=SelfEncoder)
