@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.3 - 10.01.2025
+
+Reverted some type changes to fix the closing behavior of the app
+
 ## 3.0.2 - 10.01.2025
 
 Added stop for execute process and visualization for screen processes
