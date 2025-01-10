@@ -1,10 +1,10 @@
 import { RosNode } from "../models";
 
-const generateUniqueId = () => {
+export function generateUniqueId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
-};
+}
 
-const extractSubstring: (data: string, s1: string, s2: string) => string = (data, s1, s2) => {
+export function extractSubstring(data: string, s1: string, s2: string): string {
   if (!data || data.length === 0) return "";
 
   let indexS1 = 0;
@@ -14,17 +14,17 @@ const extractSubstring: (data: string, s1: string, s2: string) => string = (data
   if (s2 && s2.length > 0) indexS2 = data.lastIndexOf(s2);
 
   return data.substring(indexS1 + s1.length, indexS2);
-};
+}
 
-const delay: (ms: number) => Promise<string> = (ms) => {
+export function delay(ms: number): Promise<string> {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve("");
     }, ms);
   });
-};
+}
 
-const pathJoin = (pathArr: string[]) => {
+export function pathJoin(pathArr: string[]): string {
   return pathArr
     .map((path) => {
       let result = path;
@@ -37,20 +37,20 @@ const pathJoin = (pathArr: string[]) => {
       return result;
     })
     .join("/");
-};
+}
 
-const splitOrSearchTerm: (searchTerm: string) => string[] = (searchTerm) => {
+export function splitOrSearchTerm(searchTerm: string): string[] {
   return searchTerm.split(" ").filter((item) => item.length > 0);
-};
+}
 
-const splitAndSearchTerm: (searchTerm: string) => string[] = (searchTerm) => {
+export function splitAndSearchTerm(searchTerm: string): string[] {
   return searchTerm.split("+").filter((item) => item.length > 0);
-};
+}
 
 /** Search for a given search term in given word without split the term.
  * Returns true if one of the words contains the search term.
  */
-const findTerm: (searchTerm: string, words: string[]) => boolean = (searchTerm, words) => {
+export function findTerm(searchTerm: string, words: string[]): boolean {
   // eslint-disable-next-line no-restricted-syntax
   for (const w of words) {
     if (Array.isArray(w)) {
@@ -67,11 +67,11 @@ const findTerm: (searchTerm: string, words: string[]) => boolean = (searchTerm, 
     }
   }
   return false;
-};
+}
 
 /** Splits the search term first by <space> for OR and then by "+" for AND.
  */
-const findIn: (searchTerms: string, words: string[]) => boolean = (searchTerms, words) => {
+export function findIn(searchTerms: string, words: string[]): boolean {
   let invert = false;
   const searchOrTerms = splitOrSearchTerm(searchTerms);
   // eslint-disable-next-line no-restricted-syntax
@@ -109,22 +109,20 @@ const findIn: (searchTerms: string, words: string[]) => boolean = (searchTerms, 
     }
   }
   return invert;
-};
+}
 
-const removeDDSuid: (item: string) => string = (item) => {
+export function removeDDSuid(item: string): string {
   if (item) {
     const lastIndex = item.lastIndexOf("-");
     return lastIndex === -1 ? item : item.substring(0, lastIndex);
   }
   return item;
-};
+}
 
 /**
  * Return the first and last letter of the base name
- *
- * @param {string} path - Ros topic/service/node name
  */
-const getRosNameAbb: (name: string) => string = (name) => {
+export function getRosNameAbb(name: string): string {
   if (!name) return name;
   const base = name.replace(/^.*[\\/]/, "").replace(/@.*/, "");
   if (base) {
@@ -153,40 +151,26 @@ const getRosNameAbb: (name: string) => string = (name) => {
     return name;
   }
   return name;
-};
+}
 
-const xor: (a1: boolean, a2: boolean) => boolean = (a1, a2) => {
+export function xor(a1: boolean, a2: boolean): boolean {
   return (a1 && !a2) || (!a1 && a2);
-};
+}
 
-const nodeNameWithoutNamespace = (node: RosNode) => {
+export function nodeNameWithoutNamespace(node: RosNode): string {
   const name = node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
   return name[0] === "/" ? name.slice(1) : name;
-};
+}
 
-const basename = (name: string) => {
+export function basename(name: string): string {
   const result: string = name.split("/").slice(-1)[0];
   return result;
-};
+}
 
-const normalizeNameWithPrefix: (name: string, prefix: string) => string = (name, prefix) => {
+export function normalizeNameWithPrefix(name: string, prefix: string): string {
   if (!prefix) return name;
   if (name.startsWith(prefix)) {
     return name.slice(prefix.length + 1);
   }
   return name.startsWith("/") ? name.slice(1) : name;
-};
-
-export {
-  delay,
-  extractSubstring,
-  findIn,
-  generateUniqueId,
-  getRosNameAbb,
-  nodeNameWithoutNamespace,
-  basename,
-  normalizeNameWithPrefix,
-  pathJoin,
-  removeDDSuid,
-  xor,
-};
+}

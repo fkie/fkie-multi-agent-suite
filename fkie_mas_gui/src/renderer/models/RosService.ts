@@ -2,7 +2,7 @@
 /**
  * RosService models topics in a ROS system
  */
-class RosService {
+export default class RosService {
   /**
    * Topic name including namespace
    */
@@ -14,12 +14,12 @@ class RosService {
   srv_type: string;
 
   /**
-   * ROS serice API URI (where the service is running)
+   * ROS service API URI (where the service is running)
    */
   service_API_URI: string;
 
   /**
-   * The ROS_MASTER_URI the service was originaly registered
+   * The ROS_MASTER_URI the service was originally registered
    */
   masteruri: string;
 
@@ -38,16 +38,6 @@ class RosService {
    */
   requester: string[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} name - Topic name including namespace
-   * @param {string} srv_type - Service type.
-   * @param {string} service_API_URI - ROS serice API URI (where the service is running)
-   * @param {string} masteruri - The ROS_MASTER_URI the service was originaly registered
-   * @param {string[]} provider - List of ROS nodes provide this service.
-   * @param {string} location - Describes whether the service is running on the same host as the ROS master. Possible values: local, remote
-   */
   constructor(
     name: string,
     srv_type: string,
@@ -65,15 +55,4 @@ class RosService {
     this.location = location;
     this.requester = requester;
   }
-
-  /**
-   * Generates a string representation of the node
-   *
-   * @return {string} Node description
-   */
-  toString: () => string = () => {
-    return `${this.name} - ${this.srv_type}`;
-  };
 }
-
-export default RosService;

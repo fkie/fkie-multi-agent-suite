@@ -9,7 +9,7 @@ import packageJson from "../../../../package.json";
 import { AutoUpdateContext } from "../../context/AutoUpdateContext";
 import CopyButton from "../UI/CopyButton";
 
-function LinearProgressWithLabel({ value, ...props }) {
+function LinearProgressWithLabel({ value, ...props }): JSX.Element {
   return (
     <Box sx={{ display: "flex", alignItems: "center" }}>
       <Box sx={{ width: "100%", mr: 1 }}>
@@ -25,7 +25,7 @@ LinearProgressWithLabel.propTypes = {
   value: PropTypes.number.isRequired,
 };
 
-function About() {
+export default function About(): JSX.Element {
   const auCtx = useContext(AutoUpdateContext);
   const [openErrorTooltip, setOpenErrorTooltip] = useState(false);
 
@@ -164,5 +164,3 @@ function About() {
     </Stack>
   );
 }
-
-export default About;

@@ -1,6 +1,10 @@
+import { TFileRange } from "@/types";
+import { Monaco } from "@monaco-editor/react";
+import { languages } from "monaco-editor/esm/vs/editor/editor.api";
+
 const word_pattern = /(?<word>\w+)/gm;
 
-function createWordList(text, monaco, range) {
+function createWordList(text: string, monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
   const words = text.match(word_pattern);
   const result = [...new Set(words)].map((word) => {
     return {
@@ -16,7 +20,12 @@ function createWordList(text, monaco, range) {
 
 // Method,Function,Constructor,Field,Variable,Class,Struct,Interface,Module,Property,Event,Operator,Unit,Value,Constant,Enum,EnumMember,Keyword,Text,Color,File,Reference,Customcolor,Folder,TypeParameter,User,Issue,Snippet
 
-export const createPythonLaunchProposals = (monaco, range, clipText, text) => {
+export function createPythonLaunchProposals(
+  monaco: Monaco,
+  range: TFileRange,
+  clipText: string,
+  text: string
+): languages.CompletionItem[] {
   // returning a static list of proposals, valid for ROS launch and XML  files
 
   const wordSuggestions = createWordList(text, monaco, range);
@@ -70,4 +79,4 @@ export const createPythonLaunchProposals = (monaco, range, clipText, text) => {
       range,
     },
   ];
-};
+}

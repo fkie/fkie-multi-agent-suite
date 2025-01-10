@@ -4,7 +4,7 @@ import { JSONObject } from "@/types";
 /**
  * LaunchPublishMessage models the message to publish to a ROS topic.
  */
-class LaunchPublishMessage {
+export default class LaunchPublishMessage {
   /**
    * The ROS topic name.
    */
@@ -50,19 +50,6 @@ class LaunchPublishMessage {
    */
   substitute_keywords: boolean;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} topic_name - The ROS topic name.
-   * @param {string} msg_type - Type of the message.
-   * @param {JSONObject | null} data - Dictionary structure of the ROS message as JSON string.
-   * @param {number} rate - Publishing rate (hz), only if once and latched is False.
-   * @param {boolean} once - Publish one message and exit.
-   * @param {boolean} latched - Enable latching.
-   * @param {boolean} verbose - Print verbose output.
-   * @param {boolean} use_rostime - Use rostime for time stamps, else walltime is used.
-   * @param {boolean} substitute_keywords - When publishing with a rate, performs keyword ('now' or 'auto') substitution for each message.
-   */
   constructor(
     topic_name: string,
     msg_type: string,
@@ -84,15 +71,4 @@ class LaunchPublishMessage {
     this.use_rostime = use_rostime;
     this.substitute_keywords = substitute_keywords;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.topic_name} [${this.msg_type}]`;
-  };
 }
-
-export default LaunchPublishMessage;

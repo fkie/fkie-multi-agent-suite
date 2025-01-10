@@ -39,7 +39,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
               </Stack>
             ),
             key: `info-${topicName}`,
-            onClick: () => {
+            onClick: (): void => {
               onClick(EMenuTopic.INFO, topicName, providerId);
             },
           },
@@ -51,7 +51,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
               </Stack>
             ),
             key: `stats-${topicName}`,
-            onClick: () => {
+            onClick: (): void => {
               onClick(EMenuTopic.HZ, topicName, providerId);
             },
           },
@@ -63,7 +63,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
               </Stack>
             ),
             key: `echo-${topicName}`,
-            onClick: () => {
+            onClick: (): void => {
               onClick(EMenuTopic.ECHO, topicName, providerId);
             },
           },
@@ -75,7 +75,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
               </Stack>
             ),
             key: `publish-${topicName}`,
-            onClick: () => {
+            onClick: (): void => {
               onClick(EMenuTopic.PUBLISH, topicName, providerId);
             },
           },
@@ -87,7 +87,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
               </Stack>
             ),
             key: `clipboard-${topicName}`,
-            onClick: () => {
+            onClick: (): void => {
               onClick(EMenuTopic.clipboard, topicName, providerId);
             },
           },

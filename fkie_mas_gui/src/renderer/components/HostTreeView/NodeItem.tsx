@@ -28,13 +28,20 @@ interface NodeItemProps {
 }
 
 const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(props, ref) {
-  const { itemId, node, namespacePart = "", onDoubleClick = () => {}, onShowLoggersClick = () => {}, ...other } = props;
+  const {
+    itemId,
+    node,
+    namespacePart = "",
+    onDoubleClick = (): void => {},
+    onShowLoggersClick = (): void => {},
+    ...other
+  } = props;
 
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
 
-  const getColorFromDiagnostic = (diagnosticLevel: DiagnosticLevel, isDarkMode: boolean = false) => {
+  function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel, isDarkMode: boolean = false): string {
     switch (diagnosticLevel) {
       case DiagnosticLevel.OK:
         return isDarkMode ? green[600] : green[500];
@@ -47,9 +54,9 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       default:
         return isDarkMode ? blue[600] : blue[500];
     }
-  };
+  }
 
-  const getColorFromLifecycle = (state: string, isDarkMode: boolean = false) => {
+  function getColorFromLifecycle(state: string, isDarkMode: boolean = false): string {
     switch (state) {
       case "unconfigured":
         return isDarkMode ? blue[600] : blue[500];
@@ -62,8 +69,8 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       default:
         return isDarkMode ? yellow[600] : yellow[500];
     }
-  };
-  const getNodeIcon = (node: RosNode, isDarkMode: boolean = false) => {
+  }
+  function getNodeIcon(node: RosNode, isDarkMode: boolean = false): JSX.Element {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
         const color = getColorFromDiagnostic(node.diagnosticLevel, isDarkMode);
@@ -96,7 +103,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                 return {
                   name: item.label,
                   key: item.label,
-                  onClick: async () => {
+                  onClick: async function (): Promise<void> {
                     const provider = rosCtx.getProviderById(node.providerId as string, true);
                     await provider?.callService(
                       new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
@@ -173,7 +180,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
       }
     }
-  };
+  }
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
   const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));

@@ -10,7 +10,7 @@ export interface IElectronContext {
 export const DEFAULT = {
   shutdownManager: null,
   terminateSubprocesses: false,
-  cancelCloseApp: () => {},
+  cancelCloseApp: (): void => {},
 };
 
 interface IElectronProviderComponent {
@@ -25,7 +25,7 @@ export function ElectronProvider({
   const [shutdownManager, setShutdownManager] = useState<TShutdownManager | null>(null);
   const [terminateSubprocesses, setTerminateSubprocesses] = useState<boolean>(false);
 
-  function cancelCloseApp() {
+  function cancelCloseApp(): void {
     shutdownManager?.cancelCloseTimeout();
     setTerminateSubprocesses(false);
   }
@@ -52,7 +52,6 @@ export function ElectronProvider({
       terminateSubprocesses,
       cancelCloseApp,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [shutdownManager, terminateSubprocesses]
   );
 

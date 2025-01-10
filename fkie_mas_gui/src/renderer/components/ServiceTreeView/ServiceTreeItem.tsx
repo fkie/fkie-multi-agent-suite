@@ -1,6 +1,6 @@
 import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { Box, Stack, Typography } from "@mui/material";
-import { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
+import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { NavigationContext } from "../../context/NavigationContext";
 import { SettingsContext } from "../../context/SettingsContext";
@@ -38,18 +38,21 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
   const [selected, setSelected] = useState(false);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
 
-  const getHostStyle = () => {
-    if (serviceInfo?.providerName && settingsCtx.get("colorizeHosts")) {
-      return {
-        flexGrow: 1,
-        alignItems: "center",
-        borderLeftStyle: "solid",
-        borderLeftColor: colorFromHostname(serviceInfo.providerName),
-        borderLeftWidth: "0.6em",
-      };
-    }
-    return { flexGrow: 1, alignItems: "center" };
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      if (serviceInfo.providerName && settingsCtx.get("colorizeHosts")) {
+        return {
+          flexGrow: 1,
+          alignItems: "center",
+          borderLeftStyle: "solid",
+          borderLeftColor: colorFromHostname(serviceInfo.providerName),
+          borderLeftWidth: "0.6em",
+        };
+      }
+      return { flexGrow: 1, alignItems: "center" };
+    },
+    [serviceInfo.providerName, settingsCtx.changed]
+  );
 
   useEffect(() => {
     if (!rootPath) return;

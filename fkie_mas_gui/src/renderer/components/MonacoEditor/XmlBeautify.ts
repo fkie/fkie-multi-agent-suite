@@ -19,7 +19,7 @@ export default class XmlBeautify {
     this.shift = this._createShiftArr(this.step);
   }
 
-  _createShiftArr(step: number | string) {
+  _createShiftArr(step: number | string): string[] {
     let space = "    ";
 
     if (typeof step === "string") {
@@ -74,7 +74,7 @@ export default class XmlBeautify {
     return shift;
   }
 
-  beautify(xml: string, step = 2) {
+  beautify(xml: string, step = 2): string {
     const ar = xml
       .replace(/>\s{0,}</g, "><")
       .replace(/</g, "~::~<")

@@ -1,7 +1,7 @@
 /**
  * LaunchFile models a launch file.
  */
-class LaunchFile {
+export default class LaunchFile {
   /**
    * Absolute path of the launch file.
    */
@@ -18,27 +18,9 @@ class LaunchFile {
    */
   host: string;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} path - argument name.
-   * @param {string} masteruri - argument value.
-   * @param {string} host - argument value.
-   */
   constructor(path: string, masteruri: string, host: string) {
     this.path = path;
     this.masteruri = masteruri;
     this.host = host;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.path} - ${this.masteruri} - ${this.host}`;
-  };
 }
-
-export default LaunchFile;

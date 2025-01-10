@@ -3,7 +3,7 @@ import { emitCustomEvent } from "react-custom-events";
 import { ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import { URI } from "../models";
-import { ConnectionState } from "./ConnectionState";
+import ConnectionState from "./ConnectionState";
 import { EventProviderLaunchLoaded } from "./events";
 import { EVENT_PROVIDER_LAUNCH_LOADED } from "./eventTypes";
 import Provider, { TConCallback } from "./Provider";

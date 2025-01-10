@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import OverflowMenu from "../../../components/UI/OverflowMenu";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 
-function OverflowMenuNodeDetails() {
+export default function OverflowMenuNodeDetails(): JSX.Element {
   const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);
   const [showPublishers, setShowPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
   const [showSubscribers, setShowSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
@@ -19,42 +19,42 @@ function OverflowMenuNodeDetails() {
           {
             name: `${showNodeInfo ? "Hide" : "Show"} Node Info`,
             key: "toggle-node-info",
-            onClick: () => {
+            onClick: (): void => {
               setShowNodeInfo((prev) => !prev);
             },
           },
           {
             name: `${showPublishers ? "Hide" : "Show"} Publishers`,
             key: "toggle-publishers",
-            onClick: () => {
+            onClick: (): void => {
               setShowPublishers((prev) => !prev);
             },
           },
           {
             name: `${showSubscribers ? "Hide" : "Show"} Subscribers`,
             key: "toggle-subscribers",
-            onClick: () => {
+            onClick: (): void => {
               setShowSubscribers((prev) => !prev);
             },
           },
           {
             name: `${showServices ? "Hide" : "Show"} Services`,
             key: "toggle-services",
-            onClick: () => {
+            onClick: (): void => {
               setShowServices((prev) => !prev);
             },
           },
           {
             name: `${showConnections ? "Hide" : "Show"} Connections`,
             key: "toggle-connections",
-            onClick: () => {
+            onClick: (): void => {
               setShowConnections((prev) => !prev);
             },
           },
           {
             name: `${showLaunchParameter ? "Hide" : "Show"} Launch Parameter`,
             key: "toggle-launch-parameter",
-            onClick: () => {
+            onClick: (): void => {
               setShowLaunchParameter((prev) => !prev);
             },
           },
@@ -66,5 +66,3 @@ function OverflowMenuNodeDetails() {
 
   return createMenu;
 }
-
-export default OverflowMenuNodeDetails;

@@ -12,7 +12,7 @@ export default class CmdType extends String {
   static SET_TIME = new CmdType("set_time");
 }
 
-export function cmdTypeFromString(type: string | undefined | null) {
+export function cmdTypeFromString(type: string | undefined | null): CmdType {
   switch (type?.toLocaleLowerCase()) {
     case "cmd":
       return CmdType.CMD;

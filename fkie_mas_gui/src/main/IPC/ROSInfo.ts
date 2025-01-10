@@ -2,7 +2,7 @@ import { TRosInfo } from "@/types";
 /**
  * Read ROS info stored in Environment variables
  */
-class ROSInfo {
+export class ROSInfo {
   // both
   version: string | undefined; // ROS_VERSION
 
@@ -43,7 +43,7 @@ class ROSInfo {
     this.localhostOnly = process.env.ROS_LOCALHOST_ONLY;
   }
 
-  public getInfo: () => Promise<TRosInfo> = () => {
+  public async getInfo(): Promise<TRosInfo> {
     return Promise.resolve({
       version: this.version,
       pythonVersion: this.pythonVersion,
@@ -54,15 +54,13 @@ class ROSInfo {
       domainId: this.domainId,
       localhostOnly: this.localhostOnly,
     } as TRosInfo);
-  };
+  }
 
   /**
    * Get a string representation of this object
    *
    */
-  public toString: () => string = () => {
+  public toString(): string {
     return JSON.stringify(this.getInfo());
-  };
+  }
 }
-
-export { ROSInfo };

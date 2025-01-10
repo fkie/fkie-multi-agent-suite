@@ -1,9 +1,5 @@
 import About from "../../../components/SettingsModal/About";
 
-function AboutPanel() {
+export default function AboutPanel(): JSX.Element {
   return <About />;
 }
-
-AboutPanel.propTypes = {};
-
-export default AboutPanel;

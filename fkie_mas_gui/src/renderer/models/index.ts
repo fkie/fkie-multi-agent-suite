@@ -1,14 +1,13 @@
 // ROS related imports
 import DaemonVersion from "./DaemonVersion";
-import {
-  DiagnosticArray,
+import DiagnosticArray, {
   DiagnosticKeyValue,
   DiagnosticLevel,
   DiagnosticStatus,
   getDiagnosticLevelName,
   getMaxDiagnosticLevel,
 } from "./Diagnostics";
-import { FileItem, FileLanguageAssociations, getBaseName, getFileAbb, getFileExtension, getFileName } from "./FileItem";
+import FileItem, { FileLanguageAssociations, getBaseName, getFileAbb, getFileExtension, getFileName } from "./FileItem";
 import PathEvent, { PATH_EVENT_TYPE } from "./PathEvent";
 import PathItem from "./PathItem";
 import RosDuration from "./RosDuration";
@@ -44,7 +43,7 @@ import ProviderLaunchConfiguration from "./ProviderLaunchConfiguration";
 import ScreensMapping from "./ScreensMapping";
 // Other structs
 import LogEvent, { LoggingLevel } from "./LogEvent";
-import { LogLevelType, LoggerConfig } from "./LoggerConfig";
+import LoggerConfig, { LogLevelType } from "./LoggerConfig";
 import LogPathItem from "./LogPathItem";
 import Result from "./Result";
 import SubscriberEvent from "./SubscriberEvent";

@@ -18,7 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import { forwardRef, useCallback, useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import Provider from "../../providers/Provider";
 import { EVENT_PROVIDER_NODE_STARTED } from "../../providers/eventTypes";
@@ -47,15 +47,15 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
     const { closeSnackbar } = useSnackbar();
     const [expanded, setExpanded] = useState(false);
 
-    const handleExpandClick = useCallback(() => {
+    function handleExpandClick(): void {
       setExpanded((oldExpanded) => !oldExpanded);
-    }, []);
+    }
 
-    const handleDismiss = useCallback(() => {
+    function handleDismiss(): void {
       closeSnackbar(id);
-    }, [id, closeSnackbar]);
+    }
 
-    const handleToggle = (value: string) => () => {
+    function handleToggle(value: string): void {
       const currentIndex = checked.indexOf(value);
       const newChecked = [...checked];
 
@@ -66,7 +66,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
       }
 
       setChecked(newChecked);
-    };
+    }
 
     // remove nodes started from this list to close this alert if the list is empty
     useCustomEventListener(
@@ -107,7 +107,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                   transition: "all .2s",
                 }}
                 style={expanded ? { transform: "rotate(180deg)" } : undefined}
-                onClick={handleExpandClick}
+                onClick={() => handleExpandClick()}
               >
                 <ExpandMoreIcon fontSize="inherit" />
               </IconButton>
@@ -129,7 +129,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                 Restart
               </Button>
               <IconButton
-                onClick={handleDismiss}
+                onClick={() => handleDismiss()}
                 size="small"
                 sx={{ color: (theme) => theme.palette.getContrastText(theme.palette.warning.main) }}
               >
@@ -153,7 +153,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                     const labelId = `checkbox-list-label-${node}`;
                     return (
                       <ListItem key={node} disablePadding>
-                        <ListItemButton role={undefined} onClick={handleToggle(node)} dense>
+                        <ListItemButton role={undefined} onClick={() => handleToggle(node)} dense>
                           <ListItemIcon>
                             <Checkbox
                               edge="start"

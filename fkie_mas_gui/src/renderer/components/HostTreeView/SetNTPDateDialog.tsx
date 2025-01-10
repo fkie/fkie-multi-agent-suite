@@ -9,7 +9,7 @@ interface SetNTPDateDialogProps {
 }
 
 const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(function SetNTPDateDialog(props, ref) {
-  const { open, defaultCmd, onClose = () => {} } = props;
+  const { open, defaultCmd, onClose = (): void => {} } = props;
 
   const settingsCtx = useContext(SettingsContext);
   const [value, setValue] = useState<string>(defaultCmd);
@@ -22,11 +22,11 @@ const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(funct
     }
   }, [defaultCmd, open]);
 
-  const handleCancel = () => {
+  function handleCancel(): void {
     onClose("");
-  };
+  }
 
-  const handleOk = () => {
+  function handleOk(): void {
     if (timerServerValue) {
       if (!(settingsCtx.get("ntpServer") as string[])?.includes(timerServerValue)) {
         setTimerServer([timerServerValue, ...(settingsCtx.get("ntpServer") as string[])]);
@@ -34,7 +34,7 @@ const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(funct
       }
       onClose(timerServerValue ? `${value} ${timerServerValue}` : "");
     }
-  };
+  }
 
   return (
     <Dialog

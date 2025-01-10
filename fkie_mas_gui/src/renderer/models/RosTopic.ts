@@ -16,7 +16,7 @@ export type EndpointInfo = {
 /**
  * RosTopic models topics in a ROS system
  */
-class RosTopic {
+export default class RosTopic {
   /**
    * Topic unique ID
    */
@@ -42,14 +42,6 @@ class RosTopic {
    */
   subscriber: EndpointInfo[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} name - Topic name including namespace
-   * @param {string} msg_type - Message type.
-   * @param {string[]} publisher - List of ROS nodes publish to this topic.
-   * @param {string[]} subscriber - List of ROS nodes subscribe to this topic.
-   */
   constructor(
     name: string,
     msg_type: string,
@@ -63,15 +55,4 @@ class RosTopic {
     this.publisher = publisher;
     this.subscriber = subscriber;
   }
-
-  /**
-   * Generates a string representation of the node
-   *
-   * @return {string} Node description
-   */
-  toString: () => string = () => {
-    return `${this.name} - ${this.msg_type}`;
-  };
 }
-
-export default RosTopic;

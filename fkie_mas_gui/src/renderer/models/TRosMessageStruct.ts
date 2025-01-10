@@ -13,7 +13,7 @@ export function rosMessageStructToString(
   msgStruct: TRosMessageStruct | TRosMessageStruct[] | undefined,
   asDict: boolean,
   withEmptyFields: boolean
-) {
+): string | JSONValue {
   if (!msgStruct) return "{}";
   const result: { [fieldName: string]: JSONValue | JSONValue[] } = {};
   const struct: TRosMessageStruct[] = Array.isArray(msgStruct) ? msgStruct : msgStruct.def;
@@ -62,7 +62,10 @@ export function rosMessageStructToString(
   return asDict ? result : dictToString(result);
 }
 
-function str2typedValue(value: TRosMessageStruct[] | JSONValue | undefined, valueType: string) {
+function str2typedValue(
+  value: TRosMessageStruct[] | JSONValue | undefined,
+  valueType: string
+): number | boolean | string {
   let result: number | boolean | string = JSON.stringify(value);
   if (valueType.search("int") !== -1) {
     result = Number(value);
@@ -78,7 +81,7 @@ function str2typedValue(value: TRosMessageStruct[] | JSONValue | undefined, valu
   return result;
 }
 
-function dictToString(dict: JSONObject) {
+function dictToString(dict: JSONObject): string {
   const json = JSON.stringify(dict);
   return json.replace(
     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,

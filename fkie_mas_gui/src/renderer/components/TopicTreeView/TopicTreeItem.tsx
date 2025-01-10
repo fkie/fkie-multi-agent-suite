@@ -1,7 +1,7 @@
 import { EndpointInfo, TopicExtendedInfo } from "@/renderer/models";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
-import { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
+import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { NavigationContext } from "../../context/NavigationContext";
@@ -31,18 +31,21 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   const [selected, setSelected] = useState(false);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
 
-  const getHostStyle = () => {
-    if (topicInfo.providerName && settingsCtx.get("colorizeHosts")) {
-      return {
-        flexGrow: 1,
-        alignItems: "center",
-        borderLeftStyle: "solid",
-        borderLeftColor: colorFromHostname(topicInfo.providerName),
-        borderLeftWidth: "0.6em",
-      };
-    }
-    return { flexGrow: 1, alignItems: "center" };
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      if (topicInfo.providerName && settingsCtx.get("colorizeHosts")) {
+        return {
+          flexGrow: 1,
+          alignItems: "center",
+          borderLeftStyle: "solid",
+          borderLeftColor: colorFromHostname(topicInfo.providerName),
+          borderLeftWidth: "0.6em",
+        };
+      }
+      return { flexGrow: 1, alignItems: "center" };
+    },
+    [topicInfo.providerName, settingsCtx.changed]
+  );
 
   useEffect(() => {
     if (!rootPath) return;

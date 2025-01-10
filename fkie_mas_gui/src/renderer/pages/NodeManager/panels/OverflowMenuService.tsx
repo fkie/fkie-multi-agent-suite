@@ -36,7 +36,7 @@ const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>
                 </Stack>
               ),
               key: `info-${serviceName}`,
-              onClick: () => {
+              onClick: (): void => {
                 onClick(EMenuService.INFO, serviceName, providerId);
               },
             },
@@ -48,7 +48,7 @@ const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>
                 </Stack>
               ),
               key: `service-call-${serviceName}`,
-              onClick: () => {
+              onClick: (): void => {
                 onClick(EMenuService.SERVICE_CALL, serviceName, providerId);
               },
             },
@@ -60,7 +60,7 @@ const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>
                 </Stack>
               ),
               key: `clipboard-${serviceName}`,
-              onClick: () => {
+              onClick: (): void => {
                 onClick(EMenuService.clipboard, serviceName, providerId);
               },
             },

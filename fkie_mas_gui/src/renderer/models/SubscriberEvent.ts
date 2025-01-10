@@ -4,7 +4,7 @@ import { JSONObject } from "@/types";
 /**
  * SubscriberEvent models a received ROS message and statistics for a topic.
  */
-class SubscriberEvent {
+export default class SubscriberEvent {
   /**
    * Name of the ROS topic to listen to (e.g. '/chatter').
    */
@@ -59,15 +59,6 @@ class SubscriberEvent {
 
   size_max: number;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} topic - Name of the ROS topic to listen to (e.g. '/chatter').
-   * @param {string} message_type - Type of the ROS message (e.g. 'std_msgs/msg/String')
-   * @param {JSONObject | null} data - Dictionary of the ROS message as JSON string.
-   * @param {number} count - Count of received messages since the start.
-   * @param {number} rate - Receive rate on the topic
-   */
   constructor(
     topic: string,
     message_type: string,
@@ -101,15 +92,4 @@ class SubscriberEvent {
     this.size_min = size_min;
     this.size_max = size_max;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.topic}`;
-  };
 }
-
-export default SubscriberEvent;

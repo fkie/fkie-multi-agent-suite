@@ -104,7 +104,7 @@ interface SearchResultTreeItemProps {
 
 const SearchResultTreeItem = forwardRef<HTMLDivElement, SearchResultTreeItemProps>(
   function SearchResultTreeItem(props, ref) {
-    const { itemId, lineNumber, lineText, onClick = () => {}, ...children } = props;
+    const { itemId, lineNumber, lineText, onClick = (): void => {}, ...children } = props;
 
     // avoid selection if collapse icon was clicked
     let toggled = false;

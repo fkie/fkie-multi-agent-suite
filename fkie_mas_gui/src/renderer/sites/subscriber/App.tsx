@@ -1,5 +1,5 @@
 import { Stack } from "@mui/material";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
@@ -15,14 +15,14 @@ interface ISubscriberInfo {
   noData: boolean;
 }
 
-export default function SubscriberApp() {
+export default function SubscriberApp(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [subInfo, setSubInfo] = useState<ISubscriberInfo | null>(null);
   const [stopRequested, setStopRequested] = useState<string>("");
 
-  const initProvider = useCallback(async () => {
+  async function initProvider(): Promise<void> {
     const queryString = window.location.search;
     console.log(`queryString: ${queryString}`);
     const urlParams = new URLSearchParams(queryString);
@@ -60,9 +60,9 @@ export default function SubscriberApp() {
     } else {
       logCtx.error(`connection to ${host}:${port} failed`, "", false);
     }
-  }, [setSubInfo]);
+  }
 
-  const stopSubscriber = async (topic: string, provider: SubscriberProvider) => {
+  async function stopSubscriber(topic: string, provider: SubscriberProvider): Promise<void> {
     // stop ros node for given topic
     logCtx.info(`Stopping subscriber node for '${topic} on '${provider.name()}'`, "");
     const result = await provider.stopSubscriber(topic);
@@ -73,7 +73,7 @@ export default function SubscriberApp() {
     }
     // close window on stop request
     window.subscriberManager?.close(stopRequested);
-  };
+  }
 
   useEffect(() => {
     if (stopRequested) {
@@ -92,7 +92,7 @@ export default function SubscriberApp() {
       setStopRequested(id);
     });
     initProvider();
-    return () => {
+    return (): void => {
       // Anything in here is fired on component unmount.
     };
   }, []);

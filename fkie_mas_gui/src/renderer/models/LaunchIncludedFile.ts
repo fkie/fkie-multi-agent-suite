@@ -4,7 +4,7 @@ import LaunchArgument from "./LaunchArgument";
 /**
  * Representation of an included file found in given string or path of a file.
  */
-class LaunchIncludedFile {
+export default class LaunchIncludedFile {
   /**
    * host of the file.
    */
@@ -58,22 +58,6 @@ class LaunchIncludedFile {
   /** if True the included file is not loaded be current configuration. */
   conditional_excluded: boolean;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} host - File host
-   * @param {string} path - File to parse.
-   * @param {number} line_number - Line number of the occurrence. If requested `unique` is True the line number is zero.
-   * @param {string} inc_path - Resolved path.
-   * @param {boolean} exists - True if resolved path exists.
-   * @param {string} raw_inc_path - Representation of included file without resolved arg and find statements.
-   * @param {number} rec_depth - Depth of recursion. If `unique` is True the depth is zero.
-   * @param {LaunchArgument[]} args - A list with arguments forwarded within include tag for 'inc_path'.
-   * @param {LaunchArgument[]} default_inc_args - A list with default arguments defined in 'inc_path'.
-   * @param {number} size - Size of the included file in bytes.
-   * @param {boolean} conditional_excluded - If True the included file is not loaded be current configuration.
-
-   */
   constructor(
     host: string,
     path: string,
@@ -100,5 +84,3 @@ class LaunchIncludedFile {
     this.conditional_excluded = conditional_excluded;
   }
 }
-
-export default LaunchIncludedFile;

@@ -1,14 +1,14 @@
+import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
+import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 import SearchBar from "../../../components/UI/SearchBar";
 import { DEFAULT_BUG_TEXT, LoggingContext } from "../../../context/LoggingContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
-import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
 
 type TRootData = {
   provider: Provider;
@@ -21,7 +21,7 @@ interface ParameterPanelProps {
   providers: string[];
 }
 
-export default function ParameterPanel(props: ParameterPanelProps) {
+export default function ParameterPanel(props: ParameterPanelProps): JSX.Element {
   const { nodes, providers } = props;
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -39,7 +39,7 @@ export default function ParameterPanel(props: ParameterPanelProps) {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
 
-  const deleteSelectedParameters = useCallback(async () => {
+  async function deleteSelectedParameters(): Promise<void> {
     if (selectedParameter) {
       if (!selectedParameter.provider.deleteParameters) {
         logCtx.error(
@@ -62,7 +62,7 @@ export default function ParameterPanel(props: ParameterPanelProps) {
     }
     // TODO: update only involved provider / nodes
     setForceReload();
-  }, [selectedParameter, logCtx]);
+  }
 
   useEffect(() => {
     if (!rosCtx.initialized) return;
@@ -99,7 +99,6 @@ export default function ParameterPanel(props: ParameterPanelProps) {
       });
       setRootData(newRootData);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosCtx.initialized, rosCtx.providers]);
 
   const createParameterItems = useMemo(() => {

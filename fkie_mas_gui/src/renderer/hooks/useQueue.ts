@@ -7,7 +7,18 @@ interface StatusItem {
   message: string;
 }
 
-function useQueue<T>(onProgress: (progress: number) => void) {
+export type TQueueProps<T> = {
+  queue: T[];
+  currentIndex: number;
+  update: (list: T[]) => void;
+  clear: () => void;
+  get: () => T | null;
+  success: (action: string) => StatusItem[];
+  failed: (action: string) => StatusItem[];
+  addStatus: (action: string, itemName: string, success: boolean, message: string) => void;
+};
+
+export default function useQueue<T>(onProgress: (progress: number) => void): TQueueProps<T> {
   // offers variable to store success and failed results
   const [resultStatus, setResultStatus] = useState<StatusItem[]>([]);
   const [queue, setQueue] = useState<T[]>([]);
@@ -28,36 +39,42 @@ function useQueue<T>(onProgress: (progress: number) => void) {
    * @param list List with items.
    */
   const update = useCallback(
-    (list: T[]) => {
+    function (list: T[]): void {
       setAddToQueue(list);
     },
     [setAddToQueue]
   );
 
   /** Clear queue and all result states */
-  const clear = useCallback(() => {
-    setQueue([]);
-    setCurrentIndex(-1);
-    setResultStatus([]);
-  }, [setQueue, setCurrentIndex, setResultStatus]);
+  const clear = useCallback(
+    function (): void {
+      setQueue([]);
+      setCurrentIndex(-1);
+      setResultStatus([]);
+    },
+    [setQueue, setCurrentIndex, setResultStatus]
+  );
 
   /**
    * Returns item on the current index or null if index is invalid.
    * Change the current index by call next().
    */
-  const get = useCallback(() => {
-    if (currentIndex >= 0 && currentIndex < queue.length) {
-      return queue[currentIndex];
-    }
-    return null;
-  }, [currentIndex, queue]);
+  const get = useCallback(
+    function (): T | null {
+      if (currentIndex >= 0 && currentIndex < queue.length) {
+        return queue[currentIndex];
+      }
+      return null;
+    },
+    [currentIndex, queue]
+  );
 
   /**
    * Adds a status to the item of the current index.
    * Increase the current index and update the progress state.
    */
   const addStatus = useCallback(
-    (action: string, itemName: string, success: boolean, message: string) => {
+    function (action: string, itemName: string, success: boolean, message: string): void {
       setResultStatus([...resultStatus, { action, itemName, success, message }]);
       // increase index and progress
       const nextIndex = currentIndex + 1;
@@ -70,14 +87,14 @@ function useQueue<T>(onProgress: (progress: number) => void) {
   );
 
   const success = useCallback(
-    (action: string) => {
+    function (action: string): StatusItem[] {
       return resultStatus.filter((item) => item.success && action === item.action);
     },
     [resultStatus]
   );
 
   const failed = useCallback(
-    (action: string) => {
+    function (action: string): StatusItem[] {
       return resultStatus.filter((item) => !item.success && action === item.action);
     },
     [resultStatus]
@@ -94,5 +111,3 @@ function useQueue<T>(onProgress: (progress: number) => void) {
     addStatus,
   };
 }
-
-export default useQueue;

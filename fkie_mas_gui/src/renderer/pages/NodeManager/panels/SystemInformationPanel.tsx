@@ -1,6 +1,6 @@
 import { SystemWarning } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
-import { JSONObject } from "@/types";
+import { JSONObject, TSystemInfo } from "@/types";
 import { Box, Stack, Typography } from "@mui/material";
 import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
 import { JSONTree } from "react-json-tree";
@@ -22,9 +22,9 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
     const rosCtx = useContext(RosContext);
     const settingsCtx = useContext(SettingsContext);
 
-    const [systemInfoContent, setSystemInfoContent] = useState(null);
+    const [systemInfoContent, setSystemInfoContent] = useState<TSystemInfo | null>(null);
     const [provider, setProvider] = useState<Provider | undefined>();
-    const [providerDetails, setProviderDetails] = useState({});
+    const [providerDetails, setProviderDetails] = useState<JSONObject | TSystemInfo | null>({});
     const [providerWarnings, setProviderWarnings] = useState<SystemWarning[]>([]);
     const [filter, setFilter] = useState("");
     const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
@@ -34,7 +34,7 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
     }, [settingsCtx.changed]);
 
     /** filter dictionaries with system information by given filter */
-    function filterNestObject(item) {
+    function filterNestObject(item: TSystemInfo | JSONObject | null): TSystemInfo | JSONObject | null {
       if (!item) return item;
       return Object.keys(item).reduce((object, key) => {
         let addKey = false;
@@ -82,7 +82,6 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
       if (provider && provider.isLocalHost) {
         setSystemInfoContent(filterNestObject(rosCtx.systemInfo));
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [provider, filter, setSystemInfoContent]);
 
     useEffect(() => {
@@ -116,7 +115,6 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
         });
         setProviderWarnings(warnings);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [provider, filter]);
 
     useEffect(() => {

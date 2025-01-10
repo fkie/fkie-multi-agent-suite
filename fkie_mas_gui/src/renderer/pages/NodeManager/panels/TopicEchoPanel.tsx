@@ -90,12 +90,12 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
 
-  const handleQosClick = (event) => {
+  function handleQosClick(event): void {
     setQosAnchorEl(event.currentTarget);
-  };
-  const handleQosClose = () => {
+  }
+  function handleQosClose(): void {
     setQosAnchorEl(null);
-  };
+  }
   let receivedIndex = 0;
 
   // set default topic if defined
@@ -105,15 +105,11 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     }
   }, [defaultTopic]);
 
-  useEffect(
-    () => {
-      if (content) {
-        setHistory((prev) => [content, ...prev.slice(0, msgCount - 1)]);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [content]
-  );
+  useEffect(() => {
+    if (content) {
+      setHistory((prev) => [content, ...prev.slice(0, msgCount - 1)]);
+    }
+  }, [content]);
 
   useCustomEventListener(
     `${EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX}_${topicName}`,
@@ -137,17 +133,15 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     if (!provider) return;
     const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize);
     rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noData, noArr, noStr, hz, windowSize]);
-  // }, [rosCtx, selectedProvider, topicName, noData, noArr, noStr, hz, windowSize]);
 
-  const close = useCallback(() => {
+  function close(): void {
     if (rosCtx) {
       setSubscribed(false);
       logCtx.debug(`unregister subscriber to topic ${topicName}`);
       rosCtx.unregisterSubscriber(selectedProvider, topicName);
     }
-  }, [rosCtx, logCtx, topicName, selectedProvider, setSubscribed]);
+  }
 
   useEffect(() => {
     if (subscribed || pause) return;
@@ -180,7 +174,6 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
       rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg);
       setSubscribed(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicName, rosCtx.mapProviderRosNodes, rosCtx.registerSubscriber, pause, subscribed, setSubscribed]);
 
   // initialize provider
@@ -191,16 +184,15 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   }, [pause]);
 
   useEffect(() => {
-    return () => {
+    return (): void => {
       if (topicName) {
         close();
       }
     };
     // no dependencies: execute return statement on close this panel
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function normalizePrint(size: number, fixed: number = 2, per: string = "") {
+  function normalizePrint(size: number, fixed: number = 2, per: string = ""): string {
     if (size > 999999) {
       return `${(size / 1048576.0).toFixed(fixed)}MiB${per}`;
     }
@@ -210,11 +202,11 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     return `${size.toFixed(fixed)}B${per}`;
   }
 
-  function isObject(item: object | Array<object> | null) {
+  function isObject(item: object | Array<object> | null): boolean {
     return (item && typeof item === "object") || Array.isArray(item);
   }
 
-  function filterJson(data: object | Array<object> | null, filter: string) {
+  function filterJson(data: object | Array<object> | null, filter: string): object | Array<object> | null {
     if (filter.length < 2) {
       return data;
     }
@@ -496,26 +488,29 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     showSearchBar,
   ]);
 
-  const getHostStyle = () => {
-    const providerName = currentProvider?.name();
-    if (providerName && settingsCtx.get("colorizeHosts")) {
-      return {
-        flexGrow: 1,
-        borderTopStyle: "solid",
-        borderTopColor: colorFromHostname(providerName),
-        borderTopWidth: "0.3em",
-        backgroundColor: backgroundColor,
-      };
-    }
-    return { flexGrow: 1, backgroundColor: backgroundColor };
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      const providerName = currentProvider?.name();
+      if (providerName && settingsCtx.get("colorizeHosts")) {
+        return {
+          flexGrow: 1,
+          borderTopStyle: "solid",
+          borderTopColor: colorFromHostname(providerName),
+          borderTopWidth: "0.3em",
+          backgroundColor: backgroundColor,
+        };
+      }
+      return { flexGrow: 1, backgroundColor: backgroundColor };
+    },
+    [currentProvider, settingsCtx.changed]
+  );
 
-  const onKeyDown = (event) => {
+  function onKeyDown(event: React.KeyboardEvent): void {
     if (event.ctrlKey && event.key === "f") {
       setShowSearchBar(!showSearchBar);
       setFilterText("");
     }
-  };
+  }
 
   return (
     <Stack

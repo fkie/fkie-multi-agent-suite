@@ -6,7 +6,7 @@ import RosParameter from "./RosParameter";
 /**
  * LaunchContent models the launch file with all content with nodes or associations.
  */
-class LaunchContent {
+export default class LaunchContent {
   /**
    * Full path of the launch file with contains the reported nodes.
    */
@@ -43,17 +43,6 @@ class LaunchContent {
    */
   associations: LaunchAssociations[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} path - Full path of the launch file with contains the reported nodes.
-   * @param {LaunchArgument[]} args - Arguments used to load the launch file.
-   * @param {string} masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
-   * @param {string} host - Start nodes of this file on specified host.
-   * @param {string[]} nodes - List of node names configured by this launch file.
-   * @param {RosParameter[]} parameters - List of node names configured by this launch file.
-   * @param {LaunchAssociations[]} associations - List of associations configured by this launch file.
-   */
   constructor(
     path: string,
     args: LaunchArgument[],
@@ -71,15 +60,4 @@ class LaunchContent {
     this.parameters = parameters;
     this.associations = associations;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.path}`;
-  };
 }
-
-export default LaunchContent;

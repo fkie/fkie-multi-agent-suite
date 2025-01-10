@@ -1,6 +1,5 @@
 import { TRosMessageStruct } from "@/renderer/models";
 import { Checkbox, FormControlLabel, FormGroup, FormLabel, Stack, TextField } from "@mui/material";
-import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 
 interface BoolInputProps {
@@ -9,7 +8,7 @@ interface BoolInputProps {
   filterText?: string;
 }
 
-function BoolInput(props: BoolInputProps) {
+export default function BoolInput(props: BoolInputProps): JSX.Element {
   const { id, messageStruct, filterText = "" } = props;
   const [value, setValue] = useState<string | boolean>(messageStruct.is_array ? "" : false);
   const [isVisible, setVisible] = useState("");
@@ -109,11 +108,3 @@ function BoolInput(props: BoolInputProps) {
     </Stack>
   );
 }
-
-BoolInput.propTypes = {
-  id: PropTypes.string,
-  messageStruct: PropTypes.any,
-  filterText: PropTypes.string,
-};
-
-export default BoolInput;

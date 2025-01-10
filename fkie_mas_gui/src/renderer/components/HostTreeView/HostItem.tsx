@@ -47,7 +47,7 @@ interface HostItemProps {
 }
 
 const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(props, ref) {
-  const { provider, stopNodes = () => {}, onDoubleClick = () => {}, ...children } = props;
+  const { provider, stopNodes = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
   const settingsCtx = useContext(SettingsContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -65,7 +65,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
     setTimeDiffThreshold(settingsCtx.get("timeDiffThreshold") as number);
   }, [settingsCtx, settingsCtx.changed]);
 
-  const updateTime = async (local = true) => {
+  async function updateTime(local = true): Promise<void> {
     if (provider) {
       const localProviders = rosCtx.getLocalProvider();
       if (localProviders.length === 0) {
@@ -94,9 +94,9 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
         );
       }
     }
-  };
+  }
 
-  const handleMenuTimeItemClick = (_event, index) => {
+  function handleMenuTimeItemClick(_event, index): void {
     if (index === 0) {
       // set time using ntpdate
       setOpenNtpdateDialog(true);
@@ -112,20 +112,20 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       setShowHelpTime(true);
     }
     setOpenTimeButton(false);
-  };
+  }
 
-  const handleCloseTimeButton = (event: MouseEvent | TouchEvent) => {
+  function handleCloseTimeButton(event: MouseEvent | TouchEvent): void {
     if (anchorRef.current && anchorRef.current === event.target) {
       return;
     }
     setOpenTimeButton(false);
-  };
+  }
 
   /**
    * Check if provider has master sync on
    */
   const getMasterSyncNode = useCallback(
-    (providerId: string) => {
+    function (providerId: string): RosNode | undefined {
       const foundSyncNode = rosCtx.mapProviderRosNodes.get(providerId)?.find((node) => {
         return node.id.includes(`/mas_sync`);
       });
@@ -135,7 +135,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
   );
 
   const toggleMasterSync = useCallback(
-    (provider: Provider) => {
+    function (provider: Provider): void {
       const syncNode: RosNode | undefined = getMasterSyncNode(provider.id);
       if (syncNode) {
         stopNodes([syncNode.idGlobal]);
@@ -149,7 +149,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
   /**
    * Get provider tags
    */
-  const getProviderTags = useCallback((provider: Provider) => {
+  function getProviderTags(provider: Provider): TTag[] {
     const tags: TTag[] = [];
     if (!provider.daemon) {
       tags.push({ id: "no-daemon", data: "No Daemon", tooltip: "", color: "red" });
@@ -158,25 +158,28 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       tags.push({ id: "no-discovery", data: "No Discovery", tooltip: "", color: "red" });
     }
     return tags;
-  }, []);
+  }
 
-  function formatTime(milliseconds) {
+  function formatTime(milliseconds): string {
     const sec = (milliseconds / 1000.0).toFixed(3);
     return `${sec}s`;
   }
 
-  const getHostStyle = (provider: Provider) => {
-    if (settingsCtx.get("colorizeHosts")) {
-      // borderLeft: `3px dashed`,
-      // borderColor: colorFromHostname(provider.name()),
-      return {
-        borderLeftStyle: "solid",
-        borderLeftColor: colorFromHostname(provider.name()),
-        borderLeftWidth: "0.6em",
-      };
-    }
-    return {};
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(provider: Provider): object {
+      if (settingsCtx.get("colorizeHosts")) {
+        // borderLeft: `3px dashed`,
+        // borderColor: colorFromHostname(provider.name()),
+        return {
+          borderLeftStyle: "solid",
+          borderLeftColor: colorFromHostname(provider.name()),
+          borderLeftWidth: "0.6em",
+        };
+      }
+      return {};
+    },
+    [settingsCtx.changed]
+  );
 
   // avoid selection if collapse icon was clicked
   let toggled = false;

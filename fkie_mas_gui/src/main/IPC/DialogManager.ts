@@ -5,7 +5,7 @@ import log from "electron-log";
 /**
  * Class DialogManager: Open files requests
  */
-class DialogManager implements TDialogManager {
+export default class DialogManager implements TDialogManager {
   mainWindow: BrowserWindow | null = null;
 
   constructor(mainWindow: BrowserWindow) {
@@ -14,13 +14,13 @@ class DialogManager implements TDialogManager {
     this.registerHandlers();
   }
 
-  public registerHandlers: () => void = () => {
+  public registerHandlers(): void {
     ipcMain.handle(DialogManagerEvents.openFile, (_event: Electron.IpcMainInvokeEvent, path: string) => {
       return this.openFile(path);
     });
-  };
+  }
 
-  public openFile: (path: string) => Promise<string | null> = async (path) => {
+  public async openFile(path: string): Promise<string | null> {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       defaultPath: path,
     });
@@ -28,11 +28,9 @@ class DialogManager implements TDialogManager {
       return filePaths[0];
     }
     return null;
-  };
+  }
 
   quit(): void {
     // TODO
   }
 }
-
-export default DialogManager;

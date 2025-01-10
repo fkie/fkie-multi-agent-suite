@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import RosDuration from "./RosDuration";
 
-const RELIABILITY = {
+export const RELIABILITY = {
   // Implementation specific default
   SYSTEM_DEFAULT: 0,
   // Guarantee that samples are delivered, may retry multiple times.
@@ -13,7 +13,7 @@ const RELIABILITY = {
 };
 
 // QoS history enumerations describing how samples endure
-const HISTORY = {
+export const HISTORY = {
   // Implementation default for history policy
   SYSTEM_DEFAULT: 0,
   // Only store up to a maximum number of samples, dropping oldest once max is exceeded
@@ -25,7 +25,7 @@ const HISTORY = {
 };
 
 // QoS durability enumerations describing how samples persist
-const DURABILITY = {
+export const DURABILITY = {
   // Implementation specific default
   SYSTEM_DEFAULT: 0,
   // The rmw publisher is responsible for persisting samples for “late-joining” subscribers
@@ -38,12 +38,12 @@ const DURABILITY = {
 
 // QoS liveliness enumerations that describe a publisher's reporting policy for its alive status.
 // For a subscriber, these are its requirements for its topic's publishers.
-const LIVELINESS = {
+export const LIVELINESS = {
   // Implementation specific default
   SYSTEM_DEFAULT: 0,
   // The signal that establishes a Topic is alive comes from the ROS rmw layer.
   AUTOMATIC: 1,
-  // :depricated: Explicitly asserting node liveliness is required in this case.
+  // :deprecated: Explicitly asserting node liveliness is required in this case.
   MANUAL_BY_NODE: 2,
   // The signal that establishes a Topic is alive is at the Topic level. Only publishing a message
   // on the Topic or an explicit signal from the application to assert liveliness on the Topic
@@ -57,7 +57,7 @@ const LIVELINESS = {
 /**
  * Quality of service settings for a ros topic.
  */
-class RosQos {
+export default class RosQos {
   /**
    * QoS durability enumerations describing how samples persist
    */
@@ -89,18 +89,6 @@ class RosQos {
 
   lifespan: RosDuration;
 
-  /**
-   * Class Constructor
-   *
-   * @param {number} durability - QoS durability enumerations describing how samples persist
-   * @param {number} history - QoS history enumerations describing how samples endure
-   * @param {number} depth - Queue size
-   * @param {number} liveliness - QoS liveliness enumerations that describe a publisher's reporting policy for its alive status.
-   * @param {number} reliability - QoS reliability enumerations the guaranties.
-   * @param {RosDuration} deadline - .
-   * @param {RosDuration} lease_duration - .
-   * @param {RosDuration} lifespan - .
-   */
   constructor(
     durability: number = DURABILITY.VOLATILE,
     history: number = HISTORY.KEEP_LAST,
@@ -121,7 +109,3 @@ class RosQos {
     this.lifespan = lifespan;
   }
 }
-
-export default RosQos;
-
-export { DURABILITY, HISTORY, LIVELINESS, RELIABILITY };

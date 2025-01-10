@@ -92,27 +92,28 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
     // load commands initially
     useEffect(() => {
       initializeTerminal(screen);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // update the terminal every time the node screen changes
     useEffect(() => {
       updateScreenName();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rosCtx.mapProviderRosNodes]);
 
-    const getHostStyle = () => {
-      if (providerName && settingsCtx.get("colorizeHosts")) {
-        return {
-          flexGrow: 1,
-          borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
-          borderTopWidth: "0.3em",
-          backgroundColor: backgroundColor,
-        };
-      }
-      return { flexGrow: 1, backgroundColor: backgroundColor };
-    };
+    const getHostStyle = useCallback(
+      function getHostStyle(): object {
+        if (providerName && settingsCtx.get("colorizeHosts")) {
+          return {
+            flexGrow: 1,
+            borderTopStyle: "solid",
+            borderTopColor: colorFromHostname(providerName),
+            borderTopWidth: "0.3em",
+            backgroundColor: backgroundColor,
+          };
+        }
+        return { flexGrow: 1, backgroundColor: backgroundColor };
+      },
+      [providerName, settingsCtx.changed]
+    );
 
     const createTerminalView = useMemo(() => {
       return (

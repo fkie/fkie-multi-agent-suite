@@ -54,7 +54,7 @@ type TColumnDataSaved = {
   width: number | string;
 };
 
-const exportLogs = (logs: LogEvent[]) => {
+function exportLogs(logs: LogEvent[]): void {
   const filename = "logs.json";
   const jsonStr = JSON.stringify(logs, null, 2);
 
@@ -66,12 +66,12 @@ const exportLogs = (logs: LogEvent[]) => {
   document.body.appendChild(element);
   element.click();
   document.body.removeChild(element);
-};
+}
 
 const DEFAULT_MIN_WIDTH_CELL = 70;
 const DEFAULT_MAX_WIDTH_CELL = 2048;
 
-function LoggingPanel() {
+export default function LoggingPanel(): JSX.Element {
   const [headers] = useState<TColumnData[]>([
     {
       key: "datum",
@@ -106,7 +106,7 @@ function LoggingPanel() {
   const isResizing = useRef(-1);
   const resizingStart = useRef(-1);
 
-  const showLogLevel = (level: string) => {
+  function showLogLevel(level: string): boolean {
     if (level === LoggingLevel.DEBUG) {
       return logLevel === LoggingLevel.DEBUG;
     }
@@ -117,9 +117,9 @@ function LoggingPanel() {
       return [LoggingLevel.DEBUG, LoggingLevel.INFO, LoggingLevel.WARN].includes(logLevel);
     }
     return true;
-  };
+  }
 
-  const saveColumnInfoLocalStorage = () => {
+  function saveColumnInfoLocalStorage(): void {
     const columnsInfo: TColumnDataSaved[] = [];
     headers.forEach((col, index) => {
       const wi = headers[index].ref?.current?.parentElement?.style.width;
@@ -129,9 +129,9 @@ function LoggingPanel() {
       });
     });
     setLoggerColumnWidths(columnsInfo);
-  };
+  }
 
-  const adjustWidthColumn = (index: number, width: number) => {
+  function adjustWidthColumn(index: number, width: number): void {
     const minWidth = headers[index].minWidth ?? DEFAULT_MIN_WIDTH_CELL;
     const maxWidth = headers[index].maxWidth ?? DEFAULT_MAX_WIDTH_CELL;
     let newWidth = width;
@@ -144,11 +144,11 @@ function LoggingPanel() {
       headers[index].ref.current.parentElement!.style.width = `${newWidth}px`;
     }
     headers[index].width = newWidth;
-  };
+  }
 
-  const setCursorDocument = (isColResizing: boolean) => {
+  function setCursorDocument(isColResizing: boolean): void {
     document.body.style.cursor = isColResizing ? "col-resize" : "auto";
-  };
+  }
 
   const handleOnMouseMove = useDebounceCallback((e) => {
     if (isResizing.current >= 0) {
@@ -161,15 +161,15 @@ function LoggingPanel() {
     }
   }, 1);
 
-  const handleOnMouseUp = () => {
+  function handleOnMouseUp(): void {
     if (isResizing.current >= 0) {
       isResizing.current = -1;
       saveColumnInfoLocalStorage();
       setCursorDocument(false);
     }
-  };
+  }
 
-  const onClickResizeColumn = (event: React.MouseEvent, index: number) => {
+  function onClickResizeColumn(event: React.MouseEvent, index: number): void {
     isResizing.current = index;
     if (typeof headers[index].width === "number") {
       resizingStart.current = headers[index].width - event.clientX;
@@ -177,10 +177,10 @@ function LoggingPanel() {
       resizingStart.current = parseInt(headers[index].width.replace("px", "")) - event.clientX;
     }
     setCursorDocument(true);
-  };
+  }
 
   /** create header row with an empty column used width='auto' to avoid width change of resizable columns */
-  function fixedHeaderContent() {
+  function fixedHeaderContent(): JSX.Element {
     return (
       <TableRow key="header">
         {headers.map((column, index) => {
@@ -244,7 +244,7 @@ function LoggingPanel() {
     );
   }
 
-  function rowContent(_index: number, row: LogEvent) {
+  function rowContent(_index: number, row: LogEvent): JSX.Element {
     const color = levelColors[row.level.toLowerCase()];
     return (
       <>
@@ -266,11 +266,10 @@ function LoggingPanel() {
   useEffect(() => {
     document.onmousemove = handleOnMouseMove;
     document.onmouseup = handleOnMouseUp;
-    return () => {
+    return (): void => {
       document.onmousemove = null;
       document.onmouseup = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -356,7 +355,3 @@ function LoggingPanel() {
     </Stack>
   );
 }
-
-LoggingPanel.propTypes = {};
-
-export default LoggingPanel;

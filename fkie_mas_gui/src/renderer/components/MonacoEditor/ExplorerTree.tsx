@@ -10,7 +10,7 @@ import { LaunchArgument, LaunchIncludedFile } from "../../models";
 import FileTreeItem from "./FileTreeItem";
 import { TLaunchIncludeItem } from "./types";
 
-export const equalLaunchArgs = (launchArgs: TLaunchArg[], argList: LaunchArgument[]) => {
+export function equalLaunchArgs(launchArgs: TLaunchArg[], argList: LaunchArgument[]): boolean {
   if (launchArgs && launchArgs.length > 0) {
     const notEqual = argList?.filter((item) => {
       // ignore args with not resolved statements
@@ -20,7 +20,7 @@ export const equalLaunchArgs = (launchArgs: TLaunchArg[], argList: LaunchArgumen
     return notEqual.length === 0;
   }
   return true;
-};
+}
 
 interface ExplorerTreeProps {
   tabId: string;
@@ -48,7 +48,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
   const [expandedExplorerResults, setExpandedExplorerResults] = useState<string[]>([]);
 
   const createUriPath = useCallback(
-    (path: string) => {
+    function (path: string): string {
       return `/${tabId}:${path}`;
     },
     [tabId]
@@ -95,7 +95,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
 
   /** Create from SimpleTreeView from given root item */
   const includeFilesToTree = useCallback(
-    (item: TLaunchIncludeItem, lineNumberCount: number, parentItems: string[] = []) => {
+    function (item: TLaunchIncludeItem, lineNumberCount: number, parentItems: string[] = []): JSX.Element {
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!item) return <></>;
       const pathList: string[] = [...parentItems, `${item.file.inc_path}-${item.file.line_number + lineNumberCount}`];

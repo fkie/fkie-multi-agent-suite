@@ -86,7 +86,7 @@ type TMenuOptionsScreen = {
   callback?: () => void;
 };
 
-function HostTreeViewPanel() {
+export default function HostTreeViewPanel(): JSX.Element {
   // context objects
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -154,7 +154,7 @@ function HostTreeViewPanel() {
 
   const getSelectedNodes = useCallback(() => {
     return getNodesFromIds(navCtx.selectedNodes);
-  }, [getNodesFromIds, navCtx.selectedNodes]);
+  }, [navCtx.selectedNodes]);
 
   // debounced search callback
   // search in the origin node list and create a new tree
@@ -251,26 +251,23 @@ function HostTreeViewPanel() {
   /**
    * Callback when provides on the tree are selected by the user
    */
-  const handleProviderSelect = useCallback(
-    (providerIds) => {
-      // set the selected nodes
-      const selectedProvidersLocal: string[] = [];
-      // update setSelectedNodes based on trees selectedItems
-      providerIds.forEach((id) => {
-        // search selected host
-        if (rosCtx.getProviderById(id)) {
-          selectedProvidersLocal.push(id);
-        }
-      });
-      navCtx.setSelectedProviders(selectedProvidersLocal);
-    },
-    [navCtx, rosCtx]
-  );
+  function handleProviderSelect(providerIds: string[]): void {
+    // set the selected nodes
+    const selectedProvidersLocal: string[] = [];
+    // update setSelectedNodes based on trees selectedItems
+    providerIds.forEach((id: string) => {
+      // search selected host
+      if (rosCtx.getProviderById(id)) {
+        selectedProvidersLocal.push(id);
+      }
+    });
+    navCtx.setSelectedProviders(selectedProvidersLocal);
+  }
 
   /**
    * Create and open a new panel with a [NodeLoggerPanel] for a given node
    */
-  const createLoggerPanel = useCallback(async (node) => {
+  function createLoggerPanel(node: RosNode): void {
     const id = `node-logger-${node.idGlobal}`;
     const title = node.name;
     emitCustomEvent(
@@ -284,35 +281,36 @@ function HostTreeViewPanel() {
         new LayoutTabConfig(false, "node-logger")
       )
     );
-  }, []);
+  }
 
   /**
    * Start nodes from a list of itemIds
    */
-  const createLoggerPanelFromId = useCallback(
-    (itemIds: string[]) => {
-      const nodeList = getNodesFromIds(itemIds);
-      if (nodeList.length > 0) {
-        createLoggerPanel(nodeList[0]);
-      }
-    },
-    [getNodesFromIds, createLoggerPanel]
-  );
+  function createLoggerPanelFromId(itemIds: string[]): void {
+    const nodeList = getNodesFromIds(itemIds);
+    if (nodeList.length > 0) {
+      createLoggerPanel(nodeList[0]);
+    }
+  }
 
   /**
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
    */
-  const createSingleTerminalPanel = useCallback(
-    async (type, providerId, nodeName, screen, externalKeyModifier = false, openInTerminal = false) => {
-      rosCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
-    },
-    [rosCtx]
-  );
+  async function createSingleTerminalPanel(
+    type: CmdType,
+    providerId: string,
+    nodeName: string,
+    screen: string,
+    externalKeyModifier: boolean = false,
+    openInTerminal: boolean = false
+  ): Promise<void> {
+    return rosCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
+  }
 
   /**
    * Create and open a new panel with a [createFileEditorPanel] for selected nodes
    */
-  const createFileEditorPanel = (nodes: RosNode[], external: boolean) => {
+  function createFileEditorPanel(nodes: RosNode[], external: boolean): void {
     if (nodes.length > 0) {
       // open only for first node
       const node = nodes[0];
@@ -336,12 +334,12 @@ function HostTreeViewPanel() {
         );
       }
     }
-  };
+  }
 
   /**
    * Create and open a new panel with a [ParameterPanel] for selected nodes
    */
-  const createParameterPanel: (nodes: RosNode[], providers: string[]) => void = useCallback((nodes, providers) => {
+  function createParameterPanel(nodes: RosNode[], providers: string[]): void {
     const openLocation: string = LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation") as string];
     const params: { name: string; callback: () => void }[] = [];
     nodes.forEach((node) => {
@@ -390,9 +388,9 @@ function HostTreeViewPanel() {
         item.callback();
       });
     }
-  }, []);
+  }
 
-  const startNodeQueued = async (node: RosNode | undefined) => {
+  async function startNodeQueued(node: RosNode | undefined): Promise<void> {
     // let node = getQueueMain();
     if (node !== undefined) {
       const provider = rosCtx.getProviderById(node.providerId);
@@ -409,47 +407,41 @@ function HostTreeViewPanel() {
         }
       }
     }
-  };
+  }
 
-  const updateWithAssociations: (nodes: RosNode[], depth?: number) => RosNode[] = useCallback(
-    (nodes, depth = 0) => {
-      if (depth > 10) return [...nodes];
-      const newNodeList: RosNode[] = [];
-      nodes.forEach((node) => {
-        if (node.launchInfo.size > 0) {
-          const associations: string[] =
-            node.launchInfo.size === 1
-              ? node.launchInfo.values().next().value?.associations || []
-              : node.launchInfo.get(node.launchPath)?.associations || [];
-          if (associations) {
-            const provider = rosCtx.getProviderById(node.providerId);
-            if (provider) {
-              associations.forEach((asNodeName: string) => {
-                const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
-                const asNodesRec = updateWithAssociations(asNodes, depth + 1);
-                asNodesRec.forEach((asNode) => {
-                  if (!newNodeList.find((n) => n.name === asNode.name)) {
-                    newNodeList.push(asNode);
-                  }
-                });
+  function updateWithAssociations(nodes: RosNode[], depth?: number): RosNode[] {
+    if (depth === undefined) depth = 0;
+    if (depth > 10) return [...nodes];
+    const newNodeList: RosNode[] = [];
+    nodes.forEach((node) => {
+      if (node.launchInfo.size > 0) {
+        const associations: string[] =
+          node.launchInfo.size === 1
+            ? node.launchInfo.values().next().value?.associations || []
+            : node.launchInfo.get(node.launchPath)?.associations || [];
+        if (associations) {
+          const provider = rosCtx.getProviderById(node.providerId);
+          if (provider) {
+            associations.forEach((asNodeName: string) => {
+              const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
+              const asNodesRec = updateWithAssociations(asNodes, depth + 1);
+              asNodesRec.forEach((asNode) => {
+                if (!newNodeList.find((n) => n.name === asNode.name)) {
+                  newNodeList.push(asNode);
+                }
               });
-            }
+            });
           }
         }
-        if (!newNodeList.find((n) => n.name === node.name)) {
-          newNodeList.push(node);
-        }
-      });
-      return newNodeList;
-    },
-    [rosCtx]
-  );
+      }
+      if (!newNodeList.find((n) => n.name === node.name)) {
+        newNodeList.push(node);
+      }
+    });
+    return newNodeList;
+  }
 
-  const getNodeLetManager: (node: RosNode, ignoreRunState: boolean, nodes2start: RosNode[]) => RosNode | null = (
-    node,
-    ignoreRunState = false,
-    nodes2start = []
-  ) => {
+  function getNodeLetManager(node: RosNode, ignoreRunState: boolean, nodes2start: RosNode[]): RosNode | null {
     if (!node) return null;
     const composableParent = node.getLaunchComposableContainer();
     if (composableParent) {
@@ -471,96 +463,94 @@ function HostTreeViewPanel() {
       }
     }
     return null;
-  };
+  }
 
-  const startNodesWithLaunchCheck = useCallback(
-    (nodes, ignoreRunState = false, useLaunchFiles = {}) => {
-      const withMultiLaunch: RosNode[] = [];
-      const node2Start: RosNode[] = [];
-      const withNoLaunch: string[] = [];
-      const skippedNodes: Map<string, string> = new Map();
-      // update nodes with launchFile if they are provided (on multiple launch files for a node)
-      let nodeList = nodes.map((node) => {
-        node.launchPath = useLaunchFiles[node.name];
-        return node;
-      });
-      // check nodes for associations and extend start node list
-      nodeList = updateWithAssociations(nodeList);
-      const add2start = (node: RosNode | null) => {
-        // add only valid node and if it is not already added
-        if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
-          node2Start.push(node);
+  function startNodesWithLaunchCheck(
+    nodes: RosNode[],
+    ignoreRunState: boolean = false,
+    useLaunchFiles: { [key: string]: string } = {}
+  ): void {
+    const withMultiLaunch: RosNode[] = [];
+    const node2Start: RosNode[] = [];
+    const withNoLaunch: string[] = [];
+    const skippedNodes: Map<string, string> = new Map();
+    // update nodes with launchFile if they are provided (on multiple launch files for a node)
+    let nodeList = nodes.map((node) => {
+      node.launchPath = useLaunchFiles[node.name];
+      return node;
+    });
+    // check nodes for associations and extend start node list
+    nodeList = updateWithAssociations(nodeList);
+    const add2start: (node: RosNode | null) => void = (node) => {
+      // add only valid node and if it is not already added
+      if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
+        node2Start.push(node);
+      }
+    };
+    nodeList.forEach((node) => {
+      // ignore running and nodes already in the queue
+      if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
+        skippedNodes.set(node.name, "already running");
+      } else if (
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === "START" && elem.node?.name === node.name;
+        })
+      ) {
+        skippedNodes.set(node.name, "already in the start queue");
+      } else if (node.launchInfo.size > 0) {
+        // prepend nodeLet manager to the start list if it is not already added,
+        // not running or in the list with started nodes
+        const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
+        if (managerNode) {
+          managerNode.launchPath = node.launchPath;
         }
-      };
-      nodeList.forEach((node) => {
-        // ignore running and nodes already in the queue
-        if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
-          skippedNodes.set(node.name, "already running");
-        } else if (
-          queueItemsQueueMain &&
-          queueItemsQueueMain.find((elem) => {
-            return elem.action === "START" && elem.node?.name === node.name;
-          })
-        ) {
-          skippedNodes.set(node.name, "already in the start queue");
-        } else if (node.launchInfo.size > 0) {
-          // prepend nodeLet manager to the start list if it is not already added,
-          // not running or in the list with started nodes
-          const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
-          if (managerNode) {
-            managerNode.launchPath = node.launchPath;
-          }
-          add2start(managerNode);
-          add2start(node);
-          if (node.launchInfo.size > 1 && !node.launchPath) {
-            // Multiple launch files available
-            withMultiLaunch.push(node);
-          }
-        } else if (!node.system_node) {
-          // no launch files
-          withNoLaunch.push(node.name);
+        add2start(managerNode);
+        add2start(node);
+        if (node.launchInfo.size > 1 && !node.launchPath) {
+          // Multiple launch files available
+          withMultiLaunch.push(node);
         }
+      } else if (!node.system_node) {
+        // no launch files
+        withNoLaunch.push(node.name);
+      }
+    });
+    if (skippedNodes.size > 0) {
+      logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
+    }
+    if (withNoLaunch.length > 0) {
+      withNoLaunch.forEach((nodeName) => {
+        skippedNodes.set(nodeName, "no launch file");
       });
-      if (skippedNodes.size > 0) {
-        logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
-      }
-      if (withNoLaunch.length > 0) {
-        withNoLaunch.forEach((nodeName) => {
-          skippedNodes.set(nodeName, "no launch file");
-        });
-        logCtx.debug(`No launch file for ${withNoLaunch.length} nodes found`, JSON.stringify(node2Start));
-      }
-      if (withMultiLaunch.length > 0) {
-        // let the user select the launch files.
-        setNodesAwaitModal(node2Start);
-        setNodeMultiLaunches(withMultiLaunch);
-      } else if (node2Start.length > 0) {
-        setNodesToStart(node2Start);
-      }
-    },
-    [queueItemsQueueMain, logCtx, updateWithAssociations]
-  );
+      logCtx.debug(`No launch file for ${withNoLaunch.length} nodes found`, JSON.stringify(node2Start));
+    }
+    if (withMultiLaunch.length > 0) {
+      // let the user select the launch files.
+      setNodesAwaitModal(node2Start);
+      setNodeMultiLaunches(withMultiLaunch);
+    } else if (node2Start.length > 0) {
+      setNodesToStart(node2Start);
+    }
+  }
 
   /**
    * Start nodes in the selected list
    */
-  const startSelectedNodes = useCallback(() => {
+  function startSelectedNodes(): void {
     startNodesWithLaunchCheck(getSelectedNodes());
-  }, [getSelectedNodes, startNodesWithLaunchCheck]);
+  }
 
   /**
    * Start nodes from a list of itemIds
    */
-  const startNodesFromId = useCallback(
-    (itemIds) => {
-      const nodeList = getNodesFromIds(itemIds);
-      startNodesWithLaunchCheck(nodeList);
-    },
-    [getNodesFromIds, startNodesWithLaunchCheck]
-  );
+  function startNodesFromId(itemIds: string[]): void {
+    const nodeList = getNodesFromIds(itemIds);
+    startNodesWithLaunchCheck(nodeList);
+  }
 
   /** Stop node from queue and trigger the next one. */
-  const stopNodeQueued: (node: RosNode | undefined) => Promise<void> = async (node) => {
+  async function stopNodeQueued(node: RosNode | undefined): Promise<void> {
     if (node !== undefined) {
       logCtx.debug(`stop: ${node.name}`, "");
       const provider = rosCtx.getProviderById(node.providerId);
@@ -587,16 +577,12 @@ function HostTreeViewPanel() {
       }
     }
     return Promise.resolve();
-  };
+  }
 
   /**
    * Stop nodes given in the arguments
    */
-  const stopNodes: (nodes: RosNode[], onlyWithLaunch?: boolean, restart?: boolean) => void = (
-    nodes,
-    onlyWithLaunch = false,
-    restart = false
-  ) => {
+  function stopNodes(nodes: RosNode[], onlyWithLaunch?: boolean, restart?: boolean): void {
     const nodes2stop: RosNode[] = [];
     const skippedNodes: Map<string, string> = new Map();
     const nodeList = updateWithAssociations(nodes);
@@ -666,59 +652,41 @@ function HostTreeViewPanel() {
         startNodesWithLaunchCheck(nodeList, true);
       }
     }
-  };
+  }
 
   /**
    * Stop nodes in the selected list
    */
-  const stopSelectedNodes = useCallback(() => {
+  function stopSelectedNodes(): void {
     stopNodes(getSelectedNodes());
-  }, [getSelectedNodes, stopNodes]);
+  }
 
   /**
    * Stop nodes from a list of itemIds
    */
-  const stopNodesFromId = useCallback(
-    (itemIds) => {
-      const nodeList = getNodesFromIds(itemIds);
-      stopNodes(nodeList);
-    },
-    [getNodesFromIds, stopNodes]
-  );
+  function stopNodesFromId(itemIds: string[]): void {
+    const nodeList = getNodesFromIds(itemIds);
+    stopNodes(nodeList);
+  }
 
   /**
    * Restart nodes given in the arguments
    */
-  const restartNodes = useCallback(
-    (nodeList: RosNode[], onlyWithLaunch: boolean) => {
-      stopNodes(nodeList, onlyWithLaunch, true); // => true, for restart
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stopNodes]
-  );
+  function restartNodes(nodeList: RosNode[], onlyWithLaunch: boolean): void {
+    stopNodes(nodeList, onlyWithLaunch, true); // => true, for restart
+  }
 
   /**
    * Restart nodes in the selected list
    */
-  const restartSelectedNodes = useCallback(() => {
+  function restartSelectedNodes(): void {
     restartNodes(getSelectedNodes(), true);
-  }, [getSelectedNodes, restartNodes]);
-
-  /**
-   * Restart nodes from a list of itemIds
-   */
-  // const restartNodesFromId = useCallback(
-  //   (itemIds: string[]) => {
-  //     const nodeList = getNodesFromIds(itemIds);
-  //     restartNodes(nodeList, true);
-  //   },
-  //   [getNodesFromIds, restartNodes]
-  // );
+  }
 
   /**
    * Kill selected nodes using provider
    */
-  const killSelectedNodes = useCallback(() => {
+  function killSelectedNodes(): void {
     const nodes2kill: RosNode[] = [];
     getSelectedNodes().map(async (node) => {
       // we kill system nodes only when they are individually selected
@@ -739,10 +707,10 @@ function HostTreeViewPanel() {
         return { node, action: "KILL" };
       })
     );
-  }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
+  }
 
   /** Kill node in the queue and trigger the next one. */
-  const killNodeQueued = async (node: RosNode | undefined) => {
+  async function killNodeQueued(node: RosNode | undefined): Promise<void> {
     if (node !== undefined) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
@@ -757,12 +725,13 @@ function HostTreeViewPanel() {
         }
       }
     }
-  };
+    return Promise.resolve();
+  }
 
   /**
    * Unregister selected nodes using provider
    */
-  const unregisterSelectedNodes = useCallback(() => {
+  function unregisterSelectedNodes(): void {
     const nodes2unregister: RosNode[] = [];
     getSelectedNodes().map(async (node) => {
       // we unregister system nodes only when they are individually selected
@@ -785,10 +754,10 @@ function HostTreeViewPanel() {
         return { node, action: "UNREGISTER" };
       })
     );
-  }, [getSelectedNodes, navCtx.selectedNodes.length, queueItemsQueueMain, updateQueueMain]);
+  }
 
   /** Unregister node in the queue and trigger the next one. */
-  const unregisterNodeQueued = async (node: RosNode | undefined) => {
+  async function unregisterNodeQueued(node: RosNode | undefined): Promise<void> {
     if (node) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
@@ -803,29 +772,27 @@ function HostTreeViewPanel() {
         }
       }
     }
-  };
+    return Promise.resolve();
+  }
 
   /**
    * Start dynamic reconfigure GUI for selected nodes
    */
-  const startDynamicReconfigure = useCallback(
-    (service: string, masteruri: string) => {
-      if (
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
-          return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
-        })
-      ) {
-        // TODO: skippedNodes.set(service, 'already in queue');
-      } else {
-        updateQueueMain([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
-      }
-    },
-    [queueItemsQueueMain, updateQueueMain]
-  );
+  function startDynamicReconfigure(service: string, masteruri: string): void {
+    if (
+      queueItemsQueueMain &&
+      queueItemsQueueMain.find((elem) => {
+        return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
+      })
+    ) {
+      // TODO: skippedNodes.set(service, 'already in queue');
+    } else {
+      updateQueueMain([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
+    }
+  }
 
   /** start dynamic reconfigure in the queue and trigger the next one. */
-  const dynamicReconfigureQueued = async (service: string | undefined, masteruri: string | undefined) => {
+  async function dynamicReconfigureQueued(service: string | undefined, masteruri: string | undefined): Promise<void> {
     if (service) {
       // store result for message
       const result = await rosCtx.startDynamicReconfigureClient(service, masteruri || "");
@@ -835,68 +802,63 @@ function HostTreeViewPanel() {
         addStatusQueueMain("DYNAMIC_RECONFIGURE", service, true, `dynamic reconfigure started`);
       }
     }
-  };
+    return Promise.resolve();
+  }
 
   /**
    * Remove log files from ROS nodes using [rosclean purge] for a given provider
    */
-  const clearProviderLogs = useCallback(
-    async (providers: string[]) => {
-      // purge logs from host
-      if (providers) {
-        Promise.all(
-          providers.map(async (providerId: string) => {
-            const provider = rosCtx.getProviderById(providerId);
-            if (!provider || !provider.isAvailable()) return;
+  async function clearProviderLogs(providers: string[]): Promise<void> {
+    // purge logs from host
+    if (providers) {
+      Promise.all(
+        providers.map(async (providerId: string) => {
+          const provider = rosCtx.getProviderById(providerId);
+          if (!provider || !provider.isAvailable()) return;
 
-            const result: Result = await provider.rosCleanPurge();
+          const result: Result = await provider.rosCleanPurge();
 
-            if (result.result && result.message.indexOf("Purging ROS node logs.") === -1) {
-              // should not happen, probably error
-              logCtx.error("Could not delete logs", result.message);
-            } else {
-              logCtx.success("Logs removed successfully", "");
-            }
-          })
-        ).catch((error) => {
-          logCtx.error(`Could not clear logs for providers`, error);
-        });
-      }
-    },
-    [rosCtx, logCtx]
-  );
+          if (result.result && result.message.indexOf("Purging ROS node logs.") === -1) {
+            // should not happen, probably error
+            logCtx.error("Could not delete logs", result.message);
+          } else {
+            logCtx.success("Logs removed successfully", "");
+          }
+        })
+      ).catch((error) => {
+        logCtx.error(`Could not clear logs for providers`, error);
+      });
+    }
+  }
 
   /**
    * Delete log file of given nodes.
    */
-  const clearLogs = useCallback(
-    (nodes: RosNode[]) => {
-      const nodes2clear: RosNode[] = [];
-      nodes.map(async (node) => {
-        // we unregister system nodes only when they are individually selected
-        if (node.system_node && nodes.length > 1) return;
-        if (
-          queueItemsQueueMain &&
-          queueItemsQueueMain.find((elem) => {
-            return elem.action === "CLEAR_LOG" && elem.node?.name === node.name;
-          })
-        ) {
-          // TODO: skippedNodes.set(node.name, 'already in queue');
-        } else {
-          nodes2clear.push(node);
-        }
-      });
-      updateQueueMain(
-        nodes2clear.map((node) => {
-          return { node, action: "CLEAR_LOG" };
+  function clearLogs(nodes: RosNode[]): void {
+    const nodes2clear: RosNode[] = [];
+    nodes.map(async (node) => {
+      // we unregister system nodes only when they are individually selected
+      if (node.system_node && nodes.length > 1) return;
+      if (
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === "CLEAR_LOG" && elem.node?.name === node.name;
         })
-      );
-    },
-    [queueItemsQueueMain, updateQueueMain]
-  );
+      ) {
+        // TODO: skippedNodes.set(node.name, 'already in queue');
+      } else {
+        nodes2clear.push(node);
+      }
+    });
+    updateQueueMain(
+      nodes2clear.map((node) => {
+        return { node, action: "CLEAR_LOG" };
+      })
+    );
+  }
 
   /** Delete log file for node in the queue and trigger the next one. */
-  const clearNodeLogQueued = async (node: RosNode | undefined) => {
+  async function clearNodeLogQueued(node: RosNode | undefined): Promise<void> {
     if (node !== undefined) {
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
@@ -914,20 +876,20 @@ function HostTreeViewPanel() {
         }
       }
     }
-  };
+    return Promise.resolve();
+  }
 
-  const refreshAllProvider = useCallback(() => {
+  function refreshAllProvider(): void {
     rosCtx.providersConnected.forEach((p) => {
       p.updateRosNodes({});
       p.updateTimeDiff();
     });
-  }, [rosCtx.providersConnected]);
+  }
 
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
 
   useEffect(() => {
     refreshAllProvider();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosCtx.providersConnected]);
 
   useEffect(() => {
@@ -952,104 +914,79 @@ function HostTreeViewPanel() {
       );
       setNodesToStart(undefined);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodesToStart]);
 
-  const performQueueMain = useCallback(
-    async (index) => {
-      if (index < 0) return;
-      // get current item from queue.
-      // The index will be increased after the task was executed (by the callback).
-      const queueItem = getQueueMain();
-      if (queueItem) {
-        if (queueItem.action === "START") {
-          await startNodeQueued(queueItem.node);
-        } else if (queueItem.action === "STOP") {
-          await stopNodeQueued(queueItem.node);
-        } else if (queueItem.action === "UNREGISTER") {
-          await unregisterNodeQueued(queueItem.node);
-        } else if (queueItem.action === "KILL") {
-          await killNodeQueued(queueItem.node);
-        } else if (queueItem.action === "CLEAR_LOG") {
-          await clearNodeLogQueued(queueItem.node);
-        } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
-          await dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
-        } else {
-          console.log(`unknown item in the queue: ${JSON.stringify(queueItem)}`);
-        }
+  async function performQueueMain(index: number): Promise<void> {
+    if (index < 0) return Promise.resolve();
+    // get current item from queue.
+    // The index will be increased after the task was executed (by the callback).
+    const queueItem = getQueueMain();
+    if (queueItem) {
+      if (queueItem.action === "START") {
+        await startNodeQueued(queueItem.node);
+      } else if (queueItem.action === "STOP") {
+        await stopNodeQueued(queueItem.node);
+      } else if (queueItem.action === "UNREGISTER") {
+        await unregisterNodeQueued(queueItem.node);
+      } else if (queueItem.action === "KILL") {
+        await killNodeQueued(queueItem.node);
+      } else if (queueItem.action === "CLEAR_LOG") {
+        await clearNodeLogQueued(queueItem.node);
+      } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
+        await dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
       } else {
-        // queue is finished, print failed results
-        ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"].forEach((action) => {
-          const failed = failedQueueMain(action);
-          if (failed.length > 0) {
-            const infoDict = {};
-            failed.forEach((item) => {
-              infoDict[item.itemName] = item.message;
-            });
-            logCtx.warn(
-              `Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`,
-              JSON.stringify(infoDict),
-              true
-            );
-          }
-        });
-        // queue is finished, print success results
-        [
-          ["STOP", "stopped"],
-          ["START", "started"],
-          ["KILL", "killed"],
-          ["UNREGISTER", "unregistered"],
-          ["CLEAR_LOG", "logs cleared"],
-          ["DYNAMIC_RECONFIGURE", "dynamic reconfigure started"],
-        ].forEach((action) => {
-          const success = successQueueMain(action[0]);
-          if (success.length > 0) {
-            const infoDict = {};
-            success.forEach((item) => {
-              infoDict[item.itemName] = item.message;
-            });
-            logCtx.success(`${success.length} nodes ${action[1]}`, JSON.stringify(infoDict), true);
-          }
-        });
-        // clear queue and results
-        clearQueueMain();
+        console.log(`unknown item in the queue: ${JSON.stringify(queueItem)}`);
       }
-    },
-    [
-      queueItemsQueueMain,
-      indexQueueMain,
-      getQueueMain,
-      failedQueueMain,
-      successQueueMain,
-      startNodeQueued,
-      stopNodeQueued,
-      unregisterNodeQueued,
-      killNodeQueued,
-      clearNodeLogQueued,
-      dynamicReconfigureQueued,
-      logCtx,
-    ]
-  );
+    } else {
+      // queue is finished, print failed results
+      ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"].forEach((action) => {
+        const failed = failedQueueMain(action);
+        if (failed.length > 0) {
+          const infoDict = {};
+          failed.forEach((item) => {
+            infoDict[item.itemName] = item.message;
+          });
+          logCtx.warn(`Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`, JSON.stringify(infoDict), true);
+        }
+      });
+      // queue is finished, print success results
+      [
+        ["STOP", "stopped"],
+        ["START", "started"],
+        ["KILL", "killed"],
+        ["UNREGISTER", "unregistered"],
+        ["CLEAR_LOG", "logs cleared"],
+        ["DYNAMIC_RECONFIGURE", "dynamic reconfigure started"],
+      ].forEach((action) => {
+        const success = successQueueMain(action[0]);
+        if (success.length > 0) {
+          const infoDict = {};
+          success.forEach((item) => {
+            infoDict[item.itemName] = item.message;
+          });
+          logCtx.success(`${success.length} nodes ${action[1]}`, JSON.stringify(infoDict), true);
+        }
+      });
+      // clear queue and results
+      clearQueueMain();
+      return Promise.resolve();
+    }
+  }
 
   // update queue
   useEffect(() => {
     performQueueMain(indexQueueMain);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indexQueueMain]);
 
-  const showRemoteOnAllProvider = useCallback(
-    (state: boolean) => {
-      rosCtx.providersConnected.forEach((p) => {
-        p.showRemoteNodes = state;
-      });
-    },
-    [rosCtx.providersConnected]
-  );
+  function showRemoteOnAllProvider(state: boolean): void {
+    rosCtx.providersConnected.forEach((p) => {
+      p.showRemoteNodes = state;
+    });
+  }
 
   useEffect(() => {
     showRemoteOnAllProvider(showRemoteNodes);
     refreshAllProvider();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRemoteNodes]);
 
   const createButtonBox = useMemo(() => {
@@ -1312,7 +1249,7 @@ function HostTreeViewPanel() {
                             CmdType.SCREEN,
                             node.providerId,
                             node.name,
-                            undefined,
+                            "",
                             event.nativeEvent.shiftKey,
                             event.nativeEvent.ctrlKey
                           );
@@ -1364,7 +1301,7 @@ function HostTreeViewPanel() {
                         CmdType.LOG,
                         node.providerId,
                         node.name,
-                        undefined,
+                        "",
                         event.nativeEvent.shiftKey,
                         event.nativeEvent.ctrlKey
                       );
@@ -1470,7 +1407,6 @@ function HostTreeViewPanel() {
         )}
       </ButtonGroup>
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navCtx.selectedNodes, navCtx.selectedProviders]);
 
   return (
@@ -1768,7 +1704,3 @@ function HostTreeViewPanel() {
     </Box>
   );
 }
-
-HostTreeViewPanel.propTypes = {};
-
-export default HostTreeViewPanel;

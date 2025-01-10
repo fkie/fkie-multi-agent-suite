@@ -1,4 +1,3 @@
-/* eslint-disable max-classes-per-file */
 import { JSONObject, TResultData, TSystemInfo, TTag } from "@/types";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
@@ -46,9 +45,9 @@ import { EVENT_FILTER_NODES, eventFilterNodes } from "../pages/NodeManager/layou
 import { delay, generateUniqueId } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";
-import { ConnectionState } from "./ConnectionState";
+import ConnectionState from "./ConnectionState";
 import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
-import { RosProviderState } from "./RosProviderState";
+import RosProviderState from "./RosProviderState";
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
@@ -417,8 +416,6 @@ export default class Provider implements IProvider {
 
   /**
    * Initializes the ROS provider
-   *
-   * @return {Promise} True is a connection to a WAMP Router succeeded
    */
   public init: () => Promise<boolean> = () => {
     if (this.connection.connected()) return Promise.resolve(true);
@@ -430,7 +427,7 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Close the connection to the WAMP Router
+   * Close the connection to the websocket
    */
   public close: () => void = async () => {
     let closeError = "";
@@ -445,7 +442,7 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Reconnect the connection to the WAMP Router
+   * Reconnect the connection to the websocket
    */
   public reconnect: () => void = async () => {
     if (this.connection.connected()) return Promise.resolve(true);
@@ -457,8 +454,6 @@ export default class Provider implements IProvider {
 
   /**
    * Check if the provider is available
-   *
-   * @return {boolean} true is available
    */
   public isAvailable: () => boolean = () => {
     return this.connection.connected();
@@ -466,8 +461,6 @@ export default class Provider implements IProvider {
 
   /**
    * Check if the provider is ready
-   *
-   * @return {boolean} true is available
    */
   public isReady: () => boolean = () => {
     return this.daemon && this.discovery;
@@ -484,8 +477,6 @@ export default class Provider implements IProvider {
 
   /**
    * Request a list of available providers using uri URI.ROS_PROVIDER_GET_LIST
-   *
-   * @return {Provider} Empty
    */
   public updateProviderList: () => Promise<boolean> = async () => {
     const rosProviders: RosProviderState[] = await this.makeCall(URI.ROS_PROVIDER_GET_LIST, [], true).then(
@@ -616,8 +607,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get daemon version.
-   *
-   * @return {Promise<DaemonVersion>}
    */
   public getDaemonVersion: () => Promise<DaemonVersion> = async () => {
     let error: string = "";
@@ -642,9 +631,7 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Get system info from provider using the WAMP uri 'ros.provider.get_system_info'
-   *
-   * @return {Promise<any>}
+   * Get system info from provider using the websocket uri 'ros.provider.get_system_info'
    */
   public getProviderSystemInfo: () => Promise<object> = async () => {
     const systemInfo = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_INFO, [], true).then((value: TResultData) => {
@@ -660,8 +647,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get system environment from provider.
-   *
-   * @return {Promise<any>}
    */
   public getProviderSystemEnv: () => Promise<object> = async () => {
     const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: TResultData) => {
@@ -675,7 +660,7 @@ export default class Provider implements IProvider {
     return Promise.resolve(systemEnv);
   };
 
-  private calcTimeDiff(startTs: number, endTs: number, remoteTs: number) {
+  private calcTimeDiff: (startTs: number, endTs: number, remoteTs: number) => number = (startTs, endTs, remoteTs) => {
     // try to remove JavaScript andNetwork delay
     const diffStartEnd = endTs - startTs;
     const diffToStart = remoteTs - startTs;
@@ -685,10 +670,10 @@ export default class Provider implements IProvider {
       result *= -1.0;
     }
     return result;
-  }
+  };
 
   /**
-   * Updates the time difference in milliseconds to the provider using the WAMP uri URI.ROS_PROVIDER_GET_TIMESTAMP
+   * Updates the time difference in milliseconds to the provider using the websocket uri URI.ROS_PROVIDER_GET_TIMESTAMP
    * Emit event on successful update.
    */
   public updateTimeDiff: () => Promise<boolean> = async () => {
@@ -723,8 +708,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get list of available nodes using the uri URI.ROS_NODES_GET_LIST
-   *
-   * @return {Promise<RosNode[]>} Returns a list of ROS nodes
    */
   public getNodeList: () => Promise<RosNode[]> = async () => {
     interface IRosNode {
@@ -972,8 +955,6 @@ export default class Provider implements IProvider {
 
   /**
    * Clear the path of log files for given nodes
-   *
-   * @return {Promise<Result>} Returns a list of [PathItem] elements
    */
   public rosCleanPurge: () => Promise<Result> = async () => {
     const result = await this.makeCall(URI.ROS_PROVIDER_ROS_CLEAN_PURGE, [], true).then((value: TResultData) => {
@@ -991,8 +972,6 @@ export default class Provider implements IProvider {
 
   /**
    * Terminate all running subprocesses (ROS, TTYD) of the provider
-   *
-   * @return {Promise<Result>}
    */
   public shutdown: () => Promise<Result> = async () => {
     const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [], true).then((value: TResultData) => {
@@ -1012,9 +991,6 @@ export default class Provider implements IProvider {
 
   /**
    * Load a new launch file into launch servicer
-   *
-   * @param {LaunchLoadRequest} request - Launch request
-   * @return {Promise<LaunchLoadReply>} Returns a LaunchLoadReply
    */
   public launchLoadFile: (request: LaunchLoadRequest, reload: boolean) => Promise<LaunchLoadReply | null> = async (
     request,
@@ -1048,9 +1024,6 @@ export default class Provider implements IProvider {
 
   /**
    * Unload a launch file from the launch servicer
-   *
-   * @param {LaunchFile} request - Launch file to be removed
-   * @return {Promise<LaunchLoadReply>} Returns a LaunchLoadReply
    */
   public launchUnloadFile: (request: LaunchFile) => Promise<LaunchLoadReply | null> = async (request) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true).then((value: TResultData) => {
@@ -1065,6 +1038,7 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
+  /** Update the screens of the node and create a new node it not exists */
   public applyScreens: (screens: ScreensMapping[] | null, rosNodes: RosNode[]) => void = (screens = null, rosNodes) => {
     this.screens = screens ? screens : [];
     let nodesUpdated: boolean = false;
@@ -1173,8 +1147,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get the list of nodes loaded in launch files. update launch files into provider object
-   *
-   * @return {Promise<LaunchContent>} Returns a list of LaunchContent elements
    */
   public updateLaunchContent: () => Promise<boolean> = async () => {
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true).then((value: TResultData) => {
@@ -1385,9 +1357,6 @@ export default class Provider implements IProvider {
 
   /**
    * Returns all included files in given launch file.
-   *
-   * @param {LaunchIncludedFilesRequest} request - Launch file to be requested
-   * @return {Promise<LogPathItem>} Returns a list of [PathItem] elements
    */
   public launchGetIncludedFiles: (request: LaunchIncludedFilesRequest) => Promise<LaunchIncludedFile[] | null> = async (
     request
@@ -1442,9 +1411,6 @@ export default class Provider implements IProvider {
 
   /**
    * Returns a messages struct for given message type.
-   *
-   * @param {string} request - Topic type to be requested
-   * @return {Promise<LaunchMessageStruct>} Returns a message struct
    */
   public getMessageStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_MSG_STRUCT, [request], true).then((value: TResultData) => {
@@ -1465,9 +1431,6 @@ export default class Provider implements IProvider {
 
   /**
    * Returns a messages struct for given service type.
-   *
-   * @param {string} request - Service type to be requested
-   * @return {Promise<LaunchMessageStruct>} Returns a message struct
    */
   public getServiceStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_SRV_STRUCT, [request], true).then((value: TResultData) => {
@@ -1488,9 +1451,6 @@ export default class Provider implements IProvider {
 
   /**
    * Start Publisher
-   *
-   * @param {LaunchPublishMessage} request - Launch request
-   * @return {Promise<Boolean>} Returns true if success
    */
   public publishMessage: (request: LaunchPublishMessage) => Promise<boolean> = async (request) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_PUBLISH_MESSAGE, [request], true).then((value: TResultData) => {
@@ -1505,9 +1465,6 @@ export default class Provider implements IProvider {
 
   /**
    * Call Service
-   *
-   * @param {LaunchCallService} request - Launch request
-   * @return {Promise<LaunchMessageStruct | null>} Returns true if success
    */
   public callService: (request: LaunchCallService) => Promise<LaunchMessageStruct | null> = async (request) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_CALL_SERVICE, [request], true).then((value: TResultData) => {
@@ -1557,9 +1514,6 @@ export default class Provider implements IProvider {
 
   /**
    * Start subscriber node for given topic
-   *
-   * @param {SubscriberNode} subscriber - Launch request
-   * @return {Promise<boolean>} Returns true if success
    */
   public startSubscriber: (request: SubscriberNode) => Promise<boolean> = async (request) => {
     const hasEcho = this.echoTopics.includes(request.topic);
@@ -1588,9 +1542,6 @@ export default class Provider implements IProvider {
 
   /**
    * Stop subscriber node for given topic
-   *
-   * @param {string} topic - topic name
-   * @return {Promise<Result>} Returns true if success
    */
   public stopSubscriber: (topic: string) => Promise<Result> = async (topic) => {
     const hasTopic = this.echoTopics.includes(topic);
@@ -1737,9 +1688,6 @@ export default class Provider implements IProvider {
 
   /**
    * Stop a node given a name
-   *
-   * @param {string} id - Unique ID of the node to be stopped
-   * @return {Promise<Result>} Returns a result
    */
   public stopNode: (id: string) => Promise<Result> = async (id) => {
     const result = await this.makeCall(URI.ROS_NODES_STOP_NODE, [id], false).then((value: TResultData) => {
@@ -1761,9 +1709,6 @@ export default class Provider implements IProvider {
 
   /**
    * Kill a node given a name
-   *
-   * @param name - Node to be killed
-   * @return Returns a result
    */
   public screenKillNode: (name: string, signal?: string) => Promise<Result> = async (name, signal) => {
     const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name, signal], true).then((value: TResultData) => {
@@ -1786,8 +1731,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get list of available screens 'ros.screen.get_list'
-   *
-   * @return {Promise<ScreensMapping[]>} Returns a list of screens
    */
   private getScreenList: () => Promise<ScreensMapping[] | null> = async () => {
     const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true).then((value: TResultData) => {
@@ -1807,8 +1750,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get list of diagnostics
-   *
-   * @return {Promise<DiagnosticArray>}
    */
   private getDiagnostics: () => Promise<DiagnosticArray | null> = async () => {
     const result = await this.makeCall(URI.ROS_PROVIDER_GET_DIAGNOSTICS, [], true).then((value: TResultData) => {
@@ -1823,8 +1764,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get list of warnings
-   *
-   * @return {Promise<SystemWarningGroup[]>}
    */
   private updateSystemWarnings: () => Promise<SystemWarningGroup[] | null> = async () => {
     const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: TResultData) => {
@@ -1841,9 +1780,6 @@ export default class Provider implements IProvider {
 
   /**
    * Return a list with loggers for given node
-   *
-   * @param {string} node - Node name
-   * @return {Promise<LoggerConfig[]>} Returns a result
    */
   public getNodeLoggers: (node: string) => Promise<LoggerConfig[]> = async (node) => {
     const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node], true).then((value: TResultData) => {
@@ -1863,10 +1799,6 @@ export default class Provider implements IProvider {
 
   /**
    * Set new logger levels for a ros node
-   *
-   * @param {string} node - Node name
-   * @param {LoggerConfig[]} loggers - Node name
-   * @return {Promise<Result>} Returns a result
    */
   public setNodeLoggers: (node: string, loggers: LoggerConfig[]) => Promise<Result> = async (node, loggers) => {
     const result = await this.makeCall(URI.ROS_NODES_SET_LOGGER_LEVEL, [node, loggers], true).then(
@@ -1883,9 +1815,6 @@ export default class Provider implements IProvider {
 
   /**
    * Unregister a node given a name
-   *
-   * @param {string} name - Node to be stopped
-   * @return {Promise<Result>} Returns a result
    */
   public unregisterNode: (name: string) => Promise<Result> = async (name) => {
     const result = await this.makeCall(URI.ROS_NODES_UNREGISTER, [name], true).then((value: TResultData) => {
@@ -1908,8 +1837,6 @@ export default class Provider implements IProvider {
 
   /**
    * Return a list with all registered parameters values and types
-   *
-   * @return {Promise<Result>} Returns a result
    */
   public getParameterList: () => Promise<RosParameter[]> = async () => {
     const result = await this.makeCall("ros.parameters.get_list", [], true).then((value: TResultData) => {
@@ -1929,9 +1856,6 @@ export default class Provider implements IProvider {
 
   /**
    * Return a list with all registered parameters values and types for a list of nodes
-   *
-   * @param {string[]} nodes - List of node names
-   * @return {Promise<Result>} Returns a result
    */
   public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> = async (nodes) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], false).then(
@@ -1953,9 +1877,6 @@ export default class Provider implements IProvider {
 
   /**
    * Set the value of a parameter
-   *
-   * @param {RosParameter} parameter
-   * @return {Promise<Boolean>} Returns true if success
    */
   public setParameter: (parameter: RosParameter) => Promise<boolean> = async (parameter) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_SET_PARAMETER, [parameter], true).then(
@@ -1973,9 +1894,6 @@ export default class Provider implements IProvider {
 
   /**
    * Check if a parameter exists
-   *
-   * @param {string} parameterName
-   * @return {Promise<Boolean>} Returns true if success
    */
   public hasParameter: (parameterName: string) => Promise<boolean> = async (parameterName) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_HAS_PARAMETER, [parameterName], true).then(
@@ -1992,9 +1910,6 @@ export default class Provider implements IProvider {
 
   /**
    * Delete a list of parameters
-   *
-   * @param {string[]} parameters list of parameters to be deleted
-   * @return {Promise<Boolean>} Returns true if success
    */
   public deleteParameters: (parameters: string[]) => Promise<boolean> = async (parameters) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_DELETE_PARAMETERS, [parameters], true).then(
@@ -2148,10 +2063,6 @@ export default class Provider implements IProvider {
     });
     this.rosNodes = nl;
     this.sameIdDict = sameIdDict;
-    // emitCustomEvent(
-    //   EVENT_PROVIDER_ROS_NODES,
-    //   new EventProviderRosNodes(this, nl),
-    // );
     this.updateLaunchContent();
     this.unlockRequest("updateRosNodes");
   };
@@ -2237,10 +2148,6 @@ export default class Provider implements IProvider {
 
   /**
    * Execute a call considering [callAttempts] and [delayCallAttempts]
-   *
-   * @param {string} uri URI to be called
-   * @param {unknown[]} args call arguments
-   * @return {Promise<JSONObject>} Return promise of the call
    */
   private makeCall: (uri: string, args: unknown[], lockRequest: boolean) => Promise<TResultData> = async (
     uri,
@@ -2324,7 +2231,7 @@ export default class Provider implements IProvider {
     emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));
   };
 
-  private onOpenConnection = () => {
+  private onOpenConnection: () => void = () => {
     // connected state is set after all remote connections are registered
     this.daemon = false;
     this.discovery = false;
@@ -2353,7 +2260,7 @@ export default class Provider implements IProvider {
   /*
   Remove lock for a given [request]
   */
-  private unlockRequest = (request: string) => {
+  private unlockRequest: (request: string) => void = (request) => {
     this.currentRequestList.delete(request);
     if (this.currentRequestList.size === 0) {
       emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));

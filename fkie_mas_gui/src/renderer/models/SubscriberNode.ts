@@ -5,7 +5,7 @@ import SubscriberFilter from "./SubscriberFilter";
 /**
  * SubscriberNode creates a subscriber node which subscribes a given topic.
  */
-class SubscriberNode {
+export default class SubscriberNode {
   /**
    * Name of the ROS topic to listen to (e.g. '/chatter').
    */
@@ -36,16 +36,6 @@ class SubscriberNode {
    */
   qos: RosQos;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} topic - Name of the ROS topic to listen to (e.g. '/chatter').
-   * @param {string} message_type - Type of the ROS message (e.g. 'std_msgs/msg/String')
-   * @param {boolean} tcp_no_delay - use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1)
-   * @param {boolean} use_sim_time - Enable ROS simulation time (Only ROS2)
-   * @param {SubscriberFilter} filter - Filter
-   * @param {RosQos} qos - Quality of service subscription options (Only ROS2).
-   */
   constructor(
     topic: string,
     message_type: string,
@@ -61,15 +51,4 @@ class SubscriberNode {
     this.filter = filter;
     this.qos = qos;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.topic}`;
-  };
 }
-
-export default SubscriberNode;

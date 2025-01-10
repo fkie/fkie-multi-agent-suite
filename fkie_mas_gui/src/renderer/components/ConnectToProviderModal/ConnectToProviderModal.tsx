@@ -106,20 +106,19 @@ const DEFAULT_PARAMETER: ProviderLaunchConfiguration = new ProviderLaunchConfigu
 
 /**
  * Simple is object check.
- * @param item
- * @returns {boolean}
  */
-function isObject(item) {
+function isObject(item: object | unknown[] | undefined): boolean | undefined {
   return item && typeof item === "object" && !Array.isArray(item);
 }
 
 /**
  * Deep merge modifier into org and returns new object
- * @param org
- * @param modifier
  */
-function mergeDeepConfig(org: ProviderLaunchConfiguration, modifier: ProviderLaunchConfiguration) {
-  const result = {};
+function mergeDeepConfig(
+  org: ProviderLaunchConfiguration,
+  modifier: ProviderLaunchConfiguration
+): ProviderLaunchConfiguration {
+  const result: ProviderLaunchConfiguration = {} as ProviderLaunchConfiguration;
   if (isObject(org)) {
     for (const key in org) {
       if (isObject(org[key])) {
@@ -148,7 +147,7 @@ interface ConnectToProviderModalProps {
 
 const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModalProps>(
   function ConnectToProviderModal(props, ref) {
-    const { onCloseDialog = () => {} } = props;
+    const { onCloseDialog = (): void => {} } = props;
 
     const rosCtx = useContext(RosContext);
     const settingsCtx = useContext(SettingsContext);
@@ -199,13 +198,13 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     const [startProviderDescription, setStartProviderDescription] = useState("");
     const [startProviderIsSubmitting, setStartProviderIsSubmitting] = useState(false);
 
-    const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+    function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
       if (reason && reason === "backdropClick") return;
       setOpen(false);
       setOpenTerminalTooltip(false);
       onCloseDialog();
       // setStartProviderIsSubmitting(false);
-    };
+    }
 
     useEffect(() => {
       if (!rosCtx.systemInfo) return;
@@ -232,7 +231,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       setHostValues([{ host: "localhost" }]);
     }, [rosCtx.systemInfo]);
 
-    const updateTopics = () => {
+    function updateTopics(): void {
       // trigger add new provider
       const newAcTsSet = new Set<string>();
       const newAcTopicSet = new Set<string>();
@@ -258,7 +257,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       });
       setTSList(Array.from(newAcTsSet));
       setTopicList(Array.from(newAcTopicSet));
-    };
+    }
 
     useEffect(() => {
       updateTopics();
@@ -271,40 +270,40 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       updateTopics();
     });
 
-    const host2string: (host: string | THostIp) => string = (host) => {
+    function host2string(host: string | THostIp): string {
       if (Object.keys(host).includes("host")) {
         return `${(host as THostIp).host}`;
       } else {
         return host as string;
       }
-    };
+    }
 
-    const host2label: (host: string | THostIp) => string = (host) => {
+    function host2label(host: string | THostIp): string {
       if (Object.keys(host).includes("host")) {
         const ho: THostIp = host as THostIp;
         return `${ho.host}${ho.ip ? ` [${ho.ip}]` : ""}`;
       } else {
         return host as string;
       }
-    };
+    }
 
-    const host2host: (host: string | THostIp) => THostIp = (host) => {
+    function host2host(host: string | THostIp): THostIp {
       if (Object.keys(host).includes("host")) {
         return host as THostIp;
       } else {
         return { host: host } as THostIp;
       }
-    };
+    }
 
-    const getHosts = () => {
+    function getHosts(): string[] {
       const hosts: string[] = hostValues.map((h: THostIp) => h.host);
       if (hostInputValue !== "" && !hosts.includes(hostInputValue)) {
         hosts.push(hostInputValue);
       }
       return hosts;
-    };
+    }
 
-    const getRobotHosts = () => {
+    function getRobotHosts(): string[] {
       const robotHosts: string[] = [];
       startParameter.discovery.robotHosts?.forEach((h: string) => {
         robotHosts.push(h);
@@ -312,62 +311,62 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       // add temporal values to the list as well
       if (robotHostInputValue.length > 0) robotHosts.push(robotHostInputValue);
       return robotHosts;
-    };
+    }
 
-    const updateStartParameter = () => {
+    function updateStartParameter(): void {
       setStartParameter(JSON.parse(JSON.stringify(startParameter)));
-    };
+    }
 
     const setRosVersion = useCallback(
-      (rosVersion: string) => {
+      function (rosVersion: string): void {
         startParameter.rosVersion = rosVersion;
         updateStartParameter();
       },
       [startParameter]
     );
 
-    const setMasterUri = (masterUri: string) => {
+    function setMasterUri(masterUri: string): void {
       startParameter.ros1MasterUri.uri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
       updateStartParameter();
-    };
+    }
 
-    const setNetworkId = (networkId: number) => {
+    function setNetworkId(networkId: number): void {
       startParameter.networkId = networkId;
       setOptionNetworkId(networkId);
       updateStartParameter();
-    };
+    }
 
-    const setHeartbeatHz = (hz: number) => {
+    function setHeartbeatHz(hz: number): void {
       startParameter.discovery.heartbeatHz = hz;
       updateStartParameter();
-    };
+    }
 
-    const setRobotHostValues = (robotHosts: string[]) => {
+    function setRobotHostValues(robotHosts: string[]): void {
       startParameter.discovery.robotHosts = robotHosts;
       updateStartParameter();
-    };
+    }
 
-    const setDoNotSync = (doNotSync: string[]) => {
+    function setDoNotSync(doNotSync: string[]): void {
       startParameter.sync.doNotSync = doNotSync;
       updateStartParameter();
-    };
+    }
 
-    const setSyncTopics = (syncTopics: string[]) => {
+    function setSyncTopics(syncTopics: string[]): void {
       startParameter.sync.syncTopics = syncTopics;
       updateStartParameter();
-    };
+    }
 
-    const setTerminalPath = (path: string) => {
+    function setTerminalPath(path: string): void {
       startParameter.terminal.path = path;
       updateStartParameter();
-    };
+    }
 
-    const setTerminalPort = (port: number) => {
+    function setTerminalPort(port: number): void {
       startParameter.terminal.port = port;
       updateStartParameter();
-    };
+    }
 
-    const stringifyStartConfig = (cfg: TSavedStartConfiguration) => {
+    function stringifyStartConfig(cfg: TSavedStartConfiguration): string {
       let result = `${cfg.hosts.map((item) => host2label(item)).join()}; ros${cfg.params.rosVersion}`;
       if (cfg.params.rosVersion === "1") {
         result = `${result}; network id: ${cfg.params.networkId}`;
@@ -385,9 +384,9 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         result = `${result}; ttyd port: ${cfg.params.terminal.port}`;
       }
       return result;
-    };
+    }
 
-    const createLaunchConfigFor = (host: string) => {
+    function createLaunchConfigFor(host: string): ProviderLaunchConfiguration {
       const launchCfg = new ProviderLaunchConfiguration(host, startParameter.rosVersion);
       launchCfg.daemon.enable = startParameter.daemon.enable;
       launchCfg.discovery.enable = startParameter.discovery.enable;
@@ -410,9 +409,9 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         launchCfg.ros1MasterUri.uri = startParameter.ros1MasterUri.uri.replace("{HOST}", host);
       }
       return launchCfg;
-    };
+    }
 
-    const createCommandsFor = (launchCfg) => {
+    function createCommandsFor(launchCfg: ProviderLaunchConfiguration): string[] {
       const commands: string[] = [];
       if (launchCfg.daemon.enable) {
         commands.push(launchCfg.daemonStartCmd().message);
@@ -427,9 +426,9 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         commands.push(launchCfg.terminalStartCmd().message);
       }
       return commands;
-    };
+    }
 
-    const handleStartProvider = async () => {
+    async function handleStartProvider(): Promise<void> {
       setStartProviderDescription("Starting nodes on selected hosts");
       setStartProviderIsSubmitting(true);
 
@@ -478,9 +477,10 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         setStartProviderIsSubmitting(false);
         setStartProviderDescription("");
       }, 500);
-    };
+      return Promise.resolve();
+    }
 
-    const handleJoinProvider = async () => {
+    async function handleJoinProvider(): Promise<void> {
       setStartProviderIsSubmitting(true);
       const hosts: THostIp[] = hostValues;
       if (
@@ -536,7 +536,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         setStartProviderIsSubmitting(false);
         setStartProviderDescription("");
       }, 500);
-    };
+      return Promise.resolve();
+    }
 
     useEffect(() => {
       // use system ros version
@@ -544,7 +545,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         setRosVersion(rosCtx.rosInfo?.version);
       }
       // do not include to dependency (loop!): setRosVersion
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rosCtx.rosInfo]);
 
     const generateHistoryView = useMemo(() => {

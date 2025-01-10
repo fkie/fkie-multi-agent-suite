@@ -10,22 +10,22 @@ interface ConfirmModalProps {
 }
 
 const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function ConfirmModal(props, ref) {
-  const { title, message, onConfirmCallback = () => {}, onCancelCallback = () => {} } = props;
+  const { title, message, onConfirmCallback = (): void => {}, onCancelCallback = (): void => {} } = props;
 
   const [open, setOpen] = useState(true);
 
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     // if (reason && reason === 'backdropClick') return;
     setOpen(false);
     if (reason !== "confirmed" && onCancelCallback) {
       onCancelCallback();
     }
-  };
+  }
 
-  const onConfirm = () => {
+  function onConfirm(): void {
     onConfirmCallback();
     handleClose("confirmed");
-  };
+  }
 
   const dialogRef = useRef(ref);
 

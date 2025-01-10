@@ -5,17 +5,17 @@ import { generateUniqueId } from "../utils";
  *
  * @param {string} path - File path
  */
-const getFileName = (path: string) => {
+export function getFileName(path: string): string {
   if (!path) return path;
   return path.replace(/^.*[\\/]/, "");
-};
+}
 
 /**
  * Return the filename without extension from a given path
  *
  * @param {string} path - File path
  */
-const getBaseName = (path: string) => {
+export function getBaseName(path: string): string {
   const fileName = getFileName(path);
   if (fileName) {
     const base = fileName
@@ -27,14 +27,14 @@ const getBaseName = (path: string) => {
     }
   }
   return fileName;
-};
+}
 
 /**
  * Return the first and last letter of the file base name
  *
  * @param {string} path - File path
  */
-const getFileAbb = (path: string) => {
+export function getFileAbb(path: string): string {
   if (!path) return path;
   const baseSplits = path.replace(/^.*[\\/]/, "").split(".");
   let base = baseSplits.shift();
@@ -43,21 +43,21 @@ const getFileAbb = (path: string) => {
     return `${base[0]}${base[base.length - 1]}`;
   }
   return path;
-};
+}
 
 /**
  * Return the file extension from a given path
  *
  * @param {string} path - File path
  */
-const getFileExtension = (path: string) => {
+export function getFileExtension(path: string): string {
   return `${path.split(".").pop()}`;
-};
+}
 
 /**
  * FileItem models arguments for remote files.
  */
-class FileItem {
+export default class FileItem {
   /**
    * unique ID for file
    */
@@ -104,12 +104,12 @@ class FileItem {
   /**
    * Class Constructor
    *
-   * @param {string} host - IP of the host machine.
-   * @param {string} path - file path.
-   * @param {string} extension - file extension.
-   * @param {string} language - file type.
-   * @param {string} value - file content.
-   * @param {number} mTime - Date of last modification of the file.
+   * @param host - IP of the host machine.
+   * @param path - file path.
+   * @param extension - file extension.
+   * @param language - file type.
+   * @param value - file content.
+   * @param mTime - Date of last modification of the file.
    */
   constructor(
     host: string,
@@ -129,8 +129,6 @@ class FileItem {
     this.mTime = mTime;
   }
 }
-
-export default FileItem;
 
 // languages that have rich IntelliSense and validation
 //   TypeScript
@@ -164,7 +162,7 @@ export default FileItem;
 //   R
 //   Objective-C
 
-const FileLanguageAssociations: Record<string, string> = {
+export const FileLanguageAssociations: Record<string, string> = {
   xml: "xml",
   world: "xml",
   launch: "xml",
@@ -195,5 +193,3 @@ const FileLanguageAssociations: Record<string, string> = {
   sh: "shell",
   sql: "sql",
 };
-
-export { FileItem, FileLanguageAssociations, getBaseName, getFileAbb, getFileExtension, getFileName };

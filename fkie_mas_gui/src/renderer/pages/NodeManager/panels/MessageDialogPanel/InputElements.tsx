@@ -73,13 +73,13 @@ interface InputElementsProps {
   onCopyToClipboard?: () => void;
 }
 
-function InputElements(props: InputElementsProps) {
+export default function InputElements(props: InputElementsProps): JSX.Element {
   const {
     messageStruct,
     parentName = "undefined",
     filterText = "",
     expanded = true,
-    onCopyToClipboard = () => {},
+    onCopyToClipboard = (): void => {},
   } = props;
 
   const [arrayCount, setArrayCount] = useState<number>(0);
@@ -94,25 +94,31 @@ function InputElements(props: InputElementsProps) {
     }
   }, [messageStruct.value]);
 
-  const addArrayElement = useCallback(() => {
-    if (!messageStruct.value) {
-      messageStruct.value = [];
-    }
-    if (Array.isArray(messageStruct.value)) {
-      messageStruct.value.push(JSON.parse(JSON.stringify(messageStruct.def)));
-    } else {
-      console.log(`add errror`);
-      console.error(`can't add array element, it is set to ${messageStruct.value}`);
-    }
-  }, [messageStruct]);
+  const addArrayElement = useCallback(
+    function (): void {
+      if (!messageStruct.value) {
+        messageStruct.value = [];
+      }
+      if (Array.isArray(messageStruct.value)) {
+        messageStruct.value.push(JSON.parse(JSON.stringify(messageStruct.def)));
+      } else {
+        console.log(`add errror`);
+        console.error(`can't add array element, it is set to ${messageStruct.value}`);
+      }
+    },
+    [messageStruct]
+  );
 
-  const removeArrayElement = useCallback(() => {
-    if (Array.isArray(messageStruct.value)) {
-      messageStruct.value.pop();
-    } else {
-      console.error(`can't remove array element, it is set to ${messageStruct.value}`);
-    }
-  }, [messageStruct.value]);
+  const removeArrayElement = useCallback(
+    function (): void {
+      if (Array.isArray(messageStruct.value)) {
+        messageStruct.value.pop();
+      } else {
+        console.error(`can't remove array element, it is set to ${messageStruct.value}`);
+      }
+    },
+    [messageStruct.value]
+  );
 
   // component visibility based on filter input text
   const [isVisible, setVisible] = useState("");
@@ -134,7 +140,7 @@ function InputElements(props: InputElementsProps) {
   });
 
   if (messageStruct === undefined || messageStruct === null) {
-    return [];
+    return <></>;
   }
 
   if (messageStruct.def === undefined) {
@@ -167,7 +173,7 @@ function InputElements(props: InputElementsProps) {
     });
   }
   // create input mask for an element of the array
-  function createListEntry(element, index) {
+  function createListEntry(element, index: number): JSX.Element {
     return (
       <Stack direction="column" spacing={1} key={`liststack-${messageStruct.name}-${index}`}>
         <Divider textAlign="left">{`${messageStruct.name}[${index}]`}</Divider>
@@ -320,5 +326,3 @@ function InputElements(props: InputElementsProps) {
     </Alert>
   );
 }
-
-export default InputElements;

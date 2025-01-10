@@ -23,7 +23,7 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { ISettingsParam, SettingsContext } from "../../context/SettingsContext";
 import SearchBar from "../UI/SearchBar";
 
@@ -73,21 +73,21 @@ export interface IGroupEntry {
   forceExpanded: boolean;
 }
 
-export default function GuiPanel() {
+export default function GuiPanel(): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const [grouped, setGrouped] = useState<IGroupEntry[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [filter, setFilter] = useState("");
 
-  const handleChange = (panel: string) => () => {
+  function handleChange(panel: string): void {
     if (expanded.includes(panel)) {
       setExpanded(expanded.filter((item) => panel !== item));
     } else {
       setExpanded((prev) => [...prev, panel]);
     }
-  };
+  }
 
-  const createGroups = useCallback(() => {
+  function createGroups(): void {
     const groupedDict: { [group: string]: { name: string; param: ISettingsParam }[] } = {};
     settingsCtx.getParamList().forEach(({ name, param }) => {
       if (filter.length <= 1 || name.toLocaleLowerCase().includes(filter)) {
@@ -103,7 +103,7 @@ export default function GuiPanel() {
       newGrouped.push({ group: key, params: groupedDict[key], forceExpanded: filter.length > 1 });
     });
     setGrouped(newGrouped);
-  }, [grouped, setGrouped, filter, settingsCtx]);
+  }
 
   useEffect(() => {
     createGroups();
@@ -123,7 +123,7 @@ export default function GuiPanel() {
               <Accordion
                 key={`${group}-accordion`}
                 expanded={expanded.includes(group) || (forceExpanded && filter.length > 1)}
-                onChange={handleChange(group)}
+                onChange={() => handleChange(group)}
               >
                 <AccordionSummary aria-controls={`${group}-content`} id={`${group}-header`}>
                   <Typography style={{ fontWeight: "inherit" }}>{group}</Typography>

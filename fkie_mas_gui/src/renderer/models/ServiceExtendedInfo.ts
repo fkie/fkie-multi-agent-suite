@@ -25,10 +25,10 @@ export default class ServiceExtendedInfo {
     this.providerName = providerName;
   }
 
-  addProvider(nodeName: string, nodeId: string) {
+  public addProvider(nodeName: string, nodeId: string): void {
     this.nodeProviders.push({ nodeName, nodeId });
   }
-  addRequester(nodeName: string, nodeId: string) {
+  public addRequester(nodeName: string, nodeId: string): void {
     this.nodeRequester.push({ nodeName, nodeId });
   }
 }

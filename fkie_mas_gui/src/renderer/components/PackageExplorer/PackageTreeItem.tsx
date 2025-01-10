@@ -16,7 +16,15 @@ interface PackageTreeItemProps {
 }
 
 const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(function PackageTreeItem(props, ref) {
-  const { itemId, packageName, path, exists = true, onClick = () => {}, onDoubleClick = () => {}, ...children } = props;
+  const {
+    itemId,
+    packageName,
+    path,
+    exists = true,
+    onClick = (): void => {},
+    onDoubleClick = (): void => {},
+    ...children
+  } = props;
 
   const iconColor: string = exists ? blue[700] : red[700];
   const enableCopy: boolean = false;

@@ -5,14 +5,16 @@ import { SettingsContext } from "../../context/SettingsContext";
 import DraggablePaper from "../UI/DraggablePaper";
 import About from "./About";
 
-function AboutModal() {
+export default function AboutModal(): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleOpen(): void {
+    setOpen(true);
+  }
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
-  };
+  }
 
   const dialogRef = useRef(null);
 
@@ -69,5 +71,3 @@ function AboutModal() {
     </div>
   );
 }
-
-export default AboutModal;

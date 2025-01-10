@@ -136,7 +136,6 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceName, providerId, rosCtx.mapProviderRosNodes, rosCtx]);
 
   // debounced filter callback
@@ -153,7 +152,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     );
   }, 300);
 
-  const handleCallService = async () => {
+  async function handleCallService(): Promise<void> {
     setResultError("");
     setResultMessage(undefined);
     setCallServiceDescription("Calling service...");
@@ -194,7 +193,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
       setCallServiceIsSubmitting(false);
       setCallServiceDescription("");
     }
-  };
+  }
 
   useEffect(() => {
     if (!timeoutObj) return;
@@ -224,23 +223,20 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     if (serviceStruct.def.length === 0) {
       handleCallService();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceStruct]);
 
   // Get topic struct when mounting the component
   useEffect(() => {
     getServiceStructData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceName]);
 
   // Update the visible state of input fields on a filter change
   useEffect(() => {
     onUpdateInputElements(searchTerm);
-    // eslint-disable-next-line
   }, [searchTerm]);
 
   // create input mask for an element of the array
-  function createHistoryButton(index) {
+  function createHistoryButton(index): JSX.Element {
     return (
       <Button
         key={`history-button-${index}`}
@@ -256,19 +252,22 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     );
   }
 
-  const getHostStyle = () => {
-    const providerName = provider?.name();
-    if (providerName && settingsCtx.get("colorizeHosts")) {
-      return {
-        flexGrow: 1,
-        borderTopStyle: "solid",
-        borderTopColor: colorFromHostname(providerName),
-        borderTopWidth: "0.3em",
-        backgroundColor: settingsCtx.get("backgroundColor") as string,
-      };
-    }
-    return { flexGrow: 1, backgroundColor: settingsCtx.get("backgroundColor") as string };
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      const providerName = provider?.name();
+      if (providerName && settingsCtx.get("colorizeHosts")) {
+        return {
+          flexGrow: 1,
+          borderTopStyle: "solid",
+          borderTopColor: colorFromHostname(providerName),
+          borderTopWidth: "0.3em",
+          backgroundColor: settingsCtx.get("backgroundColor") as string,
+        };
+      }
+      return { flexGrow: 1, backgroundColor: settingsCtx.get("backgroundColor") as string };
+    },
+    [provider, settingsCtx.changed]
+  );
 
   const createJsonView = useMemo(() => {
     return (

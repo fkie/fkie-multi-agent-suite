@@ -21,7 +21,7 @@ function parseJSON<T>(value: string | null): T | undefined {
   }
 }
 
-function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
+export default function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
   // Get from local storage then
   // parse stored json or return initialValue
   const readValue = useCallback((): T => {
@@ -45,7 +45,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
 
   const setValueRef = useRef<SetValue<T>>();
 
-  setValueRef.current = (value) => {
+  setValueRef.current = (value): void => {
     // Prevent build error "window is undefined" but keeps working
     if (typeof window === "undefined") {
       console.warn(`Tried setting localStorage key “${key}” even though environment is not a client`);
@@ -76,7 +76,6 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
 
   useEffect(() => {
     setStoredValue(readValue());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStorageChange = useCallback(
@@ -98,5 +97,3 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
 
   return [storedValue, setValue];
 }
-
-export default useLocalStorage;

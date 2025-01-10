@@ -3,7 +3,7 @@ import { TResult } from "@/types";
 /**
  * ProviderLaunchConfiguration models launch configuration to start ROS system nodes
  */
-class ProviderLaunchConfiguration {
+export default class ProviderLaunchConfiguration {
   /** Name of the provider, usually set after the provider was launched. */
   providerName?: string;
 
@@ -68,12 +68,6 @@ class ProviderLaunchConfiguration {
 
   respawn: boolean = false;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} host - Parameter name
-   * @param {string | number | boolean | string[]} value - Parameter value
-   */
   constructor(host: string, rosVersion: string, port: number = 0) {
     this.host = host;
     this.rosVersion = rosVersion;
@@ -84,7 +78,7 @@ class ProviderLaunchConfiguration {
     return this.providerName ? this.providerName : this.host;
   };
 
-  public terminalStartCmd: () => TResult = () => {
+  public terminalStartCmd(): TResult {
     const portNumber = this.terminal.port || 7681;
     const ttydPath = this.terminal.path || "ttyd";
     const ttydCmd = `${ttydPath} --writable --port ${portNumber} bash`;
@@ -100,18 +94,18 @@ class ProviderLaunchConfiguration {
       } as TResult;
     }
     return { result: true, message: cmd } as TResult;
-  };
+  }
 
-  public toRos1MasterUriPrefix: (ros1MasterUri: { enable: boolean; uri: string }) => string = (ros1MasterUri) => {
+  public toRos1MasterUriPrefix(ros1MasterUri: { enable: boolean; uri: string }): string {
     let rosMasterUriPrefix = "";
     if (ros1MasterUri && ros1MasterUri.enable && ros1MasterUri.uri.length > 0 && ros1MasterUri.uri !== "default") {
       rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.uri.replace("{HOST}", this.host)} `;
     }
     return rosMasterUriPrefix;
-  };
+  }
 
   /** Generate start command for a master discovery node */
-  public masterDiscoveryStartCmd: () => TResult = () => {
+  public masterDiscoveryStartCmd(): TResult {
     // Spawn a new Node Manager Master sync node
     const hostSuffix = "{HOST}";
     let dName = this.rosVersion === "2" ? `discovery_${hostSuffix}` : "mas_discovery";
@@ -154,10 +148,10 @@ class ProviderLaunchConfiguration {
     // combine commands and execute
     const cmd = `${cmdMasterDiscovery}`;
     return { result: true, message: cmd } as TResult;
-  };
+  }
 
   /** Generate start command for a master sync node */
-  public masterSyncStartCmd: () => TResult = () => {
+  public masterSyncStartCmd(): TResult {
     if (this.rosVersion === "1") {
       // Spawn a new Node Manager Master sync node
       const dName = "mas_sync";
@@ -186,10 +180,10 @@ class ProviderLaunchConfiguration {
       result: false,
       message: "Could not start [mas_sync], It is available only for ROS1",
     } as TResult;
-  };
+  }
 
   /** Generate start command for a Daemon Node */
-  public daemonStartCmd: () => TResult = () => {
+  public daemonStartCmd(): TResult {
     const hostSuffix = "{HOST}";
     let dName = this.rosVersion === "2" ? `daemon_${hostSuffix}` : "mas_daemon";
     if (this.rosVersion === "2") {
@@ -225,18 +219,13 @@ class ProviderLaunchConfiguration {
       } as TResult;
     }
     return { result: true, message: cmdDaemon } as TResult;
-  };
+  }
 
   /** Generate start command for a Dynamic Reconfigure Node */
-  public dynamicReconfigureClientCmd: (nodeName: string, ros1MasterUri: string) => TResult = (
-    nodeName,
-    ros1MasterUri
-  ) => {
+  public dynamicReconfigureClientCmd(nodeName: string, ros1MasterUri: string): TResult {
     const nameArg = `--name=/dynamic_reconfigure${nodeName}`;
     const envArg = `ROS_MASTER_URI=${ros1MasterUri}`;
     const cmd = `${envArg} rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
     return { result: true, message: cmd } as TResult;
-  };
+  }
 }
-
-export default ProviderLaunchConfiguration;

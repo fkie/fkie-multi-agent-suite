@@ -1,46 +1,56 @@
+import { JSONValue } from "@/types";
 import { BrowserWindow, screen } from "electron";
 import settings from "electron-settings";
 
-const windowStateKeeper = async (windowName: string) => {
+export type TWindowState = {
+  x: number | undefined;
+  y: number | undefined;
+  width: number;
+  height: number;
+  isMaximized?: boolean;
+};
+
+export interface TWindowStateRun extends TWindowState {
+  track: (win: BrowserWindow) => Promise<void>;
+}
+
+export default async function windowStateKeeper(windowName: string): Promise<TWindowStateRun> {
   let window: BrowserWindow | null = null;
-  let windowState: any;
-
-  const setBounds = async (): Promise<void> => {
-    // Restore from appConfig
-    if (await settings.has(`windowState.${windowName}`)) {
-      windowState = await settings.get(`windowState.${windowName}`);
-      return;
-    }
-
-    const size = screen.getPrimaryDisplay().workAreaSize;
-
-    // Default
-    windowState = {
-      x: undefined,
-      y: undefined,
-      width: size.width / 2,
-      height: size.height / 2,
-    };
+  const size = screen.getPrimaryDisplay().workAreaSize;
+  let windowState: TWindowState = {
+    x: undefined,
+    y: undefined,
+    width: size.width / 2,
+    height: size.height / 2,
   };
 
-  const saveState = async (): Promise<void> => {
+  async function setBounds(): Promise<void> {
+    // Restore from appConfig
+    if (await settings.has(`windowState.${windowName}`)) {
+      windowState = (await settings.get(`windowState.${windowName}`)) as TWindowState;
+      return;
+    }
+  }
+
+  async function saveState(): Promise<void> {
     if (window === null) return;
     // TODO lots of save state events are called. they should be debounced
-    const bounds = window.getBounds();
+    const bounds = window.getBounds() as TWindowState;
     if (bounds.x !== 0) {
       windowState = bounds;
     }
     windowState.isMaximized = window.isMaximized();
-    await settings.set(`windowState.${windowName}`, windowState);
-  };
+    await settings.set(`windowState.${windowName}`, windowState as JSONValue);
+  }
 
-  const track = async (win: BrowserWindow): Promise<void> => {
+  async function track(win: BrowserWindow): Promise<void> {
     window = win;
-    ["resize", "move", "close", "maximize", "unmaximize"].forEach((eventName) => {
-      const eventType: any = eventName;
-      win.on(eventType, saveState);
-    });
-  };
+    win.on("resize", saveState);
+    // win.on("move", saveState);
+    win.on("close", saveState);
+    win.on("maximize", saveState);
+    win.on("unmaximize", saveState);
+  }
 
   await setBounds();
 
@@ -52,6 +62,4 @@ const windowStateKeeper = async (windowName: string) => {
     isMaximized: windowState.isMaximized,
     track,
   };
-};
-
-export default windowStateKeeper;
+}

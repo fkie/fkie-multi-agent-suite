@@ -4,7 +4,7 @@ import LaunchArgument from "./LaunchArgument";
 /**
  * LaunchLoadRequest models load request of the launch file.
  */
-class LaunchLoadRequest {
+export default class LaunchLoadRequest {
   /**
    * ROS package name
    */
@@ -49,18 +49,6 @@ class LaunchLoadRequest {
    */
   host: string;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} ros_package - ROS package name.
-   * @param {string} launch - Launch file in the package path.
-   * @param {string} path - if set, this will be used instead of package/launch
-   * @param {LaunchArgument[]} args - Arguments to load the launch file.
-   * @param {boolean} force_first_file - If True, use first file if more than one was found in the package.
-   * @param {boolean} request_args - If True, the launch file will not be loaded, only launch arguments are requested.
-   * @param {string} masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
-   * @param {string} host - Start nodes of this file on specified host.
-   */
   constructor(
     ros_package: string,
     launch: string,
@@ -80,15 +68,4 @@ class LaunchLoadRequest {
     this.masteruri = masteruri;
     this.host = host;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.ros_package} - ${this.launch} - ${this.path}`;
-  };
 }
-
-export default LaunchLoadRequest;

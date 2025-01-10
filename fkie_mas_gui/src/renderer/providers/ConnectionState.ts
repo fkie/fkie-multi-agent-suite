@@ -1,4 +1,4 @@
-export class ConnectionState extends String {
+export default class ConnectionState extends String {
   static STATES = {
     UNKNOWN: "unknown",
     STARTING: "starting",
@@ -14,5 +14,3 @@ export class ConnectionState extends String {
     ERRORED: "errored",
   };
 }
-
-export default { ConnectionState };

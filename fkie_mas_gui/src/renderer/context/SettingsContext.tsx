@@ -41,14 +41,14 @@ export const DEFAULT_SETTINGS = {
   bgColorForDarkMod: "#424242",
 
   changed: 0,
-  get: () => {
+  get: (): JSONValue | undefined => {
     return undefined;
   },
-  getDefault: () => {
+  getDefault: (): JSONValue | undefined => {
     return undefined;
   },
-  set: () => {},
-  getParamList: () => {
+  set: (): void => {},
+  getParamList: (): { name: string; param: ISettingsParam }[] => {
     return [];
   },
 };
@@ -65,7 +65,7 @@ export interface ISettingsParam {
   group?: string;
   min?: number;
   max?: number;
-  cb?: (get: (attribute: string) => JSONValue, set: (attribute: string, value: JSONValue) => void) => void;
+  cb?: (get: (attribute: string) => JSONValue | undefined, set: (attribute: string, value: JSONValue) => void) => void;
   validate?: (value: JSONValue) => JSONValue;
 }
 
@@ -75,7 +75,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: false,
     type: "boolean",
     description: "",
-    cb: (get: (attribute: string) => JSONValue, set: (attribute: string, value: JSONValue) => void) => {
+    cb: (get: (attribute: string) => JSONValue | undefined, set: (attribute: string, value: JSONValue) => void) => {
       const newValue = get("useDarkMode");
       set("color", newValue ? DEFAULT_SETTINGS.fgColorForDarkMode : DEFAULT_SETTINGS.fgColor);
       set("backgroundColor", newValue ? DEFAULT_SETTINGS.bgColorForDarkMod : DEFAULT_SETTINGS.bgColor);
@@ -315,7 +315,7 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
   const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
   const [config, setConfig] = useLocalStorage<JSONObject>("SettingsContext:config", {});
 
-  const get = (attribute: string) => {
+  function get(attribute: string): JSONValue | undefined {
     if (attribute in config) {
       return config[attribute];
     }
@@ -323,16 +323,16 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
       return SETTINGS_DEF[attribute]?.default;
     }
     throw new Error(`Configuration attribute ${attribute} not found!`);
-  };
+  }
 
-  const getDefault = (attribute: string) => {
+  function getDefault(attribute: string): JSONValue | undefined {
     if (attribute in SETTINGS_DEF) {
       return SETTINGS_DEF[attribute]?.default;
     }
     throw new Error(`Configuration attribute ${attribute} not found!`);
-  };
+  }
 
-  const set = (attribute: string, value: JSONValue) => {
+  function set(attribute: string, value: JSONValue): void {
     if (SETTINGS_DEF[attribute]) {
       // TODO: check for valid value
       config[attribute] = value;
@@ -344,15 +344,15 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
     } else {
       throw new Error(`Configuration attribute ${attribute} while set() not found!`);
     }
-  };
+  }
 
-  const getParamList: () => { name: string; param: ISettingsParam }[] = () => {
+  function getParamList(): { name: string; param: ISettingsParam }[] {
     const params: { name: string; param: ISettingsParam }[] = [];
     Object.keys(SETTINGS_DEF).forEach(function (key) {
       params.push({ name: key, param: SETTINGS_DEF[key] });
     });
     return params;
-  };
+  }
 
   const attributesMemo = useMemo(
     () => ({
@@ -363,7 +363,6 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
       set,
       getParamList,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [changed]
   );
 

@@ -15,7 +15,7 @@ import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { getFileName, LaunchContent } from "../../models";
 
-const compareLaunchFiles = (a: LaunchContent, b: LaunchContent) => {
+function compareLaunchFiles(a: LaunchContent, b: LaunchContent): number {
   if (getFileName(a.path) < getFileName(b.path)) {
     return -1;
   }
@@ -23,7 +23,7 @@ const compareLaunchFiles = (a: LaunchContent, b: LaunchContent) => {
     return 1;
   }
   return 0;
-};
+}
 
 interface LaunchFileListProps {
   providerId: string;
@@ -38,10 +38,10 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
   const {
     providerId,
     launchContentList,
-    selectNodesFromLaunch = () => {},
-    onRemoveLaunch = () => {},
-    onReloadLaunch = () => {},
-    onMouseOver = () => {},
+    selectNodesFromLaunch = (): void => {},
+    onRemoveLaunch = (): void => {},
+    onReloadLaunch = (): void => {},
+    onMouseOver = (): void => {},
   } = props;
 
   const rosCtx = useContext(RosContext);
@@ -51,7 +51,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host
    */
   const createFileEditorPanel = useCallback(
-    async (provId: string, launchContent: LaunchContent, external: boolean) => {
+    async function (provId: string, launchContent: LaunchContent, external: boolean): Promise<void> {
       rosCtx.openEditor(provId, launchContent.path, launchContent.path, null, [], external);
     },
     [rosCtx]

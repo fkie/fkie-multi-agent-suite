@@ -36,7 +36,7 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
       return tree;
     }, []);
 
-  const renderNodeRow = ({ index, style }) => {
+  function renderNodeRow({ index, style }): JSX.Element {
     return (
       <ListItem style={style} key={index} component="div" disablePadding dense disableGutters>
         <ListItemButton dense disableGutters>
@@ -44,7 +44,7 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
         </ListItemButton>
       </ListItem>
     );
-  };
+  }
 
   // const renderParameterRow = ({ columnIndex, rowIndex, style }) => {
   //   let text = '';

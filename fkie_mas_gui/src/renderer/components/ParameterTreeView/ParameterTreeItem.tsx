@@ -1,10 +1,10 @@
+import { RosParameter } from "@/renderer/models";
+import { basename, normalizeNameWithPrefix } from "@/renderer/utils";
 import { Box, Stack, Switch, TextField, Typography } from "@mui/material";
 import { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import OverflowMenu from "../UI/OverflowMenu";
-import { RosParameter } from "@/renderer/models";
 import StyledTreeItem from "./StyledTreeItem";
-import { basename, normalizeNameWithPrefix } from "@/renderer/utils";
 
 interface ParameterTreeItemProps {
   itemId: string;
@@ -15,7 +15,7 @@ interface ParameterTreeItemProps {
 }
 
 const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(function ParameterTreeItem(props, ref) {
-  const { itemId, namespacePart, paramInfo, updateParameter = () => {}, rosVersion = "" } = props;
+  const { itemId, namespacePart, paramInfo, updateParameter = (): void => {}, rosVersion = "" } = props;
 
   const logCtx = useContext(LoggingContext);
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
@@ -29,7 +29,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     {
       name: "int",
       key: "int",
-      onClick: () => {
+      onClick: (): void => {
         setParameterType("int");
         updateParameter(paramInfo, paramInfo.value, "int");
       },
@@ -37,7 +37,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     {
       name: "float",
       key: "float",
-      onClick: () => {
+      onClick: (): void => {
         setParameterType("float");
         updateParameter(paramInfo, paramInfo.value, "float");
       },
@@ -45,7 +45,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     {
       name: "str",
       key: "str",
-      onClick: () => {
+      onClick: (): void => {
         setParameterType("str");
         updateParameter(paramInfo, paramInfo.value, "str");
       },
@@ -53,14 +53,14 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     {
       name: "bool",
       key: "bool",
-      onClick: () => {
+      onClick: (): void => {
         setParameterType("bool");
         updateParameter(paramInfo, paramInfo.value, "bool");
       },
     },
   ];
 
-  const renderInput = () => {
+  function renderInput(): JSX.Element {
     if (["int", "float"].includes(parameterType)) {
       return (
         <TextField
@@ -122,7 +122,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
         }}
       />
     );
-  };
+  }
 
   return (
     <StyledTreeItem

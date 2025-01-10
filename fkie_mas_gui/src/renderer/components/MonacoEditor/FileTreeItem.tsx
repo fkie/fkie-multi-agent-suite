@@ -73,7 +73,7 @@ const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function File
   const logCtx = useContext(LoggingContext);
   const fileExtension = getFileExtension(item.file.inc_path as string);
 
-  const getLabelSx = () => {
+  function getLabelSx(): object {
     if (selected && modified) {
       return {
         textDecoration: "underline",
@@ -92,7 +92,7 @@ const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function File
       };
     }
     return {};
-  };
+  }
 
   // avoid selection if collapse icon was clicked
   let toggled = false;

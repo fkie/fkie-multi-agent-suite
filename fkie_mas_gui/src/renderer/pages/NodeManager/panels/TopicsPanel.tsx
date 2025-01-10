@@ -1,5 +1,5 @@
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
-import { EndpointInfo, RosTopic, TopicExtendedInfo } from "@/renderer/models";
+import { EndpointInfo, RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -7,6 +7,7 @@ import DvrIcon from "@mui/icons-material/Dvr";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -18,7 +19,6 @@ import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
-import { grey } from "@mui/material/colors";
 
 type TTreeItem = {
   groupKey: string;
@@ -55,7 +55,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
   }, [settingsCtx, settingsCtx.changed]);
 
-  function genKey(items: string[]) {
+  function genKey(items: string[]): string {
     return `${items.join("#")}`;
     //  return `${name}#${type}#${providerId}`;
   }
@@ -69,7 +69,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
       // Get topics from the ros node list of each provider.
       rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
         nodeList.forEach((node) => {
-          const addTopic = (rosTopic: RosTopic, rosNode) => {
+          function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
             const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type, providerId]));
             if (topicInfo) {
               topicInfo.add(rosTopic);
@@ -79,7 +79,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
                 new TopicExtendedInfo(rosTopic, rosNode.providerId, rosNode.providerName)
               );
             }
-          };
+          }
 
           node.publishers.forEach((topic) => {
             addTopic(topic, node);
@@ -123,18 +123,16 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   // Get topic list when mounting the component
   useEffect(() => {
     getTopicList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
 
   // Initial filter when setting the topics
   useEffect(() => {
     onSearch(searchTerm);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topics, searchTerm]);
 
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
-  const fillTree = (fullPrefix: string, topicsGroup: TopicExtendedInfo[], itemId: string) => {
+  function fillTree(fullPrefix: string, topicsGroup: TopicExtendedInfo[], itemId: string): TTreeItem {
     const byPrefixP1 = new Map<string, { restNameSuffix: string; topicInfo: TopicExtendedInfo }[]>();
     // create a map with simulated tree for the namespaces of the topic list
     topicsGroup.forEach((topicInfo) => {
@@ -214,8 +212,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         }
       }
     });
-    return { topics: newFilteredTopics, count, groupKeys };
-  };
+    return { topics: newFilteredTopics, count, groupKeys } as TTreeItem;
+  }
 
   // create topics tree from filtered topic list
   useEffect(() => {
@@ -224,19 +222,15 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
       setExpandedFiltered(tree.groupKeys);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTopics]);
 
-  const onEchoClick = useCallback(
-    (topic: TopicExtendedInfo | null, external: boolean, openInTerminal: boolean = false) => {
-      if (topic) {
-        rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
-      }
-    },
-    [rosCtx]
-  );
+  function onEchoClick(topic: TopicExtendedInfo | null, external: boolean, openInTerminal: boolean = false): void {
+    if (topic) {
+      rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
+    }
+  }
 
-  const onPublishClick = useCallback((topic: TopicExtendedInfo | null) => {
+  function onPublishClick(topic: TopicExtendedInfo | null): void {
     if (topic) {
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
@@ -250,9 +244,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         )
       );
     }
-  }, []);
+  }
 
-  const topicTreeToStyledItems = useCallback((rootPath: string, treeItem: TTreeItem, selectedItem: string | null) => {
+  function topicTreeToStyledItems(rootPath: string, treeItem: TTreeItem, selectedItem: string | null): JSX.Element {
     if (treeItem.topicInfo) {
       return (
         <TopicTreeItem
@@ -278,7 +272,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         </TopicGroupTreeItem>
       );
     }
-  }, []);
+  }
 
   useEffect(() => {
     const selectedTopics = filteredTopics.filter((item) => {
@@ -291,16 +285,13 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     }
   }, [filteredTopics, selectedItem]);
 
-  const handleToggle = useCallback(
-    (itemIds: string[]) => {
-      if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
-        setExpanded(itemIds);
-      } else {
-        setExpandedFiltered(itemIds);
-      }
-    },
-    [searchTerm]
-  );
+  function handleToggle(itemIds: string[]): void {
+    if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
+      setExpanded(itemIds);
+    } else {
+      setExpandedFiltered(itemIds);
+    }
+  }
 
   const createButtonBox = useMemo(() => {
     return (
@@ -436,7 +427,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
               </IconButton>
             </Tooltip>
             <SearchBar
-              onSearch={onSearch}
+              onSearch={(term) => onSearch(term)}
               placeholder="Filter Topics (OR: <space>, AND: +, NOT: !)"
               defaultValue={initialSearchTerm}
               fullWidth

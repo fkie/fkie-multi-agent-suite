@@ -17,7 +17,7 @@ interface PackageItemTreeProps {
 }
 
 const FileTreeItem = forwardRef<HTMLDivElement, PackageItemTreeProps>(function FileTreeItem(props, ref) {
-  const { itemId, file, showPackage = false, onClick = () => {}, onDoubleClick = () => {} } = props;
+  const { itemId, file, showPackage = false, onClick = (): void => {}, onDoubleClick = (): void => {} } = props;
 
   const fileExtension = getFileExtension(file.name as string);
   const enableCopy: boolean = false;

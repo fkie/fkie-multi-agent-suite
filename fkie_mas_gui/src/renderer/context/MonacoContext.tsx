@@ -65,7 +65,12 @@ export interface IMonacoContext {
   getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined;
   saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
   createUriPath: (tabId: string, path: string) => string;
-  getModel: (tabId: string, providerId: string, path: string, forceReload: boolean) => Promise<TModelResult>;
+  getModel: (
+    tabId: string,
+    providerId: string,
+    path: string,
+    forceReload: boolean
+  ) => Promise<{ model: TTextModelExt | null; file: FileItem | null; error: string }>;
   createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
 }
 
@@ -74,20 +79,20 @@ export interface IMonacoProvider {
 }
 export const DEFAULT_MONACO = {
   monaco: null,
-  updateModifiedFiles: () => null,
-  getModifiedTabs: () => [],
-  getModifiedFilesByTab: () => undefined,
-  saveModifiedFilesOfTabId: () => {
+  updateModifiedFiles: (): void => {},
+  getModifiedTabs: (): ModifiedTabsInfo[] => [],
+  getModifiedFilesByTab: (): ModifiedTabsInfo | undefined => undefined,
+  saveModifiedFilesOfTabId: (): Promise<SaveResult[]> => {
     return Promise.resolve([]);
   },
-  createUriPath: () => "",
-  getModel: () =>
+  createUriPath: (): string => "",
+  getModel: (): Promise<TModelResult> =>
     Promise.resolve({
       model: null,
       file: null,
       error: "",
     } as TModelResult),
-  createModel: () => null,
+  createModel: (): editor.ITextModel | null => null,
 };
 
 export const MonacoContext = createContext<IMonacoContext>(DEFAULT_MONACO);
@@ -118,7 +123,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   }, [monaco]);
 
   const updateModifiedFiles = useCallback(
-    (tabId: string, providerId: string, uriPaths: string[]) => {
+    function (tabId: string, providerId: string, uriPaths: string[]): void {
       if (uriPaths.length > 0) {
         // add to the list
         const newFilesInfo: ModifiedTabsInfo = new ModifiedTabsInfo(tabId, providerId, uriPaths);
@@ -135,19 +140,22 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     [setModifiedFiles]
   );
 
-  const getModifiedTabs: () => ModifiedTabsInfo[] = useCallback(() => {
-    return modifiedFiles;
-  }, [modifiedFiles]);
+  const getModifiedTabs = useCallback(
+    function (): ModifiedTabsInfo[] {
+      return modifiedFiles;
+    },
+    [modifiedFiles]
+  );
 
-  const getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined = useCallback(
-    (tabId) => {
+  const getModifiedFilesByTab = useCallback(
+    function (tabId: string): ModifiedTabsInfo | undefined {
       return modifiedFiles.filter((item) => item.tabId === tabId)[0];
     },
     [modifiedFiles]
   );
 
-  const saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]> = useCallback(
-    async (tabId) => {
+  const saveModifiedFilesOfTabId = useCallback(
+    async function (tabId: string): Promise<SaveResult[]> {
       if (!monaco) return Promise.resolve([]);
       const result: SaveResult[] = [];
       const tabInfos: ModifiedTabsInfo[] = modifiedFiles.filter((item) => item.tabId === tabId);
@@ -187,17 +195,17 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     [logCtx, modifiedFiles, monaco, rosCtx]
   );
 
-  const createUriPath = (tabId: string, path: string) => {
+  function createUriPath(tabId: string, path: string): string {
     if (path.indexOf(":") !== -1) {
       return path;
     }
     return `/${tabId}:${path}`;
-  };
+  }
 
   /**
    * Return a monaco model from a given path
    */
-  const getModelFromPath = (tabId: string, path: string) => {
+  function getModelFromPath(tabId: string, path: string): editor.ITextModel | null {
     if (!monaco) return null;
     if (!path || path.length === 0) return null;
     let modelUri = path;
@@ -206,14 +214,14 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       modelUri = createUriPath(tabId, path);
     }
     return monaco.editor.getModel(monaco.Uri.file(modelUri));
-  };
+  }
 
   /**
    * Create a new monaco model from a given file
    *
    * @param {FileItem} file - Original file
    */
-  const createModel = (tabId: string, file: FileItem) => {
+  function createModel(tabId: string, file: FileItem): editor.ITextModel | null {
     if (!monaco) return null;
     const pathUri = monaco.Uri.file(createUriPath(tabId, file.path));
     // create monaco model, if it does not exists yet
@@ -226,18 +234,14 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       model.dispose();
     }
     return monaco.editor.createModel(file.value, FileLanguageAssociations[file.extension], pathUri);
-  };
+  }
 
-  const getModel: (
+  async function getModel(
     tabId: string,
     providerId: string,
     path: string,
     forceReload: boolean
-  ) => Promise<{
-    model: TTextModelExt | null;
-    file: FileItem | null;
-    error: string;
-  }> = async (tabId, providerId, path, forceReload) => {
+  ): Promise<{ model: TTextModelExt | null; file: FileItem | null; error: string }> {
     let model: editor.ITextModel | null = getModelFromPath(tabId, path);
     if (!model || forceReload) {
       const provider = rosCtx.getProviderById(providerId, false);
@@ -260,7 +264,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       }
     }
     return Promise.resolve({ model: model as TTextModelExt, file: null, error: "" });
-  };
+  }
 
   const attributesMemo = useMemo(
     () => ({
@@ -275,7 +279,6 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       getModel,
       createModel,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       monaco,
       modifiedFiles,

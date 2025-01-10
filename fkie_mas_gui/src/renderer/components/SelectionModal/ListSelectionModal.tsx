@@ -24,12 +24,17 @@ interface ListSelectionModalProps {
 }
 
 const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(function ListSelectionModal(props, ref) {
-  const { title = "Confirm Selection", list, onConfirmCallback = () => {}, onCancelCallback = () => {} } = props;
+  const {
+    title = "Confirm Selection",
+    list,
+    onConfirmCallback = (): void => {},
+    onCancelCallback = (): void => {},
+  } = props;
 
   const [open, setOpen] = useState<boolean>(true);
   const [selectedItems, setSelectedItems] = useState<string[]>(list.length < 5 ? list : []);
 
-  const handleToggle = (value: string) => () => {
+  function handleToggle(value: string): void {
     const currentIndex = selectedItems.indexOf(value);
     const newSelectedItems = [...selectedItems];
 
@@ -40,21 +45,21 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
     }
 
     setSelectedItems(newSelectedItems);
-  };
+  }
 
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     setSelectedItems([]);
     setOpen(false);
     if (reason !== "confirmed" && onCancelCallback) {
       onCancelCallback();
     }
-  };
+  }
 
-  const onConfirm = () => {
+  function onConfirm(): void {
     onConfirmCallback(selectedItems);
     handleClose("confirmed");
-  };
+  }
 
   const dialogRef = useRef(ref);
 
@@ -93,7 +98,7 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
 
                   return (
                     <ListItem key={node} disablePadding>
-                      <ListItemButton role={undefined} onClick={handleToggle(node)} dense>
+                      <ListItemButton role={undefined} onClick={() => handleToggle(node)} dense>
                         <ListItemIcon>
                           <Checkbox
                             edge="start"

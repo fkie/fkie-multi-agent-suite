@@ -1,3 +1,9 @@
+import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
+import RosContext from "@/renderer/context/RosContext";
+import SettingsContext from "@/renderer/context/SettingsContext";
+import { RosNode, RosParameter } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
+import { findIn } from "@/renderer/utils";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ComputerIcon from "@mui/icons-material/Computer";
@@ -6,14 +12,8 @@ import { Box, Stack } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { RosNode, RosParameter } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
-import RosContext from "@/renderer/context/RosContext";
-import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
-import { findIn } from "@/renderer/utils";
-import ParameterTreeItem from "./ParameterTreeItem";
 import ParameterGroupTreeItem from "./ParameterGroupTreeItem";
-import SettingsContext from "@/renderer/context/SettingsContext";
+import ParameterTreeItem from "./ParameterTreeItem";
 
 type TTreeItem = {
   groupKey: string;
@@ -41,7 +41,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     updateOnCreate = false,
     filterText = "",
     forceReload,
-    onSelectParams = () => {},
+    onSelectParams = (): void => {},
   } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
@@ -69,7 +69,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     setSearched(filterText);
   }, [filterText]);
 
-  function filterParameters(searchTerm: string, parameters: RosParameter[] | undefined) {
+  function filterParameters(searchTerm: string, parameters: RosParameter[] | undefined): RosParameter[] | undefined {
     if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
       return parameters;
     }
@@ -125,37 +125,39 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   //   }
   // }, []);
 
-  // debounced callback when updating a parameter
-  const updateParameter = useCallback(
-    async (parameter: RosParameter, newValue: string | boolean | number | string[], newType?: string) => {
-      if (!provider.isAvailable()) return;
+  // callback when updating a parameter
+  async function updateParameter(
+    parameter: RosParameter,
+    newValue: string | boolean | number | string[],
+    newType?: string
+  ): Promise<void> {
+    if (!provider.isAvailable()) return;
 
-      if (!provider.setParameter) {
-        logCtx.error(
-          `Provider ${rosCtx.getProviderName(parameter.providerId)} does not support [setParameter] method`,
-          DEFAULT_BUG_TEXT
-        );
-        return;
-      }
-      parameter.value = newValue;
-      if (newType) {
-        parameter.type = newType;
-      }
-      const result = await provider.setParameter(parameter);
+    if (!provider.setParameter) {
+      logCtx.error(
+        `Provider ${rosCtx.getProviderName(parameter.providerId)} does not support [setParameter] method`,
+        DEFAULT_BUG_TEXT
+      );
+      return;
+    }
+    parameter.value = newValue;
+    if (newType) {
+      parameter.type = newType;
+    }
+    const result = await provider.setParameter(parameter);
 
-      if (result) {
-        logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
-      } else {
-        logCtx.error(`Could not update parameter [${parameter.name}]`, DEFAULT_BUG_TEXT);
-      }
-    },
-    [provider]
-  );
+    if (result) {
+      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
+    } else {
+      logCtx.error(`Could not update parameter [${parameter.name}]`, DEFAULT_BUG_TEXT);
+    }
+  }
 
   // create tree based on parameter namespace
   // parameters are grouped only if more then one is in the group
-  const fillTree = (fullPrefix: string, params: RosParameter[], itemId: string) => {
-    if (!params) return { params: [], count: 0, groupKeys: [] };
+  function fillTree(fullPrefix: string, params: RosParameter[], itemId: string): TTreeItem {
+    if (!params)
+      return { params: [], count: 0, groupKeys: [], groupKey: "", groupName: "", fullPrefix: "", paramInfo: null };
     const byPrefixP1: Map<string, { restNameSuffix: string; paramInfo: RosParameter }[]> = new Map();
     // count parameter for each group
     params.forEach((param) => {
@@ -218,18 +220,17 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         count += 1;
       }
     });
-    return { params: filteredParams, count, groupKeys };
-  };
+    return { params: filteredParams, count, groupKeys, groupKey: "", groupName: "", fullPrefix: "", paramInfo: null };
+  }
 
   // create parameter tree from filtered parameter list
   useEffect(() => {
     const subtree = fillTree(rosNode ? rosNode.name : "", rosParametersFiltered || [], rosNode ? rosNode.name : "");
     setTree(subtree.params);
     setExpandedFiltered([itemId, ...subtree.groupKeys]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosParametersFiltered]);
 
-  const paramTreeToStyledItems = (treeItems: TTreeItem[]) => {
+  function paramTreeToStyledItems(treeItems: TTreeItem[]): JSX.Element[] {
     return treeItems.map((param) => {
       let namespacePart = "";
       while (avoidGroupWithOneItem && param.params.length === 1) {
@@ -266,7 +267,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         );
       }
     });
-  };
+  }
 
   useEffect(() => {
     const params: RosParameter[] =

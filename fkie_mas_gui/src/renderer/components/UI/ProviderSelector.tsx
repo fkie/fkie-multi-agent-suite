@@ -8,7 +8,7 @@ interface ProviderSelectorProps {
 }
 
 const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(function ProviderSelector(props, ref) {
-  const { defaultProvider = "", setSelectedProvider = () => {} } = props;
+  const { defaultProvider = "", setSelectedProvider = (): void => {} } = props;
   const rosCtx = useContext(RosContext);
   const [currentProvider, setCurrentProvider] = useState<string>(defaultProvider);
   const [providerNames, setProviderNames] = useState<{ name: string; id: string }[]>(

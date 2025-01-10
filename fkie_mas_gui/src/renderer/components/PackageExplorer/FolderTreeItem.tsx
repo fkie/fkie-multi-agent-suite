@@ -14,7 +14,7 @@ interface FolderTreeItemProps {
 }
 
 const FolderTreeItem = forwardRef<HTMLDivElement, FolderTreeItemProps>(function FolderTreeItem(props, ref) {
-  const { itemId, directoryName, path, onClick = () => {}, onDoubleClick = () => {}, ...children } = props;
+  const { itemId, directoryName, path, onClick = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
 
   return (
     <StyledTreeItem

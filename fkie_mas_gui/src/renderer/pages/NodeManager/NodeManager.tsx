@@ -83,11 +83,17 @@ import ServicesPanel from "./panels/ServicesPanel";
 import SettingsPanel from "./panels/SettingsPanel";
 import TopicsPanel from "./panels/TopicsPanel";
 
+type TPanelId = {
+  id: string;
+  isBorder: boolean;
+  location: DockLocation;
+};
+
 interface ITabAttributesExt extends ITabAttributes {
   panelGroup: string;
 }
 
-function NodeManager() {
+export default function NodeManager(): JSX.Element {
   const auCtx = useContext(AutoUpdateContext);
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useContext(RosContext);
@@ -108,7 +114,7 @@ function NodeManager() {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
   }, [settingsCtx.changed]);
 
-  const hasTab = useCallback((layout, tabId) => {
+  function hasTab(layout, tabId): boolean {
     if (!layout.children) return false;
     const tabs = layout.children.filter((item) => {
       if (item.type === "tab" && item.id === tabId) {
@@ -120,10 +126,10 @@ function NodeManager() {
       return false;
     });
     return tabs.length > 0;
-  }, []);
+  }
 
   // disable float button if the gui is not running in the browser
-  const updateFloatButton = useCallback((layout: IJsonRowNode | IJsonBorderNode | IJsonTabSetNode) => {
+  function updateFloatButton(layout: IJsonRowNode | IJsonBorderNode | IJsonTabSetNode): boolean {
     if (!layout.children) return false;
     let result = false;
     layout.children.forEach((item) => {
@@ -140,7 +146,7 @@ function NodeManager() {
       }
     });
     return result;
-  }, []);
+  }
 
   useEffect(() => {
     rosCtx.setLayoutModel(model);
@@ -175,52 +181,49 @@ function NodeManager() {
   }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel, settingsCtx, hasTab, logCtx]);
 
   /** Hide bottom panel on close of last terminal */
-  const deleteTab: (tabId: string) => void = useCallback(
-    (tabId) => {
-      // check if it is an editor with modified files
-      if (tabId.startsWith("editor")) {
-        const mTab = monacoCtx.getModifiedFilesByTab(tabId);
-        if (mTab) {
-          const editorTab = model.getNodeById(tabId);
-          if (editorTab) {
-            model.doAction(Actions.selectTab(editorTab.getId()));
-            setModifiedEditorTabs([mTab]);
-            return;
-          }
+  function deleteTab(tabId: string): void {
+    // check if it is an editor with modified files
+    if (tabId.startsWith("editor")) {
+      const mTab = monacoCtx.getModifiedFilesByTab(tabId);
+      if (mTab) {
+        const editorTab = model.getNodeById(tabId);
+        if (editorTab) {
+          model.doAction(Actions.selectTab(editorTab.getId()));
+          setModifiedEditorTabs([mTab]);
+          return;
         }
       }
-      // handle tabs in bottom border
+    }
+    // handle tabs in bottom border
+    const nodeBId = model.getNodeById(tabId);
+    if (
+      nodeBId &&
+      nodeBId.getParent()?.getType() === "border" &&
+      (nodeBId.getParent() as BorderNode)?.getLocation().getName() === DockLocation.BOTTOM.getName()
+    ) {
+      // on close of last bottom tab hide the border if it currently visible
+      const shouldSelectNewTab =
+        nodeBId.getParent()?.getChildren().length === 2 &&
+        (nodeBId.getParent() as BorderNode)?.getSelectedNode()?.isVisible();
+      if (shouldSelectNewTab) {
+        model.doAction(Actions.selectTab(tabId));
+      }
+    } else {
+      // select nodes tab it is in the same set as closed tab
       const nodeBId = model.getNodeById(tabId);
-      if (
-        nodeBId &&
-        nodeBId.getParent()?.getType() === "border" &&
-        (nodeBId.getParent() as BorderNode)?.getLocation().getName() === DockLocation.BOTTOM.getName()
-      ) {
-        // on close of last bottom tab hide the border if it currently visible
-        const shouldSelectNewTab =
-          nodeBId.getParent()?.getChildren().length === 2 &&
-          (nodeBId.getParent() as BorderNode)?.getSelectedNode()?.isVisible();
-        if (shouldSelectNewTab) {
-          model.doAction(Actions.selectTab(tabId));
-        }
-      } else {
-        // select nodes tab it is in the same set as closed tab
-        const nodeBId = model.getNodeById(tabId);
-        if (nodeBId) {
-          nodeBId
-            .getParent()
-            ?.getChildren()
-            .filter((tab) => {
-              if (tab.getId() === LAYOUT_TABS.NODES) {
-                model.doAction(Actions.selectTab(tab.getId()));
-              }
-            });
-        }
+      if (nodeBId) {
+        nodeBId
+          .getParent()
+          ?.getChildren()
+          .filter((tab) => {
+            if (tab.getId() === LAYOUT_TABS.NODES) {
+              model.doAction(Actions.selectTab(tab.getId()));
+            }
+          });
       }
-      model.doAction(Actions.deleteTab(tabId));
-    },
-    [model, monacoCtx]
-  );
+    }
+    model.doAction(Actions.deleteTab(tabId));
+  }
 
   useCustomEventListener(
     EVENT_OPEN_COMPONENT,
@@ -301,58 +304,48 @@ function NodeManager() {
     [setPasswordRequests]
   );
 
-  const getPanelId: (
-    id: string,
-    panelGroup: string
-  ) => {
-    id: string;
-    isBorder: boolean;
-    location: DockLocation;
-  } = useCallback(
-    (id, panelGroup) => {
-      const result = {
-        id: panelGroup,
-        isBorder: false,
-        location: DockLocation.CENTER,
-      };
-      if (panelGroup.startsWith("border")) {
-        // search first for a tab with same start prefix
+  function getPanelId(id: string, panelGroup: string): TPanelId {
+    const result: TPanelId = {
+      id: panelGroup,
+      isBorder: false,
+      location: DockLocation.CENTER,
+    };
+    if (panelGroup.startsWith("border")) {
+      // search first for a tab with same start prefix
+    }
+    switch (panelGroup) {
+      case LAYOUT_TAB_SETS.BORDER_TOP:
+        result.isBorder = true;
+        result.location = DockLocation.TOP;
+        break;
+      case LAYOUT_TAB_SETS.BORDER_BOTTOM:
+        result.isBorder = true;
+        result.location = DockLocation.BOTTOM;
+        break;
+      case LAYOUT_TAB_SETS.BORDER_RIGHT:
+        result.isBorder = true;
+        result.location = DockLocation.RIGHT;
+        break;
+      default:
+        // it could be a tabSet id
+        result.isBorder = false;
+        break;
+    }
+    if (result.isBorder) {
+      result.id =
+        model
+          .getBorderSet()
+          .getBorders()
+          .find((b) => b.getLocation() === result.location)
+          ?.getId() || id;
+    } else {
+      const nodeBId = model.getNodeById(panelGroup);
+      if (nodeBId && LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
+        result.id = nodeBId.getParent()?.getId() || id;
       }
-      switch (panelGroup) {
-        case LAYOUT_TAB_SETS.BORDER_TOP:
-          result.isBorder = true;
-          result.location = DockLocation.TOP;
-          break;
-        case LAYOUT_TAB_SETS.BORDER_BOTTOM:
-          result.isBorder = true;
-          result.location = DockLocation.BOTTOM;
-          break;
-        case LAYOUT_TAB_SETS.BORDER_RIGHT:
-          result.isBorder = true;
-          result.location = DockLocation.RIGHT;
-          break;
-        default:
-          // it could be a tabSet id
-          result.isBorder = false;
-          break;
-      }
-      if (result.isBorder) {
-        result.id =
-          model
-            .getBorderSet()
-            .getBorders()
-            .find((b) => b.getLocation() === result.location)
-            ?.getId() || id;
-      } else {
-        const nodeBId = model.getNodeById(panelGroup);
-        if (nodeBId && LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
-          result.id = nodeBId.getParent()?.getId() || id;
-        }
-      }
-      return result;
-    },
-    [model]
-  );
+    }
+    return result;
+  }
 
   // adds tabs to layout after event to create new tab was received and the 'addToLayout' was updated.
   useEffect(() => {
@@ -391,7 +384,7 @@ function NodeManager() {
     }
   }, [addToLayout, getPanelId, model]);
 
-  const factory = (node: TabNode) => {
+  function factory(node: TabNode): JSX.Element {
     const component = node.getComponent();
     switch (component) {
       case LAYOUT_TABS.NODES:
@@ -419,9 +412,34 @@ function NodeManager() {
           return layoutComponents[component];
         }
     }
-  };
+    return <></>;
+  }
 
-  function onRenderTab(node /* TabNode */, renderValues /* ITabRenderValues */) {
+  async function openExternalTerminal(config: IExtTerminalConfig, tabNodeId: string): Promise<void> {
+    // create a terminal command
+    const provider = rosCtx.getProviderById(config.providerId);
+    if (!provider) return;
+    const terminalCmd = await provider.cmdForType(
+      config.type,
+      config.nodeName,
+      config.topicName,
+      config.screen,
+      config.cmd
+    );
+    // open screen in a new terminal
+    try {
+      window.commandExecutor?.execTerminal(
+        provider.isLocalHost ? null : { host: provider.host() },
+        `"${config.type} ${config.nodeName}@${provider.host()}"`,
+        terminalCmd.cmd
+      );
+      deleteTab(tabNodeId);
+    } catch (error) {
+      logCtx.error(`Can't open external terminal for ${config.nodeName}`, JSON.stringify(error), true);
+    }
+  }
+
+  function onRenderTab(node /* TabNode */, renderValues /* ITabRenderValues */): void {
     // add tooltip to the abbreviations
     if (
       ![
@@ -526,33 +544,6 @@ function NodeManager() {
                 onMouseDown={(event) => {
                   if (event?.button === 1) return;
                   if (node.getConfig().extTerminalConfig) {
-                    const openExternalTerminal = async (config: IExtTerminalConfig, tabNodeId: string) => {
-                      // create a terminal command
-                      const provider = rosCtx.getProviderById(config.providerId);
-                      if (!provider) return;
-                      const terminalCmd = await provider.cmdForType(
-                        config.type,
-                        config.nodeName,
-                        config.topicName,
-                        config.screen,
-                        config.cmd
-                      );
-                      // open screen in a new terminal
-                      try {
-                        window.commandExecutor?.execTerminal(
-                          provider.isLocalHost ? null : { host: provider.host() },
-                          `"${config.type} ${config.nodeName}@${provider.host()}"`,
-                          terminalCmd.cmd
-                        );
-                        deleteTab(tabNodeId);
-                      } catch (error) {
-                        logCtx.error(
-                          `Can't open external terminal for ${config.nodeName}`,
-                          JSON.stringify(error),
-                          true
-                        );
-                      }
-                    };
                     openExternalTerminal(node.getConfig().extTerminalConfig, node.getId());
                   }
                   if (node.getConfig().editorConfig) {
@@ -630,7 +621,7 @@ function NodeManager() {
       | "top-start"
       | undefined = "right",
     force: boolean = false
-  ) {
+  ): void {
     if (force || !model.getNodeById(id)) {
       container.push(
         <Tooltip
@@ -655,7 +646,7 @@ function NodeManager() {
     }
   }
 
-  function onRenderTabSet(node: TabSetNode | BorderNode, renderValues: ITabSetRenderValues) {
+  function onRenderTabSet(node: TabSetNode | BorderNode, renderValues: ITabSetRenderValues): void {
     const children = node.getChildren();
     children.forEach((child) => {
       if (child.getId() === LAYOUT_TABS.NODES) {
@@ -746,7 +737,7 @@ function NodeManager() {
     }
   }
 
-  function removeGenericTabs(parent) {
+  function removeGenericTabs(parent): IJsonRowNode {
     if (!parent.children) return parent;
     if (parent.selected) {
       // if tabs are removed we have to disable the selection of them in the panel
@@ -825,7 +816,7 @@ function NodeManager() {
     [electronCtx]
   );
 
-  const onKeyDown = (event: React.KeyboardEvent) => {
+  function onKeyDown(event: React.KeyboardEvent): void {
     const currFontSize = settingsCtx.get("fontSize") as number;
     if (event.ctrlKey && event.key === "+") {
       settingsCtx.set("fontSize", currFontSize + 1);
@@ -836,7 +827,7 @@ function NodeManager() {
     if (event.ctrlKey && event.key === "0") {
       settingsCtx.set("fontSize", currFontSize);
     }
-  };
+  }
 
   const dialogRef = useRef(null);
 
@@ -976,5 +967,3 @@ function NodeManager() {
     </Stack>
   );
 }
-
-export default NodeManager;

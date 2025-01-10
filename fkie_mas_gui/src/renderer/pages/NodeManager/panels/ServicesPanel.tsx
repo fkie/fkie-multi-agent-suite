@@ -5,6 +5,7 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -16,7 +17,6 @@ import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import ServiceCallerPanel from "./ServiceCallerPanel";
-import { grey } from "@mui/material/colors";
 
 type TTreeItem = {
   groupKey: string;
@@ -55,7 +55,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
 
-  function genKey(items: string[]) {
+  function genKey(items: string[]): string {
     return `${items.join("#")}`;
   }
 
@@ -125,40 +125,36 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     setFilteredServices(newFilteredServices);
   }, 300);
 
-  const onCallService = useCallback(
-    (service: ServiceExtendedInfo, _external: boolean, _openInTerminal: boolean) => {
-      // TODO: open in external window like subscriber
-      // rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `call-service-${service.name}-${service.providerId}}`,
-          `Call Service - ${service.name}`,
-          <ServiceCallerPanel serviceName={service.name} providerId={service.providerId} />,
-          true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
-        )
-      );
-    },
-    [rosCtx]
-  );
+  function onCallService(service: ServiceExtendedInfo, external: boolean, openInTerminal: boolean): void {
+    // TODO: open in external window like subscriber
+    console.debug(`not implemented service parameter: ${external} ${openInTerminal}`);
+    // rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent(
+        `call-service-${service.name}-${service.providerId}}`,
+        `Call Service - ${service.name}`,
+        <ServiceCallerPanel serviceName={service.name} providerId={service.providerId} />,
+        true,
+        LAYOUT_TAB_SETS.BORDER_RIGHT,
+        new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
+      )
+    );
+  }
 
   // Get service list when mounting the component
   useEffect(() => {
     getServiceList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosCtx.mapProviderRosNodes]);
 
   // Initial filter when setting the services
   useEffect(() => {
     onSearch(searchTerm);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [services, searchTerm]);
 
   // create tree based on service namespace
   // services are grouped only if more then one is in the group
-  const fillTree = (fullPrefix: string, serviceGroup: ServiceExtendedInfo[], itemId: string) => {
+  function fillTree(fullPrefix: string, serviceGroup: ServiceExtendedInfo[], itemId: string): TTreeItem {
     const byPrefixP1 = new Map<string, { restNameSuffix: string; serviceInfo: ServiceExtendedInfo }[]>();
     // create a map with simulated tree for the namespaces of the service list
     serviceGroup.forEach((serviceInfo) => {
@@ -238,8 +234,8 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         }
       }
     });
-    return { services: newFilteredServices, count, groupKeys };
-  };
+    return { services: newFilteredServices, count, groupKeys } as TTreeItem;
+  }
 
   // create services tree from filtered service list
   useEffect(() => {
@@ -248,7 +244,6 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
       setExpandedFiltered(tree.groupKeys);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredServices]);
 
   const serviceTreeToStyledItems = useCallback((rootPath: string, treeItem: TTreeItem, selectedItem: string) => {

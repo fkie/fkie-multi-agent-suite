@@ -71,7 +71,7 @@ interface ITerminalClient {
   onCtrlD?: (wsUrl: string, tokenUrl: string) => void | null;
 }
 
-function TerminalClient(props: ITerminalClient) {
+export default function TerminalClient(props: ITerminalClient): JSX.Element {
   const { type, initialCommands, tokenUrl, wsUrl, name, errorHighlighting, provider, onIncomingData, onCtrlD } = props;
   const settingsCtx = useContext(SettingsContext);
 
@@ -116,5 +116,3 @@ function TerminalClient(props: ITerminalClient) {
     />
   );
 }
-
-export default TerminalClient;

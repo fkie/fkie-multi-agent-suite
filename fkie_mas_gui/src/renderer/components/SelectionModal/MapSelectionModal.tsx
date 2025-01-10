@@ -35,8 +35,8 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
   const {
     title = "Confirm Selection",
     list,
-    onConfirmCallback = () => {},
-    onCancelCallback = () => {},
+    onConfirmCallback = (): void => {},
+    onCancelCallback = (): void => {},
     useRadioGroup = false,
   } = props;
 
@@ -47,18 +47,18 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
     })
   );
 
-  const initRadioMap = (initList: MapSelectionItem[]) => {
+  function initRadioMap(initList: MapSelectionItem[]): { [key: string]: string[] } {
     // convert list to map the 'title' as key and first list element as item
     const result = {};
     initList.forEach((o: MapSelectionItem) => {
       [result[o.title]] = o.list;
     });
     return result;
-  };
+  }
 
-  const [selectedRadioItems, setSelectedRadioItems] = useState(initRadioMap(list));
+  const [selectedRadioItems, setSelectedRadioItems] = useState<{ [key: string]: string[] }>(initRadioMap(list));
 
-  const handleToggle = (title: string, value: string) => {
+  function handleToggle(title: string, value: string): void {
     const newSelectedItems = structuredClone(selectedItems);
     const item = newSelectedItems.find((o: MapSelectionItem) => title.localeCompare(o.title) === 0);
     if (item) {
@@ -70,35 +70,35 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
       }
     }
     setSelectedItems(newSelectedItems);
-  };
+  }
 
-  const handleRadio = (title: string, value: string) => {
+  function handleRadio(title: string, value: string): void {
     const newSelectedItems = { ...selectedRadioItems };
-    newSelectedItems[title] = value;
+    newSelectedItems[title] = [value];
     setSelectedRadioItems(newSelectedItems);
-  };
+  }
 
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     setSelectedItems([]);
     setOpen(false);
     if (reason !== "confirmed" && onCancelCallback) {
       onCancelCallback();
     }
-  };
+  }
 
-  const onConfirm = () => {
+  function onConfirm(): void {
     if (useRadioGroup) {
       // convert map state to list of maps with 'title' and 'list' keys
       const result: MapSelectionItem[] = Object.keys(selectedRadioItems).map((key) => {
-        return { title: key, list: [selectedRadioItems[key]] };
+        return { title: key, list: selectedRadioItems[key] };
       });
       onConfirmCallback(result);
     } else {
       onConfirmCallback(selectedItems);
     }
     handleClose("confirmed");
-  };
+  }
 
   const dialogRef = useRef(ref);
 

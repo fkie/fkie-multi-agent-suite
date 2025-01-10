@@ -7,7 +7,7 @@ export enum LogLevelType {
   UNKNOWN = "",
 }
 
-export class LoggerConfig {
+export default class LoggerConfig {
   level: LogLevelType;
 
   name: string;
@@ -17,5 +17,3 @@ export class LoggerConfig {
     this.name = name;
   }
 }
-
-export default LoggerConfig;

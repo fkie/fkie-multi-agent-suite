@@ -1,4 +1,4 @@
-export class RosProviderState {
+export default class RosProviderState {
   /** Parameter from ROS state */
   masteruri: string | undefined = undefined;
   ros_version: string | undefined = undefined;
@@ -10,5 +10,3 @@ export class RosProviderState {
   host: string = "";
   hostnames: string[] = [];
 }
-
-export default RosProviderState;

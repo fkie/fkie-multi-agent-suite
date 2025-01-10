@@ -3,7 +3,7 @@ import { TLaunchArg } from "@/types";
 /**
  * LaunchArgument models arguments for launch files.
  */
-class LaunchArgument implements TLaunchArg {
+export default class LaunchArgument implements TLaunchArg {
   /**
    * Name of the argument.
    */
@@ -20,15 +20,6 @@ class LaunchArgument implements TLaunchArg {
 
   choices?: string[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} name - argument name.
-   * @param {string} value - argument value.
-   * @param {unknown} default_value - default argument value.
-   * @param {string} description - argument description.
-   * @param {string[]} choices - possible values.
-   */
   constructor(name: string, value: string, default_value?: string, description?: string, choices?: string[]) {
     this.name = name;
     this.value = value;
@@ -36,15 +27,4 @@ class LaunchArgument implements TLaunchArg {
     this.description = description;
     this.choices = choices;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.name} - ${this.value}`;
-  };
 }
-
-export default LaunchArgument;

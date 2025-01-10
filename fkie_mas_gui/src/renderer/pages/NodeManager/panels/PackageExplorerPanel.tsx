@@ -10,7 +10,7 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import { ConnectionState } from "../../../providers";
 import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
 
-function PackageExplorerPanel() {
+export default function PackageExplorerPanel(): JSX.Element {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [selectedProvider, setSelectedProvider] = useState<string>("");
@@ -24,33 +24,27 @@ function PackageExplorerPanel() {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
 
-  const updatePackageList = useCallback(
-    async (providerId: string, force: boolean = false) => {
-      if (!rosCtx.initialized) return;
-      if (!rosCtx.providers) return;
-      if (!providerId) return;
-      if (providerId.length === 0) return;
+  async function updatePackageList(providerId: string, force: boolean = false): Promise<void> {
+    if (!rosCtx.initialized) return;
+    if (!rosCtx.providers) return;
+    if (!providerId) return;
+    if (providerId.length === 0) return;
 
-      const provider = rosCtx.getProviderById(providerId);
-      if (!provider) return;
-      if (!provider.packages || force) {
-        const pl = await provider.getPackageList();
-        setPackageList(() => pl);
-      } else {
-        setPackageList(() => (provider.packages ? provider.packages : []));
-      }
-    },
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.initialized, rosCtx.providers]
-  );
+    const provider = rosCtx.getProviderById(providerId);
+    if (!provider) return;
+    if (!provider.packages || force) {
+      const pl = await provider.getPackageList();
+      setPackageList(() => pl);
+    } else {
+      setPackageList(() => (provider.packages ? provider.packages : []));
+    }
+  }
 
   // Update files when selected provider changes
   useEffect(() => {
     if (!selectedProvider) return;
     updatePackageList(selectedProvider);
     setShowReloadButton(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvider, rosCtx.initialized]);
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
@@ -64,21 +58,24 @@ function PackageExplorerPanel() {
     return <PackageExplorer selectedProvider={selectedProvider} packageList={packageList} />;
   }, [selectedProvider, packageList]);
 
-  const getHostStyle = () => {
-    if (selectedProvider && settingsCtx.get("colorizeHosts")) {
-      const provider = rosCtx.getProviderById(selectedProvider);
-      const hColor = colorFromHostname(provider?.name());
-      return {
-        borderLeftStyle: "solid",
-        borderLeftColor: hColor,
-        borderLeftWidth: "0.6em",
-        borderBottomStyle: "solid",
-        borderBottomColor: hColor,
-        borderBottomWidth: "0.6em",
-      };
-    }
-    return {};
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      if (selectedProvider && settingsCtx.get("colorizeHosts")) {
+        const provider = rosCtx.getProviderById(selectedProvider);
+        const hColor = colorFromHostname(provider?.name() || "");
+        return {
+          borderLeftStyle: "solid",
+          borderLeftColor: hColor,
+          borderLeftWidth: "0.6em",
+          borderBottomStyle: "solid",
+          borderBottomColor: hColor,
+          borderBottomWidth: "0.6em",
+        };
+      }
+      return {};
+    },
+    [selectedProvider, settingsCtx.changed]
+  );
 
   return (
     <Box
@@ -126,5 +123,3 @@ function PackageExplorerPanel() {
     </Box>
   );
 }
-
-export default PackageExplorerPanel;

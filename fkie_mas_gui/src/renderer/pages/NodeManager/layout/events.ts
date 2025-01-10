@@ -35,14 +35,7 @@ export function eventOpenComponent(
   closable: boolean = true,
   panelGroup: string = "", // panel or tab id where to place the new tab
   config: LayoutTabConfig = new LayoutTabConfig(false, panelGroup) // a place to hold json config for the hosted component
-): {
-  id: string;
-  title: string;
-  component: React.ReactNode;
-  closable: boolean;
-  panelGroup: string; // panel or tab id where to place the new tab
-  config: LayoutTabConfig;
-} {
+): TEventOpenComponent {
   return {
     id,
     title,
@@ -60,12 +53,12 @@ export class SETTING extends String {
   };
 }
 
-export function eventOpenSettings(id: SETTING) {
-  return { id } as TEventId;
+export function eventOpenSettings(id: string): TEventId {
+  return { id };
 }
 
-export function eventCloseComponent(id: string) {
-  return { id } as TEventId;
+export function eventCloseComponent(id: string): TEventId {
+  return { id };
 }
 
 export function eventEditorSelectRange(
@@ -73,10 +66,10 @@ export function eventEditorSelectRange(
   filePath: string,
   fileRange: TFileRange | null,
   launchArgs?: TLaunchArg[]
-) {
-  return { tabId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] } as TEventEditorSelectRange;
+): TEventEditorSelectRange {
+  return { tabId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] };
 }
 
-export function eventFilterNodes(id: string): { id: string } {
-  return { id } as TEventId;
+export function eventFilterNodes(id: string): TEventId {
+  return { id };
 }

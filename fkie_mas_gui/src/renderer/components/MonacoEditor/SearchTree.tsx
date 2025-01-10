@@ -37,7 +37,7 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
    *
    * @param {string} searchText - Text to search
    */
-  const findAllTextMatches = async (searchText, isRegex) => {
+  async function findAllTextMatches(searchText: string, isRegex: boolean): Promise<void> {
     if (currentIndex < ownUriPaths.length) {
       // search only in own models
       const uriPath = ownUriPaths[currentIndex];
@@ -66,9 +66,9 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
         setCurrentIndex((prev) => prev + 1);
       }
     }
-  };
+  }
 
-  const debouncedFindAllMatches = useDebounceCallback(async (searchText) => {
+  const debouncedFindAllMatches = useDebounceCallback(async function (searchText: string): Promise<void> {
     setSearchResults([]);
     setCurrentSearchText(searchText);
     if (!searchText) {
@@ -106,7 +106,7 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
     debouncedFindAllMatches(searchTerm);
   }, [searchTerm]);
 
-  function selectSearchResult(entry: TSearchResult) {
+  function selectSearchResult(entry: TSearchResult): void {
     emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, entry.file, entry.range));
   }
 

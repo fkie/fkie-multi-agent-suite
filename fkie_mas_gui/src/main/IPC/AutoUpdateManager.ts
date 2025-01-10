@@ -14,7 +14,7 @@ import { autoUpdater } from "electron-updater";
 /**
  * Class AutoUpdateManager: Handles autoUpdate of the app
  */
-class AutoUpdateManager implements TAutoUpdateManager {
+export default class AutoUpdateManager implements TAutoUpdateManager {
   isChecking: boolean = false;
   mainWindow: BrowserWindow | null = null;
 
@@ -52,7 +52,7 @@ class AutoUpdateManager implements TAutoUpdateManager {
     // implemented in preload script
   };
 
-  checkForUpdate: () => void = () => {
+  checkForUpdate(): void {
     if (this.isChecking) return;
     if (process.env.APPIMAGE === undefined) {
       this.mainWindow?.webContents.send(
@@ -64,12 +64,12 @@ class AutoUpdateManager implements TAutoUpdateManager {
     autoUpdater.checkForUpdates().catch(() => {
       this.isChecking = false;
     });
-  };
-  quitAndInstall: () => void = () => {
+  }
+  quitAndInstall(): void {
     autoUpdater.quitAndInstall();
-  };
+  }
 
-  public registerHandlers: () => void = () => {
+  public registerHandlers(): void {
     ipcMain.handle(AutoUpdateManagerEvents.checkForUpdate, () => {
       this.checkForUpdate();
     });
@@ -101,11 +101,9 @@ class AutoUpdateManager implements TAutoUpdateManager {
     autoUpdater.on("update-downloaded", (path) => {
       this.mainWindow?.webContents.send(AutoUpdateManagerEvents.onUpdateDownloaded, path);
     });
-  };
+  }
 
   quit(): void {
     // TODO
   }
 }
-
-export default AutoUpdateManager;

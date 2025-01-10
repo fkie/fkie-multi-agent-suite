@@ -64,7 +64,7 @@ const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = 
   return groupLevel;
 };
 
-const getGroupIconColor = (treeItems: NodeTreeItem[], isDarkMode: boolean = false) => {
+function getGroupIconColor(treeItems: NodeTreeItem[], isDarkMode: boolean = false): string {
   const groupStatus = getGroupStatus(treeItems);
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
@@ -90,9 +90,9 @@ const getGroupIconColor = (treeItems: NodeTreeItem[], isDarkMode: boolean = fals
     default:
       return isDarkMode ? red[600] : red[500];
   }
-};
+}
 
-export const GroupIcon = (treeItems: NodeTreeItem[], isDarkMode = false) => {
+export function GroupIcon(treeItems: NodeTreeItem[], isDarkMode = false): JSX.Element {
   const groupStatus = getGroupStatus(treeItems);
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
@@ -107,10 +107,10 @@ export const GroupIcon = (treeItems: NodeTreeItem[], isDarkMode = false) => {
     default:
       return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
   }
-};
+}
 
 /** Returns count of nodes for given group */
-export const NodesCount = (children: NodeTreeItem[]) => {
+export function NodesCount(children: NodeTreeItem[]): number {
   let result = 0;
   let itemsCount = 0;
   children.forEach((treeItem: NodeTreeItem) => {
@@ -121,7 +121,7 @@ export const NodesCount = (children: NodeTreeItem[]) => {
     }
   });
   return result + itemsCount;
-};
+}
 
 interface GroupItemProps {
   itemId: string;
@@ -133,7 +133,7 @@ interface GroupItemProps {
 }
 
 const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(props, ref) {
-  const { itemId, groupName, icon = <></>, countChildren = 0, onDoubleClick = () => {}, ...children } = props;
+  const { itemId, groupName, icon = <></>, countChildren = 0, onDoubleClick = (): void => {}, ...children } = props;
 
   // avoid selection if collapse icon was clicked
   let toggled = false;

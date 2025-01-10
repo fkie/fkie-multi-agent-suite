@@ -4,7 +4,7 @@ import LaunchArgument from "./LaunchArgument";
 /**
  * Request to parse the given file for included files.
  */
-class LaunchIncludedFilesRequest {
+export default class LaunchIncludedFilesRequest {
   /**
    * File to parse.
    */
@@ -35,16 +35,6 @@ class LaunchIncludedFilesRequest {
    */
   args: LaunchArgument[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} path - File to parse.
-   * @param {boolean} recursive - True to read recursive.
-   * @param {boolean} unique - True to ignore files included multiple times.
-   * @param {string[]} pattern - Pattern to change include detection. Empty for default.
-   * @param {string[]} search_in_ext - Search only for files with given extensions. Empty for default.
-   * @param {LaunchArgument[]} args - Arguments used to load the launch file.
-   */
   constructor(
     path = "",
     recursive = true,
@@ -61,5 +51,3 @@ class LaunchIncludedFilesRequest {
     this.args = args;
   }
 }
-
-export default LaunchIncludedFilesRequest;

@@ -36,7 +36,7 @@ import ServicesPanel from "./ServicesPanel";
 import TopicPublishPanel from "./TopicPublishPanel";
 import TopicsPanel from "./TopicsPanel";
 
-const compareTopics = (a: RosTopic, b: RosTopic) => {
+function compareTopics(a: RosTopic, b: RosTopic): number {
   if (a.name < b.name) {
     return -1;
   }
@@ -44,9 +44,9 @@ const compareTopics = (a: RosTopic, b: RosTopic) => {
     return 1;
   }
   return 0;
-};
+}
 
-function NodesDetailsPanel() {
+export default function NodesDetailsPanel(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -87,99 +87,93 @@ function NodesDetailsPanel() {
     setNodesShow(nodes);
   }, [navCtx.selectedNodes, rosCtx.nodeMap]);
 
-  const onTopicClick = useCallback(
-    async (
-      rosTopicType: EMenuTopic,
-      topic: string,
-      providerId: string,
-      external: boolean = false,
-      openInTerminal: boolean = false
-    ) => {
-      if (rosTopicType === EMenuTopic.clipboard) {
-        if (navigator && navigator.clipboard) {
-          navigator.clipboard.writeText(topic);
-          logCtx.success(`${topic} copied!`);
-        }
-        return;
+  async function onTopicClick(
+    rosTopicType: EMenuTopic,
+    topic: string,
+    providerId: string,
+    external: boolean = false,
+    openInTerminal: boolean = false
+  ): Promise<void> {
+    if (rosTopicType === EMenuTopic.clipboard) {
+      if (navigator && navigator.clipboard) {
+        navigator.clipboard.writeText(topic);
+        logCtx.success(`${topic} copied!`);
       }
-      if (rosTopicType === EMenuTopic.INFO) {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `topics-${generateUniqueId()}`,
-            `${topic}`,
-            <TopicsPanel initialSearchTerm={topic} />,
-            true,
-            LAYOUT_TABS.NODES,
-            new LayoutTabConfig(false, "info")
-          )
-        );
-        return;
-      }
+      return;
+    }
+    if (rosTopicType === EMenuTopic.INFO) {
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          `topics-${generateUniqueId()}`,
+          `${topic}`,
+          <TopicsPanel initialSearchTerm={topic} />,
+          true,
+          LAYOUT_TABS.NODES,
+          new LayoutTabConfig(false, "info")
+        )
+      );
+      return;
+    }
 
-      if (rosTopicType === EMenuTopic.PUBLISH) {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `publish-${topic}-${providerId}`,
-            topic,
-            <TopicPublishPanel topicName={topic} providerId={providerId} />,
-            true,
-            LAYOUT_TAB_SETS[settingsCtx.get("publisherOpenLocation") as string],
-            new LayoutTabConfig(false, "publish")
-          )
-        );
-        return;
-      }
+    if (rosTopicType === EMenuTopic.PUBLISH) {
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          `publish-${topic}-${providerId}`,
+          topic,
+          <TopicPublishPanel topicName={topic} providerId={providerId} />,
+          true,
+          LAYOUT_TAB_SETS[settingsCtx.get("publisherOpenLocation") as string],
+          new LayoutTabConfig(false, "publish")
+        )
+      );
+      return;
+    }
 
-      let defaultNoData = true;
-      if (rosTopicType === EMenuTopic.ECHO) {
-        defaultNoData = false;
-      }
-      rosCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
-    },
-    [logCtx, rosCtx]
-  );
+    let defaultNoData = true;
+    if (rosTopicType === EMenuTopic.ECHO) {
+      defaultNoData = false;
+    }
+    rosCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
+  }
 
-  const onServiceClick = useCallback(
-    (rosServiceType: EMenuService, service: string, providerId: string) => {
-      if (rosServiceType === EMenuService.clipboard) {
-        if (navigator && navigator.clipboard) {
-          navigator.clipboard.writeText(service);
-          logCtx.success(`${service} copied!`);
-        }
-        return;
+  function onServiceClick(rosServiceType: EMenuService, service: string, providerId: string): void {
+    if (rosServiceType === EMenuService.clipboard) {
+      if (navigator && navigator.clipboard) {
+        navigator.clipboard.writeText(service);
+        logCtx.success(`${service} copied!`);
       }
-      if (rosServiceType === EMenuService.SERVICE_CALL) {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `call-service-${generateUniqueId()}`,
-            service,
-            <ServiceCallerPanel serviceName={service} providerId={providerId} />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
-          )
-        );
-        return;
-      }
-      if (rosServiceType === EMenuService.INFO) {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `service-${generateUniqueId()}`,
-            `${service}`,
-            <ServicesPanel initialSearchTerm={service} />,
-            true,
-            LAYOUT_TABS.NODES,
-            new LayoutTabConfig(false, "info")
-          )
-        );
-      }
-    },
-    [logCtx]
-  );
+      return;
+    }
+    if (rosServiceType === EMenuService.SERVICE_CALL) {
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          `call-service-${generateUniqueId()}`,
+          service,
+          <ServiceCallerPanel serviceName={service} providerId={providerId} />,
+          true,
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
+          new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
+        )
+      );
+      return;
+    }
+    if (rosServiceType === EMenuService.INFO) {
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          `service-${generateUniqueId()}`,
+          `${service}`,
+          <ServicesPanel initialSearchTerm={service} />,
+          true,
+          LAYOUT_TABS.NODES,
+          new LayoutTabConfig(false, "info")
+        )
+      );
+    }
+  }
 
   const getHostStyle = useCallback(
     (providerName: string | undefined) => {
@@ -192,7 +186,7 @@ function NodesDetailsPanel() {
       }
       return {};
     },
-    [settingsCtx]
+    [settingsCtx.changed]
   );
 
   const createNodeDetailsView = useMemo(() => {
@@ -369,10 +363,7 @@ function NodesDetailsPanel() {
                                           size="small"
                                           title="publishers"
                                           // showZero={true}
-                                          color={(() => {
-                                            if (topic.publisher.length === 0) return "warning";
-                                            return "default";
-                                          })()}
+                                          color={topic.publisher.length === 0 ? "warning" : "default"}
                                           label={topic.publisher.length}
                                         />
                                         <Chip
@@ -707,5 +698,3 @@ function NodesDetailsPanel() {
     </Box>
   );
 }
-
-export default NodesDetailsPanel;

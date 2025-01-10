@@ -16,7 +16,7 @@ interface SearchBarProps {
 const SearchBar = forwardRef<HTMLDivElement, SearchBarProps>(function SearchBar(props, ref) {
   const {
     onSearch,
-    onCloseRequest = () => {},
+    onCloseRequest = (): void => {},
     placeholder = "Filter",
     defaultValue = "",
     fullWidth = true,

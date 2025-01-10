@@ -1,15 +1,15 @@
 /* eslint-disable max-classes-per-file */
-import { ConnectionState } from "./ConnectionState";
 import { ConnectConfig } from "ssh2";
 import {
   LaunchContent,
   PathEvent,
+  ProviderLaunchConfiguration,
   RosNode,
   ScreensMapping,
   SubscriberEvent,
   SystemWarningGroup,
-  ProviderLaunchConfiguration,
 } from "../models";
+import ConnectionState from "./ConnectionState";
 import Provider from "./Provider";
 
 export { ConnectionState };

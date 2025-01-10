@@ -13,7 +13,7 @@ import Provider from "../../../providers/Provider";
 import { EVENT_OPEN_CONNECT } from "../layout/events";
 import ProviderPanelRow from "./ProviderPanelRow";
 
-function ProviderPanel() {
+export default function ProviderPanel(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
@@ -32,7 +32,7 @@ function ProviderPanel() {
     setOpenConnect(true);
   });
 
-  const getDomainId = async () => {
+  async function getDomainId(): Promise<void> {
     if (rosCtx.providers.length === 0) {
       // do we have a join environment parameter
       if (import.meta.env.VITE_JOIN_ID) {
@@ -99,7 +99,7 @@ function ProviderPanel() {
         setOpenConnect(true);
       }
     }
-  };
+  }
 
   const debouncedCallbackFilterText = useDebounceCallback((providers: Provider[], searchTerm: string) => {
     if (searchTerm.length > 1) {
@@ -143,7 +143,6 @@ function ProviderPanel() {
       </TableContainer>
     );
     return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerRowsFiltered, rosCtx]);
 
   return (
@@ -197,5 +196,3 @@ function ProviderPanel() {
     </Stack>
   );
 }
-
-export default ProviderPanel;

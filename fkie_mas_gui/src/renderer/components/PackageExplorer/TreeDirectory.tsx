@@ -17,7 +17,12 @@ interface TreeDirectoryProps {
 }
 
 const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function TreeDirectory(props, ref) {
-  const { packageItemsTree, selectedPackage = null, onNodeSelect = () => {}, onFileDoubleClick = () => {} } = props;
+  const {
+    packageItemsTree,
+    selectedPackage = null,
+    onNodeSelect = (): void => {},
+    onFileDoubleClick = (): void => {},
+  } = props;
 
   const [expanded, setExpanded] = useState<string[]>([]);
   const [selectedItems, setSelectedItems] = useState<string | null>(null);
@@ -54,23 +59,20 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
   /**
    * Callback when folders on the tree are double-clicked by the user
    */
-  const handleFolderDoubleClick = useCallback(
-    (_label: string, id: string) => {
-      if (!expanded) return;
+  function handleFolderDoubleClick(_label: string, id: string): void {
+    if (!expanded) return;
 
-      const alreadyExpanded = expanded.find((item) => item === id);
+    const alreadyExpanded = expanded.find((item) => item === id);
 
-      if (alreadyExpanded) {
-        setExpanded((prev) => [...prev.filter((item) => item !== id)]);
-        return;
-      }
+    if (alreadyExpanded) {
+      setExpanded((prev) => [...prev.filter((item) => item !== id)]);
+      return;
+    }
 
-      if (id) {
-        setExpanded((prev) => [...prev, id]);
-      }
-    },
-    [expanded]
-  );
+    if (id) {
+      setExpanded((prev) => [...prev, id]);
+    }
+  }
 
   /**
    * Callback when folders on the tree are single-clicked by the user
@@ -107,47 +109,44 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
   /**
    * Build the tree structure for files and directories
    */
-  const buildTreePackageItems = useCallback(
-    (packageName, pathId: string, treeItem: TPackageTreeItem) => {
-      if (!treeItem) {
-        console.error("Invalid item ", packageName, treeItem);
-        return <div key={`${pathId}#${generateUniqueId()}`} />;
-      }
-      const { name, children, file } = treeItem;
+  function buildTreePackageItems(packageName: string, pathId: string, treeItem: TPackageTreeItem): JSX.Element {
+    if (!treeItem) {
+      console.error("Invalid item ", packageName, treeItem);
+      return <div key={`${pathId}#${generateUniqueId()}`} />;
+    }
+    const { name, children, file } = treeItem;
 
-      if (file && children && children.length === 0) {
-        // no children means that [item.value] is a file
-        return (
-          <FileTreeItem
-            key={`${pathId}#${file.id}`}
-            itemId={`${file.id}`}
-            file={file}
-            onDoubleClick={(labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) =>
-              handleFileDoubleClick(labelText, itemId, ctrlKey, shiftKey, altKey)
-            }
-          />
-        );
-      }
-
-      const newPathId = `${pathId}#${name}`;
+    if (file && children && children.length === 0) {
+      // no children means that [item.value] is a file
       return (
-        // valid children means that item is a directory
-        <FolderTreeItem
-          key={newPathId}
-          itemId={newPathId}
-          directoryName={name.replace("/", "")}
-          path={""}
-          onDoubleClick={(directoryName: string, itemId: string) => handleFolderDoubleClick(directoryName, itemId)}
-          onClick={(directoryName: string, id: string) => handleFolderClick(directoryName, id)}
-        >
-          {children.map((tItem) => {
-            return buildTreePackageItems(packageName, newPathId, tItem);
-          })}
-        </FolderTreeItem>
+        <FileTreeItem
+          key={`${pathId}#${file.id}`}
+          itemId={`${file.id}`}
+          file={file}
+          onDoubleClick={(labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) =>
+            handleFileDoubleClick(labelText, itemId, ctrlKey, shiftKey, altKey)
+          }
+        />
       );
-    },
-    [handleFolderDoubleClick, handleFileDoubleClick, handleFolderClick]
-  );
+    }
+
+    const newPathId = `${pathId}#${name}`;
+    return (
+      // valid children means that item is a directory
+      <FolderTreeItem
+        key={newPathId}
+        itemId={newPathId}
+        directoryName={name.replace("/", "")}
+        path={""}
+        onDoubleClick={(directoryName: string, itemId: string) => handleFolderDoubleClick(directoryName, itemId)}
+        onClick={(directoryName: string, id: string) => handleFolderClick(directoryName, id)}
+      >
+        {children.map((tItem) => {
+          return buildTreePackageItems(packageName, newPathId, tItem);
+        })}
+      </FolderTreeItem>
+    );
+  }
 
   /**
    * Memoize the generation of the tree to improve render performance

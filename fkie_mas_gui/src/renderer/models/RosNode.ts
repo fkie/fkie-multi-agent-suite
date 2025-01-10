@@ -33,7 +33,7 @@ export const RosNodeStatusInfo = {
 /**
  * RosNode models the nodes running in a ROS system
  */
-class RosNode {
+export default class RosNode {
   /** ID used on the UI side across all provider. idGlobal should be the same for life of the node on remote host */
   idGlobal: string = "";
 
@@ -164,25 +164,6 @@ class RosNode {
   lifecycle_state?: string;
   lifecycle_available_transitions?: { label: string; id: number }[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} id - Unique identifier
-   * @param {string} name - ROS name (including namespace)
-   * @param {string} namespace - ROS namespace
-   * @param {string} node_API_URI - ROS node API URI (where the node is running)
-   * @param {RosNodeStatus} status - Node status: inactive (loaded but not stated), running (already started), unknown
-   * @param {number} pid - process id
-   * @param {string} masteruri - The ROS_MASTER_URI the node was originally registered
-   * @param {string} location - Describes whether the node is running on the same host as the ROS master. Possible values: local, remote
-   * @param {Map<string, RosTopic>} subscribers - List of topics subscribed by the node
-   * @param {Map<string, RosTopic>} publishers - List of topics published by the node
-   * @param {Map<string, RosTopic>} actions - List of actions registered by the node
-   * @param {Map<string, RosService>} services - List of services available in the node
-   * @param {string[]} screens - List of screens associated to the node
-   * @param {boolean} system_node - Flag to signal a system's relevant node
-   *
-   */
   constructor(
     id = "",
     name = "",
@@ -217,11 +198,11 @@ class RosNode {
     this.providerId = "";
   }
 
-  getRosLoggersCount: () => number = () => {
+  public getRosLoggersCount(): number {
     return Object.keys(this.rosLoggers).length;
-  };
+  }
 
-  getLaunchComposableContainer: () => string | null = () => {
+  public getLaunchComposableContainer(): string | null {
     if (this.launchPath) {
       const launchInfo = this.launchInfo.get(this.launchPath);
       if (launchInfo?.composable_container) {
@@ -234,9 +215,9 @@ class RosNode {
       }
     }
     return null;
-  };
+  }
 
-  getAllContainers: () => string[] = () => {
+  public getAllContainers(): string[] {
     const result: string[] = [];
     if (this.container_name) {
       result.push(this.container_name);
@@ -247,16 +228,5 @@ class RosNode {
       }
     });
     return result;
-  };
-
-  /**
-   * Generates a string representation of the node
-   *
-   * @return {string} Node description
-   */
-  toString: () => string = () => {
-    return `${this.name} - ${this.namespace} - ${this.status}`;
-  };
+  }
 }
-
-export default RosNode;

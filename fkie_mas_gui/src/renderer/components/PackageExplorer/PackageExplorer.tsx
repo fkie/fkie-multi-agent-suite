@@ -19,7 +19,7 @@ import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "./types";
 /**
  * Sorting function used for comparing two package objects
  */
-const comparePathItems = (a: PathItem, b: PathItem) => {
+function comparePathItems(a: PathItem, b: PathItem): number {
   if (a.name && b.name) {
     return a.name?.localeCompare(b.name);
   } else if (a.name) {
@@ -28,12 +28,12 @@ const comparePathItems = (a: PathItem, b: PathItem) => {
     return 1;
   }
   return 0;
-};
+}
 
 /**
  * Sorting function used for comparing two package items (files/directories)
  */
-const comparePackageItems = (a: RosPackage, b: RosPackage) => {
+function comparePackageItems(a: RosPackage, b: RosPackage): number {
   if (a.path < b.path) {
     return -1;
   }
@@ -41,7 +41,7 @@ const comparePackageItems = (a: RosPackage, b: RosPackage) => {
     return 1;
   }
   return 0;
-};
+}
 
 interface PackageExplorerProps {
   packageList: RosPackage[];
@@ -133,7 +133,6 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
 
     const sortedPackages = packageList.sort(comparePackageItems);
     setPackageListFiltered(sortedPackages);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageList, rosCtx, selectedProvider, selectedPackage, launchFileHistory]);
 
   // Reset states upon packageList or history modification.
@@ -145,148 +144,141 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
   /**
    * Callback function when a package is selected.
    */
-  const handleOnSelectPackage = useCallback(
-    async (newSelectedPackage: RosPackage | null) => {
-      if (!newSelectedPackage) return;
+  async function handleOnSelectPackage(newSelectedPackage: RosPackage | null): Promise<void> {
+    if (!newSelectedPackage) return;
 
-      const packagePath = newSelectedPackage.path;
-      const packageName = newSelectedPackage.name;
+    const packagePath = newSelectedPackage.path;
+    const packageName = newSelectedPackage.name;
 
-      if (!packagePath) return;
-      if (!selectedProvider) return;
-      if (selectedProvider.length === 0) return;
+    if (!packagePath) return;
+    if (!selectedProvider) return;
+    if (selectedProvider.length === 0) return;
 
-      const provider = rosCtx.getProviderById(selectedProvider, false);
-      if (!provider || !provider.getPathList) return;
+    const provider = rosCtx.getProviderById(selectedProvider, false);
+    if (!provider || !provider.getPathList) return;
 
-      let fl: PathItem[] = await provider.getPathList(`${packagePath}/`);
+    let fl: PathItem[] = await provider.getPathList(`${packagePath}/`);
 
-      // if file list is too large, we will have render problems
-      // filter files to consider only relevant ones
+    // if file list is too large, we will have render problems
+    // filter files to consider only relevant ones
+    // try to filter/ignore unnecessary files
+    fl = fl.filter((f) => {
+      // ignore temporal directories
+      // TODO: Make a setting parameter for this
+      if (f.path.includes("/node_modules/")) return false;
+      if (f.path.includes("/build/")) return false;
+      if (f.path.includes("/__pycache__/")) return false;
+      return true;
+    });
+
+    // if list of files still too large, keep only "relevant" file extensions
+    // TODO: Do we need a setting for this number?
+    if (fl.length > 100) {
+      setIgnoringNonRelevantPackageFiles(true);
+
       // try to filter/ignore unnecessary files
       fl = fl.filter((f) => {
-        // ignore temporal directories
-        // TODO: Make a setting parameter for this
-        if (f.path.includes("/node_modules/")) return false;
-        if (f.path.includes("/build/")) return false;
-        if (f.path.includes("/__pycache__/")) return false;
-        return true;
+        // check file extension for "interesting" files
+        const fileExtension = getFileExtension(f.path);
+        return ["launch", "yaml", "md", "h", "hpp", "c", "cpp", "py", "xml", "txt", "sdf", "config", "cfg"].includes(
+          fileExtension
+        );
       });
+    } else {
+      setIgnoringNonRelevantPackageFiles(false);
+    }
 
-      // if list of files still too large, keep only "relevant" file extensions
-      // TODO: Do we need a setting for this number?
-      if (fl.length > 100) {
-        setIgnoringNonRelevantPackageFiles(true);
+    const pathItemMap = new Map<string, PathItem>();
 
-        // try to filter/ignore unnecessary files
-        fl = fl.filter((f) => {
-          // check file extension for "interesting" files
-          const fileExtension = getFileExtension(f.path);
-          return ["launch", "yaml", "md", "h", "hpp", "c", "cpp", "py", "xml", "txt", "sdf", "config", "cfg"].includes(
-            fileExtension
-          );
-        });
-      } else {
-        setIgnoringNonRelevantPackageFiles(false);
-      }
+    // Add extra properties to file object.
+    const itemList: PathItem[] = fl.map((f) => {
+      f.name = getFileName(f.path);
+      f.package = packageName;
+      // remove the package path from the file path
+      // replace the file name by file id, to prevent name collisions in subfolders
+      f.relativePath = f.path.replace(`${packagePath}/`, "/").replace(f.name, f.id);
+      pathItemMap.set(f.id, f);
+      return f;
+    });
 
-      const pathItemMap = new Map<string, PathItem>();
+    itemList.sort(comparePathItems);
 
-      // Add extra properties to file object.
-      const itemList: PathItem[] = fl.map((f) => {
-        f.name = getFileName(f.path);
-        f.package = packageName;
-        // remove the package path from the file path
-        // replace the file name by file id, to prevent name collisions in subfolders
-        f.relativePath = f.path.replace(`${packagePath}/`, "/").replace(f.name, f.id);
-        pathItemMap.set(f.id, f);
-        return f;
-      });
+    const packageTree: TPackageTreeItem[] = [];
+    const level: TPackageTree = { packageTree };
 
-      itemList.sort(comparePathItems);
+    // create a tree structure
+    // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
+    itemList.forEach((item) => {
+      item.relativePath?.split("/").reduce((prev: TPackageTree, name, i, a) => {
+        if (!prev[name]) {
+          prev[name] = { packageTree: [] };
 
-      const packageTree: TPackageTreeItem[] = [];
-      const level: TPackageTree = { packageTree };
-
-      // create a tree structure
-      // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
-      itemList.forEach((item) => {
-        item.relativePath?.split("/").reduce((prev: TPackageTree, name, i, a) => {
-          if (!prev[name]) {
-            prev[name] = { packageTree: [] };
-
-            if (pathItemMap.has(name)) {
-              // file
-              prev.packageTree.push({
-                name: pathItemMap.get(name)?.name as string,
-                children: [],
-                file: pathItemMap.get(name),
-                isDirectory: false,
-              });
-            } else {
-              // directory
-              prev.packageTree.push({
-                name: name,
-                children: prev[name].packageTree,
-                file: undefined,
-                isDirectory: true,
-              });
-            }
-          } else if (i === a.length - 1) {
-            // TODO: Allow duplicate filenames ?
-            // Filenames should always be at the end of the array.
-            // r.treeFile.push({ name, children: [] });
+          if (pathItemMap.has(name)) {
+            // file
+            prev.packageTree.push({
+              name: pathItemMap.get(name)?.name as string,
+              children: [],
+              file: pathItemMap.get(name),
+              isDirectory: false,
+            });
+          } else {
+            // directory
+            prev.packageTree.push({
+              name: name,
+              children: prev[name].packageTree,
+              file: undefined,
+              isDirectory: true,
+            });
           }
+        } else if (i === a.length - 1) {
+          // TODO: Allow duplicate filenames ?
+          // Filenames should always be at the end of the array.
+          // r.treeFile.push({ name, children: [] });
+        }
 
-          return prev[name];
-        }, level);
-      });
+        return prev[name];
+      }, level);
+    });
 
-      const pit: TPackageItemsTree = {};
-      // eslint-disable-next-line prefer-destructuring
-      pit[`${packageName}`] = packageTree;
+    const pit: TPackageItemsTree = {};
+    // eslint-disable-next-line prefer-destructuring
+    pit[`${packageName}`] = packageTree;
 
-      setPackageItemsTree(pit);
-      setPackageItemList(itemList);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.getProviderById, selectedProvider, setSelectedPackage]
-  );
+    setPackageItemsTree(pit);
+    setPackageItemList(itemList);
+  }
 
   /**
    * Callback function when the search box is used.
    */
-  const searchCallback = useCallback(
-    (searchText: string) => {
-      if (!searchText || (searchText && searchText.length === 0)) {
-        const sortedPackages = packageList.sort(comparePackageItems);
-        setPackageListFiltered(sortedPackages);
-        return;
-      }
-
-      const searchResult: RosPackage[] = [];
-      const includedPackages: string[] = [];
-      packageList.forEach((p) => {
-        if (
-          p.name.indexOf(searchText) !== -1 &&
-          !includedPackages.includes(p.name) // prevent duplicates
-        ) {
-          searchResult.push(p);
-          includedPackages.push(p.name);
-        }
-      });
-
-      const sortedPackages = searchResult.sort(comparePackageItems);
+  function searchCallback(searchText: string): void {
+    if (!searchText || (searchText && searchText.length === 0)) {
+      const sortedPackages = packageList.sort(comparePackageItems);
       setPackageListFiltered(sortedPackages);
-    },
-    [packageList]
-  );
+      return;
+    }
+
+    const searchResult: RosPackage[] = [];
+    const includedPackages: string[] = [];
+    packageList.forEach((p) => {
+      if (
+        p.name.indexOf(searchText) !== -1 &&
+        !includedPackages.includes(p.name) // prevent duplicates
+      ) {
+        searchResult.push(p);
+        includedPackages.push(p.name);
+      }
+    });
+
+    const sortedPackages = searchResult.sort(comparePackageItems);
+    setPackageListFiltered(sortedPackages);
+  }
 
   /**
    * Callback when files on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (itemId: string) => {
+    function (itemId: string): void {
       const callbackFile: PathItem | undefined = packageItemList.find((item) => item.id === itemId);
       if (callbackFile) {
         setSelectedFile(callbackFile);
@@ -297,20 +289,17 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
     [packageItemList]
   );
 
-  const onEditFile = useCallback(
-    async (fileObj: PathItem | undefined, external: boolean) => {
-      if (fileObj) {
-        rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, [], external);
-      }
-    },
-    [selectedProvider, rosCtx]
-  );
+  function onEditFile(fileObj: PathItem | undefined, external: boolean): void {
+    if (fileObj) {
+      rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, [], external);
+    }
+  }
 
   /**
    * Callback when files are double-clicked by the user
    */
   const onFileDoubleClick = useCallback(
-    (_label: string, itemId: string, _ctrlKey: boolean, shiftKey: boolean) => {
+    function (_label: string, itemId: string, _ctrlKey: boolean, shiftKey: boolean): void {
       const callbackFile = packageItemList.find((item) => item.id === itemId);
       if (!callbackFile) return;
 

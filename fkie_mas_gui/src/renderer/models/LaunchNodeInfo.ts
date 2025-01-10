@@ -6,7 +6,7 @@ import RosParameter from "./RosParameter";
 /**
  * LaunchNodeInfo models info for ROS nodes that comes from launch file.
  */
-class LaunchNodeInfo {
+export default class LaunchNodeInfo {
   unique_name: string | null;
 
   node_name: string | null;
@@ -63,10 +63,6 @@ class LaunchNodeInfo {
 
   associations: string[] = [];
 
-  /**
-   * Class Constructor
-   *
-   */
   constructor(
     unique_name: string | null,
     node_name: string | null = null,
@@ -125,5 +121,3 @@ class LaunchNodeInfo {
     this.composable_container = composable_container;
   }
 }
-
-export default LaunchNodeInfo;

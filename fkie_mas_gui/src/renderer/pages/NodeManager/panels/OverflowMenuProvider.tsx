@@ -26,14 +26,14 @@ const OverflowMenuProvider = forwardRef<HTMLDivElement, OverflowMenuProviderProp
             {
               name: "Info",
               key: `info-${providerId}`,
-              onClick: () => {
+              onClick: (): void => {
                 onClick(EMenuProvider.INFO, providerId, providerName);
               },
             },
             {
               name: "Delete",
               key: `delete-${providerId}`,
-              onClick: () => {
+              onClick: (): void => {
                 onClick(EMenuProvider.DELETE, providerId, providerName);
               },
             },

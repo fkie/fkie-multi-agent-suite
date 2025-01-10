@@ -32,16 +32,16 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
     const {
       title = "Select providers",
       providers,
-      onConfirmCallback = () => {},
-      onCloseCallback = () => {},
-      onForceCloseCallback = () => {},
+      onConfirmCallback = (): void => {},
+      onCloseCallback = (): void => {},
+      onForceCloseCallback = (): void => {},
     } = props;
     const [selectedProviders, setSelectedProviders] = useState<Provider[]>([]);
     const [progress, setProgress] = useState<number>(100);
     const [showProgress, setShowProgress] = useState<boolean>(true);
     const [onShutdown, setOnShutdown] = useState<boolean>(false);
 
-    const handleToggle = (value: string) => () => {
+    function handleToggle(value: string): void {
       const currentIndex = selectedProviders.findIndex((prov) => prov.id === value);
       const newSelectedProviders: Provider[] = [...selectedProviders];
 
@@ -56,18 +56,18 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
 
       setSelectedProviders(newSelectedProviders);
       setShowProgress(false);
-    };
+    }
 
-    const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+    function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
       if (reason && reason === "backdropClick") return;
       onCloseCallback();
-    };
+    }
 
-    const onConfirm = () => {
+    function onConfirm(): void {
       setOnShutdown(true);
       onConfirmCallback(selectedProviders);
       // handleClose();
-    };
+    }
 
     const performCloseProgress = useCallback(
       async (oldProgress: number) => {
@@ -125,7 +125,7 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
 
                 return (
                   <ListItem key={prov.id} disablePadding>
-                    <ListItemButton role={undefined} onClick={handleToggle(prov.id)} dense>
+                    <ListItemButton role={undefined} onClick={() => handleToggle(prov.id)} dense>
                       <ListItemIcon>
                         <Checkbox
                           edge="start"

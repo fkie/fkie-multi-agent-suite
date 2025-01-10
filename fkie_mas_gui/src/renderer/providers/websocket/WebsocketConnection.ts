@@ -94,7 +94,10 @@ export default class WebsocketConnection extends ProviderConnection {
       this.handleMessage(event.data);
     });
     const start = Date.now();
-    const waitForConnection = (resolve: (value: boolean) => void, reject: (reason?: boolean) => void) => {
+    const waitForConnection: (resolve: (value: boolean) => void, reject: (reason?: boolean) => void) => void = (
+      resolve,
+      reject
+    ) => {
       // connection available :)
       if (this.connected()) {
         resolve(true);

@@ -25,7 +25,7 @@ export default class TopicExtendedInfo {
     this.addSubscribers(topic.subscriber);
   }
 
-  addPublishers(publishers: EndpointInfo[]) {
+  addPublishers(publishers: EndpointInfo[]): void {
     publishers.forEach((pub: EndpointInfo) => {
       if (this.publishers.filter((item) => item.node_id === pub.node_id).length === 0) {
         this.publishers.push(pub);
@@ -33,7 +33,7 @@ export default class TopicExtendedInfo {
     });
   }
 
-  addSubscribers(subscribers: EndpointInfo[]) {
+  addSubscribers(subscribers: EndpointInfo[]): void {
     subscribers.forEach((sub: EndpointInfo) => {
       if (this.subscribers.filter((item) => item.node_id === sub.node_id).length === 0) {
         this.subscribers.push(sub);
@@ -41,7 +41,7 @@ export default class TopicExtendedInfo {
     });
   }
 
-  add(topic: RosTopic) {
+  public add(topic: RosTopic): void {
     this.addPublishers(topic.publisher);
     this.addSubscribers(topic.subscriber);
   }

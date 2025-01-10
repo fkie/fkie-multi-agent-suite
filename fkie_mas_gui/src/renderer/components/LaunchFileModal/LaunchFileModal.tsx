@@ -18,7 +18,7 @@ import { ForwardedRef, forwardRef, HTMLAttributes, useCallback, useContext, useE
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import useLocalStorage from "../../hooks/useLocalStorage";
-import { LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem, getFileName } from "../../models";
+import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "../../models";
 import DraggablePaper from "../UI/DraggablePaper";
 import Tag from "../UI/Tag";
 
@@ -34,7 +34,7 @@ interface LaunchFileModalProps {
 }
 
 const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(function LaunchFileModal(props, ref) {
-  const { selectedProvider, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = () => {} } = props;
+  const { selectedProvider, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = (): void => {} } = props;
 
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -47,7 +47,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
   const getLaunchFile = useCallback(
-    async (file: string) => {
+    async function (file: string): Promise<void> {
       const provider = rosCtx.getProviderById(selectedProvider, true);
       if (!provider || !provider.isAvailable()) return;
 
@@ -148,7 +148,6 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       }
     },
     // Do not include [logCtx] or [rosCtx] as dependency, because it will cause infinity loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       argHistory,
       rosCtx.initialized,
@@ -159,106 +158,107 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   );
 
   // The user clicked on launch, fill arguments a make a request to provider
-  const launchSelectedFile = useCallback(async () => {
-    if (!selectedLaunch) return;
+  const launchSelectedFile = useCallback(
+    async function (): Promise<void> {
+      if (!selectedLaunch) return;
 
-    const provider = rosCtx.getProviderById(selectedProvider, true);
-    if (!provider || !provider.isAvailable()) return;
+      const provider = rosCtx.getProviderById(selectedProvider, true);
+      if (!provider || !provider.isAvailable()) return;
 
-    if (provider.launchLoadFile) {
-      /*
-       * ros_package -
-       * launch - Launch file in the package path.
-       * path - if set, this will be used instead of package/launch
-       * @param {LaunchArgument[]} args - Arguments to load the launch file.
-       * @param {boolean} force_first_file - If True, use first file if more than one was found in the package.
-       * @param {boolean} request_args - If True, the launch file will not be loaded, only launch arguments are requested.
-       * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
-       * host - Start nodes of this file on specified host.
-       * */
-      const rosPackage = ""; // ROS package name.
-      const launch = ""; // Launch file in the package path.
-      const path = selectedLaunch.paths[0];
-      const forceFirstFile = true;
-      const requestArgs = false;
+      if (provider.launchLoadFile) {
+        /*
+         * ros_package -
+         * launch - Launch file in the package path.
+         * path - if set, this will be used instead of package/launch
+         * @param {LaunchArgument[]} args - Arguments to load the launch file.
+         * @param {boolean} force_first_file - If True, use first file if more than one was found in the package.
+         * @param {boolean} request_args - If True, the launch file will not be loaded, only launch arguments are requested.
+         * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
+         * host - Start nodes of this file on specified host.
+         * */
+        const rosPackage = ""; // ROS package name.
+        const launch = ""; // Launch file in the package path.
+        const path = selectedLaunch.paths[0];
+        const forceFirstFile = true;
+        const requestArgs = false;
 
-      // fill arguments
-      const args: LaunchArgument[] = [];
+        // fill arguments
+        const args: LaunchArgument[] = [];
 
-      currentArgs.forEach((arg) => {
-        args.push(new LaunchArgument(arg.name, arg.value));
-        // update history
-        let hList: string[] = argHistory[arg.name];
-        if (hList !== undefined) {
-          hList = hList.filter((value) => value !== arg.value);
+        currentArgs.forEach((arg) => {
+          args.push(new LaunchArgument(arg.name, arg.value));
+          // update history
+          let hList: string[] = argHistory[arg.name];
+          if (hList !== undefined) {
+            hList = hList.filter((value) => value !== arg.value);
+          } else {
+            hList = [];
+          }
+          hList.unshift(arg.value);
+          hList = hList.slice(0, 10);
+          argHistory[arg.name] = hList;
+        });
+        setArgHistory({ ...argHistory });
+
+        const request = new LaunchLoadRequest(
+          rosPackage,
+          launch,
+          path,
+          args,
+          forceFirstFile,
+          requestArgs,
+          provider.rosState.masteruri ? provider.rosState.masteruri : "",
+          provider.host()
+        );
+
+        const resultLaunchLoadFile = await provider.launchLoadFile(request, false);
+
+        if (!resultLaunchLoadFile) {
+          logCtx.error(
+            `Invalid response for [launchLoadFile], check DAEMON screen output`,
+            "Please check your provider configuration"
+          );
+        } else if (resultLaunchLoadFile.status.code === "OK") {
+          setOpen(false);
+          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+        } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
+          setMessageLaunchLoaded("Please fill all arguments");
         } else {
-          hList = [];
+          setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
+          logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`);
         }
-        hList.unshift(arg.value);
-        hList = hList.slice(0, 10);
-        argHistory[arg.name] = hList;
-      });
-      setArgHistory({ ...argHistory });
-
-      const request = new LaunchLoadRequest(
-        rosPackage,
-        launch,
-        path,
-        args,
-        forceFirstFile,
-        requestArgs,
-        provider.rosState.masteruri ? provider.rosState.masteruri : "",
-        provider.host()
-      );
-
-      const resultLaunchLoadFile = await provider.launchLoadFile(request, false);
-
-      if (!resultLaunchLoadFile) {
+      } else {
         logCtx.error(
-          `Invalid response for [launchLoadFile], check DAEMON screen output`,
+          `The provider [${selectedProvider}] does not support [launchLoadFile]`,
           "Please check your provider configuration"
         );
-      } else if (resultLaunchLoadFile.status.code === "OK") {
-        setOpen(false);
-        logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
-      } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
-        setMessageLaunchLoaded("Please fill all arguments");
-      } else {
-        setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
-        logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`);
       }
-    } else {
-      logCtx.error(
-        `The provider [${selectedProvider}] does not support [launchLoadFile]`,
-        "Please check your provider configuration"
-      );
-    }
 
-    // clear launch objects
-    setSelectedLaunch(null);
-    setSelectedLaunchFile(undefined);
+      // clear launch objects
+      setSelectedLaunch(null);
+      setSelectedLaunchFile(undefined);
 
-    onLaunchCallback();
+      onLaunchCallback();
 
-    // trigger node's update (will force a reload using useEffect hook)
-    // rosCtx.updateNodeList(provider.name());
-    // rosCtx.updateLaunchList(provider.name());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentArgs, argHistory, selectedLaunch, selectedProvider, setSelectedLaunchFile, setArgHistory]);
+      // trigger node's update (will force a reload using useEffect hook)
+      // rosCtx.updateNodeList(provider.name());
+      // rosCtx.updateLaunchList(provider.name());
+    },
+    [currentArgs, argHistory, selectedLaunch, selectedProvider, setSelectedLaunchFile, setArgHistory]
+  );
 
   // Request file and load arguments
   useEffect(() => {
     getLaunchFile(selectedLaunchFile.path);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLaunchFile]);
 
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
-  };
+  }
 
   const deleteHistoryOption = useCallback(
-    (argName, option) => {
+    function (argName: string, option: string): void {
       setCurrentArgs(
         currentArgs.map((arg) => {
           if (arg.name === argName) {
@@ -282,7 +282,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   );
 
   const openFileDialog = useCallback(
-    async (argName, argValue) => {
+    async function (argName: string, argValue: string): Promise<void> {
       let defaultPath = lastOpenPath;
       if (!defaultPath && argValue.startsWith("/")) {
         defaultPath = argValue;
@@ -303,7 +303,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
     [currentArgs, lastOpenPath, setLastOpenPath]
   );
 
-  const isPathParam = (name, value) => {
+  function isPathParam(name: string, value: string): boolean {
     if (!value) {
       // offer path select dialog on empty string
       return true;
@@ -320,7 +320,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       return false;
     }
     return Number.isNaN(Number(value));
-  };
+  }
 
   const dialogRef = useRef(ref);
 

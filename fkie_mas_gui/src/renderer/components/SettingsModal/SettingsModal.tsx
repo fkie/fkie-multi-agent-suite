@@ -7,14 +7,16 @@ import { EVENT_OPEN_SETTINGS, SETTING } from "../../pages/NodeManager/layout/eve
 import DraggablePaper from "../UI/DraggablePaper";
 import GuiPanel from "./GuiPanel";
 
-function SettingsModal() {
+export default function SettingsModal(): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleOpen(): void {
+    setOpen(true);
+  }
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
-  };
+  }
 
   useCustomEventListener(EVENT_OPEN_SETTINGS, (data: { id: string }) => {
     if (data.id === SETTING.IDS.INTERFACE) {
@@ -77,5 +79,3 @@ function SettingsModal() {
     </div>
   );
 }
-
-export default SettingsModal;

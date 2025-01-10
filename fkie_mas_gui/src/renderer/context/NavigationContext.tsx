@@ -11,8 +11,8 @@ export const DEFAULT = {
   selectedNodes: [],
   selectedProviders: [],
   modifiedFiles: [],
-  setSelectedNodes: () => {},
-  setSelectedProviders: () => {},
+  setSelectedNodes: (): void => {},
+  setSelectedProviders: (): void => {},
 };
 
 interface INavigationProvider {

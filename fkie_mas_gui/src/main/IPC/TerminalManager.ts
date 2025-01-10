@@ -1,4 +1,4 @@
-import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
+import { /*TerminalCloseCallback, */ TerminalManagerEvents, TTerminalManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
@@ -12,7 +12,7 @@ type TTerminal = {
 /**
  * Class TerminalManager: Allows to create terminal objects to interact with console
  */
-class TerminalManager implements TTerminalManager {
+export default class TerminalManager implements TTerminalManager {
   rosInfo: ROSInfo;
 
   instances: { [id: string]: TTerminal } = {};
@@ -21,11 +21,11 @@ class TerminalManager implements TTerminalManager {
     this.rosInfo = new ROSInfo();
   }
 
-  onClose: (callback: TerminalCloseCallback) => void = () => {
+  onClose(/*callback: TerminalCloseCallback*/): void {
     // implemented in preload script
-  };
+  }
 
-  public registerHandlers: () => void = () => {
+  public registerHandlers(): void {
     ipcMain.handle(TerminalManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
       return this.has(id);
     });
@@ -47,25 +47,25 @@ class TerminalManager implements TTerminalManager {
         return this.open(id, host, port, info, node, screen, cmd);
       }
     );
-  };
+  }
 
-  public has: (id: string) => Promise<boolean> = async (id) => {
+  public async has(id: string): Promise<boolean> {
     if (this.instances[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  };
+  }
 
-  public close: (id: string) => Promise<boolean> = async (id) => {
+  public async close(id: string): Promise<boolean> {
     if (this.instances[id]) {
       this.instances[id].window.destroy();
       delete this.instances[id];
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  };
+  }
 
-  public open: (
+  public async open(
     id: string,
     host: string,
     port: number,
@@ -73,7 +73,7 @@ class TerminalManager implements TTerminalManager {
     node: string,
     screen: string,
     cmd: string
-  ) => Promise<string | null> = async (id, host, port, info, node, screen, cmd) => {
+  ): Promise<string | null> {
     // if (isDebug) {
     //   await installExtensions()
     // }
@@ -152,7 +152,5 @@ class TerminalManager implements TTerminalManager {
       });
     }
     return Promise.resolve(null);
-  };
+  }
 }
-
-export default TerminalManager;

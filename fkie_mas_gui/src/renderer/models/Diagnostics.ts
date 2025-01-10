@@ -7,7 +7,7 @@ export enum DiagnosticLevel {
   STALE = 3,
 }
 
-export const getMaxDiagnosticLevel = (lvl1: DiagnosticLevel, lvl2: DiagnosticLevel) => {
+export function getMaxDiagnosticLevel(lvl1: DiagnosticLevel, lvl2: DiagnosticLevel): DiagnosticLevel {
   const maxLvl = Math.max(lvl1, lvl2);
   if (maxLvl === DiagnosticLevel.STALE) {
     const minLvl = Math.min(lvl1, lvl2);
@@ -16,9 +16,9 @@ export const getMaxDiagnosticLevel = (lvl1: DiagnosticLevel, lvl2: DiagnosticLev
     }
   }
   return maxLvl;
-};
+}
 
-export const getDiagnosticLevelName = (lvl: DiagnosticLevel) => {
+export function getDiagnosticLevelName(lvl: DiagnosticLevel): string {
   switch (lvl) {
     case 0:
       return `OK[${lvl}]`;
@@ -31,7 +31,7 @@ export const getDiagnosticLevelName = (lvl: DiagnosticLevel) => {
     default:
       return `UNKNOWN[${lvl}]`;
   }
-};
+}
 
 export class DiagnosticKeyValue {
   key: string;
@@ -70,21 +70,13 @@ export class DiagnosticStatus {
   }
 }
 
-export class DiagnosticArray {
+export default class DiagnosticArray {
   timestamp: number;
 
   status: DiagnosticStatus[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {number} timestamp - time stamp
-   * @param {DiagnosticStatus[]} status - list of status
-   */
   constructor(timestamp: number, status: DiagnosticStatus[]) {
     this.timestamp = timestamp;
     this.status = status;
   }
 }
-
-export default DiagnosticArray;

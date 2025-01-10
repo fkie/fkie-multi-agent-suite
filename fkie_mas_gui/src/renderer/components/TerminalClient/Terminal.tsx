@@ -148,7 +148,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     // this.sendData = this.sendData.bind(this);
   }
 
-  private connect() {
+  private connect(): void {
     console.log(`[ttyd] connect to ${this.props.wsUrl}`);
     this.socket = new WebSocket(this.props.wsUrl, ["tty"]);
     this.socket.binaryType = "arraybuffer";
@@ -158,7 +158,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     this.socket.onerror = this.onSocketError;
   }
 
-  async componentDidMount() {
+  async componentDidMount(): Promise<void> {
     const { termOptions } = this.props;
     termOptions.allowProposedApi = true;
     this.terminal = new XTerminal(termOptions);
@@ -204,7 +204,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         shiftKey: true,
         ctrlKey: true,
         altKey: false,
-        callback: () => {
+        callback: (): void => {
           navigator.clipboard.writeText(terminal.getSelection());
         },
       },
@@ -213,7 +213,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         shiftKey: false,
         ctrlKey: true,
         altKey: false,
-        callback: () => {
+        callback: (): void => {
           this.fontSize = this.fontSize + 1;
           const { terminal } = this;
           if (terminal) terminal.options.fontSize = this.fontSize;
@@ -226,7 +226,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         shiftKey: false,
         ctrlKey: true,
         altKey: false,
-        callback: () => {
+        callback: (): void => {
           this.fontSize = this.fontSize - 1;
           const { terminal } = this;
           if (terminal) terminal.options.fontSize = this.fontSize;
@@ -239,7 +239,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         shiftKey: false,
         ctrlKey: true,
         altKey: false,
-        callback: () => {
+        callback: (): void => {
           this.fontSize = this.settingsCtx?.getDefault("fontSizeTerminal") as number;
           const { terminal } = this;
           if (terminal) terminal.options.fontSize = this.fontSize;
@@ -252,7 +252,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         shiftKey: false,
         ctrlKey: true,
         altKey: false,
-        callback: () => {
+        callback: (): void => {
           const { terminal } = this;
           if (terminal) terminal.clear();
         },
@@ -262,7 +262,7 @@ export class Terminal extends React.Component<Props, XtermState> {
         shiftKey: false,
         ctrlKey: true,
         altKey: false,
-        callback: () => {
+        callback: (): void => {
           this.setState({ opened: this.state.opened, showSearchBar: !this.state.showSearchBar });
         },
       },
@@ -288,7 +288,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     });
   }
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     // send SIGINT on terminal close
     this.socket?.close(1000, "Component closed");
     if (this.terminal) this.terminal.dispose();
@@ -297,7 +297,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  private async onSocketOpen() {
+  private async onSocketOpen(): Promise<void> {
     const { socket, textEncoder, terminal, fitAddon, state } = this;
     const dims = fitAddon.proposeDimensions();
     this.setState({
@@ -344,12 +344,12 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  private onSocketError(_event: Event) {
+  private onSocketError(_event: Event): void {
     // might be fired when component is closed
     console.error("[ttyd] websocket connection error: ", _event);
   }
 
-  private onSocketData(event: MessageEvent) {
+  private onSocketData(event: MessageEvent): void {
     const { textDecoder } = this;
     const rawData = event.data as ArrayBuffer;
     const cmd = String.fromCharCode(new Uint8Array(rawData)[0]);
@@ -380,7 +380,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  render() {
+  render(): JSX.Element {
     const { state, fitAddon } = this;
     fitAddon.fit();
     return (
@@ -477,12 +477,12 @@ export class Terminal extends React.Component<Props, XtermState> {
     );
   }
 
-  private pause() {
+  private pause(): void {
     const { textEncoder, socket } = this;
     socket?.send(textEncoder.encode(CommandClient.PAUSE));
   }
 
-  private onTerminalResize(size: { cols: number; rows: number }) {
+  private onTerminalResize(size: { cols: number; rows: number }): void {
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
       const msg = JSON.stringify({ columns: size.cols, rows: size.rows });
@@ -490,7 +490,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  private onTerminalData(data: string) {
+  private onTerminalData(data: string): void {
     if (data?.charCodeAt(0) === 4) {
       const { wsUrl, tokenUrl, onCtrlD } = this.props;
       if (onCtrlD) {
@@ -504,7 +504,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  private resume() {
+  private resume(): void {
     const { textEncoder, socket } = this;
     socket?.send(textEncoder.encode(CommandClient.RESUME));
   }

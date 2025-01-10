@@ -1,7 +1,7 @@
 /**
  * LaunchReturnStatus models return status while handle launch tasks
  */
-class LaunchReturnStatus {
+export default class LaunchReturnStatus {
   /**
    * Return code, one of follow stings
    * OK
@@ -18,29 +18,12 @@ class LaunchReturnStatus {
   code: string;
 
   /**
-   * Explaning optional message.
+   * Explaining optional message.
    */
   msg: string;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} code - Return code
-   * @param {string} msg - Explaning optional message.
-   */
   constructor(code: string, msg: string) {
     this.code = code;
     this.msg = msg;
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.code}`;
-  };
 }
-
-export default LaunchReturnStatus;

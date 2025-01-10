@@ -13,7 +13,7 @@ const textDecoder = new TextDecoder();
 /**
  * Class CommandExecutor: Execute commands locally or remote using SSH2 interface
  */
-class CommandExecutor implements TCommandExecutor {
+export default class CommandExecutor implements TCommandExecutor {
   localCredential: ConnectConfig;
 
   // TODO: read ssh config to get username for a given host
@@ -123,17 +123,14 @@ class CommandExecutor implements TCommandExecutor {
 
   /**
    * Executes a command using a SSH connection
-   * @param {ConnectConfig} credential - SSH credential, null for local host.
-   * @param {string} command - Remote directory path
-   * @return {Promise<{result: boolean, message: string}>} Returns response
+   * @param credential - SSH credential, null for local host.
+   * @param command - Remote directory path
+   * @return Returns response
    */
-  public exec: (
+  public async exec(
     credential: ConnectConfig | null,
     command: string
-  ) => Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> = async (
-    credential: ConnectConfig | null,
-    command: string
-  ) => {
+  ): Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> {
     let c = credential;
 
     // if no credential is given, assumes local host
@@ -226,17 +223,13 @@ class CommandExecutor implements TCommandExecutor {
     // command must be executed remotely
 
     return this.execRemote(c, command, 0);
-  };
+  }
 
-  private execRemote: (
+  private async execRemote(
     credential: ConnectConfig,
     command: string,
     keyIndex: number
-  ) => Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> = async (
-    credential,
-    command,
-    keyIndex = 0
-  ) => {
+  ): Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> {
     const parentOut = getArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES) === "true";
     const connectionConfig = this.generateConfig(credential, keyIndex);
     return new Promise((resolve) => {
@@ -338,20 +331,19 @@ class CommandExecutor implements TCommandExecutor {
         });
       }
     });
-  };
+  }
 
   /**
    * Executes a command in an external Terminal (using a SSH connection on remote hosts)
-   * @param {TCredenConnectConfigtial} credential - SSH credential, null for local host
-   * @param {string} title - Remote directory path
-   * @param {string} command - Remote directory path
-   * @return {Promise<{result: boolean, message: string}>} Returns response
+   * @param credential - SSH credential, null for local host
+   * @param title - Remote directory path
+   * @param command - Remote directory path
    */
-  public execTerminal: (
+  public async execTerminal(
     credential: ConnectConfig | null,
     title: string,
     command: string
-  ) => Promise<{ result: boolean; message: string; command: string }> = async (credential, title, command) => {
+  ): Promise<{ result: boolean; message: string; command: string }> {
     let terminalEmulator = "";
     let terminalTitleOpt = this.terminalOptions.title;
     let noCloseOpt = this.terminalOptions.noClose;
@@ -415,14 +407,13 @@ class CommandExecutor implements TCommandExecutor {
     }
     const cmd = `${terminalEmulator} ${terminalTitle} ${noCloseOpt} ${terminalExecOpt} ${sshCmd} ${command}`;
     return this.exec(null, cmd);
-  };
+  }
 
   /**
    * Generate configuration file for SSH connection
-   * @param {ConnectConfig} credential - SSH credential
-   * @return {object} Returns a configuration file
+   * @param credential - SSH credential
    */
-  private generateConfig = (credential: ConnectConfig, keyIndex: number): ConnectConfig => {
+  private generateConfig(credential: ConnectConfig, keyIndex: number): ConnectConfig {
     let privateKey: Buffer | undefined;
 
     const sshHost: string | undefined = credential.host ? this.sshUsers[credential.host] : undefined;
@@ -442,7 +433,5 @@ class CommandExecutor implements TCommandExecutor {
     };
 
     return config;
-  };
+  }
 }
-
-export default CommandExecutor;

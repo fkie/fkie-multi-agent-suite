@@ -82,16 +82,18 @@ const applicationRows = [
   },
 ];
 
-function ExternalAppsModal(ref) {
+function ExternalAppsModal(ref): JSX.Element {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
   const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleOpen(): void {
+    setOpen(true);
+  }
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     setOpen(false);
-  };
+  }
 
   const runApp = useCallback(async (command) => {
     await window.commandExecutor?.exec(null, command);

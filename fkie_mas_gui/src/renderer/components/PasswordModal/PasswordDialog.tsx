@@ -14,7 +14,7 @@ interface PasswordDialogProps {
 }
 
 const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function PasswordDialog(props, ref) {
-  const { provider, connectConfig, launchConfig, onClose = () => {} } = props;
+  const { provider, connectConfig, launchConfig, onClose = (): void => {} } = props;
 
   const rosCtx = useContext(RosContext);
   const [username, setUsername] = useState(connectConfig.username);
@@ -22,18 +22,18 @@ const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function 
   const [open, setOpen] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
 
-  const handleSubmit = () => {
+  function handleSubmit(): void {
     connectConfig.username = username;
     connectConfig.password = password;
     rosCtx.startConfig(launchConfig, connectConfig);
     handleClose("confirmed");
-  };
+  }
 
-  const handleCancel = () => {
+  function handleCancel(): void {
     handleClose("cancel");
-  };
+  }
 
-  const handleClose = (reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel") => {
+  function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
     if (reason === "cancel" || reason === "escapeKeyDown") {
       provider.setConnectionState(ConnectionState.STATES.AUTHZ, "");
@@ -42,7 +42,7 @@ const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function 
     if (onClose) {
       onClose(provider);
     }
-  };
+  }
 
   const codeSnippet = `
   ssh-keygen -f ~/.ssh/id_${connectConfig.host}

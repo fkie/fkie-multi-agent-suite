@@ -9,7 +9,7 @@ interface StringInputProps {
   filterText?: string;
 }
 
-function StringInput(props: StringInputProps) {
+export default function StringInput(props: StringInputProps): JSX.Element {
   const { id, messageStruct, filterText = "" } = props;
 
   const [historyStruct, setHistoryStruct] = useLocalStorage(`MessageStruct:history`, {});
@@ -28,7 +28,7 @@ function StringInput(props: StringInputProps) {
   }, [messageStruct.value, messageStruct.default_value]);
 
   // get item history after the history was loaded
-  const updateHistory = (val: string) => {
+  function updateHistory(val: string): void {
     if (!val) return;
     if (!history.includes(val)) {
       history.unshift(val);
@@ -39,7 +39,7 @@ function StringInput(props: StringInputProps) {
       historyStruct[id] = history;
       setHistoryStruct(historyStruct);
     }
-  };
+  }
   // get item history after the history was loaded
   useEffect(() => {
     const historyInStruct = historyStruct[id];
@@ -58,7 +58,7 @@ function StringInput(props: StringInputProps) {
   }, [filterText, messageStruct.name]);
 
   // check value for valid range
-  function checkValue(newValue: string) {
+  function checkValue(newValue: string): void {
     // TODO: add additional tests
     if (messageStruct.is_array) {
       return;
@@ -135,8 +135,8 @@ function StringInput(props: StringInputProps) {
       )}
       onChange={(event, newValue) => {
         const val: string = newValue ? newValue : "";
-        console.log(`  chanage messageStruct: ${messageStruct}`);
-        console.log(`  chanage val: ${val}`);
+        console.log(`  change messageStruct: ${messageStruct}`);
+        console.log(`  change val: ${val}`);
         messageStruct.value = val;
         updateHistory(val);
         setValue(val);
@@ -145,5 +145,3 @@ function StringInput(props: StringInputProps) {
     />
   );
 }
-
-export default StringInput;

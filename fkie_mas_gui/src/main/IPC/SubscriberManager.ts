@@ -11,16 +11,18 @@ type TSubscriber = {
 /**
  * Class SubscriberManager: handle communication with external echo window
  */
-class SubscriberManager implements TSubscriberManager {
+export default class SubscriberManager implements TSubscriberManager {
   instances: { [id: string]: TSubscriber } = {};
 
-  constructor() {}
+  constructor() {
+    //
+  }
 
   onClose: (callback: SubscriberCloseCallback) => void = () => {
     // implemented in preload script
   };
 
-  public registerHandlers: () => void = () => {
+  public registerHandlers(): void {
     ipcMain.handle(SubscriberManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
       return this.has(id);
     });
@@ -41,32 +43,32 @@ class SubscriberManager implements TSubscriberManager {
         return this.open(id, host, port, topic, showOptions, noData);
       }
     );
-  };
+  }
 
-  public has: (id: string) => Promise<boolean> = async (id) => {
+  public async has(id: string): Promise<boolean> {
     if (this.instances[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  };
+  }
 
-  public close: (id: string) => Promise<boolean> = async (id) => {
+  public async close(id: string): Promise<boolean> {
     if (this.instances[id]) {
       this.instances[id].window.destroy();
       delete this.instances[id];
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  };
+  }
 
-  public open: (
+  public async open(
     id: string,
     host: string,
     port: number,
     topic: string,
     showOptions: boolean,
     noData: boolean
-  ) => Promise<string | null> = async (id, host, port, topic, showOptions, noData) => {
+  ): Promise<string | null> {
     if (this.instances[id]) {
       this.instances[id].window.focus();
       return Promise.resolve(null);
@@ -136,7 +138,5 @@ class SubscriberManager implements TSubscriberManager {
       });
     }
     return Promise.resolve(null);
-  };
+  }
 }
-
-export default SubscriberManager;

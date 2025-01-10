@@ -48,7 +48,7 @@ export const levelColorsWbg = {
   },
 };
 
-export const getDiagnosticStyle = (lvl) => {
+export function getDiagnosticStyle(lvl: DiagnosticLevel): object {
   switch (lvl) {
     case DiagnosticLevel.OK:
       return {
@@ -76,7 +76,7 @@ export const getDiagnosticStyle = (lvl) => {
         color: "#2b2b2c",
       };
   }
-};
+}
 
 export const HostColors = [
   "#191f45",
@@ -126,7 +126,7 @@ export const HostColors = [
   "#bb7796",
 ];
 
-export const colorFromHostname = (hostname) => {
+export function colorFromHostname(hostname: string): string {
   if (!hostname) return HostColors[0];
   // TODO get color from manually assigned list
   // generate hashCode from hostname
@@ -138,7 +138,7 @@ export const colorFromHostname = (hostname) => {
   // determine a color (map 31 unsigned bits to color list)
   const index = Math.floor((Math.abs(hash) / 0x80000000) * HostColors.length);
   return HostColors[index];
-};
+}
 
 export const TagColors = [
   // 'red', // Reserve for errors

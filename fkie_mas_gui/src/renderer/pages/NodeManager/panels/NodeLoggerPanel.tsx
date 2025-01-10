@@ -169,21 +169,24 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
     [loggers, currentNode, setLoggersOnProvider]
   );
 
-  const getHostStyle = (providerName) => {
-    if (settingsCtx.get("colorizeHosts")) {
-      // borderLeft: `3px dashed`,
-      // borderColor: colorFromHostname(provider.name()),
-      return {
-        borderLeftStyle: "solid",
-        borderLeftColor: colorFromHostname(providerName),
-        borderLeftWidth: "0.6em",
-      };
-    }
-    return {};
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(providerName: string): object {
+      if (settingsCtx.get("colorizeHosts")) {
+        // borderLeft: `3px dashed`,
+        // borderColor: colorFromHostname(provider.name()),
+        return {
+          borderLeftStyle: "solid",
+          borderLeftColor: colorFromHostname(providerName),
+          borderLeftWidth: "0.6em",
+        };
+      }
+      return {};
+    },
+    [settingsCtx.changed]
+  );
 
   useEffect(() => {
-    return () => {
+    return (): void => {
       // remove user defined changes from node
       if (currentNode) {
         currentNode.rosLoggers = {};

@@ -15,7 +15,7 @@ interface DateHelpDialogProps {
 }
 
 const DateHelpDialog = forwardRef<HTMLDivElement, DateHelpDialogProps>(function DateHelpDialog(props, ref) {
-  const { open, onClose = () => {}, ...other } = props;
+  const { open, onClose = (): void => {}, ...other } = props;
 
   const codeSnippet = `
   USER  ALL=NOPASSWD: /bin/date

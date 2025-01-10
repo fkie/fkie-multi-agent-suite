@@ -44,17 +44,17 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event) => {
+  function handleClick(event): void {
     setAnchorEl(event.currentTarget);
     event.stopPropagation();
-  };
-  const handleClose = (event) => {
+  }
+  function handleClose(event): void {
     setAnchorEl(null);
     event.stopPropagation();
-  };
+  }
 
   /** create style to colorize the menu item depends on the provider name */
-  const getSxPropByName = (name: string | React.ReactNode) => {
+  function getSxPropByName(name: string | React.ReactNode): object {
     if (colorizeItems && typeof name === "string" && (settingsCtx.get("colorizeHosts") as boolean)) {
       return {
         borderLeftStyle: "solid",
@@ -63,7 +63,7 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
       };
     }
     return {};
-  };
+  }
 
   return (
     <StyledBadge

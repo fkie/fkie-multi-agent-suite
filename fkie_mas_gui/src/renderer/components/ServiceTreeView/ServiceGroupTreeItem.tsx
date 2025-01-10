@@ -22,9 +22,9 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
 
     const logCtx = useContext(LoggingContext);
 
-    const getHostStyle = () => {
+    function getHostStyle(): object {
       return { flexGrow: 1, alignItems: "center" };
-    };
+    }
 
     // avoid selection if collapse icon was clicked
     let toggled = false;

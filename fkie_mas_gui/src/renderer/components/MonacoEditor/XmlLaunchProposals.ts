@@ -4,13 +4,13 @@ import { TFileRange } from "@/types";
 import { Monaco } from "@monaco-editor/react";
 import { editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 
-const createXMLDependencyProposals = (monaco: Monaco, range: TFileRange, clipText: string) => {
+function createXMLDependencyProposals(monaco: Monaco, range: TFileRange, clipText: string): languages.CompletionItem[] {
   // returning a static list of proposals, valid for ROS launch and XML  files
 
-  const getParamName = (defaultValue) => {
+  function getParamName(defaultValue: string | undefined): string | undefined {
     const text = clipText;
     return text || defaultValue;
-  };
+  }
 
   return [
     {
@@ -118,9 +118,9 @@ const createXMLDependencyProposals = (monaco: Monaco, range: TFileRange, clipTex
       range,
     },
   ];
-};
+}
 
-const createDocumentSymbols = (model: editor.ITextModel /*, token*/) => {
+function createDocumentSymbols(model: editor.ITextModel /*, token*/): languages.DocumentSymbol[] {
   const parser = new DOMParser();
 
   const symbolList: languages.DocumentSymbol[] = [];
@@ -214,6 +214,6 @@ const createDocumentSymbols = (model: editor.ITextModel /*, token*/) => {
   }
 
   return symbolList;
-};
+}
 
 export { createDocumentSymbols, createXMLDependencyProposals };

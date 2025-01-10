@@ -1,7 +1,5 @@
 import About from "../../components/SettingsModal/About";
 
-function AboutPage() {
+export default function AboutPage(): JSX.Element {
   return <About />;
 }
-
-export default AboutPage;

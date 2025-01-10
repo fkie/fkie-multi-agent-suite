@@ -32,13 +32,13 @@ export interface ILoggingProvider {
 export const DEFAULT_LOGGING = {
   logs: [],
   countErrors: 0,
-  debug: () => {},
-  info: () => {},
-  success: () => {},
-  warn: () => {},
-  error: () => {},
-  clearLogs: () => {},
-  debugInterface: () => {},
+  debug: (): void => {},
+  info: (): void => {},
+  success: (): void => {},
+  warn: (): void => {},
+  error: (): void => {},
+  clearLogs: (): void => {},
+  debugInterface: (): void => {},
 };
 
 // TODO Add valid github issue repository
@@ -60,13 +60,13 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     setDebugByUri(settingsCtx.get("debugByUri") as string[]);
   }, [settingsCtx, settingsCtx.changed]);
 
-  const createLog = (
+  function createLog(
     level: LoggingLevel,
     description: string,
     details: string,
     showSnackbar: boolean,
     snackbarVariant: VariantType
-  ) => {
+  ): void {
     // add new log event
     setLogs((prevLogs) => [new LogEvent(level, description, details), ...prevLogs]);
     // check settings logger level
@@ -99,38 +99,38 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
         variant: snackbarVariant,
       });
     }
-  };
+  }
 
-  const debug = (description: string, details: string = "", showSnackbar: boolean = false) => {
+  function debug(description: string, details: string = "", showSnackbar: boolean = false): void {
     createLog(LoggingLevel.DEBUG, description, details, showSnackbar, "default");
-  };
+  }
 
-  const info = (description: string, details: string = "", showSnackbar: boolean = true) => {
+  function info(description: string, details: string = "", showSnackbar: boolean = true): void {
     createLog(LoggingLevel.INFO, description, details, showSnackbar, "info");
-  };
+  }
 
-  const success = (description: string, details: string = "", showSnackbar: boolean = true) => {
+  function success(description: string, details: string = "", showSnackbar: boolean = true): void {
     createLog(LoggingLevel.SUCCESS, description, details, showSnackbar, "success");
-  };
+  }
 
-  const warn = (description: string, details: string = "", showSnackbar: boolean = true) => {
+  function warn(description: string, details: string = "", showSnackbar: boolean = true): void {
     createLog(LoggingLevel.WARN, description, details, showSnackbar, "warning");
-  };
+  }
 
-  const error = (description: string, details: string = "", showSnackbar: boolean = true) => {
+  function error(description: string, details: string = "", showSnackbar: boolean = true): void {
     createLog(LoggingLevel.ERROR, description, details, showSnackbar, "error");
-  };
+  }
 
-  const clearLogs = () => {
+  function clearLogs(): void {
     setLogs(() => []);
-  };
+  }
 
-  const debugInterface = (
+  function debugInterface(
     uri: string,
     msg: TResult | JSONObject | string,
     details?: TResult | JSONObject | string,
     providerName?: string
-  ) => {
+  ): void {
     // check settings to debug by uri
 
     let parsedMsg: TResult | JSONObject | string = {};
@@ -157,7 +157,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     if (Array.isArray(debugByUri) && debugByUri.includes(uri)) {
       debug(`[URI] ${providerName} (${uri}): ${JSON.stringify(parseDetails)}}`, JSON.stringify(parsedMsg));
     }
-  };
+  }
 
   const attributesMemo = useMemo(
     () => ({
@@ -171,7 +171,6 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
       clearLogs,
       debugInterface,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [logs, countErrors]
   );
 

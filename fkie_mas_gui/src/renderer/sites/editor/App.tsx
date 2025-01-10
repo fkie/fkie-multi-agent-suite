@@ -1,6 +1,6 @@
 import { TFileRange, TLaunchArg } from "@/types";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { LoggingContext } from "../../context/LoggingContext";
@@ -21,7 +21,7 @@ type TLaunchInfo = {
   launchArgs: TLaunchArg[];
 };
 
-export default function EditorApp() {
+export default function EditorApp(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const monacoCtx = useContext(MonacoContext);
   const rosCtx = useContext(RosContext);
@@ -31,7 +31,7 @@ export default function EditorApp() {
   const dialogRef = useRef(null);
   let escapePressCount = 0;
 
-  const initProvider = useCallback(async () => {
+  async function initProvider(): Promise<void> {
     const queryString = window.location.search;
     console.log(`queryString: ${queryString}`);
     const urlParams = new URLSearchParams(queryString);
@@ -81,7 +81,7 @@ export default function EditorApp() {
     } else {
       logCtx.error(`connection to ${host}:${port} failed`, "", false);
     }
-  }, [setLaunchInfo]);
+  }
 
   useCustomEventListener(
     EVENT_CLOSE_COMPONENT,
@@ -112,7 +112,7 @@ export default function EditorApp() {
   useEffect(() => {
     // Anything in here is fired on component mount.
     initProvider();
-    return () => {
+    return (): void => {
       if (launchInfo) {
         launchInfo.provider.close();
       }

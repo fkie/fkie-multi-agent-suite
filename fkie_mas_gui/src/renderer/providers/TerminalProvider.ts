@@ -1,7 +1,7 @@
 import { ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import { URI } from "../models";
-import { ConnectionState } from "./ConnectionState";
+import ConnectionState from "./ConnectionState";
 import Provider, { TConCallback } from "./Provider";
 
 /**

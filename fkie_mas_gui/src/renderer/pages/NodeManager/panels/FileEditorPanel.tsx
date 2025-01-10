@@ -1,4 +1,5 @@
 import RosContext from "@/renderer/context/RosContext";
+import { Provider } from "@/renderer/providers";
 import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { TFileRange, TLaunchArg } from "@/types";
 import * as Monaco from "@monaco-editor/react";
@@ -58,7 +59,7 @@ interface FileEditorPanelProps {
   launchArgs: TLaunchArg[];
 }
 
-function FileEditorPanel(props: FileEditorPanelProps) {
+export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Element {
   const { tabId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
   const monaco = Monaco.useMonaco();
   const settingsCtx = useContext(SettingsContext);
@@ -160,14 +161,14 @@ function FileEditorPanel(props: FileEditorPanelProps) {
   }, [selectionRange]);
 
   const handleChangeExplorer = useCallback(
-    (isExpanded) => {
+    function (isExpanded: boolean): void {
       setEnableExplorer(isExpanded);
     },
     [setEnableExplorer]
   );
 
   const handleChangeSearch = useCallback(
-    (isExpanded) => {
+    function (isExpanded: boolean): void {
       setEnableGlobalSearch(isExpanded);
     },
     [setEnableGlobalSearch]
@@ -178,7 +179,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
    * @param {any} position - Mouse cursor position
    */
   const getIncludeResource = useCallback(
-    (position: Position) => {
+    function (position: Position): string | undefined {
       const declarations = includeDecorations.filter((item) => {
         return (
           item.range.startLineNumber <= position.lineNumber &&
@@ -196,14 +197,14 @@ function FileEditorPanel(props: FileEditorPanelProps) {
   );
 
   const addMonacoDisposable = useCallback(
-    (disposable: IDisposable) => {
+    function (disposable: IDisposable): void {
       setMonacoDisposables((prev) => [...prev, disposable]);
     },
     [setMonacoDisposables]
   );
 
   // update modified files in this panel and context
-  const updateModifiedFiles = useCallback(() => {
+  function updateModifiedFiles(): void {
     if (!monaco) return;
     const newModifiedFiles = monaco.editor
       .getModels()
@@ -216,10 +217,10 @@ function FileEditorPanel(props: FileEditorPanelProps) {
       });
     setModifiedFiles(newModifiedFiles);
     monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }, [monacoCtx, ownUriPaths, providerId, tabId]);
+  }
 
   // update decorations for included files
-  const updateIncludeDecorations = (model, includedFilesList) => {
+  function updateIncludeDecorations(model: TTextModelExt | null, includedFilesList: LaunchIncludedFile[]): void {
     if (!model) return;
     // prepare file decorations
     const newIncludeDecorations: TIncludeDecoration[] = [];
@@ -228,7 +229,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
       includedFilesList.forEach((f: LaunchIncludedFile) => {
         const path = model.uri.path.split(":")[1];
         if (path !== f.inc_path) {
-          const matches = model.findMatches(f.raw_inc_path);
+          const matches = model.findMatches(f.raw_inc_path, false, false, false, null, true);
           if (matches.length > 0) {
             matches.forEach((match) => {
               // Add a different style to "clickable" definitions
@@ -247,16 +248,16 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     }
     model.deltaDecorations([], newDecorators);
     setIncludeDecorations(newIncludeDecorations);
-  };
+  }
 
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
-    async (
+    async function (
       uriPath: string,
       range: TFileRange | null = null,
       launchArgs: TLaunchArg[] = [],
       forceReload: boolean = false
-    ) => {
+    ): Promise<boolean> {
       if (!uriPath) return false;
       setCurrentFile({ name: getFileName(uriPath), requesting: true });
       setNotificationDescription("Getting file from provider...");
@@ -302,7 +303,6 @@ function FileEditorPanel(props: FileEditorPanelProps) {
       setCurrentLaunchArgs(launchArgs);
       return true;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       monaco,
       monacoViewStates,
@@ -376,36 +376,31 @@ function FileEditorPanel(props: FileEditorPanelProps) {
       }
       setClickRequest(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clickRequest, getIncludeResource]);
 
-  const saveCurrentFile = useCallback(
-    async (editorModel: editor.ITextModel) => {
-      const path = editorModel.uri.path.split(":")[1];
-      // TODO change encoding if the file is encoded as HEX
-      const fileToSave = new FileItem("", path, "", "", editorModel.getValue());
-      const providerObj = rosCtx.getProviderById(providerId, true);
-      if (providerObj) {
-        const saveResult = await providerObj.saveFileContent(fileToSave);
-        if (saveResult.bytesWritten > 0) {
-          const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
-          window.editorManager?.changed(id, path, false);
-          if (!savedFiles.includes(editorModel.uri.path)) {
-            setSavedFiles([...savedFiles, editorModel.uri.path]);
-          }
-          logCtx.success(`Successfully saved file`, `path: ${path}`);
-          setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel as TTextModelExt });
-          updateModifiedFiles();
-        } else {
-          logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
+  async function saveCurrentFile(editorModel: editor.ITextModel): Promise<void> {
+    const path = editorModel.uri.path.split(":")[1];
+    // TODO change encoding if the file is encoded as HEX
+    const fileToSave = new FileItem("", path, "", "", editorModel.getValue());
+    const providerObj = rosCtx.getProviderById(providerId, true);
+    if (providerObj) {
+      const saveResult = await providerObj.saveFileContent(fileToSave);
+      if (saveResult.bytesWritten > 0) {
+        const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
+        window.editorManager?.changed(id, path, false);
+        if (!savedFiles.includes(editorModel.uri.path)) {
+          setSavedFiles([...savedFiles, editorModel.uri.path]);
         }
+        logCtx.success(`Successfully saved file`, `path: ${path}`);
+        setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel as TTextModelExt });
+        updateModifiedFiles();
       } else {
-        logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`);
+        logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
       }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rosCtx.getProviderById, monaco, setActiveModel, monacoCtx.getModel]
-  );
+    } else {
+      logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`);
+    }
+  }
 
   const debouncedWidthUpdate = useDebounceCallback((newWidth) => {
     setEditorWidth(newWidth);
@@ -417,7 +412,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     }
   }, [debouncedWidthUpdate, sideBarWidth]);
 
-  const cleanUpXmlComment = (changes, model) => {
+  function cleanUpXmlComment(changes, model): void {
     // replace all '--' by '- - ' in XML comments
     if (!model) return;
     if (changes.length != 2) return;
@@ -442,10 +437,10 @@ function FileEditorPanel(props: FileEditorPanelProps) {
         { forceMoveMarkers: false, range: match.range, text: addedComment ? "- - " : "--" },
       ]);
     }, true);
-  };
+  }
 
   const handleEditorChange = useCallback(
-    async (_value: string | undefined, event: editor.IModelContentChangedEvent) => {
+    async function (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> {
       // update activeModel modified flag only once
       cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
@@ -502,7 +497,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     const provider = rosCtx.getProviderById(providerId, true);
     if (!provider?.host()) return;
     if (editorRef.current) {
-      updateIncludeDecorations(editorRef.current.getModel(), includedFiles);
+      updateIncludeDecorations(editorRef.current.getModel() as TTextModelExt, includedFiles);
     }
     const uriPath = monacoCtx.createUriPath(tabId, rootFilePath);
     const newOwnUris = [uriPath];
@@ -531,7 +526,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
       });
       resizeObserver.current.observe(panelRef.current);
     }
-    return () => {
+    return (): void => {
       // update state to unmount and disconnect from resize observer
       componentWillUnmount.current = true;
       if (resizeObserver.current) {
@@ -541,7 +536,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
   }, []);
 
   useEffect(() => {
-    return () => {
+    return (): void => {
       // This line only evaluates to true after the componentWillUnmount happens
       if (componentWillUnmount.current) {
         // clear monaco disposables:
@@ -570,26 +565,29 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     };
   }, [monacoDisposables, monaco, ownUriPaths, monacoCtx, tabId]);
 
-  const onKeyDown = (event) => {
+  function onKeyDown(event: React.KeyboardEvent): void {
     if (event.ctrlKey && event.shiftKey && event.key === "E") {
       setEnableExplorer(!enableExplorer);
     }
     if (event.ctrlKey && event.shiftKey && event.key === "F") {
       setEnableGlobalSearch(!enableGlobalSearch);
     }
-  };
+  }
 
-  const getHostStyle = () => {
-    if (providerName && settingsCtx.get("colorizeHosts")) {
-      return {
-        flexGrow: 1,
-        borderBottomStyle: "solid",
-        borderBottomColor: colorFromHostname(providerName),
-        borderBottomWidth: "0.3em",
-      };
-    }
-    return { flexGrow: 1 };
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      if (providerName && settingsCtx.get("colorizeHosts")) {
+        return {
+          flexGrow: 1,
+          borderBottomStyle: "solid",
+          borderBottomColor: colorFromHostname(providerName),
+          borderBottomWidth: "0.3em",
+        };
+      }
+      return { flexGrow: 1 };
+    },
+    [providerName, settingsCtx.changed]
+  );
 
   // Most important function:
   //  when the component is mounted, this callback will execute following steps:
@@ -598,7 +596,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
   //  - check if include files are available (for xml and launch files for example)
   //  -   if available, download all include files and create their corresponding models
   // We download the models per request. On recursive text search all files will be downloaded
-  const loadFiles = useCallback(() => {
+  function loadFiles(): void {
     if (!editorRef.current) {
       return;
     }
@@ -630,7 +628,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     setProviderName(provider.name());
     setNotificationDescription("Getting file from provider...");
     // get file content from provider and create monaco model
-    const getFileAndIncludesAsync = async () => {
+    async function getFileAndIncludesAsync(provider: Provider): Promise<void> {
       setCurrentFile({ name: getFileName(currentFilePath), requesting: true });
       const result: TModelResult = await monacoCtx.getModel(tabId, providerId, currentFilePath, false);
       setCurrentFile({ name: getFileName(currentFilePath), requesting: false });
@@ -671,26 +669,14 @@ function FileEditorPanel(props: FileEditorPanelProps) {
         setIncludedFiles(includedFilesLocal);
       }
       setNotificationDescription("");
-    };
-    getFileAndIncludesAsync();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    monaco,
-    editorRef.current,
-    currentFilePath,
-    providerId,
-    setEditorModel,
-    monacoCtx.getModel,
-    setProviderHost,
-    setProviderName,
-    setNotificationDescription,
-    setIncludedFiles,
-  ]);
+    }
+    getFileAndIncludesAsync(provider);
+  }
 
   // get text from clipboard for suggestions
   let clipTextSuggest = "";
   let clipTextReadyForSuggest = false;
-  const getClipboardTextForSuggest = async () => {
+  async function getClipboardTextForSuggest(): Promise<void> {
     await navigator.clipboard.readText().then((cbText) => {
       clipTextSuggest = cbText;
       clipTextReadyForSuggest = true;
@@ -699,14 +685,14 @@ function FileEditorPanel(props: FileEditorPanelProps) {
       });
       return true;
     });
-  };
+  }
 
-  function formatXml(xml, tab = 2) {
+  function formatXml(xml: string, tab = 2): string {
     const xmlResult = new XmlBeautify().beautify(xml, tab);
     return xmlResult;
   }
 
-  const configureMonacoEditor = () => {
+  function configureMonacoEditor(): void {
     // !=> the goto functionality is provided by clickRequest
     if (!monaco) return;
 
@@ -834,7 +820,7 @@ function FileEditorPanel(props: FileEditorPanelProps) {
         })
       );
     }
-  };
+  }
 
   // initialization of provider definitions
   useEffect(() => {
@@ -852,7 +838,6 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     // editorRef.current.getSupportedActions().forEach((value) => {
     //   console.log(value);
     // });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialized, monaco, loadFiles]);
 
   document.addEventListener("keydown", (event) => {
@@ -872,16 +857,16 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     }
   });
 
-  const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
+  function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
-  };
+  }
 
   return (
     <Stack
       direction="row"
       height="100%"
       width="100%"
-      onKeyDown={onKeyDown}
+      onKeyDown={(event) => onKeyDown(event)}
       ref={panelRef as ForwardedRef<HTMLDivElement>}
       overflow="auto"
     >
@@ -1182,5 +1167,3 @@ function FileEditorPanel(props: FileEditorPanelProps) {
     </Stack>
   );
 }
-
-export default FileEditorPanel;

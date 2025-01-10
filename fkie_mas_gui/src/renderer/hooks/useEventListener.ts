@@ -20,7 +20,7 @@ function useEventListener<
   eventName: KW | KH,
   handler: (event: WindowEventMap[KW] | HTMLElementEventMap[KH] | Event) => void,
   element?: RefObject<T>
-) {
+): void {
   // Create a ref that stores handler
   const savedHandler = useRef(handler);
 
@@ -41,7 +41,7 @@ function useEventListener<
     targetElement.addEventListener(eventName, eventListener);
 
     // Remove event listener on cleanup
-    return () => {
+    return (): void => {
       targetElement.removeEventListener(eventName, eventListener);
     };
   }, [eventName, element]);

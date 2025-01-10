@@ -1,4 +1,3 @@
-/* eslint-disable max-classes-per-file */
 import { generateUniqueId } from "../utils";
 
 /**
@@ -14,7 +13,7 @@ export class PATH_EVENT_TYPE extends String {
   };
 }
 
-class PathEvent {
+export default class PathEvent {
   id: string;
 
   eventType: PATH_EVENT_TYPE;
@@ -23,13 +22,6 @@ class PathEvent {
 
   affected: string[];
 
-  /**
-   * Class Constructor
-   *
-   * @param {PATH_EVENT_TYPE} eventType - Event type.
-   * @param {string} srcPath - Changes of event type are made on this path.
-   * @param {string[]} affected - List of all launch files which include changed file.
-   */
   constructor(eventType: PATH_EVENT_TYPE, srcPath: string, affected: string[]) {
     this.id = generateUniqueId();
     this.eventType = eventType;
@@ -37,5 +29,3 @@ class PathEvent {
     this.affected = affected;
   }
 }
-
-export default PathEvent;

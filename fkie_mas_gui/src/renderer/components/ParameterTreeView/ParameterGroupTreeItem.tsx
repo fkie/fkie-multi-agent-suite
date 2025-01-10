@@ -1,15 +1,15 @@
+import SettingsContext from "@/renderer/context/SettingsContext";
+import { normalizeNameWithPrefix } from "@/renderer/utils";
 import { Box, CircularProgress, Stack, SvgIconTypeMap, Typography } from "@mui/material";
+import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
   TreeItem2SlotProps,
   UseTreeItem2ContentSlotOwnProps,
   UseTreeItem2IconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
-import StyledTreeItem from "./StyledTreeItem";
-import { OverridableComponent } from "@mui/material/OverridableComponent";
-import SettingsContext from "@/renderer/context/SettingsContext";
+import React, { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
 import { colorFromHostname } from "../UI";
-import { normalizeNameWithPrefix } from "@/renderer/utils";
+import StyledTreeItem from "./StyledTreeItem";
 
 interface ParameterGroupTreeItemProps {
   itemId: string;
@@ -42,16 +42,19 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
       setLabel(normalizeNameWithPrefix(groupName, namespacePart));
     }, [namespacePart, groupName]);
 
-    const getHostStyle = () => {
-      if (providerName && settingsCtx.get("colorizeHosts")) {
-        return {
-          borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
-          borderLeftWidth: "0.6em",
-        };
-      }
-      return {};
-    };
+    const getHostStyle = useCallback(
+      function getHostStyle(): object {
+        if (providerName && settingsCtx.get("colorizeHosts")) {
+          return {
+            borderLeftStyle: "solid",
+            borderLeftColor: colorFromHostname(providerName),
+            borderLeftWidth: "0.6em",
+          };
+        }
+        return {};
+      },
+      [providerName, settingsCtx.changed]
+    );
 
     // avoid selection if collapse icon was clicked
     let toggled = false;

@@ -3,7 +3,7 @@ import { generateUniqueId } from "../utils";
 /**
  * RosParameter models parameters in a ROS system
  */
-class RosParameter {
+export default class RosParameter {
   id: string;
 
   name: string;
@@ -14,12 +14,6 @@ class RosParameter {
 
   providerId: string;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} name - Parameter name
-   * @param {string | number | boolean | string[]} value - Parameter value
-   */
   constructor(name: string, value: string | number | boolean | string[], type: string, providerId: string) {
     this.id = generateUniqueId();
     this.name = name;
@@ -28,5 +22,3 @@ class RosParameter {
     this.providerId = providerId;
   }
 }
-
-export default RosParameter;

@@ -48,7 +48,7 @@ interface ProviderPanelRowProps {
   provider: Provider;
 }
 
-function ProviderPanelRow(props: ProviderPanelRowProps) {
+export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Element {
   const { provider } = props;
 
   const rosCtx = useContext(RosContext);
@@ -71,19 +71,13 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
     [rosCtx]
   );
 
-  const handleJoinProvider = useCallback(
-    async (provider: Provider) => {
-      await rosCtx.connectToProvider(provider);
-    },
-    [rosCtx]
-  );
+  async function handleJoinProvider(provider: Provider): Promise<void> {
+    await rosCtx.connectToProvider(provider);
+  }
 
-  const handleStartProvider = useCallback(
-    async (provider: Provider) => {
-      await rosCtx.startProvider(provider, true);
-    },
-    [rosCtx]
-  );
+  async function handleStartProvider(provider: Provider): Promise<void> {
+    await rosCtx.startProvider(provider, true);
+  }
 
   const debouncedCallbackUpdateDelay = useDebounceCallback(() => {
     forceUpdate();
@@ -113,7 +107,11 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
     }
   });
 
-  const onProviderMenuClick = async (actionType: EMenuProvider, providerName: string, providerId: string) => {
+  async function onProviderMenuClick(
+    actionType: EMenuProvider,
+    providerName: string,
+    providerId: string
+  ): Promise<void> {
     if (actionType === EMenuProvider.INFO) {
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
@@ -131,82 +129,153 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
     if (actionType === EMenuProvider.DELETE) {
       // rosCtx.removeProvider(providerId);
     }
-  };
+  }
 
-  const generateStatusView = useCallback(
-    (provider: Provider) => {
-      switch (provider.connectionState) {
-        case ConnectionState.STATES.SERVER_CONNECTED:
-        case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
-        case ConnectionState.STATES.CONNECTING:
-          setTimeout(() => {
-            forceUpdate();
-          }, 3000);
-          return (
-            <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
-              <Tooltip title="Connecting" placement="bottom" disableInteractive>
-                <span style={{ color: "blue" }}>connecting</span>
-              </Tooltip>
+  function generateStatusView(provider: Provider): JSX.Element {
+    switch (provider.connectionState) {
+      case ConnectionState.STATES.SERVER_CONNECTED:
+      case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
+      case ConnectionState.STATES.CONNECTING:
+        setTimeout(() => {
+          forceUpdate();
+        }, 3000);
+        return (
+          <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
+            <Tooltip title="Connecting" placement="bottom" disableInteractive>
+              <span style={{ color: "blue" }}>connecting</span>
+            </Tooltip>
 
-              <CircularProgress size="1em" />
-              <Tooltip title="cancel" placement="bottom" disableInteractive>
-                <IconButton
-                  onClick={() => {
-                    closeProviderHandler(provider.id);
-                  }}
-                  size="small"
-                >
-                  <HighlightOffIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-        case ConnectionState.STATES.STARTING:
-          setTimeout(() => {
-            forceUpdate();
-          }, 3000);
-          return (
-            <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
-              <div style={{ color: "blue" }}>{provider.connectionState}</div>
-              <CircularProgress size="1em" />
-            </Stack>
-          );
-        case ConnectionState.STATES.CONNECTED:
-          return (
-            <Stack direction="row" alignItems="center">
-              {/* <div style={{ color: 'green' }}>{provider.connectionState}</div> */}
-              <CheckIcon style={{ color: "green", fontSize: "0.6em" }} />
+            <CircularProgress size="1em" />
+            <Tooltip title="cancel" placement="bottom" disableInteractive>
+              <IconButton
+                onClick={() => {
+                  closeProviderHandler(provider.id);
+                }}
+                size="small"
+              >
+                <HighlightOffIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      case ConnectionState.STATES.STARTING:
+        setTimeout(() => {
+          forceUpdate();
+        }, 3000);
+        return (
+          <Stack direction="row" alignItems="center" spacing="0.5em" paddingRight="0.5em">
+            <div style={{ color: "blue" }}>{provider.connectionState}</div>
+            <CircularProgress size="1em" />
+          </Stack>
+        );
+      case ConnectionState.STATES.CONNECTED:
+        return (
+          <Stack direction="row" alignItems="center">
+            {/* <div style={{ color: 'green' }}>{provider.connectionState}</div> */}
+            <CheckIcon style={{ color: "green", fontSize: "0.6em" }} />
 
-              <Tooltip title="Disconnect" placement="bottom" disableInteractive>
-                <IconButton
-                  onClick={() => {
-                    closeProviderHandler(provider.id);
-                  }}
-                  size="small"
-                >
-                  <HighlightOffIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-        case ConnectionState.STATES.AUTHZ:
-          return (
-            <Stack direction="row" alignItems="center">
-              <Tooltip title={`Can't access remote host! Wrong SSH credentials?`} placement="bottom" disableInteractive>
-                <Button
-                  style={{ textTransform: "none" }}
-                  onClick={() => {
-                    // TODO: add information panel how to configure SSH
-                  }}
-                  variant="text"
-                  color="error"
-                  size="small"
-                >
-                  <Typography noWrap variant="body2">
-                    {provider.connectionState}
-                  </Typography>
-                </Button>
-              </Tooltip>
+            <Tooltip title="Disconnect" placement="bottom" disableInteractive>
+              <IconButton
+                onClick={() => {
+                  closeProviderHandler(provider.id);
+                }}
+                size="small"
+              >
+                <HighlightOffIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      case ConnectionState.STATES.AUTHZ:
+        return (
+          <Stack direction="row" alignItems="center">
+            <Tooltip title={`Can't access remote host! Wrong SSH credentials?`} placement="bottom" disableInteractive>
+              <Button
+                style={{ textTransform: "none" }}
+                onClick={() => {
+                  // TODO: add information panel how to configure SSH
+                }}
+                variant="text"
+                color="error"
+                size="small"
+              >
+                <Typography noWrap variant="body2">
+                  {provider.connectionState}
+                </Typography>
+              </Button>
+            </Tooltip>
+            <Tooltip title="Start daemon" placement="bottom" disableInteractive>
+              <IconButton
+                color="default"
+                onClick={() => {
+                  handleStartProvider(provider);
+                }}
+              >
+                <PlayCircleOutlineIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      case ConnectionState.STATES.LOST:
+      case ConnectionState.STATES.UNSUPPORTED:
+      case ConnectionState.STATES.UNREACHABLE:
+      case ConnectionState.STATES.ERRORED:
+        // eslint-disable-next-line no-case-declarations
+        let state = provider.connectionState;
+        if (provider.connectionState === ConnectionState.STATES.ERRORED) {
+          if (!provider.daemon) {
+            state = "no daemon";
+          } else if (!provider.discovery) {
+            state = "no discovery";
+          }
+        }
+        return (
+          <Stack direction="row" alignItems="center" justifyContent="center">
+            <Tooltip
+              title={`Click to start provider! ${
+                provider.errorDetails ? `${state}: ${JSON.stringify(provider.errorDetails)}` : ""
+              }`}
+              placement="bottom"
+              disableInteractive
+            >
+              <span>
+                {window.commandExecutor && (
+                  <Button
+                    style={{
+                      textTransform: "none",
+                    }}
+                    onClick={() => {
+                      handleStartProvider(provider);
+                    }}
+                    variant="text"
+                    color="info"
+                    size="small"
+                    endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
+                  >
+                    <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>
+                  </Button>
+                )}
+                {!window.commandExecutor && <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>}
+              </span>
+            </Tooltip>
+
+            <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
+              <IconButton
+                color="default"
+                onClick={() => {
+                  handleJoinProvider(provider);
+                }}
+              >
+                <JoinFullIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+      default:
+        return (
+          <Stack direction="row" alignItems="center">
+            <div style={{ color: "grey" }}>{provider.connectionState}</div>
+            {window.commandExecutor && (
               <Tooltip title="Start daemon" placement="bottom" disableInteractive>
                 <IconButton
                   color="default"
@@ -217,97 +286,23 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
                   <PlayCircleOutlineIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
-            </Stack>
-          );
-        case ConnectionState.STATES.LOST:
-        case ConnectionState.STATES.UNSUPPORTED:
-        case ConnectionState.STATES.UNREACHABLE:
-        case ConnectionState.STATES.ERRORED:
-          // eslint-disable-next-line no-case-declarations
-          let state = provider.connectionState;
-          if (provider.connectionState === ConnectionState.STATES.ERRORED) {
-            if (!provider.daemon) {
-              state = "no daemon";
-            } else if (!provider.discovery) {
-              state = "no discovery";
-            }
-          }
-          return (
-            <Stack direction="row" alignItems="center" justifyContent="center">
-              <Tooltip
-                title={`Click to start provider! ${
-                  provider.errorDetails ? `${state}: ${JSON.stringify(provider.errorDetails)}` : ""
-                }`}
-                placement="bottom"
-                disableInteractive
+            )}
+            <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
+              <IconButton
+                color="default"
+                onClick={() => {
+                  handleJoinProvider(provider);
+                }}
               >
-                <span>
-                  {window.commandExecutor && (
-                    <Button
-                      style={{
-                        textTransform: "none",
-                      }}
-                      onClick={() => {
-                        handleStartProvider(provider);
-                      }}
-                      variant="text"
-                      color="info"
-                      size="small"
-                      endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
-                    >
-                      <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>
-                    </Button>
-                  )}
-                  {!window.commandExecutor && <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>}
-                </span>
-              </Tooltip>
+                <JoinFullIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        );
+    }
+  }
 
-              <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
-                <IconButton
-                  color="default"
-                  onClick={() => {
-                    handleJoinProvider(provider);
-                  }}
-                >
-                  <JoinFullIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-        default:
-          return (
-            <Stack direction="row" alignItems="center">
-              <div style={{ color: "grey" }}>{provider.connectionState}</div>
-              {window.commandExecutor && (
-                <Tooltip title="Start daemon" placement="bottom" disableInteractive>
-                  <IconButton
-                    color="default"
-                    onClick={() => {
-                      handleStartProvider(provider);
-                    }}
-                  >
-                    <PlayCircleOutlineIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
-                <IconButton
-                  color="default"
-                  onClick={() => {
-                    handleJoinProvider(provider);
-                  }}
-                >
-                  <JoinFullIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-      }
-    },
-    [closeProviderHandler, handleJoinProvider, handleStartProvider]
-  );
-
-  const generateWarningsView = useCallback((provider) => {
+  function generateWarningsView(provider): JSX.Element {
     if (!provider.warnings) return <></>;
     const warnings = provider.warnings.filter((group) => group.warnings.length > 0);
     if (warnings.length > 0) {
@@ -330,7 +325,7 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
     }
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <></>;
-  }, []);
+  }
 
   const getHostStyle = useCallback(
     (provider: Provider) => {
@@ -345,11 +340,11 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
       }
       return {};
     },
-    [settingsCtx]
+    [settingsCtx.changed]
   );
 
   const isOlderVersion = useCallback(
-    (provider: Provider) => {
+    function (provider: Provider): boolean {
       try {
         if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
           return true;
@@ -528,5 +523,3 @@ function ProviderPanelRow(props: ProviderPanelRowProps) {
 
   return createTableRow;
 }
-
-export default ProviderPanelRow;

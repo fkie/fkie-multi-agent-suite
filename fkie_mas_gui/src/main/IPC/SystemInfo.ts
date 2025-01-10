@@ -6,7 +6,7 @@ import si from "systeminformation";
 /**
  * Read general local system information
  */
-class SystemInfo implements TSystemInfo {
+export class SystemInfo implements TSystemInfo {
   time?: si.Systeminformation.TimeData;
 
   cpu?: si.Systeminformation.CpuData;
@@ -29,7 +29,7 @@ class SystemInfo implements TSystemInfo {
 
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
 
-  public getInfo: () => Promise<TSystemInfo> = () => {
+  public async getInfo(): Promise<TSystemInfo> {
     return new Promise((resolve, reject) => {
       const fetchInfo = async (): Promise<void> => {
         try {
@@ -78,15 +78,13 @@ class SystemInfo implements TSystemInfo {
 
       fetchInfo();
     });
-  };
+  }
 
   /**
    * Get a string representation of this object
    *
    */
-  public toString: () => string = () => {
+  public toString(): string {
     return JSON.stringify(this.getInfo());
-  };
+  }
 }
-
-export { SystemInfo };

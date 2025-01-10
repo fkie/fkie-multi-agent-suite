@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { forwardRef, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { SettingsContext } from "../../context/SettingsContext";
 import { PATH_EVENT_TYPE } from "../../models";
@@ -41,24 +41,24 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
     const [expanded, setExpanded] = useState(false);
     const [rememberChange, setRememberChange] = useState(false);
 
-    const handleExpandClick = useCallback(() => {
+    function handleExpandClick(): void {
       setExpanded((oldExpanded) => !oldExpanded);
-    }, []);
+    }
 
-    const handleReload = useCallback(() => {
+    function handleReload(): void {
       if (rememberChange) {
         settingsCtx.set("actionOnChangeLaunch", "RELOAD");
       }
       if (onReload) onReload(provider.id, launchFile);
       closeSnackbar(id);
-    }, [rememberChange, onReload, provider.id, launchFile, closeSnackbar, id, settingsCtx]);
+    }
 
-    const handleDismiss = useCallback(() => {
+    function handleDismiss(): void {
       if (rememberChange) {
         settingsCtx.set("actionOnChangeLaunch", "DISMISS");
       }
       closeSnackbar(id);
-    }, [rememberChange, closeSnackbar, id, settingsCtx]);
+    }
 
     useEffect(() => {
       switch (settingsCtx.get("actionOnChangeLaunch")) {
@@ -116,7 +116,7 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
                   transition: "all .2s",
                 }}
                 style={expanded ? { transform: "rotate(180deg)" } : undefined}
-                onClick={handleExpandClick}
+                onClick={() => handleExpandClick()}
               >
                 <ExpandMoreIcon />
               </IconButton>
@@ -152,7 +152,7 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
                 Reload
               </Button>
               <IconButton
-                onClick={handleDismiss}
+                onClick={() => handleDismiss()}
                 size="small"
                 sx={{ color: (theme) => theme.palette.getContrastText(theme.palette.warning.main) }}
               >

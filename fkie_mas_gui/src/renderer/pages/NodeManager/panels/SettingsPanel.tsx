@@ -1,6 +1,6 @@
 import GuiPanel from "../../../components/SettingsModal/GuiPanel";
 
-function SettingsPanel() {
+function SettingsPanel(): JSX.Element {
   return <GuiPanel />;
 }
 

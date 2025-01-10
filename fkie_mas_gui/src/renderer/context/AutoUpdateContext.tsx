@@ -17,12 +17,12 @@ export interface IAutoUpdateContext {
 
 export const DEFAULT = {
   autoUpdateManager: null,
-  checkForUpdate: () => {},
+  checkForUpdate: (): void => {},
   checkingForUpdate: false,
   updateAvailable: null,
   downloadProgress: null,
   updateError: "",
-  requestInstallUpdate: () => {},
+  requestInstallUpdate: (): void => {},
   requestedInstallUpdate: false,
 };
 
@@ -44,7 +44,7 @@ export function AutoUpdateProvider({
   const [updateError, setUpdateError] = useState<string>("");
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
 
-  function checkForUpdate() {
+  function checkForUpdate(): void {
     logCtx.debug(`Check for new release on https://github.com/fkie/fkie-multi-agent-suite`, "");
     setUpdateAvailable(null);
     setUpdateError("");
@@ -53,7 +53,7 @@ export function AutoUpdateProvider({
     autoUpdateManager?.checkForUpdate();
   }
 
-  function requestInstallUpdate() {
+  function requestInstallUpdate(): void {
     setUpdateError("");
     setRequestedInstallUpdate(true);
     autoUpdateManager?.quitAndInstall();
@@ -107,7 +107,6 @@ export function AutoUpdateProvider({
       requestedInstallUpdate,
       requestInstallUpdate,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [autoUpdateManager, checkingForUpdate, updateAvailable, downloadProgress, updateError, requestedInstallUpdate]
   );
 

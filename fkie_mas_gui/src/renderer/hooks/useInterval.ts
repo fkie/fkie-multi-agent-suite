@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 // See: https://usehooks-ts.com/react-hook/use-isomorphic-layout-effect
 import useIsomorphicLayoutEffect from "./useIsomorphicLayoutEffect";
 
-function useInterval(callback: () => void, delay: number | null) {
+export default function useInterval(callback: () => void, delay: number | null): void {
   const savedCallback = useRef(callback);
 
   // Remember the latest callback if it changes.
@@ -20,8 +20,6 @@ function useInterval(callback: () => void, delay: number | null) {
 
     const id = setInterval(() => savedCallback.current(), delay);
 
-    return () => clearInterval(id);
+    return (): void => clearInterval(id);
   }, [delay]);
 }
-
-export default useInterval;

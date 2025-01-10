@@ -1,5 +1,5 @@
 import { Stack } from "@mui/material";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
@@ -16,13 +16,13 @@ interface ITerminalInfo {
   cmd: string;
 }
 
-export default function TerminalApp() {
+export default function TerminalApp(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [paramInfo, setParamInfo] = useState<ITerminalInfo | null>(null);
 
-  const initProvider = useCallback(async () => {
+  async function initProvider(): Promise<void> {
     const queryString = window.location.search;
     console.log(`queryString: ${queryString}`);
     const urlParams = new URLSearchParams(queryString);
@@ -57,7 +57,7 @@ export default function TerminalApp() {
     } else {
       logCtx.error(`connection to ${host}:${port} failed`, "", false);
     }
-  }, [setParamInfo]);
+  }
 
   useEffect(() => {
     // Anything in here is fired on component mount.
@@ -66,7 +66,7 @@ export default function TerminalApp() {
       window.terminalManager?.close(id);
     });
     initProvider();
-    return () => {
+    return (): void => {
       // Anything in here is fired on component unmount.
     };
   }, []);

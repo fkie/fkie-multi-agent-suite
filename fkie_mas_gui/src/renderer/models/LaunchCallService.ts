@@ -3,7 +3,7 @@ import { TRosMessageStruct } from "./TRosMessageStruct";
 /**
  * LaunchCallService models the service to call a ROS service.
  */
-class LaunchCallService {
+export default class LaunchCallService {
   /**
    * The ROS service name.
    */
@@ -19,27 +19,9 @@ class LaunchCallService {
    */
   data: string;
 
-  /**
-   * Class Constructor
-   *
-   * @param {string} service_name - The ROS service name.
-   * @param {string} srv_type - Type of the request service.
-   * @param {JSONObject | null} data - Dictionary structure of the ROS request service as JSON string.
-   */
   constructor(service_name: string, srv_type: string, data: TRosMessageStruct | TRosMessageStruct[] | undefined) {
     this.service_name = service_name;
     this.srv_type = srv_type;
     this.data = JSON.stringify(data);
   }
-
-  /**
-   * Generates a string representation of this class
-   *
-   * @return {string} description
-   */
-  toString: () => string = () => {
-    return `${this.service_name} [${this.srv_type}]`;
-  };
 }
-
-export default LaunchCallService;

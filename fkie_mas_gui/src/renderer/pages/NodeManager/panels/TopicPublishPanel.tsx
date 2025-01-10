@@ -158,7 +158,6 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicName, providerId, rosCtx]);
 
   // debounced filter callback
@@ -190,13 +189,11 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     if (!messageType) return;
     if (!messageStruct) return;
     onUpdateInputElements(searchTerm);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageStruct]);
 
   // Get topic struct when mounting the component
   useEffect(() => {
     getTopicStructData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicName]);
 
   // Update the visible state of input fields on a filter change
@@ -205,7 +202,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     // eslint-disable-next-line
   }, [searchTerm]);
 
-  const handleStartPublisher = async () => {
+  async function handleStartPublisher(): Promise<void> {
     if (!messageStruct) return;
     setStartPublisherDescription("Starting publisher...");
     setStartPublisherIsSubmitting(true);
@@ -250,12 +247,12 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
       setStartPublisherIsSubmitting(false);
       setStartPublisherDescription("");
     }, 5000);
-  };
+  }
 
   const publishRateSelections = ["once", "latched", "1"];
 
   // create input mask for an element of the array
-  function createHistoryButton(index) {
+  function createHistoryButton(index): JSX.Element {
     return (
       <Button
         key={`history-button-${index}`}
@@ -271,19 +268,22 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     );
   }
 
-  const getHostStyle = () => {
-    const providerName = provider?.name();
-    if (providerName && settingsCtx.get("colorizeHosts")) {
-      return {
-        flexGrow: 1,
-        borderTopStyle: "solid",
-        borderTopColor: colorFromHostname(providerName),
-        borderTopWidth: "0.3em",
-        backgroundColor: settingsCtx.get("backgroundColor") as string,
-      };
-    }
-    return { flexGrow: 1, backgroundColor: settingsCtx.get("backgroundColor") as string };
-  };
+  const getHostStyle = useCallback(
+    function getHostStyle(): object {
+      const providerName = provider?.name();
+      if (providerName && settingsCtx.get("colorizeHosts")) {
+        return {
+          flexGrow: 1,
+          borderTopStyle: "solid",
+          borderTopColor: colorFromHostname(providerName),
+          borderTopWidth: "0.3em",
+          backgroundColor: settingsCtx.get("backgroundColor") as string,
+        };
+      }
+      return { flexGrow: 1, backgroundColor: settingsCtx.get("backgroundColor") as string };
+    },
+    [provider, settingsCtx.changed]
+  );
 
   return (
     <Box ref={ref} height="100%" overflow="auto" alignItems="center" sx={getHostStyle()}>
@@ -405,7 +405,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
               type="submit"
               variant="contained"
               color="success"
-              onClick={handleStartPublisher}
+              onClick={() => handleStartPublisher()}
               disabled={messageStruct?.type === undefined}
             >
               Start Publisher
