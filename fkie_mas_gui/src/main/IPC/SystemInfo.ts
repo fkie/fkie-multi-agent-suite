@@ -29,7 +29,7 @@ export class SystemInfo implements TSystemInfo {
 
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
 
-  public async getInfo(): Promise<TSystemInfo> {
+  public getInfo: () => Promise<TSystemInfo> = () => {
     return new Promise((resolve, reject) => {
       const fetchInfo = async (): Promise<void> => {
         try {
@@ -78,13 +78,13 @@ export class SystemInfo implements TSystemInfo {
 
       fetchInfo();
     });
-  }
+  };
 
   /**
    * Get a string representation of this object
    *
    */
-  public toString(): string {
+  public toString: () => string = () => {
     return JSON.stringify(this.getInfo());
-  }
+  };
 }

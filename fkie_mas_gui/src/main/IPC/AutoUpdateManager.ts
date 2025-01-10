@@ -52,7 +52,7 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
     // implemented in preload script
   };
 
-  checkForUpdate(): void {
+  checkForUpdate = (): void => {
     if (this.isChecking) return;
     if (process.env.APPIMAGE === undefined) {
       this.mainWindow?.webContents.send(
@@ -64,10 +64,10 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
     autoUpdater.checkForUpdates().catch(() => {
       this.isChecking = false;
     });
-  }
-  quitAndInstall(): void {
+  };
+  quitAndInstall = (): void => {
     autoUpdater.quitAndInstall();
-  }
+  };
 
   public registerHandlers(): void {
     ipcMain.handle(AutoUpdateManagerEvents.checkForUpdate, () => {
@@ -103,7 +103,7 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
     });
   }
 
-  quit(): void {
+  quit = (): void => {
     // TODO
-  }
+  };
 }

@@ -45,30 +45,30 @@ export default class SubscriberManager implements TSubscriberManager {
     );
   }
 
-  public async has(id: string): Promise<boolean> {
+  public has: (id: string) => Promise<boolean> = async (id) => {
     if (this.instances[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  }
+  };
 
-  public async close(id: string): Promise<boolean> {
+  public close: (id: string) => Promise<boolean> = async (id) => {
     if (this.instances[id]) {
       this.instances[id].window.destroy();
       delete this.instances[id];
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  }
+  };
 
-  public async open(
+  public open: (
     id: string,
     host: string,
     port: number,
     topic: string,
     showOptions: boolean,
     noData: boolean
-  ): Promise<string | null> {
+  ) => Promise<string | null> = async (id, host, port, topic, showOptions, noData) => {
     if (this.instances[id]) {
       this.instances[id].window.focus();
       return Promise.resolve(null);
@@ -138,5 +138,5 @@ export default class SubscriberManager implements TSubscriberManager {
       });
     }
     return Promise.resolve(null);
-  }
+  };
 }

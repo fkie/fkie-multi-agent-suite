@@ -877,8 +877,12 @@ export default function NodeManager(): JSX.Element {
         <ProviderSelectionModal
           title="Select providers to shut down"
           providers={rosCtx.providers}
-          onCloseCallback={() => electronCtx.cancelCloseApp()}
-          onConfirmCallback={(providers) => shutdownProviders(providers)}
+          onCloseCallback={() => {
+            electronCtx.cancelCloseApp();
+          }}
+          onConfirmCallback={(providers) => {
+            shutdownProviders(providers);
+          }}
           onForceCloseCallback={() => electronCtx.shutdownManager?.quitGui()}
         />
       )}

@@ -20,7 +20,7 @@ export default class DialogManager implements TDialogManager {
     });
   }
 
-  public async openFile(path: string): Promise<string | null> {
+  public openFile: (path: string) => Promise<string | null> = async (path) => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       defaultPath: path,
     });
@@ -28,7 +28,7 @@ export default class DialogManager implements TDialogManager {
       return filePaths[0];
     }
     return null;
-  }
+  };
 
   quit(): void {
     // TODO

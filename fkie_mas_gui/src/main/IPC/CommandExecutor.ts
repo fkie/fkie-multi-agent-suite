@@ -127,10 +127,13 @@ export default class CommandExecutor implements TCommandExecutor {
    * @param command - Remote directory path
    * @return Returns response
    */
-  public async exec(
+  public exec: (
     credential: ConnectConfig | null,
     command: string
-  ): Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> {
+  ) => Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> = async (
+    credential: ConnectConfig | null,
+    command: string
+  ) => {
     let c = credential;
 
     // if no credential is given, assumes local host
@@ -223,13 +226,17 @@ export default class CommandExecutor implements TCommandExecutor {
     // command must be executed remotely
 
     return this.execRemote(c, command, 0);
-  }
+  };
 
-  private async execRemote(
+  private execRemote: (
     credential: ConnectConfig,
     command: string,
     keyIndex: number
-  ): Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> {
+  ) => Promise<{ result: boolean; message: string; command: string; connectConfig?: ConnectConfig }> = async (
+    credential,
+    command,
+    keyIndex = 0
+  ) => {
     const parentOut = getArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES) === "true";
     const connectionConfig = this.generateConfig(credential, keyIndex);
     return new Promise((resolve) => {
@@ -331,7 +338,7 @@ export default class CommandExecutor implements TCommandExecutor {
         });
       }
     });
-  }
+  };
 
   /**
    * Executes a command in an external Terminal (using a SSH connection on remote hosts)

@@ -1,7 +1,7 @@
 import {
-  /*EditorCloseCallback,*/
+  EditorCloseCallback,
   EditorManagerEvents,
-  /*FileRangeCallback,*/
+  FileRangeCallback,
   TEditorManager,
   TFileRange,
   TLaunchArg,
@@ -26,12 +26,12 @@ export default class EditorManager implements TEditorManager {
     //
   }
 
-  public onFileRange(/* callback: FileRangeCallback */): void {
+  public onFileRange: (callback: FileRangeCallback) => void = () => {
     // implemented in preload script
-  }
-  public onClose(/*callback: EditorCloseCallback */): void {
+  };
+  public onClose: (callback: EditorCloseCallback) => void = () => {
     // implemented in preload script
-  }
+  };
 
   public registerHandlers(): void {
     ipcMain.handle(EditorManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
@@ -75,37 +75,37 @@ export default class EditorManager implements TEditorManager {
     );
   }
 
-  public async has(id: string): Promise<boolean> {
+  public has: (id: string) => Promise<boolean> = async (id) => {
     if (this.editors[id]) {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  }
+  };
 
-  public async emitFileRange(
+  public emitFileRange: (
     id: string,
     path: string,
     fileRange: TFileRange | null,
     launchArgs: TLaunchArg[]
-  ): Promise<boolean> {
+  ) => Promise<boolean> = async (id, path, fileRange, launchArgs) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();
       this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  }
+  };
 
-  public async close(id: string): Promise<boolean> {
+  public close: (id: string) => Promise<boolean> = async (id) => {
     if (this.editors[id]) {
       this.editors[id].window.destroy();
       delete this.editors[id];
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  }
+  };
 
-  public async changed(id: string, path: string, changed: boolean): Promise<boolean> {
+  public changed: (id: string, path: string, changed: boolean) => Promise<boolean> = async (id, path, changed) => {
     if (this.editors[id]) {
       if (this.editors[id].changed.includes(path)) {
         if (!changed) {
@@ -117,9 +117,9 @@ export default class EditorManager implements TEditorManager {
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
-  }
+  };
 
-  public async open(
+  public open: (
     id: string,
     host: string,
     port: number,
@@ -127,7 +127,7 @@ export default class EditorManager implements TEditorManager {
     launchFile: string,
     fileRange: TFileRange | null,
     launchArgs: TLaunchArg[]
-  ): Promise<string | null> {
+  ) => Promise<string | null> = async (id, host, port, path, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {
       this.editors[id].window.focus();
       this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
@@ -200,5 +200,5 @@ export default class EditorManager implements TEditorManager {
       });
     }
     return Promise.resolve(null);
-  }
+  };
 }
