@@ -284,7 +284,7 @@ export default class Provider implements IProvider {
           // this.updateRosNodes({});
           this.updateDiagnostics(null);
           // this.getPackageList();  <- this request is done by package explorer
-          this.updateScreens();
+          // this.updateScreens();  <. this request is performed while update nodes
           // this.launchGetList();
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.updateProviderList();
@@ -861,7 +861,7 @@ export default class Provider implements IProvider {
    * @return {Promise<RosPackage[]>} Returns a list of ROS packages
    */
   public getPackageList: () => Promise<RosPackage[]> = async () => {
-    const comparePackages = (a: RosPackage, b: RosPackage) => {
+    const comparePackages: (a: RosPackage, b: RosPackage) => number = (a, b) => {
       if (a.path < b.path) {
         return -1;
       }
@@ -1065,22 +1065,45 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
-  public applyScreens: (screens: ScreensMapping[] | null) => void = (screens = null) => {
+  public applyScreens: (screens: ScreensMapping[] | null, rosNodes: RosNode[]) => void = (screens = null, rosNodes) => {
     this.screens = screens ? screens : [];
     let nodesUpdated: boolean = false;
     // update nodes
-    this.rosNodes.forEach((node: RosNode, idx: number) => {
-      const screenMapping = this.screens.find((s) => node.id === s.name);
-      if (screenMapping) {
-        if (JSON.stringify(node.screens.sort()) !== JSON.stringify(screenMapping.screens.sort())) {
+    // if node exist (it is running), only update the associated launch file
+    this.screens.map((screen) => {
+      const idxNode = rosNodes.findIndex((n) => {
+        return n.name === screen.name;
+      });
+      if (idxNode >= 0) {
+        if (JSON.stringify(rosNodes[idxNode].screens.sort()) !== JSON.stringify(screen.screens.sort())) {
+          nodesUpdated = true;
+          rosNodes[idxNode].screens = screen.screens;
+        }
+      } else {
+        // create a new node for screen
+        nodesUpdated = true;
+        const n = new RosNode(screen.name, screen.name, "/", "", RosNodeStatus.INACTIVE);
+        // idGlobal should be the same for life of the node on remote host
+        n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
+        n.providerName = this.name();
+        n.providerId = this.id;
+        n.status = RosNodeStatus.ONLY_SCREEN;
+        // set if system node, e.g. ttyd
+        if (screen.name.startsWith("/ttyd-") || screen.name.startsWith("/roscore-")) {
+          n.system_node = true;
+        }
+        n.screens = screen.screens;
+        rosNodes.push(n);
+      }
+    });
+    rosNodes.forEach((node: RosNode, idx: number) => {
+      if (node.status !== RosNodeStatus.RUNNING && node.screens.length > 0) {
+        const screenMapping = this.screens.find((s) => node.id === s.name);
+        if (!screenMapping) {
           nodesUpdated = true;
         }
-        this.rosNodes[idx].screens = screenMapping.screens;
-      } else if (node.status !== RosNodeStatus.RUNNING) {
-        if (node.screens.length > 0) {
-          nodesUpdated = true;
-        }
-        this.rosNodes[idx].screens = [];
+        rosNodes[idx].screens = [];
+        // TODO: remove node if no launchInfo?
       }
     });
     emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
@@ -1097,7 +1120,7 @@ export default class Provider implements IProvider {
   public updateScreens: () => Promise<boolean> = async () => {
     const result = await this.getScreenList();
     if (result) {
-      this.applyScreens(result);
+      this.applyScreens(result, this.rosNodes);
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
@@ -1344,6 +1367,7 @@ export default class Provider implements IProvider {
         });
 
         this.daemon = true;
+        this.applyScreens(this.screens, this.rosNodes);
         emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
         return true;
       }
@@ -1351,6 +1375,7 @@ export default class Provider implements IProvider {
       if (`${value.message}`.includes("wamp.error.no_such_procedure")) {
         this.daemon = false;
       }
+
       this.logger?.error(`Provider [${this.name()}]: Error at updateLaunchContent()`, `${value.message}`);
       this.launchFiles = [];
       return false;
@@ -1737,11 +1762,11 @@ export default class Provider implements IProvider {
   /**
    * Kill a node given a name
    *
-   * @param {string} name - Node to be killed
-   * @return {Promise<Result>} Returns a result
+   * @param name - Node to be killed
+   * @return Returns a result
    */
-  public screenKillNode: (name: string) => Promise<Result> = async (name) => {
-    const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name], true).then((value: TResultData) => {
+  public screenKillNode: (name: string, signal?: string) => Promise<Result> = async (name, signal) => {
+    const result = await this.makeCall(URI.ROS_SCREEN_KILL_NODE, [name, signal], true).then((value: TResultData) => {
       if (value.result) {
         const parsed = value.data as Result;
         if (!parsed.result) {
@@ -2150,7 +2175,7 @@ export default class Provider implements IProvider {
       return;
     }
 
-    this.applyScreens(msg.screens as unknown as ScreensMapping[]);
+    this.applyScreens(msg.screens as unknown as ScreensMapping[], this.rosNodes);
   };
 
   /**

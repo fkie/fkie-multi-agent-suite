@@ -13,6 +13,7 @@ export enum RosNodeStatus {
   RUNNING = "Running", // The node is running in the given host
   NOT_MONITORED = "Not Monitored", // The node runs on a different host and will be not monitored
   DEAD = "Dead", // The node was registered in ROS_MASTER, but it does not respond (probably was killed or it is over-loaded)
+  ONLY_SCREEN = "Only screen", // we found only an active screen with correct name
   UNKNOWN = "Unknown", // Unknown status
 }
 

@@ -137,6 +137,11 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         return <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
       }
 
+      case RosNodeStatus.ONLY_SCREEN: {
+        const color = isDarkMode ? green[600] : green[500];
+        return <DvrIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+      }
+
       case RosNodeStatus.INACTIVE: {
         if (node.screens.length === 1) {
           const color = isDarkMode ? green[600] : green[500];

@@ -35,7 +35,10 @@ const getGroupStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
         allRunning = false;
       }
     }
-    if (treeItem.node && treeItem.node.status === RosNodeStatus.RUNNING) {
+    if (
+      treeItem.node &&
+      (treeItem.node.status === RosNodeStatus.RUNNING || treeItem.node.status === RosNodeStatus.ONLY_SCREEN)
+    ) {
       groupStatus = GroupStatus.SOME_RUNNING;
     } else if (treeItem.node) {
       allRunning = false;

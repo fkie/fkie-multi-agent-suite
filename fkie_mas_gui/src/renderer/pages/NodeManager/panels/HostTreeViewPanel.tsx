@@ -560,102 +560,113 @@ function HostTreeViewPanel() {
   );
 
   /** Stop node from queue and trigger the next one. */
-  const stopNodeQueued = async (node: RosNode | undefined) => {
+  const stopNodeQueued: (node: RosNode | undefined) => Promise<void> = async (node) => {
     if (node !== undefined) {
       logCtx.debug(`stop: ${node.name}`, "");
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
         addStatusQueueMain("STOP", node.name, false, `Provider ${node.providerName} not available`);
       } else {
-        // store result for message
-        const resultStopNode = await provider.stopNode(node.id);
-        if (!resultStopNode.result) {
-          addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
-        } else {
-          addStatusQueueMain("STOP", node.name, true, "stopped");
+        if (node.status === RosNodeStatus.RUNNING) {
+          // stop node and store result for message
+          const resultStopNode = await provider.stopNode(node.id);
+          if (!resultStopNode.result) {
+            addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
+          } else {
+            addStatusQueueMain("STOP", node.name, true, "stopped");
+          }
+        } else if (node.screens.length > 0) {
+          // terminate screen and store result for message
+          const resultTermNode = await provider.screenKillNode(node.id, "SIGTERM");
+          if (!resultTermNode.result) {
+            addStatusQueueMain("STOP", node.name, false, resultTermNode.message);
+          } else {
+            addStatusQueueMain("STOP", node.name, true, "sent SIGTERM to executable");
+          }
         }
       }
     }
+    return Promise.resolve();
   };
 
   /**
    * Stop nodes given in the arguments
    */
-  const stopNodes: (nodes: RosNode[], onlyWithLaunch?: boolean, restart?: boolean) => void = useCallback(
-    (nodes, onlyWithLaunch = false, restart = false) => {
-      const nodes2stop: RosNode[] = [];
-      const skippedNodes: Map<string, string> = new Map();
-      const nodeList = updateWithAssociations(nodes);
-      nodeList.forEach((node) => {
-        // we stop system nodes only when they are individually selected
-        if (node.system_node && nodeList.length > 1) {
-          // skip system nodes
-          skippedNodes.set(node.name, "system node");
-        } else if (onlyWithLaunch && node.launchInfo.size === 0) {
-          skippedNodes.set(node.name, "stop only with launch files");
-        } else if (
-          queueItemsQueueMain &&
-          queueItemsQueueMain.find((elem) => {
-            return elem.action === "STOP" && elem.node?.name === node.name;
-          })
-        ) {
-          skippedNodes.set(node.name, "already in queue");
-        } else if (node.status === RosNodeStatus.RUNNING) {
-          // const isRunning = node.status === RosNodeStatus.RUNNING;
-          // const isRunning = true;
-          // if (!skip) {
-          nodes2stop.push(node);
-        } else {
-          skippedNodes.set(node.name, "not running");
-        }
-      });
-      if (skippedNodes.size > 0) {
-        logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
-      }
-      updateQueueMain(
-        nodes2stop.map((node) => {
-          return { node, action: "STOP" };
+  const stopNodes: (nodes: RosNode[], onlyWithLaunch?: boolean, restart?: boolean) => void = (
+    nodes,
+    onlyWithLaunch = false,
+    restart = false
+  ) => {
+    const nodes2stop: RosNode[] = [];
+    const skippedNodes: Map<string, string> = new Map();
+    const nodeList = updateWithAssociations(nodes);
+    nodeList.forEach((node) => {
+      // we stop system nodes only when they are individually selected
+      if (node.system_node && nodeList.length > 1) {
+        // skip system nodes
+        skippedNodes.set(node.name, "system node");
+      } else if (onlyWithLaunch && node.launchInfo.size === 0) {
+        skippedNodes.set(node.name, "stop only with launch files");
+      } else if (
+        queueItemsQueueMain &&
+        queueItemsQueueMain.find((elem) => {
+          return elem.action === "STOP" && elem.node?.name === node.name;
         })
-      );
-      let maxKillTime = -1;
-      // add kill on stop commands
-      nodes2stop.forEach((node) => {
-        if (node.pid) {
-          let killTime: number = -1;
-          node.launchInfo.forEach((launchInfo) => {
-            launchInfo.parameters?.forEach((param) => {
-              // TODO: search for kill parameter in ros2
-              if (param.name.endsWith("/nm/kill_on_stop")) {
-                if (killTime === -1)
-                  killTime = typeof param.value === "string" ? parseInt(param.value) : (param.value as number);
-              }
-            });
-          });
-
-          if (killTime > -1) {
-            if (maxKillTime < killTime) {
-              maxKillTime = killTime;
+      ) {
+        skippedNodes.set(node.name, "already in queue");
+      } else if (node.status === RosNodeStatus.RUNNING || node.screens.length > 0) {
+        // const isRunning = node.status === RosNodeStatus.RUNNING;
+        // const isRunning = true;
+        // if (!skip) {
+        nodes2stop.push(node);
+      } else {
+        skippedNodes.set(node.name, "not running");
+      }
+    });
+    if (skippedNodes.size > 0) {
+      logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
+    }
+    updateQueueMain(
+      nodes2stop.map((node) => {
+        return { node, action: "STOP" };
+      })
+    );
+    let maxKillTime = -1;
+    // add kill on stop commands
+    nodes2stop.forEach((node) => {
+      if (node.pid) {
+        let killTime: number = -1;
+        node.launchInfo.forEach((launchInfo) => {
+          launchInfo.parameters?.forEach((param) => {
+            // TODO: search for kill parameter in ros2
+            if (param.name.endsWith("/nm/kill_on_stop")) {
+              if (killTime === -1)
+                killTime = typeof param.value === "string" ? parseInt(param.value) : (param.value as number);
             }
-            setTimeout(() => {
-              updateQueueMain([{ node, action: "KILL" }]);
-            }, killTime);
+          });
+        });
+
+        if (killTime > -1) {
+          if (maxKillTime < killTime) {
+            maxKillTime = killTime;
           }
-        }
-      });
-      if (restart) {
-        if (maxKillTime > -1) {
-          // wait until all timers are expired before start nodes if kill timer was used while stop nodes
           setTimeout(() => {
-            startNodesWithLaunchCheck(nodeList, true);
-          }, maxKillTime + 500);
-        } else {
-          startNodesWithLaunchCheck(nodeList, true);
+            updateQueueMain([{ node, action: "KILL" }]);
+          }, killTime);
         }
       }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [queueItemsQueueMain, startNodesWithLaunchCheck]
-  );
+    });
+    if (restart) {
+      if (maxKillTime > -1) {
+        // wait until all timers are expired before start nodes if kill timer was used while stop nodes
+        setTimeout(() => {
+          startNodesWithLaunchCheck(nodeList, true);
+        }, maxKillTime + 500);
+      } else {
+        startNodesWithLaunchCheck(nodeList, true);
+      }
+    }
+  };
 
   /**
    * Stop nodes in the selected list

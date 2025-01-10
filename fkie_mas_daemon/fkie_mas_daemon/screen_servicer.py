@@ -99,7 +99,16 @@ class ScreenServicer:
         self._screen_do_check = True
 
     def kill_node(self, name: str, sig: signal = signal.SIGKILL) -> bool:
-        Log.info(f"{self.__class__.__name__}: Kill node '{name}'")
+        Log.info(f"{self.__class__.__name__}: Kill node '{name}'; signal: [{type(sig)}] {sig}")
+        sig_obj = sig
+        if isinstance(sig, str):
+            if sig == 'SIGTERM':
+                sig_obj = signal.SIGTERM
+            elif sig == 'SIGKILL':
+                sig_obj = signal.SIGTERM
+            else:
+                Log.warn(f"{self.__class__.__name__}:  unknown signal '{sig}' provided. Use default SIGKILL instead")
+                sig_obj = signal.SIGKILL
         self._screen_do_check = True
         success = False
         screens = screen.get_active_screens(name)
@@ -147,19 +156,19 @@ class ScreenServicer:
                     found_pid = current_pid
             if found_pid > -1:
                 Log.info(
-                    f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig.name}")
-                os.kill(found_pid, sig)
+                    f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig_obj.name}")
+                os.kill(found_pid, sig_obj)
                 # kill all parents, to handle the case if respawn script is used
-                if sig == signal.SIGKILL:
+                if sig_obj == signal.SIGKILL:
                     Log.info(
-                        f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig.name}")
+                        f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig_obj.name}")
                     for parent_pid in reversed(parents2kill):
-                        os.kill(parent_pid, sig)
+                        os.kill(parent_pid, sig_obj)
                 successCur = True
             if not successCur:
                 Log.info(
-                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid_screen}' using signal {sig.name}")
-                os.kill(pid_screen, sig)
+                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid_screen}' using signal {sig_obj.name}")
+                os.kill(pid_screen, sig_obj)
                 successCur = True
             if successCur:
                 success = True

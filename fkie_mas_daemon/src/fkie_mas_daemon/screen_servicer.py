@@ -26,8 +26,17 @@ class ScreenServicer:
     def stop(self):
         pass
 
-    def killNode(self, name: str) -> bool:
-        Log.info("Kill node '%s'", name)
+    def killNode(self, name: str, sig: signal = signal.SIGKILL) -> bool:
+        Log.info(f"{self.__class__.__name__}: Kill node '{name}'; signal: [{type(sig)}] {sig}")
+        sig_obj = sig
+        if isinstance(sig, str):
+            if sig == 'SIGTERM':
+                sig_obj = signal.SIGTERM
+            elif sig == 'SIGKILL':
+                sig_obj = signal.SIGTERM
+            else:
+                Log.warn(f"{self.__class__.__name__}:  unknown signal '{sig}' provided. Use default SIGKILL instead")
+                sig_obj = signal.SIGKILL
         success = False
         screens = screen.get_active_screens(name)
         if len(screens.items()) == 0:
@@ -35,6 +44,6 @@ class ScreenServicer:
 
         for session_name, node_name in screens.items():
             pid, session_name = screen.split_session_name(session_name)
-            os.kill(pid, signal.SIGKILL)
+            os.kill(pid, sig_obj)
             success = True
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
