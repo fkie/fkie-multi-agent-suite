@@ -1,10 +1,10 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
 <package format="3">
   <name>fkie_mas_pylib</name>
   <description>
      Python helpers required by multi agent suite packages.
   </description>
-  <version>3.1.0</version>
+  <version>3.1.1</version>
   <license>MIT</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>

@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.3.2 (10.01.2025)
+------------------
+* added stop for execute process and visualization for screen processes
+* fixed: show screens of not running nodes e.g. ExecuteProcess, see issue #4
+
 3.3.1 (09.01.2025)
 ------------------
 * fixed daemon for galactic

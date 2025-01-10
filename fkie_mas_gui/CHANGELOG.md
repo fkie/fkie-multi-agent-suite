@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.2 - 10.01.2025
+
+Added stop for execute process and visualization for screen processes
+Bump version of some depended libraries
+
 ## 3.0.1 - 09.01.2025
 
 Added dependecy python3-netifaces for mas_pylib
