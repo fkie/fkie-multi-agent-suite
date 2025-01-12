@@ -145,7 +145,7 @@ class RosService:
         self.service_API_URI = ""
         self.provider: List[str] = []
         self.requester: List[str] = []
-        self.location = "local"
+        self.location = "unknown"
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
@@ -203,6 +203,7 @@ class RosParameter:
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
+        self.gid = None # used while creation of the node
         self.is_container = False
         self.container_name = ""
         self.name = name  # with namespace
@@ -211,7 +212,7 @@ class RosNode:
         self.pid = -1
         self.node_API_URI = None
         self.masteruri = None
-        self.location = "local"
+        self.location = "unknown"
         self.is_local = True
         self.publishers: List[RosTopic] = []
         self.subscribers: List[RosTopic] = []

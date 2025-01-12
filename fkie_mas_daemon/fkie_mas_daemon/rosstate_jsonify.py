@@ -7,7 +7,6 @@
 #
 # ****************************************************************************
 
-
 from typing import Dict
 from typing import List
 from typing import Text
@@ -31,7 +30,11 @@ from fkie_mas_pylib.interface.runtime_interface import RosService
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import get_local_addresses
+from fkie_mas_pylib.service.future import WaitFuture
+from fkie_mas_pylib.service.future import create_service_future
+from fkie_mas_pylib.service.future import wait_until_futures_done
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
+from fkie_mas_msgs.srv import GetParticipants
 
 import fkie_mas_daemon as nmd
 
@@ -75,15 +78,13 @@ class ComposedNodeInfo:
 
 
 class CachedData:
-    participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo]
     node_dict: Dict[Tuple[NodeNamespace, NodeName, ParticipantGid], RosNode]
     topic_by_id: Dict[EndpointGid, RosTopic]
     topic_objs: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]
     service_by_id: Dict[EndpointGid, RosService]
     service_objs: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]
 
-    def __init__(self, participant_infos=Dict[ParticipantGid, ParticipantEntitiesInfo]):
-        self.participant_infos = participant_infos
+    def __init__(self):
         self.node_dict = {}
         self.topic_by_id = {}
         self.topic_objs = {}
@@ -93,11 +94,13 @@ class CachedData:
 
 class RosStateJsonify:
 
-    def __init__(self):
+    def __init__(self, get_participants_service_name: Text):
         Log.debug("Create RosStateJsonify")
+        self._get_participants_service_name = get_participants_service_name
         self._last_known_nodes: List[NodeId] = []
         self._composable_nodes: Dict[NodeFullName, NodeFullName] = {}
         self._local_addresses = get_local_addresses()
+        self._participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
 
     @classmethod
     def get_message_type(cls, dds_type: Text) -> Text:
@@ -136,15 +139,23 @@ class RosStateJsonify:
                 return True
         return False
 
-    def get_nodes_as_json(self, participant_infos=Dict[ParticipantGid, ParticipantEntitiesInfo]) -> List[RosNode]:
+    def get_nodes_as_json(self, update_participants: bool) -> List[RosNode]:
         Log.debug(f"{self.__class__.__name__}: create graph for websocket")
-        cached_data: CachedData = CachedData(participant_infos)
+        cached_data: CachedData = CachedData()
         node_ids: List[NodeId] = []
         new_nodes_detected: bool = False
         composable_services: List[str] = []
         lifecycle_state_services: List[str] = []
         lifecycle_transition_services: List[str] = []
         result: List[RosNode] = []
+        wait_futures: List[WaitFuture] = []
+
+        if update_participants or len(self._participant_infos) == 0:
+            Log.debug(f"{self.__class__.__name__}:  update_participant infos calling '{self._get_participants_service_name}'")
+            ready = create_service_future(nmd.ros_node, wait_futures, "participants", "", self._get_participants_service_name,
+                                          GetParticipants, GetParticipants.Request())
+            if not ready:
+                Log.debug(f"{self.__class__.__name__}:    service '{self._get_participants_service_name}' is not ready, skip")
 
         topic_list = nmd.ros_node.get_topic_names_and_types(True)
         for topic_name, topic_types in topic_list:
@@ -234,8 +245,9 @@ class RosStateJsonify:
                             tp.requester.append(ros_node.id)
                         if is_request:
                             ros_node.services.append(tp)
-                except Exception as err:
-                    print(err)
+                except Exception:
+                    import traceback
+                    print(traceback.format_exc())
                 if is_new:
                     result.append(ros_node)
                     node_ids.append(ros_node.id)
@@ -243,10 +255,49 @@ class RosStateJsonify:
                         new_nodes_detected = True
         # update composable nodes
         if new_nodes_detected:
-            self._composable_nodes = self._update_composable_nodes(composable_services, result)
-        # update lifecycle states
-        self._update_lifecycle_states(lifecycle_state_services, result)
-        self._update_lifecycle_transitions(lifecycle_transition_services, result)
+            self._composable_nodes = {}
+            for service_name in composable_services:
+                Log.debug(f"{self.__class__.__name__}:  update composable nodes '{service_name}'")
+                create_service_future(nmd.ros_node, wait_futures, "composable", "", service_name,
+                                      ListNodes, ListNodes.Request())
+        # update lifecycle nodes
+        for service_name in lifecycle_state_services:
+            Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{service_name}'")
+            create_service_future(nmd.ros_node, wait_futures, "lc_state", "", service_name,
+                                  GetState, GetState.Request())
+        for service_name in lifecycle_transition_services:
+            Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{service_name}'")
+            create_service_future(nmd.ros_node, wait_futures, "lc_transition", "", service_name,
+                                  GetAvailableTransitions, GetAvailableTransitions.Request())
+
+        # wait until all service are finished of timeouted
+        wait_until_futures_done(wait_futures)
+        # handle response
+        for wait_future in wait_futures:
+            if wait_future.type == "participants":
+                if wait_future.finished:
+                    try:
+                        response = wait_future.future.result()
+                        if response:
+                            # update the participant info (IP addresses)
+                            new_ros_state = {}
+                            for participant in response.participants:
+                                guid = self._guid_to_str(participant.guid)
+                                new_ros_state[guid] = participant
+                            self._participant_infos = new_ros_state
+                    except Exception as exception:
+                        Log.warn(
+                            f"{self.__class__.__name__}:-> failed to update participants calling '{wait_future.service_name}': '{exception}'")
+                else:
+                    Log.warn(f"{self.__class__.__name__}:-> Timeout while update participants calling '{wait_future.service_name}'")
+                wait_future.client.destroy()
+            elif wait_future.type == "composable":
+                self._update_composable_node(self._composable_nodes, wait_future)
+            elif wait_future.type == "lc_state":
+                self._update_lifecycle_state(result, wait_future)
+            elif wait_future.type == "lc_transition":
+                self._update_lifecycle_transition(result, wait_future)
+
         # apply composable nodes to the result
         for composable_name, container_name in self._composable_nodes.items():
             for idx in range(len(result)):
@@ -254,6 +305,22 @@ class RosStateJsonify:
                     Log.debug(f"{self.__class__.__name__}:    found composable node {result[idx].name}")
                     result[idx].container_name = container_name
         self._last_known_nodes = node_ids
+
+        # update nodes with participant infos
+        for node in result:
+            if node.gid in self._participant_infos:
+                participant = self._participant_infos[node.gid]
+                Log.info(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
+                node.location = participant.unicast_locators
+                node.is_local = False
+                # check if one of locations has a local IP address
+                for loc in node.location:
+                    node.is_local = self.is_location_local(loc)
+                    if node.is_local:
+                        break
+                Log.debug(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
+                node.enclave = participant.enclave
+            node.gid = None
         return result
 
     def _get_node_from(self, node_ns: str, node_name: str, gid: ParticipantGid, data: CachedData) -> Tuple[RosNode, IsNew]:
@@ -262,18 +329,8 @@ class RosStateJsonify:
             full_name = os.path.join(node_ns, node_name)
             Log.debug(f"{self.__class__.__name__}:   create node: {full_name}")
             ros_node = RosNode(f"{full_name}-{gid}", full_name)
-            if gid in data.participant_infos:
-                participant = data.participant_infos[gid]
-                ros_node.location = participant.unicast_locators
-                ros_node.is_local = False
-                # check if one of locations has a local IP address
-                for loc in ros_node.location:
-                    ros_node.is_local = self.is_location_local(loc)
-                    if ros_node.is_local:
-                        break
-                Log.debug(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators}")
-                ros_node.namespace = node_ns
-                ros_node.enclave = participant.enclave
+            ros_node.namespace = node_ns
+            ros_node.gid = gid
             # Add active screens for a given node
             screens = screen.get_active_screens(full_name)
             for session_name, _ in screens.items():
@@ -337,56 +394,42 @@ class RosStateJsonify:
             return True
         return False
 
-    def _update_composable_nodes(self, composable_services: List[str], nodes: List[RosNode]) -> Dict[NodeFullName, NodeFullName]:
-        composable_nodes: Dict[NodeFullName, NodeFullName] = {}
-        for service_name in composable_services:
-            Log.info(f"{self.__class__.__name__}:  update composable nodes {service_name}")
-            # get composed nodes
-            request = ListNodes.Request()
-            response = nmd.launcher.call_service(service_name, ListNodes, request)
-            container_name = service_name.replace('/_container/list_nodes', '')
-            if response:
-                # for cn_name, cn_unique_id in zip(response.full_node_names, response.unique_ids):
-                for cn_name in response.full_node_names:
-                    composable_nodes[cn_name] = container_name
-            elif response is not None:
-                Log.warn(
-                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{container_name}': '{response.error_message}'")
-            else:
-                Log.warn(
-                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{container_name}': '{response}'")
-        return composable_nodes
-
-    def _update_lifecycle_states(self, lifecycle_state_services: List[str], nodes: List[RosNode]) -> None:
-        for service_name in lifecycle_state_services:
+    def _update_composable_node(self, composable_nodes: Dict[NodeFullName, NodeFullName], future: WaitFuture) -> None:
+        container_name = future.service_name.replace('/_container/list_nodes', '')
+        if future.finished:
             try:
-                Log.info(f"{self.__class__.__name__}:  update lifecycle state {service_name}")
-                # get composed nodes
-                request = GetState.Request()
-                response = nmd.launcher.call_service(service_name, GetState, request)
-                node_name = service_name.replace('/get_state', '')
+                response = future.future.result()
+                if response:
+                    for cn_name in response.full_node_names:
+                        composable_nodes[cn_name] = container_name
+            except Exception as exception:
+                Log.warn(
+                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{container_name}': '{exception}'")
+        else:
+            Log.warn(f"{self.__class__.__name__}:-> Timeout while update composable nodes of '{container_name}'")
+        future.client.destroy()
+
+    def _update_lifecycle_state(self, nodes: List[RosNode], future: WaitFuture) -> None:
+        node_name = future.service_name.replace('/get_state', '')
+        if future.finished:
+            try:
+                response = future.future.result()
                 if response:
                     for idx in range(len(nodes)):
                         if nodes[idx].name == node_name:
                             nodes[idx].lifecycle_state = response.current_state.label
-                elif response is not None:
-                    Log.warn(
-                        f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{response.error_message}'")
-                else:
-                    Log.warn(
-                        f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{response}'")
-            except:
-                import traceback
-                print(traceback.format_exc())
+            except Exception as exception:
+                Log.warn(
+                    f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{exception}'")
+        else:
+            Log.warn(f"{self.__class__.__name__}:-> Timeout while update lifecycle state of '{node_name}'")
+        future.client.destroy()
 
-    def _update_lifecycle_transitions(self, lifecycle_transition_services: List[str], nodes: List[RosNode]) -> None:
-        for service_name in lifecycle_transition_services:
+    def _update_lifecycle_transition(self, nodes: List[RosNode], future: WaitFuture) -> None:
+        node_name = future.service_name.replace('/get_available_transitions', '')
+        if future.finished:
             try:
-                Log.info(f"{self.__class__.__name__}:  update lifecycle transitions {service_name}")
-                # get composed nodes
-                request = GetAvailableTransitions.Request()
-                response = nmd.launcher.call_service(service_name, GetAvailableTransitions, request)
-                node_name = service_name.replace('/get_available_transitions', '')
+                response = future.future.result()
                 if response:
                     for idx in range(len(nodes)):
                         if nodes[idx].name == node_name:
@@ -394,15 +437,12 @@ class RosStateJsonify:
                             for transition in response.available_transitions:
                                 nodes[idx].lifecycle_available_transitions.append(
                                     (transition.transition.label, transition.transition.id))
-                elif response is not None:
-                    Log.warn(
-                        f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{response.error_message}'")
-                else:
-                    Log.warn(
-                        f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{response}'")
-            except:
-                import traceback
-                print(traceback.format_exc())
+            except Exception as exception:
+                Log.warn(
+                    f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{exception}'")
+        else:
+            Log.warn(f"{self.__class__.__name__}:-> Timeout while update lifecycle transitions of '{node_name}'")
+        future.client.destroy()
 
     def _get_qos(self, tp: TopicEndpointInfo) -> RosQos:
         return RosQos(tp.durability,
@@ -421,3 +461,6 @@ class RosStateJsonify:
         elif qc == QoSCompatibility.Warning:
             return "warning"
         return "error"
+
+    def _guid_to_str(self, guid: List[int]) -> ParticipantGid:
+        return '.'.join('{:02X}'.format(c) for c in guid.data.tolist()[0:12])

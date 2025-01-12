@@ -18,11 +18,11 @@ if ( ament_cmake_FOUND )
     find_package(rosidl_default_generators REQUIRED)
 
     rosidl_generate_interfaces(${PROJECT_NAME}
-      "msg2/DiscoveredState.msg"
+      "msg2/ChangedState.msg"
       "msg2/Endpoint.msg"
       "msg2/Gid.msg"
       "msg2/ParticipantEntitiesInfo.msg"
-      "msg2/Qos.msg"
+      "srv/GetParticipants.srv"
       "srv/ListNodes.srv"
       "srv/LoadLaunch.srv"
       "srv/Task.srv"

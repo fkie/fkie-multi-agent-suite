@@ -44,7 +44,7 @@ export default class RosService {
     service_API_URI: string,
     masteruri = "",
     provider: string[] = [],
-    location = "local",
+    location = "unknown",
     requester: string[] = []
   ) {
     this.name = name;

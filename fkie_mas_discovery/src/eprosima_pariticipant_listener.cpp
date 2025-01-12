@@ -32,9 +32,10 @@
 #include "rmw/impl/cpp/key_value.hpp"
 
 #include "builtin_interfaces/msg/duration.hpp"
-#include "fkie_mas_msgs/msg/discovered_state.hpp"
+#include "fkie_mas_msgs/msg/changed_state.hpp"
 #include "fkie_mas_msgs/msg/gid.hpp"
 #include "fkie_mas_msgs/msg/participant_entities_info.hpp"
+#include "fkie_mas_msgs/srv/get_participants.hpp"
 
 #include "rclcpp/node.hpp"
 #include "rclcpp/publisher.hpp"
@@ -73,17 +74,23 @@ public:
                                                                                              eprosima::fastrtps::ParticipantListener(),
                                                                                              eprosima::fastrtps::SubscriberListener()
     {
-        rclcpp::QoS qos_settings(100);
-        qos_settings.reliable();
-        qos_settings.transient_local();
-        qos_settings.keep_last(1);
+        rclcpp::QoS qos_settings(10);
+        // qos_settings.reliable();
+        // qos_settings.transient_local();
+        // qos_settings.keep_last(1);
         on_shutdown = false;
-        publisher_ = this->create_publisher<fkie_mas_msgs::msg::DiscoveredState>("~/rosstate", qos_settings);
+        RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
+        publisher_ = this->create_publisher<fkie_mas_msgs::msg::ChangedState>("~/changed", qos_settings);
+        RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/ChangedState]", this->publisher_->get_topic_name());
+        service_ = this->create_service<fkie_mas_msgs::srv::GetParticipants>("~/get_participants",
+                                                                             std::bind(&CustomParticipantListener::get_pparticipants,
+                                                                                       this,
+                                                                                       std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        RCLCPP_INFO(get_logger(), "  service: %s [fkie_mas_msgs/msg/GetParticipants]", this->service_->get_service_name());
         daemon_topic_ = std::string("rt") + this->publisher_->get_topic_name();
         participant_ = nullptr;
         eprosima::fastrtps::ParticipantAttributes participant_attr;
         std::string full_name = this->get_node_base_interface()->get_fully_qualified_name();
-        RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
         RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
         participant_attr.rtps.setName(full_name.erase(0, 1).c_str());
         char *ros_domain_id = getenv("ROS_DOMAIN_ID");
@@ -138,10 +145,10 @@ public:
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_READER);
         // }
         std::string name = info.info.topicName().c_str();
-        if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
-        {
-            publish_notification();
-        }
+        publish_notification(2, name);
+        // if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
+        // {
+        // }
     }
 
     void onPublisherDiscovery(
@@ -165,10 +172,11 @@ public:
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_WRITER);
         // }
         std::string name = info.info.topicName().c_str();
-        if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
-        {
-            publish_notification();
-        }
+        publish_notification(1, name);
+        // if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
+        // {
+        //     publish_notification(1, name);
+        // }
     }
 
     template <class T>
@@ -179,16 +187,28 @@ public:
         return stream.str();
     }
 
-    void publish_notification()
+    void publish_notification(uint8_t type, std::string name = std::string(""))
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        fkie_mas_msgs::msg::DiscoveredState rosmsg;
+        fkie_mas_msgs::msg::ChangedState msg;
+        msg.type = type;
+        msg.topic_name = name;
+        RCLCPP_DEBUG(get_logger(), "rosgraph: publish change notification of type %i with topic_name: %s", msg.type, msg.topic_name.c_str());
+        publisher_->publish(msg);
+    }
+
+    void get_pparticipants(const std::shared_ptr<rmw_request_id_t>,
+                           const std::shared_ptr<fkie_mas_msgs::srv::GetParticipants::Request>,
+                           const std::shared_ptr<fkie_mas_msgs::srv::GetParticipants::Response> response)
+    {
+        RCLCPP_INFO(get_logger(), "Request get_participants");
+        std::lock_guard<std::mutex> guard(mutex_);
         for (auto itdp = discoveredParticipants_.begin(); itdp != discoveredParticipants_.end(); itdp++)
         {
-            rosmsg.participants.push_back(itdp->second);
+            response->participants.push_back(itdp->second);
         }
-        RCLCPP_DEBUG(get_logger(), "rosgraph: publish state with %lu participants", rosmsg.participants.size());
-        publisher_->publish(rosmsg);
+        RCLCPP_INFO(get_logger(), " request get_participants handled with %lu participants", response->participants.size());
+        RCLCPP_DEBUG(get_logger(), "rosgraph: service response state with %lu participants", response->participants.size());
     }
 
     void onParticipantDiscovery(
@@ -253,7 +273,7 @@ public:
         default:
             return;
         }
-        publish_notification();
+        publish_notification(0);
     }
 
     /** Returns current time in seconds. */
@@ -267,7 +287,8 @@ private:
     mutable std::mutex mutex_;
     bool on_shutdown;
     eprosima::fastrtps::Participant *participant_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
-    rclcpp::Publisher<fkie_mas_msgs::msg::DiscoveredState>::SharedPtr publisher_;
+    rclcpp::Publisher<fkie_mas_msgs::msg::ChangedState>::SharedPtr publisher_;
+    rclcpp::Service<fkie_mas_msgs::srv::GetParticipants>::SharedPtr service_;
     std::string daemon_topic_;
     double stamp_;
     paricipant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);

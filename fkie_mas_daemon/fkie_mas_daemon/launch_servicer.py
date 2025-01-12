@@ -930,8 +930,6 @@ class LaunchServicer(LoggingEventHandler):
                 result.error_msg = f"unexpected service class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
                 return json.dumps(result, cls=SelfEncoder)
 
-            cli = nmd.ros_node.create_client(sub_class, request.service_name)
-
             # create request message
             service_request = sub_class.Request()
             try:
@@ -940,20 +938,10 @@ class LaunchServicer(LoggingEventHandler):
             except Exception as e:
                 result.error_msg = 'Failed to populate field: {0}'.format(e)
 
-            # call service
-            if not cli.service_is_ready():
-                Log.debug(
-                    f"{self.__class__.__name__}: waiting for service '{request.service_name}' to become available...")
-                cli.wait_for_service()
-            Log.debug(
-                f"{self.__class__.__name__}: requester: making request: {service_request}")
-            future = cli.call_async(service_request)
-
-            rclpy.spin_until_future_complete(nmd.ros_node, future, None, 30.)
             try:
-                response = future.result()
+                response = nmd.launcher.call_service(request.service_name, sub_class, service_request, 5)
             except Exception as e:
-                response.error_msg = 'Exception while calling service: %r' % e
+                result.error_msg = 'Exception while calling service: %r' % e
             else:
                 result.data = message_to_ordereddict(response)
                 result.valid = True

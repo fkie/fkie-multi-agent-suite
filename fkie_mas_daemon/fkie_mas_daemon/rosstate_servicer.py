@@ -38,7 +38,7 @@ from fkie_mas_pylib.system.host import get_hostname
 from fkie_mas_pylib.system.url import get_port
 from fkie_mas_pylib.websocket.server import WebSocketServer
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
-from fkie_mas_msgs.msg import DiscoveredState
+from fkie_mas_msgs.msg import ChangedState
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
 from fkie_mas_msgs.msg import Endpoint
 
@@ -52,17 +52,18 @@ class RosStateServicer:
     def __init__(self, websocket: WebSocketServer, test_env=False):
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
-        self._participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
-        self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/rosstate"
+        self.service_name_get_p = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/get_participants"
+        self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
+        self._update_participants = True
         self._ts_state_updated = 0
         self._ts_state_notified = 0
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
         self._on_shutdown = False
-        self._state_jsonify = RosStateJsonify()
+        self._state_jsonify = RosStateJsonify(self.service_name_get_p)
         self.websocket = websocket
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
@@ -74,10 +75,10 @@ class RosStateServicer:
                            self.get_provider_timestamp)
 
     def start(self):
-        qos_state_profile = QoSProfile(depth=100,
-                                       durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                       history=QoSHistoryPolicy.KEEP_LAST,
-                                       reliability=QoSReliabilityPolicy.RELIABLE
+        qos_state_profile = QoSProfile(depth=10,
+                                       #    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                       #    history=QoSHistoryPolicy.KEEP_LAST,
+                                       #    reliability=QoSReliabilityPolicy.RELIABLE
                                        )
         qos_endpoint_profile = QoSProfile(depth=100,
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -85,7 +86,7 @@ class RosStateServicer:
                                           reliability=QoSReliabilityPolicy.RELIABLE)
         Log.info(f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
         self.sub_discovered_state = nmd.ros_node.create_subscription(
-            DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
+            ChangedState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
         Log.info(f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
@@ -152,27 +153,25 @@ class RosStateServicer:
         self.topic_state_publisher_count = 0
         self.publish_discovery_state()
 
-    def _on_msg_state(self, msg: DiscoveredState):
+    def _on_msg_state(self, msg: ChangedState):
         '''
         The method to handle the received Log messages.
         :param msg: the received message
-        :type msg: fkie_mas_msgs.DiscoveredState<XXX>
+        :type msg: fkie_mas_msgs.ChangedState
         '''
         if not self.topic_state_publisher_count:
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
             self.publish_discovery_state()
-        # update the participant info (IP addresses)
-        new_ros_state = {}
-        for participant in msg.participants:
-            guid = self._guid_to_str(participant.guid)
-            new_ros_state[guid] = participant
-        self._participant_infos = new_ros_state
-        self._ros_node_list = None
         # notify WebSocket clients, but not to often
         # notifications are sent from _check_discovery_node()
-        with self._lock_check:
-            self._ts_state_updated = time.time()
+        if not (msg.topic_name.startswith("rq/") or msg.topic_name.startswith("rr/") or msg.topic_name == "ros_discovery_info") or msg.topic_name.endswith('/load_nodeReply') or msg.topic_name.endswith('/unload_nodeReply'):
+            # ignore changes caused by service requests
+            if msg.type == 0:
+                # update participants on on next ros state update
+                self._update_participants = True
+            with self._lock_check:
+                self._ts_state_updated = time.time()
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
@@ -288,7 +287,8 @@ class RosStateServicer:
         # self._ros_node_list is cleared on updates in _on_msg_state()
         # otherwise we use a cached list
         if self._ros_node_list is None or forceRefresh:
-            self._ros_node_list = self._state_jsonify.get_nodes_as_json(self._participant_infos)
+            self._ros_node_list = self._state_jsonify.get_nodes_as_json(self._update_participants)
+            self._update_participants = False
         return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
@@ -304,6 +304,3 @@ class RosStateServicer:
             if node_id == node.id:
                 return node
         return None
-
-    def _guid_to_str(self, guid: List[int]) -> ParticipantGid:
-        return '.'.join('{:02X}'.format(c) for c in guid.data.tolist()[0:12])

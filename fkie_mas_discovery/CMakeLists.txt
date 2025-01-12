@@ -56,7 +56,8 @@ endif()
 if ( ament_cmake_FOUND )
     set(DEPS
         fkie_mas_msgs
-        rclcpp_lifecycle rclcpp
+        rclcpp
+        rclcpp_lifecycle
         rmw_fastrtps_shared_cpp
         lifecycle_msgs
     )

@@ -172,7 +172,7 @@ export default class RosNode {
     status = RosNodeStatus.UNKNOWN,
     pid = -1,
     masteruri = "",
-    location = "local",
+    location = "unknown",
     system_node = false,
     subscribers = new Map<string, RosTopic>(),
     publishers = new Map<string, RosTopic>(),
