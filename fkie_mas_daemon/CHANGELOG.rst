@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.4.0 (12.01.2025)
+------------------
+* changed communication with mas discovery
+* fixed call service, which stops rclpy.spin() after call
+
 3.3.2 (10.01.2025)
 ------------------
 * added stop for execute process and visualization for screen processes

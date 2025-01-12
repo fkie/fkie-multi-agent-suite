@@ -1,6 +1,9 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3.2.0 (12.01.2025)
+------------------
+* Fixed call service while get/set ros2 parameter
 
 3.1.0 (09.01.2025)
 ------------------

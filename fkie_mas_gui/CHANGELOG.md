@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.4 - 12.01.2025
+
+Updated minimum daemon version
+Fixed the problem where the automatic updates were stopped
+
 ## 3.0.3 - 10.01.2025
 
 Reverted some type changes to fix the closing behavior of the app
