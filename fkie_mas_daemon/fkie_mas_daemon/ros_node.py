@@ -56,8 +56,8 @@ class RosNodeLauncher(object):
         self.ros_node = rclpy.create_node(self.name, namespace=NM_NAMESPACE)
 
         nmd.ros_node = self.ros_node
-        self.executor = MultiThreadedExecutor(num_threads=5)
-        self.executor.add_node(self.ros_node)
+        # self.executor = MultiThreadedExecutor(num_threads=5)
+        # self.executor.add_node(self.ros_node)
         # set loglevel to DEBUG
         # nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
@@ -88,7 +88,8 @@ class RosNodeLauncher(object):
                 self._port, displayed_name=self._displayed_name)
             if self.success_start:
                 self._load_launches()
-                self.executor.spin()
+                # self.executor.spin()
+                rclpy.spin(self.ros_node)
                 # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             self.exit_gracefully(-1, None)
