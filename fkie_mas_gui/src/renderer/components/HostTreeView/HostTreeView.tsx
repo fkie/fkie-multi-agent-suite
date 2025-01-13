@@ -382,16 +382,18 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       setSelectedItems((prevItems) => [
         ...getParentAndChildrenIds(
           prevItems.map((selItem) => {
-            const selItemSplitted = keyToNodeName(selItem);
-            const newKey = keyNodeList.filter((keyItem) => {
-              const keyItemSplitted = keyToNodeName(keyItem.key);
-              return (
-                selItemSplitted.provider === keyItemSplitted.provider &&
-                selItemSplitted.node_name === keyItemSplitted.node_name
-              );
-            });
-            if (newKey.length > 0) {
-              return newKey[0].key;
+            if (selItem.indexOf("/") > 0) {
+              const selItemSplitted = keyToNodeName(selItem);
+              const newKey = keyNodeList.filter((keyItem) => {
+                const keyItemSplitted = keyToNodeName(keyItem.key);
+                return (
+                  selItemSplitted.provider === keyItemSplitted.provider &&
+                  selItemSplitted.node_name === keyItemSplitted.node_name
+                );
+              });
+              if (newKey.length > 0) {
+                return newKey[0].key;
+              }
             }
             return selItem;
           })
