@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.7 - 13.01.2025
+
+Ignore last changes
+
 ## 3.0.6 - 13.01.2025
 
 Hot fix for render error
