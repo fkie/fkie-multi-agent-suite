@@ -271,7 +271,7 @@ class RosStateJsonify:
                                   GetAvailableTransitions, GetAvailableTransitions.Request())
 
         # wait until all service are finished of timeouted
-        wait_until_futures_done(wait_futures)
+        wait_until_futures_done(wait_futures, 3.0)
         # handle response
         for wait_future in wait_futures:
             if wait_future.type == "participants":

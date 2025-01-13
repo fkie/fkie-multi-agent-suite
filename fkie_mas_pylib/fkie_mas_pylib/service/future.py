@@ -43,7 +43,7 @@ def create_service_future(node: Node, wait_futures: List[WaitFuture], type: str,
         return False
 
 
-def wait_until_futures_done(futures: List[WaitFuture], timeout: float = 3.0):
+def wait_until_futures_done(futures: List[WaitFuture], timeout: float = 5.0):
     start_ts = time.time()
 
     def check_finished(futures):
