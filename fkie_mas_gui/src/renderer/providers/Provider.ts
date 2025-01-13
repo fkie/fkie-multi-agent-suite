@@ -1039,19 +1039,19 @@ export default class Provider implements IProvider {
   };
 
   /** Update the screens of the node and create a new node it not exists */
-  public applyScreens: (screens: ScreensMapping[] | null, rosNodes: RosNode[]) => void = (screens = null, rosNodes) => {
+  public applyScreens: (screens: ScreensMapping[] | null) => void = (screens = null) => {
     this.screens = screens ? screens : [];
     let nodesUpdated: boolean = false;
     // update nodes
     // if node exist (it is running), only update the associated launch file
     this.screens.map((screen) => {
-      const idxNode = rosNodes.findIndex((n) => {
+      const idxNode = this.rosNodes.findIndex((n) => {
         return n.name === screen.name;
       });
       if (idxNode >= 0) {
-        if (JSON.stringify(rosNodes[idxNode].screens.sort()) !== JSON.stringify(screen.screens.sort())) {
+        if (JSON.stringify(this.rosNodes[idxNode].screens.sort()) !== JSON.stringify(screen.screens.sort())) {
           nodesUpdated = true;
-          rosNodes[idxNode].screens = screen.screens;
+          this.rosNodes[idxNode].screens = screen.screens;
         }
       } else {
         // create a new node for screen
@@ -1067,19 +1067,27 @@ export default class Provider implements IProvider {
           n.system_node = true;
         }
         n.screens = screen.screens;
-        rosNodes.push(n);
+        this.rosNodes.push(n);
       }
     });
-    rosNodes.forEach((node: RosNode, idx: number) => {
-      if (node.status !== RosNodeStatus.RUNNING && node.screens.length > 0) {
-        const screenMapping = this.screens.find((s) => node.id === s.name);
-        if (!screenMapping) {
+    const nodesToRemove: string[] = [];
+    this.rosNodes.forEach((node: RosNode, idx: number) => {
+      if (node.status !== RosNodeStatus.RUNNING) {
+        if (node.screens.length > 0) {
+          const screenMapping = this.screens.find((s) => node.id === s.name);
+          if (!screenMapping) {
+            nodesUpdated = true;
+            this.rosNodes[idx].screens = [];
+          }
+        }
+        if (node.screens.length === 0 && this.rosNodes[idx].launchInfo.size === 0) {
+          // remove node if no launchInfo?
+          nodesToRemove.push(node.idGlobal);
           nodesUpdated = true;
         }
-        rosNodes[idx].screens = [];
-        // TODO: remove node if no launchInfo?
       }
     });
+    this.rosNodes = this.rosNodes.filter((node) => !nodesToRemove.includes(node.idGlobal));
     emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
     if (nodesUpdated) {
       emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
@@ -1094,7 +1102,7 @@ export default class Provider implements IProvider {
   public updateScreens: () => Promise<boolean> = async () => {
     const result = await this.getScreenList();
     if (result) {
-      this.applyScreens(result, this.rosNodes);
+      this.applyScreens(result);
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
@@ -1339,7 +1347,7 @@ export default class Provider implements IProvider {
         });
 
         this.daemon = true;
-        this.applyScreens(this.screens, this.rosNodes);
+        this.applyScreens(this.screens);
         emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
         return true;
       }
@@ -2086,7 +2094,7 @@ export default class Provider implements IProvider {
       return;
     }
 
-    this.applyScreens(msg.screens as unknown as ScreensMapping[], this.rosNodes);
+    this.applyScreens(msg.screens as unknown as ScreensMapping[]);
   };
 
   /**
