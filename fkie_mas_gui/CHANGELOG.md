@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.6 - 13.01.2025
+
+Hot fix for render error
+
 ## 3.0.5 - 13.01.2025
 
 Fixed: do not deselect node after start/stop
