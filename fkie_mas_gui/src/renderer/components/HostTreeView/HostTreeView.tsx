@@ -363,14 +363,15 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     [getParentAndChildrenIds]
   );
 
-  function keyToNodeName(key: string): { provider: string; node_name: string } {
+  function keyToNodeName(key: string): { isValidNode: boolean; provider: string; node_name: string } {
     const [provider, rest] = key.split("/", 2);
+    if (!rest) return { isValidNode: false, provider: "", node_name: "" };
     const name = rest
-      .replace(/\/{.*}/, "")
-      .replace("#", "/")
-      .split("-")[0];
+      ?.replace(/\/{.*}/, "")
+      ?.replace("#", "/")
+      ?.split("-")[0];
 
-    return { provider: provider, node_name: name };
+    return { isValidNode: name !== undefined, provider: provider, node_name: name };
   }
 
   /**
@@ -382,14 +383,17 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       setSelectedItems((prevItems) => [
         ...getParentAndChildrenIds(
           prevItems.map((selItem) => {
-            if (selItem.indexOf("/") > 0) {
-              const selItemSplitted = keyToNodeName(selItem);
+            const selItemSplitted = keyToNodeName(selItem);
+            if (selItemSplitted.isValidNode) {
               const newKey = keyNodeList.filter((keyItem) => {
                 const keyItemSplitted = keyToNodeName(keyItem.key);
-                return (
-                  selItemSplitted.provider === keyItemSplitted.provider &&
-                  selItemSplitted.node_name === keyItemSplitted.node_name
-                );
+                if (keyItemSplitted.isValidNode) {
+                  return (
+                    selItemSplitted.provider === keyItemSplitted.provider &&
+                    selItemSplitted.node_name === keyItemSplitted.node_name
+                  );
+                }
+                return false;
               });
               if (newKey.length > 0) {
                 return newKey[0].key;
