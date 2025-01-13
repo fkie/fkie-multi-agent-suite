@@ -884,6 +884,7 @@ export default function NodeManager(): JSX.Element {
             shutdownProviders(providers);
           }}
           onForceCloseCallback={() => electronCtx.shutdownManager?.quitGui()}
+          onToggle={() => electronCtx.cancelCloseApp()}
         />
       )}
       {modifiedEditorTabs.length > 0 && (

@@ -25,6 +25,7 @@ interface ProviderSelectionModalProps {
   onConfirmCallback: (items: Provider[]) => void;
   onCloseCallback: () => void;
   onForceCloseCallback: () => void;
+  onToggle: (item: string, value: boolean) => void;
 }
 
 const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModalProps>(
@@ -35,6 +36,7 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
       onConfirmCallback = (): void => {},
       onCloseCallback = (): void => {},
       onForceCloseCallback = (): void => {},
+      onToggle = (): void => {},
     } = props;
     const [selectedProviders, setSelectedProviders] = useState<Provider[]>([]);
     const [progress, setProgress] = useState<number>(100);
@@ -50,8 +52,10 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
         if (selected) {
           newSelectedProviders.push(selected);
         }
+        onToggle(value, true);
       } else {
         newSelectedProviders.splice(currentIndex, 1);
+        onToggle(value, false);
       }
 
       setSelectedProviders(newSelectedProviders);
