@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.5 - 13.01.2025
+
+Fixed: do not deselect node after start/stop
+Fixed: fixed nodes cleanup if screen and launch info are gone
+
 ## 3.0.4 - 12.01.2025
 
 Updated minimum daemon version
