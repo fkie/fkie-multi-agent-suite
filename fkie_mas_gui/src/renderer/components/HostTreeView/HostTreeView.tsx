@@ -363,6 +363,16 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     [getParentAndChildrenIds]
   );
 
+  function keyToNodeName(key: string): { provider: string; node_name: string } {
+    const [provider, rest] = key.split("/", 2);
+    const name = rest
+      .replace(/\/{.*}/, "")
+      .replace("#", "/")
+      .split("-")[0];
+
+    return { provider: provider, node_name: name };
+  }
+
   /**
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
@@ -371,21 +381,19 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     function (): void {
       setSelectedItems((prevItems) => [
         ...getParentAndChildrenIds(
-          prevItems.map((item) => {
-            const itemIds = item.split("#");
-            const itemProvider = itemIds[0];
-            const itemId = itemIds.slice(-1)[0];
-            const itemName = removeDDSuid(itemId);
-            // find the node and determine the new node id
-            let present = itemId;
-            const providerNodes = rosCtx.mapProviderRosNodes.get(itemProvider);
-            providerNodes?.forEach((node) => {
-              if (node.name === itemName) {
-                present = node.id;
-              }
+          prevItems.map((selItem) => {
+            const selItemSplitted = keyToNodeName(selItem);
+            const newKey = keyNodeList.filter((keyItem) => {
+              const keyItemSplitted = keyToNodeName(keyItem.key);
+              return (
+                selItemSplitted.provider === keyItemSplitted.provider &&
+                selItemSplitted.node_name === keyItemSplitted.node_name
+              );
             });
-            // create the item id with new/old node id
-            return `${itemIds.slice(0, -1).join("#")}#${present}`;
+            if (newKey.length > 0) {
+              return newKey[0].key;
+            }
+            return selItem;
           })
         ),
       ]);
