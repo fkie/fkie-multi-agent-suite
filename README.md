@@ -24,7 +24,7 @@ sudo snap install ttyd --classic
 pip install "websockets>=12.0"
 ```
 
-> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. If you are using a different DDS for your system, you will need to change the environment variable for **mas-discovery** by setting `export RMW_IMPLEMENTATION=rmw_fastrtps_cpp`.
+> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. Tests must show whether it is necessary to prepend **RMW_IMPLEMENTATION=rmw_fastrtps_cpp**. Under Ubuntu 20.04 with ROS-galactic this leads to problems with the communication between discovery and daemon.
 
 ### Build ROS FKIE packages
 
