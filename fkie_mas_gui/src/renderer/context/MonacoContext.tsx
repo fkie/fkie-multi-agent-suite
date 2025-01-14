@@ -14,12 +14,8 @@ import {
 import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 
-export interface TTextModelExt extends editor.ITextModel {
-  modified: boolean;
-}
-
 export type TModelResult = {
-  model: TTextModelExt | null;
+  model: editor.ITextModel | null;
   file: FileItem | null;
   error: string;
 };
@@ -70,7 +66,7 @@ export interface IMonacoContext {
     providerId: string,
     path: string,
     forceReload: boolean
-  ) => Promise<{ model: TTextModelExt | null; file: FileItem | null; error: string }>;
+  ) => Promise<{ model: editor.ITextModel | null; file: FileItem | null; error: string }>;
   createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
 }
 
@@ -241,7 +237,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     providerId: string,
     path: string,
     forceReload: boolean
-  ): Promise<{ model: TTextModelExt | null; file: FileItem | null; error: string }> {
+  ): Promise<{ model: editor.ITextModel | null; file: FileItem | null; error: string }> {
     let model: editor.ITextModel | null = getModelFromPath(tabId, path);
     if (!model || forceReload) {
       const provider = rosCtx.getProviderById(providerId, false);
@@ -258,12 +254,12 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
             `Host: ${provider.host()}, root file: ${file.path}`
           );
         }
-        return Promise.resolve({ model: model as TTextModelExt, file, error });
+        return Promise.resolve({ model: model, file, error });
       } else {
         console.error(`Could not open included file: [${file.fileName}]: ${error}`);
       }
     }
-    return Promise.resolve({ model: model as TTextModelExt, file: null, error: "" });
+    return Promise.resolve({ model: model, file: null, error: "" });
   }
 
   const attributesMemo = useMemo(

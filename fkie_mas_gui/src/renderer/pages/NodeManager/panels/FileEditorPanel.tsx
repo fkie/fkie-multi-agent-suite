@@ -26,7 +26,7 @@ import {
 import { colorFromHostname } from "../../../components/UI/Colors";
 import SearchBar from "../../../components/UI/SearchBar";
 import { LoggingContext } from "../../../context/LoggingContext";
-import { MonacoContext, TModelResult, TTextModelExt } from "../../../context/MonacoContext";
+import { MonacoContext, TModelResult } from "../../../context/MonacoContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { FileItem, LaunchIncludedFile, LaunchIncludedFilesRequest, getFileAbb, getFileName } from "../../../models";
@@ -42,12 +42,17 @@ import "./FileEditorPanel.css";
 type TActiveModel = {
   path: string;
   modified: boolean;
-  model: TTextModelExt;
+  model: editor.ITextModel;
 };
 
 type TIncludeDecoration = {
   resource: string;
   range: TFileRange;
+};
+
+type TModelVersion = {
+  path: string;
+  version: number;
 };
 
 interface FileEditorPanelProps {
@@ -111,6 +116,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [selectionRange, setSelectionRange] = useState<TFileRange>();
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
   const [modifiedFiles, setModifiedFiles] = useState<string[]>([]);
+  const [savedModelVersions, setSavedModelVersions] = useState<TModelVersion[]>([]);
   const [includedFiles, setIncludedFiles] = useState<LaunchIncludedFile[]>([]);
   const [includeDecorations, setIncludeDecorations] = useState<TIncludeDecoration[]>([]);
   const [notificationDescription, setNotificationDescription] = useState("");
@@ -208,8 +214,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     if (!monaco) return;
     const newModifiedFiles = monaco.editor
       .getModels()
-      .filter((model) => {
-        const result = (model as TTextModelExt).modified && ownUriPaths.includes(model.uri.path);
+      .filter((model: editor.ITextModel) => {
+        const result = isModified(model) && ownUriPaths.includes(model.uri.path);
         return result;
       })
       .map((model) => {
@@ -220,7 +226,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }
 
   // update decorations for included files
-  function updateIncludeDecorations(model: TTextModelExt | null, includedFilesList: LaunchIncludedFile[]): void {
+  function updateIncludeDecorations(model: editor.ITextModel | null, includedFilesList: LaunchIncludedFile[]): void {
     if (!model) return;
     // prepare file decorations
     const newIncludeDecorations: TIncludeDecoration[] = [];
@@ -249,6 +255,17 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     model.deltaDecorations([], newDecorators);
     setIncludeDecorations(newIncludeDecorations);
   }
+
+  const isModified = useCallback(
+    function (model: editor.ITextModel): boolean {
+      const item: TModelVersion | undefined = savedModelVersions.find((item) => item.path === model.uri.path);
+      if (item) {
+        return item.version !== model.getAlternativeVersionId();
+      }
+      return model.getAlternativeVersionId() > 1;
+    },
+    [savedModelVersions]
+  );
 
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
@@ -288,7 +305,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         }
       }
       updateIncludeDecorations(result.model, includedFiles);
-      setActiveModel({ path: result.model.uri.path, modified: result.model.modified, model: result.model });
+      setActiveModel({
+        path: result.model.uri.path,
+        modified: isModified(result.model),
+        model: result.model,
+      });
 
       // update modified files for the user info in the info bar
       updateModifiedFiles();
@@ -378,6 +399,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   }, [clickRequest, getIncludeResource]);
 
+  useEffect(() => {
+    updateModifiedFiles();
+  }, [savedModelVersions]);
+
   async function saveCurrentFile(editorModel: editor.ITextModel): Promise<void> {
     const path = editorModel.uri.path.split(":")[1];
     // TODO change encoding if the file is encoded as HEX
@@ -392,8 +417,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           setSavedFiles([...savedFiles, editorModel.uri.path]);
         }
         logCtx.success(`Successfully saved file`, `path: ${path}`);
-        setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel as TTextModelExt });
-        updateModifiedFiles();
+        setSavedModelVersions((prev) => [
+          ...prev.filter((item) => {
+            return item.path !== editorModel.uri.path;
+          }),
+          { path: editorModel.uri.path, version: editorModel.getAlternativeVersionId() } as TModelVersion,
+        ]);
+        setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
       } else {
         logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
       }
@@ -451,7 +481,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           setCurrentFile({ name: getFileName(activeModel.path), requesting: false });
           setNotificationDescription("");
           if (result.model) {
-            result.model!.modified = true;
             setActiveModel({ path: result.model.uri.path, modified: true, model: result.model });
           }
           updateModifiedFiles();
@@ -497,7 +526,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     const provider = rosCtx.getProviderById(providerId, true);
     if (!provider?.host()) return;
     if (editorRef.current) {
-      updateIncludeDecorations(editorRef.current.getModel() as TTextModelExt, includedFiles);
+      updateIncludeDecorations(editorRef.current.getModel(), includedFiles);
     }
     const uriPath = monacoCtx.createUriPath(tabId, rootFilePath);
     const newOwnUris = [uriPath];
@@ -637,7 +666,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
         return;
       }
-      // setActiveModel({ path: model.uri.path, modified: model.modified });
       if (result.model) {
         setEditorModel(result.model.uri.path, fileRange, launchArgs);
       }
