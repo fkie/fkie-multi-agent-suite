@@ -43,7 +43,9 @@ export default class ShutdownManager implements TShutdownManager {
    */
   public quitGui = (): void => {
     log.info("Quitting GUI...");
+    this.cancelCloseTimeout();
     this.mainWindow?.destroy();
     app.quit();
+    log.info("bye!");
   };
 }
