@@ -55,6 +55,11 @@ type TModelVersion = {
   version: number;
 };
 
+type TFileItem = {
+  path: string;
+  file: FileItem;
+};
+
 interface FileEditorPanelProps {
   tabId: string;
   providerId: string;
@@ -103,6 +108,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [initialized, setInitialized] = useState<boolean>(false);
   const [activeModel, setActiveModel] = useState<TActiveModel>();
   const [currentFile, setCurrentFile] = useState({ name: "", requesting: false });
+  const [openFiles, setOpenFiles] = useState<TFileItem[]>([]);
   const [ownUriPaths, setOwnUriPaths] = useState<string[]>([]);
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState<IDisposable[]>([]);
@@ -178,6 +184,17 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       setEnableGlobalSearch(isExpanded);
     },
     [setEnableGlobalSearch]
+  );
+
+  const isReadOnly = useCallback(
+    function (path: string): boolean {
+      const files = openFiles.filter((item) => item.path === path);
+      if (files.length > 0) {
+        return files[0].file.readonly;
+      }
+      return false;
+    },
+    [openFiles]
   );
 
   /**
@@ -267,6 +284,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     [savedModelVersions]
   );
 
+  function updateOpenFiles(result: TModelResult): void {
+    if (result && result.file !== null && result.model && result.model.uri.path) {
+      const newFileItem: TFileItem = { path: result.model.uri.path, file: result.file };
+      setOpenFiles((prev) => [...prev.filter((item) => item.path !== result.model?.uri.path), newFileItem]);
+    }
+  }
+
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
     async function (
@@ -289,6 +313,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return false;
       }
 
+      updateOpenFiles(result);
       // save current view state, in case user wants to open the file again
       // view state contains the cursor position, folding, selections etc...
       if (editorRef.current) {
@@ -377,6 +402,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           return;
         }
         if (currentModel && currentModel.uri.path === model.uri.path) {
+          updateOpenFiles({ model: model, file: result.file } as TModelResult);
           editorRef.current.setModel(model);
           // restore view state for current file
           const viewState = monacoViewStates.get(model.uri.path);
@@ -406,7 +432,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   async function saveCurrentFile(editorModel: editor.ITextModel): Promise<void> {
     const path = editorModel.uri.path.split(":")[1];
     // TODO change encoding if the file is encoded as HEX
-    const fileToSave = new FileItem("", path, "", "", editorModel.getValue());
+    const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
     const providerObj = rosCtx.getProviderById(providerId, true);
     if (providerObj) {
       const saveResult = await providerObj.saveFileContent(fileToSave);
@@ -667,6 +693,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return;
       }
       if (result.model) {
+        updateOpenFiles(result);
         setEditorModel(result.model.uri.path, fileRange, launchArgs);
       }
 
@@ -1093,17 +1120,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             </Tooltip>
             <Stack direction="row" width="100%" spacing={0.4} alignItems="center">
               {currentFile.requesting && <CircularProgress size="0.8em" />}
-              <Typography
-                noWrap
-                style={{
-                  padding: "0.1em",
-                  fontWeight: "normal",
-                  fontSize: "0.8em",
-                }}
-              >
-                {activeModel?.modified ? "*" : ""}
-                {currentFile.name}
-              </Typography>
+              <Tooltip title={activeModel?.path?.split(":")[1]} disableInteractive>
+                <Typography
+                  noWrap
+                  style={{
+                    padding: "0.1em",
+                    fontWeight: "normal",
+                    fontSize: "0.8em",
+                  }}
+                >
+                  {activeModel?.modified ? "*" : ""}
+                  {currentFile.name}
+                </Typography>
+              </Tooltip>
               <Stack direction="row" spacing={0.2}>
                 {modifiedFiles
                   .filter((path) => path !== activeModel?.path)
@@ -1158,6 +1187,17 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               {notificationDescription}
             </Alert>
           )}
+          {activeModel && isReadOnly(activeModel.path) ? (
+            <Alert severity="info" style={{ minWidth: 0 }}>
+              {`no write permissions for ${activeModel.path.split(":")[1]}`}
+            </Alert>
+          ) : (
+            activeModel?.path?.split(":")[0]?.search("/install/") !== -1 && (
+              <Alert severity="warning" style={{ minWidth: 0 }}>
+                {`${activeModel?.path.split(":")[1]} is located in 'install' path. The changes could be lost after rebuilding packages.`}
+              </Alert>
+            )
+          )}
           <Monaco.Editor
             key="editor"
             height={editorHeight}
@@ -1170,7 +1210,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             options={{
               // to check the all possible options check this - https://github.com/microsoft/monacoRef.current-editor/blob/a5298e1/website/typedoc/monacoRef.current.d.ts#L3017
               // TODO: make global config for this parameters
-              readOnly: false,
+              readOnly: activeModel?.model ? isReadOnly(activeModel.model.uri.path) : false,
               colorDecorators: true,
               mouseWheelZoom: true,
               scrollBeyondLastLine: false,

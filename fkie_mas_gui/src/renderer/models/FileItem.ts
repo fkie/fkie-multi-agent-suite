@@ -83,6 +83,8 @@ export default class FileItem {
    */
   language: string;
 
+  readonly: boolean;
+
   /**
    * Value
    */
@@ -101,21 +103,12 @@ export default class FileItem {
   /** Encoding ov the value */
   encoding: string = "utf-8";
 
-  /**
-   * Class Constructor
-   *
-   * @param host - IP of the host machine.
-   * @param path - file path.
-   * @param extension - file extension.
-   * @param language - file type.
-   * @param value - file content.
-   * @param mTime - Date of last modification of the file.
-   */
   constructor(
     host: string,
     path: string,
     extension: string = "",
     language: string = "",
+    readonly: boolean = false,
     value: string = "",
     mTime: number = 0
   ) {
@@ -125,6 +118,7 @@ export default class FileItem {
     this.fileName = getFileName(path);
     this.extension = extension;
     this.language = language;
+    this.readonly = readonly;
     this.value = value;
     this.mTime = mTime;
   }

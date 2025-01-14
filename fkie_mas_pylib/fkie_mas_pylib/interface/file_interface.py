@@ -84,6 +84,7 @@ class LogPathClearResult:
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
 
+
 class FileItem:
     """
     :param str path: absolute path of the file or directory
@@ -95,8 +96,10 @@ class FileItem:
     def __init__(
         self,
         path: str,
+        *,
         mtime: float = 0,
         size: int = 0,
+        readonly: bool = True,
         value: str = "",
         encoding="utf-8",
     ) -> None:
@@ -105,6 +108,7 @@ class FileItem:
         self.mtime = mtime
         self.size = size
         self.extension = path.rsplit(".", 1)[-1]
+        self.readonly = readonly
         self.value = value
         self.encoding = encoding
 

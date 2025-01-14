@@ -165,7 +165,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
           if (editorModel) {
             const path = editorModel.uri.path.split(":")[1];
             // TODO change encoding if the file is encoded as HEX
-            const fileToSave = new FileItem("", path, "", "", editorModel.getValue());
+            const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
             const providerObj = rosCtx.getProviderById(tabInfo.providerId, false);
             if (providerObj) {
               const saveResult = await providerObj.saveFileContent(fileToSave);

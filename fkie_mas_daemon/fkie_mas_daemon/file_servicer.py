@@ -237,6 +237,7 @@ class FileServicer:
         with FileIO(requestPath, "r") as outfile:
             mTime = os.path.getmtime(requestPath)
             fSize = os.path.getsize(requestPath)
+            readonly = not os.access(requestPath, os.W_OK)
             content = outfile.readall()
             encoding = "utf-8"
             try:
@@ -245,7 +246,7 @@ class FileServicer:
                 content = content.hex()
                 encoding = "hex"
             return json.dumps(
-                FileItem(requestPath, mTime, fSize, content, encoding), cls=SelfEncoder
+                FileItem(requestPath, mtime=mTime, size=fSize, readonly=readonly, value=content, encoding=encoding), cls=SelfEncoder
             )
 
     def saveFileContent(self, request_json: FileItem) -> int:
