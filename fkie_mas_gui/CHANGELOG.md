@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.9 - 14.01.2025
+
+Changed: do not use 'RMW_IMPLEMENTATION=rmw_fastrtps_cpp' for mas-discovery
+
 ## 3.0.8 - 14.01.2025
 
 Added visualization for read-only files and files in the installation folder
