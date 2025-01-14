@@ -5,12 +5,14 @@ export interface IElectronContext {
   shutdownManager: TShutdownManager | null;
   terminateSubprocesses: boolean;
   cancelCloseApp: () => void;
+  cancelCloseTimer: () => void;
 }
 
 export const DEFAULT = {
   shutdownManager: null,
   terminateSubprocesses: false,
   cancelCloseApp: (): void => {},
+  cancelCloseTimer: (): void => {},
 };
 
 interface IElectronProviderComponent {
@@ -26,8 +28,12 @@ export function ElectronProvider({
   const [terminateSubprocesses, setTerminateSubprocesses] = useState<boolean>(false);
 
   function cancelCloseApp(): void {
-    shutdownManager?.cancelCloseTimeout();
+    cancelCloseTimer();
     setTerminateSubprocesses(false);
+  }
+
+  function cancelCloseTimer(): void {
+    shutdownManager?.cancelCloseTimeout();
   }
 
   // Effect to initialize the shutdownManager
@@ -51,6 +57,7 @@ export function ElectronProvider({
       shutdownManager,
       terminateSubprocesses,
       cancelCloseApp,
+      cancelCloseTimer,
     }),
     [shutdownManager, terminateSubprocesses]
   );
