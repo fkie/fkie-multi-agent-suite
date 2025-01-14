@@ -341,7 +341,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     async function (providerId: string): Promise<void> {
       logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "", false);
       const provider = getProviderById(providerId);
-      await provider?.updateRosNodes({});
+      await provider?.updateRosNodes({}, false);
     },
     [getProviderById, logCtx]
   );

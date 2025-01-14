@@ -709,7 +709,7 @@ export default class Provider implements IProvider {
   /**
    * Get list of available nodes using the uri URI.ROS_NODES_GET_LIST
    */
-  public getNodeList: () => Promise<RosNode[]> = async () => {
+  public getNodeList: (forceRefresh: boolean) => Promise<RosNode[]> = async (forceRefresh = false) => {
     interface IRosNode {
       id: string;
       name: string;
@@ -730,7 +730,7 @@ export default class Provider implements IProvider {
       lifecycle_state: string | null;
       lifecycle_available_transitions: [string, number][] | null;
     }
-    const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [], true).then((value: TResultData) => {
+    const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [forceRefresh], true).then((value: TResultData) => {
       if (value.result) {
         return value.data as unknown as IRosNode[];
       }
@@ -1962,7 +1962,7 @@ export default class Provider implements IProvider {
   /**
    * Callback when any launch file or ROS nodes changes  in provider
    */
-  public updateRosNodes: (msg: JSONObject) => void = async (msg) => {
+  public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => void = async (msg, forceRefresh = false) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
     await this.updateScreens();
     const msgObj = msg as unknown as { path: string; action: string };
@@ -1974,7 +1974,7 @@ export default class Provider implements IProvider {
     }
 
     // get nodes from remote provider
-    const nlUnfiltered = await this.getNodeList();
+    const nlUnfiltered = await this.getNodeList(forceRefresh);
     const sameIdDict = {};
     const nl = nlUnfiltered.filter((n) => {
       let ignored = false;

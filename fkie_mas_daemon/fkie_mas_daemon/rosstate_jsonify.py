@@ -317,7 +317,7 @@ class RosStateJsonify:
         for node in result:
             if node.gid in self._participant_infos:
                 participant = self._participant_infos[node.gid]
-                Log.info(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
+                Log.debug(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
                 node.location = participant.unicast_locators
                 node.is_local = False
                 # check if one of locations has a local IP address

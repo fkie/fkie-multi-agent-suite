@@ -879,9 +879,9 @@ export default function HostTreeViewPanel(): JSX.Element {
     return Promise.resolve();
   }
 
-  function refreshAllProvider(): void {
+  function refreshAllProvider(forceRefresh: boolean): void {
     rosCtx.providersConnected.forEach((p) => {
-      p.updateRosNodes({});
+      p.updateRosNodes({}, forceRefresh);
       p.updateTimeDiff();
     });
   }
@@ -889,7 +889,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
 
   useEffect(() => {
-    refreshAllProvider();
+    refreshAllProvider(false);
   }, [rosCtx.providersConnected]);
 
   useEffect(() => {
@@ -986,7 +986,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   useEffect(() => {
     showRemoteOnAllProvider(showRemoteNodes);
-    refreshAllProvider();
+    refreshAllProvider(false);
   }, [showRemoteNodes]);
 
   const createButtonBox = useMemo(() => {
@@ -1446,7 +1446,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               <IconButton
                 size="small"
                 onClick={() => {
-                  refreshAllProvider();
+                  refreshAllProvider(true);
                 }}
               >
                 <RefreshIcon sx={{ fontSize: "inherit" }} />

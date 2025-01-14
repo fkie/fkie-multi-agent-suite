@@ -29,7 +29,7 @@ class WaitFuture:
         future.add_done_callback(self.done_callback)
 
     def done_callback(self, future: rclpy.task.Future):
-        self.finished = True
+        self.finished = future.done()
 
 
 def create_service_future(node: Node, wait_futures: List[WaitFuture], type: str, node_name: str, service_name: str, srv_type: SrvType, request: SrvTypeRequest) -> bool:
