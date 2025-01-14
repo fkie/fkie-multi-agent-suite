@@ -78,6 +78,7 @@ export default class TerminalManager implements TTerminalManager {
     //   await installExtensions()
     // }
     if (this.instances[id]) {
+      this.instances[id].window.restore();
       this.instances[id].window.focus();
       return Promise.resolve(null);
     }

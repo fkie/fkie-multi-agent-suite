@@ -70,6 +70,7 @@ export default class SubscriberManager implements TSubscriberManager {
     noData: boolean
   ) => Promise<string | null> = async (id, host, port, topic, showOptions, noData) => {
     if (this.instances[id]) {
+      this.instances[id].window.restore();
       this.instances[id].window.focus();
       return Promise.resolve(null);
     }

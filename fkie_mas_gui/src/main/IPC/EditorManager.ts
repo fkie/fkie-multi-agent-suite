@@ -89,6 +89,7 @@ export default class EditorManager implements TEditorManager {
     launchArgs: TLaunchArg[]
   ) => Promise<boolean> = async (id, path, fileRange, launchArgs) => {
     if (this.editors[id]) {
+      this.editors[id].window.restore();
       this.editors[id].window.focus();
       this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
       return Promise.resolve(true);
@@ -129,6 +130,7 @@ export default class EditorManager implements TEditorManager {
     launchArgs: TLaunchArg[]
   ) => Promise<string | null> = async (id, host, port, path, launchFile, fileRange, launchArgs) => {
     if (this.editors[id]) {
+      this.editors[id].window.restore();
       this.editors[id].window.focus();
       this.editors[id].window.webContents.send(EditorManagerEvents.onFileRange, id, path, fileRange, launchArgs);
       return Promise.resolve(null);
