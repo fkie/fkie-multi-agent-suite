@@ -1,6 +1,6 @@
 {
   "name": "fkie-mas-gui",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "description": "GUI to manage running ROS components",
   "license": "MIT",
   "author": "Alexander Tiderko <alexander.tiderko@fkie.fraunhofer.de>",

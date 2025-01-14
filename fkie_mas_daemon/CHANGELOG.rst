@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.5.0 (14.01.2025)
+------------------
+* Added read-only parameter to FileItems that are reported to Websocket
+
 3.4.0 (12.01.2025)
 ------------------
 * changed communication with mas discovery

@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.8 - 14.01.2025
+
+Added visualization for read-only files and files in the installation folder
+Added forced update of ros nodes
+Changed the process for updating the ros status; is performed in a separate thread
+Fixed deselection of nodes after starting/stopping
+Fixed unrecognized file saves
+Fixed close dialog when exiting the application
+Fixed: restore external window before focus
+Fixed: closes app although an item has been selected
+
 ## 3.0.7 - 13.01.2025
 
 Ignore last changes
