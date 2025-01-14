@@ -53,11 +53,13 @@ class RosStateServicer:
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_node_list: List[RosNode] = None
+        self._ros_node_list_mutex = threading.RLock()
         self.service_name_get_p = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/get_participants"
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
         self._update_participants = True
+        self._force_refresh = False
         self._ts_state_updated = 0
         self._ts_state_notified = 0
         self._rate_check_discovery_node = 2  # Hz
@@ -131,12 +133,28 @@ class RosStateServicer:
                         self._ts_state_updated = time.time()
             # if a change was detected by discovery node we received _on_msg_state()
             # therefor the self._ts_state_updated was updated
+            update_ros_state = False
             with self._lock_check:
                 if self._ts_state_updated > self._ts_state_notified:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
-                        self._ts_state_notified = self._ts_state_updated
-                        self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_updated})
-                        nmd.launcher.server.screen_servicer.system_change()
+                        update_ros_state = True
+            # as some services are called during the update, it may take some time
+            if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0 :
+                self._force_refresh = False
+                # trigger screen servicer to update
+                nmd.launcher.server.screen_servicer.system_change()
+                # participants should only be retrieved from discovery if they have also changed
+                update_participants = self._update_participants
+                self._update_participants = False
+                ts_start_update = time.time()
+                # create state
+                state = self._state_jsonify.get_nodes_as_json(update_participants)
+                with self._ros_node_list_mutex:
+                    # set status only with lock, as this method runs in a thread
+                    self._ros_node_list = state
+                    self._ts_state_notified = ts_start_update
+                    self.websocket.publish('ros.nodes.changed', {"timestamp": ts_start_update})
+
             time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
@@ -202,7 +220,7 @@ class RosStateServicer:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
-    def get_node_list(self, forceRefresh: bool = True) -> str:
+    def get_node_list(self, forceRefresh: bool = False) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
         node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
         return json.dumps(node_list, cls=SelfEncoder)
@@ -284,11 +302,12 @@ class RosStateServicer:
         return -1
 
     def _get_ros_node_list(self, forceRefresh: bool = False) -> List[RosNode]:
-        # self._ros_node_list is cleared on updates in _on_msg_state()
-        # otherwise we use a cached list
+        # the status is updated in _check_discovery_node() in a thread
+        # in the meantime, the cached list is returned
+        # after the state is ready, a 'ros.nodes.changed' notification will be send
         if self._ros_node_list is None or forceRefresh:
-            self._ros_node_list = self._state_jsonify.get_nodes_as_json(self._update_participants)
-            self._update_participants = False
+            self._force_refresh = True
+            self._ros_node_list = []
         return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:

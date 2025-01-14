@@ -97,7 +97,7 @@ def split_session_name(session: str) -> Tuple[int, str]:
     return pid, node[0].strip()
 
 
-def get_active_screens(nodename: str = '') -> Dict[str, List[str]]:
+def get_active_screens(nodename: str = '') -> Dict[str, str]:
     '''
     Returns the dictionary (session name: node name) with all compatible screen names. If the session is set to
     an empty string all screens will be returned.

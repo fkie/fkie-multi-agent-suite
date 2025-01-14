@@ -33,6 +33,7 @@ class WebSocketServer:
         self._remote_registrations = {}
         self._spin_thread = None
         self._server = None
+        self.clients_count = 0
         self.port = -1
 
     def shutdown(self):
@@ -40,6 +41,10 @@ class WebSocketServer:
         if (self._server):
             self._server.shutdown()
             self._server = None
+
+    def count_clients(self):
+        with self._lock:
+            return len(self._handler)
 
     def ws_handler(self, websocket) -> None:
         handler = WebSocketHandler(self, websocket)

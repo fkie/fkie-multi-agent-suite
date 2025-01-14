@@ -32,6 +32,7 @@ class ScreenServicer:
         self._screen_check_force_after = self._screen_check_force_after_default
         self._screen_do_check = True
         self._screen_thread = None
+        self._screen_thread_lock = threading.RLock()
         self._screens_set = set()
         self._screen_nodes_set = set()
         self._screen_json_msg: List[ScreensMapping] = []
@@ -81,15 +82,16 @@ class ScreenServicer:
                     json_msg.append(ScreensMapping(name=sn, screens=[]))
 
                 # publish the message only on difference
-                div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
-                div_screens = self._screens_set ^ new_screens_set
-                if div_screen_nodes or div_screens:
-                    Log.debug(
-                        f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
-                    self.websocket.publish('ros.screen.list', {"screens": json_msg})
-                    self._screen_json_msg = json_msg
-                    self._screen_nodes_set = new_screen_nodes_set
-                    self._screens_set = new_screens_set
+                with self._screen_thread_lock:
+                    div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
+                    div_screens = self._screens_set ^ new_screens_set
+                    if div_screen_nodes or div_screens:
+                        Log.debug(
+                            f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
+                        self.websocket.publish('ros.screen.list', {"screens": json_msg})
+                        self._screen_json_msg = json_msg
+                        self._screen_nodes_set = new_screen_nodes_set
+                        self._screens_set = new_screens_set
                 last_check = 0
             else:
                 last_check += 1
@@ -177,5 +179,6 @@ class ScreenServicer:
     def get_screen_list(self) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
-        self._screen_do_check = True
-        return json.dumps(self._screen_json_msg, cls=SelfEncoder)
+        with self._screen_thread_lock:
+            self._screen_do_check = True
+            return json.dumps(self._screen_json_msg, cls=SelfEncoder)

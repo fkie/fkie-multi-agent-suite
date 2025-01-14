@@ -7,6 +7,7 @@
 #
 # ****************************************************************************
 
+import time
 from typing import Dict
 from typing import List
 from typing import Text
@@ -83,6 +84,7 @@ class CachedData:
     topic_objs: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]
     service_by_id: Dict[EndpointGid, RosService]
     service_objs: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]
+    screens: Dict[str, str]
 
     def __init__(self):
         self.node_dict = {}
@@ -90,6 +92,7 @@ class CachedData:
         self.topic_objs = {}
         self.service_by_id = {}
         self.service_objs = {}
+        self.screens = {}
 
 
 class RosStateJsonify:
@@ -141,6 +144,7 @@ class RosStateJsonify:
 
     def get_nodes_as_json(self, update_participants: bool) -> List[RosNode]:
         Log.debug(f"{self.__class__.__name__}: create graph for websocket")
+        starts = time.time()
         cached_data: CachedData = CachedData()
         node_ids: List[NodeId] = []
         new_nodes_detected: bool = False
@@ -149,6 +153,7 @@ class RosStateJsonify:
         lifecycle_transition_services: List[str] = []
         result: List[RosNode] = []
         wait_futures: List[WaitFuture] = []
+        cached_data.screens = screen.get_active_screens()
 
         if update_participants or len(self._participant_infos) == 0:
             Log.debug(f"{self.__class__.__name__}:  update_participant infos calling '{self._get_participants_service_name}'")
@@ -272,6 +277,8 @@ class RosStateJsonify:
 
         # wait until all service are finished of timeouted
         wait_until_futures_done(wait_futures, 3.0)
+        if time.time() - starts > 1.0:
+            Log.warn(f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec")
         # handle response
         for wait_future in wait_futures:
             if wait_future.type == "participants":
@@ -332,10 +339,11 @@ class RosStateJsonify:
             ros_node.namespace = node_ns
             ros_node.gid = gid
             # Add active screens for a given node
-            screens = screen.get_active_screens(full_name)
-            for session_name, _ in screens.items():
-                Log.debug(f"{self.__class__.__name__}:     append screen: {session_name}")
-                ros_node.screens.append(session_name)
+            starts = time.time()
+            for session_name, screen_node_name in data.screens.items():
+                if screen_node_name == node_name:
+                    Log.debug(f"{self.__class__.__name__}:     append screen: {session_name}")
+                    ros_node.screens.append(session_name)
             ros_node.system_node = os.path.basename(
                 full_name).startswith('_') or full_name in ['/rosout']
             ros_node.system_node |= node_ns == '/mas' or node_ns.startswith('/mas/')
