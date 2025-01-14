@@ -1103,76 +1103,65 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                       >
                         <Grid container>
                           <Grid item xs={4}>
-                            <FormGroup
-                              aria-label="position"
-                              row
-                              onClick={(event) => {
-                                event.stopPropagation();
-                              }}
+                            <Stack
+                              direction="row"
+                              style={{ marginLeft: 0, paddingLeft: 0 }}
+                              justifyItems="center"
+                              alignItems="center"
                             >
-                              <FormControlLabel
-                                control={
-                                  <Checkbox
-                                    checked={startParameter.terminal.enable}
-                                    onChange={(event) => {
-                                      startParameter.terminal.enable = event.target.checked;
-                                      updateStartParameter();
+                              <Checkbox
+                                style={{ marginLeft: 0, paddingLeft: 0 }}
+                                checked={startParameter.terminal.enable}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                }}
+                                onChange={(event) => {
+                                  startParameter.terminal.enable = event.target.checked;
+                                  updateStartParameter();
+                                }}
+                              />
+                              <Typography>Terminal Manager</Typography>
+
+                              <Tooltip
+                                title={
+                                  <>
+                                    <Typography variant="body1">Install TTYD in the host using:</Typography>
+                                    <Stack mt={1} direction="row" justifyContent="center">
+                                      <Typography variant="body2">sudo snap install ttyd --classic</Typography>
+                                      <CopyButton value="sudo snap install ttyd --classic" />
+                                    </Stack>
+                                    <Link mt={2} href="https://github.com/tsl0922/ttyd" target="_blank" color="inherit">
+                                      See https://github.com/tsl0922/ttyd
+                                    </Link>
+                                  </>
+                                }
+                                // PopperProps={{
+                                //   disablePortal: true,
+                                // }}
+                                disableFocusListener
+                                disableHoverListener
+                                disableTouchListener
+                                open={openTerminalTooltip}
+                                placement="bottom-start"
+                                // enterDelay={tooltipDelay}
+                                // enterNextDelay={tooltipDelay}
+                              >
+                                <Stack
+                                  marginLeft="3px"
+                                  onClick={(event) => {
+                                    setOpenTerminalTooltip(!openTerminalTooltip);
+                                    event.stopPropagation();
+                                  }}
+                                >
+                                  <InfoOutlinedIcon
+                                    sx={{
+                                      fontSize: "inherit",
+                                      color: "DodgerBlue",
                                     }}
                                   />
-                                }
-                                label={
-                                  <div>
-                                    Terminal Manager
-                                    <Tooltip
-                                      title={
-                                        <>
-                                          <Typography variant="body1">Install TTYD in the host using:</Typography>
-                                          <Stack mt={1} direction="row" justifyContent="center">
-                                            <Typography variant="body2">sudo snap install ttyd --classic</Typography>
-                                            <CopyButton value="sudo snap install ttyd --classic" />
-                                          </Stack>
-                                          <Link
-                                            mt={2}
-                                            href="https://github.com/tsl0922/ttyd"
-                                            target="_blank"
-                                            color="inherit"
-                                          >
-                                            See https://github.com/tsl0922/ttyd
-                                          </Link>
-                                        </>
-                                      }
-                                      // PopperProps={{
-                                      //   disablePortal: true,
-                                      // }}
-                                      disableFocusListener
-                                      disableHoverListener
-                                      disableTouchListener
-                                      open={openTerminalTooltip}
-                                      placement="bottom-start"
-                                      // enterDelay={tooltipDelay}
-                                      // enterNextDelay={tooltipDelay}
-                                    >
-                                      <IconButton
-                                        edge="start"
-                                        aria-label="additional terminal information"
-                                        onClick={() => {
-                                          setOpenTerminalTooltip(!openTerminalTooltip);
-                                        }}
-                                        autoFocus
-                                      >
-                                        <InfoOutlinedIcon
-                                          sx={{
-                                            fontSize: "inherit",
-                                            color: "DodgerBlue",
-                                          }}
-                                        />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </div>
-                                }
-                                labelPlacement="end"
-                              />
-                            </FormGroup>
+                                </Stack>
+                              </Tooltip>
+                            </Stack>
                           </Grid>
                           <Grid item xs={6} sx={{ alignSelf: "center" }}>
                             <Stack direction="column" sx={{ display: "grid" }}>
