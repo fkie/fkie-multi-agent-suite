@@ -10,7 +10,7 @@ import { getFileName, LaunchContent, LaunchFile, RosNode } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { CmdType, Provider } from "../../providers";
-import { generateUniqueId, nodeNameWithoutNamespace } from "../../utils";
+import { generateUniqueId, nodeNameWithoutNamespace, removeDDSuid } from "../../utils";
 import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
@@ -316,7 +316,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   function getProvidersFromIds(itemIds: string[]): string[] {
     const provList: string[] = [];
     itemIds.forEach((item) => {
-      if (!item.includes("#")) {
+      if (!item.includes("#") && !item.includes("/")) {
         provList.push(item);
       }
     });
@@ -353,7 +353,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             }
           });
         }
-
         // add child items for selected groups
         return getParentAndChildrenIds(selectedIds);
       });
@@ -364,14 +363,22 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   );
 
   function keyToNodeName(key: string): { isValidNode: boolean; provider: string; node_name: string } {
-    const [provider, rest] = key.split("/", 2);
-    if (!rest) return { isValidNode: false, provider: "", node_name: "" };
-    const name = rest
-      ?.replace(/\/{.*}/, "")
-      ?.replace("#", "/")
-      ?.split("-")[0];
-
-    return { isValidNode: name !== undefined, provider: provider, node_name: name };
+    if (!key) return { isValidNode: false, provider: "", node_name: "" };
+    const [prefix, node] = key.split("#", 2);
+    if (!node) return { isValidNode: false, provider: "", node_name: "" };
+    // the namespace begins with /
+    // we split to get the provider id
+    const splitted = prefix.split("/");
+    const provider = splitted[0];
+    splitted.shift();
+    // the rest of the array is namespace
+    // remove groups e.g. {SYSTEM} from namespace
+    const namespace: string[] = splitted.filter((item) => !(item.startsWith("{") && item.endsWith("}")));
+    // add empty at the beginning to create "/" while join
+    namespace.unshift("");
+    // add node name
+    namespace.push(node);
+    return { isValidNode: name !== undefined, provider: provider, node_name: removeDDSuid(namespace.join("/")) };
   }
 
   /**

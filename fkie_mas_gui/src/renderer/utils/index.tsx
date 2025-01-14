@@ -24,21 +24,6 @@ export function delay(ms: number): Promise<string> {
   });
 }
 
-export function pathJoin(pathArr: string[]): string {
-  return pathArr
-    .map((path) => {
-      let result = path;
-      if (result[0] === "/") {
-        result = result.slice(1);
-      }
-      if (result[result.length - 1] === "/") {
-        result = result.slice(0, result.length - 1);
-      }
-      return result;
-    })
-    .join("/");
-}
-
 export function splitOrSearchTerm(searchTerm: string): string[] {
   return searchTerm.split(" ").filter((item) => item.length > 0);
 }
