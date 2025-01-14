@@ -10,7 +10,7 @@ import { getFileName, LaunchContent, LaunchFile, RosNode } from "../../models";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
 import { CmdType, Provider } from "../../providers";
-import { generateUniqueId, nodeNameWithoutNamespace, removeDDSuid } from "../../utils";
+import { generateUniqueId, nodeNameWithoutNamespace } from "../../utils";
 import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";

@@ -15,7 +15,7 @@ export function equalLaunchArgs(launchArgs: TLaunchArg[], argList: LaunchArgumen
     const notEqual = argList?.filter((item) => {
       // ignore args with not resolved statements
       const found = launchArgs.filter((li) => li.name === item.name && li.value === item.value);
-      return !(found.length > 0 || item.value?.search("$(") !== -1);
+      return !(found.length > 0 || item.value?.search("/\\$\\(") !== -1);
     });
     return notEqual.length === 0;
   }
