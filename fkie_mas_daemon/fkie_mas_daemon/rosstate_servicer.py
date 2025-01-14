@@ -139,7 +139,7 @@ class RosStateServicer:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                         update_ros_state = True
             # as some services are called during the update, it may take some time
-            if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0 :
+            if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
                 self._force_refresh = False
                 # trigger screen servicer to update
                 nmd.launcher.server.screen_servicer.system_change()
