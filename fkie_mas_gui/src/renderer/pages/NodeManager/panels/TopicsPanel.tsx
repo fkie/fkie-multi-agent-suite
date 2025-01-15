@@ -50,9 +50,13 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | null>(null);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
+    settingsCtx.get("avoidGroupWithOneItem") as string
+  );
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
   function genKey(items: string[]): string {
@@ -133,20 +137,21 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   // create tree based on topic namespace
   // topics are grouped only if more then one is in the group
   function fillTree(fullPrefix: string, topicsGroup: TopicExtendedInfo[], itemId: string): TTreeItem {
-    const byPrefixP1 = new Map<string, { restNameSuffix: string; topicInfo: TopicExtendedInfo }[]>();
+    const byPrefixP1 = new Map<string, { restNameSuffix: string; topicInfo: TopicExtendedInfo; isGroup: boolean }[]>();
     // create a map with simulated tree for the namespaces of the topic list
     topicsGroup.forEach((topicInfo) => {
       const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
+      const isGroup = restName.length > 1; // last value is the provider name
       if (restName.length > 0) {
         const restNameSuffix = restName.join("/");
         if (byPrefixP1.has(groupName)) {
-          byPrefixP1.get(groupName)?.push({ restNameSuffix, topicInfo });
+          byPrefixP1.get(groupName)?.push({ restNameSuffix, topicInfo, isGroup: isGroup });
         } else {
-          byPrefixP1.set(groupName, [{ restNameSuffix, topicInfo }]);
+          byPrefixP1.set(groupName, [{ restNameSuffix, topicInfo, isGroup: isGroup }]);
         }
       } else {
-        byPrefixP1.set(groupName, [{ restNameSuffix: "", topicInfo }]);
+        byPrefixP1.set(groupName, [{ restNameSuffix: "", topicInfo, isGroup: isGroup }]);
       }
     });
 
@@ -157,10 +162,15 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
       const newFullPrefix: string = `${fullPrefix}/${groupName}`;
-      if (value.length > 1) {
+      let topicValues = value.filter((item) => !item.isGroup);
+      if (avoidGroupWithOneItem && value.length - topicValues.length === 1) {
+        topicValues = value;
+      }
+      const groupValues = value.filter((item) => !topicValues.includes(item));
+      if (groupValues.length > 0) {
         const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
         groupKeys.push(groupKey);
-        const groupTopics = value.map((item) => {
+        const groupTopics = groupValues.map((item) => {
           return item.topicInfo;
         });
         const subResult = fillTree(newFullPrefix, groupTopics, groupKey);
@@ -175,7 +185,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         }
         // if all topics of the group have same message id, show it in the group info
         let msgType: string | undefined = undefined;
-        value.map((item) => {
+        groupValues.map((item) => {
           if (msgType === undefined) {
             msgType = item.topicInfo.msgType;
           } else if (msgType !== item.topicInfo.msgType) {
@@ -194,23 +204,24 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           groupKeys: groupKeys,
           topicInfo: null,
         } as TTreeItem);
-      } else {
+      }
+      topicValues.forEach((item) => {
         newFilteredTopics.push({
           groupKey: "",
           groupName: "",
           topics: [],
           count: 0,
           fullPrefix: newFullPrefix,
-          msgType: value[0].topicInfo.msgType,
+          msgType: item.topicInfo.msgType,
           groupKeys: groupKeys,
-          topicInfo: value[0].topicInfo,
+          topicInfo: item.topicInfo,
         } as TTreeItem);
-        if (value[0].topicInfo.providerName !== groupName) {
+        if (item.topicInfo.providerName !== groupName) {
           // since the same topic can be on multiple provider
           // we count only topics
           count += 1;
         }
-      }
+      });
     });
     return { topics: newFilteredTopics, count, groupKeys } as TTreeItem;
   }
@@ -222,7 +233,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
       setExpandedFiltered(tree.groupKeys);
     }
-  }, [filteredTopics]);
+  }, [filteredTopics, avoidGroupWithOneItem]);
 
   function onEchoClick(topic: TopicExtendedInfo | null, external: boolean, openInTerminal: boolean = false): void {
     if (topic) {
