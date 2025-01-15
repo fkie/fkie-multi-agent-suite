@@ -113,7 +113,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     if (!messageStruct) return;
     const json: string = rosMessageStructToString(messageStruct, false, true) as string;
     navigator.clipboard.writeText(json);
-    logCtx.success(`${json} copied!`);
+    logCtx.success(`message publish object copied!`);
   }, 300);
 
   const getTopicStructData = useCallback(async () => {

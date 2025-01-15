@@ -330,9 +330,11 @@ export default class Provider implements IProvider {
       type = CmdType.LOG;
     }
     switch (type) {
-      case CmdType.CMD:
-        result.cmd = `${cmd}`;
+      case CmdType.CMD: {
+        const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
+        result.cmd = cmd ? `${prefix}${cmd}` : `${prefix}/bin/bash`;
         break;
+      }
       case CmdType.SCREEN:
         if (screenName && screenName.length > 0) {
           result.cmd = `screen -d -r ${screenName}`;
@@ -358,16 +360,20 @@ export default class Provider implements IProvider {
           result.log = logPaths[0].screen_log;
         }
         break;
-      case CmdType.ECHO:
+      case CmdType.ECHO: {
         if (this.rosState.ros_version === "1") {
           result.cmd = `rostopic echo ${topicName}`;
         } else if (this.rosState.ros_version === "2") {
-          result.cmd = `ros2 topic echo ${topicName}`;
+          const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
+          result.cmd = `${prefix}ros2 topic echo ${topicName}`;
         }
         break;
-      case CmdType.TERMINAL:
-        result.cmd = cmd ? `${cmd} \r` : ``;
+      }
+      case CmdType.TERMINAL: {
+        const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
+        result.cmd = cmd ? `${prefix}${cmd}` : `${prefix}/bin/bash`;
         break;
+      }
       case CmdType.SET_TIME:
         result.cmd = cmd;
         break;
