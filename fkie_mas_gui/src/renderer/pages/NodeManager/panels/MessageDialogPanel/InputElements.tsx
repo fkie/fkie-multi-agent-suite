@@ -1,13 +1,12 @@
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import { Alert, AlertTitle, Button, ButtonGroup, Divider, FormLabel, IconButton, Stack } from "@mui/material";
+import { Alert, AlertTitle, Button, ButtonGroup, Divider, FormLabel, Stack } from "@mui/material";
 import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
 import { useDebounceCallback } from "@react-hook/debounce";
 import React, { useCallback, useEffect, useState } from "react";
-
 import { TRosMessageStruct } from "@/renderer/models";
 import BoolInput from "./BoolInput";
 import StringInput from "./StringInput";
@@ -184,6 +183,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
             messageStruct={struct}
             filterText={filterText}
             expanded={false}
+            onCopyToClipboard={onCopyToClipboard}
           />
         ))}
       </Stack>
@@ -252,18 +252,14 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
               {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
             </FormLabel>
             {!messageStruct.name && (
-              <ButtonGroup sx={{ maxHeight: "24px" }}>
-                <IconButton
-                  aria-label="ContentCopyOutlined"
-                  size="small"
-                  onClick={(event) => {
-                    copyToClipboard();
-                    event.stopPropagation();
-                  }}
-                >
-                  <ContentCopyOutlinedIcon fontSize="inherit" />
-                </IconButton>
-              </ButtonGroup>
+              <Stack
+                onClick={(event) => {
+                  copyToClipboard();
+                  event.stopPropagation();
+                }}
+              >
+                <ContentCopyOutlinedIcon fontSize="inherit" />
+              </Stack>
             )}
             {messageStruct.is_array && (
               <ButtonGroup sx={{ maxHeight: "24px" }}>

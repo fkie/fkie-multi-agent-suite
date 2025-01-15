@@ -3,10 +3,8 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Card, CardActions, Collapse, IconButton, Paper, Stack, Typography } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
 import React, { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { JSONTree } from "react-json-tree";
+import JsonView from "react18-json-view";
 import { SettingsContext } from "../../context/SettingsContext";
-import { darkThemeJson } from "../../themes/darkTheme";
-import { lightThemeJson } from "../../themes/lightTheme";
 import { levelColorsWbg } from "./Colors";
 
 interface LoggingDetailsComponentProps {
@@ -110,13 +108,23 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
           <Collapse in={expanded} timeout={expanded ? undefined : "auto"} unmountOnExit>
             <Paper sx={{ padding: 2 }}>
               {!(typeof detailsObject === "string" || detailsObject instanceof String) && (
-                <JSONTree
-                  data={detailsObject}
-                  sortObjectKeys={true}
-                  theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
-                  invertTheme={false}
-                  hideRoot={true}
-                  shouldExpandNodeInitially={() => {
+                <JsonView
+                  src={detailsObject}
+                  dark={settingsCtx.get("useDarkMode") as boolean}
+                  theme="a11y"
+                  enableClipboard={false}
+                  ignoreLargeArray={false}
+                  collapseObjectsAfterLength={3}
+                  displaySize={"collapsed"}
+                  collapsed={(params: {
+                    node: Record<string, unknown> | Array<unknown>; // Object or array
+                    indexOrName: number | string | undefined;
+                    depth: number;
+                    size: number; // Object's size or array's length
+                  }) => {
+                    if (params.indexOrName === undefined) return false;
+                    if (Array.isArray(params.node) && params.node.length === 0) return true;
+                    if (params.depth > 2) return true;
                     return false;
                   }}
                 />

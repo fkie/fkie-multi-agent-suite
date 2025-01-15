@@ -98,7 +98,6 @@ export default function StringInput(props: StringInputProps): JSX.Element {
       // sx={{ width: 150 }}
       inputValue={value || ""}
       onInputChange={(event, newValue) => {
-        console.log(`  messageStruct: ${messageStruct}`);
         messageStruct.value = newValue;
         setValue(newValue);
         checkValue((event.target as HTMLInputElement).value);
@@ -135,8 +134,6 @@ export default function StringInput(props: StringInputProps): JSX.Element {
       )}
       onChange={(event, newValue) => {
         const val: string = newValue ? newValue : "";
-        console.log(`  change messageStruct: ${messageStruct}`);
-        console.log(`  change val: ${val}`);
         messageStruct.value = val;
         updateHistory(val);
         setValue(val);

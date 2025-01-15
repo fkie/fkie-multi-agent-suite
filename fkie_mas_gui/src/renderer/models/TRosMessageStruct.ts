@@ -66,7 +66,7 @@ function str2typedValue(
   value: TRosMessageStruct[] | JSONValue | undefined,
   valueType: string
 ): number | boolean | string {
-  let result: number | boolean | string = JSON.stringify(value);
+  let result: number | boolean | string = `${value}`;
   if (valueType.search("int") !== -1) {
     result = Number(value);
   } else if (valueType.search("float") !== -1 || valueType.search("double") !== -1) {
@@ -83,7 +83,7 @@ function str2typedValue(
 
 function dictToString(dict: JSONObject): string {
   const json = JSON.stringify(dict);
-  return json.replace(
+  const result = json.replace(
     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
     (match) => {
       let cls = "number";
@@ -101,4 +101,5 @@ function dictToString(dict: JSONObject): string {
       return cls === "key" || cls === "number" || cls === "boolean" ? match.replaceAll('"', "") : match;
     }
   );
+  return result;
 }

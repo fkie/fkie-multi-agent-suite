@@ -16,15 +16,14 @@ import {
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { JSONTree } from "react-json-tree";
+import JsonView from "react18-json-view";
 import { SearchBar } from "../../../components";
 import { colorFromHostname } from "../../../components/UI/Colors";
 import { RosContext } from "../../../context/RosContext";
+import LoggingContext from "../../../context/LoggingContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { LaunchCallService, rosMessageStructToString, RosNode, TRosMessageStruct } from "../../../models";
-import { darkThemeJson } from "../../../themes/darkTheme";
-import { lightThemeJson } from "../../../themes/lightTheme";
 import InputElements from "./MessageDialogPanel/InputElements";
 
 interface ServiceCallerPanelProps {
@@ -35,6 +34,7 @@ interface ServiceCallerPanelProps {
 const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(function ServiceCallerPanel(props, ref) {
   const { serviceName, providerId } = props;
 
+  const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
   const [history, setHistory] = useLocalStorage(`ServiceStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
@@ -100,6 +100,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     if (!serviceStruct) return;
     const json = rosMessageStructToString(serviceStruct, false, true);
     navigator.clipboard.writeText(`${serviceType} ${json}`);
+    logCtx.success(`service call input copied!`);
   }, 300);
 
   const getServiceStructData = useCallback(async () => {
@@ -271,14 +272,23 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
 
   const createJsonView = useMemo(() => {
     return (
-      <JSONTree
-        data={resultMessage}
-        sortObjectKeys={true}
-        theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
-        invertTheme={false}
-        hideRoot={true}
-        shouldExpandNodeInitially={() => {
-          return true;
+      <JsonView
+        src={resultMessage}
+        dark={settingsCtx.get("useDarkMode") as boolean}
+        theme="a11y"
+        enableClipboard={false}
+        ignoreLargeArray={false}
+        collapseObjectsAfterLength={3}
+        displaySize={"collapsed"}
+        collapsed={(params: {
+          node: Record<string, unknown> | Array<unknown>; // Object or array
+          indexOrName: number | string | undefined;
+          depth: number;
+          size: number; // Object's size or array's length
+        }) => {
+          if (params.indexOrName === undefined) return false;
+          if (Array.isArray(params.node) && params.node.length === 0) return true;
+          return false;
         }}
       />
     );
@@ -315,7 +325,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
               <FormLabel>Publish history</FormLabel>
               <ButtonGroup sx={{ maxHeight: "24px" }}>
                 {historyLength > 0 && (
-                  <Tooltip title="clear history entries" enterDelay={500}>
+                  <Tooltip title="clear history entries" enterDelay={500} disableInteractive>
                     <Button
                       color="success"
                       onClick={(event) => {
@@ -332,7 +342,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
                 {historyLength > 0 &&
                   Array.from(Array(historyLength).keys()).map((index) => createHistoryButton(index))}
                 {historyLength > 0 && (
-                  <Tooltip title="remove oldest history entry" enterDelay={500}>
+                  <Tooltip title="remove oldest history entry" enterDelay={500} disableInteractive>
                     <Button
                       color="error"
                       onClick={(event) => {

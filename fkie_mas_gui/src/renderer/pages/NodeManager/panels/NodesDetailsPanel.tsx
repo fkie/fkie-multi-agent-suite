@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { JSONTree } from "react-json-tree";
+import JsonView from "react18-json-view";
 import { CopyButton, Tag, colorFromHostname, getDiagnosticStyle } from "../../../components";
 import { LoggingContext } from "../../../context/LoggingContext";
 import { NavigationContext } from "../../../context/NavigationContext";
@@ -24,8 +24,6 @@ import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { RosNode, RosNodeStatus, RosTopic, getDiagnosticLevelName, getFileName } from "../../../models";
-import { darkThemeJson } from "../../../themes/darkTheme";
-import { lightThemeJson } from "../../../themes/lightTheme";
 import { generateUniqueId } from "../../../utils";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
@@ -54,7 +52,6 @@ export default function NodesDetailsPanel(): JSX.Element {
 
   const [nodesShow, setNodesShow] = useState<RosNode[]>([]);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
-  const [currentTheme, setCurrentTheme] = useState(settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson);
 
   const [showNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);
   const [showPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
@@ -67,7 +64,6 @@ export default function NodesDetailsPanel(): JSX.Element {
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
-    setCurrentTheme(settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson);
   }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
@@ -627,14 +623,24 @@ export default function NodesDetailsPanel(): JSX.Element {
                                           ? parameter.name.slice(node.name.length + 1)
                                           : parameter.name}
                                         {typeof parameter.value === "object" && (
-                                          <JSONTree
-                                            data={parameter.value}
-                                            sortObjectKeys={true}
-                                            theme={currentTheme}
-                                            invertTheme={false}
-                                            hideRoot={false}
-                                            shouldExpandNodeInitially={() => {
-                                              return true;
+                                          <JsonView
+                                            src={parameter.value}
+                                            dark={settingsCtx.get("useDarkMode") as boolean}
+                                            theme="a11y"
+                                            enableClipboard={false}
+                                            ignoreLargeArray={false}
+                                            collapseObjectsAfterLength={3}
+                                            displaySize={"collapsed"}
+                                            collapsed={(params: {
+                                              node: Record<string, unknown> | Array<unknown>; // Object or array
+                                              indexOrName: number | string | undefined;
+                                              depth: number;
+                                              size: number; // Object's size or array's length
+                                            }) => {
+                                              if (params.indexOrName === undefined) return true;
+                                              if (Array.isArray(params.node) && params.node.length === 0) return true;
+                                              if (params.depth > 3) return true;
+                                              return false;
                                             }}
                                           />
                                         )}

@@ -749,6 +749,7 @@ export default function NodeManager(): JSX.Element {
         item.type === "tab" &&
         item.id !== LAYOUT_TABS.ABOUT &&
         item.id !== LAYOUT_TABS.SETTINGS &&
+        item.id !== LAYOUT_TABS.PARAMETER &&
         LAYOUT_TAB_LIST.includes(item.id)
       ) {
         return true;

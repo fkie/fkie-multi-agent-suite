@@ -1,5 +1,5 @@
 import { SearchBar } from "@/renderer/components";
-import { JSONTree } from "@/renderer/components/react-json-tree";
+import JsonView from "react18-json-view";
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
 import { findIn } from "@/renderer/utils";
@@ -38,8 +38,6 @@ import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { RosNode, SubscriberEvent, SubscriberFilter } from "../../../models";
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "../../../providers/eventTypes";
-import { darkThemeJson } from "../../../themes/darkTheme";
-import { lightThemeJson } from "../../../themes/lightTheme";
 
 interface TSubscriberEventExt extends SubscriberEvent {
   key: string;
@@ -228,11 +226,11 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     return result;
   }
 
-  const generateJsonTopics = useMemo(() => {
+  function topicsToJson(): JSX.Element[] {
     return history.map((event) => {
       return (
         // <Box key={`box-${event.key}`}>
-        <Stack height="300px" key={`box-${event.key}`} marginTop={1} spacing={1} direction="row">
+        <Stack key={`box-${event.key}`} marginTop={1} spacing={1} direction="row">
           {/* <Tag
             key={event.receivedIndex}
             color="info"
@@ -254,27 +252,52 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
             //   text={`${event.seq}`}
             // />
           )}
-          <JSONTree
+          <JsonView
             key={`${event.key}`}
-            data={filterJson(event?.data, filterText)}
-            sortObjectKeys={true}
-            theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
-            invertTheme={false}
-            hideRoot={true}
-            shouldExpandNodeInitially={([key]) => {
-              return !collapsedKeys.includes(key);
+            src={filterJson(event?.data, filterText)}
+            dark={settingsCtx.get("useDarkMode") as boolean}
+            theme="a11y"
+            enableClipboard={false}
+            ignoreLargeArray={false}
+            collapseObjectsAfterLength={3}
+            displaySize={"collapsed"}
+            collapsed={(params: {
+              node: Record<string, unknown> | Array<unknown>; // Object or array
+              indexOrName: number | string | undefined;
+              depth: number;
+              size: number; // Object's size or array's length
+            }) => {
+              if (params.indexOrName === undefined) return false;
+              if (Array.isArray(params.node) && params.node.length === 0) return true;
+              return collapsedKeys.includes(params.indexOrName);
             }}
-            onCollapse={([key]) => {
-              setCollapsedKeys((prev) => [...prev, key]);
-            }}
-            onExpand={([key]) => {
-              setCollapsedKeys((prev) => prev.filter((item) => item != key));
+            onCollapse={(params: {
+              isCollapsing: boolean;
+              node: Record<string, unknown> | Array<unknown>;
+              indexOrName: string | number | undefined;
+              depth: number;
+            }) => {
+              if (params.indexOrName !== undefined) {
+                if (!params.isCollapsing) {
+                  if (!collapsedKeys.includes(params.indexOrName)) {
+                    setCollapsedKeys((prev) => [...prev, params.indexOrName as string | number]);
+                  }
+                } else {
+                  if (collapsedKeys.includes(params.indexOrName)) {
+                    setCollapsedKeys((prev) => prev.filter((item) => item != params.indexOrName));
+                  }
+                }
+              }
             }}
           />
         </Stack>
         // </Box>
       );
     });
+  }
+
+  const generateJsonTopics = useMemo(() => {
+    return topicsToJson();
   }, [history, settingsCtx.changed, collapsedKeys, filterText]);
 
   const generateOptions = useMemo(() => {

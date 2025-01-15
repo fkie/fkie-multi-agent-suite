@@ -3,12 +3,10 @@ import { Provider } from "@/renderer/providers";
 import { JSONObject, TSystemInfo } from "@/types";
 import { Box, Stack, Typography } from "@mui/material";
 import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
-import { JSONTree } from "react-json-tree";
+import JsonView from "react18-json-view";
 import { CopyButton, SearchBar } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
-import { darkThemeJson } from "../../../themes/darkTheme";
-import { lightThemeJson } from "../../../themes/lightTheme";
 import { generateUniqueId } from "../../../utils";
 
 interface SystemInformationPanelProps {
@@ -125,12 +123,23 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
       return (
         <Stack sx={{ width: "100%" }}>
           <h5>Provider Details</h5>
-          <JSONTree
-            data={providerDetails}
-            sortObjectKeys={true}
-            theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
-            invertTheme={false}
-            hideRoot={true}
+          <JsonView
+            src={providerDetails}
+            dark={settingsCtx.get("useDarkMode") as boolean}
+            theme="a11y"
+            enableClipboard={false}
+            ignoreLargeArray={false}
+            collapseObjectsAfterLength={3}
+            displaySize={"collapsed"}
+            collapsed={(params: {
+              node: Record<string, unknown> | Array<unknown>; // Object or array
+              indexOrName: number | string | undefined;
+              depth: number;
+              size: number; // Object's size or array's length
+            }) => {
+              if (params.indexOrName === undefined) return false;
+              return true;
+            }}
           />
         </Stack>
       );
@@ -140,12 +149,23 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
       return (
         <Stack sx={{ width: "100%" }}>
           <h5>This System Information</h5>
-          <JSONTree
-            data={systemInfoContent}
-            sortObjectKeys={true}
-            theme={settingsCtx.get("useDarkMode") ? darkThemeJson : lightThemeJson}
-            invertTheme={false}
-            hideRoot={true}
+          <JsonView
+            src={systemInfoContent}
+            dark={settingsCtx.get("useDarkMode") as boolean}
+            theme="a11y"
+            enableClipboard={false}
+            ignoreLargeArray={false}
+            // collapseObjectsAfterLength={3}
+            displaySize={"collapsed"}
+            collapsed={(params: {
+              node: Record<string, unknown> | Array<unknown>; // Object or array
+              indexOrName: number | string | undefined;
+              depth: number;
+              size: number; // Object's size or array's length
+            }) => {
+              if (params.indexOrName === undefined) return false;
+              return true;
+            }}
           />
         </Stack>
       );
