@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.10 - 15.01.2025
+
+Changed json visualization to react18-json-view
+Fixed topic visualization when one topic is part of another
+Fixed starting the external terminal with ROS_DOMAIN_ID of the provider
+
 ## 3.0.9 - 14.01.2025
 
 Changed: do not use 'RMW_IMPLEMENTATION=rmw_fastrtps_cpp' for mas-discovery

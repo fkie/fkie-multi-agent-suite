@@ -195,7 +195,8 @@ echo "your echo commands here!"
 
 See related reports on [Stack Exchange](https://unix.stackexchange.com/questions/61580/sftp-gives-an-error-received-message-too-long-and-what-is-the-reason), [SSH2 GitHub](https://github.com/mscdex/ssh2/issues/509) or [StackOverflow](https://stackoverflow.com/questions/33409233/getting-received-too-large-sftp-packet-when-logging-in-with-root-using-winscp).
 
-- *You don't see the correct output in external terminal*. Try to change your default terminal:
+- _You don't see the correct output in external terminal_. Try to change your default terminal:
+
 ```bash
 sudo update-alternatives --config x-terminal-emulator
 ```
