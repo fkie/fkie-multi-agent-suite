@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.12 - 16.01.2025
+
+Added a warning for the parameter list if there are many ROS nodes.
+No automatic update of the parameter list when opening
+Increased timeout to get parameter list
+Added QoS visualization to each topic
+Added package proposals to launch file editor
+
 ## 3.0.11 - 16.01.2025
 
 Topic panel revised
