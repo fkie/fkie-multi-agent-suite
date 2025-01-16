@@ -116,12 +116,12 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
         {Object.entries(values).map(([key, value]) => {
           index += 1;
           return (
-            <Stack direction="row" spacing={"0.2em"}>
-              <Typography key={`qos-reliability-${key}`} variant="body2" color="inherit">
+            <Stack key={`qos-reliability-${key}`} direction="row" spacing={"0.2em"}>
+              <Typography variant="body2" color="inherit">
                 {reliabilityToString(parseInt(key))}
               </Typography>
               {index > 1 && (
-                <Typography key={`qos-reliability-${key}`} variant="body2" color="inherit">
+                <Typography variant="body2" color="inherit">
                   {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
                 </Typography>
               )}
@@ -150,12 +150,12 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
         {Object.entries(values).map(([key, value]) => {
           index += 1;
           return (
-            <Stack direction="row" spacing={"0.2em"}>
-              <Typography key={`qos-durability-${key}`} variant="body2" color="inherit">
+            <Stack key={`qos-durability-${key}`} direction="row" spacing={"0.2em"}>
+              <Typography variant="body2" color="inherit">
                 {durabilityToString(parseInt(key))}
               </Typography>
               {index > 1 && (
-                <Typography key={`qos-durability-${key}`} variant="body2" color="inherit">
+                <Typography variant="body2" color="inherit">
                   {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
                 </Typography>
               )}
@@ -184,12 +184,12 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
         {Object.entries(values).map(([key, value]) => {
           index += 1;
           return (
-            <Stack direction="row" spacing={"0.2em"}>
-              <Typography key={`qos-liveliness-${key}`} variant="body2" color="inherit">
+            <Stack key={`qos-liveliness-${key}`} direction="row" spacing={"0.2em"}>
+              <Typography variant="body2" color="inherit">
                 {livelinessToString(parseInt(key))}
               </Typography>
               {index > 1 && (
-                <Typography key={`qos-liveliness-${key}`} variant="body2" color="inherit">
+                <Typography variant="body2" color="inherit">
                   {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
                 </Typography>
               )}
@@ -375,7 +375,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
 
               {incompatibleQos.map((item) => {
                 return (
-                  <Typography fontSize="small">
+                  <Typography key={`incompatible-qos-${item.node_id}`} fontSize="small">
                     {`${item.compatibility}`}: {item.reason}
                   </Typography>
                 );
