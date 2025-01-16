@@ -977,7 +977,7 @@ class MasterMonitor:
         return json.dumps(list(
             self._json_warning_groups.values()), cls=SelfEncoder)
 
-    def get_node_list(self) -> str:
+    def get_node_list(self, forceRefresh: bool = False) -> str:
         Log.info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = []
         if self.__master_state is not None:
