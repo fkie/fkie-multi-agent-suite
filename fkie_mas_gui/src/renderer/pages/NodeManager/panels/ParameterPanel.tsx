@@ -3,7 +3,7 @@ import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { Alert, AlertTitle, Box, IconButton, Stack, Tooltip } from "@mui/material";
 import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 import SearchBar from "../../../components/UI/SearchBar";
 import { DEFAULT_BUG_TEXT, LoggingContext } from "../../../context/LoggingContext";
@@ -31,6 +31,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
   const [forceReload, setForceReload] = useReducer((x) => x + 1, 0);
   const [searched, setSearched] = useState<string>("");
   const [selectedParameter, setSelectedParameter] = useState<{ provider: Provider; params: RosParameter[] }>();
+  const [showWarning, setShowWarning] = useState<boolean>(false);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
 
@@ -97,6 +98,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
           });
         }
       });
+      setShowWarning(newRootData.length > 5);
       setRootData(newRootData);
     }
   }, [rosCtx.initialized, rosCtx.providers]);
@@ -158,6 +160,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
             <IconButton
               size="small"
               onClick={() => {
+                setShowWarning(false);
                 setForceReload();
               }}
             >
@@ -171,6 +174,22 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
             fullWidth
           />
         </Stack>
+        {showWarning && (
+          <Alert
+            severity="warning"
+            style={{ minWidth: 0 }}
+            onClose={() => {
+              setShowWarning(false);
+            }}
+          >
+            <AlertTitle>
+              {
+                "Many ROS nodes must be queried. This can take some time and affect other functions of the GUI during this time."
+              }
+            </AlertTitle>
+            {"Use the filter and then click on refresh."}
+          </Alert>
+        )}
         {createParameterItems}
       </Stack>
     </Box>
