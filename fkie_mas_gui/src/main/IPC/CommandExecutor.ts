@@ -412,7 +412,8 @@ export default class CommandExecutor implements TCommandExecutor {
         [c.username, c.host].join("@"),
       ].join(" ");
     }
-    const cmd = `${terminalEmulator} ${terminalTitle} ${noCloseOpt} ${terminalExecOpt} ${sshCmd} /bin/sh -c "${command}"`;
+    const shCommand = command.includes(";") ? `/bin/sh -c "${command}"` : command;
+    const cmd = `${terminalEmulator} ${terminalTitle} ${noCloseOpt} ${terminalExecOpt} ${sshCmd} ${shCommand}`;
     return this.exec(null, cmd);
   }
 
