@@ -1,10 +1,30 @@
 /* eslint-disable no-template-curly-in-string */
 
+import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
 import { Monaco } from "@monaco-editor/react";
 import { editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 
-function createXMLDependencyProposals(monaco: Monaco, range: TFileRange, clipText: string): languages.CompletionItem[] {
+function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
+  const result = packages?.map((item: RosPackage) => {
+    console.log(`create package : ${item.name}`);
+    return {
+      label: `${item.name}`,
+      kind: monaco.languages.CompletionItemKind.Field,
+      insertText: `${item.name}`,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    };
+  });
+  return result ? result : [];
+}
+
+function createXMLDependencyProposals(
+  monaco: Monaco,
+  range: TFileRange,
+  clipText: string,
+  packages: RosPackage[]
+): languages.CompletionItem[] {
   // returning a static list of proposals, valid for ROS launch and XML  files
 
   function getParamName(defaultValue: string | undefined): string | undefined {
@@ -12,6 +32,7 @@ function createXMLDependencyProposals(monaco: Monaco, range: TFileRange, clipTex
     return text || defaultValue;
   }
 
+  const packageSuggestions = createPackageList(packages, monaco, range);
   return [
     {
       label: "node",
@@ -117,6 +138,7 @@ function createXMLDependencyProposals(monaco: Monaco, range: TFileRange, clipTex
       insertText: 'param name="nm/kill_on_stop" value="300" /',
       range,
     },
+    ...packageSuggestions,
   ];
 }
 

@@ -1,3 +1,4 @@
+import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
 import { Monaco } from "@monaco-editor/react";
 import { languages } from "monaco-editor/esm/vs/editor/editor.api";
@@ -18,19 +19,34 @@ function createWordList(text: string, monaco: Monaco, range: TFileRange): langua
   return result;
 }
 
+function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
+  const result = packages?.map((item: RosPackage) => {
+    console.log(`create package : ${item.name}`);
+    return {
+      label: `${item.name}`,
+      kind: monaco.languages.CompletionItemKind.Field,
+      insertText: `${item.name}`,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    };
+  });
+  return result ? result : [];
+}
+
 // Method,Function,Constructor,Field,Variable,Class,Struct,Interface,Module,Property,Event,Operator,Unit,Value,Constant,Enum,EnumMember,Keyword,Text,Color,File,Reference,Customcolor,Folder,TypeParameter,User,Issue,Snippet
 
 export function createPythonLaunchProposals(
   monaco: Monaco,
   range: TFileRange,
   clipText: string,
-  text: string
+  text: string,
+  packages: RosPackage[]
 ): languages.CompletionItem[] {
   // returning a static list of proposals, valid for ROS launch and XML  files
 
   const wordSuggestions = createWordList(text, monaco, range);
+  const packageSuggestions = createPackageList(packages, monaco, range);
   return [
-    ...wordSuggestions,
     {
       label: "Node",
       kind: monaco.languages.CompletionItemKind.Snippet,
@@ -78,5 +94,7 @@ export function createPythonLaunchProposals(
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
+    ...packageSuggestions,
+    ...wordSuggestions,
   ];
 }

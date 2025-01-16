@@ -29,7 +29,14 @@ import { LoggingContext } from "../../../context/LoggingContext";
 import { MonacoContext, TModelResult } from "../../../context/MonacoContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
-import { FileItem, LaunchIncludedFile, LaunchIncludedFilesRequest, getFileAbb, getFileName } from "../../../models";
+import {
+  FileItem,
+  LaunchIncludedFile,
+  LaunchIncludedFilesRequest,
+  RosPackage,
+  getFileAbb,
+  getFileName,
+} from "../../../models";
 import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
 import {
   EVENT_CLOSE_COMPONENT,
@@ -751,6 +758,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // !=> the goto functionality is provided by clickRequest
     if (!monaco) return;
 
+    let packages: RosPackage[] = [];
+    const provider = rosCtx.getProviderById(providerId, true);
+    if (provider && provider.packages) {
+      packages = provider.packages;
+    }
     // personalize launch file objects
     ["xml", "launch", "python"].forEach((e) => {
       // Add Completion provider for XML and launch files
@@ -770,8 +782,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               return {
                 suggestions:
                   e === "python"
-                    ? createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue())
-                    : createXMLDependencyProposals(monaco, range, clipTextSuggest),
+                    ? createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages)
+                    : createXMLDependencyProposals(monaco, range, clipTextSuggest, packages),
               };
             }
             getClipboardTextForSuggest();
