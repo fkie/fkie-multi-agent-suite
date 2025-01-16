@@ -107,8 +107,8 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                 sx={{ fontWeight: "inherit" }}
                 onClick={(e) => {
                   if (e.detail === 2) {
-                    navigator.clipboard.writeText(label);
-                    logCtx.success(`${label} copied!`);
+                    navigator.clipboard.writeText(serviceInfo.name);
+                    logCtx.success(`${serviceInfo.name} copied!`);
                     e.stopPropagation();
                   }
                 }}

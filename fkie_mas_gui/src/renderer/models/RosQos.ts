@@ -109,3 +109,41 @@ export default class RosQos {
     this.lifespan = lifespan;
   }
 }
+
+export function reliabilityToString(value: number): string {
+  switch (value) {
+    case RELIABILITY.SYSTEM_DEFAULT:
+      return "SYSTEM_DEFAULT";
+    case RELIABILITY.RELIABLE:
+      return "RELIABLE";
+    case RELIABILITY.BEST_EFFORT:
+      return "BEST_EFFORT";
+  }
+  return "UNKNOWN";
+}
+
+export function durabilityToString(value: number): string {
+  switch (value) {
+    case DURABILITY.SYSTEM_DEFAULT:
+      return "SYSTEM_DEFAULT";
+    case DURABILITY.TRANSIENT_LOCAL:
+      return "TRANSIENT_LOCAL";
+    case DURABILITY.VOLATILE:
+      return "BEST_EFFORT";
+  }
+  return "UNKNOWN";
+}
+
+export function livelinessToString(value: number): string {
+  switch (value) {
+    case LIVELINESS.SYSTEM_DEFAULT:
+      return "SYSTEM_DEFAULT";
+    case LIVELINESS.AUTOMATIC:
+      return "AUTOMATIC";
+    case LIVELINESS.MANUAL_BY_NODE:
+      return "MANUAL_BY_NODE";
+    case LIVELINESS.MANUAL_BY_TOPIC:
+      return "MANUAL_BY_TOPIC";
+  }
+  return "UNKNOWN";
+}

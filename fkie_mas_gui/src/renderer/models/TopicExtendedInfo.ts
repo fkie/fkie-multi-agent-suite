@@ -14,6 +14,8 @@ export default class TopicExtendedInfo {
 
   msgType: string = "";
 
+  hasQos: boolean = false;
+
   publishers: EndpointExtendedInfo[] = [];
 
   subscribers: EndpointExtendedInfo[] = [];
@@ -34,6 +36,9 @@ export default class TopicExtendedInfo {
       ) {
         this.publishers.push({ info: pub, providerId: node.providerId, providerName: node.providerName });
       }
+      if (pub.qos) {
+        this.hasQos = true;
+      }
     });
   }
 
@@ -44,6 +49,9 @@ export default class TopicExtendedInfo {
           .length === 0
       ) {
         this.subscribers.push({ info: sub, providerId: node.providerId, providerName: node.providerName });
+      }
+      if (sub.qos) {
+        this.hasQos = true;
       }
     });
   }

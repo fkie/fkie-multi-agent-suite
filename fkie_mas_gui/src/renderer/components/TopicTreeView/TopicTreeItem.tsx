@@ -1,8 +1,9 @@
-import { TopicExtendedInfo } from "@/renderer/models";
+import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
+import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
+import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
 import { NavigationContext } from "../../context/NavigationContext";
@@ -31,6 +32,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   // state variables to show/hide extended info
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
   const [selected, setSelected] = useState(false);
+  const [incompatibleQos, setIncompatibleQos] = useState<IncompatibleQos[]>([]);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
 
   const getHostStyle = useCallback(
@@ -69,7 +71,134 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
     setName(`${nameParts.pop()}`);
     const ns = nameParts.join("/");
     setNamespace(ns ? `${ns}/` : rootPath ? "" : "/");
+    const inQos: IncompatibleQos[] = [];
+    topicInfo?.subscribers
+      .filter((sub) => sub.info.incompatible_qos && sub.info.incompatible_qos.length > 0)
+      .forEach((sub) => {
+        sub.info.incompatible_qos?.forEach((item) => inQos.push(item));
+      });
+    setIncompatibleQos(inQos);
   }, []);
+
+  function addQosValue(
+    value: string | number | undefined,
+    nodeId: string,
+    type: string,
+    values: { [key: string]: { nodeId: string; type: string }[] }
+  ): void {
+    if (value !== undefined) {
+      const val: string = `${value}`;
+      if (!values[val]) {
+        values[val] = [];
+      }
+      values[val].push({
+        nodeId: nodeId,
+        type: type,
+      });
+    }
+  }
+
+  const createReliabilityItem = useMemo((): JSX.Element => {
+    const values: { [key: string]: { nodeId: string; type: string }[] } = {};
+
+    topicInfo.publishers.forEach((pub) => {
+      addQosValue(pub.info.qos?.reliability, pub.info.node_id, "pub", values);
+    });
+    topicInfo.subscribers.forEach((sub) => {
+      addQosValue(sub.info.qos?.reliability, sub.info.node_id, "sub", values);
+    });
+    let index = 0;
+    return (
+      <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
+        <Typography variant="caption" color="inherit">
+          Reliability:
+        </Typography>
+        {Object.entries(values).map(([key, value]) => {
+          index += 1;
+          return (
+            <Stack direction="row" spacing={"0.2em"}>
+              <Typography key={`qos-reliability-${key}`} variant="body2" color="inherit">
+                {reliabilityToString(parseInt(key))}
+              </Typography>
+              {index > 1 && (
+                <Typography key={`qos-reliability-${key}`} variant="body2" color="inherit">
+                  {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
+                </Typography>
+              )}
+            </Stack>
+          );
+        })}
+      </Stack>
+    );
+  }, [topicInfo]);
+
+  const createDurabilityItem = useMemo((): JSX.Element => {
+    const values: { [key: string]: { nodeId: string; type: string }[] } = {};
+
+    topicInfo.publishers.forEach((pub) => {
+      addQosValue(pub.info.qos?.durability, pub.info.node_id, "pub", values);
+    });
+    topicInfo.subscribers.forEach((sub) => {
+      addQosValue(sub.info.qos?.durability, sub.info.node_id, "sub", values);
+    });
+    let index = 0;
+    return (
+      <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
+        <Typography variant="caption" color="inherit">
+          Durability:
+        </Typography>
+        {Object.entries(values).map(([key, value]) => {
+          index += 1;
+          return (
+            <Stack direction="row" spacing={"0.2em"}>
+              <Typography key={`qos-durability-${key}`} variant="body2" color="inherit">
+                {durabilityToString(parseInt(key))}
+              </Typography>
+              {index > 1 && (
+                <Typography key={`qos-durability-${key}`} variant="body2" color="inherit">
+                  {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
+                </Typography>
+              )}
+            </Stack>
+          );
+        })}
+      </Stack>
+    );
+  }, [topicInfo]);
+
+  const createLivelinessItem = useMemo((): JSX.Element => {
+    const values: { [key: string]: { nodeId: string; type: string }[] } = {};
+
+    topicInfo.publishers.forEach((pub) => {
+      addQosValue(pub.info.qos?.liveliness, pub.info.node_id, "pub", values);
+    });
+    topicInfo.subscribers.forEach((sub) => {
+      addQosValue(sub.info.qos?.liveliness, sub.info.node_id, "sub", values);
+    });
+    let index = 0;
+    return (
+      <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
+        <Typography variant="caption" color="inherit">
+          Liveliness:
+        </Typography>
+        {Object.entries(values).map(([key, value]) => {
+          index += 1;
+          return (
+            <Stack direction="row" spacing={"0.2em"}>
+              <Typography key={`qos-liveliness-${key}`} variant="body2" color="inherit">
+                {livelinessToString(parseInt(key))}
+              </Typography>
+              {index > 1 && (
+                <Typography key={`qos-liveliness-${key}`} variant="body2" color="inherit">
+                  {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
+                </Typography>
+              )}
+            </Stack>
+          );
+        })}
+      </Stack>
+    );
+  }, [topicInfo]);
 
   return (
     <StyledTreeItem
@@ -122,13 +251,11 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                 </Typography>
               </Stack>
               {/* {requestData && <CircularProgress size="1em" />} */}
-              {topicInfo &&
-                topicInfo.subscribers.filter((sub) => sub.info.incompatible_qos && sub.info.incompatible_qos.length > 0)
-                  .length > 0 && (
-                  <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
-                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
-                  </Tooltip>
-                )}
+              {incompatibleQos.length > 0 && (
+                <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                </Tooltip>
+              )}
             </Stack>
             <Stack
               direction="row"
@@ -235,6 +362,22 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                     )}
                     {/* <CopyButton value={subNodeName} fontSize="0.7em" /> */}
                   </Stack>
+                );
+              })}
+              {topicInfo?.hasQos && (
+                <Typography fontWeight="bold" fontSize="small">
+                  Qos profiles:
+                </Typography>
+              )}
+              {topicInfo?.hasQos && createReliabilityItem}
+              {topicInfo?.hasQos && createDurabilityItem}
+              {topicInfo?.hasQos && createLivelinessItem}
+
+              {incompatibleQos.map((item) => {
+                return (
+                  <Typography fontSize="small">
+                    {`${item.compatibility}`}: {item.reason}
+                  </Typography>
                 );
               })}
             </Stack>
