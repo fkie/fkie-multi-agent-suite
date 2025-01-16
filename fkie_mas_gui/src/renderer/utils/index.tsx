@@ -153,9 +153,10 @@ export function basename(name: string): string {
 }
 
 export function normalizeNameWithPrefix(name: string, prefix: string): string {
-  if (!prefix) return name;
-  if (name.startsWith(prefix)) {
-    return name.slice(prefix.length + 1);
+  if (prefix) {
+    if (name.startsWith(prefix)) {
+      return name.slice(prefix.length + 1);
+    }
   }
   return name.startsWith("/") ? name.slice(1) : name;
 }

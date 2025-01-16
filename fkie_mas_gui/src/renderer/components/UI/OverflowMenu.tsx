@@ -1,6 +1,17 @@
 import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
-import { Badge, Fade, IconButton, ListItemText, Menu, MenuItem } from "@mui/material";
+import {
+  Badge,
+  Fade,
+  IconButton,
+  IconButtonPropsSizeOverrides,
+  ListItemText,
+  Menu,
+  MenuItem,
+  SxProps,
+  Theme,
+} from "@mui/material";
 import { styled } from "@mui/material/styles";
+import { OverridableStringUnion } from "@mui/types";
 import React, { forwardRef, useContext, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 import { colorFromHostname } from "./Colors";
@@ -20,7 +31,7 @@ const StyledBadge = styled(Badge)((/*{ theme }*/) => ({
 export type OverflowMenuItem = {
   key: string;
   name: string | React.ReactNode;
-  onClick: () => void;
+  onClick: (event?: React.MouseEvent) => void;
 };
 
 interface OverflowMenuProps {
@@ -29,6 +40,9 @@ interface OverflowMenuProps {
   options: OverflowMenuItem[];
   showBadge?: boolean;
   colorizeItems?: boolean;
+  disabled?: boolean;
+  size?: OverridableStringUnion<"small" | "medium" | "large", IconButtonPropsSizeOverrides>;
+  sx?: SxProps<Theme>;
 }
 
 const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function OverflowMenu(props, ref) {
@@ -38,6 +52,9 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
     options = [],
     showBadge = false,
     colorizeItems = false,
+    disabled = false,
+    size = "small",
+    sx = { padding: 0, margin: 0 },
   } = props;
 
   const settingsCtx = useContext(SettingsContext);
@@ -77,11 +94,12 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
       <IconButton
         aria-label={`${id}-icon`}
         id={`${id}-icon`}
-        size="small"
-        sx={{ padding: 0, margin: 0 }}
+        size={size}
+        sx={sx}
         aria-controls={open ? "long-menu" : undefined}
         aria-expanded={open ? "true" : undefined}
         aria-haspopup="true"
+        disabled={disabled}
         onClick={handleClick}
         onMouseDown={handleClick}
       >
@@ -104,7 +122,7 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
               key={option.key}
               sx={getSxPropByName(option.name)}
               onClick={(event) => {
-                option.onClick();
+                option.onClick(event);
                 handleClose(event);
               }}
             >

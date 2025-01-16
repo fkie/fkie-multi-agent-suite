@@ -259,7 +259,7 @@ export default class Provider implements IProvider {
 
   public getCallbacks: () => TConCallback[] = () => {
     return [
-      { uri: URI.ROS_PROVIDER_LIST, callback: this.updateProviderList },
+      { uri: URI.ROS_PROVIDER_LIST, callback: this.providerUpdated },
       { uri: URI.ROS_DAEMON_READY, callback: this.callbackDaemonReady },
       { uri: URI.ROS_DISCOVERY_READY, callback: this.callbackDiscoveryReady },
       { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateRosNodes },
@@ -481,10 +481,16 @@ export default class Provider implements IProvider {
     return this.daemonVersion.version.split("-")[0].replace("v", "");
   };
 
+  public providerUpdated: () => void = () => {
+    this.updateProviderList();
+  };
+
   /**
    * Request a list of available providers using uri URI.ROS_PROVIDER_GET_LIST
    */
-  public updateProviderList: () => Promise<boolean> = async () => {
+  public updateProviderList: (ignoreNewHosts?: boolean | undefined) => Promise<boolean> = async (
+    ignoreNewHosts = false
+  ) => {
     const rosProviders: RosProviderState[] = await this.makeCall(URI.ROS_PROVIDER_GET_LIST, [], true).then(
       (value: TResultData) => {
         if (value.result) {
@@ -527,7 +533,7 @@ export default class Provider implements IProvider {
           }
           // copy all new addresses to local hostnames
           this.hostnames = [...new Set([...this.hostnames, ...p.hostnames])];
-        } else {
+        } else if (!ignoreNewHosts) {
           // add provider discovered by the contacted provider
           // add discovered provider
           const np = new Provider(

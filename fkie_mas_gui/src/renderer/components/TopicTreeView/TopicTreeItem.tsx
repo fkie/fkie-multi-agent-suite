@@ -1,4 +1,5 @@
-import { EndpointInfo, TopicExtendedInfo } from "@/renderer/models";
+import { TopicExtendedInfo } from "@/renderer/models";
+import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
@@ -8,7 +9,7 @@ import { NavigationContext } from "../../context/NavigationContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
-import { removeDDSuid } from "../../utils/index";
+import { normalizeNameWithPrefix, removeDDSuid } from "../../utils/index";
 import { colorFromHostname } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -25,38 +26,28 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
-  const [label, setLabel] = useState(topicInfo.name);
+  const [name, setName] = useState<string>("");
+  const [namespace, setNamespace] = useState("");
   // state variables to show/hide extended info
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
   const [selected, setSelected] = useState(false);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
 
   const getHostStyle = useCallback(
-    function getHostStyle(): object {
-      if (topicInfo.providerName && settingsCtx.get("colorizeHosts")) {
+    function getHostStyle(providerName: string): object {
+      if (providerName && settingsCtx.get("colorizeHosts")) {
         return {
           flexGrow: 1,
           alignItems: "center",
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(topicInfo.providerName),
+          borderLeftColor: colorFromHostname(providerName),
           borderLeftWidth: "0.6em",
         };
       }
       return { flexGrow: 1, alignItems: "center" };
     },
-    [topicInfo.providerName, settingsCtx.changed]
+    [settingsCtx.changed]
   );
-
-  useEffect(() => {
-    if (!rootPath) return;
-    if (!topicInfo) return;
-
-    if (topicInfo.name === rootPath) {
-      setLabel(topicInfo.providerName);
-    } else {
-      setLabel(topicInfo.name.slice(rootPath.length + 1));
-    }
-  }, [rootPath, topicInfo.name, topicInfo]);
 
   useEffect(() => {
     // update state variables to show/hide extended info
@@ -72,6 +63,13 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
       setSelected(true);
     }
   }, [selectedItem]);
+
+  useEffect(() => {
+    const nameParts = normalizeNameWithPrefix(topicInfo.name, rootPath).split("/");
+    setName(`${nameParts.pop()}`);
+    const ns = nameParts.join("/");
+    setNamespace(ns ? `${ns}/` : rootPath ? "" : "/");
+  }, []);
 
   return (
     <StyledTreeItem
@@ -94,24 +92,39 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
               }
             }}
           >
-            <Stack spacing={1} direction="row" sx={getHostStyle()}>
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: "inherit" }}
-                onClick={(e) => {
-                  if (e.detail === 2) {
-                    navigator.clipboard.writeText(topicInfo.name);
-                    logCtx.success(`${topicInfo.name} copied!`);
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                {label}
-              </Typography>
+            <Stack spacing={1} direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+              <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "inherit", userSelect: "none" }}
+                  onClick={(e) => {
+                    if (e.detail === 2) {
+                      navigator.clipboard.writeText(topicInfo.name);
+                      logCtx.success(`${topicInfo.name} copied!`);
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {namespace}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}
+                  onClick={(e) => {
+                    if (e.detail === 2) {
+                      navigator.clipboard.writeText(topicInfo.name);
+                      logCtx.success(`${topicInfo.name} copied!`);
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {name}
+                </Typography>
+              </Stack>
               {/* {requestData && <CircularProgress size="1em" />} */}
               {topicInfo &&
-                topicInfo.subscribers.filter((sub) => sub.incompatible_qos && sub.incompatible_qos.length > 0).length >
-                  0 && (
+                topicInfo.subscribers.filter((sub) => sub.info.incompatible_qos && sub.info.incompatible_qos.length > 0)
+                  .length > 0 && (
                   <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
                     <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
                   </Tooltip>
@@ -166,14 +179,14 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
               <Typography fontWeight="bold" fontSize="small">
                 Publisher [{topicInfo.publishers.length}]:
               </Typography>
-              {topicInfo.publishers.map((item: EndpointInfo) => {
-                const pubNodeName = removeDDSuid(item.node_id);
+              {topicInfo.publishers.map((item: EndpointExtendedInfo) => {
+                const pubNodeName = removeDDSuid(item.info.node_id);
                 return (
-                  <Stack key={item.node_id} paddingLeft={3} direction="row">
+                  <Stack key={item.info.node_id} paddingLeft={3} direction="row" sx={getHostStyle(item.providerName)}>
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        const id: string = `${topicInfo.providerId}${item.node_id.replaceAll("/", "#")}`;
+                        const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
                         navCtx.setSelectedNodes([id]);
                         // inform details panel tab about selected nodes by user
                         emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
@@ -188,21 +201,22 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
               <Typography fontWeight="bold" fontSize="small">
                 Subscriber [{topicInfo.subscribers.length}]:
               </Typography>
-              {topicInfo.subscribers.map((item: EndpointInfo) => {
-                const subNodeName = removeDDSuid(item.node_id);
+              {topicInfo.subscribers.map((item: EndpointExtendedInfo) => {
+                const subNodeName = removeDDSuid(item.info.node_id);
                 return (
                   <Stack
-                    key={item.node_id}
+                    key={item.info.node_id}
                     paddingLeft={3}
                     spacing={1}
                     direction="row"
                     justifyItems="center"
                     alignItems="center"
+                    sx={getHostStyle(item.providerName)}
                   >
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        const id: string = `${topicInfo.providerId}${item.node_id.replaceAll("/", "#")}`;
+                        const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
                         navCtx.setSelectedNodes([id]);
                         // inform details panel tab about selected nodes by user
                         emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
@@ -210,9 +224,9 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                     >
                       {subNodeName}
                     </Typography>
-                    {item.incompatible_qos && item.incompatible_qos.length > 0 && (
+                    {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
                       <Tooltip
-                        title={`Incompatible QoS: ${JSON.stringify(item.incompatible_qos)}`}
+                        title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
                         placement="right"
                         disableInteractive
                       >

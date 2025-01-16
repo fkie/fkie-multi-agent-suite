@@ -1,24 +1,30 @@
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
-import { EndpointInfo, RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
+import LoggingContext from "@/renderer/context/LoggingContext";
+import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
+import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
+import { Provider } from "@/renderer/providers";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { SearchBar, TopicTreeItem } from "../../../components";
+import { OverflowMenu, SearchBar, TopicTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
+// import NotStartedOutlinedIcon from "@mui/icons-material/NotStartedOutlined";
 
 type TTreeItem = {
   groupKey: string;
@@ -31,6 +37,10 @@ type TTreeItem = {
   topicInfo: TopicExtendedInfo | null;
 };
 
+type TProviderDscription = {
+  providerId: string;
+  providerName: string;
+};
 interface TopicsPanelProps {
   initialSearchTerm?: string;
 }
@@ -39,6 +49,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const { initialSearchTerm = "" } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
+  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [topics, setTopics] = useState<TopicExtendedInfo[]>([]); // [topicInfo: TopicExtendedInfo]
@@ -49,6 +60,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [expandedFiltered, setExpandedFiltered] = useState<string[]>([]);
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | null>(null);
   const [selectedItem, setSelectedItem] = useState<string>("");
+  const [availableProviders, setAvailableProviders] = useState<TProviderDscription[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
     settingsCtx.get("avoidGroupWithOneItem") as string
@@ -58,6 +70,16 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
   }, [settingsCtx, settingsCtx.changed]);
+
+  function getAvailableProviders(): TProviderDscription[] {
+    return rosCtx.providers.map((item: Provider) => {
+      return { providerId: item.id, providerName: item.name() } as TProviderDscription;
+    });
+  }
+
+  useEffect(() => {
+    setAvailableProviders(getAvailableProviders());
+  }, []);
 
   function genKey(items: string[]): string {
     return `${items.join("#")}`;
@@ -71,17 +93,14 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
     if (rosCtx.mapProviderRosNodes) {
       // Get topics from the ros node list of each provider.
-      rosCtx.mapProviderRosNodes.forEach((nodeList, providerId) => {
+      rosCtx.mapProviderRosNodes.forEach((nodeList) => {
         nodeList.forEach((node) => {
           function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
-            const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type, providerId]));
+            const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
             if (topicInfo) {
-              topicInfo.add(rosTopic);
+              topicInfo.add(rosTopic, node);
             } else {
-              newTopicsMap.set(
-                genKey([rosTopic.name, rosTopic.msg_type, rosNode.providerId]),
-                new TopicExtendedInfo(rosTopic, rosNode.providerId, rosNode.providerName)
-              );
+              newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
             }
           }
 
@@ -114,9 +133,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
       const isMatch = findIn(newSearchTerm, [
         topic.name,
         topic.msgType,
-        topic.providerName,
-        ...topic.publishers.map((item: EndpointInfo) => item.node_id),
-        ...topic.subscribers.map((item: EndpointInfo) => item.node_id),
+        ...topic.publishers.map((item: EndpointExtendedInfo) => `${item.info.node_id} ${item.providerName}`),
+        ...topic.subscribers.map((item: EndpointExtendedInfo) => `${item.info.node_id} ${item.providerName}`),
       ]);
       return isMatch;
     });
@@ -127,6 +145,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   // Get topic list when mounting the component
   useEffect(() => {
     getTopicList();
+    setAvailableProviders(getAvailableProviders());
   }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
 
   // Initial filter when setting the topics
@@ -140,18 +159,17 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     const byPrefixP1 = new Map<string, { restNameSuffix: string; topicInfo: TopicExtendedInfo; isGroup: boolean }[]>();
     // create a map with simulated tree for the namespaces of the topic list
     topicsGroup.forEach((topicInfo) => {
-      const nameSuffix = topicInfo.id.slice(fullPrefix.length + 1);
+      const nameSuffix = topicInfo.name.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
-      const isGroup = restName.length > 1; // last value is the provider name
       if (restName.length > 0) {
         const restNameSuffix = restName.join("/");
         if (byPrefixP1.has(groupName)) {
-          byPrefixP1.get(groupName)?.push({ restNameSuffix, topicInfo, isGroup: isGroup });
+          byPrefixP1.get(groupName)?.push({ restNameSuffix, topicInfo, isGroup: true });
         } else {
-          byPrefixP1.set(groupName, [{ restNameSuffix, topicInfo, isGroup: isGroup }]);
+          byPrefixP1.set(groupName, [{ restNameSuffix, topicInfo, isGroup: true }]);
         }
       } else {
-        byPrefixP1.set(groupName, [{ restNameSuffix: "", topicInfo, isGroup: isGroup }]);
+        byPrefixP1.set(groupName, [{ restNameSuffix: "", topicInfo, isGroup: false }]);
       }
     });
 
@@ -216,11 +234,12 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           groupKeys: groupKeys,
           topicInfo: item.topicInfo,
         } as TTreeItem);
-        if (item.topicInfo.providerName !== groupName) {
-          // since the same topic can be on multiple provider
-          // we count only topics
-          count += 1;
-        }
+        count += 1;
+        // if (item.topicInfo.providerName !== groupName) {
+        //   // since the same topic can be on multiple provider
+        //   // we count only topics
+        //   count += 1;
+        // }
       });
     });
     return { topics: newFilteredTopics, count, groupKeys } as TTreeItem;
@@ -235,25 +254,40 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     }
   }, [filteredTopics, avoidGroupWithOneItem]);
 
-  function onEchoClick(topic: TopicExtendedInfo | null, external: boolean, openInTerminal: boolean = false): void {
+  function onEchoClick(
+    topic: TopicExtendedInfo | null,
+    external: boolean,
+    openInTerminal: boolean = false,
+    providerId: string = ""
+  ): void {
     if (topic) {
-      rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
+      const provId = providerId ? providerId : topic.publishers.length > 0 ? topic.publishers[0].providerId : "";
+      if (provId) {
+        rosCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
+      } else {
+        logCtx.warn("no publisher available");
+      }
     }
   }
 
-  function onPublishClick(topic: TopicExtendedInfo | null): void {
+  function onPublishClick(topic: TopicExtendedInfo | null, providerId: string = ""): void {
     if (topic) {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `publish-${topic.name}-${topic.providerId}`,
-          topic.name,
-          <TopicPublishPanel topicName={topic.name} providerId={topic.providerId} />,
-          true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(true, "publish")
-        )
-      );
+      const provId = providerId ? providerId : topic.subscribers.length > 0 ? topic.subscribers[0].providerId : "";
+      if (provId) {
+        emitCustomEvent(
+          EVENT_OPEN_COMPONENT,
+          eventOpenComponent(
+            `publish-${topic.name}-${provId}`,
+            topic.name,
+            <TopicPublishPanel topicName={topic.name} providerId={provId} />,
+            true,
+            LAYOUT_TAB_SETS.BORDER_RIGHT,
+            new LayoutTabConfig(true, "publish")
+          )
+        );
+      } else {
+        logCtx.warn("no subscriber available");
+      }
     }
   }
 
@@ -261,8 +295,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (treeItem.topicInfo) {
       return (
         <TopicTreeItem
-          key={genKey([treeItem.topicInfo.name, treeItem.topicInfo.msgType, treeItem.topicInfo.providerId])}
-          itemId={genKey([treeItem.topicInfo.name, treeItem.topicInfo.msgType, treeItem.topicInfo.providerId])}
+          key={genKey([treeItem.topicInfo.name, treeItem.topicInfo.msgType])}
+          itemId={genKey([treeItem.topicInfo.name, treeItem.topicInfo.msgType])}
           rootPath={rootPath}
           topicInfo={treeItem.topicInfo}
           selectedItem={selectedItem}
@@ -287,7 +321,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
   useEffect(() => {
     const selectedTopics = filteredTopics.filter((item) => {
-      return genKey([item.name, item.msgType, item.providerId]) === selectedItem;
+      return genKey([item.name, item.msgType]) === selectedItem;
     });
     if (selectedTopics?.length > 0) {
       setTopicForSelected(selectedTopics[0]);
@@ -327,6 +361,38 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             </IconButton>
           </span>
         </Tooltip>
+
+        <OverflowMenu
+          disabled={!topicForSelected}
+          icon={
+            <Tooltip
+              title="Echo with option to select the host on which the subscriber is to be started (shift+click for alternative open location)"
+              placement="left"
+              enterDelay={tooltipDelay}
+              // enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <ChatOutlinedIcon fontSize="inherit" />
+            </Tooltip>
+          }
+          size="medium"
+          sx={{ margin: 0 }}
+          options={availableProviders.map((item) => {
+            return {
+              name: item.providerName,
+              key: item.providerId,
+              onClick: async function (event?: React.MouseEvent): Promise<void> {
+                onEchoClick(
+                  topicForSelected,
+                  event?.nativeEvent.shiftKey || false,
+                  event?.nativeEvent.ctrlKey || false,
+                  item.providerId
+                );
+              },
+            };
+          })}
+          id={`echo-provider-menu-${topicForSelected?.name}`}
+        />
         <Tooltip
           title="Echo in Terminal"
           placement="left"
@@ -363,13 +429,65 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
                 onPublishClick(topicForSelected);
               }}
             >
-              <PlayCircleOutlineIcon fontSize="inherit" />
+              <SlideshowOutlinedIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>
+        <OverflowMenu
+          disabled={!topicForSelected}
+          icon={
+            <Tooltip
+              title="Publish with option to select the host on which the publisher is to be started"
+              placement="left"
+              enterDelay={tooltipDelay}
+              // enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <PlayCircleOutlineIcon fontSize="inherit" />
+            </Tooltip>
+          }
+          size="medium"
+          sx={{ margin: 0 }}
+          options={availableProviders.map((item) => {
+            return {
+              name: item.providerName,
+              key: item.providerId,
+              onClick: async function (): Promise<void> {
+                onPublishClick(topicForSelected, item.providerId);
+              },
+            };
+          })}
+          id={`echo-provider-menu-${topicForSelected?.name}`}
+        />
+        {/* <OverflowMenu
+          // disabled={!topicForSelected}
+          icon={
+            <Tooltip
+              title="Publish to a new topic with option to select the host on which the publisher is to be started"
+              placement="left"
+              enterDelay={tooltipDelay}
+              // enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <NotStartedOutlinedIcon fontSize="inherit" />
+            </Tooltip>
+          }
+          size="medium"
+          sx={{ margin: 0 }}
+          options={availableProviders.map((item) => {
+            return {
+              name: item.providerName,
+              key: item.providerId,
+              onClick: async function (): Promise<void> {
+                onPublishClick(topicForSelected, item.providerId);
+              },
+            };
+          })}
+          id={`echo-provider-menu-${topicForSelected?.name}`}
+        /> */}
       </ButtonGroup>
     );
-  }, [tooltipDelay, topicForSelected]);
+  }, [tooltipDelay, topicForSelected, availableProviders]);
 
   const createTreeView = useMemo(() => {
     return (

@@ -1,4 +1,11 @@
+import RosNode from "./RosNode";
 import RosTopic, { EndpointInfo } from "./RosTopic";
+
+export type EndpointExtendedInfo = {
+  info: EndpointInfo;
+  providerId: string;
+  providerName: string;
+};
 
 export default class TopicExtendedInfo {
   id: string;
@@ -7,42 +14,42 @@ export default class TopicExtendedInfo {
 
   msgType: string = "";
 
-  providerId: string = "";
+  publishers: EndpointExtendedInfo[] = [];
 
-  providerName: string = "";
+  subscribers: EndpointExtendedInfo[] = [];
 
-  publishers: EndpointInfo[] = [];
-
-  subscribers: EndpointInfo[] = [];
-
-  constructor(topic: RosTopic, providerId: string, providerName: string) {
-    this.id = `${topic.name}/${providerName}`;
+  constructor(topic: RosTopic, node: RosNode) {
+    this.id = `${topic.name}-${topic.msg_type}`;
     this.name = topic.name;
     this.msgType = topic.msg_type;
-    this.providerId = providerId;
-    this.providerName = providerName;
-    this.addPublishers(topic.publisher);
-    this.addSubscribers(topic.subscriber);
+    this.addPublishers(topic.publisher, node);
+    this.addSubscribers(topic.subscriber, node);
   }
 
-  addPublishers(publishers: EndpointInfo[]): void {
+  addPublishers(publishers: EndpointInfo[], node: RosNode): void {
     publishers.forEach((pub: EndpointInfo) => {
-      if (this.publishers.filter((item) => item.node_id === pub.node_id).length === 0) {
-        this.publishers.push(pub);
+      if (
+        this.publishers.filter((item) => item.info.node_id === pub.node_id && item.providerId === node.providerId)
+          .length === 0
+      ) {
+        this.publishers.push({ info: pub, providerId: node.providerId, providerName: node.providerName });
       }
     });
   }
 
-  addSubscribers(subscribers: EndpointInfo[]): void {
+  addSubscribers(subscribers: EndpointInfo[], node: RosNode): void {
     subscribers.forEach((sub: EndpointInfo) => {
-      if (this.subscribers.filter((item) => item.node_id === sub.node_id).length === 0) {
-        this.subscribers.push(sub);
+      if (
+        this.subscribers.filter((item) => item.info.node_id === sub.node_id && item.providerId === node.providerId)
+          .length === 0
+      ) {
+        this.subscribers.push({ info: sub, providerId: node.providerId, providerName: node.providerName });
       }
     });
   }
 
-  public add(topic: RosTopic): void {
-    this.addPublishers(topic.publisher);
-    this.addSubscribers(topic.subscriber);
+  public add(topic: RosTopic, node: RosNode): void {
+    this.addPublishers(topic.publisher, node);
+    this.addSubscribers(topic.subscriber, node);
   }
 }
