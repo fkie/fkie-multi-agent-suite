@@ -130,8 +130,8 @@ export default class WebsocketConnection extends ProviderConnection {
   /**
    * Subscribe a URI topic using current session
    *
-   * @param {string} uri - URI to subscribe for. (ex. 'ros.system.pong')
-   * @param {function} callback - Callback to be executed when new messages arrives.
+   * @param uri - URI to subscribe for. (ex. 'ros.system.pong')
+   * @param callback - Callback to be executed when new messages arrives.
    */
   subscribe: (uri: string, callback: (msg: JSONObject) => void) => Promise<TResult> = async (uri, callback) => {
     this.subscriptions[uri] = callback;
@@ -157,10 +157,14 @@ export default class WebsocketConnection extends ProviderConnection {
   /**
    * Make a request to remote server.
    *
-   * @param {string} uri - URI to call for. (ex. 'ros.system.ping')
-   * @param {Object} params - Arguments passed to the call
+   * @param uri - URI to call for. (ex. 'ros.system.ping')
+   * @param params - Arguments passed to the call
    */
-  call: (uri: string, params: unknown[]) => Promise<TResultData> = async (uri, params) => {
+  call: (uri: string, params: unknown[], timeout?: number) => Promise<TResultData> = async (
+    uri,
+    params,
+    timeout = 5000
+  ) => {
     return new Promise((resolve, reject) => {
       if (!this.connected()) reject(new Error(`[${this.uri}] socket not ready`));
 
@@ -174,18 +178,21 @@ export default class WebsocketConnection extends ProviderConnection {
 
       this.websocket?.send(JSON.stringify(message));
       this.queue[rpcId] = { promise: [resolve as never, reject] };
-      this.queue[rpcId].timeout = setTimeout(() => {
-        delete this.queue[rpcId];
-        reject(new Error(`[${this.uri}] reply timeout`));
-      }, this.timeout);
+      this.queue[rpcId].timeout = setTimeout(
+        () => {
+          delete this.queue[rpcId];
+          reject(new Error(`[${this.uri}] reply timeout`));
+        },
+        timeout ? timeout : this.timeout
+      );
     });
   };
 
   /**
    * publish to a URI topic using current session
    *
-   * @param {string} uri - URI to publish. (ex. 'ros.remote.ping')
-   * @param {object} payload - payload to be sent with request
+   * @param uri - URI to publish. (ex. 'ros.remote.ping')
+   * @param payload - payload to be sent with request
    */
   publish: (uri: string, payload: JSONObject) => Promise<TResult> = async (uri, payload) => {
     if (!this.connected()) {

@@ -1859,7 +1859,7 @@ export default class Provider implements IProvider {
    * Return a list with all registered parameters values and types
    */
   public getParameterList: () => Promise<RosParameter[]> = async () => {
-    const result = await this.makeCall("ros.parameters.get_list", [], true).then((value: TResultData) => {
+    const result = await this.makeCall("ros.parameters.get_list", [], true, 10000).then((value: TResultData) => {
       if (value.result) {
         const paramList: RosParameter[] = [];
         const parsed = value.data as RosParameter[];
@@ -1878,7 +1878,7 @@ export default class Provider implements IProvider {
    * Return a list with all registered parameters values and types for a list of nodes
    */
   public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> = async (nodes) => {
-    const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], false).then(
+    const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], false, 60000).then(
       (value: TResultData) => {
         if (value.result) {
           const paramList: RosParameter[] = [];
@@ -2169,80 +2169,78 @@ export default class Provider implements IProvider {
   /**
    * Execute a call considering [callAttempts] and [delayCallAttempts]
    */
-  private makeCall: (uri: string, args: unknown[], lockRequest: boolean) => Promise<TResultData> = async (
-    uri,
-    args,
-    lockRequest = true
-  ) => {
-    if (!this.isAvailable()) {
-      return {
-        result: false,
-        message: `[${this.name()}]: Ignoring request to: [${uri}], provider not yet connected!`,
-        data: null,
-      };
-    }
+  private makeCall: (uri: string, args: unknown[], lockRequest: boolean, timeout?: number) => Promise<TResultData> =
+    async (uri, args, lockRequest = true, timeout) => {
+      if (!this.isAvailable()) {
+        return {
+          result: false,
+          message: `[${this.name()}]: Ignoring request to: [${uri}], provider not yet connected!`,
+          data: null,
+        };
+      }
 
-    if (lockRequest && (await this.lockRequest(uri))) {
-      return {
-        result: false,
-        message: `[${this.name()}]: Ignoring request to: [${uri}] with ${JSON.stringify(args)}, request already running!`,
-        data: null,
-      };
-    }
-    const callRequest: (_uri: string, _args: unknown[], currentAttempt?: number) => Promise<TResultData> = async (
-      _uri,
-      _args,
-      currentAttempt = 0
-    ) => {
-      try {
-        const r = await this.connection.call(_uri, _args).catch((err) => {
-          // TODO
-          // this.logger?.warn(`failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`, '', false);
-          if (Object.keys(err).includes("result")) {
-            err.data = null;
-            return err;
-          }
-          return { result: false, message: err, data: null };
-        });
-        return r;
-      } catch (err) {
-        if (`${err}`.includes("{")) {
-          const errorObj = JSON.parse(`${err}`);
-          if (errorObj.error?.includes("wamp.error.runtime_error")) {
-            // do not re-try on runtime errors
+      if (lockRequest && (await this.lockRequest(uri))) {
+        return {
+          result: false,
+          message: `[${this.name()}]: Ignoring request to: [${uri}] with ${JSON.stringify(args)}, request already running!`,
+          data: null,
+        };
+      }
+      const callRequest: (
+        _uri: string,
+        _args: unknown[],
+        currentAttempt?: number,
+        _timeout?: number
+      ) => Promise<TResultData> = async (_uri, _args, currentAttempt = 0, _timeout) => {
+        try {
+          const r = await this.connection.call(_uri, _args, _timeout).catch((err) => {
+            // TODO
+            // this.logger?.warn(`failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`, '', false);
+            if (Object.keys(err).includes("result")) {
+              err.data = null;
+              return err;
+            }
+            return { result: false, message: err, data: null };
+          });
+          return r;
+        } catch (err) {
+          if (`${err}`.includes("{")) {
+            const errorObj = JSON.parse(`${err}`);
+            if (errorObj.error?.includes("wamp.error.runtime_error")) {
+              // do not re-try on runtime errors
+              this.unlockRequest(uri);
+              return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}`, data: null };
+            }
+          } else if (err === "Connection is closed") {
             this.unlockRequest(uri);
             return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}`, data: null };
           }
-        } else if (err === "Connection is closed") {
-          this.unlockRequest(uri);
-          return { result: false, message: `[${this.name()}]: request to [${uri}] failed: ${err}`, data: null };
-        }
-        if (currentAttempt >= this.callAttempts) {
-          this.unlockRequest(uri);
-          return {
-            result: false,
-            message: `[URI] (${uri}) [${this.name()}]: Max call attempts (${this.callAttempts}) reached!`,
-            data: null,
-          };
-        }
+          if (currentAttempt >= this.callAttempts) {
+            this.unlockRequest(uri);
+            return {
+              result: false,
+              message: `[URI] (${uri}) [${this.name()}]: Max call attempts (${this.callAttempts}) reached!`,
+              data: null,
+            };
+          }
 
-        // didn't work, wait and repeat
-        this.logger?.info(
-          `[URI] (${uri}) [${this.name()}]`,
-          `Waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
-          false
-        );
-        await delay(this.delayCallAttempts);
-        return callRequest(_uri, _args, currentAttempt + 1);
-      }
+          // didn't work, wait and repeat
+          this.logger?.info(
+            `[URI] (${uri}) [${this.name()}]`,
+            `Waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
+            false
+          );
+          await delay(this.delayCallAttempts);
+          return callRequest(_uri, _args, currentAttempt + 1, timeout);
+        }
+      };
+
+      const result = await callRequest(uri, args, undefined, timeout);
+      // const result = await this.connection.call(uri, args);
+      this.unlockRequest(uri);
+      this.logger?.debugInterface(uri, result, "", this.name());
+      return result;
     };
-
-    const result = await callRequest(uri, args);
-    // const result = await this.connection.call(uri, args);
-    this.unlockRequest(uri);
-    this.logger?.debugInterface(uri, result, "", this.name());
-    return result;
-  };
 
   private onCloseConnection: (state: ConnectionState, details: string) => void = (state, details) => {
     this.setConnectionState(state, details);
