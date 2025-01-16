@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <package format="3">
   <name>fkie_mas_gui</name>
-  <version>3.0.12</version>
+  <version>3.0.13</version>
   <description>
     Graphical interface to manage the running and
     configured ROS nodes on different hosts.

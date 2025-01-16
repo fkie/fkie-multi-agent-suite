@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.13 - 16.01.2025
+
+e3dbd5b fixed open external terminal with different terminal
+
 ## 3.0.12 - 16.01.2025
 
 Added a warning for the parameter list if there are many ROS nodes.
