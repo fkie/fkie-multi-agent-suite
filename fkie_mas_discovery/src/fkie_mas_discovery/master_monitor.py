@@ -980,8 +980,9 @@ class MasterMonitor:
     def get_node_list(self, forceRefresh: bool = False) -> str:
         Log.info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = []
-        if self.__master_state is not None:
-            node_list = self.__master_state.toJson()
+        with self._state_access_lock:
+            if self.__master_state is not None:
+                node_list = self.__master_state.toJson()
         return json.dumps(node_list, cls=SelfEncoder)
 
     def get_system_uri(self) -> str:
