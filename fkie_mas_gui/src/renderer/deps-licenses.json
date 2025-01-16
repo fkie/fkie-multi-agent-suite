@@ -11,72 +11,27 @@
     "installedVersion": "3.0.0",
     "author": "Alex Wei<https://github.com/alex8088>"
   },
-  {
-    "name": "@emotion/react",
-    "licenseType": "MIT",
-    "installedVersion": "11.14.0",
-    "author": "Emotion Contributors"
-  },
-  {
-    "name": "@emotion/styled",
-    "licenseType": "MIT",
-    "installedVersion": "11.14.0",
-    "author": "n/a"
-  },
-  {
-    "name": "@eslint/compat",
-    "licenseType": "Apache-2.0",
-    "installedVersion": "1.1.1",
-    "author": "Nicholas C. Zakas"
-  },
+  { "name": "@emotion/react", "licenseType": "MIT", "installedVersion": "11.14.0", "author": "Emotion Contributors" },
+  { "name": "@emotion/styled", "licenseType": "MIT", "installedVersion": "11.14.0", "author": "n/a" },
+  { "name": "@eslint/compat", "licenseType": "Apache-2.0", "installedVersion": "1.1.1", "author": "Nicholas C. Zakas" },
   {
     "name": "@monaco-editor/react",
     "licenseType": "MIT",
     "installedVersion": "4.6.0",
     "author": "Suren Atoyan <contact@surenatoyan.com>"
   },
-  {
-    "name": "@mui/icons-material",
-    "licenseType": "MIT",
-    "installedVersion": "6.3.1",
-    "author": "MUI Team"
-  },
-  {
-    "name": "@mui/material",
-    "licenseType": "MIT",
-    "installedVersion": "6.3.1",
-    "author": "MUI Team"
-  },
-  {
-    "name": "@mui/x-tree-view",
-    "licenseType": "MIT",
-    "installedVersion": "7.23.6",
-    "author": "MUI Team"
-  },
+  { "name": "@mui/icons-material", "licenseType": "MIT", "installedVersion": "6.3.1", "author": "MUI Team" },
+  { "name": "@mui/material", "licenseType": "MIT", "installedVersion": "6.3.1", "author": "MUI Team" },
+  { "name": "@mui/x-tree-view", "licenseType": "MIT", "installedVersion": "7.23.6", "author": "MUI Team" },
   {
     "name": "@react-hook/debounce",
     "licenseType": "MIT",
     "installedVersion": "4.0.0",
     "author": "Jared Lunde <jared.lunde@gmail.com>"
   },
-  {
-    "name": "@types/ssh2",
-    "licenseType": "MIT",
-    "installedVersion": "1.15.3",
-    "author": "n/a"
-  },
-  {
-    "name": "@typescript-eslint/eslint-plugin",
-    "licenseType": "MIT",
-    "installedVersion": "7.18.0",
-    "author": "n/a"
-  },
-  {
-    "name": "@typescript-eslint/parser",
-    "licenseType": "BSD-2-Clause",
-    "installedVersion": "7.18.0",
-    "author": "n/a"
-  },
+  { "name": "@types/ssh2", "licenseType": "MIT", "installedVersion": "1.15.3", "author": "n/a" },
+  { "name": "@typescript-eslint/eslint-plugin", "licenseType": "MIT", "installedVersion": "7.18.0", "author": "n/a" },
+  { "name": "@typescript-eslint/parser", "licenseType": "BSD-2-Clause", "installedVersion": "7.18.0", "author": "n/a" },
   {
     "name": "@xterm/addon-fit",
     "licenseType": "MIT",
@@ -107,42 +62,17 @@
     "installedVersion": "0.18.0",
     "author": "The xterm.js authors https://xtermjs.org/"
   },
-  {
-    "name": "@xterm/xterm",
-    "licenseType": "MIT",
-    "installedVersion": "5.5.0",
-    "author": "n/a"
-  },
-  {
-    "name": "electron-log",
-    "licenseType": "MIT",
-    "installedVersion": "5.2.4",
-    "author": "Alexey Prokhorov"
-  },
+  { "name": "@xterm/xterm", "licenseType": "MIT", "installedVersion": "5.5.0", "author": "n/a" },
+  { "name": "electron-log", "licenseType": "MIT", "installedVersion": "5.2.4", "author": "Alexey Prokhorov" },
   {
     "name": "electron-settings",
     "licenseType": "MIT",
     "installedVersion": "4.0.4",
     "author": "Nathan Buchar hello@nathanbuchar.com https://www.nathanbuchar.com"
   },
-  {
-    "name": "electron-updater",
-    "licenseType": "MIT",
-    "installedVersion": "6.3.9",
-    "author": "Vladimir Krivosheev"
-  },
-  {
-    "name": "eslint-plugin-react-hooks",
-    "licenseType": "MIT",
-    "installedVersion": "5.1.0",
-    "author": "n/a"
-  },
-  {
-    "name": "flexlayout-react",
-    "licenseType": "ISC",
-    "installedVersion": "0.7.15",
-    "author": "Caplin Systems Ltd"
-  },
+  { "name": "electron-updater", "licenseType": "MIT", "installedVersion": "6.3.9", "author": "Vladimir Krivosheev" },
+  { "name": "eslint-plugin-react-hooks", "licenseType": "MIT", "installedVersion": "5.1.0", "author": "n/a" },
+  { "name": "flexlayout-react", "licenseType": "ISC", "installedVersion": "0.7.15", "author": "Caplin Systems Ltd" },
   {
     "name": "hostile",
     "licenseType": "MIT",
@@ -155,42 +85,17 @@
     "installedVersion": "2.2.3",
     "author": "Aseem Kishore <aseem.kishore@gmail.com>"
   },
-  {
-    "name": "jtest",
-    "licenseType": "ISC",
-    "installedVersion": "0.0.1",
-    "author": "Jeffrey Liu"
-  },
+  { "name": "jtest", "licenseType": "ISC", "installedVersion": "0.0.1", "author": "Jeffrey Liu" },
   {
     "name": "notistack",
     "licenseType": "MIT",
     "installedVersion": "3.0.1",
     "author": "Hossein Dehnokhalaji hossein.dehnavi98@yahoo.com https://iamhosseindhv.com"
   },
-  {
-    "name": "react-app-polyfill",
-    "licenseType": "MIT",
-    "installedVersion": "3.0.0",
-    "author": "n/a"
-  },
-  {
-    "name": "react-custom-events",
-    "licenseType": "MIT",
-    "installedVersion": "1.1.1",
-    "author": "Harsh Rohila"
-  },
-  {
-    "name": "react-draggable",
-    "licenseType": "MIT",
-    "installedVersion": "4.4.6",
-    "author": "Matt Zabriskie"
-  },
-  {
-    "name": "react-file-icon",
-    "licenseType": "MIT",
-    "installedVersion": "1.5.0",
-    "author": "n/a"
-  },
+  { "name": "react-app-polyfill", "licenseType": "MIT", "installedVersion": "3.0.0", "author": "n/a" },
+  { "name": "react-custom-events", "licenseType": "MIT", "installedVersion": "1.1.1", "author": "Harsh Rohila" },
+  { "name": "react-draggable", "licenseType": "MIT", "installedVersion": "4.4.6", "author": "Matt Zabriskie" },
+  { "name": "react-file-icon", "licenseType": "MIT", "installedVersion": "1.5.0", "author": "n/a" },
   {
     "name": "react-json-tree",
     "licenseType": "MIT",
@@ -203,42 +108,23 @@
     "installedVersion": "6.28.1",
     "author": "Remix Software <hello@remix.run>"
   },
-  {
-    "name": "react-virtuoso",
-    "licenseType": "MIT",
-    "installedVersion": "4.12.3",
-    "author": "Petyo Ivanov"
-  },
+  { "name": "react-virtuoso", "licenseType": "MIT", "installedVersion": "4.12.3", "author": "Petyo Ivanov" },
   {
     "name": "react-window",
     "licenseType": "MIT",
     "installedVersion": "1.8.11",
     "author": "Brian Vaughn <brian.david.vaughn@gmail.com> (https://github.com/bvaughn/)"
   },
-  {
-    "name": "split-pane-react",
-    "licenseType": "MIT",
-    "installedVersion": "0.1.3",
-    "author": "yyllff"
-  },
-  {
-    "name": "ssh2",
-    "licenseType": "MIT",
-    "installedVersion": "1.16.0",
-    "author": "Brian White <mscdex@mscdex.net>"
-  },
+  { "name": "react18-json-view", "licenseType": "MIT", "installedVersion": "0.2.9-canary.9", "author": "Suni" },
+  { "name": "split-pane-react", "licenseType": "MIT", "installedVersion": "0.1.3", "author": "yyllff" },
+  { "name": "ssh2", "licenseType": "MIT", "installedVersion": "1.16.0", "author": "Brian White <mscdex@mscdex.net>" },
   {
     "name": "systeminformation",
     "licenseType": "MIT",
     "installedVersion": "5.25.8",
     "author": "Sebastian Hildebrandt <hildebrandt@plus-innovations.com> (https://plus-innovations.com)"
   },
-  {
-    "name": "uuid",
-    "licenseType": "MIT",
-    "installedVersion": "11.0.4",
-    "author": "n/a"
-  },
+  { "name": "uuid", "licenseType": "MIT", "installedVersion": "11.0.4", "author": "n/a" },
   {
     "name": "@electron-toolkit/eslint-config-prettier",
     "licenseType": "MIT",
@@ -257,48 +143,13 @@
     "installedVersion": "1.0.1",
     "author": "Alex Wei<https://github.com/alex8088>"
   },
-  {
-    "name": "@eslint/js",
-    "licenseType": "MIT",
-    "installedVersion": "9.17.0",
-    "author": "n/a"
-  },
-  {
-    "name": "@types/node",
-    "licenseType": "MIT",
-    "installedVersion": "20.17.12",
-    "author": "n/a"
-  },
-  {
-    "name": "@types/react",
-    "licenseType": "MIT",
-    "installedVersion": "18.3.18",
-    "author": "n/a"
-  },
-  {
-    "name": "@types/react-dom",
-    "licenseType": "MIT",
-    "installedVersion": "18.3.5",
-    "author": "n/a"
-  },
-  {
-    "name": "@vitejs/plugin-react",
-    "licenseType": "MIT",
-    "installedVersion": "4.3.4",
-    "author": "Evan You"
-  },
-  {
-    "name": "electron",
-    "licenseType": "MIT",
-    "installedVersion": "31.7.6",
-    "author": "Electron Community"
-  },
-  {
-    "name": "electron-builder",
-    "licenseType": "MIT",
-    "installedVersion": "24.13.3",
-    "author": "Vladimir Krivosheev"
-  },
+  { "name": "@eslint/js", "licenseType": "MIT", "installedVersion": "9.17.0", "author": "n/a" },
+  { "name": "@types/node", "licenseType": "MIT", "installedVersion": "20.17.12", "author": "n/a" },
+  { "name": "@types/react", "licenseType": "MIT", "installedVersion": "18.3.18", "author": "n/a" },
+  { "name": "@types/react-dom", "licenseType": "MIT", "installedVersion": "18.3.5", "author": "n/a" },
+  { "name": "@vitejs/plugin-react", "licenseType": "MIT", "installedVersion": "4.3.4", "author": "Evan You" },
+  { "name": "electron", "licenseType": "MIT", "installedVersion": "31.7.6", "author": "Electron Community" },
+  { "name": "electron-builder", "licenseType": "MIT", "installedVersion": "24.13.3", "author": "Vladimir Krivosheev" },
   {
     "name": "electron-vite",
     "licenseType": "MIT",
@@ -323,40 +174,10 @@
     "installedVersion": "15.14.0",
     "author": "Sindre Sorhus sindresorhus@gmail.com https://sindresorhus.com"
   },
-  {
-    "name": "prettier",
-    "licenseType": "MIT",
-    "installedVersion": "3.4.2",
-    "author": "James Long"
-  },
-  {
-    "name": "react",
-    "licenseType": "MIT",
-    "installedVersion": "18.3.1",
-    "author": "n/a"
-  },
-  {
-    "name": "react-dom",
-    "licenseType": "MIT",
-    "installedVersion": "18.3.1",
-    "author": "n/a"
-  },
-  {
-    "name": "typescript",
-    "licenseType": "Apache-2.0",
-    "installedVersion": "5.7.3",
-    "author": "Microsoft Corp."
-  },
-  {
-    "name": "typescript-eslint",
-    "licenseType": "MIT",
-    "installedVersion": "8.19.1",
-    "author": "n/a"
-  },
-  {
-    "name": "vite",
-    "licenseType": "MIT",
-    "installedVersion": "5.4.11",
-    "author": "Evan You"
-  }
+  { "name": "prettier", "licenseType": "MIT", "installedVersion": "3.4.2", "author": "James Long" },
+  { "name": "react", "licenseType": "MIT", "installedVersion": "18.3.1", "author": "n/a" },
+  { "name": "react-dom", "licenseType": "MIT", "installedVersion": "18.3.1", "author": "n/a" },
+  { "name": "typescript", "licenseType": "Apache-2.0", "installedVersion": "5.7.3", "author": "Microsoft Corp." },
+  { "name": "typescript-eslint", "licenseType": "MIT", "installedVersion": "8.19.1", "author": "n/a" },
+  { "name": "vite", "licenseType": "MIT", "installedVersion": "5.4.11", "author": "Evan You" }
 ]

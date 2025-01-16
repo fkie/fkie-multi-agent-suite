@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.11 - 16.01.2025
+
+Topic panel revised
+fixed: ros1 interface to mas gui
+
 ## 3.0.10 - 15.01.2025
 
 Changed json visualization to react18-json-view
