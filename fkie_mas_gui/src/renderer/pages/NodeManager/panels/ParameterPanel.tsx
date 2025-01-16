@@ -92,7 +92,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
         } else {
           provider.rosNodes.map((item) => {
             if (item.status === RosNodeStatus.RUNNING) {
-              newRootData.push({ provider: provider, rosNode: item, updateOnCreate: true } as TRootData);
+              newRootData.push({ provider: provider, rosNode: item, updateOnCreate: false } as TRootData);
             }
           });
         }

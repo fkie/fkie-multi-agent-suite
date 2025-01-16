@@ -57,6 +57,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   const [expandedFiltered, setExpandedFiltered] = useState<string[]>([itemId]);
   const [searched, setSearched] = useState<string>(filterText);
   const [selectedItem, setSelectedItem] = useState<string>("");
+  const [requesting, setRequesting] = useState<boolean>(false);
   const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
     settingsCtx.get("avoidGroupWithOneItem") as string
   );
@@ -97,6 +98,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       return;
     }
     setRosParameters(undefined);
+    setRequesting(true);
     const paramList: RosParameter[] = await (rosNode
       ? provider.getNodeParameters([rosNode.name])
       : provider.getParameterList());
@@ -109,11 +111,16 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     });
     setRosParameters(paramList);
     setRosParametersFiltered(filterParameters(searched, paramList));
+    setRequesting(false);
   }, [provider, rosNode, searched, setRosParameters, setRosParametersFiltered, filterParameters]);
 
   useEffect(() => {
     setTree(undefined);
-    if (updateOnCreate) {
+    if (
+      updateOnCreate ||
+      (forceReload && (searched.length < EXPAND_ON_SEARCH_MIN_CHARS || findIn(searched, [itemId])))
+    ) {
+      // if forceReload, check if this root is in filtered list
       getParameterList();
     }
   }, [forceReload]);
@@ -306,17 +313,17 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         icon={rosNode ? Label : ComputerIcon}
         providerName={provider.name()}
         countChildren={rosParameters ? rosParameters.length : 0}
-        requestData={rosParameters === undefined}
+        requestData={requesting}
       >
         {paramTreeToStyledItems(tree || [])}
       </ParameterGroupTreeItem>
     );
-  }, [tree]);
+  }, [tree, requesting]);
 
   return (
     <Box ref={ref}>
       <Stack direction="row" sx={{ flexGrow: 1 }}>
-        {(searched.length < EXPAND_ON_SEARCH_MIN_CHARS || (tree && tree.length > 0)) && (
+        {(searched.length < EXPAND_ON_SEARCH_MIN_CHARS || (tree && tree.length > 0) || findIn(searched, [itemId])) && (
           <SimpleTreeView
             aria-label="parameters"
             expandedItems={searched.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
