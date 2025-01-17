@@ -91,34 +91,37 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
     const newTopicsMap = new Map();
 
-    if (rosCtx.mapProviderRosNodes) {
-      // Get topics from the ros node list of each provider.
-      rosCtx.mapProviderRosNodes.forEach((nodeList) => {
-        nodeList.forEach((node) => {
-          function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
-            const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
-            if (topicInfo) {
-              topicInfo.add(rosTopic, node);
-            } else {
-              newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
-            }
+    // Get topics from the ros node list of each provider.
+    rosCtx.providers.forEach((provider) => {
+      provider.rosTopics.forEach((topic: RosTopic) => {
+        function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
+          const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
+          if (topicInfo) {
+            topicInfo.add(rosTopic, rosNode);
+          } else {
+            newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
           }
-
-          node.publishers.forEach((topic) => {
-            addTopic(topic, node);
-          });
-          node.subscribers.forEach((topic) => {
-            addTopic(topic, node);
-          });
+        }
+        topic.publisher.forEach((pub) => {
+          const rosNode = provider.rosNodes.find((node: RosNode) => node.id === pub.node_id);
+          if (rosNode) {
+            addTopic(topic, rosNode);
+          }
+        });
+        topic.subscriber.forEach((sub) => {
+          const rosNode = provider.rosNodes.find((node: RosNode) => node.id === sub.node_id);
+          if (rosNode) {
+            addTopic(topic, rosNode);
+          }
         });
       });
-      // sort topics by name
-      const newTopics = Array.from(newTopicsMap.values());
-      newTopics.sort(function (a, b) {
-        return a.name.localeCompare(b.name);
-      });
-      setTopics(newTopics);
-    }
+    });
+    // sort topics by name
+    const newTopics = Array.from(newTopicsMap.values());
+    newTopics.sort(function (a, b) {
+      return a.name.localeCompare(b.name);
+    });
+    setTopics(newTopics);
   }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
 
   // debounced search callback

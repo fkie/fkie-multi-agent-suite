@@ -14,13 +14,14 @@ export enum EMenuService {
 
 interface OverflowMenuServiceProps {
   serviceName: string;
+  serviceType: string;
   providerId: string;
-  onClick: (type: EMenuService, topic: string, providerId: string) => void;
+  onClick: (type: EMenuService, service: string, serviceType: string, providerId: string) => void;
 }
 
 const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>(
   function OverflowMenuService(props, ref) {
-    const { serviceName, providerId, onClick } = props;
+    const { serviceName, serviceType, providerId, onClick } = props;
 
     const createMenu = useMemo(() => {
       return (
@@ -37,7 +38,7 @@ const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>
               ),
               key: `info-${serviceName}`,
               onClick: (): void => {
-                onClick(EMenuService.INFO, serviceName, providerId);
+                onClick(EMenuService.INFO, serviceName, serviceType, providerId);
               },
             },
             {
@@ -49,7 +50,7 @@ const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>
               ),
               key: `service-call-${serviceName}`,
               onClick: (): void => {
-                onClick(EMenuService.SERVICE_CALL, serviceName, providerId);
+                onClick(EMenuService.SERVICE_CALL, serviceName, serviceType, providerId);
               },
             },
             {
@@ -61,7 +62,7 @@ const OverflowMenuService = forwardRef<HTMLDivElement, OverflowMenuServiceProps>
               ),
               key: `clipboard-${serviceName}`,
               onClick: (): void => {
-                onClick(EMenuService.clipboard, serviceName, providerId);
+                onClick(EMenuService.clipboard, serviceName, serviceType, providerId);
               },
             },
           ]}

@@ -19,27 +19,27 @@ import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } fro
 import JsonView from "react18-json-view";
 import { SearchBar } from "../../../components";
 import { colorFromHostname } from "../../../components/UI/Colors";
-import { RosContext } from "../../../context/RosContext";
 import LoggingContext from "../../../context/LoggingContext";
+import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
-import { LaunchCallService, rosMessageStructToString, RosNode, TRosMessageStruct } from "../../../models";
+import { LaunchCallService, rosMessageStructToString, TRosMessageStruct } from "../../../models";
 import InputElements from "./MessageDialogPanel/InputElements";
 
 interface ServiceCallerPanelProps {
   serviceName: string;
+  serviceType: string;
   providerId: string;
 }
 
 const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(function ServiceCallerPanel(props, ref) {
-  const { serviceName, providerId } = props;
+  const { serviceName, serviceType, providerId } = props;
 
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
   const [history, setHistory] = useLocalStorage(`ServiceStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
   const rosCtx = useContext(RosContext);
-  const [serviceType, setServiceType] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceStruct, setServiceStruct] = useState<TRosMessageStruct>();
   const [serviceStructOrg, setServiceStructOrg] = useState<TRosMessageStruct>();
@@ -106,21 +106,10 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   const getServiceStructData = useCallback(async () => {
     if (serviceName) {
       const newProvider = rosCtx.getProviderById(providerId);
-      if (newProvider && rosCtx.mapProviderRosNodes) {
+      if (newProvider) {
         setProvider(newProvider);
-        let srvType = "";
-        // Get messageType from node list of the provider
-        const nodeList: RosNode[] | undefined = rosCtx.mapProviderRosNodes.get(providerId);
-        nodeList?.forEach((node) => {
-          node.services.forEach((service) => {
-            if (srvType === "" && serviceName === service.name) {
-              srvType = service.srv_type;
-            }
-          });
-        });
-        if (srvType) {
-          setServiceType(srvType);
-          const srvStruct = await newProvider.getServiceStruct(srvType);
+        if (serviceType) {
+          const srvStruct = await newProvider.getServiceStruct(serviceType);
           if (srvStruct) {
             setServiceStructOrg(srvStruct.data);
             setServiceStruct(srvStruct.data);
@@ -128,7 +117,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
               <InputElements
                 key={srvStruct.data.type}
                 messageStruct={srvStruct.data}
-                parentName={srvStruct.data.type ? srvStruct.data.type : `${serviceName}[${srvType}]`}
+                parentName={srvStruct.data.type ? srvStruct.data.type : `${serviceName}[${serviceType}]`}
                 filterText={searchTerm}
                 onCopyToClipboard={onCopyToClipboard}
               />
@@ -137,7 +126,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
         }
       }
     }
-  }, [serviceName, providerId, rosCtx.mapProviderRosNodes, rosCtx]);
+  }, [serviceName, providerId, rosCtx]);
 
   // debounced filter callback
   const onUpdateInputElements = useDebounceCallback((searchText) => {

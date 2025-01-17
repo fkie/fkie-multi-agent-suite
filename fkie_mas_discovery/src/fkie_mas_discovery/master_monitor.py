@@ -44,6 +44,9 @@ from .master_info import MasterInfo
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import RosService
+from fkie_mas_pylib.interface.runtime_interface import RosTopic
+from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
 from fkie_mas_pylib.interface.runtime_interface import SystemWarning
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
@@ -180,6 +183,7 @@ class MasterMonitor:
         self._screen_nodes_set = set()
         self._sceen_json_msg: List[ScreensMapping] = []
 
+        self.ts_updated = 0
         self._master_errors = list()
         # Create an XML-RPC server
         self.ready = False
@@ -244,13 +248,14 @@ class MasterMonitor:
             self.wsClient.register("ros.screen.get_list", self.getScreenList)
             self.wsClient.register("ros.provider.get_list", self.getProviderList)
             self.wsClient.register("ros.nodes.get_list", self.get_node_list)
+            self.wsClient.register("ros.nodes.get_services", self.get_service_list)
+            self.wsClient.register("ros.nodes.get_topics", self.get_topic_list)
             self.wsClient.register("ros.nodes.stop_node", self.stop_node)
             self.wsClient.register("ros.subscriber.stop", self.stop_subscriber)
             self.wsClient.register("ros.provider.get_timestamp", self.getProviderTimestamp)
             self.wsClient.register("ros.provider.get_warnings", self.get_provider_warnings)
             self.wsClient.register("ros.system.get_uri", self.get_system_uri)
-            self.wsClient.register("ros.nodes.unregister",self.unregister_node)
-
+            self.wsClient.register("ros.nodes.unregister", self.unregister_node)
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
@@ -930,6 +935,7 @@ class MasterMonitor:
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
             if result and self.connect_server:
+                self.ts_updated = time.time()
                 result = {"timestamp": self.__new_master_state.timestamp}
                 self.wsClient.publish('ros.nodes.changed', result)
                 self._screen_do_check = True
@@ -979,12 +985,34 @@ class MasterMonitor:
             self._json_warning_groups.values()), cls=SelfEncoder)
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
-        Log.info('Request to [ros.nodes.get_list]')
+        Log.info(f'Request to [ros.nodes.get_list]; forceRefresh(ignored): {forceRefresh}')
         node_list: List[RosNode] = []
         with self._state_access_lock:
             if self.__master_state is not None:
                 node_list = self.__master_state.toJson()
-        return json.dumps(node_list, cls=SelfEncoder)
+        result = json.dumps(node_list, cls=SelfEncoder)
+        Log.info(f"Node status size: {sys.getsizeof(result) / 1024 / 1024:,.4f} Mbit")
+        return result
+
+    def get_service_list(self, filter: List[RosTopicId] = []) -> str:
+        Log.info(f'Request to [ros.nodes.get_services]; filter: {filter}')
+        service_list: List[RosService] = []
+        with self._state_access_lock:
+            if self.__master_state is not None:
+                service_list = self.__master_state.toJsonServices(filter)
+        result = json.dumps(service_list, cls=SelfEncoder)
+        Log.info(f"Services status size: {sys.getsizeof(result) / 1024 / 1024:,.4f} Mbit")
+        return result
+
+    def get_topic_list(self, filter: List[RosTopicId] = []) -> str:
+        Log.info(f'Request to [ros.nodes.get_topics]; filter: {filter}')
+        topic_list: List[RosTopic] = []
+        with self._state_access_lock:
+            if self.__master_state is not None:
+                topic_list = self.__master_state.toJsonTopics(filter)
+        result = json.dumps(topic_list, cls=SelfEncoder)
+        Log.info(f"Topics status size: {sys.getsizeof(result) / 1024 / 1024:,.4f} Mbit")
+        return result
 
     def get_system_uri(self) -> str:
         Log.info('Request to [ros.system.get_uri]')
@@ -1123,7 +1151,6 @@ class MasterMonitor:
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self._screen_json_msg, cls=SelfEncoder)
 
-
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
         if not self.connect_server:
@@ -1147,4 +1174,3 @@ class MasterMonitor:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
-    

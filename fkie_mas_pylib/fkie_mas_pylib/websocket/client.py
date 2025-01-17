@@ -45,6 +45,8 @@ class WebSocketClient:
 
     def shutdown(self) -> None:
         self._shutdown = True
+        if self.connection:
+            self.connection.close()
 
     def subscribe(self, uri: str, callback: Callable[[Any], None]) -> None:
         self.subscriptions[uri] = callback
@@ -114,7 +116,8 @@ class WebSocketClient:
                         import traceback
                         print(traceback.format_exc())
                     except websockets.exceptions.ConnectionClosedError as recv_error:
-                        Log.warn(f"websocket connection 'ws: // localhost: {self.port}' closed while recv: {recv_error}")
+                        Log.warn(
+                            f"websocket connection 'ws: // localhost: {self.port}' closed while recv: {recv_error}")
                     except Exception:
                         import traceback
                         print(traceback.format_exc())
@@ -125,8 +128,6 @@ class WebSocketClient:
                 if self._conn_try == 0:
                     Log.warn(f"{cr_error}")
             except Exception as error:
-                import traceback
-                print(traceback.format_exc())
                 if self._conn_try == 0:
                     import traceback
                     print(traceback.format_exc())

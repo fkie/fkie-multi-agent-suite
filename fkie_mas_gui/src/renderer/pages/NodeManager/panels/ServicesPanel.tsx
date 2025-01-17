@@ -1,5 +1,6 @@
 import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
-import { RosNode, ServiceExtendedInfo } from "@/renderer/models";
+import { RosService, ServiceExtendedInfo } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -62,31 +63,30 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   const getServiceList = useCallback(async () => {
     // Get services from the ros node list of each provider.
     const newServicesMap = new Map();
-    rosCtx.mapProviderRosNodes.forEach((nodeList: RosNode[]) => {
-      nodeList.forEach((node) => {
-        node.services.forEach((service) => {
-          const key = genKey([node.providerId, service.name, service.srv_type]);
-          const serviceInfo = newServicesMap.get(key);
-          if (serviceInfo) {
-            service.provider.map((item) => {
-              serviceInfo.addProvider(item.split("-")[0], item);
-            });
-            service.requester.map((item) => {
-              serviceInfo.addRequester(item.split("-")[0], item);
-            });
-          } else {
-            const serviceInfo = new ServiceExtendedInfo(service, node.providerId, node.providerName);
-            service.provider.map((item) => {
-              serviceInfo.addProvider(item.split("-")[0], item);
-            });
-            service.requester.map((item) => {
-              serviceInfo.addRequester(item.split("-")[0], item);
-            });
-            newServicesMap.set(key, serviceInfo);
-          }
-        });
+    rosCtx.providers.forEach((provider: Provider) => {
+      provider.rosServices.forEach((service: RosService) => {
+        const key = genKey([provider.id, service.name, service.srv_type]);
+        const serviceInfo = newServicesMap.get(key);
+        if (serviceInfo) {
+          service.provider.map((item) => {
+            serviceInfo.addProvider(item.split("-")[0], item);
+          });
+          service.requester.map((item) => {
+            serviceInfo.addRequester(item.split("-")[0], item);
+          });
+        } else {
+          const serviceInfo = new ServiceExtendedInfo(service, provider.id, provider.name());
+          service.provider.map((item) => {
+            serviceInfo.addProvider(item.split("-")[0], item);
+          });
+          service.requester.map((item) => {
+            serviceInfo.addRequester(item.split("-")[0], item);
+          });
+          newServicesMap.set(key, serviceInfo);
+        }
       });
     });
+
     const newServices: ServiceExtendedInfo[] = Array.from(newServicesMap.values());
     newServices.sort(function (a, b) {
       return a.name.localeCompare(b.name);
@@ -134,7 +134,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
       eventOpenComponent(
         `call-service-${service.name}-${service.providerId}}`,
         `Call Service - ${service.name}`,
-        <ServiceCallerPanel serviceName={service.name} providerId={service.providerId} />,
+        <ServiceCallerPanel serviceName={service.name} serviceType={service.srvType} providerId={service.providerId} />,
         true,
         LAYOUT_TAB_SETS.BORDER_RIGHT,
         new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)

@@ -23,7 +23,7 @@ import { NavigationContext } from "../../../context/NavigationContext";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
-import { RosNode, RosNodeStatus, RosTopic, getDiagnosticLevelName, getFileName } from "../../../models";
+import { RosNode, RosNodeStatus, RosTopic, RosTopicId, getDiagnosticLevelName, getFileName } from "../../../models";
 import { generateUniqueId } from "../../../utils";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
@@ -34,7 +34,7 @@ import ServicesPanel from "./ServicesPanel";
 import TopicPublishPanel from "./TopicPublishPanel";
 import TopicsPanel from "./TopicsPanel";
 
-function compareTopics(a: RosTopic, b: RosTopic): number {
+function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): number {
   if (a.name < b.name) {
     return -1;
   }
@@ -134,7 +134,7 @@ export default function NodesDetailsPanel(): JSX.Element {
     rosCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
   }
 
-  function onServiceClick(rosServiceType: EMenuService, service: string, providerId: string): void {
+  function onServiceClick(rosServiceType: EMenuService, service: string, msgType: string, providerId: string): void {
     if (rosServiceType === EMenuService.clipboard) {
       if (navigator && navigator.clipboard) {
         navigator.clipboard.writeText(service);
@@ -148,7 +148,7 @@ export default function NodesDetailsPanel(): JSX.Element {
         eventOpenComponent(
           `call-service-${generateUniqueId()}`,
           service,
-          <ServiceCallerPanel serviceName={service} providerId={providerId} />,
+          <ServiceCallerPanel serviceName={service} serviceType={msgType} providerId={providerId} />,
           true,
           LAYOUT_TAB_SETS.BORDER_RIGHT,
           new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
@@ -187,6 +187,7 @@ export default function NodesDetailsPanel(): JSX.Element {
 
   const createNodeDetailsView = useMemo(() => {
     const result = nodesShow.map((node: RosNode) => {
+      const provider = rosCtx.getProviderById(node.providerId);
       return (
         <Stack
           key={node.idGlobal}
@@ -335,10 +336,10 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
                       Subscribed Topics:
-                      {` [${node.subscribers.size}]`}
+                      {` [${node.subscribers.length}]`}
                     </Box>
                   </Typography>
-                  {node.subscribers.size > 0 && (
+                  {node.subscribers.length > 0 && (
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
                         <TableBody>
@@ -353,24 +354,29 @@ export default function NodesDetailsPanel(): JSX.Element {
                                       topicName={topic.name}
                                       providerId={node.providerId}
                                     />
-                                    {showConnections && (
-                                      <Stack direction="row">
-                                        <Chip
-                                          size="small"
-                                          title="publishers"
-                                          // showZero={true}
-                                          color={topic.publisher.length === 0 ? "warning" : "default"}
-                                          label={topic.publisher.length}
-                                        />
-                                        <Chip
-                                          size="small"
-                                          title="subscribers"
-                                          // showZero={true}
-                                          color={topic.subscriber.length > 0 ? "default" : "warning"}
-                                          label={topic.subscriber.length}
-                                        />
-                                      </Stack>
-                                    )}
+                                    {showConnections &&
+                                      provider?.rosTopics
+                                        .filter((item) => item.name === topic.name && item.msg_type === topic.msg_type)
+                                        .map((rt: RosTopic) => {
+                                          return (
+                                            <Stack key={`pub-sub-${rt.name}`} direction="row">
+                                              <Chip
+                                                size="small"
+                                                title="publishers"
+                                                // showZero={true}
+                                                color={rt.publisher.length === 0 ? "warning" : "default"}
+                                                label={rt.publisher.length}
+                                              />
+                                              <Chip
+                                                size="small"
+                                                title="subscribers"
+                                                // showZero={true}
+                                                color={rt.subscriber.length > 0 ? "default" : "warning"}
+                                                label={rt.subscriber.length}
+                                              />
+                                            </Stack>
+                                          );
+                                        })}
                                     <Button
                                       size="small"
                                       style={{
@@ -408,70 +414,71 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
                       Published topics:
-                      {` [${node.publishers.size}]`}
+                      {` [${node.publishers.length}]`}
                     </Box>
                   </Typography>
-                  {node.publishers.size > 0 && (
+                  {node.publishers.length > 0 && (
                     // useZebraStyles={false}>
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
                         <TableBody>
-                          {Array.from(node.publishers.values())
-                            .sort(compareTopics)
-                            .map((topic) => (
-                              <TableRow key={topic.name}>
-                                <TableCell style={{ padding: 0 }}>
-                                  <Stack direction="row" alignItems="center" spacing={0}>
-                                    <OverflowMenuTopic
-                                      onClick={onTopicClick}
-                                      topicName={topic.name}
-                                      providerId={node.providerId}
-                                    />
-
-                                    {showConnections && (
-                                      <Stack direction="row">
-                                        <Chip
-                                          size="small"
-                                          title="publishers"
-                                          // showZero={true}
-                                          color="default"
-                                          label={topic.publisher.length}
-                                        />
-
-                                        <Chip
-                                          size="small"
-                                          title="subscribers"
-                                          // showZero={true}
-                                          color={topic.subscriber.length > 0 ? "default" : "warning"}
-                                          label={topic.subscriber.length}
-                                        />
-                                      </Stack>
-                                    )}
-                                    <Button
-                                      size="small"
-                                      style={{
-                                        marginLeft: 1,
-                                        textTransform: "none",
-                                        justifyContent: "left",
-                                      }}
-                                      onClick={(event) => {
-                                        onTopicClick(
-                                          event.nativeEvent.ctrlKey && !event.nativeEvent.shiftKey
-                                            ? EMenuTopic.PUBLISH
-                                            : EMenuTopic.ECHO,
-                                          topic.name,
-                                          node.providerId,
-                                          event.nativeEvent.shiftKey,
-                                          event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
+                          {node.publishers.sort(compareTopics).map((topic) => (
+                            <TableRow key={topic.name}>
+                              <TableCell style={{ padding: 0 }}>
+                                <Stack direction="row" alignItems="center" spacing={0}>
+                                  <OverflowMenuTopic
+                                    onClick={onTopicClick}
+                                    topicName={topic.name}
+                                    providerId={node.providerId}
+                                  />
+                                  {showConnections &&
+                                    provider?.rosTopics
+                                      .filter((item) => item.name === topic.name && item.msg_type === topic.msg_type)
+                                      .map((rt: RosTopic) => {
+                                        return (
+                                          <Stack key={`pub-sub-${rt.name}`} direction="row">
+                                            <Chip
+                                              size="small"
+                                              title="publishers"
+                                              // showZero={true}
+                                              color="default"
+                                              label={rt.publisher.length}
+                                            />
+                                            <Chip
+                                              size="small"
+                                              title="subscribers"
+                                              // showZero={true}
+                                              color={rt.subscriber.length > 0 ? "default" : "warning"}
+                                              label={rt.subscriber.length}
+                                            />
+                                          </Stack>
                                         );
-                                      }}
-                                    >
-                                      {`${topic.name}`}
-                                    </Button>
-                                  </Stack>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                                      })}
+                                  <Button
+                                    size="small"
+                                    style={{
+                                      marginLeft: 1,
+                                      textTransform: "none",
+                                      justifyContent: "left",
+                                    }}
+                                    onClick={(event) => {
+                                      onTopicClick(
+                                        event.nativeEvent.ctrlKey && !event.nativeEvent.shiftKey
+                                          ? EMenuTopic.PUBLISH
+                                          : EMenuTopic.ECHO,
+                                        topic.name,
+                                        node.providerId,
+                                        event.nativeEvent.shiftKey,
+                                        event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
+                                      );
+                                    }}
+                                  >
+                                    {`${topic.name}`}
+                                  </Button>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))}
                         </TableBody>
                       </Table>
                     </TableContainer>
@@ -484,21 +491,22 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
                       Available Services:
-                      {` [${Array.from(node.services.values()).length}]`}
+                      {` [${node.services.length}]`}
                     </Box>
                   </Typography>
 
-                  {Array.from(node.services.values()).length > 0 && (
+                  {node.services.length > 0 && (
                     <TableContainer component={Paper}>
                       <Table size="small" aria-label="a dense table">
                         <TableBody>
-                          {Array.from(node.services.values()).map((service) => (
-                            <TableRow key={service.name}>
+                          {node.services.map((service) => (
+                            <TableRow key={`${service.name}#${service.msg_type}`}>
                               <TableCell style={{ padding: 0 }}>
                                 <Stack direction="row" spacing={1}>
                                   <OverflowMenuService
                                     onClick={onServiceClick}
                                     serviceName={service.name}
+                                    serviceType={service.msg_type}
                                     providerId={node.providerId}
                                   />
 
@@ -510,7 +518,12 @@ export default function NodesDetailsPanel(): JSX.Element {
                                       justifyContent: "left",
                                     }}
                                     onClick={() =>
-                                      onServiceClick(EMenuService.SERVICE_CALL, service.name, node.providerId)
+                                      onServiceClick(
+                                        EMenuService.SERVICE_CALL,
+                                        service.name,
+                                        service.msg_type,
+                                        node.providerId
+                                      )
                                     }
                                   >
                                     {`${service.name}`}

@@ -27,6 +27,7 @@ from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import RosProvider
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
+from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.interface.runtime_interface import RosService
 from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
 from fkie_mas_pylib.interface.launch_interface import LaunchContent
@@ -53,6 +54,8 @@ class RosStateServicer:
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_node_list: List[RosNode] = None
+        self._ros_service_dict: Dict[str, RosService] = {}
+        self._ros_topic_dict: Dict[str, RosTopic] = {}
         self._ros_node_list_mutex = threading.RLock()
         self.service_name_get_p = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/get_participants"
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
@@ -69,6 +72,8 @@ class RosStateServicer:
         self.websocket = websocket
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
+        websocket.register("ros.nodes.get_services", self.get_service_list)
+        websocket.register("ros.nodes.get_topics", self.get_topic_list)
         websocket.register("ros.nodes.get_loggers", self.get_loggers)
         websocket.register("ros.nodes.set_logger_level", self.set_logger_level)
         websocket.register("ros.nodes.stop_node", self.stop_node)
@@ -152,6 +157,8 @@ class RosStateServicer:
                 with self._ros_node_list_mutex:
                     # set status only with lock, as this method runs in a thread
                     self._ros_node_list = state
+                    self._ros_service_dict = self._state_jsonify.get_services()
+                    self._ros_topic_dict = self._state_jsonify.get_topics()
                     self._ts_state_notified = ts_start_update
                     self.websocket.publish('ros.nodes.changed', {"timestamp": ts_start_update})
 
@@ -222,8 +229,27 @@ class RosStateServicer:
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
-        node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
-        return json.dumps(node_list, cls=SelfEncoder)
+        with self._ros_node_list_mutex:
+            node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
+            return json.dumps(node_list, cls=SelfEncoder)
+
+    def get_service_list(self, filter: List[RosTopicId] = []) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_services]")
+        with self._ros_node_list_mutex:
+            result: List[RosService] = []
+            for id, service in self._ros_service_dict.items():
+                if len(filter) == 0 or str(id) in filter:
+                    result.append(service)
+            return json.dumps(result, cls=SelfEncoder)
+
+    def get_topic_list(self, filter: List[RosTopicId] = []) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_topics]")
+        with self._ros_node_list_mutex:
+            result: List[RosTopic] = []
+            for id, topic in self._ros_topic_dict.items():
+                if len(filter) == 0 or str(id) in filter:
+                    result.append(topic)
+            return json.dumps(result, cls=SelfEncoder)
 
     def get_loggers(self, name: str) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', not implemented")
@@ -308,18 +334,22 @@ class RosStateServicer:
         if self._ros_node_list is None or forceRefresh:
             self._force_refresh = True
             self._ros_node_list = []
+            self._ros_service_dict = {}
+            self._ros_topic_dict = {}
         return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
-        node_list: List[RosNode] = self._get_ros_node_list()
-        for node in node_list:
-            if node_name == node.name:
-                return node
-        return None
+        with self._ros_node_list_mutex:
+            node_list: List[RosNode] = self._get_ros_node_list()
+            for node in node_list:
+                if node_name == node.name:
+                    return node
+            return None
 
     def get_ros_node_by_id(self, node_id: str) -> Union[RosNode, None]:
-        node_list: List[RosNode] = self._get_ros_node_list()
-        for node in node_list:
-            if node_id == node.id:
-                return node
-        return None
+        with self._ros_node_list_mutex:
+            node_list: List[RosNode] = self._get_ros_node_list()
+            for node in node_list:
+                if node_id == node.id:
+                    return node
+            return None

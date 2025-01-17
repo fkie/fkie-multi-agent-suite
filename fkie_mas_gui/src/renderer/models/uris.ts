@@ -6,6 +6,8 @@ const URI = {
   ROS_FILE_GET: "ros.file.get",
   ROS_FILE_SAVE: "ros.file.save",
   ROS_NODES_GET_LIST: "ros.nodes.get_list",
+  ROS_NODES_GET_SERVICES: "ros.nodes.get_services",
+  ROS_NODES_GET_TOPICS: "ros.nodes.get_topics",
   ROS_NODES_CHANGED: "ros.nodes.changed",
   ROS_PROVIDER_LIST: "ros.provider.list",
   ROS_PROVIDER_GET_LIST: "ros.provider.get_list",

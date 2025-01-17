@@ -34,6 +34,7 @@ import {
   RosParameter,
   RosService,
   RosTopic,
+  RosTopicId,
   ScreensMapping,
   SubscriberEvent,
   SubscriberFilter,
@@ -160,6 +161,8 @@ export default class Provider implements IProvider {
   launchFiles: LaunchContent[] = [];
 
   rosNodes: RosNode[] = [];
+  rosServices: RosService[] = [];
+  rosTopics: RosTopic[] = [];
 
   /** List of nodes with same GUID */
   sameIdDict: { [guid: string]: string[] } = {};
@@ -731,9 +734,9 @@ export default class Provider implements IProvider {
       pid: number;
       masteruri: string;
       location: string;
-      publishers: RosTopic[];
-      subscribers: RosTopic[];
-      services: RosService[];
+      publishers: RosTopicId[];
+      subscribers: RosTopicId[];
+      services: RosTopicId[];
       screens: string[];
       system_node: boolean;
       guid: string | null;
@@ -797,22 +800,9 @@ export default class Provider implements IProvider {
                 return { label: item[0], id: item[1] };
               });
             }
-            // Add Array elements
-            n.publishers.forEach((s: RosTopic) => {
-              rn.publishers.set(s.name, new RosTopic(s.name, s.msg_type, s.publisher, s.subscriber, s.id));
-            });
-
-            n.subscribers.forEach((s: RosTopic) => {
-              rn.subscribers.set(s.name, new RosTopic(s.name, s.msg_type, s.publisher, s.subscriber, s.id));
-            });
-
-            n.services.forEach((s: RosService) => {
-              rn.services.set(
-                s.name,
-                new RosService(s.name, s.srv_type, s.masteruri, s.service_API_URI, s.provider, s.location, s.requester)
-              );
-            });
-
+            rn.publishers = n.publishers;
+            rn.subscribers = n.subscribers;
+            rn.services = n.services;
             // add screens
             // TODO: Filter screens that belongs to the same master URI
             rn.screens = n.screens;
@@ -832,6 +822,40 @@ export default class Provider implements IProvider {
     }
 
     return Promise.resolve([]);
+  };
+
+  public getTopic(id: RosTopicId): RosTopic | undefined {
+    return this.rosTopics.find((item) => item.name === id.name && item.msg_type === id.msg_type);
+  }
+
+  /**
+   * Get list of available service using the uri URI.ROS_NODES_GET_SERVICES
+   */
+  public getServiceList: (filter: RosTopicId[]) => Promise<RosService[]> = async (filter = []) => {
+    const rawSrvList = await this.makeCall(URI.ROS_NODES_GET_SERVICES, [filter], true).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as unknown as RosService[];
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getServiceList()`, `${value.message}`);
+      return [];
+    });
+
+    return Promise.resolve(rawSrvList);
+  };
+
+  /**
+   * Get list of available topics using the uri URI.ROS_NODES_GET_TOPICS
+   */
+  public getTopicList: (filter: RosTopicId[]) => Promise<RosTopic[]> = async (filter = []) => {
+    const rawTopicsList = await this.makeCall(URI.ROS_NODES_GET_TOPICS, [filter], true).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as unknown as RosTopic[];
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getTopicList()`, `${value.message}`);
+      return [];
+    });
+
+    return Promise.resolve(rawTopicsList);
   };
 
   /**
@@ -2040,6 +2064,7 @@ export default class Provider implements IProvider {
         n.rosLoggers = oldNode.rosLoggers;
         n.is_container = oldNode.is_container;
         n.container_name = oldNode.container_name;
+        n.screens = oldNode.screens;
         if (oldNode.pid !== n.pid) {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
         }
@@ -2066,9 +2091,9 @@ export default class Provider implements IProvider {
         }
       }
       // check if the node has dynamic reconfigure service
-      Array.from(n.services.keys()).forEach((service) => {
-        if (service.endsWith("/set_parameters")) {
-          const serviceNs = service.slice(0, -15);
+      n.services.forEach((service: RosTopicId) => {
+        if (service.name.endsWith("/set_parameters")) {
+          const serviceNs = service.name.slice(0, -15);
           n.dynamicReconfigureServices.push(serviceNs);
           if (serviceNs !== n.name) {
             dynamicReconfigureNodes.add(serviceNs);
@@ -2084,7 +2109,31 @@ export default class Provider implements IProvider {
     this.rosNodes = nl;
     this.sameIdDict = sameIdDict;
     this.updateLaunchContent();
+    this.updateRosServices();
+    this.updateRosTopics();
     this.unlockRequest("updateRosNodes");
+  };
+
+  public updateRosServices: () => void = async () => {
+    this.logger?.debug(`Trigger update ros services for ${this.id}`, "");
+    if (await this.lockRequest("updateRosServices")) {
+      return;
+    }
+
+    // get service from remote provider
+    this.rosServices = await this.getServiceList([]);
+    this.unlockRequest("updateRosServices");
+  };
+
+  public updateRosTopics: () => void = async () => {
+    this.logger?.debug(`Trigger update ros topics for ${this.id}`, "");
+    if (await this.lockRequest("updateRosTopics")) {
+      return;
+    }
+
+    // get publishers from remote provider
+    this.rosTopics = await this.getTopicList([]);
+    this.unlockRequest("updateRosTopics");
   };
 
   public callbackChangedFile: (msg: JSONObject) => void = async (msg) => {

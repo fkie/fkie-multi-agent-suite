@@ -17,6 +17,7 @@ import RosParameter from "./RosParameter";
 import RosQos from "./RosQos";
 import RosService from "./RosService";
 import RosTopic, { EndpointInfo, IncompatibleQos } from "./RosTopic";
+import RosTopicId from "./RosTopicId";
 import ServiceExtendedInfo, { TServiceNodeInfo } from "./ServiceExtendedInfo";
 import TopicExtendedInfo from "./TopicExtendedInfo";
 import { TRosMessageStruct, rosMessageStructToString } from "./TRosMessageStruct";
@@ -97,6 +98,7 @@ export {
   RosQos,
   RosService,
   RosTopic,
+  RosTopicId,
   ScreensMapping,
   ServiceExtendedInfo,
   SubscriberEvent,
@@ -112,7 +114,8 @@ export {
   getFileExtension,
   getFileName,
   getMaxDiagnosticLevel,
-  rosMessageStructToString,
+  rosMessageStructToString
 };
 
-export type { EndpointInfo, IncompatibleQos, TRosMessageStruct, TServiceNodeInfo };
+  export type { EndpointInfo, IncompatibleQos, TRosMessageStruct, TServiceNodeInfo };
+

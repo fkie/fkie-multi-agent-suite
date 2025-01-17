@@ -137,6 +137,14 @@ class RosTopic:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
+class RosTopicId:
+    def __init__(self, name: str, msg_type: str) -> None:
+        self.name = name
+        self.msg_type = msg_type
+
+    def __str__(self):
+        return f"{self.name}#{self.msg_type}"
+
 class RosService:
     def __init__(self, name: str, srv_type: str) -> None:
         self.name = name
@@ -214,9 +222,9 @@ class RosNode:
         self.masteruri = None
         self.location = "unknown"
         self.is_local = True
-        self.publishers: List[RosTopic] = []
-        self.subscribers: List[RosTopic] = []
-        self.services: List[RosService] = []
+        self.publishers: List[RosTopicId] = []
+        self.subscribers: List[RosTopicId] = []
+        self.services: List[RosTopicId] = []
         self.screens: List[str] = []
         self.parameters: List[RosParameter] = []
         self.system_node = False

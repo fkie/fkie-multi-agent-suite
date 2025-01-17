@@ -2,8 +2,7 @@
 import { TTag } from "@/types";
 import { DiagnosticLevel, DiagnosticStatus } from "./Diagnostics";
 import LaunchNodeInfo from "./LaunchNodeInfo";
-import RosService from "./RosService";
-import RosTopic from "./RosTopic";
+import RosTopicId from "./RosTopicId";
 
 /**
  * RosNodeStatus Valid state of a ROS node:
@@ -97,17 +96,17 @@ export default class RosNode {
   /**
    * List of topics subscribed by the node
    */
-  subscribers: Map<string, RosTopic>;
+  subscribers: RosTopicId[];
 
   /**
    * List of topics published by the node
    */
-  publishers: Map<string, RosTopic>;
+  publishers: RosTopicId[];
 
   /**
    * List of services available in the node
    */
-  services: Map<string, RosService>;
+  services: RosTopicId[];
 
   /**
    * List of Active screens
@@ -174,9 +173,9 @@ export default class RosNode {
     masteruri = "",
     location = "unknown",
     system_node = false,
-    subscribers = new Map<string, RosTopic>(),
-    publishers = new Map<string, RosTopic>(),
-    services = new Map<string, RosService>(),
+    subscribers = [],
+    publishers = [],
+    services = [],
     screens = [],
     launchPath = ""
   ) {

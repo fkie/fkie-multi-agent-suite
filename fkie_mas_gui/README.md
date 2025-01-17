@@ -97,6 +97,8 @@ Then open in browser <http://localhost:6274>
 | ros.file.get                       | RPC  | `(path: str) => FileItem`                                                | see fkie_mas_pylib/interface/file_interface/FileItem                                         |
 | ros.file.save                      | RPC  | `(file: FileItem) => number`                                             | write file content to providers file system. Return count of written bytes.                  |
 | ros.nodes.get_list                 | RPC  | `() => RosNode[]`                                                        | see fkie_mas_pylib/interface/runtime_interface/RosNode                                       |
+| ros.nodes.get_services             | RPC  | `() => RosService[]`                                                     | see fkie_mas_pylib/interface/runtime_interface/RosService                                    |
+| ros.nodes.get_topics               | RPC  | `() => RosTopic[]`                                                       | see fkie_mas_pylib/interface/runtime_interface/RosTopic                                      |
 | ros.nodes.changed                  | PUB  | `=> "timestamp": float`                                                  | Triggers when node changed (start, stop etc...)                                              |
 | ros.provider.list                  | PUB  | `=> RosProvider[]`                                                       | see fkie_mas_pylib/interface/runtime_interface/RosProvider                                   |
 | ros.provider.get_list              | RPC  | `() => RosProvider[]`                                                    | Request the list of current providers                                                        |

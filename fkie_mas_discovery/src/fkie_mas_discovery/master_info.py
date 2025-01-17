@@ -21,6 +21,7 @@ from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosService
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
+from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.system import screen
 
 from typing import List, Dict
@@ -639,8 +640,13 @@ class MasterInfo(object):
         self.__servicelist = {}
         self.__timestamp = 0
         self.__timestamp_local = 0
+        self._nodes = {}
+        self._topics = {}
+        self._services = {}
         self.check_ts = 0
         '''the last time, when the state of the ROS master retrieved'''
+        self._for_json_topics = dict()
+        self._for_json_services = dict()
 
     @staticmethod
     def from_list(l):
@@ -1355,19 +1361,24 @@ class MasterInfo(object):
     def toJson(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
         try:
             iffilter = filter_interface
+            self._for_json_topics: Dict[str, RosTopic] = dict()
+            self._for_json_services: Dict[str, RosService] = dict()
             ros_nodes = dict()
             # filter the topics
             discover_state_publisher = False
             system_service = False
             for name, topic in self.topics.items():
                 ros_topic = RosTopic(name, topic.type)
+                ros_topic_id = RosTopicId(name, topic.type)
+                ros_topic_id_str = str(ros_topic_id)
                 for n in topic.publisherNodes:
                     discover_state_publisher = topic.type in [
                         'fkie_mas_msgs/MasterState']
                     if not iffilter.is_ignored_publisher(n, name, topic.type):
                         ros_topic.publisher.append(EndpointInfo(n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
-                        node.publishers.append(ros_topic)
+                        # node.publishers.append(ros_topic)
+                        node.publishers.append(ros_topic_id)
                         # check if it is a nodlet
                         if name.endswith('/bond'):
                             parent_id = name[:-5]
@@ -1379,18 +1390,26 @@ class MasterInfo(object):
                     if not iffilter.is_ignored_subscriber(n, name, topic.type):
                         ros_topic.subscriber.append(EndpointInfo(n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
-                        node.subscribers.append(ros_topic)
+                        # node.subscribers.append(ros_topic)
+                        node.subscribers.append(ros_topic_id)
                         ros_nodes[n] = node
+                self._for_json_topics[ros_topic_id_str] = ros_topic
             # filter the services
             for name, service in self.services.items():
                 system_service = service.type in [
                     'fkie_mas_msgs/LoadLaunch', 'fkie_mas_msgs/GetSyncInfo']
                 ros_service = RosService(name, service.type)
+                ros_topic_id = RosTopicId(name, service.type)
+                ros_topic_id_str = str(ros_topic_id)
                 for sp in service.serviceProvider:
                     if not iffilter.is_ignored_service(sp, name):
                         ros_service.provider.append(sp)
                         node = ros_nodes.get(sp, RosNode(sp, sp))
-                        node.services.append(ros_service)
+                        if not (ros_topic_id_str in self._for_json_services):
+                            self._for_json_services[ros_topic_id_str] = []
+                        self._for_json_services[ros_topic_id_str] = ros_service
+                        # node.services.append(ros_service)
+                        node.services.append(ros_topic_id)
                         node.system_node |= system_service
                         ros_nodes[sp] = node
                 ros_service.service_API_URI = service.uri
@@ -1423,4 +1442,18 @@ class MasterInfo(object):
         except Exception:
             import traceback
             print(traceback.format_exc())
+        return result
+
+    def toJsonServices(self, filter: List[RosTopicId]) -> List[RosService]:
+        result = []
+        for id, service in self._for_json_services.items():
+            if len(filter) == 0 or str(id) in filter:
+                result.append(service)
+        return result
+
+    def toJsonTopics(self, filter: List[RosTopicId]) -> List[RosTopic]:
+        result = []
+        for id, topic in self._for_json_topics.items():
+            if len(filter) == 0 or str(id) in filter:
+                result.append(topic)
         return result
