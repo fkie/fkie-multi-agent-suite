@@ -133,6 +133,12 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
     );
   }, [rootData, forceReload, searched]);
 
+  useEffect(() => {
+    if (rootData.length > 0 && rootData.length <= 5) {
+      setForceReload();
+    }
+  }, [rootData]);
+
   return (
     <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
       <Stack spacing={1} height="100%">
