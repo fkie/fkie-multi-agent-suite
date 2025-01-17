@@ -24,6 +24,8 @@ from watchdog.events import FileSystemEvent
 import rosidl_parser.definition
 from rosidl_runtime_py import message_to_ordereddict
 from rosidl_runtime_py import set_message_fields
+from rosidl_runtime_py import get_message_interfaces
+
 
 from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.interface import SelfEncoder
@@ -150,6 +152,7 @@ class LaunchServicer(LoggingEventHandler):
         websocket.register("ros.launch.publish_message", self.publish_message)
         websocket.register("ros.launch.get_srv_struct", self.get_srv_struct)
         websocket.register("ros.launch.call_service", self.call_service)
+        websocket.register("ros.launch.get_message_types", self.get_message_types)
         websocket.register("ros.subscriber.start", self.start_subscriber)
 
     def _terminated(self):
@@ -950,6 +953,15 @@ class LaunchServicer(LoggingEventHandler):
             result.error_msg = repr(err)
         finally:
             nmd.ros_node.destroy_client(request.service_name)
+        return json.dumps(result, cls=SelfEncoder)
+
+    def get_message_types(self) -> str:
+        Log.info(f"Request to [ros.launch.get_message_types]")
+        result = []
+        interfaces = get_message_interfaces()
+        for pkg, messages in interfaces.items():
+            for message in messages:
+                result.append(f"{pkg}/{message}")
         return json.dumps(result, cls=SelfEncoder)
 
     def start_subscriber(self, request_json: SubscriberNode) -> bool:
