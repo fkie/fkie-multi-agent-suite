@@ -38,10 +38,9 @@ import {
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
 } from "../../../providers/eventTypes";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
+import { LAYOUT_TABS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { EMenuProvider } from "./OverflowMenuProvider";
-import SingleTerminalPanel from "./SingleTerminalPanel";
 import SystemInformationPanel from "./SystemInformationPanel";
 
 interface ProviderPanelRowProps {
@@ -344,7 +343,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
   );
 
   const isOlderVersion = useCallback(
-    function (provider: Provider): boolean {
+    function (): boolean {
       try {
         if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
           return true;
@@ -355,7 +354,30 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
       }
       return false;
     },
-    [settingsCtx.MIN_VERSION_DAEMON]
+    [settingsCtx.MIN_VERSION_DAEMON, provider]
+  );
+
+  const getVersionColor = useCallback(
+    function (): string {
+      try {
+        if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
+          return "grey";
+        }
+        if (semver.major(settingsCtx.MIN_VERSION_DAEMON) !== semver.major(provider.getDaemonReleaseVersion())) {
+          return "red";
+        }
+        if (semver.minor(settingsCtx.MIN_VERSION_DAEMON) !== semver.minor(provider.getDaemonReleaseVersion())) {
+          return "HotPink";
+        }
+        if (semver.patch(settingsCtx.MIN_VERSION_DAEMON) !== semver.patch(provider.getDaemonReleaseVersion())) {
+          return "orange";
+        }
+      } catch {
+        // no output on version errors
+      }
+      return "grey";
+    },
+    [settingsCtx.MIN_VERSION_DAEMON, provider]
   );
 
   const getDelayColor = useCallback((delay: number) => {
@@ -448,7 +470,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
           )}
         </TableCell>
         <TableCell style={{ padding: 0 }}>
-          {isOlderVersion(provider) && (
+          {isOlderVersion() && (
             <Tooltip
               title={`daemon has older version ${provider.getDaemonReleaseVersion()}, required: ${settingsCtx.MIN_VERSION_DAEMON}, open terminal for update`}
               placement="bottom-start"
@@ -458,31 +480,20 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
             >
               <IconButton
                 edge="start"
-                onClick={() => {
+                onClick={(event) => {
                   // open terminal for update
-                  const type = CmdType.TERMINAL;
-                  const id = `${type}@${provider.name()}`;
-                  emitCustomEvent(
-                    EVENT_OPEN_COMPONENT,
-                    eventOpenComponent(
-                      id,
-                      `${provider.name()}`,
-                      <SingleTerminalPanel id={id} type={type} providerId={provider.id} nodeName={""} cmd="" />,
-                      true,
-                      LAYOUT_TAB_SETS.BORDER_BOTTOM,
-                      new LayoutTabConfig(true, type, {
-                        type: type,
-                        providerId: provider.id,
-                        nodeName: "",
-                        topicName: "",
-                        screen: "",
-                        cmd: "",
-                      })
-                    )
+                  rosCtx.openTerminal(
+                    CmdType.TERMINAL,
+                    provider.id,
+                    "",
+                    "",
+                    "",
+                    event.nativeEvent.shiftKey,
+                    event.nativeEvent.ctrlKey
                   );
                 }}
               >
-                <UpgradeIcon sx={{ fontSize: "inherit", color: "orange" }} />
+                <UpgradeIcon sx={{ fontSize: "inherit", color: getVersionColor() }} />
               </IconButton>
             </Tooltip>
           )}
