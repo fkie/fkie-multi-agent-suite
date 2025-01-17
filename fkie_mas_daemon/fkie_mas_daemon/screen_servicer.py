@@ -101,8 +101,10 @@ class ScreenServicer:
         self._screen_do_check = True
 
     def kill_node(self, name: str, sig: signal = signal.SIGKILL) -> bool:
-        Log.info(f"{self.__class__.__name__}: Kill node '{name}'; signal: [{type(sig)}] {sig}")
         sig_obj = sig
+        if sig_obj is None:
+            sig_obj = signal.SIGKILL
+        Log.info(f"{self.__class__.__name__}: Kill node '{name}'; signal: [{type(sig)}] {sig}")
         if isinstance(sig, str):
             if sig == 'SIGTERM':
                 sig_obj = signal.SIGTERM
