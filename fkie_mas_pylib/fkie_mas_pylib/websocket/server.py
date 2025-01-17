@@ -60,7 +60,7 @@ class WebSocketServer:
         Log.info(
             f"Open Websocket on port {port}")
         try:
-            with websockets.sync.server.serve(self.ws_handler, "0.0.0.0", port) as server:
+            with websockets.sync.server.serve(self.ws_handler, "0.0.0.0", port, max_size=2**22) as server:
                 self._server = server
                 self.port = port
                 server.serve_forever()

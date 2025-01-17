@@ -69,7 +69,7 @@ class WebSocketClient:
         while not self._shutdown:
             try:
                 uri = f"ws://localhost:{self.port}"
-                with websockets.sync.client.connect(uri) as connection:
+                with websockets.sync.client.connect(uri, max_size=2**22) as connection:
                     try:
                         self._conn_try = 0
                         Log.info(
@@ -111,9 +111,10 @@ class WebSocketClient:
                                 Log.warn(
                                     f"[{self.connection.remote_address}]: {error}")
                     except websockets.exceptions.ConnectionClosedOK:
-                        pass
-                    except websockets.exceptions.ConnectionClosedError:
-                        pass
+                        import traceback
+                        print(traceback.format_exc())
+                    except websockets.exceptions.ConnectionClosedError as recv_error:
+                        Log.warn(f"websocket connection 'ws: // localhost: {self.port}' closed while recv: {recv_error}")
                     except Exception:
                         import traceback
                         print(traceback.format_exc())
@@ -124,6 +125,8 @@ class WebSocketClient:
                 if self._conn_try == 0:
                     Log.warn(f"{cr_error}")
             except Exception as error:
+                import traceback
+                print(traceback.format_exc())
                 if self._conn_try == 0:
                     import traceback
                     print(traceback.format_exc())
@@ -171,9 +174,10 @@ class WebSocketClient:
                         self.connection.send(item.data)
                 except websockets.exceptions.ConnectionClosedOK:
                     pass
-                except websockets.exceptions.ConnectionClosedError:
-                    pass
-                except (ConnectionRefusedError, ConnectionResetError):
+                except websockets.exceptions.ConnectionClosedError as send_error:
+                    Log.warn(f"websocket connection 'ws: // localhost: {self.port}' closed: {send_error}")
+                except (ConnectionRefusedError, ConnectionResetError) as send_reset:
+                    Log.warn(f"websocket connection 'ws: // localhost: {self.port}' reset: {send_reset}")
                     pass
                 except Exception:
                     import traceback
