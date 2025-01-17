@@ -94,12 +94,16 @@ class MonitorServicer:
         procs = []
         try:
             for process in psutil.process_iter():
-                cmdStr = ' '.join(process.cmdline())
-                if cmdStr.find(SETTINGS_PATH) > -1:
-                    if (cmdStr.find('mas-daemon') == -1):
-                        # ignore mas daemon pid to kill it last
-                        procs.append(process)
-                        process.terminate()
+                try:
+                    cmdStr = ' '.join(process.cmdline())
+                    if cmdStr.find(SETTINGS_PATH) > -1:
+                        if (cmdStr.find('mas-daemon') == -1):
+                            # ignore mas daemon pid to kill it last
+                            procs.append(process)
+                            process.terminate()
+                except Exception as error:
+                    import traceback
+                    print(traceback.format_exc())
             gone, alive = psutil.wait_procs(procs, timeout=3)
             for p in alive:
                 p.kill()
