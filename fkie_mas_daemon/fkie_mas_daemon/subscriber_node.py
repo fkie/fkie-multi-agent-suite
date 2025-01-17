@@ -7,11 +7,12 @@
 # ****************************************************************************
 
 
+import os
 import argparse
 import json
+import signal
 import sys
 import time
-import threading
 import traceback
 from importlib import import_module
 from types import SimpleNamespace
@@ -58,6 +59,9 @@ class RosSubscriberLauncher:
             parsed_args.topic)
         print('\33]0;%s\a' % (self.name), end='', flush=True)
         self._port = parsed_args.ws_port
+        if os.environ.get('ROS_DISTRO') != 'galactic':
+            signal.signal(signal.SIGTERM, self.exit_gracefully)
+            signal.signal(signal.SIGINT, self.exit_gracefully)
         rclpy.init(args=remaining_args)
         # NM_NAMESPACE
         self.ros_node = rclpy.create_node(self.name, namespace=self.namespace)
@@ -119,6 +123,20 @@ class RosSubscriberLauncher:
 
     def __del__(self):
         self.stop()
+
+    def stop(self):
+        if hasattr(self, 'wsClient'):
+            if self.wsClient:
+                self.wsClient.shutdown()
+                self.wsClient = None
+
+    def exit_gracefully(self, signum, frame):
+        print('shutdown rclpy')
+        self.sub.destroy()
+        self.stop()
+        if rclpy.ok():
+            rclpy.shutdown()
+        print('bye!')
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
 
@@ -230,7 +248,7 @@ class RosSubscriberLauncher:
         try:
             rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
-            pass
+            self.exit_gracefully(-1, None)
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
@@ -240,10 +258,7 @@ class RosSubscriberLauncher:
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-        print('shutdown rclpy')
-        self.sub.destroy()
-        rclpy.shutdown()
-        print('bye!')
+            self.exit_gracefully(-1, None)
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
     def add_qos_arguments(self, parser: argparse.ArgumentParser, subscribe_or_publish: str, default_profile_str):
@@ -323,12 +338,6 @@ class RosSubscriberLauncher:
         parser.set_defaults(tcp_no_delay=False)
         parser.set_defaults(help=False)
         return parser
-
-    def stop(self):
-        if self.wsClient:
-            self.wsClient.shutdown()
-        if hasattr(self, 'wsClient'):
-            self.wsClient.shutdown()
 
     async def _msg_handle(self, data):
         self._count_received += 1
