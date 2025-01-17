@@ -161,6 +161,7 @@ class MasterMonitor:
         self.__cached_services = dict()
         self._on_shutdown = False
         self._screen_check_force_after = 10
+        self._screen_json_msg = []
         self.ros_node_name = str(rospy.get_name())
         if rospy.has_param('~name'):
             self.__mastername = rospy.get_param('~name')
