@@ -2,7 +2,7 @@
 
 ## 3.0.13 - 16.01.2025
 
-e3dbd5b fixed open external terminal with different terminal
+Fixed open external terminal with different terminal
 
 ## 3.0.12 - 16.01.2025
 

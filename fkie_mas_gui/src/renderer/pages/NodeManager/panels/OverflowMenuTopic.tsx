@@ -18,12 +18,13 @@ export enum EMenuTopic {
 
 interface OverflowMenuTopicProps {
   topicName: string;
+  messageType: string;
   providerId: string;
-  onClick: (type: EMenuTopic, topic: string, providerId: string) => void;
+  onClick: (type: EMenuTopic, topic: string, messageType: string, providerId: string) => void;
 }
 
 const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(function OverflowMenuTopic(props, ref) {
-  const { topicName, providerId, onClick } = props;
+  const { topicName, messageType, providerId, onClick } = props;
 
   const createMenu = useMemo(() => {
     return (
@@ -40,7 +41,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
             ),
             key: `info-${topicName}`,
             onClick: (): void => {
-              onClick(EMenuTopic.INFO, topicName, providerId);
+              onClick(EMenuTopic.INFO, topicName, messageType, providerId);
             },
           },
           {
@@ -52,7 +53,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
             ),
             key: `stats-${topicName}`,
             onClick: (): void => {
-              onClick(EMenuTopic.HZ, topicName, providerId);
+              onClick(EMenuTopic.HZ, topicName, messageType, providerId);
             },
           },
           {
@@ -64,7 +65,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
             ),
             key: `echo-${topicName}`,
             onClick: (): void => {
-              onClick(EMenuTopic.ECHO, topicName, providerId);
+              onClick(EMenuTopic.ECHO, topicName, messageType, providerId);
             },
           },
           {
@@ -76,7 +77,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
             ),
             key: `publish-${topicName}`,
             onClick: (): void => {
-              onClick(EMenuTopic.PUBLISH, topicName, providerId);
+              onClick(EMenuTopic.PUBLISH, topicName, messageType, providerId);
             },
           },
           {
@@ -88,7 +89,7 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
             ),
             key: `clipboard-${topicName}`,
             onClick: (): void => {
-              onClick(EMenuTopic.clipboard, topicName, providerId);
+              onClick(EMenuTopic.clipboard, topicName, messageType, providerId);
             },
           },
         ]}

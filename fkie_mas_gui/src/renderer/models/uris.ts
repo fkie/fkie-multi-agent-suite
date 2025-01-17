@@ -38,6 +38,7 @@ const URI = {
   ROS_LAUNCH_GET_MSG_STRUCT: "ros.launch.get_msg_struct",
   ROS_LAUNCH_GET_SRV_STRUCT: "ros.launch.get_srv_struct",
   ROS_LAUNCH_PUBLISH_MESSAGE: "ros.launch.publish_message",
+  ROS_LAUNCH_GET_MESSAGE_TYPES: "ros.launch.get_message_types",
   ROS_NODES_GET_LOGGERS: "ros.nodes.get_loggers",
   ROS_NODES_SET_LOGGER_LEVEL: "ros.nodes.set_logger_level",
   ROS_NODES_STOP_NODE: "ros.nodes.stop_node",

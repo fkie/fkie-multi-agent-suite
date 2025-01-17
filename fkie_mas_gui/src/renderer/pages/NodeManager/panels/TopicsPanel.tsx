@@ -8,6 +8,7 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
+import NotStartedOutlinedIcon from "@mui/icons-material/NotStartedOutlined";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
@@ -17,14 +18,13 @@ import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { OverflowMenu, SearchBar, TopicTreeItem } from "../../../components";
+import { NewPublisherModal, OverflowMenu, SearchBar, TopicTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
 import { findIn } from "../../../utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
-// import NotStartedOutlinedIcon from "@mui/icons-material/NotStartedOutlined";
 
 type TTreeItem = {
   groupKey: string;
@@ -61,6 +61,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | null>(null);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [availableProviders, setAvailableProviders] = useState<TProviderDscription[]>([]);
+  const [providerForNewPublisher, setProviderForNewPublisher] = useState<string | undefined>();
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
     settingsCtx.get("avoidGroupWithOneItem") as string
@@ -282,7 +283,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           eventOpenComponent(
             `publish-${topic.name}-${provId}`,
             topic.name,
-            <TopicPublishPanel topicName={topic.name} providerId={provId} />,
+            <TopicPublishPanel topicName={topic.name} topicType={topic.msgType} providerId={provId} />,
             true,
             LAYOUT_TAB_SETS.BORDER_RIGHT,
             new LayoutTabConfig(true, "publish")
@@ -462,32 +463,56 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           })}
           id={`echo-provider-menu-${topicForSelected?.name}`}
         />
-        {/* <OverflowMenu
-          // disabled={!topicForSelected}
-          icon={
-            <Tooltip
-              title="Publish to a new topic with option to select the host on which the publisher is to be started"
-              placement="left"
-              enterDelay={tooltipDelay}
-              // enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <NotStartedOutlinedIcon fontSize="inherit" />
-            </Tooltip>
-          }
-          size="medium"
-          sx={{ margin: 0 }}
-          options={availableProviders.map((item) => {
-            return {
-              name: item.providerName,
-              key: item.providerId,
-              onClick: async function (): Promise<void> {
-                onPublishClick(topicForSelected, item.providerId);
-              },
-            };
-          })}
-          id={`echo-provider-menu-${topicForSelected?.name}`}
-        /> */}
+        {availableProviders.length === 1 ? (
+          <Tooltip
+            title="Publish to"
+            placement="left"
+            enterDelay={tooltipDelay}
+            // enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <span>
+              <IconButton
+                size="medium"
+                aria-label="Create a new publisher"
+                onClick={() => {
+                  setProviderForNewPublisher(availableProviders[0].providerId);
+                }}
+              >
+                <NotStartedOutlinedIcon fontSize="inherit" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ) : (
+          availableProviders.length > 1 && (
+            <OverflowMenu
+              // disabled={!topicForSelected}
+              icon={
+                <Tooltip
+                  title="Publish to a new topic with option to select the host on which the publisher is to be started"
+                  placement="left"
+                  enterDelay={tooltipDelay}
+                  // enterNextDelay={tooltipDelay}
+                  disableInteractive
+                >
+                  <NotStartedOutlinedIcon fontSize="inherit" />
+                </Tooltip>
+              }
+              size="medium"
+              sx={{ margin: 0 }}
+              options={availableProviders.map((item) => {
+                return {
+                  name: item.providerName,
+                  key: item.providerId,
+                  onClick: async function (): Promise<void> {
+                    setProviderForNewPublisher(item.providerId);
+                  },
+                };
+              })}
+              id={`echo-provider-menu-${topicForSelected?.name}`}
+            />
+          )
+        )}
       </ButtonGroup>
     );
   }, [tooltipDelay, topicForSelected, availableProviders]);
@@ -529,7 +554,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm, providerForNewPublisher]);
 
   const createPanel = useMemo(() => {
     return (
@@ -576,10 +601,25 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
               {createTreeView}
             </Box>
           </Stack>
+          {providerForNewPublisher && (
+            <NewPublisherModal
+              providerId={providerForNewPublisher}
+              onClose={() => setProviderForNewPublisher(undefined)}
+            />
+          )}
         </Stack>
       </Box>
     );
-  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, topicForSelected, settingsCtx.changed]);
+  }, [
+    rootDataList,
+    expanded,
+    expandedFiltered,
+    searchTerm,
+    selectedItem,
+    topicForSelected,
+    settingsCtx.changed,
+    providerForNewPublisher,
+  ]);
   return createPanel;
 });
 

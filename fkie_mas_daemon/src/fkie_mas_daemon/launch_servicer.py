@@ -26,6 +26,8 @@ from watchdog.events import FileSystemEvent
 
 import genpy
 import std_msgs
+from rosmsg import iterate_packages
+from rosmsg import _list_types
 
 from . import launcher
 from fkie_mas_daemon.strings import utf8
@@ -154,6 +156,7 @@ class LaunchServicer(LoggingEventHandler):
         websocket.register("ros.launch.publish_message", self.publish_message)
         websocket.register("ros.launch.get_srv_struct", self.get_srv_struct)
         websocket.register("ros.launch.call_service", self.call_service)
+        websocket.register("ros.launch.get_message_types", self.get_message_types)
         websocket.register("ros.subscriber.start", self.start_subscriber)
 
     def _terminated(self):
@@ -1166,7 +1169,7 @@ class LaunchServicer(LoggingEventHandler):
 
             print(traceback.format_exc())
 
-    def call_service(self, request_json: LaunchCallService) -> None:
+    def call_service(self, request_json: LaunchCallService) -> str:
         # Convert input dictionary into a proper python object
         Log.info(
             f"Request to [ros.launch.call_service]: msg [{request_json}]")
@@ -1212,6 +1215,19 @@ class LaunchServicer(LoggingEventHandler):
             import traceback
             print(traceback.format_exc())
             result.error_msg = repr(err)
+        return json.dumps(result, cls=SelfEncoder)
+
+    def get_message_types(self) -> str:
+        # Convert input dictionary into a proper python object
+        Log.info(f"Request to [ros.launch.get_message_types]")
+        result = []
+        mode = ".msg"
+        subdir = "msg"
+        rospack = rospkg.RosPack()
+        packs = sorted([x for x in iterate_packages(rospack, mode)])
+        for (p, direc) in packs:
+            for file in _list_types(direc, subdir, mode):
+                result.append(f"{p}/{file}")
         return json.dumps(result, cls=SelfEncoder)
 
     def interpret_path(

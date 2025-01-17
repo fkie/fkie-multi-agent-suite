@@ -38,11 +38,12 @@ type THistoryItem = {
 
 interface TopicPublishPanelProps {
   topicName: string;
+  topicType: string;
   providerId: string;
 }
 
 const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(function TopicPublishPanel(props, ref) {
-  const { topicName = null, providerId = "" } = props;
+  const { topicName = null, topicType = "", providerId = "" } = props;
 
   const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>(`MessageStruct:history`, {});
   const [historyLength, setHistoryLength] = useState(0);
@@ -50,7 +51,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [substituteKeywords, setSubstituteKeywords] = useState(true);
-  const [messageType, setMessageType] = useState("");
+  const [messageType, setMessageType] = useState(topicType);
   const [searchTerm, setSearchTerm] = useState("");
   const [messageStruct, setMessageStruct] = useState<TRosMessageStruct>();
   const [messageStructOrg, setMessageStructOrg] = useState<TRosMessageStruct>();
@@ -121,24 +122,26 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
       const newProvider = rosCtx.getProviderById(providerId, true);
       if (newProvider) {
         setProvider(newProvider);
-        let msgType = "";
-        // Get messageType from node list of the provider
-        newProvider.rosNodes.forEach((node) => {
-          if (node.providerId === providerId) {
-            node.subscribers.forEach((topic) => {
-              if (msgType === "" && topicName === topic.name) {
-                msgType = topic.msg_type;
-              }
-            });
-            if (msgType === "") {
-              node.publishers.forEach((topic) => {
+        let msgType = messageType;
+        if (msgType.length === 0) {
+          // Get messageType from node list of the provider
+          newProvider.rosNodes.forEach((node) => {
+            if (node.providerId === providerId) {
+              node.subscribers.forEach((topic) => {
                 if (msgType === "" && topicName === topic.name) {
                   msgType = topic.msg_type;
                 }
               });
+              if (msgType === "") {
+                node.publishers.forEach((topic) => {
+                  if (msgType === "" && topicName === topic.name) {
+                    msgType = topic.msg_type;
+                  }
+                });
+              }
             }
-          }
-        });
+          });
+        }
         if (msgType) {
           setMessageType(msgType);
           const msgStruct = await newProvider.getMessageStruct(msgType);

@@ -86,6 +86,7 @@ export default function NodesDetailsPanel(): JSX.Element {
   async function onTopicClick(
     rosTopicType: EMenuTopic,
     topic: string,
+    messageType: string,
     providerId: string,
     external: boolean = false,
     openInTerminal: boolean = false
@@ -118,7 +119,7 @@ export default function NodesDetailsPanel(): JSX.Element {
         eventOpenComponent(
           `publish-${topic}-${providerId}`,
           topic,
-          <TopicPublishPanel topicName={topic} providerId={providerId} />,
+          <TopicPublishPanel topicName={topic} topicType={messageType} providerId={providerId} />,
           true,
           LAYOUT_TAB_SETS[settingsCtx.get("publisherOpenLocation") as string],
           new LayoutTabConfig(false, "publish")
@@ -352,6 +353,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                                     <OverflowMenuTopic
                                       onClick={onTopicClick}
                                       topicName={topic.name}
+                                      messageType={topic.msg_type}
                                       providerId={node.providerId}
                                     />
                                     {showConnections &&
@@ -390,6 +392,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                                             ? EMenuTopic.PUBLISH
                                             : EMenuTopic.ECHO,
                                           topic.name,
+                                          topic.msg_type,
                                           node.providerId,
                                           event.nativeEvent.shiftKey,
                                           event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
@@ -429,6 +432,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                                   <OverflowMenuTopic
                                     onClick={onTopicClick}
                                     topicName={topic.name}
+                                    messageType={topic.msg_type}
                                     providerId={node.providerId}
                                   />
                                   {showConnections &&
@@ -467,6 +471,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                                           ? EMenuTopic.PUBLISH
                                           : EMenuTopic.ECHO,
                                         topic.name,
+                                        topic.msg_type,
                                         node.providerId,
                                         event.nativeEvent.shiftKey,
                                         event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey

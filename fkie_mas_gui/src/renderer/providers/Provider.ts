@@ -1526,6 +1526,24 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
+  /**
+   * Requests the list with known message types
+   */
+  public getRosMessageMessageTypes: () => Promise<string[]> = async () => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_MESSAGE_TYPES, [], true).then((value: TResultData) => {
+      if (value.result) {
+        if (!value.data) {
+          return [];
+        }
+        const response = value.data as string[];
+        return response;
+      }
+      this.logger?.error(`Provider [${this.name()}]: Error at getRosMessageMessageTypes()`, `${value.message}`);
+      return [];
+    });
+    return Promise.resolve(result);
+  };
+
   private generateSubscriberUri: (topic: string) => string = (topic) => {
     return `${URI.ROS_SUBSCRIBER_EVENT_PREFIX}.${topic.replaceAll("/", "_")}`;
   };

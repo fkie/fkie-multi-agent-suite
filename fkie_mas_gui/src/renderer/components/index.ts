@@ -1,5 +1,6 @@
 import ConnectToProviderModal from "./ConnectToProviderModal/ConnectToProviderModal";
 import HostTreeView from "./HostTreeView/HostTreeView";
+import NewPublisherModal from "./NewPublisherModal/NewPublisherModal";
 import PackageExplorer from "./PackageExplorer/PackageExplorer";
 import ParameterTreeItem from "./ParameterTreeView/ParameterTreeItem";
 import ConfirmModal from "./SelectionModal/ConfirmModal";
@@ -23,6 +24,7 @@ export {
   DraggablePaper,
   HostTreeView,
   MapSelectionModal,
+  NewPublisherModal,
   OverflowMenu,
   PackageExplorer,
   ParameterTreeItem,
@@ -37,5 +39,6 @@ export {
   colorFromHostname,
   getDiagnosticStyle,
   levelColors,
-  levelColorsWbg,
+  levelColorsWbg
 };
+
