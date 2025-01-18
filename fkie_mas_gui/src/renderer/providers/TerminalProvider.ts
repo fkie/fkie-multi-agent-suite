@@ -11,11 +11,11 @@ export default class TerminalProvider extends Provider {
   /**
    * constructor that initializes a new instance of a provider object.
    *
-   * @param {ISettingsContext} settings - External settings
-   * @param {string} host - IP address or hostname of a remote server on remote host.
-   * @param {string} rosVersion - ROS version as string of {'1', '2'}
-   * @param {number} port - Port of a remote server on remote host. If zero, it depends on the ros version.
-   * @param {ILoggingContext | null} logger - External logger
+   * @param settings - External settings
+   * @param host - IP address or hostname of a remote server on remote host.
+   * @param rosVersion - ROS version as string of {'1', '2'}
+   * @param port - Port of a remote server on remote host. If zero, it depends on the ros version.
+   * @param logger - External logger
    */
   constructor(
     settings: ISettingsContext,

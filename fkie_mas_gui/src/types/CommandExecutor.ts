@@ -8,9 +8,9 @@ export const CommandExecutorEvents = {
 export type TCommandExecutor = {
   /**
    * Executes a command using a SSH connection
-   * @param {ConnectConfig} credential - SSH credential, null for local host.
-   * @param {string} command - Remote directory path
-   * @return {Promise<{result: boolean, message: string}>} Returns response
+   * @param credential - SSH credential, null for local host.
+   * @param command - Remote directory path
+   * @return Returns response
    */
   exec: (
     credential: ConnectConfig | null,
@@ -19,10 +19,10 @@ export type TCommandExecutor = {
 
   /**
    * Executes a command in an external Terminal (using a SSH connection on remote hosts)
-   * @param {ConnectConfig} credential - SSH credential, null for local host
-   * @param {string} title - Remote directory path
-   * @param {string} command - Remote directory path
-   * @return {Promise<{result: boolean, message: string}>} Returns response
+   * @param credential - SSH credential, null for local host
+   * @param title - Remote directory path
+   * @param command - Remote directory path
+   * @return Returns response
    */
   execTerminal: (
     credential: ConnectConfig | null,

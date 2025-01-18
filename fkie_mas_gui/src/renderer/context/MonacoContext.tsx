@@ -214,8 +214,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
 
   /**
    * Create a new monaco model from a given file
-   *
-   * @param {FileItem} file - Original file
+   * @param file - Original file
    */
   function createModel(tabId: string, file: FileItem): editor.ITextModel | null {
     if (!monaco) return null;

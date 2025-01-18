@@ -206,7 +206,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   /**
    * Returns include path if position is on the include declaration, overwise undefined.
-   * @param {any} position - Mouse cursor position
+   * @param position - Mouse cursor position
    */
   const getIncludeResource = useCallback(
     function (position: Position): string | undefined {

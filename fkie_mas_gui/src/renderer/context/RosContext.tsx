@@ -37,7 +37,6 @@ import {
   EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_RESTART_NODES,
   EVENT_PROVIDER_ROS_NODES,
-  EVENT_PROVIDER_SCREENS,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
 } from "../providers/eventTypes";
@@ -48,7 +47,6 @@ import {
   EventProviderRemoved,
   EventProviderRestartNodes,
   EventProviderRosNodes,
-  EventProviderScreens,
   EventProviderState,
   EventProviderWarnings,
 } from "../providers/events";

@@ -230,11 +230,11 @@ export default class Provider implements IProvider {
   /**
    * constructor that initializes a new instance of a provider object.
    *
-   * @param {ISettingsContext} settings - External settings
-   * @param {string} host - IP address or hostname of a remote server on remote host.
-   * @param {string} rosVersion - ROS version as string of {'1', '2'}
-   * @param {number} port - Port of a remote server on remote host. If zero, it depends on the ros version.
-   * @param {ILoggingContext | null} logger - External logger
+   * @param settings - External settings
+   * @param host - IP address or hostname of a remote server on remote host.
+   * @param rosVersion - ROS version as string of {'1', '2'}
+   * @param port - Port of a remote server on remote host. If zero, it depends on the ros version.
+   * @param logger - External logger
    */
   constructor(
     settings: ISettingsContext,
@@ -463,17 +463,6 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Reconnect the connection to the websocket
-   */
-  public reconnect: () => void = async () => {
-    if (this.connection.connected()) return Promise.resolve(true);
-
-    this.setConnectionState(ConnectionState.STATES.CONNECTING, "reconnect");
-
-    return this.connection.open();
-  };
-
-  /**
    * Check if the provider is available
    */
   public isAvailable: () => boolean = () => {
@@ -580,8 +569,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get content of the file from provider.
-   *
-   * @return {Promise<{ file: FileItem; error: string }>}
    */
   public getFileContent: (path: string) => Promise<{ file: FileItem; error: string }> = async (path) => {
     const error: string = "";
@@ -607,8 +594,6 @@ export default class Provider implements IProvider {
 
   /**
    * Save content of the file in providers file system.
-   *
-   * @return {Promise<{ bytesWritten: number; error: string }>}
    */
   public saveFileContent: (file: FileItem) => Promise<{ bytesWritten: number; error: string }> = async (file) => {
     let error: string = "";
@@ -888,8 +873,6 @@ export default class Provider implements IProvider {
 
   /**
    * Get list of available packages using the uri 'ros.packages.get_list'
-   *
-   * @return {Promise<RosPackage[]>} Returns a list of ROS packages
    */
   public getPackageList: () => Promise<RosPackage[]> = async () => {
     const comparePackages: (a: RosPackage, b: RosPackage) => number = (a, b) => {
@@ -932,8 +915,8 @@ export default class Provider implements IProvider {
   /**
    * Get list of files available for a given path
    *
-   * @param {string} path - Folder path to retrieve content from.
-   * @return {Promise<PathItem[]>} Returns a list of [PathItem] elements
+   * @param path - Folder path to retrieve content from.
+   * @return Returns a list of [PathItem] elements
    */
   public getPathList: (path: string) => Promise<PathItem[]> = async (path) => {
     const result = await this.makeCall(URI.ROS_PATH_GET_LIST_RECURSIVE, [path], true).then((value: TResultData) => {
@@ -957,8 +940,8 @@ export default class Provider implements IProvider {
   /**
    * Get the path of log files for all [nodes]
    *
-   * @param {string[]} nodes - List of node names to get log files
-   * @return {Promise<LogPathItem>} Returns a list of [PathItem] elements
+   * @param nodes - List of node names to get log files
+   * @return Returns a list of [PathItem] elements
    */
   public getLogPaths: (nodes: string[]) => Promise<LogPathItem[]> = async (nodes) => {
     const result = await this.makeCall(URI.ROS_PATH_GET_LOG_PATHS, [nodes], true).then((value: TResultData) => {
@@ -979,8 +962,8 @@ export default class Provider implements IProvider {
   /**
    * Clear the path of log files for given nodes
    *
-   * @param {string[]} nodes - List of node names to clear log files
-   * @return {Promise<TResultClearPath[]>} Returns a list of [PathItem] elements
+   * @param nodes - List of node names to clear log files
+   * @return Returns a list of [PathItem] elements
    */
   public clearLogPaths: (nodes: string[]) => Promise<TResultClearPath[]> = async (nodes) => {
     const result = await this.makeCall(URI.ROS_PATH_CLEAR_LOG_PATHS, [nodes], true).then((value: TResultData) => {

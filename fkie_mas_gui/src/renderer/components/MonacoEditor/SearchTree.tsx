@@ -34,8 +34,6 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
 
   /**
    * Search through all available models a given text, and return all coincidences
-   *
-   * @param {string} searchText - Text to search
    */
   async function findAllTextMatches(searchText: string, isRegex: boolean): Promise<void> {
     if (currentIndex < ownUriPaths.length) {

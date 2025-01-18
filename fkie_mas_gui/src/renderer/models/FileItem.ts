@@ -2,8 +2,6 @@ import { generateUniqueId } from "../utils";
 
 /**
  * Return the filename from a given path
- *
- * @param {string} path - File path
  */
 export function getFileName(path: string): string {
   if (!path) return path;
@@ -12,8 +10,6 @@ export function getFileName(path: string): string {
 
 /**
  * Return the filename without extension from a given path
- *
- * @param {string} path - File path
  */
 export function getBaseName(path: string): string {
   const fileName = getFileName(path);
@@ -31,8 +27,6 @@ export function getBaseName(path: string): string {
 
 /**
  * Return the first and last letter of the file base name
- *
- * @param {string} path - File path
  */
 export function getFileAbb(path: string): string {
   if (!path) return path;
@@ -47,8 +41,6 @@ export function getFileAbb(path: string): string {
 
 /**
  * Return the file extension from a given path
- *
- * @param {string} path - File path
  */
 export function getFileExtension(path: string): string {
   return `${path.split(".").pop()}`;
