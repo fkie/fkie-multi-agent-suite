@@ -251,7 +251,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
           });
           node.services.forEach((service) => {
             newAcTsSet.add(service.name);
-            newAcTsSet.add(service.srv_type);
+            newAcTsSet.add(service.msg_type);
           });
         });
       });
