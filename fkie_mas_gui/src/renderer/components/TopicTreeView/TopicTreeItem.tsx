@@ -2,7 +2,7 @@ import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
-import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Chip, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { LoggingContext } from "../../context/LoggingContext";
@@ -34,6 +34,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   const [selected, setSelected] = useState(false);
   const [incompatibleQos, setIncompatibleQos] = useState<IncompatibleQos[]>([]);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
+  const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
   const getHostStyle = useCallback(
     function getHostStyle(providerName: string): object {
@@ -205,7 +206,20 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
       itemId={itemId}
       ref={ref as LegacyRef<HTMLLIElement>}
       label={
-        <Stack direction="column">
+        <Stack
+          direction="column"
+          onContextMenu={(event) => {
+            event.preventDefault();
+            setContextMenu(
+              contextMenu === null
+                ? {
+                    mouseX: event.clientX + 2,
+                    mouseY: event.clientY - 6,
+                  }
+                : null
+            );
+          }}
+        >
           <Box
             sx={{
               display: "flex",
@@ -382,6 +396,31 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
               })}
             </Stack>
           )}
+          <Menu
+            open={contextMenu != null}
+            onClose={() => setContextMenu(null)}
+            anchorReference="anchorPosition"
+            anchorPosition={contextMenu != null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
+          >
+            <MenuItem
+              sx={{ fontSize: "0.8em" }}
+              onClick={async () => {
+                navigator.clipboard.writeText(topicInfo.name);
+                setContextMenu(null);
+              }}
+            >
+              Copy topic name
+            </MenuItem>
+            <MenuItem
+              sx={{ fontSize: "0.8em" }}
+              onClick={async () => {
+                navigator.clipboard.writeText(topicInfo.msgType);
+                setContextMenu(null);
+              }}
+            >
+              Copy message type
+            </MenuItem>
+          </Menu>
         </Stack>
       }
     />
