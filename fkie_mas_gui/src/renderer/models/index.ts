@@ -114,8 +114,7 @@ export {
   getFileExtension,
   getFileName,
   getMaxDiagnosticLevel,
-  rosMessageStructToString
+  rosMessageStructToString,
 };
 
-  export type { EndpointInfo, IncompatibleQos, TRosMessageStruct, TServiceNodeInfo };
-
+export type { EndpointInfo, IncompatibleQos, TRosMessageStruct, TServiceNodeInfo };

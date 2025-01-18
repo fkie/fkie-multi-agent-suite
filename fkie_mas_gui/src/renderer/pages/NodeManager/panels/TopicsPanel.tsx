@@ -3,6 +3,7 @@ import LoggingContext from "@/renderer/context/LoggingContext";
 import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { Provider } from "@/renderer/providers";
+import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -16,8 +17,8 @@ import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/materi
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent } from "react-custom-events";
+import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { NewPublisherModal, OverflowMenu, SearchBar, TopicTreeItem } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
@@ -78,16 +79,12 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     });
   }
 
-  useEffect(() => {
-    setAvailableProviders(getAvailableProviders());
-  }, []);
-
   function genKey(items: string[]): string {
     return `${items.join("#")}`;
     //  return `${name}#${type}#${providerId}`;
   }
 
-  const getTopicList = useCallback(async () => {
+  async function updateTopicList(): Promise<void> {
     if (!rosCtx.initialized) return;
 
     const newTopicsMap = new Map();
@@ -123,7 +120,17 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
       return a.name.localeCompare(b.name);
     });
     setTopics(newTopics);
-  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
+  }
+
+  function getTopicList(): void {
+    rosCtx.providers.forEach((provider) => {
+      provider.updateRosTopics();
+    });
+  }
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
+    updateTopicList();
+  });
 
   // debounced search callback
   const onSearch = useDebounceCallback((newSearchTerm) => {
@@ -148,9 +155,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
   // Get topic list when mounting the component
   useEffect(() => {
-    getTopicList();
+    updateTopicList();
     setAvailableProviders(getAvailableProviders());
-  }, [rosCtx.initialized, rosCtx.mapProviderRosNodes]);
+  }, [rosCtx.initialized]);
 
   // Initial filter when setting the topics
   useEffect(() => {
@@ -554,7 +561,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm, providerForNewPublisher]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm]);
 
   const createPanel = useMemo(() => {
     return (

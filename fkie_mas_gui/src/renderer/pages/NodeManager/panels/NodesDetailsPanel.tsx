@@ -1,3 +1,4 @@
+import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import {
   Alert,
   AlertTitle,
@@ -15,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent } from "react-custom-events";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 import { CopyButton, Tag, colorFromHostname, getDiagnosticStyle } from "../../../components";
 import { LoggingContext } from "../../../context/LoggingContext";
@@ -82,6 +83,14 @@ export default function NodesDetailsPanel(): JSX.Element {
     });
     setNodesShow(nodes);
   }, [navCtx.selectedNodes, rosCtx.nodeMap]);
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
+    setNodesShow((prev) => [...prev]);
+  });
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
+    setNodesShow((prev) => [...prev]);
+  });
 
   async function onTopicClick(
     rosTopicType: EMenuTopic,

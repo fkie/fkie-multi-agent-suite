@@ -1,6 +1,7 @@
 import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
 import { RosService, ServiceExtendedInfo } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
+import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -10,7 +11,7 @@ import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent } from "react-custom-events";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { SearchBar } from "../../../components";
 import { RosContext } from "../../../context/RosContext";
 import { SettingsContext } from "../../../context/SettingsContext";
@@ -60,7 +61,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     return `${items.join("#")}`;
   }
 
-  const getServiceList = useCallback(async () => {
+  async function updateServiceList(): Promise<void> {
     // Get services from the ros node list of each provider.
     const newServicesMap = new Map();
     rosCtx.providers.forEach((provider: Provider) => {
@@ -92,7 +93,17 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
       return a.name.localeCompare(b.name);
     });
     setServices(newServices);
-  }, [rosCtx.mapProviderRosNodes, setServices, setFilteredServices]);
+  }
+
+  function getServiceList(): void {
+    rosCtx.providers.forEach((provider) => {
+      provider.updateRosServices();
+    });
+  }
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
+    updateServiceList();
+  });
 
   // debounced search callback
   const onSearch = useDebounceCallback((searchTerm: string) => {
@@ -144,8 +155,8 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
 
   // Get service list when mounting the component
   useEffect(() => {
-    getServiceList();
-  }, [rosCtx.mapProviderRosNodes]);
+    updateServiceList();
+  }, [rosCtx.initialized]);
 
   // Initial filter when setting the services
   useEffect(() => {

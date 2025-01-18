@@ -82,6 +82,22 @@ export class EventProviderRosNodes {
   }
 }
 
+export class EventProviderRosServices {
+  provider: Provider;
+
+  constructor(provider: Provider) {
+    this.provider = provider;
+  }
+}
+
+export class EventProviderRosTopics {
+  provider: Provider;
+
+  constructor(provider: Provider) {
+    this.provider = provider;
+  }
+}
+
 export class EventProviderScreens {
   provider: Provider;
 

@@ -59,6 +59,8 @@ import {
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_ROS_NODES,
+  EVENT_PROVIDER_ROS_SERVICES,
+  EVENT_PROVIDER_ROS_TOPICS,
   EVENT_PROVIDER_SCREENS,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX,
@@ -75,6 +77,8 @@ import {
   EventProviderPathEvent,
   EventProviderRemoved,
   EventProviderRosNodes,
+  EventProviderRosServices,
+  EventProviderRosTopics,
   EventProviderScreens,
   EventProviderState,
   EventProviderSubscriberEvent,
@@ -1075,7 +1079,7 @@ export default class Provider implements IProvider {
   };
 
   /** Update the screens of the node and create a new node it not exists */
-  public applyScreens: (screens: ScreensMapping[] | null) => void = (screens = null) => {
+  public applyScreens: (screens: ScreensMapping[] | null) => boolean = (screens = null) => {
     this.screens = screens ? screens : [];
     let nodesUpdated: boolean = false;
     // update nodes
@@ -1128,7 +1132,7 @@ export default class Provider implements IProvider {
     if (nodesUpdated) {
       emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
     }
-    return Promise.resolve(true);
+    return nodesUpdated;
   };
 
   /**
@@ -1383,8 +1387,10 @@ export default class Provider implements IProvider {
         });
 
         this.daemon = true;
-        this.applyScreens(this.screens);
-        emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
+        const changed = this.applyScreens(this.screens);
+        if (!changed) {
+          emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
+        }
         return true;
       }
 
@@ -2018,7 +2024,6 @@ export default class Provider implements IProvider {
    */
   public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => void = async (msg, forceRefresh = false) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
-    await this.updateScreens();
     const msgObj = msg as unknown as { path: string; action: string };
     if (msgObj?.path) {
       emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path));
@@ -2126,7 +2131,8 @@ export default class Provider implements IProvider {
     });
     this.rosNodes = nl;
     this.sameIdDict = sameIdDict;
-    this.updateLaunchContent();
+    await this.updateLaunchContent();
+    await this.updateScreens();
     this.updateRosServices();
     this.updateRosTopics();
     this.unlockRequest("updateRosNodes");
@@ -2140,6 +2146,7 @@ export default class Provider implements IProvider {
 
     // get service from remote provider
     this.rosServices = await this.getServiceList([]);
+    emitCustomEvent(EVENT_PROVIDER_ROS_SERVICES, new EventProviderRosServices(this));
     this.unlockRequest("updateRosServices");
   };
 
@@ -2151,6 +2158,7 @@ export default class Provider implements IProvider {
 
     // get publishers from remote provider
     this.rosTopics = await this.getTopicList([]);
+    emitCustomEvent(EVENT_PROVIDER_ROS_TOPICS, new EventProviderRosTopics(this));
     this.unlockRequest("updateRosTopics");
   };
 

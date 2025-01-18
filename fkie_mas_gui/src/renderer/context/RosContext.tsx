@@ -1384,24 +1384,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     [providers, mapProviderRosNodes, setMapProviderRosNodes]
   );
 
-  useCustomEventListener(EVENT_PROVIDER_SCREENS, (data: EventProviderScreens) => {
-    let updated = false;
-    // update screens for affected node
-    data.screens.forEach((nodeScreen) => {
-      const matchingNode = data.provider.rosNodes.find(
-        (node) => node.id === nodeScreen.name || node.name === nodeScreen.name
-      );
-      if (matchingNode) {
-        matchingNode.screens = nodeScreen.screens;
-        updated = true;
-      }
-    });
-    if (updated) {
-      // inform listener about updated nodes
-      emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(data.provider, data.provider.rosNodes));
-    }
-  });
-
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
     const { provider, newState, oldState, details } = data;
     console.log(
