@@ -324,6 +324,14 @@ export default class Provider implements IProvider {
     this.userName = name;
   };
 
+  public setSettingsCtx(settings: ISettingsContext): void {
+    this.settings = settings;
+  }
+
+  public setLoggerCtx(logger: ILoggingContext): void {
+    this.logger = logger;
+  }
+
   /** Creates a command string to open screen or log in a terminal */
   public cmdForType: (
     type: CmdType,

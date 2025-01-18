@@ -182,6 +182,18 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   // nodeMap: Map<string, RosNode>
   const [nodeMap, setNodeMap] = useState(new Map());
 
+  useEffect(() => {
+    providers.forEach((provider) => {
+      provider.setSettingsCtx(settingsCtx);
+    });
+  }, [settingsCtx]);
+
+  useEffect(() => {
+    providers.forEach((provider) => {
+      provider.setLoggerCtx(logCtx);
+    });
+  }, [logCtx]);
+
   /** Remove all disconnected provider and their discovered provider. */
   function clearProviders(): void {
     const idsSavedProviders: string[] = [];
