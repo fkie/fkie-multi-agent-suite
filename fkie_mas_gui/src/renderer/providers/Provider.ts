@@ -744,6 +744,7 @@ export default class Provider implements IProvider {
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [forceRefresh], true).then((value: TResultData) => {
       if (value.result) {
+        console.log(`node value.data: ${JSON.stringify(value.data)}`);
         return value.data as unknown as IRosNode[];
       }
       if (`${value.message}`.includes("wamp.error.no_such_procedure")) {
@@ -797,12 +798,12 @@ export default class Provider implements IProvider {
                 return { label: item[0], id: item[1] };
               });
             }
-            rn.publishers = n.publishers;
-            rn.subscribers = n.subscribers;
-            rn.services = n.services;
+            rn.publishers = n.publishers ? n.publishers : [];
+            rn.subscribers = n.subscribers ? n.subscribers : [];
+            rn.services = n.services ? n.services : n.services;
             // add screens
             // TODO: Filter screens that belongs to the same master URI
-            rn.screens = n.screens;
+            rn.screens = n.screens ? n.screens : [];
             nodeList.set(n.id, rn);
           });
 
@@ -846,6 +847,7 @@ export default class Provider implements IProvider {
   public getTopicList: (filter: RosTopicId[]) => Promise<RosTopic[]> = async (filter = []) => {
     const rawTopicsList = await this.makeCall(URI.ROS_NODES_GET_TOPICS, [filter], true).then((value: TResultData) => {
       if (value.result) {
+        console.log(`topic value.data: ${JSON.stringify(value.data)}`);
         return value.data as unknown as RosTopic[];
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getTopicList()`, `${value.message}`);
@@ -1794,12 +1796,11 @@ export default class Provider implements IProvider {
   private getScreenList: () => Promise<ScreensMapping[] | null> = async () => {
     const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true).then((value: TResultData) => {
       if (value.result) {
-        const screenMappings = value.data as ScreensMapping[];
-        const screenList: ScreensMapping[] = [];
-        screenMappings?.forEach((p: ScreensMapping) => {
-          screenList.push(new ScreensMapping(p.name, p.screens));
+        console.log(`screens: ${JSON.stringify(value.data)}`);
+        const screenMappings: ScreensMapping[] = (value.data as JSONObject[])?.map((item) => {
+          return ScreensMapping.fromJson(item);
         });
-        return screenList;
+        return screenMappings;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getScreenList()`, `${value.message}`);
       return null;
@@ -1813,7 +1814,7 @@ export default class Provider implements IProvider {
   private getDiagnostics: () => Promise<DiagnosticArray | null> = async () => {
     const result = await this.makeCall(URI.ROS_PROVIDER_GET_DIAGNOSTICS, [], true).then((value: TResultData) => {
       if (value.result) {
-        return value.data as DiagnosticArray;
+        return DiagnosticArray.fromJson(value.data as JSONObject);
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getDiagnostics()`, `${value.message}`);
       return null;
@@ -1827,8 +1828,11 @@ export default class Provider implements IProvider {
   private updateSystemWarnings: () => Promise<SystemWarningGroup[] | null> = async () => {
     const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: TResultData) => {
       if (value.result) {
-        const warnings = value.data as SystemWarningGroup[];
-        this.warnings = warnings;
+        const warnings = (value.data as JSONObject[])?.map((item) => {
+          return SystemWarningGroup.fromJson(item);
+        });
+        console.log(`warnings: ${value.data}`);
+        this.warnings = warnings ? warnings : [];
         return warnings;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at updateSystemWarnings()`, `${value.message}`);

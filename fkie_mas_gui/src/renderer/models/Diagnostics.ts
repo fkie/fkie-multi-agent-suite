@@ -1,4 +1,7 @@
 /* eslint-disable max-classes-per-file */
+
+import { JSONObject } from "@/types";
+
 /* eslint-disable camelcase */
 export enum DiagnosticLevel {
   OK = 0,
@@ -42,6 +45,13 @@ export class DiagnosticKeyValue {
     this.key = key;
     this.value = value;
   }
+
+  public static fromJson(obj: JSONObject): DiagnosticKeyValue {
+    const key = obj.key ? (obj.key as string) : "";
+    const value = obj.value ? (obj.value as string) : "";
+    const result: DiagnosticKeyValue = new DiagnosticKeyValue(key, value);
+    return result;
+  }
 }
 
 export class DiagnosticStatus {
@@ -68,6 +78,19 @@ export class DiagnosticStatus {
     this.hardware_id = hardware_id;
     this.values = values;
   }
+
+  public static fromJson(obj: JSONObject): DiagnosticStatus {
+    const level: DiagnosticLevel = obj.level ? (obj.level as DiagnosticLevel) : DiagnosticLevel.OK;
+    const name = obj.name ? (obj.name as string) : "";
+    const message = obj.message ? (obj.message as string) : "";
+    const hardware_id = obj.name ? (obj.hardware_id as string) : "";
+    const values: DiagnosticKeyValue[] = [];
+    (obj.values as JSONObject[])?.forEach((item) => {
+      values.push(DiagnosticKeyValue.fromJson(item));
+    });
+    const result: DiagnosticStatus = new DiagnosticStatus(level, name, message, hardware_id, values);
+    return result;
+  }
 }
 
 export default class DiagnosticArray {
@@ -78,5 +101,15 @@ export default class DiagnosticArray {
   constructor(timestamp: number, status: DiagnosticStatus[]) {
     this.timestamp = timestamp;
     this.status = status;
+  }
+
+  public static fromJson(obj: JSONObject): DiagnosticArray {
+    const timestamp = obj.timestamp ? (obj.timestamp as number) : 0;
+    const status: DiagnosticStatus[] = [];
+    (obj.status as JSONObject[])?.forEach((item) => {
+      status.push(DiagnosticStatus.fromJson(item));
+    });
+    const result: DiagnosticArray = new DiagnosticArray(timestamp, status);
+    return result;
   }
 }

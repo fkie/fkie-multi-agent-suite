@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 
+import { SystemWarningGroup } from "@/renderer/models";
 import {
   EventProviderActivity,
   EventProviderDelay,
@@ -303,7 +304,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
 
   function generateWarningsView(provider): JSX.Element {
     if (!provider.warnings) return <></>;
-    const warnings = provider.warnings.filter((group) => group.warnings.length > 0);
+    const warnings = provider.warnings.filter((group: SystemWarningGroup) => group.warnings.length > 0);
     if (warnings.length > 0) {
       return (
         <Tooltip
