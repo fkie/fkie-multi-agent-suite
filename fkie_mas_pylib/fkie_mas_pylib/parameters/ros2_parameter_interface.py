@@ -175,7 +175,7 @@ class ParameterInterface:
 
         parameter = Parameter()
         parameter.name = _parameter.name.replace(f'{node_name}/', '')
-        parameter.value = get_parameter_value(json.dumps(_parameter.value))
+        parameter.value = get_parameter_value(_parameter.value)
 
         response = self.call_set_parameters(
             node=self.global_node, node_name=node_name, parameters=[parameter])

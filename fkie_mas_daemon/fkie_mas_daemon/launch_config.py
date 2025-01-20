@@ -908,7 +908,7 @@ class LaunchConfig(object):
         for argument_action in launch_arguments:
             value = ''
             for parg in provided_args:
-                if argument_action.name == parg.name:
+                if argument_action.name == parg.name and hasattr(parg, "value"):
                     value = parg.value
                     break
 

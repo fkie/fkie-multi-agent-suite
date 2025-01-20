@@ -107,7 +107,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
             historyList = [...new Set([...historyList, argValue])];
             argList.push({
               name: arg.name,
-              value: argValue,
+              value: argValue || "",
               history: historyList,
               choices: arg.choices,
               default_value: undefined,

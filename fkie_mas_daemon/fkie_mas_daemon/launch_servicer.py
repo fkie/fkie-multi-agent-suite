@@ -385,7 +385,7 @@ class LaunchServicer(LoggingEventHandler):
                             f"{self.__class__.__name__}: ..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; privided args {provided_args}")
                         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
-            launch_arguments = [(arg.name, arg.value) for arg in request.args]
+            launch_arguments = [(arg.name, arg.value) for arg in request.args if hasattr(arg, "value")]
             # context=self.__launch_context
             launch_config = LaunchConfig(
                 launchfile, context=self.__launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
@@ -648,7 +648,7 @@ class LaunchServicer(LoggingEventHandler):
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
             # search for loaded file and get the arguments
-            resolve_args = {arg.name: arg.value for arg in request.args}
+            resolve_args = {arg.name: arg.value for arg in request.args if hasattr(arg, "value")}
             if not resolve_args:
                 for cfgid, lcfg in self._loaded_files.items():
                     if cfgid.path == request.path:
@@ -683,7 +683,7 @@ class LaunchServicer(LoggingEventHandler):
         text = request.text
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.launch.interpret_path]: {text}")
-        args = {arg.name: arg.value for arg in request.args}
+        args = {arg.name: arg.value for arg in request.args if hasattr(arg, "value")}
         result = []
         if text:
             try:
