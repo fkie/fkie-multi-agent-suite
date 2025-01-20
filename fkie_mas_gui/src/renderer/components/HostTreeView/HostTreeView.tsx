@@ -211,12 +211,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
         if (node) {
-          if (node.pid > 0 || node.screens.length > 0) {
+          if (node.pid > 0 || (node.screens || []).length > 0) {
             if (event.nativeEvent.ctrlKey && !node.system_node) {
               // stop node
               stopNodes([node.idGlobal]);
             } else {
-              node.screens.forEach((screen) => {
+              node.screens?.forEach((screen) => {
                 rosCtx.openTerminal(
                   CmdType.SCREEN,
                   node.providerId as string,
@@ -489,11 +489,10 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       // find ros nodes with this name
       const providerNodes = rosCtx.mapProviderRosNodes.get(providerId);
       providerNodes?.forEach((treeNode) => {
-        if (
-          launch.nodes.filter((lNode) => {
-            return lNode.node_name === treeNode.name;
-          }).length > 0
-        ) {
+        const nodes = launch.nodes?.filter((lNode) => {
+          return lNode.node_name === treeNode.name;
+        });
+        if ((nodes || []).length > 0) {
           treeNodes = [...treeNodes, treeNode.idGlobal];
         }
       });

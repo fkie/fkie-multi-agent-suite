@@ -41,7 +41,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
 
-  function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel, isDarkMode: boolean = false): string {
+  function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel | undefined, isDarkMode: boolean = false): string {
     switch (diagnosticLevel) {
       case DiagnosticLevel.OK:
         return isDarkMode ? green[600] : green[500];
@@ -150,7 +150,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       }
 
       case RosNodeStatus.INACTIVE: {
-        if (node.screens.length === 1) {
+        if ((node.screens || []).length === 1) {
           const color = isDarkMode ? green[600] : green[500];
           return <DvrIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
         } else {
@@ -257,17 +257,17 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               </IconButton>
             </Tooltip>
           )}
-          {node.status === RosNodeStatus.RUNNING && node.screens.length > 1 && (
+          {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
             <Tooltip title="Multiple Screens" placement="left">
               <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
-          {node.status === RosNodeStatus.RUNNING && node.screens.length < 1 && (
+          {node.status === RosNodeStatus.RUNNING && (node.screens || []).length < 1 && (
             <Tooltip title="No Screens" placement="left">
               <DesktopAccessDisabledOutlinedIcon style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
-          {node.status !== RosNodeStatus.RUNNING && node.screens.length > 1 && (
+          {node.status !== RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
             <Tooltip title="Ghost Screens" placement="left">
               <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
             </Tooltip>

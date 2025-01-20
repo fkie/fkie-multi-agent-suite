@@ -565,7 +565,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           } else {
             addStatusQueueMain("STOP", node.name, true, "stopped");
           }
-        } else if (node.screens.length > 0) {
+        } else if ((node.screens || []).length > 0) {
           // terminate screen and store result for message
           const resultTermNode = await provider.screenKillNode(node.id, "SIGTERM");
           if (!resultTermNode.result) {
@@ -600,7 +600,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         })
       ) {
         skippedNodes.set(node.name, "already in queue");
-      } else if (node.status === RosNodeStatus.RUNNING || node.screens.length > 0) {
+      } else if (node.status === RosNodeStatus.RUNNING || (node.screens || []).length > 0) {
         // const isRunning = node.status === RosNodeStatus.RUNNING;
         // const isRunning = true;
         // if (!skip) {
@@ -1188,7 +1188,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                   navCtx.selectedProviders?.forEach((providerId) => {
                     const prov = rosCtx.getProviderById(providerId);
                     prov?.screens.forEach((screenMap) => {
-                      screenMap.screens.forEach((screen) => {
+                      screenMap.screens?.forEach((screen) => {
                         screens.push({
                           nodeName: screenMap.name,
                           providerId: prov?.id,
@@ -1202,24 +1202,26 @@ export default function HostTreeViewPanel(): JSX.Element {
                 } else {
                   const screens: TMenuOptionsScreen[] = []; // {node : string, screen: string, callback: () => void, external: boolean}
                   getSelectedNodes().forEach((node) => {
-                    if (node.screens.length === 1) {
+                    if (node.screens && node.screens.length === 1) {
                       // 1 screen available
                       screens.push({
                         nodeName: node.name,
                         providerId: node.providerId,
                         screen: node.screens[0],
                         callback: () => {
-                          createSingleTerminalPanel(
-                            CmdType.SCREEN,
-                            node.providerId,
-                            node.name,
-                            node.screens[0],
-                            event.nativeEvent.shiftKey,
-                            event.nativeEvent.ctrlKey
-                          );
+                          if (node.screens) {
+                            createSingleTerminalPanel(
+                              CmdType.SCREEN,
+                              node.providerId,
+                              node.name,
+                              node.screens[0],
+                              event.nativeEvent.shiftKey,
+                              event.nativeEvent.ctrlKey
+                            );
+                          }
                         },
                       });
-                    } else if (node.screens.length > 1) {
+                    } else if (node.screens && node.screens.length > 1) {
                       // Multiple screens available
                       node.screens.map((screen) => {
                         screens.push({

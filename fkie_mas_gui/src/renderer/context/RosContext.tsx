@@ -508,7 +508,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (provider.launchFiles) {
         const filteredLaunchFile = provider.launchFiles.find((lf) => lf.path === modifiedFile);
         if (filteredLaunchFile) {
-          args = filteredLaunchFile.args;
+          args = filteredLaunchFile.args || [];
         }
       }
 
@@ -531,7 +531,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 key,
                 `${message}`,
                 provider,
-                result.reply ? result.reply.changed_nodes : [],
+                result.reply && result.reply.changed_nodes ? result.reply.changed_nodes : [],
                 modifiedFile
               ),
           });
@@ -1295,11 +1295,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, (data: EventProviderPathEvent) => {
-    if (data.path.affected.length === 0 && data.provider.className === "Provider") {
+    if (
+      (data.path.affected === undefined || data.path.affected.length === 0) &&
+      data.provider.className === "Provider"
+    ) {
       // no affected launch files => it is a binary
       const nodes: string[] = [];
       data.provider.launchFiles.forEach((launch) => {
-        launch.nodes.forEach((node) => {
+        launch.nodes?.forEach((node) => {
           if (node.executable) {
             if (data.path.srcPath.endsWith(node.executable)) {
               if (node.node_name) {
@@ -1323,7 +1326,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         });
       }
     }
-    data.path.affected.forEach((arg: string) => {
+    data.path.affected?.forEach((arg: string) => {
       enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
         persist: true,
         anchorOrigin: {

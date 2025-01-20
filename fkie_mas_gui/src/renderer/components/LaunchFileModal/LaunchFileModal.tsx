@@ -96,7 +96,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
 
           // set default values to arguments in form
           const argList: LaunchArgumentWithHistory[] = [];
-          result.args.forEach((arg) => {
+          result.args?.forEach((arg) => {
             const argValue: string = !arg.value ? (arg.default_value as string) : arg.value;
             let historyList = argHistory[arg.name];
             if (historyList === undefined) {
@@ -110,6 +110,8 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
               value: argValue,
               history: historyList,
               choices: arg.choices,
+              default_value: undefined,
+              description: undefined,
             });
           });
           setCurrentArgs(argList);
@@ -135,7 +137,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
         }
 
         if (result.status.code === "ERROR") {
-          setMessageLaunchLoaded(result.status.msg);
+          setMessageLaunchLoaded(result.status.msg || "");
           logCtx.error(`Error on load "${getFileName(path)}"`, `Error message: ${result.status.msg}`);
         }
 
@@ -178,7 +180,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
          * */
         const rosPackage = ""; // ROS package name.
         const launch = ""; // Launch file in the package path.
-        const path = selectedLaunch.paths[0];
+        const path = selectedLaunch.paths && selectedLaunch.paths.length > 0 ? selectedLaunch.paths[0] : "";
         const forceFirstFile = true;
         const requestArgs = false;
 
@@ -343,7 +345,9 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       <DialogContent>
         {selectedLaunch && (
           <Stack>
-            <Tag className="not-draggable" color="info" text={selectedLaunch.paths[0]} wrap />
+            {selectedLaunch.paths && selectedLaunch.paths.length > 0 && (
+              <Tag className="not-draggable" color="info" text={selectedLaunch.paths[0]} wrap />
+            )}
             <Stack>
               {currentArgs.map((arg) => {
                 const optionsTmp = arg.choices ? arg.choices : arg.history;

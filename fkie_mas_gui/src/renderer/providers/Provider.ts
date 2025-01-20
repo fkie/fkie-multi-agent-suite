@@ -1033,7 +1033,12 @@ export default class Provider implements IProvider {
       result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true).then((value: TResultData) => {
         if (value.result) {
           const parsed = value.data as LaunchLoadReply;
-          const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
+          const loadReply = new LaunchLoadReply(
+            parsed.status,
+            parsed.paths || [],
+            parsed.args || [],
+            parsed.changed_nodes || []
+          );
           return loadReply;
         }
         this.logger?.error(`Provider [${this.name()}]: Error at launchLoadFile()`, `${value.message}`);
@@ -1043,7 +1048,12 @@ export default class Provider implements IProvider {
       result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true).then((value: TResultData) => {
         if (value.result) {
           const parsed = value.data as LaunchLoadReply;
-          const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
+          const loadReply = new LaunchLoadReply(
+            parsed.status,
+            parsed.paths || [],
+            parsed.args || [],
+            parsed.changed_nodes || []
+          );
           return loadReply;
         }
         this.logger?.error(`Provider [${this.name()}]: Error at launchLoadFile()`, `${value.message}`);
@@ -1060,7 +1070,12 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true).then((value: TResultData) => {
       if (value.result) {
         const parsed = value.data as LaunchLoadReply;
-        const loadReply = new LaunchLoadReply(parsed.status, parsed.paths, parsed.args, parsed.changed_nodes);
+        const loadReply = new LaunchLoadReply(
+          parsed.status,
+          parsed.paths || [],
+          parsed.args || [],
+          parsed.changed_nodes || []
+        );
         return loadReply;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at launchUnloadFile()`, `${value.message}`);
@@ -1080,9 +1095,12 @@ export default class Provider implements IProvider {
         return n.name === screen.name;
       });
       if (idxNode >= 0) {
-        if (JSON.stringify(this.rosNodes[idxNode].screens.sort()) !== JSON.stringify(screen.screens.sort())) {
+        let oScr = this.rosNodes[idxNode].screens;
+        if (oScr === undefined) oScr = [];
+        const nScr = screen.screens ? screen.screens : [];
+        if (JSON.stringify(oScr.sort()) !== JSON.stringify(nScr.sort())) {
           nodesUpdated = true;
-          this.rosNodes[idxNode].screens = screen.screens;
+          this.rosNodes[idxNode].screens = nScr;
         }
       } else {
         // create a new node for screen
@@ -1104,14 +1122,14 @@ export default class Provider implements IProvider {
     const nodesToRemove: string[] = [];
     this.rosNodes.forEach((node: RosNode, idx: number) => {
       if (node.status !== RosNodeStatus.RUNNING) {
-        if (node.screens.length > 0) {
+        if (node.screens && node.screens.length > 0) {
           const screenMapping = this.screens.find((s) => node.id === s.name);
           if (!screenMapping) {
             nodesUpdated = true;
             this.rosNodes[idx].screens = [];
           }
         }
-        if (node.screens.length === 0 && this.rosNodes[idx].launchInfo.size === 0) {
+        if (node.screens?.length === 0 && this.rosNodes[idx].launchInfo.size === 0) {
           // remove node if no launchInfo?
           nodesToRemove.push(node.idGlobal);
           nodesUpdated = true;
@@ -1152,20 +1170,20 @@ export default class Provider implements IProvider {
       }
     }
     // update the screens
-    diags.status.forEach((status) => {
+    diags.status?.forEach((status) => {
       const matchingNode = this.rosNodes.find((node) => node.id === status.name);
       if (matchingNode) {
         matchingNode.diagnosticLevel = status.level;
         matchingNode.diagnosticMessage = status.message;
-        if (matchingNode.diagnosticStatus.length === 0) {
+        if (matchingNode.diagnosticStatus && matchingNode.diagnosticStatus.length === 0) {
           matchingNode.diagnosticStatus.push(status);
-        } else {
+        } else if (matchingNode.diagnosticStatus) {
           // do not add the same value
           const lastStatus = matchingNode.diagnosticStatus[matchingNode.diagnosticStatus.length - 1];
           if (
             lastStatus.level !== status.level ||
             lastStatus.message !== status.message ||
-            lastStatus.values.length !== status.values.length
+            (lastStatus.values || []).length !== (status.values || []).length
           ) {
             matchingNode.diagnosticStatus.push(status);
           }
@@ -1202,18 +1220,18 @@ export default class Provider implements IProvider {
             launchList.push(
               new LaunchContent(
                 parsed.path,
-                parsed.args,
-                parsed.masteruri,
+                parsed.args || [],
+                parsed.masteruri || "",
                 parsed.host,
-                parsed.nodes,
-                parsed.parameters.map((p) => {
+                parsed.nodes || [],
+                parsed.parameters?.map((p) => {
                   if (this.rosVersion === "1") {
                     return new RosParameter(p.name, p.value, p.type, this.id);
                   } else {
                     return new RosParameter(p[0], p[1], "", this.id);
                   }
-                }),
-                parsed.associations
+                }) || [],
+                parsed.associations || []
               )
             );
           });
@@ -1225,7 +1243,7 @@ export default class Provider implements IProvider {
         // update nodes
         // Add nodes from launch files to the list of nodes
         this.launchFiles.forEach((launchFile) => {
-          launchFile.nodes.forEach((launchNode: LaunchNodeInfo) => {
+          launchFile.nodes?.forEach((launchNode: LaunchNodeInfo) => {
             // get parameter of a node and determine the capability group parameter
             const nodeParameters: RosParameter[] = [];
             let nodeGroup: { namespace?: string; name?: string } = {};
@@ -1269,9 +1287,9 @@ export default class Provider implements IProvider {
               }
 
               let associations: string[] = [];
-              launchFile.associations.forEach((item) => {
+              launchFile.associations?.forEach((item) => {
                 if (item.node === uniqueNodeName) {
-                  associations = item.nodes;
+                  associations = item.nodes || [];
                 }
               });
               launchNode.associations = associations;
@@ -1417,8 +1435,8 @@ export default class Provider implements IProvider {
                 exists: boolean;
                 raw_inc_path: string;
                 rec_depth: number;
-                args: LaunchArgument[];
-                default_inc_args: LaunchArgument[];
+                args: LaunchArgument[] | undefined;
+                default_inc_args: LaunchArgument[] | undefined;
                 size: number;
                 conditional_excluded: boolean;
               }) => {
@@ -1431,8 +1449,8 @@ export default class Provider implements IProvider {
                     lf.exists,
                     lf.raw_inc_path,
                     lf.rec_depth,
-                    lf.args,
-                    lf.default_inc_args,
+                    lf.args || [],
+                    lf.default_inc_args || [],
                     lf.size,
                     lf.conditional_excluded
                   )
@@ -1664,7 +1682,7 @@ export default class Provider implements IProvider {
       emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, node));
       if (value.result) {
         const parsed = value.data as LaunchNodeReply;
-        const response = new LaunchNodeReply(parsed.name, parsed.status, parsed.paths, parsed.launch_files);
+        const response = new LaunchNodeReply(parsed.name, parsed.status, parsed.paths || [], parsed.launch_files || []);
 
         if (!response) {
           return {
@@ -1797,7 +1815,7 @@ export default class Provider implements IProvider {
         const screenMappings = value.data as ScreensMapping[];
         const screenList: ScreensMapping[] = [];
         screenMappings?.forEach((p: ScreensMapping) => {
-          screenList.push(new ScreensMapping(p.name, p.screens));
+          screenList.push(new ScreensMapping(p.name, p.screens || []));
         });
         return screenList;
       }
@@ -2105,7 +2123,7 @@ export default class Provider implements IProvider {
         }
       }
       // check if the node has dynamic reconfigure service
-      n.services.forEach((service: RosTopicId) => {
+      n.services?.forEach((service: RosTopicId) => {
         if (service.name.endsWith("/set_parameters")) {
           const serviceNs = service.name.slice(0, -15);
           n.dynamicReconfigureServices.push(serviceNs);

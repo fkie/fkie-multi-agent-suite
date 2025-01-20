@@ -68,7 +68,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
         rosCtx.mapProviderRosNodes.get(providerId)?.forEach((n) => {
           if (n.name === nodeName) {
             // TODO: How to handle multiple screens? For now just do this for nodes with a single screen.
-            if (n.screens.length > 0) {
+            if (n.screens && n.screens.length > 0) {
               setErrorHighlighting(false);
               if (n.screens[0] !== screen && n.screens[0] !== lastScreenUsed) {
                 // screen changed, reload the component
@@ -76,7 +76,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
                 setInitialCommands(() => []);
                 initializeTerminal(n.screens[0]);
               }
-            } else if (n.screens.length === 0) {
+            } else if (!n.screens || n.screens.length === 0) {
               if (lastScreenUsed !== "") {
                 // Open Log if no screen is available
                 setInitialCommands(() => []);

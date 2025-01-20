@@ -12,9 +12,9 @@ export default class SystemWarningGroup {
   /**
    * List of warnings.
    */
-  warnings: [SystemWarning];
+  warnings: SystemWarning[] | undefined;
 
-  constructor(id: string, warnings: [SystemWarning]) {
+  constructor(id: string, warnings: SystemWarning[]) {
     this.id = id;
     this.warnings = warnings;
   }

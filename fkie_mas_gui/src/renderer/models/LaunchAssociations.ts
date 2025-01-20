@@ -10,7 +10,7 @@ export default class LaunchAssociations {
   /**
    * List with nodes (full name) controlled by nodelet manager.
    */
-  nodes: string[];
+  nodes: string[] | undefined;
 
   constructor(manager: string, nodes: string[]) {
     this.node = manager;

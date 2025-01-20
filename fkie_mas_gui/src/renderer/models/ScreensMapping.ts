@@ -10,7 +10,7 @@ export default class ScreensMapping {
   /**
    * A list of screens detected for a node.
    */
-  screens: string[];
+  screens: string[] | undefined;
 
   constructor(name: string, screens: string[]) {
     this.name = name;

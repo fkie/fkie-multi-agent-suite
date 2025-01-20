@@ -28,7 +28,7 @@ export default class LaunchInterpretPathReply {
   /**
    * Arguments used to load the launch file.
    */
-  args: LaunchArgument[];
+  args: LaunchArgument[] | undefined;
 
   constructor(text: string, status: LaunchReturnStatus, path: string, exists: boolean, args: LaunchArgument[]) {
     this.text = text;

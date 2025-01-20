@@ -3,7 +3,7 @@ import JSONObject, { JSONValue } from "../../types/JsonObject";
 export type TRosMessageStruct = {
   type: string;
   name: string;
-  def: TRosMessageStruct[];
+  def: TRosMessageStruct[] | undefined;
   default_value?: JSONValue;
   value?: JSONValue | TRosMessageStruct[];
   is_array: boolean;
@@ -16,9 +16,9 @@ export function rosMessageStructToString(
 ): string | JSONValue {
   if (!msgStruct) return "{}";
   const result: { [fieldName: string]: JSONValue | JSONValue[] } = {};
-  const struct: TRosMessageStruct[] = Array.isArray(msgStruct) ? msgStruct : msgStruct.def;
+  const struct: TRosMessageStruct[] = Array.isArray(msgStruct) ? msgStruct : msgStruct.def ? msgStruct.def : [];
   struct.forEach((field: TRosMessageStruct) => {
-    if (field.def.length === 0) {
+    if (field.def && field.def.length === 0) {
       // simple types
       if (field.value || withEmptyFields) {
         if (field.value || typeof field.value === "boolean" || field.type.startsWith("bool")) {

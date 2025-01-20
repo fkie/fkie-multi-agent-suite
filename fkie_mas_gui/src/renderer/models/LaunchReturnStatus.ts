@@ -20,7 +20,7 @@ export default class LaunchReturnStatus {
   /**
    * Explaining optional message.
    */
-  msg: string;
+  msg: string | undefined;
 
   constructor(code: string, msg: string) {
     this.code = code;

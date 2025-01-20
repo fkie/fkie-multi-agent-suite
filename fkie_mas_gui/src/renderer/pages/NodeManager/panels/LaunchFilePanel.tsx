@@ -20,8 +20,8 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
   const { launchContent } = props;
 
   const settingsCtx = useContext(SettingsContext);
-  const nodes: LaunchNodeInfo[] = launchContent.nodes.filter((e) => !e.composable_container);
-  const composableNodes: TComposableNodes[] = launchContent.nodes
+  const nodes: LaunchNodeInfo[] = launchContent.nodes?.filter((e) => !e.composable_container) || [];
+  const composableNodes: TComposableNodes[] = (launchContent.nodes || [])
     .filter((e: LaunchNodeInfo) => e.composable_container)
     .reduce((tree: TComposableNodes[], composableNode: LaunchNodeInfo) => {
       const manager = tree.find((n) => n.manager && n.manager === composableNode.composable_container);
@@ -125,7 +125,7 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
 
         {/* TODO: Fix and add arguments of the launch file */}
 
-        <Typography variant="body1">Arguments {`[${launchContent.args.length}]`}</Typography>
+        <Typography variant="body1">Arguments {`[${(launchContent.args || []).length}]`}</Typography>
 
         {launchContent && launchContent.args && launchContent.args.length > 0 && (
           <SimpleTreeView
@@ -176,7 +176,7 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
           </>
         )}
 
-        <Typography variant="body1">Parameters {`[${launchContent.parameters.length}]`}</Typography>
+        <Typography variant="body1">Parameters {`[${(launchContent.parameters || []).length}]`}</Typography>
 
         {/* TODO: Do we want to show parameters? */}
         {/* {launchContent &&

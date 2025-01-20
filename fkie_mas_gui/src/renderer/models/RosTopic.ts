@@ -35,12 +35,12 @@ export default class RosTopic {
   /**
    * List of ROS nodes publish to this topic.
    */
-  publisher: EndpointInfo[];
+  publisher: EndpointInfo[] | undefined;
 
   /**
    * List of ROS nodes subscribe to this topic.
    */
-  subscriber: EndpointInfo[];
+  subscriber: EndpointInfo[] | undefined;
 
   constructor(
     name: string,

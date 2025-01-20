@@ -11,7 +11,7 @@ export default class LaunchFile {
    * Starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
    * the nodes are started on the host specified by hostname of the masteruri.
    */
-  masteruri: string;
+  masteruri: string | undefined;
 
   /**
    * Start nodes of this file on specified host.

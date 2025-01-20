@@ -100,13 +100,13 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
           }
         }
-        topic.publisher.forEach((pub) => {
+        topic.publisher?.forEach((pub) => {
           const rosNode = provider.rosNodes.find((node: RosNode) => node.id === pub.node_id);
           if (rosNode) {
             addTopic(topic, rosNode);
           }
         });
-        topic.subscriber.forEach((sub) => {
+        topic.subscriber?.forEach((sub) => {
           const rosNode = provider.rosNodes.find((node: RosNode) => node.id === sub.node_id);
           if (rosNode) {
             addTopic(topic, rosNode);
@@ -153,11 +153,16 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     setFilteredTopics(newFilteredTopics);
   }, 300);
 
-  // Get topic list when mounting the component
+  // Get topic list
   useEffect(() => {
     updateTopicList();
     setAvailableProviders(getAvailableProviders());
   }, [rosCtx.initialized]);
+
+  // Get new provider list if providers are changed
+  useEffect(() => {
+    setAvailableProviders(getAvailableProviders());
+  }, [rosCtx.providers]);
 
   // Initial filter when setting the topics
   useEffect(() => {
@@ -283,7 +288,13 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
   function onPublishClick(topic: TopicExtendedInfo | null, providerId: string = ""): void {
     if (topic) {
-      const provId = providerId ? providerId : topic.subscribers.length > 0 ? topic.subscribers[0].providerId : "";
+      let provId = providerId ? providerId : undefined;
+      if (!provId) {
+        provId = topic.subscribers.length > 0 ? topic.subscribers[0].providerId : undefined;
+      }
+      if (!provId) {
+        provId = topic.publishers.length > 0 ? topic.publishers[0].providerId : undefined;
+      }
       if (provId) {
         emitCustomEvent(
           EVENT_OPEN_COMPONENT,
@@ -297,7 +308,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           )
         );
       } else {
-        logCtx.warn("no subscriber available");
+        logCtx.warn("no subscriber/publisher available");
       }
     }
   }

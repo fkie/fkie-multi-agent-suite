@@ -230,7 +230,7 @@ export default function NodesDetailsPanel(): JSX.Element {
             </Typography>
           </Stack>
 
-          {node && node.diagnosticLevel > 0 && (
+          {node && node.diagnosticLevel && node.diagnosticLevel > 0 && (
             <Typography variant="body1" style={getDiagnosticStyle(node.diagnosticLevel)} marginBottom={1}>
               {getDiagnosticLevelName(node.diagnosticLevel)}: {node.diagnosticMessage}
             </Typography>
@@ -308,7 +308,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <Tag color="default" title="GID:" text={`${node.guid}`} wrap />
                 </Stack>
               )}
-              {node.screens.length > 0 && (
+              {node.screens && node.screens.length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   {node.screens.map((screen) => (
                     <Tag
@@ -341,7 +341,7 @@ export default function NodesDetailsPanel(): JSX.Element {
 
           {node && (
             <Stack spacing={1}>
-              {showSubscribers && (
+              {showSubscribers && node.subscribers && (
                 <>
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
@@ -375,15 +375,15 @@ export default function NodesDetailsPanel(): JSX.Element {
                                                 size="small"
                                                 title="publishers"
                                                 // showZero={true}
-                                                color={rt.publisher.length === 0 ? "warning" : "default"}
-                                                label={rt.publisher.length}
+                                                color={(rt.publisher || []).length === 0 ? "warning" : "default"}
+                                                label={rt.publisher ? rt.publisher.length : 0}
                                               />
                                               <Chip
                                                 size="small"
                                                 title="subscribers"
                                                 // showZero={true}
-                                                color={rt.subscriber.length > 0 ? "default" : "warning"}
-                                                label={rt.subscriber.length}
+                                                color={(rt.subscriber || []).length > 0 ? "default" : "warning"}
+                                                label={rt.subscriber ? rt.subscriber.length : 0}
                                               />
                                             </Stack>
                                           );
@@ -421,7 +421,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                 </>
               )}
 
-              {showPublishers && (
+              {showPublishers && node.publishers && (
                 <>
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
@@ -455,14 +455,14 @@ export default function NodesDetailsPanel(): JSX.Element {
                                               title="publishers"
                                               // showZero={true}
                                               color="default"
-                                              label={rt.publisher.length}
+                                              label={rt.publisher ? rt.publisher.length : 0}
                                             />
                                             <Chip
                                               size="small"
                                               title="subscribers"
                                               // showZero={true}
-                                              color={rt.subscriber.length > 0 ? "default" : "warning"}
-                                              label={rt.subscriber.length}
+                                              color={(rt.subscriber || []).length > 0 ? "default" : "warning"}
+                                              label={rt.subscriber ? rt.subscriber.length : 0}
                                             />
                                           </Stack>
                                         );
@@ -500,7 +500,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                 </>
               )}
 
-              {showServices && (
+              {showServices && node.services && (
                 <>
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold", marginTop: 1 }}>

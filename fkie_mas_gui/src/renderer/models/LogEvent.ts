@@ -35,7 +35,7 @@ export default class LogEvent {
   /**
    * Detailed log info
    */
-  details: string;
+  details: string | undefined;
 
   constructor(level: LoggingLevel, description: string, details = "", datum = new Date().toLocaleString()) {
     this.id = generateUniqueId();

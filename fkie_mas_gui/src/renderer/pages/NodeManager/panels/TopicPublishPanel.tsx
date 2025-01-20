@@ -29,6 +29,7 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { LaunchPublishMessage, rosMessageStructToString, TRosMessageStruct } from "../../../models";
 import InputElements from "./MessageDialogPanel/InputElements";
+import { JSONObject } from "@/types";
 
 type THistoryItem = {
   rate: string;
@@ -127,13 +128,13 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
           // Get messageType from node list of the provider
           newProvider.rosNodes.forEach((node) => {
             if (node.providerId === providerId) {
-              node.subscribers.forEach((topic) => {
+              node.subscribers?.forEach((topic) => {
                 if (msgType === "" && topicName === topic.name) {
                   msgType = topic.msg_type;
                 }
               });
               if (msgType === "") {
-                node.publishers.forEach((topic) => {
+                node.publishers?.forEach((topic) => {
                   if (msgType === "" && topicName === topic.name) {
                     msgType = topic.msg_type;
                   }
@@ -236,7 +237,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
       new LaunchPublishMessage(
         topicName as string,
         messageType,
-        messageStruct,
+        messageStruct as JSONObject,
         rate,
         once,
         latched,
@@ -298,7 +299,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
           </Typography>
         </Stack>
         <Stack direction="row" spacing={1}>
-          {messageStruct && messageStruct.def.length > 0 && (
+          {messageStruct && (messageStruct.def || []).length > 0 && (
             <SearchBar
               onSearch={(value) => {
                 setSearchTerm(value);

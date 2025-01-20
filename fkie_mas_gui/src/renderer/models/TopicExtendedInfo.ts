@@ -28,8 +28,8 @@ export default class TopicExtendedInfo {
     this.addSubscribers(topic.subscriber, node);
   }
 
-  addPublishers(publishers: EndpointInfo[], node: RosNode): void {
-    publishers.forEach((pub: EndpointInfo) => {
+  addPublishers(publishers: EndpointInfo[] | undefined, node: RosNode): void {
+    publishers?.forEach((pub: EndpointInfo) => {
       if (
         this.publishers.filter((item) => item.info.node_id === pub.node_id && item.providerId === node.providerId)
           .length === 0
@@ -42,8 +42,8 @@ export default class TopicExtendedInfo {
     });
   }
 
-  addSubscribers(subscribers: EndpointInfo[], node: RosNode): void {
-    subscribers.forEach((sub: EndpointInfo) => {
+  addSubscribers(subscribers: EndpointInfo[] | undefined, node: RosNode): void {
+    subscribers?.forEach((sub: EndpointInfo) => {
       if (
         this.subscribers.filter((item) => item.info.node_id === sub.node_id && item.providerId === node.providerId)
           .length === 0

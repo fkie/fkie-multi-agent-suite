@@ -16,12 +16,12 @@ export default class RosService {
   /**
    * ROS service API URI (where the service is running)
    */
-  service_API_URI: string;
+  service_API_URI: string | undefined;
 
   /**
    * The ROS_MASTER_URI the service was originally registered
    */
-  masteruri: string;
+  masteruri: string | undefined;
 
   /**
    * Describes whether the service is running on the same host as the ROS master. Possible values: local, remote
@@ -31,12 +31,12 @@ export default class RosService {
   /**
    * List of ROS nodes provide this service.
    */
-  provider: string[];
+  provider: string[] | undefined;
 
   /**
    * List of ROS nodes requested this service.
    */
-  requester: string[];
+  requester: string[] | undefined;
 
   constructor(
     name: string,

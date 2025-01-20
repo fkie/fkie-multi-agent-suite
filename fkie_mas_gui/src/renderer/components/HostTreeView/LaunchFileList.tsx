@@ -113,7 +113,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
                         edge="end"
                         aria-label="Reload launch"
                         onClick={(event) => {
-                          onReloadLaunch(providerId, lc.path, lc.masteruri);
+                          onReloadLaunch(providerId, lc.path, lc.masteruri || "");
                           event.stopPropagation();
                         }}
                       >
@@ -139,7 +139,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
                         edge="end"
                         aria-label="Unload launch file"
                         onClick={(event) => {
-                          onRemoveLaunch(providerId, lc.path, lc.masteruri);
+                          onRemoveLaunch(providerId, lc.path, lc.masteruri || "");
                           event.stopPropagation();
                         }}
                       >
@@ -151,7 +151,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
               >
                 <ListItemButton dense>
                   <ListItemText
-                    primary={`${launchName} [${lc.nodes.length}]`}
+                    primary={`${launchName} [${lc.nodes ? lc.nodes.length : 0}]`}
                     sx={{
                       color: settingsCtx.get("useDarkMode") ? blue[300] : blue[800],
                     }}

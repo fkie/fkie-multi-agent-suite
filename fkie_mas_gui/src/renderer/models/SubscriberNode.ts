@@ -34,7 +34,7 @@ export default class SubscriberNode {
   /**
    * Quality of service subscription options (Only ROS2).
    */
-  qos: RosQos;
+  qos: RosQos | undefined;
 
   constructor(
     topic: string,

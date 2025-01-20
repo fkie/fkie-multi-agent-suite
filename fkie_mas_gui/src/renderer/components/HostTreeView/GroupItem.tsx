@@ -55,10 +55,10 @@ const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = 
   treeItems.forEach((treeItem) => {
     if (treeItem.children && treeItem.children.length > 0) {
       const childrenLevel = getGroupDiagnosticLevel(treeItem.children);
-      groupLevel = getMaxDiagnosticLevel(groupLevel, childrenLevel);
+      groupLevel = getMaxDiagnosticLevel(groupLevel, childrenLevel) || DiagnosticLevel.OK;
     }
     if (treeItem.node) {
-      groupLevel = getMaxDiagnosticLevel(groupLevel, treeItem.node.diagnosticLevel);
+      groupLevel = getMaxDiagnosticLevel(groupLevel, treeItem.node.diagnosticLevel) || DiagnosticLevel.OK;
     }
   });
   return groupLevel;

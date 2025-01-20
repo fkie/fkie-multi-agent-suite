@@ -5,9 +5,9 @@ import { TResult } from "@/types";
  */
 export default class ProviderLaunchConfiguration {
   /** Name of the provider, usually set after the provider was launched. */
-  providerName?: string;
+  providerName: string | undefined;
 
-  providerId?: string;
+  providerId: string | undefined;
 
   host: string;
 

@@ -210,7 +210,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
     if (!serviceType) return;
     if (!serviceStruct) return;
     onUpdateInputElements(searchTerm);
-    if (serviceStruct.def.length === 0) {
+    if ((serviceStruct.def || []).length === 0) {
       handleCallService();
     }
   }, [serviceStruct]);
@@ -292,7 +292,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
             {provider?.name()}
           </Typography>
         </Stack>
-        {serviceStruct && serviceStruct.def.length > 0 && (
+        {serviceStruct && (serviceStruct.def || []).length > 0 && (
           <Stack direction="row" spacing={1}>
             <SearchBar
               onSearch={(value) => {

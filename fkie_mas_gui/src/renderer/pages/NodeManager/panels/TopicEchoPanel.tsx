@@ -153,13 +153,13 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     const nodeList: RosNode[] | undefined = rosCtx.mapProviderRosNodes.get(selectedProvider);
     // TODO: select QoS depending on publishers QoS, see choose_qos: https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
     nodeList?.forEach((node) => {
-      node.subscribers.forEach((topic) => {
+      node.subscribers?.forEach((topic) => {
         if (msgType === "" && topicName === topic.name) {
           msgType = topic.msg_type;
         }
       });
       if (msgType === "") {
-        node.publishers.forEach((topic) => {
+        node.publishers?.forEach((topic) => {
           if (msgType === "" && topicName === topic.name) {
             msgType = topic.msg_type;
           }

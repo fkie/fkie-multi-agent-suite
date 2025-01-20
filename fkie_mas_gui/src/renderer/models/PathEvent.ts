@@ -20,7 +20,7 @@ export default class PathEvent {
 
   srcPath: string;
 
-  affected: string[];
+  affected: string[] | undefined;
 
   constructor(eventType: PATH_EVENT_TYPE, srcPath: string, affected: string[]) {
     this.id = generateUniqueId();

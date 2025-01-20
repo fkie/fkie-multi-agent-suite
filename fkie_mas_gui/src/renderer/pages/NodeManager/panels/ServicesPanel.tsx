@@ -69,18 +69,18 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         const key = genKey([provider.id, service.name, service.srv_type]);
         const serviceInfo = newServicesMap.get(key);
         if (serviceInfo) {
-          service.provider.map((item) => {
+          service.provider?.map((item) => {
             serviceInfo.addProvider(item.split("-")[0], item);
           });
-          service.requester.map((item) => {
+          service.requester?.map((item) => {
             serviceInfo.addRequester(item.split("-")[0], item);
           });
         } else {
           const serviceInfo = new ServiceExtendedInfo(service, provider.id, provider.name());
-          service.provider.map((item) => {
+          service.provider?.map((item) => {
             serviceInfo.addProvider(item.split("-")[0], item);
           });
-          service.requester.map((item) => {
+          service.requester?.map((item) => {
             serviceInfo.addRequester(item.split("-")[0], item);
           });
           newServicesMap.set(key, serviceInfo);

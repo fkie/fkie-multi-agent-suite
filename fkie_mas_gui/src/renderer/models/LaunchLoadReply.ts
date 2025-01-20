@@ -14,17 +14,17 @@ export default class LaunchLoadReply {
   /**
    * All paths found for package/launch file combination.
    */
-  paths: string[];
+  paths: string[] | undefined;
 
   /**
    * The list of arguments used or required for a load of the launch file.
    */
-  args: LaunchArgument[];
+  args: LaunchArgument[] | undefined;
 
   /**
    * The list of nodes with changed configuration after reload the launch file.
    */
-  changed_nodes: string[];
+  changed_nodes: string[] | undefined;
 
   constructor(status: LaunchReturnStatus, paths: string[], args: LaunchArgument[], changed_nodes: string[]) {
     this.status = status;

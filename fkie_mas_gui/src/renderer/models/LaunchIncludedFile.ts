@@ -43,12 +43,12 @@ export default class LaunchIncludedFile {
   /**
    * A list with arguments forwarded within include tag for 'inc_path'.
    */
-  args: LaunchArgument[];
+  args: LaunchArgument[] | undefined;
 
   /**
    * A list with default arguments defined in 'inc_path'.
    */
-  default_inc_args: LaunchArgument[];
+  default_inc_args: LaunchArgument[] | undefined;
 
   /**
    * Size of the included file in bytes.

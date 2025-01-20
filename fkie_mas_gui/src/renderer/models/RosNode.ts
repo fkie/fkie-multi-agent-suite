@@ -96,27 +96,27 @@ export default class RosNode {
   /**
    * List of topics subscribed by the node
    */
-  subscribers: RosTopicId[];
+  subscribers: RosTopicId[] | undefined;
 
   /**
    * List of topics published by the node
    */
-  publishers: RosTopicId[];
+  publishers: RosTopicId[] | undefined;
 
   /**
    * List of services available in the node
    */
-  services: RosTopicId[];
+  services: RosTopicId[] | undefined;
 
   /**
    * List of Active screens
    */
-  screens: string[];
+  screens: string[] | undefined;
 
   /** List of diagnostic messages associated with this node. */
-  diagnosticStatus: DiagnosticStatus[] = [];
+  diagnosticStatus: DiagnosticStatus[] | undefined = [];
 
-  diagnosticLevel: DiagnosticLevel = DiagnosticLevel.OK;
+  diagnosticLevel: DiagnosticLevel | undefined = DiagnosticLevel.OK;
 
   diagnosticMessage: string = "";
 
@@ -146,22 +146,22 @@ export default class RosNode {
    */
   rosLoggers: { [id: string]: string } = {};
 
-  guid?: string;
+  guid: string | undefined;
 
   /**
    * True if the node is a container
    */
 
-  is_container?: boolean;
+  is_container: boolean | undefined;
   /**
    * The node name of the composable/nodelet's parent
    */
-  container_name?: string;
+  container_name: string | undefined;
 
   dynamicReconfigureServices: string[] = [];
 
-  lifecycle_state?: string;
-  lifecycle_available_transitions?: { label: string; id: number }[];
+  lifecycle_state?: string | undefined;
+  lifecycle_available_transitions: { label: string; id: number }[] | undefined;
 
   constructor(
     id = "",

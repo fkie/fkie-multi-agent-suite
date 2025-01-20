@@ -11,27 +11,27 @@ export default class LaunchNode {
   /**
    * The full path of the binary. Used in case of multiple binaries in the same package.
    */
-  opt_binary: string;
+  opt_binary: string | undefined;
 
   /**
    * Full name of the launch file to use. Used in case the node with same name exists in more then one loaded launch file.
    */
-  opt_launch: string;
+  opt_launch: string | undefined;
 
   /**
    * Log level
    */
-  loglevel: string;
+  loglevel: string | undefined;
 
   /**
    * Log format
    */
-  logformat: string;
+  logformat: string | undefined;
 
   /**
    * Starts nodes with specified ROS_MASTER_URI.
    */
-  masteruri: string;
+  masteruri: string | undefined;
 
   /**
    * Reload all global parameter if True.
@@ -41,7 +41,7 @@ export default class LaunchNode {
   /**
    * Custom command prefix. It will be prepended before launch prefix.
    */
-  cmd_prefix: string;
+  cmd_prefix: string | undefined;
 
   constructor(
     name: string,

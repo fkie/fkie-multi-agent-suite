@@ -239,17 +239,17 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         prov.rosNodes.forEach((node) => {
           newAcTsSet.add(`${node.name}/*`);
           newAcTopicSet.add(`${node.name}/*`);
-          node.publishers.forEach((topic) => {
+          node.publishers?.forEach((topic) => {
             newAcTsSet.add(topic.name);
             newAcTsSet.add(topic.msg_type);
             newAcTopicSet.add(topic.name);
           });
-          node.subscribers.forEach((topic) => {
+          node.subscribers?.forEach((topic) => {
             newAcTsSet.add(topic.name);
             newAcTsSet.add(topic.msg_type);
             newAcTopicSet.add(topic.name);
           });
-          node.services.forEach((service) => {
+          node.services?.forEach((service) => {
             newAcTsSet.add(service.name);
             newAcTsSet.add(service.msg_type);
           });

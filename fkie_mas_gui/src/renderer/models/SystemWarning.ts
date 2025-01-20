@@ -15,7 +15,7 @@ export default class SystemWarning {
   /**
    * Note on the possible solution.
    */
-  hint: string;
+  hint: string | undefined;
 
   constructor(msg: string, details: string, hint: string) {
     this.msg = msg;

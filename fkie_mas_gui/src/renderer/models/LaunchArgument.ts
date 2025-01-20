@@ -14,11 +14,11 @@ export default class LaunchArgument implements TLaunchArg {
    */
   value: string;
 
-  default_value?: string;
+  default_value: string | undefined;
 
-  description?: string;
+  description: string | undefined;
 
-  choices?: string[];
+  choices: string[] | undefined;
 
   constructor(name: string, value: string, default_value?: string, description?: string, choices?: string[]) {
     this.name = name;

@@ -7,7 +7,17 @@ export enum DiagnosticLevel {
   STALE = 3,
 }
 
-export function getMaxDiagnosticLevel(lvl1: DiagnosticLevel, lvl2: DiagnosticLevel): DiagnosticLevel {
+export function getMaxDiagnosticLevel(
+  lvl1: DiagnosticLevel | undefined,
+  lvl2: DiagnosticLevel | undefined
+): DiagnosticLevel | undefined {
+  if (lvl1 === undefined && lvl2 === undefined) {
+    return DiagnosticLevel.OK;
+  } else if (lvl1 === undefined) {
+    return lvl2;
+  } else if (lvl2 === undefined) {
+    return lvl1;
+  }
   const maxLvl = Math.max(lvl1, lvl2);
   if (maxLvl === DiagnosticLevel.STALE) {
     const minLvl = Math.min(lvl1, lvl2);
@@ -51,9 +61,9 @@ export class DiagnosticStatus {
 
   message: string;
 
-  hardware_id: string;
+  hardware_id: string | undefined;
 
-  values: DiagnosticKeyValue[] = [];
+  values: DiagnosticKeyValue[] | undefined = [];
 
   constructor(
     level: DiagnosticLevel,
@@ -73,7 +83,7 @@ export class DiagnosticStatus {
 export default class DiagnosticArray {
   timestamp: number;
 
-  status: DiagnosticStatus[];
+  status: DiagnosticStatus[] | undefined;
 
   constructor(timestamp: number, status: DiagnosticStatus[]) {
     this.timestamp = timestamp;

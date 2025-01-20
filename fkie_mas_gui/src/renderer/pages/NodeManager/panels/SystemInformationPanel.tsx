@@ -109,7 +109,7 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
         // join warnings to one list
         let warnings: SystemWarning[] = [];
         provider.warnings.forEach((w) => {
-          warnings = [...warnings, ...w.warnings];
+          warnings = [...warnings, ...(w.warnings || [])];
         });
         setProviderWarnings(warnings);
       }
