@@ -1846,7 +1846,7 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: TResultData) => {
       if (value.result) {
         const warnings = value.data as SystemWarningGroup[];
-        this.warnings = warnings;
+        this.warnings = warnings ? warnings : [];
         return warnings;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at updateSystemWarnings()`, `${value.message}`);

@@ -475,7 +475,7 @@ class LaunchServicer(LoggingEventHandler):
         try:
             # test for required args
             provided_args = ["%s" % arg.name for arg in request.args]
-            provided_args_dict = {arg.name: arg.value for arg in request.args}
+            provided_args_dict = {arg.name: arg.value if hasattr(arg, "value") else "" for arg in request.args}
             launch_config = LaunchConfig(
                 launchfile,
                 masteruri=request.masteruri,
@@ -512,7 +512,7 @@ class LaunchServicer(LoggingEventHandler):
             argv = [
                 "%s:=%s" % (arg.name, arg.value)
                 for arg in request.args
-                if arg.name in req_args_dict
+                if arg.name in req_args_dict and hasattr(arg, "value")
             ]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
@@ -537,6 +537,8 @@ class LaunchServicer(LoggingEventHandler):
                                    'path': launchfile, 'action': 'loaded'})
             self._add_launch_to_observer(launchfile)
         except Exception as e:
+            import traceback
+            print(traceback.format_exc())
             err_text = "%s loading failed!" % launchfile
             err_details = "%s: %s" % (err_text, utf8(e))
             Log.warn("Loading launch file: %s", err_details)

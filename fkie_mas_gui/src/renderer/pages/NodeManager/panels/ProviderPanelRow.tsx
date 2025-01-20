@@ -301,9 +301,9 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     }
   }
 
-  function generateWarningsView(provider): JSX.Element {
+  function generateWarningsView(provider: Provider): JSX.Element {
     if (!provider.warnings) return <></>;
-    const warnings = provider.warnings.filter((group) => group.warnings.length > 0);
+    const warnings = provider.warnings.filter((group) => (group.warnings || []).length > 0);
     if (warnings.length > 0) {
       return (
         <Tooltip
