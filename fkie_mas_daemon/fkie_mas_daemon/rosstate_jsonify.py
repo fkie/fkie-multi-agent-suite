@@ -194,10 +194,12 @@ class RosStateJsonify:
                     endpoint_publisher = False
                     Log.debug(
                         f"{self.__class__.__name__}:      add publisher {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name} for {tp.name}")
-                    endpoint_info = EndpointInfo(ros_node.id, self._get_qos(pub_info.qos_profile), [])
-                    tp.publisher.append(endpoint_info)
+                    if not self._has_endpoint_info(ros_node.id, tp.publisher):
+                        endpoint_info = EndpointInfo(ros_node.id, self._get_qos(pub_info.qos_profile), [])
+                        tp.publisher.append(endpoint_info)
                     self._ros_topic_dict[ros_topic_id_str] = tp
-                    ros_node.publishers.append(ros_topic_id)
+                    if not self._has_topic_id(ros_topic_id, ros_node.publishers):
+                        ros_node.publishers.append(ros_topic_id)
                     discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in pub_info.topic_type
                     endpoint_publisher = 'fkie_mas_msgs::msg::dds_::Endpoint_' in pub_info.topic_type
                     ros_node.system_node |= ros_node.system_node or discover_state_publisher or endpoint_publisher
@@ -248,10 +250,12 @@ class RosStateJsonify:
                             if compatibility != QoSCompatibility.OK:
                                 incompatible_qos.append(IncompatibleQos(
                                     qp.node.id, self._qos_compatibility2str(compatibility), reason))
-                        endpoint_info = EndpointInfo(ros_node.id, self._get_qos(sub_info.qos_profile), incompatible_qos)
-                        tp.subscriber.append(endpoint_info)
+                        if not self._has_endpoint_info(ros_node.id, tp.subscriber):
+                            endpoint_info = EndpointInfo(ros_node.id, self._get_qos(sub_info.qos_profile), incompatible_qos)
+                            tp.subscriber.append(endpoint_info)
                         self._ros_topic_dict[ros_topic_id_str] = tp
-                        ros_node.subscribers.append(ros_topic_id)
+                        if not self._has_topic_id(ros_topic_id, ros_node.subscribers):
+                            ros_node.subscribers.append(ros_topic_id)
                     else:
                         if is_request and ros_node.id not in tp.provider:
                             Log.debug(
@@ -400,6 +404,19 @@ class RosStateJsonify:
             else:
                 data.service_by_id[gid] = data.service_objs[(srv_name, srv_type)]
             return data.service_by_id[gid], False, topic_name[:2] == 'rq'
+
+    def _has_topic_id(self, id: RosTopicId, list: List[RosTopicId]):
+        for item in list:
+            if id.name == item.name and id.msg_type == item.msg_type:
+                return True
+        return False
+
+    def _has_endpoint_info(self, node_id: str, list: List[EndpointInfo]):
+        for item in list:
+            if node_id == item.node_id:
+                return True
+        return False
+
 
     def _is_local_composable_service(self, service_name, ros_node: RosNode) -> bool:
         if service_name.endswith('/_container/list_nodes') and ros_node.is_local:
