@@ -24,7 +24,9 @@ from watchdog.events import FileSystemEvent
 import rosidl_parser.definition
 from rosidl_runtime_py import message_to_ordereddict
 from rosidl_runtime_py import set_message_fields
+from rosidl_runtime_py import get_action_interfaces
 from rosidl_runtime_py import get_message_interfaces
+from rosidl_runtime_py import get_service_interfaces
 
 
 from fkie_mas_pylib import ros_pkg
@@ -955,10 +957,17 @@ class LaunchServicer(LoggingEventHandler):
             nmd.ros_node.destroy_client(request.service_name)
         return json.dumps(result, cls=SelfEncoder)
 
-    def get_message_types(self) -> str:
+    def get_message_types(self, mode: str = "message") -> str:
         Log.info(f"Request to [ros.launch.get_message_types]")
         result = []
-        interfaces = get_message_interfaces()
+        interfaces = {}
+        if (mode == "service"):
+            interfaces = get_service_interfaces()
+        elif (mode == "action"):
+            interfaces = get_action_interfaces()
+        else:
+            interfaces = get_message_interfaces()
+
         for pkg, messages in interfaces.items():
             for message in messages:
                 result.append(f"{pkg}/{message}")

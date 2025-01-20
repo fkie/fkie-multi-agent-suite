@@ -1217,16 +1217,19 @@ class LaunchServicer(LoggingEventHandler):
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
-    def get_message_types(self) -> str:
+    def get_message_types(self, mode: str = "message") -> str:
         # Convert input dictionary into a proper python object
         Log.info(f"Request to [ros.launch.get_message_types]")
         result = []
-        mode = ".msg"
+        _mode = ".msg"
         subdir = "msg"
+        if (mode == "service"):
+            _mode = ".srv"
+            subdir = "srv"
         rospack = rospkg.RosPack()
-        packs = sorted([x for x in iterate_packages(rospack, mode)])
+        packs = sorted([x for x in iterate_packages(rospack, _mode)])
         for (p, direc) in packs:
-            for file in _list_types(direc, subdir, mode):
+            for file in _list_types(direc, subdir, _mode):
                 result.append(f"{p}/{file}")
         return json.dumps(result, cls=SelfEncoder)
 
