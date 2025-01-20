@@ -18,7 +18,7 @@ import websockets
 import websockets.sync
 import websockets.sync.client
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface import SelfAllEncoder
 from fkie_mas_pylib.websocket.queue import QueueItem, PQueue
 
 
@@ -84,7 +84,7 @@ class WebSocketClient:
                             request = {"uri": "sub",
                                        "id": self._msg_id, "params": [key]}
                             self.queue.put(QueueItem(json.dumps(
-                                request, cls=SelfEncoder), priority=0))
+                                request, cls=SelfAllEncoder), priority=0))
                         # send registrations
                         for key in self.registrations.keys():
                             Log.info(f"register callback for {key}")
@@ -92,7 +92,7 @@ class WebSocketClient:
                             request = {"uri": "reg",
                                        "id": self._msg_id, "params": [key]}
                             self.queue.put(QueueItem(json.dumps(
-                                request, cls=SelfEncoder), priority=0))
+                                request, cls=SelfAllEncoder), priority=0))
                         for message in connection:
                             try:
                                 msg = json.loads(message,
@@ -145,7 +145,7 @@ class WebSocketClient:
         try:
             result = callback(*(arg for arg in args))
             if not isinstance(result, str):
-                result = json.dumps(result, cls=SelfEncoder)
+                result = json.dumps(result, cls=SelfAllEncoder)
         except Exception as err:
             import traceback
             error = traceback.format_exc()
@@ -161,7 +161,7 @@ class WebSocketClient:
         latched_value = 'true' if latched else 'false'
         msg = message
         if not isinstance(msg, str):
-            msg = json.dumps(msg, cls=SelfEncoder)
+            msg = json.dumps(msg, cls=SelfAllEncoder)
         self.queue.put(
             QueueItem(f'{{"uri": "{uri}", "message": {msg}, "latched": {latched_value}}}', priority=1))
 

@@ -18,7 +18,7 @@ import websockets
 import websockets.sync
 import websockets.sync.server
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface import SelfAllEncoder
 from fkie_mas_pylib.websocket.handler import WebSocketHandler
 
 
@@ -101,7 +101,7 @@ class WebSocketServer:
         with self._lock:
             msg = message
             if not isinstance(msg, str):
-                msg = json.dumps(msg, cls=SelfEncoder)
+                msg = json.dumps(msg, cls=SelfAllEncoder)
             for con in self._handler:
                 con.publish(uri, msg)
             if uri in self._subscriptions:

@@ -13,7 +13,7 @@ from types import SimpleNamespace
 import websockets
 import websockets.sync.server
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface import SelfAllEncoder
 from fkie_mas_pylib.websocket.queue import QueueItem, PQueue
 
 
@@ -73,7 +73,7 @@ class WebSocketHandler:
                                 reply = {"id": rci.origin_id,
                                          "error": msg.error}
                             rci.handler.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfEncoder), priority=0))
+                                reply, cls=SelfAllEncoder), priority=0))
                         else:
                             Log.warn(
                                 f"[{self.address}]: received malformed message (without uri) {message}")
@@ -82,7 +82,7 @@ class WebSocketHandler:
                             if has_id:
                                 reply['id'] = msg.id
                             self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfEncoder), priority=0))
+                                reply, cls=SelfAllEncoder), priority=0))
                         continue
                     if has_id:
                         # handle rpc calls
@@ -94,7 +94,7 @@ class WebSocketHandler:
                                 self._subscriptions.add(msg.params[0])
                             reply = {"id": msg.id, "result": True}
                             self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfEncoder), priority=0))
+                                reply, cls=SelfAllEncoder), priority=0))
                         elif msg.uri == 'unsub':
                             # create subscription
                             try:
@@ -106,7 +106,7 @@ class WebSocketHandler:
                                 pass
                             reply = {"id": msg.id, "result": True}
                             self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfEncoder), priority=0))
+                                reply, cls=SelfAllEncoder), priority=0))
                         elif msg.uri == 'reg':
                             # register a method
                             self.server.register_rpc(msg.params[0], self)
@@ -114,7 +114,7 @@ class WebSocketHandler:
                                 self._registrations.add(msg.params[0])
                             reply = {"id": msg.id, "result": True}
                             self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfEncoder), priority=0))
+                                reply, cls=SelfAllEncoder), priority=0))
                         else:
                             callback, local = self.server.get_callback(msg.uri)
                             if callback is not None:
@@ -133,7 +133,7 @@ class WebSocketHandler:
                                 reply = {
                                     "id": msg.id, "error": f"no method for ${msg.uri} registered"}
                                 self.queue.put(QueueItem(json.dumps(
-                                    reply, cls=SelfEncoder), priority=0))
+                                    reply, cls=SelfAllEncoder), priority=0))
                     elif hasattr(msg, 'message'):
                         self.server.publish(msg.uri, msg.message)
                 except Exception as error:
@@ -159,7 +159,7 @@ class WebSocketHandler:
         try:
             result = callback(*(arg for arg in args))
             if not isinstance(result, str):
-                result = json.dumps(result, cls=SelfEncoder)
+                result = json.dumps(result, cls=SelfAllEncoder)
         except Exception as err:
             import traceback
             print(traceback.format_exc())
@@ -180,7 +180,7 @@ class WebSocketHandler:
     #     try:
     #         result = callback(*(arg for arg in args))
     #         if not isinstance(result, str):
-    #             result = json.dumps(result, cls=SelfEncoder)
+    #             result = json.dumps(result, cls=SelfAllEncoder)
     #     except Exception:
     #         import traceback
     #         error = traceback.format_exc()
@@ -206,7 +206,7 @@ class WebSocketHandler:
                 msg.id = self._remote_calls_id
                 self._remote_calls_id += 1
                 self.queue.put(QueueItem(json.dumps(
-                    msg, cls=SelfEncoder), priority=0))
+                    msg, cls=SelfAllEncoder), priority=0))
 
     def _send_handler(self):
         try:
