@@ -4,6 +4,7 @@ import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import JoinFullIcon from "@mui/icons-material/JoinFull";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
+import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Button,
@@ -357,6 +358,20 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     [settingsCtx.MIN_VERSION_DAEMON, provider]
   );
 
+  const isNewerVersion = useCallback(
+    function (): boolean {
+      try {
+        if (semver.major(settingsCtx.MIN_VERSION_DAEMON) < semver.major(provider.getDaemonReleaseVersion())) {
+          return true;
+        }
+      } catch {
+        // no output on version errors
+      }
+      return false;
+    },
+    [settingsCtx.MIN_VERSION_DAEMON, provider]
+  );
+
   const getVersionColor = useCallback(
     function (): string {
       try {
@@ -494,6 +509,33 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 }}
               >
                 <UpgradeIcon sx={{ fontSize: "inherit", color: getVersionColor() }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {isNewerVersion() && (
+            <Tooltip
+              title={`daemon has a newer version ${provider.getDaemonReleaseVersion()} with broken changes. This GUI requires ${settingsCtx.MIN_VERSION_DAEMON}. In case of problems, please open a terminal and downgrade the daemon version.`}
+              placement="bottom-start"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <IconButton
+                edge="start"
+                onClick={(event) => {
+                  // open terminal for update
+                  rosCtx.openTerminal(
+                    CmdType.TERMINAL,
+                    provider.id,
+                    "",
+                    "",
+                    "",
+                    event.nativeEvent.shiftKey,
+                    event.nativeEvent.ctrlKey
+                  );
+                }}
+              >
+                <VerticalAlignBottomIcon sx={{ fontSize: "inherit", color: getVersionColor() }} />
               </IconButton>
             </Tooltip>
           )}

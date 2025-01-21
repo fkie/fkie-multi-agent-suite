@@ -3,6 +3,7 @@ import { ProgressInfo, UpdateDownloadedEvent, UpdateInfo } from "electron-update
 export const AutoUpdateManagerEvents = {
   checkForUpdate: "au:check-for-updates",
   quitAndInstall: "au:quit-and-install",
+  setChannel: "au:set-channel",
   onCheckingForUpdate: "au:checking-for-update",
   onUpdateAvailable: "au:update-available",
   onUpdateNotAvailable: "au:update-not-available",
@@ -20,6 +21,7 @@ export type AuUpdateErrorCallback = (message: string) => void;
 export type TAutoUpdateManager = {
   checkForUpdate: () => void;
   quitAndInstall: () => void;
+  setChannel: (channelType: "prerelease" | "release") => void;
 
   onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) => void;
   onUpdateAvailable: (callback: AuUpdateAvailableCallback) => void;

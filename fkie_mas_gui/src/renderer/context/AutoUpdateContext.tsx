@@ -3,10 +3,13 @@ import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { LoggingContext } from "./LoggingContext";
 import { SettingsContext } from "./SettingsContext";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
   checkForUpdate: () => void;
+  updateChannel: string;
+  setUpdateChannel: (channelType: "prerelease" | "release") => void;
   checkingForUpdate: boolean;
   updateAvailable: UpdateInfo | null;
   downloadProgress: ProgressInfo | null;
@@ -17,7 +20,9 @@ export interface IAutoUpdateContext {
 
 export const DEFAULT = {
   autoUpdateManager: null,
+  updateChannel: "release",
   checkForUpdate: (): void => {},
+  setUpdateChannel: (): void => {},
   checkingForUpdate: false,
   updateAvailable: null,
   downloadProgress: null,
@@ -43,13 +48,17 @@ export function AutoUpdateProvider({
   const [downloadProgress, setDownloadProgress] = useState<ProgressInfo | null>(null);
   const [updateError, setUpdateError] = useState<string>("");
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
+  const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release">("AutoUpdate:updateChannel", "release");
 
-  function checkForUpdate(): void {
-    logCtx.debug(`Check for new release on https://github.com/fkie/fkie-multi-agent-suite`, "");
+  function checkForUpdate(channel?: "prerelease" | "release"): void {
+    logCtx.info(`Check for new ${updateChannel} on https://github.com/fkie/fkie-multi-agent-suite`, "", false);
     setUpdateAvailable(null);
     setUpdateError("");
     setCheckingForUpdate(false);
     setDownloadProgress(null);
+    if (channel) {
+      autoUpdateManager?.setChannel(channel);
+    }
     autoUpdateManager?.checkForUpdate();
   }
 
@@ -57,6 +66,14 @@ export function AutoUpdateProvider({
     setUpdateError("");
     setRequestedInstallUpdate(true);
     autoUpdateManager?.quitAndInstall();
+  }
+
+  function setUpdateChannel(channelType: "prerelease" | "release"): void {
+    if (updateChannel != channelType) {
+      setChannel(channelType);
+      autoUpdateManager?.setChannel(channelType);
+      checkForUpdate(channelType);
+    }
   }
 
   useEffect(() => {
@@ -92,7 +109,7 @@ export function AutoUpdateProvider({
     });
 
     if (settingsCtx.get("checkForUpdates")) {
-      checkForUpdate();
+      checkForUpdate(updateChannel);
     }
   }, [autoUpdateManager]);
 
@@ -100,6 +117,8 @@ export function AutoUpdateProvider({
     () => ({
       autoUpdateManager,
       checkForUpdate,
+      updateChannel,
+      setUpdateChannel,
       checkingForUpdate,
       updateAvailable,
       downloadProgress,

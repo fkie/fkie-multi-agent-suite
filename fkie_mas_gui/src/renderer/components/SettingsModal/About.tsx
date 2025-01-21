@@ -1,6 +1,6 @@
 import licenses from "@/renderer/deps-licenses.json";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import { Box, Button, IconButton, Link, Stack, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, IconButton, Link, Stack, TextField, Typography } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 import PropTypes from "prop-types";
@@ -71,6 +71,26 @@ export default function About(): JSX.Element {
         )}
         {auCtx.autoUpdateManager && (
           <Stack ml="1em" spacing={0.2} direction="row" alignItems="center">
+            <Autocomplete
+              handleHomeEndKeys={false}
+              disablePortal
+              disableClearable
+              // disableCloseOnSelect
+              // multiple
+              id="auto-complete-au-channel"
+              size="small"
+              options={["prerelease", "release"]}
+              sx={{ margin: 0, width: "9em" }}
+              renderInput={(params) => <TextField {...params} label="Update channel" />}
+              value={auCtx.updateChannel}
+              onChange={(_event: unknown, newValue: string | null) => {
+                if (newValue === "prerelease") {
+                  auCtx.setUpdateChannel(newValue);
+                } else {
+                  auCtx.setUpdateChannel("release");
+                }
+              }}
+            />
             {auCtx.checkingForUpdate && (
               <Box sx={{ display: "flex" }}>
                 <CircularProgress size="1em" />
@@ -99,6 +119,11 @@ export default function About(): JSX.Element {
             )}
           </Stack>
         )}
+        {auCtx.autoUpdateManager && auCtx.updateChannel === "prerelease" && (
+          <Typography ml="1em" variant="body1" color="orange">
+            You must switch to the 'prerelease' branch for Daemon and Discovery
+          </Typography>
+        )}
         {openErrorTooltip && (
           <Stack ml="1em" direction="row" alignItems="center">
             <CopyButton value={auCtx.updateError} />
@@ -120,31 +145,27 @@ export default function About(): JSX.Element {
         <Typography variant="body1" sx={{ fontWeight: "bold" }}>
           Contributors:
         </Typography>
-        <Typography variant="body1" paddingLeft="1em">
-          <Stack>
-            {packageJson.contributors.map((item) => (
-              <Typography key={`contributor-${item}`} variant="body1">
-                {item}
-              </Typography>
-            ))}
-          </Stack>
-        </Typography>
+        <Stack paddingLeft="1em">
+          {packageJson.contributors.map((item) => (
+            <Typography key={`contributor-${item}`} variant="body1">
+              {item}
+            </Typography>
+          ))}
+        </Stack>
       </Stack>
       {/** additional software */}
       <Stack mt="0.6em" spacing="0.2em" direction="column">
         <Typography variant="body1" sx={{ fontWeight: "bold" }}>
           Required additional software:
         </Typography>
-        <Typography variant="body1" paddingLeft="1em">
-          <Stack>
-            <Link href="https://github.com/tsl0922/ttyd" target="_blank" rel="noopener">
-              https://github.com/tsl0922/ttyd
-            </Link>
-            <Link href="https://github.com/fkie/fkie-multi-agent-suite" target="_blank" rel="noopener">
-              https://github.com/fkie/fkie-multi-agent-suite
-            </Link>
-          </Stack>
-        </Typography>
+        <Stack paddingLeft="1em">
+          <Link href="https://github.com/tsl0922/ttyd" target="_blank" rel="noopener">
+            https://github.com/tsl0922/ttyd
+          </Link>
+          <Link href="https://github.com/fkie/fkie-multi-agent-suite" target="_blank" rel="noopener">
+            https://github.com/fkie/fkie-multi-agent-suite
+          </Link>
+        </Stack>
       </Stack>
       {/** dependencies */}
       <Typography variant="body1" mt="0.6em" sx={{ fontWeight: "bold" }}>

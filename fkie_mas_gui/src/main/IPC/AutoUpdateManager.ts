@@ -29,9 +29,14 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
       private: true,
       token: process.env.GH_TOKEN,
     });
-
+    autoUpdater.allowPrerelease = false;
+    autoUpdater.allowDowngrade = true;
     this.registerHandlers();
   }
+
+  setChannel: (channelType: "prerelease" | "release") => void = (channelType) => {
+    autoUpdater.allowPrerelease = channelType === "prerelease";
+  };
 
   onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) => void = () => {
     // implemented in preload script
@@ -76,6 +81,12 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
     ipcMain.handle(AutoUpdateManagerEvents.quitAndInstall, () => {
       this.quitAndInstall();
     });
+    ipcMain.handle(
+      AutoUpdateManagerEvents.setChannel,
+      (_event: Electron.IpcMainInvokeEvent, channel: "prerelease" | "release") => {
+        this.setChannel(channel);
+      }
+    );
     autoUpdater.on("checking-for-update", () => {
       this.isChecking = true;
       this.mainWindow?.webContents.send(AutoUpdateManagerEvents.onCheckingForUpdate, this.isChecking);

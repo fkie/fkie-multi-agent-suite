@@ -51,6 +51,11 @@ if (process.contextIsolated) {
       quitAndInstall: () => {
         return ipcRenderer.invoke(AutoUpdateManagerEvents.quitAndInstall);
       },
+
+      setChannel: (channelType: "prerelease" | "release") => {
+        return ipcRenderer.invoke(AutoUpdateManagerEvents.setChannel, channelType);
+      },
+
       onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) =>
         ipcRenderer.on(AutoUpdateManagerEvents.onCheckingForUpdate, (_event, state) => {
           callback(state);
