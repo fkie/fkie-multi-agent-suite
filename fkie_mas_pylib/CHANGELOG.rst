@@ -1,6 +1,16 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+4.0.0 (21.01.2025)
+------------------
+* Added get_services and get_topics to websocket interface
+* Changed get_node_list interface
+* Added checks for undefined parameter and list
+* Increased maximum size of a message sent via a web socket
+* Added read-only parameter to file items
+* Skip empty fields in send messages
+
 3.2.0 (12.01.2025)
 ------------------
 * Fixed call service while get/set ros2 parameter

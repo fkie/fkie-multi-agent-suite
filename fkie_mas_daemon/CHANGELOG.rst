@@ -2,6 +2,14 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.0.0 (21.01.2025)
+------------------
+
+* added new message ros.launch.get_message_types
+* fixed kill node if None was given as signal
+* added get_services and get_topics to websocket interface
+* fixed kill all screens on shutdown
+
 3.5.0 (14.01.2025)
 ------------------
 * Added read-only parameter to FileItems that are reported to Websocket

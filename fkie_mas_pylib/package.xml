@@ -4,7 +4,7 @@
   <description>
      Python helpers required by multi agent suite packages.
   </description>
-  <version>3.2.0</version>
+  <version>4.0.0</version>
   <license>MIT</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>

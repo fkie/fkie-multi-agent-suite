@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.0.0 - 21.01.2025
+
+Changed get_node_list interface
+Added get_services and get_topics to websocket interface
+Added the option to update to prerelease
+Skip empty fields during communication with websocket
+Added checks for undefined fields
+Added context menu to searchBar, topics and services
+Improves the update behavior of the service and topic panels
+Added new message ros.launch.get_message_types
+Depending on the version difference, set different colors for the notification about new daemon version
+Changed shutdown of daemon and subscriber node
+Increased maximum size of a message sent via a web socket
+Fixed kill node if None was given as signal
+Fixed kill all screens on shutdown
+
 ## 3.0.13 - 16.01.2025
 
 Fixed open external terminal with different terminal
