@@ -15,12 +15,7 @@ class ROS2Parameters:
         Return a list with all registered parameters values and types
         '''
         param_list: List[RosParameter] = []
-        try:
-            param_list = self.interface.list()
-        except Exception as e:
-            Log.error(
-                f'Error at ParameterServicer::getNodeParameters: Error - {e}')
-            return param_list
+        param_list = self.interface.list()
         return param_list
 
     def getNodeParameters(self, nodes: List[str]) -> List[RosParameter]:
@@ -28,53 +23,21 @@ class ROS2Parameters:
         Return a list with all registered parameters values and types for a given Node
         '''
         param_list: List[RosParameter] = []
-
-        try:
-            param_list = self.interface.list(nodes)
-        except Exception as e:
-            Log.error(
-                f'Error at ParameterServicer::getNodeParameters: Error - {e}')
-            return param_list
-
+        param_list = self.interface.list(nodes)
         return param_list
-
-    def hasParameter(self, parameter_name: str) -> bool:
-        '''
-        Check if a parameter exists
-        '''
-        result = False
-
-        try:
-            result = self.interface.exist(parameter_name)
-        except Exception as e:
-            Log.error(
-                f'Error at ParameterServicer::getNodeParameters: Error - {e}')
-            return False
-
-        return result
 
     def setParameter(self, parameter: RosParameter) -> bool:
         '''
         Set the value of a parameter
         '''
-        try:
-            return self.interface.set(parameter)
-        except Exception as e:
-            Log.error(
-                f'Error at ParameterServicer::setParameter: [Name: {parameter.name}, Value: {parameter.value}] - {e}')
-        return False
+        return self.interface.set(parameter)
 
-    def deleteParameter(self, parameters: List[str]) -> bool:
+    def deleteParameter(self, parameters: List[str], nodeName: str) -> bool:
         '''
         Delete a list of parameter
         '''
-        try:
-            overall_result = True
-            for parameter in parameters:
-                if not self.interface.delete(parameter):
-                    overall_result = False
-            return overall_result
-        except Exception as e:
-            Log.error(
-                f'Error at ParameterServicer::deleteParameter: [Name: {parameter.name}, Value: {parameter.value}] - {e}')
-        return False
+        overall_result = True
+        for parameter in parameters:
+            if not self.interface.delete(parameter, nodeName):
+                overall_result = False
+        return overall_result

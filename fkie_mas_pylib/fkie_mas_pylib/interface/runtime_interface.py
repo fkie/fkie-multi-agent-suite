@@ -165,11 +165,18 @@ class RosParameter:
     """
 
     def __init__(
-        self, name: str, value: Union[int, float, bool, str, List, Dict], type: str = None
+        self, node: str, name: str, value: Union[int, float, bool, str, List, Dict], type: str = None
     ) -> None:
+        self.node = node
         self.name = name
         self.value = value
         self.type = type
+        self.readonly: bool = False
+        self.description: str = None
+        self.additional_constraints: str = None
+        self.min = None
+        self.max = None
+        self.step = None
 
         if self.type is None:
             self.type = self.get_type()

@@ -1,7 +1,7 @@
 import { RosParameter } from "@/renderer/models";
 import { basename, normalizeNameWithPrefix } from "@/renderer/utils";
 import { Box, Stack, Switch, TextField, Typography } from "@mui/material";
-import { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
+import React, { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
@@ -19,11 +19,35 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
   const logCtx = useContext(LoggingContext);
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
+  const [changed, setChanged] = useState<boolean>(false);
+  const [value, setValue] = useState(paramInfo.value);
   const [label, setLabel] = useState<string>(normalizeNameWithPrefix(basename(paramInfo.name), namespacePart));
 
   useEffect(() => {
     setLabel(normalizeNameWithPrefix(basename(paramInfo.name), namespacePart));
   }, [namespacePart, paramInfo.name]);
+
+  function handleKey(event: React.KeyboardEvent): void {
+    if (event.key === "Enter") {
+      updateParameter(paramInfo, value);
+      setChanged(false);
+    } else if (event.key === "Escape") {
+      setValue(paramInfo.value);
+      setChanged(false);
+    }
+  }
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
+    setChanged(true);
+    setValue(event.target.value);
+  }
+
+  function onLeave(): void {
+    if (changed) {
+      updateParameter(paramInfo, value);
+      setChanged(false);
+    }
+  }
 
   const typeOptions = [
     {
@@ -61,41 +85,40 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   ];
 
   function renderInput(): JSX.Element {
+    let inputElement: JSX.Element | null = null;
     if (["int", "float"].includes(parameterType)) {
-      return (
+      inputElement = (
         <TextField
           type="number"
           id={`input-${paramInfo.id}`}
           size="small"
           variant="standard"
-          defaultValue={paramInfo.value}
-          placeholder={JSON.stringify(paramInfo.value)}
+          value={value}
+          placeholder={JSON.stringify(value)}
           // InputProps={{ inputProps: { min: 0, max: 99 } }}
           fullWidth
-          onChange={(event) => {
-            updateParameter(paramInfo, event.target.value);
-          }}
+          onChange={(event) => handleChange(event)}
+          onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
+          onBlur={() => onLeave()}
         />
       );
-    }
-    if (["list"].includes(parameterType)) {
+    } else if (["list"].includes(parameterType)) {
       // TODO: show proper list/arrays
-      return (
+      inputElement = (
         <TextField
           id={`input-${paramInfo.id}`}
-          defaultValue={`${JSON.stringify(paramInfo.value)}`}
+          value={value}
           placeholder={`${JSON.stringify(paramInfo.value)}`}
           variant="standard"
           size="small"
           fullWidth
-          onChange={(event) => {
-            updateParameter(paramInfo, event.target.value);
-          }}
+          onChange={(event) => handleChange(event)}
+          onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
+          onBlur={() => onLeave()}
         />
       );
-    }
-    if (["bool"].includes(parameterType)) {
-      return (
+    } else if (["bool"].includes(parameterType)) {
+      inputElement = (
         <Switch
           id={`input-${paramInfo.id}`}
           checked={paramInfo.value ? true : false}
@@ -105,23 +128,25 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
           }}
         />
       );
+    } else {
+      // default render (usually string)
+      inputElement = (
+        <TextField
+          key={paramInfo.id}
+          id={`input-${paramInfo.id}`}
+          value={value}
+          placeholder={`${paramInfo.value}`}
+          variant="standard"
+          size="small"
+          fullWidth
+          onChange={(event) => handleChange(event)}
+          onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
+          onBlur={() => onLeave()}
+        />
+      );
     }
 
-    // default render (usually string)
-    return (
-      <TextField
-        key={paramInfo.id}
-        id={`input-${paramInfo.id}`}
-        defaultValue={`${paramInfo.value}`}
-        placeholder={`${paramInfo.value}`}
-        variant="standard"
-        size="small"
-        fullWidth
-        onChange={(event) => {
-          updateParameter(paramInfo, event.target.value, "string");
-        }}
-      />
-    );
+    return inputElement;
   }
 
   return (

@@ -19,7 +19,6 @@ class ParameterServicer:
         self._handler = ROS2Parameters(nmd.ros_node)
         websocket.register("ros.parameters.get_list", self.getParameterList)
         websocket.register("ros.parameters.get_node_parameters", self.getNodeParameters)
-        websocket.register("ros.parameters.has_parameter", self.hasParameter)
         websocket.register("ros.parameters.set_parameter", self.setParameter)
         websocket.register("ros.parameters.delete_parameters", self.deleteParameters)
 
@@ -31,9 +30,12 @@ class ParameterServicer:
         Return a list with all registered parameters values and types
         '''
         p_list = []
-        Log.info(
-            'ros.parameters.get_list: Getting parameters for all nodes')
-        p_list = self._handler.getParameterList()
+        try:
+            Log.info('ros.parameters.get_list: Getting parameters for all nodes')
+            p_list = self._handler.getParameterList()
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
         return json.dumps(p_list, cls=SelfEncoder)
 
     def getNodeParameters(self, nodes: List[str]):
@@ -41,38 +43,43 @@ class ParameterServicer:
         Return a list with all registered parameters values and types for a given Node
         '''
         p_list = []
-        Log.info(
-            f'ros.parameters.get_node_parameters: Getting parameters for nodes: [{nodes}] ')
-        p_list = self._handler.getNodeParameters(nodes)
+        try:
+            Log.info(f'ros.parameters.get_node_parameters: Getting parameters for nodes: [{nodes}] ')
+            p_list = self._handler.getNodeParameters(nodes)
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
         return json.dumps(p_list, cls=SelfEncoder)
 
-    def hasParameter(self, parameter_name: str):
-        '''
-        Check if a parameter exists
-        '''
-        result = False
-        Log.info(
-            f'ros.parameters.has_parameter: Checking parameter [{parameter_name}] ')
-        result = self._handler.hasParameter(parameter_name)
-        return json.dumps(result, cls=SelfEncoder)
-
-    def setParameter(self, _parameter: RosParameter):
+    def setParameter(self, paramName: str, paramType: str, paramValue: str, nodeName: str) -> str:
         '''
         Set the value of a parameter
         '''
-        parameter = _parameter
-        Log.info(
-            f'ros.parameters.set_parameter: [{parameter.name}] to {parameter.value} [typeof: {type(parameter.value)}|type:{parameter.type}]')
         result = None
-        result = self._handler.setParameter(parameter)
+        try:
+            Log.info(f'ros.parameters.set_parameter: [{paramName}] to {paramValue}')
+            parameter = RosParameter(nodeName, paramName, paramValue, paramType)
+            Log.info(
+                f'ros.parameters.set_parameter: [{parameter.node}:{parameter.name}] to {parameter.value} [typeof: {type(parameter.value)}|type:{parameter.type}]')
+            res = self._handler.setParameter(parameter)
+            result = {"result": res, "message" : ""}
+        except Exception as error:
+            import traceback
+            print(traceback.format_exc())
+            result = {"result": False, "message" : f"{error}"}
         return json.dumps(result, cls=SelfEncoder)
 
-    def deleteParameters(self, parameters: List[str]):
+    def deleteParameters(self, parameters: List[str], nodeName: str):
         '''
         Delete a list of parameters
         '''
-        result = False
-        Log.info(
-            f'ros.parameters.delete_parameters: Removing [{parameters}] ')
-        result = self._handler.deleteParameter(parameters)
+        result = None
+        try:
+            Log.info(f'ros.parameters.delete_parameters: Removing [{parameters}] ')
+            res = self._handler.deleteParameter(parameters, nodeName)
+            result = {"result": res, "message" : ""}
+        except Exception as error:
+            import traceback
+            print(traceback.format_exc())
+            result = {"result": False, "message" : f"{error}"}
         return json.dumps(result, cls=SelfEncoder)

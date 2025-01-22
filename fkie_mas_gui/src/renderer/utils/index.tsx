@@ -148,14 +148,14 @@ export function nodeNameWithoutNamespace(node: RosNode): string {
 }
 
 export function basename(name: string): string {
-  const result: string = name.split("/").slice(-1)[0];
+  const result: string = name?.split(/[/.]+/).slice(-1)[0];
   return result;
 }
 
 export function normalizeNameWithPrefix(name: string, prefix: string): string {
   if (prefix) {
     if (name.startsWith(prefix)) {
-      return name.slice(prefix.length + 1);
+      return name.slice(prefix.length);
     }
   }
   return name.startsWith("/") ? name.slice(1) : name;

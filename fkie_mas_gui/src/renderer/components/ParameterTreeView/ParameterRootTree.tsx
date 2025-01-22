@@ -104,11 +104,13 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       : provider.getParameterList());
     // sort parameter by name
     paramList.sort(function (a, b) {
-      return a.name.localeCompare(b.name);
+      const an = `${a.node}/${a.name}`;
+      const bn = `${b.node}/${b.name}`;
+      return an.localeCompare(bn);
     });
-    paramList.map((p) => {
-      return p;
-    });
+    // paramList.map((p) => {
+    //   return p;
+    // });
     setRosParameters(paramList);
     setRosParametersFiltered(filterParameters(searched, paramList));
     setRequesting(false);
@@ -151,12 +153,12 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     if (newType) {
       parameter.type = newType;
     }
-    const result = await provider.setParameter(parameter);
+    const result = await provider.setParameter(parameter.name, parameter.type, `${parameter.value}`, parameter.node);
 
-    if (result) {
+    if (result.result) {
       logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
     } else {
-      logCtx.error(`Could not update parameter [${parameter.name}]`, DEFAULT_BUG_TEXT);
+      logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`);
     }
   }
 
@@ -168,7 +170,10 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     const byPrefixP1: Map<string, { restNameSuffix: string; paramInfo: RosParameter }[]> = new Map();
     // count parameter for each group
     params.forEach((param) => {
-      const nameSuffix = param.name.slice(fullPrefix.length + 1);
+      const nameSuffix = `${param.node}/${param.name}`
+        .replace(/\./g, "/")
+        .replace("//", "/")
+        .slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {
         const restNameSuffix = restName.join("/");
@@ -196,12 +201,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           return item.paramInfo;
         });
         const subResult = fillTree(newFullPrefix, groupParams, groupKey);
-        // the result count is 0 -> we added multiple provider for topic with same name.
-        if (subResult.count === 0) {
-          count += 1;
-        } else {
-          count += subResult.count;
-        }
+        count += subResult.count;
         if (subResult.groupKeys.length > 0) {
           groupKeys.push(...subResult.groupKeys);
         }
@@ -240,10 +240,12 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   function paramTreeToStyledItems(treeItems: TTreeItem[]): JSX.Element[] {
     return treeItems.map((param) => {
       let namespacePart = "";
+      let groupName = param.groupName;
       while (avoidGroupWithOneItem && param.params.length === 1) {
         const child = param.params[0];
         param.params = child.params;
         namespacePart = `${namespacePart}${param.groupName}/`;
+        groupName = `${groupName}/${child.groupName}`;
       }
       if (param.paramInfo) {
         return (
@@ -264,7 +266,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
             key={param.groupKey}
             itemId={param.groupKey}
             namespacePart={namespacePart}
-            groupName={param.groupName}
+            groupName={groupName}
             icon={null}
             countChildren={param.count}
             requestData={false}
@@ -284,7 +286,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           addParam = true;
         } else if (p.id === selectedItem) {
           addParam = true;
-        } else if (p.name.startsWith(selectedItem)) {
+        } else if (p.node?.startsWith(selectedItem)) {
           addParam = true;
         }
         return addParam;

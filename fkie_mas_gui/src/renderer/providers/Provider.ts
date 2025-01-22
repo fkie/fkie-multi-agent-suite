@@ -1,4 +1,4 @@
-import { JSONObject, TResultData, TSystemInfo, TTag } from "@/types";
+import { JSONObject, TResult, TResultData, TSystemInfo, TTag } from "@/types";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
 import { colorFromHostname } from "../components";
@@ -1226,9 +1226,9 @@ export default class Provider implements IProvider {
                 parsed.nodes || [],
                 parsed.parameters?.map((p) => {
                   if (this.rosVersion === "1") {
-                    return new RosParameter(p.name, p.value, p.type, this.id);
+                    return new RosParameter("", p.name, p.value, p.type, this.id);
                   } else {
-                    return new RosParameter(p[0], p[1], "", this.id);
+                    return new RosParameter("", p[0], p[1], "", this.id);
                   }
                 }) || [],
                 parsed.associations || []
@@ -1282,7 +1282,7 @@ export default class Provider implements IProvider {
                 });
               } else {
                 launchNode.parameters?.forEach((p: RosParameter) => {
-                  nodeParameters.push(new RosParameter(p.name, p.value, "", this.id));
+                  nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
                 });
               }
 
@@ -1926,7 +1926,7 @@ export default class Provider implements IProvider {
         const paramList: RosParameter[] = [];
         const parsed = value.data as RosParameter[];
         parsed.forEach((item: RosParameter) => {
-          paramList.push(new RosParameter(item.name, item.value, item.type, this.id));
+          paramList.push(new RosParameter(item.node, item.name, item.value, item.type, this.id));
         });
         return paramList;
       }
@@ -1946,7 +1946,7 @@ export default class Provider implements IProvider {
           const paramList: RosParameter[] = [];
           const parsed = value.data as RosParameter[];
           parsed.forEach((item: RosParameter) => {
-            paramList.push(new RosParameter(item.name, item.value, item.type, this.id));
+            paramList.push(new RosParameter(item.node, item.name, item.value, item.type, this.id));
           });
           return paramList;
         }
@@ -1960,50 +1960,51 @@ export default class Provider implements IProvider {
   /**
    * Set the value of a parameter
    */
-  public setParameter: (parameter: RosParameter) => Promise<boolean> = async (parameter) => {
-    const result = await this.makeCall(URI.ROS_PARAMETERS_SET_PARAMETER, [parameter], true).then(
-      (value: TResultData) => {
-        if (value.result) {
-          const parsed = value.data as boolean;
-          return parsed;
-        }
-        this.logger?.debug(`Provider [${this.name()}]: Error at setParameter()`, `${value.message}`);
-        return false;
+  public setParameter: (
+    paramName: string,
+    paramType: string,
+    paramValue: string,
+    nodeName: string
+  ) => Promise<TResult> = async (paramName, paramType, paramValue, nodeName) => {
+    const setResult = await this.makeCall(
+      URI.ROS_PARAMETERS_SET_PARAMETER,
+      [paramName, paramType, paramValue, nodeName],
+      true
+    ).then((value: TResultData) => {
+      if (value.result) {
+        const setResponse = value.data as TResult;
+        return setResponse;
       }
-    );
-    return Promise.resolve(result);
-  };
-
-  /**
-   * Check if a parameter exists
-   */
-  public hasParameter: (parameterName: string) => Promise<boolean> = async (parameterName) => {
-    const result = await this.makeCall(URI.ROS_PARAMETERS_HAS_PARAMETER, [parameterName], true).then(
-      (value: TResultData) => {
-        if (value.result) {
-          return value.data as boolean;
-        }
-        this.logger?.debug(`Provider [${this.name()}]: Error at hasParameter()`, `${value.message}`);
-        return false;
-      }
-    );
-    return Promise.resolve(result);
+      this.logger?.debug(`Provider [${this.name()}]: Error at setParameter()`, `${value.message}`);
+      return {
+        result: false,
+        message: value.message,
+      };
+    });
+    return Promise.resolve(setResult);
   };
 
   /**
    * Delete a list of parameters
    */
-  public deleteParameters: (parameters: string[]) => Promise<boolean> = async (parameters) => {
-    const result = await this.makeCall(URI.ROS_PARAMETERS_DELETE_PARAMETERS, [parameters], true).then(
+  public deleteParameters: (parameters: string[], nodeName: string) => Promise<TResult> = async (
+    parameters,
+    nodeName
+  ) => {
+    const delResult = await this.makeCall(URI.ROS_PARAMETERS_DELETE_PARAMETERS, [parameters, nodeName], true).then(
       (value: TResultData) => {
         if (value.result) {
-          return value.data as boolean;
+          const setResponse = value.data as TResult;
+          return setResponse;
         }
-        this.logger?.debug(`Provider [${this.name()}]: Error at setParameter()`, `${value.message}`);
-        return false;
+        this.logger?.debug(`Provider [${this.name()}]: Error at deleteParameters()`, `${value.message}`);
+        return {
+          result: false,
+          message: value.message,
+        };
       }
     );
-    return Promise.resolve(result);
+    return Promise.resolve(delResult);
   };
 
   /* Publisher handler */

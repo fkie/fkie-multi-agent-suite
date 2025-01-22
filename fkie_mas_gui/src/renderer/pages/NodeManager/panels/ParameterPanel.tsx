@@ -50,16 +50,27 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
         return;
       }
 
-      const result = await selectedParameter.provider.deleteParameters(selectedParameter.params.map((p) => p.name));
+      const nodesParameter = {};
+      selectedParameter.params.forEach((p) => {
+        if (!nodesParameter[p.node]) {
+          nodesParameter[p.node] = [];
+        }
+        nodesParameter[p.node].push(p.name);
+      });
+      await Promise.all(
+        Object.keys(nodesParameter).map(async (node) => {
+          const result = await selectedParameter.provider.deleteParameters(nodesParameter[node], node);
 
-      if (result) {
-        logCtx.success(
-          `Parameter deleted successfully from ${selectedParameter.provider.name()}`,
-          `${JSON.stringify(selectedParameter.params)}`
-        );
-      } else {
-        logCtx.error(`Could not delete parameters from ${selectedParameter.provider.name()}`, DEFAULT_BUG_TEXT);
-      }
+          if (result.result) {
+            logCtx.success(
+              `Parameter deleted successfully from ${selectedParameter.provider.name()}`,
+              `${JSON.stringify(selectedParameter.params)}`
+            );
+          } else {
+            logCtx.error(`Could not delete parameters from ${selectedParameter.provider.name()}`, `${result.message}`);
+          }
+        })
+      );
     }
     // TODO: update only involved provider / nodes
     setForceReload();

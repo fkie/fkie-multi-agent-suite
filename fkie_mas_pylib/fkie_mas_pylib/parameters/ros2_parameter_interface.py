@@ -2,6 +2,7 @@ import json
 import time
 import yaml
 from typing import List
+from typing import Union
 import rclpy
 from rclpy.node import Node
 from rcl_interfaces.srv import GetParameters
@@ -11,56 +12,6 @@ from ros2node.api import get_node_names
 from fkie_mas_pylib.service.future import WaitFuture
 from fkie_mas_pylib.service.future import create_service_future
 from fkie_mas_pylib.service.future import wait_until_futures_done
-try:
-    # for jazzy
-    from rclpy.parameter import get_parameter_value
-except:
-    from rclpy.parameter import ParameterValue, ParameterType
-    # for galactic
-
-    def get_parameter_value(string_value: str) -> ParameterValue:
-        """
-        Guess the desired type of the parameter based on the string value.
-
-        :param string_value: The string value to be converted to a ParameterValue.
-        :return: The ParameterValue.
-        """
-        value = ParameterValue()
-        try:
-            yaml_value = yaml.safe_load(string_value)
-        except yaml.parser.ParserError:
-            yaml_value = string_value
-
-        if isinstance(yaml_value, bool):
-            value.type = ParameterType.PARAMETER_BOOL
-            value.bool_value = yaml_value
-        elif isinstance(yaml_value, int):
-            value.type = ParameterType.PARAMETER_INTEGER
-            value.integer_value = yaml_value
-        elif isinstance(yaml_value, float):
-            value.type = ParameterType.PARAMETER_DOUBLE
-            value.double_value = yaml_value
-        elif isinstance(yaml_value, list):
-            if all((isinstance(v, bool) for v in yaml_value)):
-                value.type = ParameterType.PARAMETER_BOOL_ARRAY
-                value.bool_array_value = yaml_value
-            elif all((isinstance(v, int) for v in yaml_value)):
-                value.type = ParameterType.PARAMETER_INTEGER_ARRAY
-                value.integer_array_value = yaml_value
-            elif all((isinstance(v, float) for v in yaml_value)):
-                value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
-                value.double_array_value = yaml_value
-            elif all((isinstance(v, str) for v in yaml_value)):
-                value.type = ParameterType.PARAMETER_STRING_ARRAY
-                value.string_array_value = yaml_value
-            else:
-                value.type = ParameterType.PARAMETER_STRING
-                value.string_value = string_value
-        else:
-            value.type = ParameterType.PARAMETER_STRING
-            value.string_value = yaml_value if yaml_value is not None else string_value
-        return value
-
 from ros2service.api import get_service_names
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.msg import ParameterType
@@ -142,9 +93,9 @@ class ParameterInterface:
                     response = wait_future.future.result()
                     if response:
                         for (index, parameter) in enumerate(response.values):
-                            param_name = f'{wait_future.node_name}/{node_parameters[wait_future.node_name][index]}'
+                            param_name = f'{node_parameters[wait_future.node_name][index]}'
                             param_list.append(
-                                RosParameter(param_name, self._get_value(parameter), self._get_type(parameter)))
+                                RosParameter(wait_future.node_name, param_name, self._get_value(parameter), self._get_type(parameter)))
                 except Exception as exception:
                     Log.warn(
                         f"{self.__class__.__name__}:-> failed to get parameter calling '{wait_future.service_name}': '{exception}'")
@@ -154,28 +105,14 @@ class ParameterInterface:
 
         return param_list
 
-    def exist(self, parameter_name: str):
-        node_name = self._get_node_name(parameter_name)
-        if node_name is None:
-            return False
-
-        param_list = self.list([node_name])
-
-        # search parameter on nodes's registered parameters
-        for p in param_list:
-            if p.name == parameter_name:
-                return True
-
-        return False
-
     def set(self, _parameter: RosParameter) -> bool:
-        node_name = self._get_node_name(_parameter.name)
+        node_name = self._get_node_name(_parameter)
         if node_name is None:
             return False
 
         parameter = Parameter()
         parameter.name = _parameter.name.replace(f'{node_name}/', '')
-        parameter.value = get_parameter_value(_parameter.value)
+        parameter.value = self._get_parameter_value(_parameter)
 
         response = self.call_set_parameters(
             node=self.global_node, node_name=node_name, parameters=[parameter])
@@ -188,14 +125,14 @@ class ParameterInterface:
         if result.successful:
             return True
 
-        Log.error(f'Setting parameter failed: ', parameter, result.reason)
-        return False
+        raise Exception(f'Setting parameter failed: ', parameter, result.reason)
 
-    def delete(self, parameter_name: str):
-        node_name = self._get_node_name(parameter_name)
+    def delete(self, parameter_name: str, node: str):
+        node_name = node
+        if not node_name or len(node_name) == 0:
+            node_name = self._get_node_name(parameter_name)
         if node_name is None:
-            Log.error(f'Deleting parameter failed: ', parameter, "Node name not found")
-            return False
+            raise Exception(f'Deleting parameter failed: ', parameter, "Node name not found")
 
         parameter = Parameter()
         parameter.name = parameter_name.replace(f'{node_name}/', '')
@@ -208,16 +145,14 @@ class ParameterInterface:
 
         # output response
         if response is None or len(response.results) == 0:
-            Log.error(f'Deleting parameter failed: ', parameter, "Empty result")
-            return False
+            raise Exception(f'Deleting parameter failed: ', parameter, "Empty result")
 
         result = response.results[0]
         if result.successful:
             return True
 
-        Log.error(f'Deleting parameter failed: ', parameter, result.reason)
-        return False
-
+        raise Exception(f'Deleting parameter failed: ', parameter, result.reason)
+        
     def _get_value(self, parameter_value):
         """Get the value from a ParameterValue."""
         if parameter_value.type == ParameterType.PARAMETER_BOOL:
@@ -256,15 +191,15 @@ class ParameterInterface:
         elif parameter_value.type == ParameterType.PARAMETER_STRING:
             return "str"
         elif parameter_value.type == ParameterType.PARAMETER_BYTE_ARRAY:
-            return "array"
+            return "byte[]"
         elif parameter_value.type == ParameterType.PARAMETER_BOOL_ARRAY:
-            return "array"
+            return "bool[]"
         elif parameter_value.type == ParameterType.PARAMETER_INTEGER_ARRAY:
-            return "array"
+            return "int[]"
         elif parameter_value.type == ParameterType.PARAMETER_DOUBLE_ARRAY:
-            return "array"
+            return "float[]"
         elif parameter_value.type == ParameterType.PARAMETER_STRING_ARRAY:
-            return "array"
+            return "str[]"
         elif parameter_value.type == ParameterType.PARAMETER_NOT_SET:
             value = None
         else:
@@ -272,16 +207,59 @@ class ParameterInterface:
 
         return value
 
-    def _get_node_name(self, parameter_name: str):
+    def _get_parameter_value(self, parameter: RosParameter) -> ParameterValue:
+        value = ParameterValue()
+
+        if parameter.get_type() == 'bool':
+            value.type = ParameterType.PARAMETER_BOOL
+            value.bool_value = parameter.typed_value()
+        elif parameter.get_type() == 'int':
+            value.type = ParameterType.PARAMETER_INTEGER
+            value.integer_value = parameter.typed_value()
+        elif parameter.get_type() == 'float':
+            value.type = ParameterType.PARAMETER_DOUBLE
+            value.double_value = parameter.typed_value()
+        elif parameter.get_type().endswith("[]"):
+            try:
+                yaml_value = yaml.safe_load(parameter.value)
+            except yaml.parser.ParserError:
+                yaml_value = parameter.value
+            if all((isinstance(v, bool) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_BOOL_ARRAY
+                value.bool_array_value = yaml_value
+            elif all((isinstance(v, int) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_INTEGER_ARRAY
+                value.integer_array_value = yaml_value
+            elif all((isinstance(v, float) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
+                value.double_array_value = yaml_value
+            elif all((isinstance(v, str) for v in yaml_value)):
+                value.type = ParameterType.PARAMETER_STRING_ARRAY
+                value.string_array_value = yaml_value
+            else:
+                value.type = ParameterType.PARAMETER_STRING
+                value.string_value = parameter.value
+        else:
+            value.type = ParameterType.PARAMETER_STRING
+            value.string_value = parameter.value
+        return value
+
+    def _get_node_name(self, parameter_name: Union[str, RosParameter]) -> str:
+        name = parameter_name
+        if isinstance(parameter_name, RosParameter):
+            if hasattr(parameter_name, "node"):
+                return parameter_name.node
+            else:
+                name = parameter_name.name
         # get node name and parameter name
-        p_split = parameter_name.split("/")
+        p_split = name.split("/")
         if len(p_split) == 0:
             return None
 
         # TODO: Fix qos_overrides parameters
 
         param_name = p_split.pop()
-        node_name = parameter_name.replace(f'/{param_name}', "")
+        node_name = name.replace(f'/{param_name}', "")
         return node_name
 
     def call_set_parameters(self, *, node, node_name, parameters):
