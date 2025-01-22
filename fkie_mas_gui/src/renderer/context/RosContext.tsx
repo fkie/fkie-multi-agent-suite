@@ -848,6 +848,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         provider.rosVersion,
         provider.connection?.port
       );
+      const domainId = provider.rosState?.ros_domain_id;
+      if (domainId !== undefined) {
+        defaultCfg.networkId = parseInt(domainId);
+      }
       defaultCfg.daemon.enable = true;
       defaultCfg.discovery.enable = true;
       defaultCfg.terminal.enable = true;
