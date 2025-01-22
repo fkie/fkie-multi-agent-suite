@@ -24,6 +24,7 @@ import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { generateUniqueId } from "../../utils";
 import DraggablePaper from "../UI/DraggablePaper";
+import SelectDomainIdModal from "./SelectDomainIdModal";
 
 const headers = [
   {
@@ -87,6 +88,7 @@ function ExternalAppsModal(ref): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
 
   const [open, setOpen] = useState(false);
+  const [showSelectDialog, setShowSelectDialog] = useState<{ command: string; domainIds: string[] } | undefined>();
   function handleOpen(): void {
     setOpen(true);
   }
@@ -95,8 +97,26 @@ function ExternalAppsModal(ref): JSX.Element {
     setOpen(false);
   }
 
-  const runApp = useCallback(async (command) => {
-    await window.commandExecutor?.exec(null, command);
+  const runApp = useCallback(async (command: string) => {
+    const domainIds: string[] = [
+      ...new Set(
+        rosCtx.providers
+          .filter((prov) => prov.rosVersion === "2" && prov.rosState.ros_domain_id)
+          .map((prov) => prov.rosState.ros_domain_id)
+      ),
+    ] as string[];
+    if (domainIds?.length === 0) {
+      await window.commandExecutor?.exec(null, command);
+    } else if (domainIds?.length === 1) {
+      await window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domainIds[0]} ${command}`);
+    } else if (domainIds) {
+      setShowSelectDialog({ command: command, domainIds: domainIds });
+    }
+  }, []);
+
+  const runAppWid = useCallback(async (command: string, domain_id: string) => {
+    await window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id} ${command}`);
+    setShowSelectDialog(undefined);
   }, []);
 
   const dialogRef = useRef(ref);
@@ -208,6 +228,16 @@ function ExternalAppsModal(ref): JSX.Element {
           <AppsIcon sx={{ fontSize: "inherit" }} />
         </IconButton>
       </Tooltip>
+      {showSelectDialog && (
+        <SelectDomainIdModal
+          domainIds={showSelectDialog.domainIds}
+          onClose={(domainId) => {
+            if (domainId) {
+              runAppWid(showSelectDialog.command, domainId);
+            }
+          }}
+        />
+      )}
     </Stack>
   );
 }
