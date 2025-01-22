@@ -8,6 +8,28 @@
 # ****************************************************************************
 
 
+from fkie_mas_daemon.rosstate_jsonify import RosStateJsonify
+from fkie_mas_daemon.rosstate_jsonify import ParticipantGid
+import fkie_mas_daemon as nmd
+from fkie_mas_msgs.msg import Endpoint
+from fkie_mas_msgs.msg import ParticipantEntitiesInfo
+from fkie_mas_msgs.msg import ChangedState
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from fkie_mas_pylib.websocket.server import WebSocketServer
+from fkie_mas_pylib.system.url import get_port
+from fkie_mas_pylib.system.host import get_hostname
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
+from fkie_mas_pylib.defines import NM_NAMESPACE
+from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
+from fkie_mas_pylib.interface.launch_interface import LaunchContent
+from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
+from fkie_mas_pylib.interface.runtime_interface import RosService
+from fkie_mas_pylib.interface.runtime_interface import RosTopicId
+from fkie_mas_pylib.interface.runtime_interface import RosTopic
+from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import RosProvider
+from fkie_mas_pylib.interface import SelfEncoder
 from typing import Dict
 from typing import List
 from numbers import Number
@@ -22,34 +44,15 @@ import time
 
 from composition_interfaces.srv import ListNodes
 from composition_interfaces.srv import UnloadNode
-from rcl_interfaces.srv import GetLoggerLevels
-from rcl_interfaces.srv import SetLoggerLevels
-from rcl_interfaces.msg import LoggerLevel
-from rcl_interfaces.msg import SetLoggerLevelsResult
-
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import RosProvider
-from fkie_mas_pylib.interface.runtime_interface import RosNode
-from fkie_mas_pylib.interface.runtime_interface import RosTopic
-from fkie_mas_pylib.interface.runtime_interface import RosTopicId
-from fkie_mas_pylib.interface.runtime_interface import RosService
-from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
-from fkie_mas_pylib.interface.launch_interface import LaunchContent
-from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
-from fkie_mas_pylib.defines import NM_NAMESPACE
-from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
-from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.system.host import get_hostname
-from fkie_mas_pylib.system.url import get_port
-from fkie_mas_pylib.websocket.server import WebSocketServer
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
-from fkie_mas_msgs.msg import ChangedState
-from fkie_mas_msgs.msg import ParticipantEntitiesInfo
-from fkie_mas_msgs.msg import Endpoint
-
-import fkie_mas_daemon as nmd
-from fkie_mas_daemon.rosstate_jsonify import ParticipantGid
-from fkie_mas_daemon.rosstate_jsonify import RosStateJsonify
+HAS_LOGGER_INTERFACE = False
+try:
+    from rcl_interfaces.srv import GetLoggerLevels
+    from rcl_interfaces.srv import SetLoggerLevels
+    from rcl_interfaces.msg import LoggerLevel
+    from rcl_interfaces.msg import SetLoggerLevelsResult
+    HAS_LOGGER_INTERFACE = True
+except:
+    print("Can't include rcl_interfaces.srv.GetLoggerLevels: logger interface disabled!")
 
 
 class RosStateServicer:
@@ -257,6 +260,8 @@ class RosStateServicer:
 
     def get_loggers(self, name: str, loggers: List[str] = []) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', loggers: {loggers}")
+        if not HAS_LOGGER_INTERFACE:
+            raise Exception("ros2 version on this client does not support logger interface!")
         logger_names = loggers
         if not logger_names or len(loggers) == 0:
             logger_names = [name.replace("/", ".").strip("."), "rcl"]
@@ -267,11 +272,14 @@ class RosStateServicer:
         get_logger = nmd.launcher.call_service(service_name, GetLoggerLevels, request_list)
         if get_logger:
             for logger in get_logger.levels:
-                loggerConfigs.append(LoggerConfig(level=LoggerConfig.LogLevelType.fromRos2(logger.level), name=logger.name))
+                loggerConfigs.append(LoggerConfig(
+                    level=LoggerConfig.LogLevelType.fromRos2(logger.level), name=logger.name))
         return json.dumps(loggerConfigs, cls=SelfEncoder)
 
     def set_logger_level(self, name: str, loggers: List[LoggerConfig]) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
+        if not HAS_LOGGER_INTERFACE:
+            raise Exception("ros2 version on this client does not support logger interface!")
         # request the current logger
         service_name_get = '%s/set_logger_levels' % name
         request_set = SetLoggerLevels.Request()
