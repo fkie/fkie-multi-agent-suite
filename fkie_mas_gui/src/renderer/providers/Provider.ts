@@ -1858,19 +1858,24 @@ export default class Provider implements IProvider {
   /**
    * Return a list with loggers for given node
    */
-  public getNodeLoggers: (node: string) => Promise<LoggerConfig[]> = async (node) => {
-    const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node], true).then((value: TResultData) => {
-      if (value.result) {
-        // handle the result of type: {result: bool, message: str}
-        if (!Array.isArray(value.data) && !value.result) {
-          this.logger?.error(`Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`, ``);
-          return [];
+  public getNodeLoggers: (node: string, loggerNames: string[]) => Promise<LoggerConfig[]> = async (
+    node,
+    loggerNames = []
+  ) => {
+    const result = await this.makeCall(URI.ROS_NODES_GET_LOGGERS, [node, loggerNames], true).then(
+      (value: TResultData) => {
+        if (value.result) {
+          // handle the result of type: {result: bool, message: str}
+          if (!Array.isArray(value.data) && !value.result) {
+            this.logger?.error(`Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`, ``);
+            return [];
+          }
+          return value.data as LoggerConfig[];
         }
-        return value.data as LoggerConfig[];
+        this.logger?.debug(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`);
+        return [];
       }
-      this.logger?.debug(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`);
-      return [];
-    });
+    );
     return Promise.resolve(result);
   };
 

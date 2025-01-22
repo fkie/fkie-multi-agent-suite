@@ -130,7 +130,7 @@ class MonitorServicer:
             os.kill(pid, sig)
         os.kill(os.getpid(), signal.SIGINT)
 
-    def getLoggers(self, name: str) -> str:
+    def getLoggers(self, name: str, loggers: List[str] = []) -> str:
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}'")
         loggerConfigs: List[LoggerConfig] = []

@@ -1,3 +1,4 @@
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {
@@ -36,6 +37,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
   const [filterText, setFilterText] = useState("");
   const [currentNode] = useState(node);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [addable] = useState<boolean>(node.id.indexOf("-") > 0);
   const [loggers, setLoggers] = useState<LoggerConfig[]>([]);
   const [loggersFiltered, setLoggersFiltered] = useState<LoggerConfig[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -47,12 +49,12 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
   }, [settingsCtx.changed]);
 
   const setLoggersOnProvider = useCallback(
-    async (rosNode, newLoggers) => {
+    async (rosNode: RosNode, newLoggers) => {
       // set loggers on ros node
       const provider = rosCtx.getProviderById(rosNode.providerId);
       if (provider) {
         setIsRequesting(true);
-        await provider.setNodeLoggers(rosNode.id, newLoggers);
+        await provider.setNodeLoggers(rosNode.name, newLoggers);
         setIsRequesting(false);
       }
     },
@@ -69,7 +71,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
         const provider = rosCtx.getProviderById(rosNode.providerId);
         if (provider) {
           setIsRequesting(true);
-          ownLoggers = await provider.getNodeLoggers(rosNode.id);
+          ownLoggers = await provider.getNodeLoggers(rosNode.name, []);
           if (ownLoggers?.length > 0) {
             // fix case: c++ nodes in ROS1 returns log level in lower case
             ownLoggers = ownLoggers?.map((item) => {
@@ -210,11 +212,25 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
         {isRequesting && <CircularProgress size="1em" />}
       </Stack>
       <Stack direction="row" spacing={0.5} justifyItems="center">
+        {addable && !addable && (
+          <Tooltip title={`Add a new logger name`} placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+            <IconButton
+              size="small"
+              aria-label="add logger name"
+              onClick={() => {
+                if (currentNode) {
+                  currentNode.rosLoggers = {};
+                }
+              }}
+            >
+              <PlaylistAddIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip
           title={`Remove last changed levels to prevent change them after node restart!`}
           placement="bottom"
           enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
           disableInteractive
         >
           <span>

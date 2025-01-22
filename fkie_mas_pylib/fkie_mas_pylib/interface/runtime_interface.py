@@ -599,12 +599,42 @@ class LoggerConfig:
 
     # Possible levels of logging
     class LogLevelType:
+        UNKNOWN = "UNKNOWN"
         DEBUG = "DEBUG"
         INFO = "INFO"
         WARN = "WARN"
         ERROR = "ERROR"
         FATAL = "FATAL"
 
+        def fromRos2(level: int) -> str:
+            if level == 0:
+                return "UNKNOWN"
+            elif level == 10:
+                return "DEBUG"
+            elif level == 20:
+                return "INFO"
+            elif level == 30:
+                return "WARN"
+            elif level == 40:
+                return "ERROR"
+            elif level == 50:
+                return "FATAL"
+
+        def toRos2(level: str):
+            if level.upper() == "UNKNOWN":
+                return 0
+            elif level.upper() == "DEBUG":
+                return 10
+            elif level.upper() == "INFO":
+                return 20
+            elif level.upper() == "WARN":
+                return 30
+            elif level.upper() == "ERROR":
+                return 40
+            elif level.upper() == "FATAL":
+                return 50
+
     def __init__(self, level: LogLevelType, name: str) -> None:
         self.level = level
         self.name = name
+

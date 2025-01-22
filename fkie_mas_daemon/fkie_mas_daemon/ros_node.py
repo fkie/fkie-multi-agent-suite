@@ -54,7 +54,7 @@ class RosNodeLauncher(object):
             signal.signal(signal.SIGTERM, self.exit_gracefully)
             signal.signal(signal.SIGINT, self.exit_gracefully)
         rclpy.init(args=remaining_args)
-        self.ros_node = rclpy.create_node(self.name, namespace=NM_NAMESPACE)
+        self.ros_node = rclpy.create_node(self.name, namespace=NM_NAMESPACE, enable_logger_service=True)
 
         nmd.ros_node = self.ros_node
         # self.executor = MultiThreadedExecutor(num_threads=5)

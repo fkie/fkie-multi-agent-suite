@@ -1091,7 +1091,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                     const parentPaths = includedFiles.filter((item) => {
                       if (path === item.inc_path) {
                         // check args to select the correct file, if the same file included twice
-                        return equalLaunchArgs(currentLaunchArgs, item.args);
+                        return equalLaunchArgs(currentLaunchArgs, item.args || []);
                       }
                       return false;
                     });

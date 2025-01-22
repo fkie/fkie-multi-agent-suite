@@ -4,7 +4,7 @@ import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import JoinFullIcon from "@mui/icons-material/JoinFull";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
-import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
+import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import {
   Button,

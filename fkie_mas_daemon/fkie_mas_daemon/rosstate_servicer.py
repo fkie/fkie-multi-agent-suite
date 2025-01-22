@@ -22,6 +22,10 @@ import time
 
 from composition_interfaces.srv import ListNodes
 from composition_interfaces.srv import UnloadNode
+from rcl_interfaces.srv import GetLoggerLevels
+from rcl_interfaces.srv import SetLoggerLevels
+from rcl_interfaces.msg import LoggerLevel
+from rcl_interfaces.msg import SetLoggerLevelsResult
 
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import RosProvider
@@ -251,14 +255,44 @@ class RosStateServicer:
                     result.append(topic)
             return json.dumps(result, cls=SelfEncoder)
 
-    def get_loggers(self, name: str) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', not implemented")
+    def get_loggers(self, name: str, loggers: List[str] = []) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', loggers: {loggers}")
+        logger_names = loggers
+        if not logger_names or len(loggers) == 0:
+            logger_names = [name.replace("/", ".").strip("."), "rcl"]
         loggerConfigs: List[LoggerConfig] = []
-        return json.dumps({'result': False, 'logger': loggerConfigs, 'message': 'not implemented'}, cls=SelfEncoder)
+        service_name = '%s/get_logger_levels' % name
+        request_list = GetLoggerLevels.Request()
+        request_list.names = logger_names
+        get_logger = nmd.launcher.call_service(service_name, GetLoggerLevels, request_list)
+        if get_logger:
+            for logger in get_logger.levels:
+                loggerConfigs.append(LoggerConfig(level=LoggerConfig.LogLevelType.fromRos2(logger.level), name=logger.name))
+        return json.dumps(loggerConfigs, cls=SelfEncoder)
 
-    def set_logger_level(self, name: str, logger: List[LoggerConfig]) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}', not implemented")
-        return json.dumps({'result': False, 'message': 'not implemented'}, cls=SelfEncoder)
+    def set_logger_level(self, name: str, loggers: List[LoggerConfig]) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
+        # request the current logger
+        service_name_get = '%s/set_logger_levels' % name
+        request_set = SetLoggerLevels.Request()
+        for logger in loggers:
+            log_level = LoggerLevel()
+            log_level.name = logger.name
+            log_level.level = LoggerConfig.LogLevelType.toRos2(logger.level)
+            request_set.levels.append(log_level)
+        set_logger = nmd.launcher.call_service(service_name_get, SetLoggerLevels, request_set)
+        result = True
+        reason = ""
+        if set_logger:
+            idx = 0
+            for set_res in set_logger.results:
+                if not set_res.successful:
+                    result = False
+                    reason += f"{idx}: {set_res.reason}; "
+                idx += 1
+        else:
+            result = False
+        return json.dumps({'result': result, 'message': reason}, cls=SelfEncoder)
 
     def stop_node(self, name: str) -> bool:
         Log.info(f"{self.__class__.__name__}: Request to stop node '{name}'")
