@@ -94,28 +94,35 @@ function ExternalAppsModal(ref): JSX.Element {
   }
   function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
+    setShowSelectDialog(undefined);
     setOpen(false);
   }
 
-  const runApp = useCallback(async (command: string) => {
-    const domainIds: string[] = [
-      ...new Set(
-        rosCtx.providers
-          .filter((prov) => prov.rosVersion === "2" && prov.rosState.ros_domain_id)
-          .map((prov) => prov.rosState.ros_domain_id)
-      ),
-    ] as string[];
-    if (domainIds?.length === 0) {
-      await window.commandExecutor?.exec(null, command);
-    } else if (domainIds?.length === 1) {
-      await window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domainIds[0]} ${command}`);
-    } else if (domainIds) {
-      setShowSelectDialog({ command: command, domainIds: domainIds });
-    }
-  }, []);
+  const runApp = useCallback(
+    async (command: string) => {
+      const domainIds: string[] = [
+        ...new Set(
+          rosCtx.providers
+            .filter((prov) => prov.rosVersion === "2" && prov.rosState.ros_domain_id)
+            .map((prov) => prov.rosState.ros_domain_id)
+        ),
+      ] as string[];
+
+      if (domainIds?.length === 0) {
+        window.commandExecutor?.exec(null, command);
+        handleClose("confirmed");
+      } else if (domainIds?.length === 1) {
+        window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domainIds[0]} ${command}`);
+        handleClose("confirmed");
+      } else if (domainIds) {
+        setShowSelectDialog({ command: command, domainIds: domainIds });
+      }
+    },
+    [setShowSelectDialog]
+  );
 
   const runAppWid = useCallback(async (command: string, domain_id: string) => {
-    await window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id} ${command}`);
+    window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id} ${command}`);
     setShowSelectDialog(undefined);
   }, []);
 
@@ -173,7 +180,6 @@ function ExternalAppsModal(ref): JSX.Element {
                             color="inherit"
                             onClick={() => {
                               runApp(command);
-                              handleClose("confirmed");
                             }}
                           >
                             <Typography variant="body2">{row.application}</Typography>
@@ -186,7 +192,6 @@ function ExternalAppsModal(ref): JSX.Element {
                             size="small"
                             onClick={() => {
                               runApp(command);
-                              handleClose("confirmed");
                             }}
                           >
                             <PlayArrowIcon />
@@ -234,6 +239,9 @@ function ExternalAppsModal(ref): JSX.Element {
           onClose={(domainId) => {
             if (domainId) {
               runAppWid(showSelectDialog.command, domainId);
+              handleClose("confirmed");
+            } else {
+              handleClose("cancel");
             }
           }}
         />

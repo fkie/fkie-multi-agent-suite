@@ -340,8 +340,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return true;
       })
     );
-    const provider = getProviderById(providerId);
-    await provider?.updateLaunchContent();
+    // const provider = getProviderById(providerId);
+    // await provider?.updateLaunchContent();
   }
 
   /**

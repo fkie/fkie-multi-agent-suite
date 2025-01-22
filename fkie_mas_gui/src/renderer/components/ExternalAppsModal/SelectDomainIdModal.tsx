@@ -21,7 +21,7 @@ const SelectDomainIdModal = forwardRef<HTMLDivElement, SelectDomainIdModalProps>
     const { domainIds, onClose = (): void => {} } = props;
 
     const [open, setOpen] = useState(true);
-    const [domainId, setDomainId] = useState<string>();
+    const [domainId, setDomainId] = useState<string>(domainIds.length > 0 ? domainIds[0] : "");
 
     function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
       if (reason && reason === "backdropClick") return;
@@ -74,10 +74,10 @@ const SelectDomainIdModal = forwardRef<HTMLDivElement, SelectDomainIdModalProps>
                 />
               )}
               onChange={(_event, newNameValue) => {
-                setDomainId(newNameValue ? newNameValue : undefined);
+                setDomainId(newNameValue ? newNameValue : "");
               }}
               onInputChange={(_event, newInputValue) => {
-                setDomainId(newInputValue ? newInputValue : undefined);
+                setDomainId(newInputValue ? newInputValue : "");
               }}
               isOptionEqualToValue={(option, value) => {
                 return value === undefined || value === "" || option === value;
@@ -111,7 +111,7 @@ const SelectDomainIdModal = forwardRef<HTMLDivElement, SelectDomainIdModalProps>
             Cancel
           </Button>
           <Button
-            disabled={!domainId}
+            disabled={!domainId && domainId.length > 0}
             color="success"
             variant="contained"
             onClick={() => {
