@@ -48,7 +48,6 @@ const URI = {
   ROS_SCREEN_LIST: "ros.screen.list",
   ROS_PARAMETERS_GET_LIST: "ros.parameters.get_list",
   ROS_PARAMETERS_GET_NODE_PARAMETERS: "ros.parameters.get_node_parameters",
-  ROS_PARAMETERS_HAS_PARAMETER: "ros.parameters.has_parameter",
   ROS_PARAMETERS_SET_PARAMETER: "ros.parameters.set_parameter",
   ROS_PARAMETERS_DELETE_PARAMETERS: "ros.parameters.delete_parameters",
   ROS_SUBSCRIBER_START: "ros.subscriber.start",

@@ -145,6 +145,7 @@ class RosTopicId:
     def __str__(self):
         return f"{self.name}#{self.msg_type}"
 
+
 class RosService:
     def __init__(self, name: str, srv_type: str) -> None:
         self.name = name
@@ -203,6 +204,16 @@ class RosParameter:
                 return self.value.lower() in ['true', '1']
             else:
                 return self.value
+        elif self.type == 'list':
+            return [a.strip() for a in self.value.split(", ")]
+        elif self.type == 'str[]':
+            return [a.strip() for a in self.value.split(", ")]
+        elif self.type == 'int[]':
+            return [int(a.strip()) for a in self.value.split(", ")]
+        elif self.type == 'float[]':
+            return [float(a.strip()) for a in self.value.split(", ")]
+        elif self.type == 'bool[]':
+            return [a.strip().lower() in ['true', '1'] for a in self.value.split(", ")]
         if self.type is not None:
             print(
                 f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")
@@ -218,7 +229,7 @@ class RosParameter:
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
-        self.gid = None # used while creation of the node
+        self.gid = None  # used while creation of the node
         self.is_container = False
         self.container_name = ""
         self.name = name  # with namespace
@@ -644,4 +655,3 @@ class LoggerConfig:
     def __init__(self, level: LogLevelType, name: str) -> None:
         self.level = level
         self.name = name
-

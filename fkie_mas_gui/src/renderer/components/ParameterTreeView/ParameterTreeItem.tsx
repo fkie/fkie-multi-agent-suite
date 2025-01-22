@@ -29,7 +29,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
   function handleKey(event: React.KeyboardEvent): void {
     if (event.key === "Enter") {
-      updateParameter(paramInfo, value);
+      updateParameter(paramInfo, value, paramInfo.type);
       setChanged(false);
     } else if (event.key === "Escape") {
       setValue(paramInfo.value);
@@ -44,7 +44,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
   function onLeave(): void {
     if (changed) {
-      updateParameter(paramInfo, value);
+      updateParameter(paramInfo, value, paramInfo.type);
       setChanged(false);
     }
   }
@@ -82,6 +82,38 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
         updateParameter(paramInfo, paramInfo.value, "bool");
       },
     },
+    {
+      name: "str[]",
+      key: "str[]",
+      onClick: (): void => {
+        setParameterType("str[]");
+        updateParameter(paramInfo, paramInfo.value, "str[]");
+      },
+    },
+    {
+      name: "int[]",
+      key: "int[]",
+      onClick: (): void => {
+        setParameterType("int[]");
+        updateParameter(paramInfo, paramInfo.value, "int[]");
+      },
+    },
+    {
+      name: "float[]",
+      key: "float[]",
+      onClick: (): void => {
+        setParameterType("float[]");
+        updateParameter(paramInfo, paramInfo.value, "float[]");
+      },
+    },
+    {
+      name: "bool[]",
+      key: "bool[]",
+      onClick: (): void => {
+        setParameterType("bool[]");
+        updateParameter(paramInfo, paramInfo.value, "bool[]");
+      },
+    },
   ];
 
   function renderInput(): JSX.Element {
@@ -102,7 +134,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
           onBlur={() => onLeave()}
         />
       );
-    } else if (["list"].includes(parameterType)) {
+    } else if (["list", "str[]", "int[]", "float[]", "bool[]"].includes(parameterType)) {
       // TODO: show proper list/arrays
       inputElement = (
         <TextField

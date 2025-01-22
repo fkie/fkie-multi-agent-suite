@@ -19,7 +19,7 @@ class ROS1Parameters:
         # get parameter values
         for param_name in param_name_list:
             param_value = rospy.get_param(param_name)
-            param_list.append(RosParameter(param_name, param_value))
+            param_list.append(RosParameter("", param_name, param_value))
         return param_list
 
     def getNodeParameters(self, nodes: List[str]) -> List[RosParameter]:
@@ -37,7 +37,7 @@ class ROS1Parameters:
                 if f'{node_name}/' not in param_name:
                     continue
                 param_value = rospy.get_param(param_name)
-                param_list.append(RosParameter(param_name, param_value))
+                param_list.append(RosParameter("", param_name, param_value))
         return param_list
 
     def setParameter(self, parameter: RosParameter) -> bool:

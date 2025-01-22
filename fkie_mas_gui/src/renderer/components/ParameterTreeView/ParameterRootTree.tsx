@@ -170,7 +170,8 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     const byPrefixP1: Map<string, { restNameSuffix: string; paramInfo: RosParameter }[]> = new Map();
     // count parameter for each group
     params.forEach((param) => {
-      const nameSuffix = `${param.node}/${param.name}`
+      const nodeName = param.node && param.node.length > 0 ? `${param.node}/` : "";
+      const nameSuffix = `${nodeName}${param.name}`
         .replace(/\./g, "/")
         .replace("//", "/")
         .slice(fullPrefix.length + 1);
