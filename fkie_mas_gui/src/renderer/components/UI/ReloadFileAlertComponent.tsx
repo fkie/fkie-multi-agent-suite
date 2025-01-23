@@ -75,7 +75,7 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
         default:
           break;
       }
-    }, [handleDismiss, handleReload, settingsCtx]);
+    }, [settingsCtx]);
 
     // close this alert if launch file was loaded
     useCustomEventListener(
