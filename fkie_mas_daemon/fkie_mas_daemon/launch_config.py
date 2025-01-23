@@ -630,15 +630,17 @@ class LaunchConfig(object):
                             file_size = -1
                             entity.execute(self.context)
                             inc_file_name = perform_to_string(self.context, entity.launch_description_source.location)
+                            used_path = inc_file_name
                             if os.path.exists(inc_file_name):
                                 inc_file_exists = True
                                 file_size = os.path.getsize(inc_file_name)
+                                used_path = os.path.realpath(inc_file_name)
                             include_line_number, position_in_file, raw_text = self.find_definition(
                                 file_content, 'IncludeLaunchDescription', position_in_file)
                             launch_inc_file = LaunchIncludedFile(path=current_file,
                                                                  line_number=include_line_number,
                                                                  inc_path=inc_file_name,
-                                                                 exists=inc_file_exists,
+                                                                 exists=used_path,
                                                                  raw_inc_path=raw_text,
                                                                  rec_depth=depth+1,
                                                                  args=[],
@@ -731,9 +733,11 @@ class LaunchConfig(object):
                             f"  ***debug launch loading: {indent} include file: {entity.launch_description_source.location}")
                         inc_file_exists = False
                         file_size = -1
+                        used_path = entity.launch_description_source.location
                         if os.path.exists(entity.launch_description_source.location):
                             inc_file_exists = True
                             file_size = os.path.getsize(entity.launch_description_source.location)
+                            used_path = os.path.realpath(entity.launch_description_source.location)
                         include_line_number, position_in_file, raw_text = self.find_definition(
                             file_content, 'IncludeLaunchDescription', position_in_file)
                         inc_launch_arguments = []
@@ -764,7 +768,7 @@ class LaunchConfig(object):
                         #     inc_launch_arguments_def.append(LaunchArgument(name=arg_name, value=arg_value))
                         launch_inc_file = LaunchIncludedFile(path=current_file,
                                                              line_number=include_line_number,
-                                                             inc_path=entity.launch_description_source.location,
+                                                             inc_path=used_path,
                                                              exists=inc_file_exists,
                                                              raw_inc_path=raw_text,
                                                              rec_depth=depth+1,

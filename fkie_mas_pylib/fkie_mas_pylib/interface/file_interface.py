@@ -104,6 +104,9 @@ class FileItem:
         encoding="utf-8",
     ) -> None:
         self.path = path
+        realpath = os.path.realpath(path)
+        if realpath != path:
+            self.realpath = realpath
         self.fileName = os.path.split(path)[-1]
         self.mtime = mtime
         self.size = size

@@ -65,6 +65,8 @@ export default class FileItem {
    */
   fileName: string;
 
+  realpath: string | undefined;
+
   /**
    * Extension
    */

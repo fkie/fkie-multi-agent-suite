@@ -128,6 +128,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   const [selectionRange, setSelectionRange] = useState<TFileRange>();
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
+  const [installPathsWarn, setInstallPathsWarn] = useState<string[]>([]);
   const [modifiedFiles, setModifiedFiles] = useState<string[]>([]);
   const [savedModelVersions, setSavedModelVersions] = useState<TModelVersion[]>([]);
   const [includedFiles, setIncludedFiles] = useState<LaunchIncludedFile[]>([]);
@@ -320,6 +321,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return false;
       }
 
+      if (result.file && result.model) {
+        updateInstallPathsWarn(result.file, result.model.uri.path);
+      }
       updateOpenFiles(result);
       // save current view state, in case user wants to open the file again
       // view state contains the cursor position, folding, selections etc...
@@ -375,6 +379,14 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   });
 
+  function updateInstallPathsWarn(file: FileItem, modelUriPath: string): void {
+    const filePath = file.realpath && file.realpath.length > 0 ? file.realpath : file.path;
+    // check if the file is located in install folder
+    if (filePath.search("/install/") !== -1) {
+      setInstallPathsWarn((prev) => [modelUriPath, ...prev.filter((item) => item !== modelUriPath)]);
+    }
+  }
+
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, async (data: EventProviderPathEvent) => {
     if (data.provider.id !== providerId) {
@@ -408,6 +420,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
           return;
         }
+        updateInstallPathsWarn(result.file, model.uri.path);
         if (currentModel && currentModel.uri.path === model.uri.path) {
           updateOpenFiles({ model: model, file: result.file } as TModelResult);
           editorRef.current.setModel(model);
@@ -515,6 +528,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           setNotificationDescription("");
           if (result.model) {
             setActiveModel({ path: result.model.uri.path, modified: true, model: result.model });
+          }
+          if (result.file && result.model) {
+            updateInstallPathsWarn(result.file, result.model.uri.path);
           }
           updateModifiedFiles();
           const provider = rosCtx.getProviderById(providerId, true);
@@ -702,6 +718,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       if (result.model) {
         updateOpenFiles(result);
         setEditorModel(result.model.uri.path, fileRange, launchArgs);
+      }
+      if (result.file && result.model) {
+        updateInstallPathsWarn(result.file, result.model.uri.path);
       }
 
       // Ignore "non-launch" files
@@ -1204,9 +1223,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               {`no write permissions for ${activeModel.path.split(":")[1]}`}
             </Alert>
           ) : (
-            activeModel?.path?.split(":")[0]?.search("/install/") !== -1 && (
+            activeModel?.path &&
+            installPathsWarn.includes(activeModel?.path) && (
               <Alert severity="warning" style={{ minWidth: 0 }}>
-                {`${activeModel?.path.split(":")[1]} is located in 'install' path. The changes could be lost after rebuilding packages.`}
+                {`${activeModel?.path.split(":")[1]} is located in 'install' path. The changes could be lost after rebuilding packages. You can build your packages with '--symlink-install' to edit your launch files in your sources.`}
               </Alert>
             )
           )}
