@@ -28,7 +28,7 @@ function createXMLDependencyProposals(
   // returning a static list of proposals, valid for ROS launch and XML  files
 
   function getParamName(defaultValue: string | undefined): string | undefined {
-    const text = clipText;
+    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
     return text || defaultValue;
   }
 

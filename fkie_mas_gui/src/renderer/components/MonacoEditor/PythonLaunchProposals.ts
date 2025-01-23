@@ -44,6 +44,11 @@ export function createPythonLaunchProposals(
 ): languages.CompletionItem[] {
   // returning a static list of proposals, valid for ROS launch and XML  files
 
+  function getClip(defaultValue: string | undefined): string | undefined {
+    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
+    return text || defaultValue;
+  }
+
   const wordSuggestions = createWordList(text, monaco, range);
   const packageSuggestions = createPackageList(packages, monaco, range);
   return [
@@ -60,7 +65,7 @@ export function createPythonLaunchProposals(
       label: "DeclareLaunchArgument",
       kind: monaco.languages.CompletionItemKind.Snippet,
       documentation: "Add a new ROS DeclareLaunchArgument",
-      insertText: `declare_\${1:${clipText || "NAME"}} = DeclareLaunchArgument('\${2:${clipText || "NAME"}}', default_value='\${3:VALUE}', description='')`,
+      insertText: `declare_\${1:${getClip("NAME")}} = DeclareLaunchArgument('\${2:${getClip("NAME")}}', default_value='\${3:VALUE}', description='')`,
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
