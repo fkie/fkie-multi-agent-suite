@@ -175,11 +175,11 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                     with open(p[0]) as tmp_param_file:
                         try:
                             yaml = ruamel.yaml.YAML(typ='rt')
-                            self.parameters.append(RosParameter(p[0], yaml.load(tmp_param_file)))
+                            self.parameters.append(RosParameter(node_name, p[0], yaml.load(tmp_param_file)))
                             continue
                         except ruamel.yaml.YAMLError as exc:
                             pass
-                self.parameters.append(RosParameter(p[0], p[1]))
+                self.parameters.append(RosParameter(node_name, p[0], p[1]))
                 continue
             print(f"new parameter type: {type(p)}: {p}")
             self.parameters.append(p)

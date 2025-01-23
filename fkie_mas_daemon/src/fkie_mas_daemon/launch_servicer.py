@@ -789,7 +789,7 @@ class LaunchServicer(LoggingEventHandler):
 
             # Add parameter values
             for name, p in lc.roscfg.params.items():
-                reply_lc.parameters.append(RosParameter(name, p.value))
+                reply_lc.parameters.append(RosParameter("", name, p.value))
 
             # create association description
             associations = {}
