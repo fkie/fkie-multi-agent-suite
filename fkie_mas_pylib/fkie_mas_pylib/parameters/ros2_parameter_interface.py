@@ -8,6 +8,7 @@ from rclpy.node import Node
 from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.srv import ListParameters
 from rcl_interfaces.srv import SetParameters
+from rcl_interfaces.srv import DescribeParameters
 from ros2node.api import get_node_names
 from fkie_mas_pylib.service.future import WaitFuture
 from fkie_mas_pylib.service.future import create_service_future
@@ -19,6 +20,7 @@ from rcl_interfaces.msg import Parameter
 from rcl_interfaces.msg import ParameterValue
 
 from fkie_mas_pylib.interface.runtime_interface import RosParameter
+from fkie_mas_pylib.interface.runtime_interface import RosParameterRange
 from fkie_mas_pylib.logging.logging import Log
 
 
@@ -103,6 +105,50 @@ class ParameterInterface:
                 Log.warn(f"{self.__class__.__name__}:-> Timeout while calling '{wait_future.service_name}'")
             wait_future.client.destroy()
 
+        # get parameter descriptions
+        wait_futures = []
+        for node_name, parameters in node_parameters.items():
+            service_name = f"{node_name}/describe_parameters"
+            Log.debug(f"{self.__class__.__name__}:  describe parameters '{service_name}'")
+            request = DescribeParameters.Request()
+            request.names = parameters
+            ready = create_service_future(self.global_node, wait_futures, "describe_parameters", node_name, service_name,
+                                          DescribeParameters, request)
+            if not ready:
+                Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
+
+        # wait until all clients have been called
+        wait_until_futures_done(wait_futures)
+
+        # read get parameter responses
+        for wait_future in wait_futures:
+            if wait_future.finished:
+                try:
+                    response = wait_future.future.result()
+                    if response:
+                        for (index, descriptor) in enumerate(response.descriptors):
+                            param_name = f'{node_parameters[wait_future.node_name][index]}'
+                            parameter = param_list[index]
+                            if parameter.name != descriptor.name:
+                                # should not happen
+                                Log.warn(
+                                    f"{self.__class__.__name__}:-> descriptor '{descriptor.name}' assigned to wrong parameter: '{parameter.name}'")
+                            parameter.readonly = descriptor.read_only
+                            parameter.description = descriptor.description
+                            parameter.additional_constraints = descriptor.additional_constraints
+                            for fpr in descriptor.floating_point_range:
+                                parameter.floating_point_range.append(
+                                    RosParameterRange(fpr.from_value, fpr.to_value, fpr.step))
+                            for ir in descriptor.integer_range:
+                                parameter.integer_range.append(
+                                    RosParameterRange(ir.from_value, ir.to_value, ir.step))
+                except Exception as exception:
+                    Log.warn(
+                        f"{self.__class__.__name__}:-> failed to get parameter calling '{wait_future.service_name}': '{exception}'")
+            else:
+                Log.warn(f"{self.__class__.__name__}:-> Timeout while calling '{wait_future.service_name}'")
+            wait_future.client.destroy()
+
         return param_list
 
     def set(self, _parameter: RosParameter) -> bool:
@@ -152,7 +198,7 @@ class ParameterInterface:
             return True
 
         raise Exception(f'Deleting parameter failed: ', parameter, result.reason)
-        
+
     def _get_value(self, parameter_value):
         """Get the value from a ParameterValue."""
         if parameter_value.type == ParameterType.PARAMETER_BOOL:

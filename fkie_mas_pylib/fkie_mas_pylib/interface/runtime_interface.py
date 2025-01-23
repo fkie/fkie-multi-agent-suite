@@ -160,6 +160,19 @@ class RosService:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
+class RosParameterRange:
+    from_value: Union[int, float, None]
+    to_value: Union[int, float, None]
+    step: Union[int, float, None]
+
+    def __init__(
+        self, from_value: Union[int, float, None], to_value: Union[int, float, None], step: Union[int, float, None]
+    ) -> None:
+        self.from_value = from_value
+        self.to_value = to_value
+        self.step = step
+
+
 class RosParameter:
     """
     Models a ROS parameter object
@@ -173,11 +186,10 @@ class RosParameter:
         self.value = value
         self.type = type
         self.readonly: bool = False
-        self.description: str = None
-        self.additional_constraints: str = None
-        self.min = None
-        self.max = None
-        self.step = None
+        self.description: Union[str, None] = None
+        self.additional_constraints: Union[str, None] = None
+        self.floating_point_range: List[RosParameterRange] = []
+        self.integer_range: List[RosParameterRange] = []
 
         if self.type is None:
             self.type = self.get_type()

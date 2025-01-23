@@ -887,12 +887,8 @@ export default class Provider implements IProvider {
     this.packages = [];
     const result = await this.makeCall("ros.packages.get_list", [], true).then((value: TResultData) => {
       if (value.result) {
-        const rosPackageList: RosPackage[] = value.data as RosPackage[];
-        const packageList: RosPackage[] = [];
-        rosPackageList?.forEach((p: RosPackage) => {
-          packageList.push(new RosPackage(p.name, p.path));
-        });
-        return packageList.sort(comparePackages);
+        const rosPackageList: RosPackage[] = (value.data as RosPackage[]) || [];
+        return rosPackageList.sort(comparePackages);
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getPackageList()`, `${value.message}`);
       return [];
@@ -1032,14 +1028,7 @@ export default class Provider implements IProvider {
     if (reload)
       result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true).then((value: TResultData) => {
         if (value.result) {
-          const parsed = value.data as LaunchLoadReply;
-          const loadReply = new LaunchLoadReply(
-            parsed.status,
-            parsed.paths || [],
-            parsed.args || [],
-            parsed.changed_nodes || []
-          );
-          return loadReply;
+          return value.data as LaunchLoadReply;
         }
         this.logger?.error(`Provider [${this.name()}]: Error at launchLoadFile()`, `${value.message}`);
         return null;
@@ -1047,14 +1036,7 @@ export default class Provider implements IProvider {
     else {
       result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true).then((value: TResultData) => {
         if (value.result) {
-          const parsed = value.data as LaunchLoadReply;
-          const loadReply = new LaunchLoadReply(
-            parsed.status,
-            parsed.paths || [],
-            parsed.args || [],
-            parsed.changed_nodes || []
-          );
-          return loadReply;
+          return value.data as LaunchLoadReply;
         }
         this.logger?.error(`Provider [${this.name()}]: Error at launchLoadFile()`, `${value.message}`);
         return null;
@@ -1069,14 +1051,7 @@ export default class Provider implements IProvider {
   public launchUnloadFile: (request: LaunchFile) => Promise<LaunchLoadReply | null> = async (request) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_UNLOAD, [request], true).then((value: TResultData) => {
       if (value.result) {
-        const parsed = value.data as LaunchLoadReply;
-        const loadReply = new LaunchLoadReply(
-          parsed.status,
-          parsed.paths || [],
-          parsed.args || [],
-          parsed.changed_nodes || []
-        );
-        return loadReply;
+        return value.data as LaunchLoadReply;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at launchUnloadFile()`, `${value.message}`);
       return null;
@@ -1474,12 +1449,11 @@ export default class Provider implements IProvider {
   public getMessageStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_MSG_STRUCT, [request], true).then((value: TResultData) => {
       if (value.result) {
-        const parsed = value.data as LaunchMessageStruct;
-        const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
+        const response = value.data as LaunchMessageStruct;
         if (response.valid) {
           return response;
         }
-        this.logger?.error(`Provider [${this.name()}]: Can't parse message: ${request}`, parsed.error_msg);
+        this.logger?.error(`Provider [${this.name()}]: Can't parse message: ${request}`, response.error_msg);
         return null;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getMessageStruct()`, `${value.message}`);
@@ -1494,12 +1468,11 @@ export default class Provider implements IProvider {
   public getServiceStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_SRV_STRUCT, [request], true).then((value: TResultData) => {
       if (value.result) {
-        const parsed = value.data as LaunchMessageStruct;
-        const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
+        const response = value.data as LaunchMessageStruct;
         if (response.valid) {
           return response;
         }
-        this.logger?.error(`Provider [${this.name()}]: Can't parse service: ${request}`, parsed.error_msg);
+        this.logger?.error(`Provider [${this.name()}]: Can't parse service: ${request}`, response.error_msg);
         return null;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getServiceStruct()`, `${value.message}`);
@@ -1531,8 +1504,7 @@ export default class Provider implements IProvider {
         if (!value.data) {
           return null;
         }
-        const parsed = value.data as LaunchMessageStruct;
-        const response = new LaunchMessageStruct(parsed.msg_type, parsed.data, parsed.valid, parsed.error_msg);
+        const response = value.data as LaunchMessageStruct;
         return response;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at callService()`, `${value.message}`);
@@ -1681,8 +1653,7 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: TResultData) => {
       emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, node));
       if (value.result) {
-        const parsed = value.data as LaunchNodeReply;
-        const response = new LaunchNodeReply(parsed.name, parsed.status, parsed.paths || [], parsed.launch_files || []);
+        const response = value.data as LaunchNodeReply;
 
         if (!response) {
           return {
@@ -1923,11 +1894,13 @@ export default class Provider implements IProvider {
   public getParameterList: () => Promise<RosParameter[]> = async () => {
     const result = await this.makeCall("ros.parameters.get_list", [], true, 10000).then((value: TResultData) => {
       if (value.result) {
-        const paramList: RosParameter[] = [];
-        const parsed = value.data as RosParameter[];
-        parsed.forEach((item: RosParameter) => {
-          paramList.push(new RosParameter(item.node, item.name, item.value, item.type, this.id));
-        });
+        // update with id
+        const paramList = [
+          ...((value.data as RosParameter[])?.map((item) => {
+            item.id = `${item.node}#${item.name}`;
+            return item;
+          }) || []),
+        ];
         return paramList;
       }
       this.logger?.debug(`Provider [${this.name()}]: Error at getParameterList()`, `${value.message}`);
@@ -1943,11 +1916,13 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], false, 60000).then(
       (value: TResultData) => {
         if (value.result) {
-          const paramList: RosParameter[] = [];
-          const parsed = value.data as RosParameter[];
-          parsed.forEach((item: RosParameter) => {
-            paramList.push(new RosParameter(item.node, item.name, item.value, item.type, this.id));
-          });
+          // update with id
+          const paramList = [
+            ...((value.data as RosParameter[])?.map((item) => {
+              item.id = `${item.node}#${item.name}`;
+              return item;
+            }) || []),
+          ];
           return paramList;
         }
         this.logger?.debug(`Provider [${this.name()}]: Error at stopNode()`, `${value.message}`);

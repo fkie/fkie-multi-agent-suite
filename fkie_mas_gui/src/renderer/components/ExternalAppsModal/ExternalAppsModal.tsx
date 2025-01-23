@@ -118,7 +118,7 @@ function ExternalAppsModal(ref): JSX.Element {
         setShowSelectDialog({ command: command, domainIds: domainIds });
       }
     },
-    [setShowSelectDialog]
+    [setShowSelectDialog, rosCtx.providers]
   );
 
   const runAppWid = useCallback(async (command: string, domain_id: string) => {

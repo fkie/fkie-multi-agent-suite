@@ -245,8 +245,8 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       while (avoidGroupWithOneItem && param.params.length === 1) {
         const child = param.params[0];
         param.params = child.params;
-        namespacePart = `${namespacePart}${param.groupName}/`;
-        groupName = `${groupName}/${child.groupName}`;
+        namespacePart = `${namespacePart}${groupName}/`;
+        groupName = `${child.groupName}`;
       }
       if (param.paramInfo) {
         return (
