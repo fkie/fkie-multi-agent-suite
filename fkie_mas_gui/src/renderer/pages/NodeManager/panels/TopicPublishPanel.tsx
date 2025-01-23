@@ -1,4 +1,6 @@
 import { Provider } from "@/renderer/providers";
+import { JSONObject } from "@/types";
+import { StopCircleOutlined } from "@mui/icons-material";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
@@ -14,6 +16,7 @@ import {
   FormControlLabel,
   FormGroup,
   FormLabel,
+  IconButton,
   Stack,
   TextField,
   Tooltip,
@@ -29,7 +32,6 @@ import { SettingsContext } from "../../../context/SettingsContext";
 import useLocalStorage from "../../../hooks/useLocalStorage";
 import { LaunchPublishMessage, rosMessageStructToString, TRosMessageStruct } from "../../../models";
 import InputElements from "./MessageDialogPanel/InputElements";
-import { JSONObject } from "@/types";
 
 type THistoryItem = {
   rate: string;
@@ -59,6 +61,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   const [publishRate, setPublishRate] = useState<string>("once");
   const [provider, setProvider] = useState<Provider | null>(null);
   const [inputElements, setInputElements] = useState<React.ReactNode | null>(null);
+  const [hasPublisher, setHasPublisher] = useState<boolean>(false);
 
   const [startPublisherDescription, setStartPublisherDescription] = useState("");
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
@@ -113,8 +116,8 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   // create string from message struct and copy it to clipboard
   const onCopyToClipboard = useDebounceCallback(() => {
     if (!messageStruct) return;
-    const json: string = rosMessageStructToString(messageStruct, false, true) as string;
-    navigator.clipboard.writeText(json);
+    const json: string = rosMessageStructToString(messageStruct, false, false) as string;
+    navigator.clipboard.writeText(`${topicName} ${topicType} '${json}'`);
     logCtx.success(`message publish object copied!`);
   }, 300);
 
@@ -178,6 +181,20 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     );
   }, 300);
 
+  function stopPublisher(): void {
+    if (provider && topicName) {
+      const publisherName = `/_mas_publisher${topicName.replaceAll("/", "_")}`;
+      console.log(
+        `publisherName: ${publisherName} :: ${JSON.stringify(provider.rosNodes.filter((node) => node.name === publisherName))}`
+      );
+      provider.rosNodes.forEach(async (node) => {
+        if (node.name === publisherName) {
+          await provider.stopNode(node.id);
+        }
+      });
+    }
+  }
+
   useEffect(() => {
     if (!messageType) return;
     if (!history) return;
@@ -205,6 +222,17 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     onUpdateInputElements(searchTerm);
     // eslint-disable-next-line
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (provider && topicName) {
+      const publisherName = `/_mas_publisher${topicName.replaceAll("/", "_")}`;
+      setHasPublisher(
+        provider.rosNodes.filter((node) => {
+          return node.name === publisherName;
+        }).length > 0
+      );
+    }
+  }, [provider, rosCtx.mapProviderRosNodes, topicName]);
 
   async function handleStartPublisher(): Promise<void> {
     if (!messageStruct) return;
@@ -250,7 +278,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     setTimeout(() => {
       setStartPublisherIsSubmitting(false);
       setStartPublisherDescription("");
-    }, 5000);
+    }, 3000);
   }
 
   const publishRateSelections = ["once", "latched", "1"];
@@ -414,6 +442,17 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
             >
               Start Publisher
             </Button>
+          )}
+          {hasPublisher && (
+            <IconButton
+              sx={{
+                padding: "0.8em",
+                color: settingsCtx.get("useDarkMode") ? "#fff" : "rgba(0, 0, 0, 0.54)",
+              }}
+              onClick={() => stopPublisher()}
+            >
+              <StopCircleOutlined sx={{ fontSize: "inherit" }} />
+            </IconButton>
           )}
         </Box>
         <Divider />

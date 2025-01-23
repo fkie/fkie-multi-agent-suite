@@ -1,13 +1,23 @@
+import { TRosMessageStruct } from "@/renderer/models";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import { Alert, AlertTitle, Button, ButtonGroup, Divider, FormLabel, Stack } from "@mui/material";
+import {
+  Alert,
+  AlertTitle,
+  Button,
+  ButtonGroup,
+  Checkbox,
+  Divider,
+  FormControlLabel,
+  FormLabel,
+  Stack,
+} from "@mui/material";
 import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
 import { useDebounceCallback } from "@react-hook/debounce";
 import React, { useCallback, useEffect, useState } from "react";
-import { TRosMessageStruct } from "@/renderer/models";
 import BoolInput from "./BoolInput";
 import StringInput from "./StringInput";
 
@@ -83,7 +93,10 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
 
   const [arrayCount, setArrayCount] = useState<number>(0);
   const [idSuffix] = useState<string>(`${parentName}-${messageStruct.name}`);
-  const [expandedElement, setExpanded] = useState<boolean>(expanded || messageStruct.type !== "std_msgs/Header");
+  const [expandedElement, setExpanded] = useState<boolean>(
+    expanded || (messageStruct.type !== "std_msgs/Header" && messageStruct.type !== "builtin_interfaces/Time")
+  );
+  const [useNow, setUseNow] = useState<boolean | undefined>(messageStruct.useNow);
 
   useEffect(() => {
     if (messageStruct?.value !== undefined) {
@@ -92,6 +105,10 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
       }
     }
   }, [messageStruct.value]);
+
+  useEffect(() => {
+    messageStruct.useNow = useNow;
+  }, [useNow]);
 
   const addArrayElement = useCallback(
     function (): void {
@@ -261,7 +278,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
                 <ContentCopyOutlinedIcon fontSize="inherit" />
               </Stack>
             )}
-            {messageStruct.is_array && (
+            {messageStruct.is_array ? (
               <ButtonGroup sx={{ maxHeight: "24px" }}>
                 <Button
                   onClick={(event) => {
@@ -284,12 +301,32 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
                   -
                 </Button>
               </ButtonGroup>
+            ) : (
+              messageStruct.type === "builtin_interfaces/Time" && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={useNow}
+                      onChange={(event) => {
+                        setUseNow((prev) => !prev);
+                        event.stopPropagation();
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                    />
+                  }
+                  label="use now"
+                  labelPlacement="end"
+                />
+              )
             )}
           </Stack>
         </AccordionSummary>
         <AccordionDetails id={`accordion-details-${idSuffix}`}>
           <Stack direction="column" spacing={1}>
             {!messageStruct.is_array &&
+              !useNow &&
               messageStruct.def.map((struct: TRosMessageStruct) => (
                 <InputElements
                   key={`input-elements-${messageStruct.name}-${struct.name}`}

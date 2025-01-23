@@ -3,6 +3,7 @@ import JSONObject, { JSONValue } from "../../types/JsonObject";
 export type TRosMessageStruct = {
   type: string;
   name: string;
+  useNow: boolean | undefined;
   def: TRosMessageStruct[] | undefined;
   default_value?: JSONValue;
   value?: JSONValue | TRosMessageStruct[];
@@ -53,9 +54,13 @@ export function rosMessageStructToString(
       }
     } else {
       // it is a complex type, call subroutine
-      const subResult = rosMessageStructToString(field.def, true, withEmptyFields);
-      if (Object.keys(subResult).length > 0) {
-        result[field.name] = subResult;
+      if (field.useNow) {
+        result[field.name] = "now";
+      } else {
+        const subResult = rosMessageStructToString(field.def, true, withEmptyFields);
+        if (Object.keys(subResult).length > 0) {
+          result[field.name] = subResult;
+        }
       }
     }
   });
@@ -101,5 +106,5 @@ function dictToString(dict: JSONObject): string {
       return cls === "key" || cls === "number" || cls === "boolean" ? match.replaceAll('"', "") : match;
     }
   );
-  return result;
+  return result.replaceAll(":", ": ");
 }

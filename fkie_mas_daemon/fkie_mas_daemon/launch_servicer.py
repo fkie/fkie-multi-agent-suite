@@ -843,9 +843,12 @@ class LaunchServicer(LoggingEventHandler):
                 if result_array:
                     result[field['name']] = result_array
             else:
-                sub_result = self._str_from_dict(field['def'])
-                if sub_result:
-                    result[field['name']] = sub_result
+                if field['useNow']:
+                    result[field['name']] = "now"
+                else:
+                    sub_result = self._str_from_dict(field['def'])
+                    if sub_result:
+                        result[field['name']] = sub_result
         return result
 
     def publish_message(self, request_json: LaunchPublishMessage) -> None:
@@ -877,7 +880,7 @@ class LaunchServicer(LoggingEventHandler):
             pub_cmd = f"pub {opt_str} {request.topic_name} {request.msg_type} \"{topic_params}\""
             screen_prefix = ' '.join([screen.get_cmd(fullname)])
             cmd = ' '.join([screen_prefix, 'ros2', 'topic', pub_cmd])
-            Log.debug(
+            Log.info(
                 f"{self.__class__.__name__}: run ros2 publisher with: {cmd}")
             SupervisedPopen(shlex.split(cmd),
                             object_id=f"ros_topic_pub_{request.topic_name}", description=f"publish to topic {request.topic_name}")
