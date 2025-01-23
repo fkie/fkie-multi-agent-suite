@@ -1,6 +1,10 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4.1.0 (23.01.2025)
+------------------
+* Added descriptor to parameter
+* Changed error handling in parameter interface
 
 4.0.0 (21.01.2025)
 ------------------

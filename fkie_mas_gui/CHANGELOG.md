@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.1.0 - 23.01.2025
+
+Added 'now' and stop button to publish panel
+Use clipboard text in parameters only until new line
+Added descriptor to parameter
+Propagate errors in parameter interface to the GUI
+Show 'install' warning in editor only if realpath is in install
+Added dialog to select ros domain id on run external apps
+Added simple logger support for ros2 nodes
+Fixed quick start provider with different ros domain id
+
 ## 4.0.0 - 21.01.2025
 
 Changed get_node_list interface
