@@ -314,7 +314,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
               <FormLabel>Publish history</FormLabel>
               <ButtonGroup sx={{ maxHeight: "24px" }}>
                 {historyLength > 0 && (
-                  <Tooltip title="clear history entries" enterDelay={500} disableInteractive>
+                  <Tooltip title="reset values" enterDelay={500} disableInteractive>
                     <Button
                       color="success"
                       onClick={(event) => {

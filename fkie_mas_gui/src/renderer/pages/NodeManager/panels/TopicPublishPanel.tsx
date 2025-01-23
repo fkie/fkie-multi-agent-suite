@@ -391,7 +391,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
               <FormLabel>Publish history</FormLabel>
               <ButtonGroup sx={{ maxHeight: "24px" }}>
                 {historyLength > 0 && (
-                  <Tooltip title="clear history entries" enterDelay={500}>
+                  <Tooltip title="reset values" enterDelay={500}>
                     <Button
                       color="success"
                       onClick={(event) => {
