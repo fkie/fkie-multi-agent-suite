@@ -109,12 +109,21 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                       new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
                         type: "lifecycle_msgs/srv/ChangeState",
                         name: "",
+                        useNow: false,
                         def: [
                           {
                             name: "transition",
+                            useNow: false,
                             def: [
-                              { name: "id", def: [], type: "uint8", is_array: false, value: `${item.id}` },
-                              { name: "label", def: [], type: "string", is_array: false },
+                              {
+                                name: "id",
+                                useNow: false,
+                                def: [],
+                                type: "uint8",
+                                is_array: false,
+                                value: `${item.id}`,
+                              },
+                              { name: "label", useNow: false, def: [], type: "string", is_array: false },
                             ],
                             type: "lifecycle_msgs/Transition",
                             is_array: false,
