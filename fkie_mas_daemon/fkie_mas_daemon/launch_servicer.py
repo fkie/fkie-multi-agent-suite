@@ -843,7 +843,7 @@ class LaunchServicer(LoggingEventHandler):
                 if result_array:
                     result[field['name']] = result_array
             else:
-                if field['useNow']:
+                if 'useNow' in field:
                     result[field['name']] = "now"
                 else:
                     sub_result = self._str_from_dict(field['def'])
