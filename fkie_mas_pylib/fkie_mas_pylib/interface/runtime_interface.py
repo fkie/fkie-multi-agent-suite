@@ -217,15 +217,15 @@ class RosParameter:
             else:
                 return self.value
         elif self.type == 'list':
-            return [a.strip() for a in self.value.split(", ")]
+            return [a.strip() for a in self.value.split(",")]
         elif self.type == 'str[]':
-            return [a.strip() for a in self.value.split(", ")]
+            return [a.strip() for a in self.value.split(",")]
         elif self.type == 'int[]':
-            return [int(a.strip()) for a in self.value.split(", ")]
+            return [int(a.strip()) for a in self.value.split(",")]
         elif self.type == 'float[]':
-            return [float(a.strip()) for a in self.value.split(", ")]
+            return [float(a.strip()) for a in self.value.split(",")]
         elif self.type == 'bool[]':
-            return [a.strip().lower() in ['true', '1'] for a in self.value.split(", ")]
+            return [a.strip().lower() in ['true', '1'] for a in self.value.split(",")]
         if self.type is not None:
             print(
                 f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")

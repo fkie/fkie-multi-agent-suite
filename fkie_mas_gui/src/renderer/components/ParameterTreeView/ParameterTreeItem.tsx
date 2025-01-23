@@ -2,8 +2,8 @@ import { RosParameter } from "@/renderer/models";
 import { RosParameterRange } from "@/renderer/models/RosParameter";
 import { basename, normalizeNameWithPrefix } from "@/renderer/utils";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, TextField, Typography } from "@mui/material";
-import React, { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
+import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, TextField, Tooltip, Typography } from "@mui/material";
+import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
@@ -124,7 +124,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     },
   ];
 
-  function renderInput(): JSX.Element {
+  const renderInput = useMemo(() => {
     let inputElement: JSX.Element | null = null;
     if (["int", "float"].includes(parameterType)) {
       let range: RosParameterRange | null = null;
@@ -138,6 +138,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
         return (
           <Stack direction="row" sx={{ flexGrow: 1 }}>
             <Input
+              id={`input-${paramInfo.id}`}
               value={value}
               size="small"
               onChange={(event) => handleChange(event)}
@@ -152,8 +153,9 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
               }}
             />
             <Slider
+              id={`slider-${paramInfo.id}`}
               sx={{ minWidth: "80px", marginLeft: "1em" }}
-              value={typeof value === "number" ? value : 0}
+              value={value as number}
               step={range.step || 1.0}
               min={range.from_value}
               max={range.to_value}
@@ -186,11 +188,10 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     } else if (["list", "str[]", "int[]", "float[]", "bool[]"].includes(parameterType)) {
       // TODO: show proper list/arrays
       inputElement = (
-        <TextField
+        <Input
           id={`input-${paramInfo.id}`}
           value={value}
           placeholder={`${JSON.stringify(paramInfo.value)}`}
-          variant="standard"
           size="small"
           fullWidth
           disabled={paramInfo.readonly}
@@ -214,12 +215,11 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     } else {
       // default render (usually string)
       inputElement = (
-        <TextField
+        <Input
           key={paramInfo.id}
           id={`input-${paramInfo.id}`}
           value={value}
           placeholder={`${paramInfo.value}`}
-          variant="standard"
           size="small"
           fullWidth
           disabled={paramInfo.readonly}
@@ -231,7 +231,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     }
 
     return inputElement;
-  }
+  }, [paramInfo, value]);
 
   return (
     <StyledTreeItem
@@ -246,10 +246,16 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             padding: 0,
             pr: 0,
           }}
+          onKeyDown={(e) => {
+            // avoid lost focus inn input elements
+            if (!["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Tab"].includes(e.key)) {
+              e.stopPropagation();
+            }
+          }}
         >
           <Grid2 container spacing={2} sx={{ flexGrow: 1 }}>
             <Grid2 size={3}>
-              <Stack direction="row" sx={{ alignItems: "center" }}>
+              <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
                 <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
                   {namespacePart}
                 </Typography>{" "}
@@ -266,16 +272,24 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                   {label}
                 </Typography>
                 {!showDescription && (paramInfo.description || paramInfo.additional_constraints) && (
-                  <IconButton
-                    color="default"
-                    onClick={(event) => {
-                      setShowDescription((prev) => !prev);
-                      event.stopPropagation();
-                    }}
-                    size="small"
+                  <Tooltip
+                    title={`${paramInfo.description}; Constraints: ${paramInfo.additional_constraints}`}
+                    placement="right"
+                    disableInteractive
                   >
-                    <InfoOutlinedIcon fontSize="inherit" />
-                  </IconButton>
+                    <span>
+                      <IconButton
+                        color="default"
+                        onClick={(event) => {
+                          setShowDescription((prev) => !prev);
+                          event.stopPropagation();
+                        }}
+                        size="small"
+                      >
+                        <InfoOutlinedIcon fontSize="inherit" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 )}
                 {showDescription && (
                   <Stack sx={{ paddingLeft: "0.5em", flexGrow: 1 }} direction="column">
@@ -310,7 +324,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                 {rosVersion === "1" && parameterType ? (
                   <OverflowMenu
                     icon={
-                      <Typography variant="caption" color="inherit" padding={0.5} minWidth="4em">
+                      <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">
                         [{parameterType}]
                       </Typography>
                     }
@@ -318,11 +332,11 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                     id="provider-options"
                   />
                 ) : (
-                  <Typography variant="caption" color="inherit" padding={0.5} minWidth="4em">
+                  <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">
                     [{parameterType}]
                   </Typography>
                 )}
-                {paramInfo && renderInput()}
+                {paramInfo && renderInput}
               </Stack>
             </Grid2>
           </Grid2>

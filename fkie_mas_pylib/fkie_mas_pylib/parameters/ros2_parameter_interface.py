@@ -171,7 +171,7 @@ class ParameterInterface:
         if result.successful:
             return True
 
-        raise Exception(f'Setting parameter failed: ', parameter, result.reason)
+        raise Exception(f"Setting parameter failed: {parameter}; reason: {result.reason}")
 
     def delete(self, parameter_name: str, node: str):
         node_name = node
@@ -197,7 +197,7 @@ class ParameterInterface:
         if result.successful:
             return True
 
-        raise Exception(f'Deleting parameter failed: ', parameter, result.reason)
+        raise Exception(f"Deleting parameter failed: {parameter}; reason: {result.reason}")
 
     def _get_value(self, parameter_value):
         """Get the value from a ParameterValue."""
@@ -266,28 +266,24 @@ class ParameterInterface:
             value.type = ParameterType.PARAMETER_DOUBLE
             value.double_value = parameter.typed_value()
         elif parameter.get_type().endswith("[]"):
-            try:
-                yaml_value = yaml.safe_load(parameter.value)
-            except yaml.parser.ParserError:
-                yaml_value = parameter.value
-            if all((isinstance(v, bool) for v in yaml_value)):
+            if parameter.get_type() == 'bool[]':
                 value.type = ParameterType.PARAMETER_BOOL_ARRAY
-                value.bool_array_value = yaml_value
-            elif all((isinstance(v, int) for v in yaml_value)):
+                value.bool_array_value = parameter.typed_value()
+            elif parameter.get_type() == 'int[]':
                 value.type = ParameterType.PARAMETER_INTEGER_ARRAY
-                value.integer_array_value = yaml_value
-            elif all((isinstance(v, float) for v in yaml_value)):
+                value.integer_array_value = parameter.typed_value()
+            elif parameter.get_type() == 'float[]':
                 value.type = ParameterType.PARAMETER_DOUBLE_ARRAY
-                value.double_array_value = yaml_value
-            elif all((isinstance(v, str) for v in yaml_value)):
+                value.double_array_value = parameter.typed_value()
+            elif parameter.get_type() == 'str[]':
                 value.type = ParameterType.PARAMETER_STRING_ARRAY
-                value.string_array_value = yaml_value
+                value.string_array_value = parameter.typed_value()
             else:
                 value.type = ParameterType.PARAMETER_STRING
-                value.string_value = parameter.value
+                value.string_value = parameter.typed_value()
         else:
             value.type = ParameterType.PARAMETER_STRING
-            value.string_value = parameter.value
+            value.string_value = parameter.typed_value()
         return value
 
     def _get_node_name(self, parameter_name: Union[str, RosParameter]) -> str:
