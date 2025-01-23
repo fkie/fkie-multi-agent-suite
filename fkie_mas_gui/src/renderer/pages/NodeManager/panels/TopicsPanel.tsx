@@ -277,7 +277,13 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     providerId: string = ""
   ): void {
     if (topic) {
-      const provId = providerId ? providerId : topic.publishers.length > 0 ? topic.publishers[0].providerId : "";
+      let provId = providerId ? providerId : undefined;
+      if (!provId) {
+        provId = topic.publishers.length > 0 ? topic.publishers[0].providerId : undefined;
+      }
+      if (!provId) {
+        provId = topic.subscribers.length > 0 ? topic.subscribers[0].providerId : undefined;
+      }
       if (provId) {
         rosCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
       } else {
