@@ -1,9 +1,9 @@
 import { TAutoUpdateManager } from "@/types";
 import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import useLocalStorage from "../hooks/useLocalStorage";
 import { LoggingContext } from "./LoggingContext";
 import { SettingsContext } from "./SettingsContext";
-import useLocalStorage from "../hooks/useLocalStorage";
 
 export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
@@ -90,7 +90,7 @@ export function AutoUpdateProvider({
     });
     autoUpdateManager?.onUpdateAvailable((info) => {
       setUpdateAvailable(info);
-      logCtx.info(`New version ${info.version} available! Please update in 'About'-tab in settings dialog.`, "");
+      logCtx.info(`New version ${info.version} available!`, "");
     });
     autoUpdateManager?.onUpdateNotAvailable(() => {
       setUpdateAvailable(null);
