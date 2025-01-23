@@ -1,8 +1,7 @@
 import { RosParameter } from "@/renderer/models";
 import { RosParameterRange } from "@/renderer/models/RosParameter";
-import { basename, normalizeNameWithPrefix } from "@/renderer/utils";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, TextField, Tooltip, Typography } from "@mui/material";
+import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, Tooltip, Typography } from "@mui/material";
 import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState } from "react";
 import { LoggingContext } from "../../context/LoggingContext";
 import OverflowMenu from "../UI/OverflowMenu";
@@ -23,12 +22,15 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);
   const [value, setValue] = useState(paramInfo.value);
-  const [label, setLabel] = useState<string>(normalizeNameWithPrefix(basename(paramInfo.name), namespacePart));
+  const [name, setName] = useState<string>("");
+  const [namespace, setNamespace] = useState<string>("");
   const [showDescription, setShowDescription] = useState<boolean>(false);
 
   useEffect(() => {
-    setLabel(normalizeNameWithPrefix(basename(paramInfo.name), namespacePart));
-  }, [namespacePart, paramInfo.name]);
+    const nameParts = paramInfo.name.replaceAll("/", ".").replaceAll("..", ".").split(".");
+    setName(`${nameParts.pop()}`);
+    setNamespace(namespacePart ? `${namespacePart}.` : "");
+  }, []);
 
   function handleKey(event: React.KeyboardEvent): void {
     if (event.key === "Enter") {
@@ -144,12 +146,13 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
               onChange={(event) => handleChange(event)}
               onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
               onBlur={() => onLeave()}
+              sx={{ minWidth: "80px" }}
               inputProps={{
                 step: range.step || 1.0,
                 min: range.from_value,
                 max: range.to_value,
                 type: "number",
-                "aria-labelledby": "input-slider",
+                "aria-labelledby": `slider-${paramInfo.id}`,
               }}
             />
             <Slider
@@ -257,7 +260,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             <Grid2 size={3}>
               <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
                 <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                  {namespacePart}
+                  {namespace}
                 </Typography>{" "}
                 <Typography
                   variant="body2"
@@ -269,11 +272,11 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                     }
                   }}
                 >
-                  {label}
+                  {name}
                 </Typography>
                 {!showDescription && (paramInfo.description || paramInfo.additional_constraints) && (
                   <Tooltip
-                    title={`${paramInfo.description}; Constraints: ${paramInfo.additional_constraints}`}
+                    title={`${paramInfo.description}${paramInfo.additional_constraints ? `; Constraints: ${paramInfo.additional_constraints}` : ""}`}
                     placement="right"
                     disableInteractive
                   >

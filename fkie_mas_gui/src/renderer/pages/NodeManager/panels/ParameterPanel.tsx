@@ -123,7 +123,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
               key={root.rosNode ? root.rosNode.idGlobal : root.provider.id}
               provider={root.provider}
               rosNode={root.rosNode}
-              updateOnCreate={root.updateOnCreate}
+              updateOnCreate={root.updateOnCreate || rootData.length <= 5}
               filterText={searched}
               forceReload={forceReload}
               onSelectParams={(provider: Provider, params: RosParameter[]) => {
@@ -143,12 +143,6 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
       </Stack>
     );
   }, [rootData, forceReload, searched]);
-
-  useEffect(() => {
-    if (rootData.length > 0 && rootData.length <= 5) {
-      setForceReload();
-    }
-  }, [rootData]);
 
   return (
     <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>

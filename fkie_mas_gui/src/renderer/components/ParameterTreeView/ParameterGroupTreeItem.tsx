@@ -1,5 +1,4 @@
 import SettingsContext from "@/renderer/context/SettingsContext";
-import { normalizeNameWithPrefix } from "@/renderer/utils";
 import { Box, CircularProgress, Stack, SvgIconTypeMap, Typography } from "@mui/material";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
@@ -7,7 +6,7 @@ import {
   UseTreeItem2ContentSlotOwnProps,
   UseTreeItem2IconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
+import React, { forwardRef, LegacyRef, useCallback, useContext } from "react";
 import { colorFromHostname } from "../UI";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -36,11 +35,6 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
     } = props;
 
     const settingsCtx = useContext(SettingsContext);
-    const [label, setLabel] = useState<string>(normalizeNameWithPrefix(groupName, namespacePart));
-
-    useEffect(() => {
-      setLabel(normalizeNameWithPrefix(groupName, namespacePart));
-    }, [namespacePart, groupName]);
 
     const getHostStyle = useCallback(
       function getHostStyle(): object {
@@ -99,10 +93,10 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
             >
               {icon && <Box component={icon} color="inherit" sx={{ mr: 1 }} />}
               <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                {namespacePart}
+                {namespacePart.length > 0 ? `${namespacePart}.` : ""}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                {label}
+                {groupName}
               </Typography>
               {requestData && <CircularProgress size="1em" />}
             </Stack>

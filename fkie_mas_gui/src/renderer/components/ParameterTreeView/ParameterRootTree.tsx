@@ -1,6 +1,5 @@
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
 import RosContext from "@/renderer/context/RosContext";
-import SettingsContext from "@/renderer/context/SettingsContext";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { findIn } from "@/renderer/utils";
@@ -47,7 +46,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
 
   const [itemId] = useState<string>(rosNode ? rosNode.idGlobal : provider.id);
   const [rosParameters, setRosParameters] = useState<RosParameter[]>();
@@ -58,13 +56,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   const [searched, setSearched] = useState<string>(filterText);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [requesting, setRequesting] = useState<boolean>(false);
-  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
-    settingsCtx.get("avoidGroupWithOneItem") as string
-  );
-
-  useEffect(() => {
-    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
-  }, [settingsCtx.changed]);
 
   useEffect(() => {
     setSearched(filterText);
@@ -117,22 +108,15 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   }, [provider, rosNode, searched, setRosParameters, setRosParametersFiltered, filterParameters]);
 
   useEffect(() => {
-    setTree(undefined);
     if (
       updateOnCreate ||
       (forceReload && (searched.length < EXPAND_ON_SEARCH_MIN_CHARS || findIn(searched, [itemId])))
     ) {
+      setTree(undefined);
       // if forceReload, check if this root is in filtered list
       getParameterList();
     }
   }, [forceReload]);
-
-  // useEffect(() => {
-  //   // update the parameter on create this component
-  //   if (updateOnCreate) {
-  //     getParameterList();
-  //   }
-  // }, []);
 
   // callback when updating a parameter
   async function updateParameter(
@@ -167,7 +151,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   function fillTree(fullPrefix: string, params: RosParameter[], itemId: string): TTreeItem {
     if (!params)
       return { params: [], count: 0, groupKeys: [], groupKey: "", groupName: "", fullPrefix: "", paramInfo: null };
-    const byPrefixP1: Map<string, { restNameSuffix: string; paramInfo: RosParameter }[]> = new Map();
+    const byPrefixP1: Map<string, { restNameSuffix: string; paramInfo: RosParameter; isGroup: boolean }[]> = new Map();
     // count parameter for each group
     params.forEach((param) => {
       const nodeName = param.node && param.node.length > 0 ? `${param.node}/` : "";
@@ -179,12 +163,12 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       if (restName.length > 0) {
         const restNameSuffix = restName.join("/");
         if (byPrefixP1.has(groupName)) {
-          byPrefixP1.get(groupName)?.push({ restNameSuffix, paramInfo: param });
+          byPrefixP1.get(groupName)?.push({ restNameSuffix, paramInfo: param, isGroup: true });
         } else {
-          byPrefixP1.set(groupName, [{ restNameSuffix, paramInfo: param }]);
+          byPrefixP1.set(groupName, [{ restNameSuffix, paramInfo: param, isGroup: true }]);
         }
       } else {
-        byPrefixP1.set(groupName, [{ restNameSuffix: "", paramInfo: param }]);
+        byPrefixP1.set(groupName, [{ restNameSuffix: "", paramInfo: param, isGroup: false }]);
       }
     });
 
@@ -195,8 +179,11 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
       const newFullPrefix = `${fullPrefix}/${groupName}`;
-      if (value.length > 1) {
-        const groupKey = `${itemId}/${groupName}`;
+      const paramValues = value.filter((item) => !item.isGroup);
+      const groupValues = value.filter((item) => !paramValues.includes(item));
+      if (groupValues.length > 0) {
+        const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
+        // const groupKey = `${itemId}/${groupName}`;
         groupKeys.push(groupKey);
         const groupParams: RosParameter[] = value.map((item) => {
           return item.paramInfo;
@@ -211,22 +198,23 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           groupName: groupName,
           params: subResult.params,
           count: subResult.count,
-          fullPrefix: newFullPrefix,
+          fullPrefix: fullPrefix,
           groupKeys: groupKeys,
           paramInfo: null,
         } as TTreeItem);
-      } else {
+      }
+      paramValues.forEach((item) => {
         filteredParams.push({
           groupKey: "",
           groupName: "",
           params: [],
           count: 0,
-          fullPrefix: newFullPrefix,
+          fullPrefix: fullPrefix,
           groupKeys: groupKeys,
-          paramInfo: value[0].paramInfo,
+          paramInfo: item.paramInfo,
         } as TTreeItem);
         count += 1;
-      }
+      });
     });
     return { params: filteredParams, count, groupKeys, groupKey: "", groupName: "", fullPrefix: "", paramInfo: null };
   }
@@ -238,45 +226,45 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     setExpandedFiltered([itemId, ...subtree.groupKeys]);
   }, [rosParametersFiltered]);
 
-  function paramTreeToStyledItems(treeItems: TTreeItem[]): JSX.Element[] {
-    return treeItems.map((param) => {
-      let namespacePart = "";
-      let groupName = param.groupName;
-      while (avoidGroupWithOneItem && param.params.length === 1) {
-        const child = param.params[0];
-        param.params = child.params;
-        namespacePart = `${namespacePart}${groupName}/`;
-        groupName = `${child.groupName}`;
-      }
-      if (param.paramInfo) {
-        return (
-          <ParameterTreeItem
-            key={param.paramInfo.id}
-            itemId={param.paramInfo.id}
-            namespacePart={namespacePart}
-            paramInfo={param.paramInfo}
-            updateParameter={(param: RosParameter, value: string | boolean | number | string[], valueType?: string) =>
-              updateParameter(param, value, valueType)
-            }
-            rosVersion={provider.rosVersion}
-          />
+  function paramTreeToStyledItems(rootPath: string, treeItem: TTreeItem): JSX.Element {
+    if (treeItem.paramInfo) {
+      return (
+        <ParameterTreeItem
+          key={treeItem.paramInfo.id}
+          itemId={treeItem.paramInfo.id}
+          namespacePart={rootPath}
+          paramInfo={treeItem.paramInfo}
+          updateParameter={(param: RosParameter, value: string | boolean | number | string[], valueType?: string) =>
+            updateParameter(param, value, valueType)
+          }
+          rosVersion={provider.rosVersion}
+        />
+      );
+    } else {
+      if (treeItem.params.length === 1) {
+        // avoid groups with one item
+        return paramTreeToStyledItems(
+          rootPath.length > 0 ? `${rootPath}.${treeItem.groupName}` : treeItem.groupName,
+          treeItem.params[0]
         );
       } else {
         return (
           <ParameterGroupTreeItem
-            key={param.groupKey}
-            itemId={param.groupKey}
-            namespacePart={namespacePart}
-            groupName={groupName}
+            key={treeItem.groupKey}
+            itemId={treeItem.groupKey}
+            namespacePart={rootPath}
+            groupName={treeItem.groupName}
             icon={null}
-            countChildren={param.count}
+            countChildren={treeItem.count}
             requestData={false}
           >
-            {paramTreeToStyledItems(param.params)}
+            {treeItem.params.map((subItem) => {
+              return paramTreeToStyledItems("", subItem);
+            })}
           </ParameterGroupTreeItem>
         );
       }
-    });
+    }
   }
 
   useEffect(() => {
@@ -318,7 +306,9 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         countChildren={rosParameters ? rosParameters.length : 0}
         requestData={requesting}
       >
-        {paramTreeToStyledItems(tree || [])}
+        {(tree || []).map((item) => {
+          return paramTreeToStyledItems("", item);
+        })}
       </ParameterGroupTreeItem>
     );
   }, [tree, requesting]);
