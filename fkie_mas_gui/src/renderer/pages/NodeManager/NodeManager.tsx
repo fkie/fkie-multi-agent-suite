@@ -353,7 +353,8 @@ export default function NodeManager(): JSX.Element {
       const tab = addToLayout.pop();
       if (tab) {
         const panelId = getPanelId(tab.id || "", tab.panelGroup);
-        const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, 1);
+        // -1: add new tab to the end
+        const action = Actions.addNode(tab, panelId.id, DockLocation.CENTER, -1);
         model.doAction(action);
         if (model && panelId.isBorder && panelId.id) {
           // If a tab in the same border is visible,
