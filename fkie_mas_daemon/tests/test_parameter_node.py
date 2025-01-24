@@ -11,6 +11,8 @@ from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
 from rclpy.parameter import Parameter
+from std_msgs.msg import Int32
+from std_msgs.msg import String
 from typing import List
 
 
@@ -42,6 +44,10 @@ class TestParameter(Node):
         # change one or more parameters of the node.
         self.add_on_set_parameters_callback(self.parameter_change_callback)
 
+        # create test subscriptions
+        self.sub_string = self.create_subscription(String, "one/two/test/sub", self.on_string, 10)
+        self.sub_int = self.create_subscription(Int32, "two/test/int", self.on_int, 10)
+
     def parameter_change_callback(self, params: List[Parameter]) -> SetParametersResult:
         result = SetParametersResult()
         result.successful = True
@@ -62,6 +68,11 @@ class TestParameter(Node):
             print(f"param: {param.name} [{param.type_}](double: {Parameter.Type.DOUBLE}) - {result.successful}")
         return result
 
+    def on_string(self, msg: String):
+        print(f"received string message: {msg}")
+
+    def on_int(self, msg: String):
+        print(f"received int32 message: {msg}")
 
 def main(args=None):
     rclpy.init(args=args)
