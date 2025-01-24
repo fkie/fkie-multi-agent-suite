@@ -771,9 +771,10 @@ class LaunchServicer(LoggingEventHandler):
             if field_type.startswith('sequence'):
                 # handle sequences defined with sequence<>
                 is_array = True
-                type_re = re.search('<(.*)>', field_type)
+                type_re = re.search('<(\w[^,]*),?\s*(\S*)>', field_type)
                 if type_re is not None:
                     base_type = type_re.group(1)
+                    seq_length = type_re.group(2)
             elif '[' in field_type:
                 # handle arrays defined with []
                 is_array = True
@@ -781,7 +782,7 @@ class LaunchServicer(LoggingEventHandler):
                 if type_re is not None:
                     base_type = type_re.group(1)
                     seq_length = type_re.group(2)
-            if base_type not in [*rosidl_parser.definition.BASIC_TYPES, 'string', 'str']:
+            if base_type not in [*rosidl_parser.definition.BASIC_TYPES, 'string', 'str', 'wstring']:
                 # type is not a simple type
                 # try to import message definition
                 splitted_type = base_type.split('/')
