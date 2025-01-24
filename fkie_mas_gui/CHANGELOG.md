@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.1.2 - 24.01.2025
+
+Fixed: show topics with different message type on same topic
+
 ## 4.1.1 - 24.01.2025
 
 Improved publisher panel
