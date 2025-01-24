@@ -183,7 +183,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           byPrefixP1.set(groupName, [{ restNameSuffix, topicInfo, isGroup: true }]);
         }
       } else {
-        byPrefixP1.set(groupName, [{ restNameSuffix: "", topicInfo, isGroup: false }]);
+        byPrefixP1.set(`${groupName}#${topicInfo.msgType}`, [{ restNameSuffix: "", topicInfo, isGroup: false }]);
       }
     });
 
@@ -229,10 +229,10 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         });
         newFilteredTopics.push({
           groupKey: groupKey,
-          groupName: `/${groupName}`,
+          groupName: groupName,
           topics: subResult.topics,
           count: subResult.count,
-          fullPrefix: newFullPrefix,
+          fullPrefix: fullPrefix,
           msgType: msgType ? msgType : "",
           groupKeys: groupKeys,
           topicInfo: null,
@@ -244,7 +244,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           groupName: "",
           topics: [],
           count: 0,
-          fullPrefix: newFullPrefix,
+          fullPrefix: fullPrefix,
           msgType: item.topicInfo.msgType,
           groupKeys: groupKeys,
           topicInfo: item.topicInfo,
@@ -324,19 +324,28 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         />
       );
     } else {
-      return (
-        <TopicGroupTreeItem
-          key={treeItem.groupKey}
-          itemId={treeItem.groupKey}
-          rootPath={rootPath}
-          groupName={treeItem.groupName}
-          countChildren={treeItem.count}
-        >
-          {treeItem.topics.map((subItem) => {
-            return topicTreeToStyledItems(treeItem.fullPrefix, subItem, selectedItem);
-          })}
-        </TopicGroupTreeItem>
-      );
+      if (treeItem.topics.length === 1) {
+        // avoid groups with one item
+        return topicTreeToStyledItems(
+          rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
+          treeItem.topics[0],
+          selectedItem
+        );
+      } else {
+        return (
+          <TopicGroupTreeItem
+            key={treeItem.groupKey}
+            itemId={treeItem.groupKey}
+            rootPath={rootPath}
+            groupName={treeItem.groupName}
+            countChildren={treeItem.count}
+          >
+            {treeItem.topics.map((subItem) => {
+              return topicTreeToStyledItems("", subItem, selectedItem);
+            })}
+          </TopicGroupTreeItem>
+        );
+      }
     }
   }
 

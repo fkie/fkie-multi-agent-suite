@@ -57,9 +57,9 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
             }}
           >
             <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
-              {/* <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                {rootPath}
-              </Typography> */}
+              <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                {rootPath.length > 0 ? `${rootPath}/` : ""}
+              </Typography>
               <Typography
                 variant="body2"
                 sx={{ fontWeight: "inherit", userSelect: "none" }}
@@ -71,7 +71,7 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
                   }
                 }}
               >
-                {groupName.startsWith("/") ? groupName.slice(1) : groupName}
+                {groupName}
               </Typography>
               {/* {topicInfo && topicInfo.subscribers.filter((sub) => sub.incompatible_qos?.length > 0).length > 0 && (
                 <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>

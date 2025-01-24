@@ -11,7 +11,7 @@ import { durabilityToString, livelinessToString, reliabilityToString } from "@/r
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
-import { normalizeNameWithPrefix, removeDDSuid } from "@/renderer/utils/index";
+import { removeDDSuid } from "@/renderer/utils/index";
 import { colorFromHostname } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -69,10 +69,9 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   }, [selectedItem]);
 
   useEffect(() => {
-    const nameParts = normalizeNameWithPrefix(topicInfo.name, rootPath).split("/");
+    const nameParts = topicInfo.name.split("/");
     setName(`${nameParts.pop()}`);
-    const ns = nameParts.join("/");
-    setNamespace(ns ? `${ns}/` : rootPath ? "" : "/");
+    setNamespace(rootPath ? `${rootPath}/` : rootPath ? "" : "");
     const inQos: IncompatibleQos[] = [];
     topicInfo?.subscribers
       .filter((sub) => sub.info.incompatible_qos && sub.info.incompatible_qos.length > 0)
