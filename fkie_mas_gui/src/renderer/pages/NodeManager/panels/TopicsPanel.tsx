@@ -64,13 +64,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [availableProviders, setAvailableProviders] = useState<TProviderDscription[]>([]);
   const [providerForNewPublisher, setProviderForNewPublisher] = useState<string | undefined>();
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
-  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
-    settingsCtx.get("avoidGroupWithOneItem") as string
-  );
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
-    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
   function getAvailableProviders(): TProviderDscription[] {
@@ -197,7 +193,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
       // don't create group with one parameter
       const newFullPrefix: string = `${fullPrefix}/${groupName}`;
       let topicValues = value.filter((item) => !item.isGroup);
-      if (avoidGroupWithOneItem && value.length - topicValues.length === 1) {
+      // avoid groups with one item inside
+      if (value.length - topicValues.length === 1) {
         topicValues = value;
       }
       const groupValues = value.filter((item) => !topicValues.includes(item));
@@ -268,7 +265,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
       setExpandedFiltered(tree.groupKeys);
     }
-  }, [filteredTopics, avoidGroupWithOneItem]);
+  }, [filteredTopics]);
 
   function onEchoClick(
     topic: TopicExtendedInfo | null,
