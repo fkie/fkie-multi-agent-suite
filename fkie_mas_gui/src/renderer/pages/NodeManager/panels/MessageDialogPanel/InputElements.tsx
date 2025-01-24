@@ -16,7 +16,6 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { useDebounceCallback } from "@react-hook/debounce";
 import React, { useCallback, useEffect, useState } from "react";
 import BoolInput from "./BoolInput";
 import StringInput from "./StringInput";
@@ -79,6 +78,7 @@ interface InputElementsProps {
   parentName: string;
   filterText?: string;
   expanded?: boolean;
+  showRoot?: boolean;
   onCopyToClipboard?: () => void;
 }
 
@@ -88,6 +88,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
     parentName = "undefined",
     filterText = "",
     expanded = true,
+    showRoot = true,
     onCopyToClipboard = (): void => {},
   } = props;
 
@@ -96,7 +97,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
   const [expandedElement, setExpanded] = useState<boolean>(
     expanded || (messageStruct.type !== "std_msgs/Header" && messageStruct.type !== "builtin_interfaces/Time")
   );
-  const [useNow, setUseNow] = useState<boolean | undefined>(messageStruct.useNow);
+  const [useNow, setUseNow] = useState<boolean>(messageStruct.useNow || false);
 
   useEffect(() => {
     if (messageStruct?.value !== undefined) {
@@ -118,7 +119,6 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
       if (Array.isArray(messageStruct.value)) {
         messageStruct.value.push(JSON.parse(JSON.stringify(messageStruct.def)));
       } else {
-        console.log(`add errror`);
         console.error(`can't add array element, it is set to ${messageStruct.value}`);
       }
     },
@@ -148,12 +148,6 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
     }
     setVisible(vis);
   }, [filterText, messageStruct]);
-
-  const copyToClipboard = useDebounceCallback(() => {
-    if (onCopyToClipboard) {
-      onCopyToClipboard();
-    }
-  });
 
   if (messageStruct === undefined || messageStruct === null) {
     return <></>;
@@ -209,141 +203,163 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
 
   // for nested types we create an accordion with collapsible elements
   if (messageStruct.def.length > 0) {
-    return (
-      <Accordion
-        id={`accordion-${idSuffix}`}
-        expanded={expandedElement}
-        // use this action to collapse by click on whole summary
-        onChange={(_e, state) => {
-          setExpanded(state);
-        }}
-        sx={{ display: `${isVisible}` }}
-      >
-        <AccordionSummary
-          // aria-controls="ttyd_panel-content"
-          id={`accordion-summary-${idSuffix}`}
-          sx={{ pl: 0 }}
-          expandIcon={
-            <ArrowForwardIosSharpIcon
-              sx={{ fontSize: "0.9rem" }}
-              // use this onclick action to collapse by click on the arrow
-              // onClick={() => {
-              //   toggleAccordion();
-              // }}
-            />
-          }
+    if (showRoot) {
+      return (
+        <Accordion
+          id={`accordion-${idSuffix}`}
+          expanded={expandedElement}
+          // use this action to collapse by click on whole summary
+          onChange={(_e, state) => {
+            setExpanded(state);
+          }}
+          sx={{ display: `${isVisible}` }}
         >
-          <Stack direction="row" spacing={1} sx={{ width: "100%" }} alignItems="center">
-            <FormLabel
-              sx={{
-                typography: "body1",
-                color: "#000080",
-                textOverflow: "ellipsis",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                minWidth: "5em",
-              }}
-            >
-              {messageStruct.name && `${messageStruct.name}`}
-              {!messageStruct.name && `${messageStruct.type}`}
-            </FormLabel>
-            <FormLabel
-              sx={{
-                fontSize: "0.8em",
-                fontWeight: "bold",
-                color: "#3cb371",
-              }}
-            >
-              {messageStruct.is_array && `[${arrayCount > 0 ? arrayCount : ""}]`}
-            </FormLabel>
-            <FormLabel
-              sx={{
-                typography: "body1",
-                textOverflow: "ellipsis",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                fontSize: "0.8em",
-                minWidth: "2em",
-              }}
-            >
-              {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
-            </FormLabel>
-            {!messageStruct.name && (
-              <Stack
-                onClick={(event) => {
-                  copyToClipboard();
-                  event.stopPropagation();
+          <AccordionSummary
+            // aria-controls="ttyd_panel-content"
+            id={`accordion-summary-${idSuffix}`}
+            sx={{ pl: 0 }}
+            expandIcon={
+              <ArrowForwardIosSharpIcon
+                sx={{ fontSize: "0.9rem" }}
+                // use this onclick action to collapse by click on the arrow
+                // onClick={() => {
+                //   toggleAccordion();
+                // }}
+              />
+            }
+          >
+            <Stack direction="row" spacing={1} sx={{ width: "100%" }} alignItems="center">
+              <FormLabel
+                sx={{
+                  typography: "body1",
+                  color: "#000080",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  minWidth: "5em",
                 }}
               >
-                <ContentCopyOutlinedIcon fontSize="inherit" />
-              </Stack>
-            )}
-            {messageStruct.is_array ? (
-              <ButtonGroup sx={{ maxHeight: "24px" }}>
-                <Button
+                {messageStruct.name && `${messageStruct.name}`}
+                {!messageStruct.name && `${messageStruct.type}`}
+              </FormLabel>
+              <FormLabel
+                sx={{
+                  fontSize: "0.8em",
+                  fontWeight: "bold",
+                  color: "#3cb371",
+                }}
+              >
+                {messageStruct.is_array && `[${arrayCount > 0 ? arrayCount : ""}]`}
+              </FormLabel>
+              <FormLabel
+                sx={{
+                  typography: "body1",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  fontSize: "0.8em",
+                  minWidth: "2em",
+                }}
+              >
+                {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
+              </FormLabel>
+              {!messageStruct.name && (
+                <Stack
                   onClick={(event) => {
-                    addArrayElement();
-                    setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
+                    onCopyToClipboard();
                     event.stopPropagation();
                   }}
                 >
-                  +
-                </Button>
-                <Button
-                  onClick={(event) => {
-                    if (arrayCount > 0) {
-                      removeArrayElement();
+                  <ContentCopyOutlinedIcon fontSize="inherit" />
+                </Stack>
+              )}
+              {messageStruct.is_array ? (
+                <ButtonGroup sx={{ maxHeight: "24px" }}>
+                  <Button
+                    onClick={(event) => {
+                      addArrayElement();
                       setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
                       event.stopPropagation();
+                    }}
+                  >
+                    +
+                  </Button>
+                  <Button
+                    onClick={(event) => {
+                      if (arrayCount > 0) {
+                        removeArrayElement();
+                        setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
+                        event.stopPropagation();
+                      }
+                    }}
+                  >
+                    -
+                  </Button>
+                </ButtonGroup>
+              ) : (
+                messageStruct.type === "builtin_interfaces/Time" && (
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={useNow}
+                        onChange={(event) => {
+                          setUseNow((prev) => !prev);
+                          event.stopPropagation();
+                        }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                      />
                     }
-                  }}
-                >
-                  -
-                </Button>
-              </ButtonGroup>
-            ) : (
-              messageStruct.type === "builtin_interfaces/Time" && (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={useNow}
-                      onChange={(event) => {
-                        setUseNow((prev) => !prev);
-                        event.stopPropagation();
-                      }}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                      }}
-                    />
-                  }
-                  label="use now"
-                  labelPlacement="end"
-                />
-              )
-            )}
-          </Stack>
-        </AccordionSummary>
-        <AccordionDetails id={`accordion-details-${idSuffix}`}>
-          <Stack direction="column" spacing={1}>
-            {!messageStruct.is_array &&
-              !useNow &&
-              messageStruct.def.map((struct: TRosMessageStruct) => (
-                <InputElements
-                  key={`input-elements-${messageStruct.name}-${struct.name}`}
-                  parentName={idSuffix}
-                  messageStruct={struct}
-                  filterText={filterText}
-                  expanded={false}
-                />
-              ))}
-            {messageStruct.is_array &&
-              messageStruct.value &&
-              arrayCount > 0 &&
-              (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
-          </Stack>
-        </AccordionDetails>
-      </Accordion>
-    );
+                    label="use now"
+                    labelPlacement="end"
+                  />
+                )
+              )}
+            </Stack>
+          </AccordionSummary>
+          <AccordionDetails id={`accordion-details-${idSuffix}`}>
+            <Stack direction="column" spacing={1}>
+              {!messageStruct.is_array &&
+                !useNow &&
+                messageStruct.def.map((struct: TRosMessageStruct) => (
+                  <InputElements
+                    key={`input-elements-${messageStruct.name}-${struct.name}`}
+                    parentName={idSuffix}
+                    messageStruct={struct}
+                    filterText={filterText}
+                    expanded={false}
+                  />
+                ))}
+              {messageStruct.is_array &&
+                messageStruct.value &&
+                arrayCount > 0 &&
+                (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      );
+    } else {
+      return (
+        <Stack direction="column" spacing={1}>
+          {!messageStruct.is_array &&
+            !useNow &&
+            messageStruct.def.map((struct: TRosMessageStruct) => (
+              <InputElements
+                key={`input-elements-${messageStruct.name}-${struct.name}`}
+                parentName={idSuffix}
+                messageStruct={struct}
+                filterText={filterText}
+                expanded={false}
+              />
+            ))}
+          {messageStruct.is_array &&
+            messageStruct.value &&
+            arrayCount > 0 &&
+            (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
+        </Stack>
+      );
+    }
   }
   if (!messageStruct.name) {
     // {`No input for "${messageStruct.type}" defined.`}

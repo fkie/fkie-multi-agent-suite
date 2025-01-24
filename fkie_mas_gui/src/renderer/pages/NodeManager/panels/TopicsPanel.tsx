@@ -9,10 +9,8 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
-import NotStartedOutlinedIcon from "@mui/icons-material/NotStartedOutlined";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
@@ -38,7 +36,7 @@ type TTreeItem = {
   topicInfo: TopicExtendedInfo | null;
 };
 
-type TProviderDscription = {
+type TProviderDescription = {
   providerId: string;
   providerName: string;
 };
@@ -59,9 +57,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [rootDataList, setRootDataList] = useState<TTreeItem[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedFiltered, setExpandedFiltered] = useState<string[]>([]);
-  const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | null>(null);
+  const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | undefined>();
   const [selectedItem, setSelectedItem] = useState<string>("");
-  const [availableProviders, setAvailableProviders] = useState<TProviderDscription[]>([]);
+  const [availableProviders, setAvailableProviders] = useState<TProviderDescription[]>([]);
   const [providerForNewPublisher, setProviderForNewPublisher] = useState<string | undefined>();
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
 
@@ -69,9 +67,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
   }, [settingsCtx, settingsCtx.changed]);
 
-  function getAvailableProviders(): TProviderDscription[] {
+  function getAvailableProviders(): TProviderDescription[] {
     return rosCtx.providers.map((item: Provider) => {
-      return { providerId: item.id, providerName: item.name() } as TProviderDscription;
+      return { providerId: item.id, providerName: item.name() } as TProviderDescription;
     });
   }
 
@@ -268,7 +266,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   }, [filteredTopics]);
 
   function onEchoClick(
-    topic: TopicExtendedInfo | null,
+    topic: TopicExtendedInfo | undefined,
     external: boolean,
     openInTerminal: boolean = false,
     providerId: string = ""
@@ -289,31 +287,25 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     }
   }
 
-  function onPublishClick(topic: TopicExtendedInfo | null, providerId: string = ""): void {
-    if (topic) {
-      let provId = providerId ? providerId : undefined;
-      if (!provId) {
-        provId = topic.subscribers.length > 0 ? topic.subscribers[0].providerId : undefined;
-      }
-      if (!provId) {
-        provId = topic.publishers.length > 0 ? topic.publishers[0].providerId : undefined;
-      }
-      if (provId) {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            `publish-${topic.name}-${provId}`,
-            topic.name,
-            <TopicPublishPanel topicName={topic.name} topicType={topic.msgType} providerId={provId} />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_RIGHT,
-            new LayoutTabConfig(true, "publish")
-          )
-        );
-      } else {
-        logCtx.warn("no subscriber/publisher available");
-      }
+  function onPublishClick(topic: TopicExtendedInfo | undefined, providerId: string = ""): void {
+    let provId = providerId ? providerId : undefined;
+    if (!provId && topic) {
+      provId = topic.subscribers.length > 0 ? topic.subscribers[0].providerId : undefined;
     }
+    if (!provId && topic) {
+      provId = topic.publishers.length > 0 ? topic.publishers[0].providerId : undefined;
+    }
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent(
+        `publish-${topic?.name}-${provId}`,
+        topic?.name || "undefined",
+        <TopicPublishPanel topicName={topic?.name} topicType={topic?.msgType} providerId={provId} />,
+        true,
+        LAYOUT_TAB_SETS.BORDER_RIGHT,
+        new LayoutTabConfig(true, "publish")
+      )
+    );
   }
 
   function topicTreeToStyledItems(rootPath: string, treeItem: TTreeItem, selectedItem: string | null): JSX.Element {
@@ -351,7 +343,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (selectedTopics?.length > 0) {
       setTopicForSelected(selectedTopics[0]);
     } else {
-      setTopicForSelected(null);
+      setTopicForSelected(undefined);
     }
   }, [filteredTopics, selectedItem]);
 
@@ -439,101 +431,22 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           </span>
         </Tooltip>
         <Tooltip
-          title="Publish to"
+          title="Create a publisher"
           placement="left"
           enterDelay={tooltipDelay}
           // enterNextDelay={tooltipDelay}
           disableInteractive
         >
-          <span>
-            <IconButton
-              disabled={!topicForSelected}
-              size="medium"
-              aria-label="Create a publisher"
-              onClick={() => {
-                onPublishClick(topicForSelected);
-              }}
-            >
-              <SlideshowOutlinedIcon fontSize="inherit" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <OverflowMenu
-          disabled={!topicForSelected}
-          icon={
-            <Tooltip
-              title="Publish with option to select the host on which the publisher is to be started"
-              placement="left"
-              enterDelay={tooltipDelay}
-              // enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <PlayCircleOutlineIcon fontSize="inherit" />
-            </Tooltip>
-          }
-          size="medium"
-          sx={{ margin: 0 }}
-          options={availableProviders.map((item) => {
-            return {
-              name: item.providerName,
-              key: item.providerId,
-              onClick: async function (): Promise<void> {
-                onPublishClick(topicForSelected, item.providerId);
-              },
-            };
-          })}
-          id={`echo-provider-menu-${topicForSelected?.name}`}
-        />
-        {availableProviders.length === 1 ? (
-          <Tooltip
-            title="Publish to"
-            placement="left"
-            enterDelay={tooltipDelay}
-            // enterNextDelay={tooltipDelay}
-            disableInteractive
+          <IconButton
+            size="medium"
+            aria-label="Create a publisher"
+            onClick={() => {
+              onPublishClick(topicForSelected);
+            }}
           >
-            <span>
-              <IconButton
-                size="medium"
-                aria-label="Create a new publisher"
-                onClick={() => {
-                  setProviderForNewPublisher(availableProviders[0].providerId);
-                }}
-              >
-                <NotStartedOutlinedIcon fontSize="inherit" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        ) : (
-          availableProviders.length > 1 && (
-            <OverflowMenu
-              // disabled={!topicForSelected}
-              icon={
-                <Tooltip
-                  title="Publish to a new topic with option to select the host on which the publisher is to be started"
-                  placement="left"
-                  enterDelay={tooltipDelay}
-                  // enterNextDelay={tooltipDelay}
-                  disableInteractive
-                >
-                  <NotStartedOutlinedIcon fontSize="inherit" />
-                </Tooltip>
-              }
-              size="medium"
-              sx={{ margin: 0 }}
-              options={availableProviders.map((item) => {
-                return {
-                  name: item.providerName,
-                  key: item.providerId,
-                  onClick: async function (): Promise<void> {
-                    setProviderForNewPublisher(item.providerId);
-                  },
-                };
-              })}
-              id={`echo-provider-menu-${topicForSelected?.name}`}
-            />
-          )
-        )}
+            <PlayCircleOutlineIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
       </ButtonGroup>
     );
   }, [tooltipDelay, topicForSelected, availableProviders]);
