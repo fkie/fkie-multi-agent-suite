@@ -1,6 +1,10 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4.1.1 (24.01.2025)
+------------------
+* Fixed set array parameter
+
 4.1.0 (23.01.2025)
 ------------------
 * Added descriptor to parameter

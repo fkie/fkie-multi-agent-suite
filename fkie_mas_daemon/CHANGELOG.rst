@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.1 (24.01.2025)
+------------------
+Added test node for parameter
+Fixed: get message struct data if sequence has defined length
+Fixed: do not use 'now' for galactic version
+
 4.1.0 (23.01.2025)
 ------------------
 Added 'now' to publisher

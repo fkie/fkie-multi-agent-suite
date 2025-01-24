@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.1.1 - 24.01.2025
+
+Improved publisher panel
+Updated call service panel
+Changed: add new tabs to the end
+Fixed auto-reload after save
+Fixed grouping of parameters
+Fixed array parameter and edit in the parameter panel
+Fixed: use also subscriber to create an echo dialog
+Fixed search in create publisher und call service panel
+
 ## 4.1.0 - 23.01.2025
 
 Added 'now' and stop button to publish panel
