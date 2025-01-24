@@ -18,12 +18,14 @@ import {
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { colorFromHostname, SearchBar } from "../../../components";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { LoggerConfig, LogLevelType, RosNode } from "../../../models";
-import { EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
-import { findIn } from "../../../utils/index";
+
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { LoggerConfig, LogLevelType, RosNode } from "@/renderer/models";
+import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
+import { findIn } from "@/renderer/utils/index";
 
 interface NodeLoggerPanelProps {
   node: RosNode;

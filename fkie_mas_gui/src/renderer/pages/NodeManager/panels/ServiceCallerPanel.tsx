@@ -1,4 +1,3 @@
-import { Provider } from "@/renderer/providers";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
@@ -19,13 +18,15 @@ import {
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
-import { SearchBar } from "../../../components";
-import { colorFromHostname } from "../../../components/UI/Colors";
-import LoggingContext from "../../../context/LoggingContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import useLocalStorage from "../../../hooks/useLocalStorage";
-import { LaunchCallService, rosMessageStructToString, TRosMessageStruct } from "../../../models";
+
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import LoggingContext from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { LaunchCallService, rosMessageStructToString, TRosMessageStruct } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
 import InputElements from "./MessageDialogPanel/InputElements";
 
 interface ServiceCallerPanelProps {

@@ -1,7 +1,8 @@
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { IconButton } from "@mui/material";
 import { forwardRef, useContext } from "react";
-import { LoggingContext } from "../../context/LoggingContext";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
 
 interface CopyButtonProps {
   value: string;

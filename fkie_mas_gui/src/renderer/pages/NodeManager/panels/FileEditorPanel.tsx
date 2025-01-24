@@ -1,7 +1,3 @@
-import RosContext from "@/renderer/context/RosContext";
-import { Provider } from "@/renderer/providers";
-import { EventProviderPathEvent } from "@/renderer/providers/events";
-import { TFileRange, TLaunchArg } from "@/types";
 import * as Monaco from "@monaco-editor/react";
 import CloudSyncOutlinedIcon from "@mui/icons-material/CloudSyncOutlined";
 import FolderCopyOutlinedIcon from "@mui/icons-material/FolderCopyOutlined";
@@ -15,20 +11,22 @@ import { ForwardedRef, useCallback, useContext, useEffect, useRef, useState } fr
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
-import ExplorerTree, { equalLaunchArgs } from "../../../components/MonacoEditor/ExplorerTree";
-import { createPythonLaunchProposals } from "../../../components/MonacoEditor/PythonLaunchProposals";
-import SearchTree from "../../../components/MonacoEditor/SearchTree";
-import XmlBeautify from "../../../components/MonacoEditor/XmlBeautify";
+
+import ExplorerTree, { equalLaunchArgs } from "@/renderer/components/MonacoEditor/ExplorerTree";
+import { createPythonLaunchProposals } from "@/renderer/components/MonacoEditor/PythonLaunchProposals";
+import SearchTree from "@/renderer/components/MonacoEditor/SearchTree";
+import XmlBeautify from "@/renderer/components/MonacoEditor/XmlBeautify";
 import {
   createDocumentSymbols,
   createXMLDependencyProposals,
-} from "../../../components/MonacoEditor/XmlLaunchProposals";
-import { colorFromHostname } from "../../../components/UI/Colors";
-import SearchBar from "../../../components/UI/SearchBar";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { MonacoContext, TModelResult } from "../../../context/MonacoContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import useLocalStorage from "../../../hooks/useLocalStorage";
+} from "@/renderer/components/MonacoEditor/XmlLaunchProposals";
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { MonacoContext, TModelResult } from "@/renderer/context/MonacoContext";
+import RosContext from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import {
   FileItem,
   LaunchIncludedFile,
@@ -36,14 +34,17 @@ import {
   RosPackage,
   getFileAbb,
   getFileName,
-} from "../../../models";
-import { EVENT_PROVIDER_PATH_EVENT } from "../../../providers/eventTypes";
+} from "@/renderer/models";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_EDITOR_SELECT_RANGE,
   TEventEditorSelectRange,
   eventCloseComponent,
-} from "../layout/events";
+} from "@/renderer/pages/NodeManager/layout/events";
+import { Provider } from "@/renderer/providers";
+import { EventProviderPathEvent } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
+import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
 
 type TActiveModel = {

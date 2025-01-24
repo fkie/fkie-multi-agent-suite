@@ -1,4 +1,4 @@
-import { DiagnosticLevel } from "../../models/Diagnostics";
+import { DiagnosticLevel } from "@/renderer/models/Diagnostics";
 
 export const levelColors = {
   debug: {

@@ -16,11 +16,12 @@ import {
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
 import { forwardRef, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { SettingsContext } from "../../context/SettingsContext";
-import { PATH_EVENT_TYPE } from "../../models";
-import Provider from "../../providers/Provider";
-import { EVENT_PROVIDER_LAUNCH_LOADED } from "../../providers/eventTypes";
-import { EventProviderLaunchLoaded } from "../../providers/events";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { PATH_EVENT_TYPE } from "@/renderer/models";
+import Provider from "@/renderer/providers/Provider";
+import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
+import { EventProviderLaunchLoaded } from "@/renderer/providers/events";
 
 interface ReloadFileComponentProps {
   id: SnackbarKey | undefined;

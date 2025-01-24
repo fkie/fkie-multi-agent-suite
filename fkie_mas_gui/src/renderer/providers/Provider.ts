@@ -1,8 +1,7 @@
 import { JSONObject, TResult, TResultData, TSystemInfo, TTag } from "@/types";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
-import { colorFromHostname } from "../components";
-import { TagColors } from "../components/UI/Colors";
+import { TagColors, colorFromHostname } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import {

@@ -1,7 +1,3 @@
-import RosContext from "@/renderer/context/RosContext";
-import { TRosMessageStruct } from "@/renderer/models/TRosMessageStruct";
-import { nodeNameWithoutNamespace } from "@/renderer/utils";
-import { TTag } from "@/types";
 import CircleIcon from "@mui/icons-material/Circle";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
@@ -13,8 +9,13 @@ import WarningIcon from "@mui/icons-material/Warning";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { forwardRef, useContext, useEffect, useState } from "react";
-import { SettingsContext } from "../../context/SettingsContext";
-import { DiagnosticLevel, LaunchCallService, RosNode, RosNodeStatus } from "../../models";
+
+import RosContext from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { DiagnosticLevel, LaunchCallService, RosNode, RosNodeStatus } from "@/renderer/models";
+import { TRosMessageStruct } from "@/renderer/models/TRosMessageStruct";
+import { nodeNameWithoutNamespace } from "@/renderer/utils";
+import { TTag } from "@/types";
 import { OverflowMenu } from "../UI";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";

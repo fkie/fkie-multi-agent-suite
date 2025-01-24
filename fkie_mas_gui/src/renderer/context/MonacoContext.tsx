@@ -1,16 +1,17 @@
 /* eslint-disable max-classes-per-file */
-import { TFileRange, TLaunchArg } from "@/types";
 import * as Monaco from "@monaco-editor/react";
 import { editor } from "monaco-editor";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { FileItem, FileLanguageAssociations } from "../models";
+
+import { FileItem, FileLanguageAssociations } from "@/renderer/models";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_EDITOR_SELECT_RANGE,
   eventCloseComponent,
   eventEditorSelectRange,
-} from "../pages/NodeManager/layout/events";
+} from "@/renderer/pages/NodeManager/layout/events";
+import { TFileRange, TLaunchArg } from "@/types";
 import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 

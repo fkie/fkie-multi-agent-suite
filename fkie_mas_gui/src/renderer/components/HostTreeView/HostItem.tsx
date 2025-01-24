@@ -1,5 +1,3 @@
-import { RosNode } from "@/renderer/models";
-import { TTag } from "@/types";
 import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
 import ComputerIcon from "@mui/icons-material/Computer";
 import HideSourceIcon from "@mui/icons-material/HideSource";
@@ -24,15 +22,19 @@ import {
 } from "@mui/x-tree-view";
 import React, { forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { LoggingContext } from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
-import { LAYOUT_TAB_SETS } from "../../pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
-import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
-import { CmdType } from "../../providers";
-import Provider from "../../providers/Provider";
-import { generateUniqueId } from "../../utils";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosNode } from "@/renderer/models";
+import { LAYOUT_TAB_SETS } from "@/renderer/pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import SingleTerminalPanel from "@/renderer/pages/NodeManager/panels/SingleTerminalPanel";
+import { CmdType } from "@/renderer/providers";
+import Provider from "@/renderer/providers/Provider";
+import { generateUniqueId } from "@/renderer/utils";
+import { TTag } from "@/types";
 import { colorFromHostname } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import DateHelpDialog from "./DateHelpDialog";
@@ -49,6 +51,7 @@ interface HostItemProps {
 const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(props, ref) {
   const { provider, stopNodes = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
   const settingsCtx = useContext(SettingsContext);
+  const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
 
@@ -73,7 +76,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
         return;
       }
       if (local) {
-        rosCtx.openTerminal(
+        navCtx.openTerminal(
           CmdType.SET_TIME,
           localProviders[0].id,
           `set_date_localhost-${Date.now()}`,
@@ -83,7 +86,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
           false
         );
       } else {
-        rosCtx.openTerminal(
+        navCtx.openTerminal(
           CmdType.SET_TIME,
           provider.id,
           `set_date_remote-${Date.now()}`,

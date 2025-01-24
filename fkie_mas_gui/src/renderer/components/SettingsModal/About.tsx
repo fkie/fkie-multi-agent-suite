@@ -1,12 +1,13 @@
-import licenses from "@/renderer/deps-licenses.json";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { Autocomplete, Box, Button, IconButton, Link, Stack, TextField, Typography } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 import PropTypes from "prop-types";
 import { useContext, useState } from "react";
+
+import { AutoUpdateContext } from "@/renderer//context/AutoUpdateContext";
+import licenses from "@/renderer/deps-licenses.json";
 import packageJson from "../../../../package.json";
-import { AutoUpdateContext } from "../../context/AutoUpdateContext";
 import CopyButton from "../UI/CopyButton";
 
 function LinearProgressWithLabel({ value, ...props }): JSX.Element {

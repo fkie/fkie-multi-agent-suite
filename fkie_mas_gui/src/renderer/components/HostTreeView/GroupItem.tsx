@@ -8,7 +8,8 @@ import { TreeItem2SlotProps } from "@mui/x-tree-view/TreeItem2";
 import { UseTreeItem2ContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem2";
 import { UseTreeItem2IconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem2/useTreeItem2.types";
 import { forwardRef, LegacyRef } from "react";
-import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "../../models";
+
+import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
 import StyledTreeItem from "./StyledTreeItem";
 import { NodeTreeItem } from "./types";
 

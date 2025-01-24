@@ -2,6 +2,7 @@ import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { forwardRef, LegacyRef } from "react";
+
 import StyledTreeItem from "./StyledTreeItem";
 
 interface FolderTreeItemProps {

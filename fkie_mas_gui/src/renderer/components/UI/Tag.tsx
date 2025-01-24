@@ -1,6 +1,7 @@
 import { Chip, ChipPropsColorOverrides } from "@mui/material";
 import { OverridableStringUnion } from "@mui/types";
 import { forwardRef } from "react";
+
 import CopyButton from "./CopyButton";
 
 const chipDefaultColors = ["default", "primary", "secondary", "error", "info", "success", "warning"];

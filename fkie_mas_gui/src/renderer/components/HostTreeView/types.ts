@@ -1,4 +1,4 @@
-import { RosNode } from "../../models";
+import { RosNode } from "@/renderer/models";
 
 export type NodeTree = {
   nodeTree: NodeTreeItem[];

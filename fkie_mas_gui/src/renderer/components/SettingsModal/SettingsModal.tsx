@@ -2,8 +2,9 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { useContext, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { SettingsContext } from "../../context/SettingsContext";
-import { EVENT_OPEN_SETTINGS, SETTING } from "../../pages/NodeManager/layout/events";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { EVENT_OPEN_SETTINGS, SETTING } from "@/renderer/pages/NodeManager/layout/events";
 import DraggablePaper from "../UI/DraggablePaper";
 import GuiPanel from "./GuiPanel";
 

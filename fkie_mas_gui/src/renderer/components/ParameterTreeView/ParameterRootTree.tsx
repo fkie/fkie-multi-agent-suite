@@ -1,8 +1,3 @@
-import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
-import RosContext from "@/renderer/context/RosContext";
-import { RosNode, RosParameter } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
-import { findIn } from "@/renderer/utils";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ComputerIcon from "@mui/icons-material/Computer";
@@ -11,6 +6,12 @@ import { Box, Stack } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+
+import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
+import RosContext from "@/renderer/context/RosContext";
+import { RosNode, RosParameter } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
+import { findIn } from "@/renderer/utils";
 import ParameterGroupTreeItem from "./ParameterGroupTreeItem";
 import ParameterTreeItem from "./ParameterTreeItem";
 

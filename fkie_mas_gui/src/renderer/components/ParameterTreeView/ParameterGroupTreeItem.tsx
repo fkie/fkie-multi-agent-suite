@@ -1,4 +1,3 @@
-import SettingsContext from "@/renderer/context/SettingsContext";
 import { Box, CircularProgress, Stack, SvgIconTypeMap, Typography } from "@mui/material";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
@@ -7,6 +6,8 @@ import {
   UseTreeItem2IconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useCallback, useContext } from "react";
+
+import SettingsContext from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "../UI";
 import StyledTreeItem from "./StyledTreeItem";
 

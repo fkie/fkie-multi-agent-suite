@@ -17,9 +17,10 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import React from "react";
-import { ISettingsContext } from "../../context/SettingsContext";
-import { CmdType } from "../../providers";
-import Provider from "../../providers/Provider";
+
+import { ISettingsContext } from "@/renderer/context/SettingsContext";
+import { CmdType } from "@/renderer/providers";
+import Provider from "@/renderer/providers/Provider";
 import SearchBar from "../UI/SearchBar";
 
 const enum Command {

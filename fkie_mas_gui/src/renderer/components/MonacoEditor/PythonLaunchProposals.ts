@@ -1,7 +1,8 @@
-import { RosPackage } from "@/renderer/models";
-import { TFileRange } from "@/types";
 import { Monaco } from "@monaco-editor/react";
 import { languages } from "monaco-editor/esm/vs/editor/editor.api";
+
+import { RosPackage } from "@/renderer/models";
+import { TFileRange } from "@/types";
 
 const word_pattern = /(?<word>\w+)/gm;
 

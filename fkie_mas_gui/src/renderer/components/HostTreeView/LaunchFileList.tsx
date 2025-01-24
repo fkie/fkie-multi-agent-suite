@@ -11,9 +11,11 @@ import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import { forwardRef, useCallback, useContext } from "react";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
-import { getFileName, LaunchContent } from "../../models";
+
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { getFileName, LaunchContent } from "@/renderer/models";
 
 function compareLaunchFiles(a: LaunchContent, b: LaunchContent): number {
   if (getFileName(a.path) < getFileName(b.path)) {
@@ -44,6 +46,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
     onMouseOver = (): void => {},
   } = props;
 
+  const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
@@ -52,7 +55,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
    */
   const createFileEditorPanel = useCallback(
     async function (provId: string, launchContent: LaunchContent, external: boolean): Promise<void> {
-      rosCtx.openEditor(provId, launchContent.path, launchContent.path, null, [], external);
+      navCtx.openEditor(provId, launchContent.path, launchContent.path, null, [], external);
     },
     [rosCtx]
   );

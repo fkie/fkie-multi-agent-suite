@@ -1,6 +1,3 @@
-import { ProviderSelector } from "@/renderer/components";
-import { Provider } from "@/renderer/providers";
-import { JSONObject } from "@/types";
 import { StopCircleOutlined } from "@mui/icons-material";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
@@ -24,13 +21,17 @@ import {
   Typography,
 } from "@mui/material";
 import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
-import { colorFromHostname } from "../../../components/UI/Colors";
-import SearchBar from "../../../components/UI/SearchBar";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import useLocalStorage from "../../../hooks/useLocalStorage";
-import { LaunchPublishMessage, rosMessageStructToString, TRosMessageStruct } from "../../../models";
+
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { LaunchPublishMessage, rosMessageStructToString, TRosMessageStruct } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
+import { JSONObject } from "@/types";
 import InputElements from "./MessageDialogPanel/InputElements";
 
 type THistoryItem = {

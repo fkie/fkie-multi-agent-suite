@@ -15,10 +15,11 @@ import {
   Typography,
 } from "@mui/material";
 import { ForwardedRef, forwardRef, HTMLAttributes, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { LoggingContext } from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import useLocalStorage from "../../hooks/useLocalStorage";
-import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "../../models";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "@/renderer/models";
 import DraggablePaper from "../UI/DraggablePaper";
 import Tag from "../UI/Tag";
 

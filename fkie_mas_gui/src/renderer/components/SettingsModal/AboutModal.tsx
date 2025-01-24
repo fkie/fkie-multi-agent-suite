@@ -1,7 +1,8 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { useContext, useRef, useState } from "react";
-import { SettingsContext } from "../../context/SettingsContext";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
 import DraggablePaper from "../UI/DraggablePaper";
 import About from "./About";
 

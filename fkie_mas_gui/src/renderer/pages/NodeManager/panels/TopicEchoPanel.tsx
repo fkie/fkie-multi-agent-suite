@@ -1,8 +1,3 @@
-import { SearchBar } from "@/renderer/components";
-import JsonView from "react18-json-view";
-import { Provider } from "@/renderer/providers";
-import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
-import { findIn } from "@/renderer/utils";
 import AbcIcon from "@mui/icons-material/Abc";
 import DataArrayIcon from "@mui/icons-material/DataArray";
 import DataObjectIcon from "@mui/icons-material/DataObject";
@@ -31,13 +26,19 @@ import {
 } from "@mui/material";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
+import JsonView from "react18-json-view";
 import { v4 as uuid } from "uuid";
-import { colorFromHostname } from "../../../components/UI/Colors";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { RosNode, SubscriberEvent, SubscriberFilter } from "../../../models";
-import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "../../../providers/eventTypes";
+
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosNode, SubscriberEvent, SubscriberFilter } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
+import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "@/renderer/providers/eventTypes";
+import { findIn } from "@/renderer/utils";
 
 interface TSubscriberEventExt extends SubscriberEvent {
   key: string;

@@ -13,7 +13,8 @@ import {
 import { styled } from "@mui/material/styles";
 import { OverridableStringUnion } from "@mui/types";
 import React, { forwardRef, useContext, useState } from "react";
-import { SettingsContext } from "../../context/SettingsContext";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "./Colors";
 
 const StyledBadge = styled(Badge)((/*{ theme }*/) => ({

@@ -1,4 +1,3 @@
-import { TRosMessageStruct } from "@/renderer/models";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import {
   Alert,
@@ -16,6 +15,8 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
 import React, { useCallback, useEffect, useState } from "react";
+
+import { TRosMessageStruct } from "@/renderer/models";
 import BoolInput from "./BoolInput";
 import StringInput from "./StringInput";
 

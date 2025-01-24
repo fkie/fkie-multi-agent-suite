@@ -17,11 +17,13 @@ import {
 import { useDebounceCallback } from "@react-hook/debounce";
 import React, { createRef, useContext, useEffect, useRef, useState } from "react";
 import { TableVirtuoso } from "react-virtuoso";
-import { levelColors, SearchBar } from "../../../components";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import useLocalStorage from "../../../hooks/useLocalStorage";
-import { LogEvent, LoggingLevel } from "../../../models";
+
+import { levelColors } from "@/renderer/components/UI/Colors";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { LogEvent, LoggingLevel } from "@/renderer/models";
 import "./TableResizable.css";
 
 // const VtScroller = forwardRef<HTMLDivElement, TableContainerProps>(function VtScroller(props, ref) {

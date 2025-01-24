@@ -4,13 +4,15 @@ import InputIcon from "@mui/icons-material/Input";
 import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from "@mui/material";
 import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import LoggingContext from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "../../context/SettingsContext";
-import useLocalStorage from "../../hooks/useLocalStorage";
-import { getFileExtension, getFileName, PathItem, RosPackage } from "../../models";
-import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
+
+import LoggingContext from "@/renderer/context/LoggingContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { getFileExtension, getFileName, PathItem, RosPackage } from "@/renderer/models";
+import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import LaunchFileModal from "../LaunchFileModal/LaunchFileModal";
 import Tag from "../UI/Tag";
 import TreeDirectory from "./TreeDirectory";
@@ -52,6 +54,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
   const { packageList = [], selectedProvider = "" } = props;
 
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -291,7 +294,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
 
   function onEditFile(fileObj: PathItem | undefined, external: boolean): void {
     if (fileObj) {
-      rosCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, [], external);
+      navCtx.openEditor(selectedProvider, fileObj.path, fileObj.path, null, [], external);
     }
   }
 

@@ -1,9 +1,3 @@
-import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
-import LoggingContext from "@/renderer/context/LoggingContext";
-import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
-import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
-import { Provider } from "@/renderer/providers";
-import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -17,10 +11,20 @@ import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import { NewPublisherModal, OverflowMenu, SearchBar, TopicTreeItem } from "../../../components";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { findIn } from "../../../utils/index";
+
+import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
+import TopicTreeItem from "@/renderer/components/TopicTreeView/TopicTreeItem";
+import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import LoggingContext from "@/renderer/context/LoggingContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
+import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
+import { Provider } from "@/renderer/providers";
+import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
+import { findIn } from "@/renderer/utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
@@ -49,6 +53,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [topics, setTopics] = useState<TopicExtendedInfo[]>([]); // [topicInfo: TopicExtendedInfo]
@@ -60,7 +65,6 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | undefined>();
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [availableProviders, setAvailableProviders] = useState<TProviderDescription[]>([]);
-  const [providerForNewPublisher, setProviderForNewPublisher] = useState<string | undefined>();
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
 
   useEffect(() => {
@@ -280,7 +284,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         provId = topic.subscribers.length > 0 ? topic.subscribers[0].providerId : undefined;
       }
       if (provId) {
-        rosCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
+        navCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
       } else {
         logCtx.warn("no publisher available");
       }
@@ -535,25 +539,10 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
               {createTreeView}
             </Box>
           </Stack>
-          {providerForNewPublisher && (
-            <NewPublisherModal
-              providerId={providerForNewPublisher}
-              onClose={() => setProviderForNewPublisher(undefined)}
-            />
-          )}
         </Stack>
       </Box>
     );
-  }, [
-    rootDataList,
-    expanded,
-    expandedFiltered,
-    searchTerm,
-    selectedItem,
-    topicForSelected,
-    settingsCtx.changed,
-    providerForNewPublisher,
-  ]);
+  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, topicForSelected, settingsCtx.changed]);
   return createPanel;
 });
 

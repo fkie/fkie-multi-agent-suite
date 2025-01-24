@@ -3,14 +3,16 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { LoggingContext } from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
-import { getFileName, LaunchContent, LaunchFile, RosNode } from "../../models";
-import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
-import { CmdType, Provider } from "../../providers";
-import { generateUniqueId, nodeNameWithoutNamespace, removeDDSuid } from "../../utils";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { getFileName, LaunchContent, LaunchFile, RosNode } from "@/renderer/models";
+import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import { CmdType, Provider } from "@/renderer/providers";
+import { generateUniqueId, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
 import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
@@ -63,6 +65,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     showLoggers = (): void => {},
   } = props;
   // const apiRef = useTreeViewApiRef();
+  const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
@@ -217,7 +220,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
               stopNodes([node.idGlobal]);
             } else {
               node.screens?.forEach((screen) => {
-                rosCtx.openTerminal(
+                navCtx.openTerminal(
                   CmdType.SCREEN,
                   node.providerId as string,
                   node.name,
@@ -233,7 +236,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
               // stop node
               startNodes([node.idGlobal]);
             } else {
-              rosCtx.openTerminal(
+              navCtx.openTerminal(
                 CmdType.LOG,
                 node.providerId as string,
                 node.name,

@@ -1,9 +1,10 @@
-import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { Box, Menu, MenuItem, Stack, Typography } from "@mui/material";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
-import { LoggingContext } from "../../context/LoggingContext";
-import { NavigationContext } from "../../context/NavigationContext";
-import { SettingsContext } from "../../context/SettingsContext";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { NavigationContext } from "@/renderer/context/NavigationContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { colorFromHostname } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 

@@ -15,8 +15,9 @@ import {
 } from "@mui/material";
 import LinearProgress from "@mui/material/LinearProgress";
 import { ForwardedRef, forwardRef, useCallback, useEffect, useRef, useState } from "react";
-import { Provider } from "../../providers";
-import { delay } from "../../utils";
+
+import { Provider } from "@/renderer/providers";
+import { delay } from "@/renderer/utils";
 import DraggablePaper from "../UI/DraggablePaper";
 
 interface ProviderSelectionModalProps {

@@ -1,4 +1,3 @@
-import { JSONValue } from "@/types";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
@@ -24,7 +23,9 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
 import { useContext, useEffect, useMemo, useState } from "react";
-import { ISettingsParam, SettingsContext } from "../../context/SettingsContext";
+
+import { ISettingsParam, SettingsContext } from "@/renderer/context/SettingsContext";
+import { JSONValue } from "@/types";
 import SearchBar from "../UI/SearchBar";
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;

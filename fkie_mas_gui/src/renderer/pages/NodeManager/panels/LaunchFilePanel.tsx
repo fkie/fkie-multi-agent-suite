@@ -4,8 +4,9 @@ import { Alert, AlertTitle, Box, Chip, ListItem, ListItemButton, ListItemText, S
 import { SimpleTreeView, TreeItem } from "@mui/x-tree-view";
 import { forwardRef, useContext } from "react";
 import { VariableSizeList } from "react-window";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { LaunchContent, LaunchNodeInfo } from "../../../models";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { LaunchContent, LaunchNodeInfo } from "@/renderer/models";
 
 type TComposableNodes = {
   manager: string;

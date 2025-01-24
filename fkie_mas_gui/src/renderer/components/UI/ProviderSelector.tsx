@@ -1,6 +1,7 @@
 import { MenuItem, Select } from "@mui/material";
 import { forwardRef, useContext, useEffect, useState } from "react";
-import { RosContext } from "../../context/RosContext";
+
+import { RosContext } from "@/renderer/context/RosContext";
 
 interface ProviderSelectorProps {
   defaultProvider: string;

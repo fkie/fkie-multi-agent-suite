@@ -20,9 +20,10 @@ import {
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
 import { forwardRef, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import Provider from "../../providers/Provider";
-import { EVENT_PROVIDER_NODE_STARTED } from "../../providers/eventTypes";
-import { EventProviderNodeStarted } from "../../providers/events";
+
+import Provider from "@/renderer/providers/Provider";
+import { EVENT_PROVIDER_NODE_STARTED } from "@/renderer/providers/eventTypes";
+import { EventProviderNodeStarted } from "@/renderer/providers/events";
 
 interface RestartNodesComponentProps {
   id: SnackbarKey | undefined;

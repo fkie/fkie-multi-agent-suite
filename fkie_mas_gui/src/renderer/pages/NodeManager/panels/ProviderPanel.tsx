@@ -4,12 +4,14 @@ import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@m
 import { useDebounceCallback } from "@react-hook/debounce";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { ConnectToProviderModal, SearchBar } from "../../../components";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
-import Provider from "../../../providers/Provider";
+
+import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal/ConnectToProviderModal";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
+import Provider from "@/renderer/providers/Provider";
 import { EVENT_OPEN_CONNECT } from "../layout/events";
 import ProviderPanelRow from "./ProviderPanelRow";
 

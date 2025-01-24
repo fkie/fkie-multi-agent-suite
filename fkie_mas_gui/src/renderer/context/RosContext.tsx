@@ -1,11 +1,10 @@
-import { TFileRange, TLaunchArg, TResult, TRosInfo, TSystemInfo } from "@/types";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { Model } from "flexlayout-react";
 import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
-import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "../components/UI";
+
+import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "@/renderer/components/UI";
 import {
   LaunchArgument,
   LaunchLoadReply,
@@ -15,21 +14,10 @@ import {
   RosNode,
   SubscriberFilter,
   SubscriberNode,
-  getBaseName,
   getFileName,
-} from "../models";
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
-import {
-  EVENT_EDITOR_SELECT_RANGE,
-  EVENT_OPEN_COMPONENT,
-  eventEditorSelectRange,
-  eventOpenComponent,
-} from "../pages/NodeManager/layout/events";
-import FileEditorPanel from "../pages/NodeManager/panels/FileEditorPanel";
-import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
-import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
-import { CmdType, ConnectionState } from "../providers";
-import Provider from "../providers/Provider";
+} from "@/renderer/models";
+import ConnectionState from "@/renderer/providers/ConnectionState";
+import Provider from "@/renderer/providers/Provider";
 import {
   EVENT_PROVIDER_AUTH_REQUEST,
   EVENT_PROVIDER_DISCOVERED,
@@ -39,7 +27,7 @@ import {
   EVENT_PROVIDER_ROS_NODES,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
-} from "../providers/eventTypes";
+} from "@/renderer/providers/eventTypes";
 import {
   EventProviderAuthRequest,
   EventProviderDiscovered,
@@ -49,8 +37,8 @@ import {
   EventProviderRosNodes,
   EventProviderState,
   EventProviderWarnings,
-} from "../providers/events";
-import { xor } from "../utils/index";
+} from "@/renderer/providers/events";
+import { TResult, TRosInfo, TSystemInfo } from "@/types";
 import { LoggingContext } from "./LoggingContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
 
@@ -62,7 +50,6 @@ export interface IRosProviderContext {
   providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
-  layoutModel: Model | null;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string) => void;
@@ -83,32 +70,6 @@ export interface IRosProviderContext {
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
   isLocalHost: (host: string) => boolean;
   addProvider: (provider: Provider) => void;
-  setLayoutModel: (model: Model) => void;
-  openEditor: (
-    providerId: string,
-    rootLaunch: string,
-    path: string,
-    fileRange: TFileRange | null,
-    launchArgs: TLaunchArg[],
-    externalKeyModifier: boolean
-  ) => void;
-  openSubscriber: (
-    providerId: string,
-    topic: string,
-    showOptions: boolean,
-    defaultNoData: boolean,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
-  ) => void;
-  openTerminal: (
-    type: CmdType,
-    providerId: string,
-    node: string,
-    screen: string,
-    cmd: string,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
-  ) => void;
 }
 
 export const DEFAULT = {
@@ -119,7 +80,6 @@ export const DEFAULT = {
   providersConnected: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
   nodeMap: new Map(),
-  layoutModel: null,
   connectToProvider: (): Promise<boolean> => new Promise<boolean>(() => {}),
   startProvider: (): Promise<boolean> => new Promise<boolean>(() => {}),
   startConfig: (): Promise<boolean> => new Promise<boolean>(() => {}),
@@ -140,10 +100,6 @@ export const DEFAULT = {
   updateFilterRosTopic: (): void => {},
   isLocalHost: (): boolean => false,
   addProvider: (): void => {},
-  setLayoutModel: (): void => {},
-  openEditor: (): void => {},
-  openSubscriber: (): void => {},
-  openTerminal: (): void => {},
 };
 
 type TLoadLaunchResult = {
@@ -174,7 +130,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
-  const [layoutModel, setLayoutModel] = useState<Model | null>(null);
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(DEFAULT.mapProviderRosNodes);
   // nodeMap: Map<string, RosNode>
@@ -1023,229 +978,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     );
   }
 
-  async function openEditor(
-    providerId: string,
-    rootLaunch: string,
-    path: string,
-    fileRange: TFileRange | null,
-    launchArgs: TLaunchArg[],
-    externalKeyModifier: boolean
-  ): Promise<void> {
-    const provider = getProviderById(providerId);
-    if (provider) {
-      const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
-      // open in external window depending on setting and key modifier and if no tab already existing
-      const openExternal: boolean =
-        xor(settingsCtx.get("editorOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
-      const hasExtEditor = await window.editorManager?.has(id);
-      if (hasExtEditor) {
-        // inform external window about new selected range
-        window.editorManager?.emitFileRange(id, path, fileRange, launchArgs);
-      } else if (openExternal && provider && window.editorManager) {
-        // open in new window
-        window.editorManager?.open(
-          id,
-          provider.connection.host,
-          provider.connection.port,
-          path,
-          rootLaunch,
-          fileRange,
-          launchArgs
-        );
-      } else {
-        // inform already open tab about new node selection
-        emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(id, path, fileRange, launchArgs));
-        // open new editor in a tab. Checks for existing tabs are performed in NodeManager
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            id,
-            getBaseName(rootLaunch),
-            <FileEditorPanel
-              tabId={id}
-              providerId={providerId}
-              currentFilePath={path}
-              rootFilePath={rootLaunch}
-              fileRange={fileRange}
-              launchArgs={launchArgs}
-            />,
-            true,
-            LAYOUT_TAB_SETS[settingsCtx.get("editorOpenLocation") as string],
-            new LayoutTabConfig(true, "editor", null, {
-              id: id,
-              host: provider.connection.host,
-              port: provider.connection.port,
-              rootLaunch: rootLaunch,
-              path: path,
-              fileRange: fileRange,
-              launchArgs: launchArgs,
-            })
-          )
-        );
-      }
-    }
-  }
-
-  async function openSubscriber(
-    providerId: string,
-    topic: string,
-    showOptions: boolean,
-    defaultNoData: boolean,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
-  ): Promise<void> {
-    const provider = getProviderById(providerId);
-    if (provider) {
-      const id = `echo-${provider.connection.host}-${provider.connection.port}-${topic}`;
-      // open in external window depending on setting and key modifier and if no tab already existing
-      const openExternal: boolean =
-        xor(settingsCtx.get("subscriberOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
-      if (forceOpenTerminal) {
-        try {
-          const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
-          const result = await window.commandExecutor?.execTerminal(
-            null, // we start the subscriber always local
-            `"echo ${topic}"`,
-            terminalCmd.cmd
-          );
-          if (!result?.result) {
-            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, true);
-          }
-        } catch (error) {
-          logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, true);
-        }
-        return;
-      }
-      if (provider && window.subscriberManager && (openExternal || (await window.subscriberManager?.has(id)))) {
-        // open in new window
-        // we do not check for existing subscriber, it is done by IPC with given id
-        window.subscriberManager?.open(
-          id,
-          provider.connection.host,
-          provider.connection.port,
-          topic,
-          showOptions,
-          defaultNoData
-        );
-      } else {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            id,
-            topic,
-            <TopicEchoPanel
-              showOptions={showOptions}
-              defaultProvider={providerId}
-              defaultTopic={topic}
-              defaultNoData={defaultNoData}
-            />,
-            true,
-            LAYOUT_TAB_SETS[settingsCtx.get("subscriberOpenLocation") as string],
-            new LayoutTabConfig(
-              true,
-              `${CmdType.ECHO}`,
-              // {
-              //   type: CmdType.ECHO,
-              //   providerId,
-              //   topicName: topic,
-              //   nodeName: "",
-              //   screen: "",
-              //   cmd: "",
-              // },
-              null,
-              null,
-              {
-                id: id,
-                host: provider.connection.host,
-                port: provider.connection.port,
-                topic: topic,
-                showOptions: showOptions,
-                noData: defaultNoData,
-              }
-            )
-          )
-        );
-      }
-    }
-  }
-
-  async function openTerminal(
-    type: CmdType,
-    providerId: string,
-    node: string,
-    screen: string,
-    cmd: string,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
-  ): Promise<void> {
-    const provider = getProviderById(providerId);
-    if (provider) {
-      const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${screen ? screen : node}`;
-      // open in external window depending on setting and key modifier and if no tab already existing
-      const openExternal: boolean =
-        type === CmdType.SCREEN
-          ? xor(settingsCtx.get("screenOpenExternal") as boolean, externalKeyModifier)
-          : xor(settingsCtx.get("logOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
-      if (forceOpenTerminal) {
-        try {
-          // create a terminal command
-          const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd);
-          const result = await window.commandExecutor?.execTerminal(
-            provider.isLocalHost ? null : { host: provider.host() },
-            `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
-            terminalCmd.cmd
-          );
-          if (!result?.result) {
-            logCtx.error(`Can't open external terminal on ${provider.host()}`, `${result?.message}`, true);
-          }
-        } catch (error) {
-          logCtx.error(`Can't open external terminal on ${provider.host()}`, `${error}`, true);
-        }
-        return;
-      }
-      if (provider && window.terminalManager && (openExternal || (await window.terminalManager?.has(id)))) {
-        // open in new window
-        // we do not check for existing subscriber, it is done by IPC with given id
-        window.terminalManager?.open(
-          id,
-          provider.connection.host,
-          provider.connection.port,
-          `${type}`,
-          node,
-          screen,
-          cmd
-        );
-      } else {
-        emitCustomEvent(
-          EVENT_OPEN_COMPONENT,
-          eventOpenComponent(
-            id,
-            node ? node : `${type}_${provider.connection.host}`,
-            <SingleTerminalPanel
-              id={id}
-              type={type}
-              providerId={providerId}
-              nodeName={node}
-              screen={screen}
-              cmd={cmd}
-            />,
-            true,
-            LAYOUT_TAB_SETS.BORDER_BOTTOM,
-            new LayoutTabConfig(true, type, null, null, null, {
-              id: id,
-              host: provider.connection.host,
-              port: provider.connection.port,
-              cmdType: type,
-              node: node,
-              screen: screen,
-              cmd: cmd,
-            })
-          )
-        );
-      }
-    }
-  }
-
   // initialize ROS and system Info
   async function init(): Promise<void> {
     setInitialized(() => false);
@@ -1497,7 +1229,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       providersConnected,
       mapProviderRosNodes,
       nodeMap,
-      layoutModel,
       connectToProvider,
       startProvider,
       startConfig,
@@ -1518,10 +1249,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       updateFilterRosTopic,
       isLocalHost,
       addProvider,
-      setLayoutModel,
-      openEditor,
-      openSubscriber,
-      openTerminal,
     }),
 
     [initialized, rosInfo, systemInfo, providers, providersConnected, mapProviderRosNodes, setMapProviderRosNodes]

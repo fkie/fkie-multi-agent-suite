@@ -12,12 +12,12 @@ import { RosProviderReact } from "./context/RosContext";
 import { SettingsContext } from "./context/SettingsContext";
 import { darkThemeDef, lightThemeDef } from "./themes";
 
-export default function ProviderStack({ children }: { children: React.ReactNode }) {
+export default function ProviderStack({ children }: { children: React.ReactNode }): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const [lightTheme, setLightTheme] = useState(createTheme(lightThemeDef));
   const [darkTheme, setDarkTheme] = useState(createTheme(darkThemeDef));
 
-  const handleWindowError = (e) => {
+  const handleWindowError = (e): void => {
     // fix "ResizeObserver loop limit exceeded" while change size of the editor
     if (
       ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications."].includes(
@@ -51,7 +51,7 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
-    return () => {
+    return (): void => {
       // Anything in here is fired on component unmount.
       window.removeEventListener("error", handleWindowError);
     };

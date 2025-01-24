@@ -1,16 +1,17 @@
-import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
-import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
-import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import { LoggingContext } from "../../context/LoggingContext";
-import { NavigationContext } from "../../context/NavigationContext";
-import { SettingsContext } from "../../context/SettingsContext";
-import { LAYOUT_TABS } from "../../pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../../pages/NodeManager/layout/events";
-import { normalizeNameWithPrefix, removeDDSuid } from "../../utils/index";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { NavigationContext } from "@/renderer/context/NavigationContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
+import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
+import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
+import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import { normalizeNameWithPrefix, removeDDSuid } from "@/renderer/utils/index";
 import { colorFromHostname } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 

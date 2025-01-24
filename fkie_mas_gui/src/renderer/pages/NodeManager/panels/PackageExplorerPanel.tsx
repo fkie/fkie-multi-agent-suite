@@ -1,14 +1,17 @@
-import { RosPackage } from "@/renderer/models";
-import { EventProviderState } from "@/renderer/providers/events";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Alert, AlertTitle, Box, FormControl, IconButton, Stack, Tooltip } from "@mui/material";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { PackageExplorer, ProviderSelector, colorFromHostname } from "../../../components";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { ConnectionState } from "../../../providers";
-import { EVENT_PROVIDER_STATE } from "../../../providers/eventTypes";
+
+import PackageExplorer from "@/renderer/components/PackageExplorer/PackageExplorer";
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosPackage } from "@/renderer/models";
+import { ConnectionState } from "@/renderer/providers";
+import { EventProviderState } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 
 export default function PackageExplorerPanel(): JSX.Element {
   const rosCtx = useContext(RosContext);

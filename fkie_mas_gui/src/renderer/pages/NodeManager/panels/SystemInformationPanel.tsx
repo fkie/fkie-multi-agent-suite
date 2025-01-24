@@ -1,13 +1,15 @@
-import { SystemWarning } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
-import { JSONObject, TSystemInfo } from "@/types";
 import { Box, Stack, Typography } from "@mui/material";
 import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
-import { CopyButton, SearchBar } from "../../../components";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { generateUniqueId } from "../../../utils";
+
+import CopyButton from "@/renderer/components/UI/CopyButton";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { SystemWarning } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
+import { generateUniqueId } from "@/renderer/utils";
+import { JSONObject, TSystemInfo } from "@/types";
 
 interface SystemInformationPanelProps {
   providerId?: string;

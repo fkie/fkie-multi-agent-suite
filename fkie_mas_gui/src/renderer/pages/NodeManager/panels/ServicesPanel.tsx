@@ -1,7 +1,3 @@
-import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
-import { RosService, ServiceExtendedInfo } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
-import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -12,10 +8,15 @@ import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import { SearchBar } from "../../../components";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { findIn } from "../../../utils/index";
+
+import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosService, ServiceExtendedInfo } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
+import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
+import { findIn } from "@/renderer/utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import ServiceCallerPanel from "./ServiceCallerPanel";
@@ -139,7 +140,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   function onCallService(service: ServiceExtendedInfo, external: boolean, openInTerminal: boolean): void {
     // TODO: open in external window like subscriber
     console.debug(`not implemented service parameter: ${external} ${openInTerminal}`);
-    // rosCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
+    // navCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
       eventOpenComponent(

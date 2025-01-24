@@ -1,5 +1,6 @@
-import { TShutdownManager } from "@/types";
 import { createContext, useEffect, useMemo, useState } from "react";
+
+import { TShutdownManager } from "@/types";
 
 export interface IElectronContext {
   shutdownManager: TShutdownManager | null;

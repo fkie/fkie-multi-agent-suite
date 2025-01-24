@@ -47,14 +47,15 @@ import { grey } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
 import { ForwardedRef, forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import { LoggingContext } from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext, getDefaultPortFromRos } from "../../context/SettingsContext";
-import useLocalStorage from "../../hooks/useLocalStorage";
-import ProviderLaunchConfiguration from "../../models/ProviderLaunchConfiguration";
-import Provider from "../../providers/Provider";
-import { EVENT_PROVIDER_ROS_NODES } from "../../providers/eventTypes";
-import { generateUniqueId } from "../../utils";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext, getDefaultPortFromRos } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import ProviderLaunchConfiguration from "@/renderer/models/ProviderLaunchConfiguration";
+import Provider from "@/renderer/providers/Provider";
+import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
+import { generateUniqueId } from "@/renderer/utils";
 import CopyButton from "../UI/CopyButton";
 import DraggablePaper from "../UI/DraggablePaper";
 

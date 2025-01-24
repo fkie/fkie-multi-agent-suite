@@ -1,7 +1,3 @@
-import { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
-import { EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
-import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
-import { TFileRange, TLaunchArg } from "@/types";
 import AddToQueueIcon from "@mui/icons-material/AddToQueue";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
@@ -35,19 +31,31 @@ import {
 import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import { ConfirmModal, HostTreeView, MapSelectionModal, SearchBar } from "../../../components";
-import ListSelectionModal from "../../../components/SelectionModal/ListSelectionModal";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { NavigationContext } from "../../../context/NavigationContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import useQueue from "../../../hooks/useQueue";
-import { Result, RosNode, RosNodeStatus } from "../../../models";
-import { CmdType } from "../../../providers";
-import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "../../../providers/eventTypes";
-import { findIn } from "../../../utils/index";
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import { EVENT_FILTER_NODES, EVENT_OPEN_COMPONENT, eventOpenComponent, TEventId } from "../layout/events";
+
+import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
+import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
+import ListSelectionModal from "@/renderer/components/SelectionModal/ListSelectionModal";
+import MapSelectionModal, { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { NavigationContext } from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useQueue from "@/renderer/hooks/useQueue";
+import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
+import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
+import {
+  EVENT_FILTER_NODES,
+  EVENT_OPEN_COMPONENT,
+  eventOpenComponent,
+  TEventId,
+} from "@/renderer/pages/NodeManager/layout/events";
+import { CmdType } from "@/renderer/providers";
+import { EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
+import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
+import { findIn } from "@/renderer/utils/index";
+import { TFileRange, TLaunchArg } from "@/types";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
@@ -304,7 +312,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     externalKeyModifier: boolean = false,
     openInTerminal: boolean = false
   ): Promise<void> {
-    return rosCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
+    return navCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
   }
 
   /**
@@ -324,7 +332,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         setEditNodeWithMultipleLaunchInfos({ node: node, external: external });
       } else {
         const [rootLaunch, launchInfo] = launchInfos[0];
-        rosCtx.openEditor(
+        navCtx.openEditor(
           node.providerId,
           rootLaunch,
           launchInfo.file_name || "",
@@ -1662,7 +1670,7 @@ export default function HostTreeViewPanel(): JSX.Element {
             items.forEach((item) => {
               item.list.forEach((launch) => {
                 const launchInfo = editNodeWithMultipleLaunchInfos.node.launchInfo.get(launch);
-                rosCtx.openEditor(
+                navCtx.openEditor(
                   editNodeWithMultipleLaunchInfos.node.providerId,
                   launch,
                   launchInfo?.file_name || "",

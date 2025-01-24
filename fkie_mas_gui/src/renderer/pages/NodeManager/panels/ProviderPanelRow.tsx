@@ -29,16 +29,18 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import semver from "semver";
-import { colorFromHostname } from "../../../components";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { CmdType, ConnectionState, Provider } from "../../../providers";
+
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { CmdType, ConnectionState, Provider } from "@/renderer/providers";
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
-} from "../../../providers/eventTypes";
+} from "@/renderer/providers/eventTypes";
 import { LAYOUT_TABS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { EMenuProvider } from "./OverflowMenuProvider";
@@ -52,6 +54,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
   const { provider } = props;
 
   const rosCtx = useContext(RosContext);
+  const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const [providersActivity, setProvidersActivity] = useState(false);
   const [updated, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -497,7 +500,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 edge="start"
                 onClick={(event) => {
                   // open terminal for update
-                  rosCtx.openTerminal(
+                  navCtx.openTerminal(
                     CmdType.TERMINAL,
                     provider.id,
                     "",
@@ -524,7 +527,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 edge="start"
                 onClick={(event) => {
                   // open terminal for update
-                  rosCtx.openTerminal(
+                  navCtx.openTerminal(
                     CmdType.TERMINAL,
                     provider.id,
                     "",

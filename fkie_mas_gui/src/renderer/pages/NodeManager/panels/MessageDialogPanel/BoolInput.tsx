@@ -1,6 +1,7 @@
-import { TRosMessageStruct } from "@/renderer/models";
 import { Checkbox, FormControlLabel, FormGroup, FormLabel, Stack, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
+
+import { TRosMessageStruct } from "@/renderer/models";
 
 interface BoolInputProps {
   id: string;

@@ -1,9 +1,10 @@
 /* eslint-disable no-template-curly-in-string */
 
-import { RosPackage } from "@/renderer/models";
-import { TFileRange } from "@/types";
 import { Monaco } from "@monaco-editor/react";
 import { editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
+
+import { RosPackage } from "@/renderer/models";
+import { TFileRange } from "@/types";
 
 function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
   const result = packages?.map((item: RosPackage) => {

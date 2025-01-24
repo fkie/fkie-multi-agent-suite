@@ -4,7 +4,8 @@ import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
 import SyncAltOutlinedIcon from "@mui/icons-material/SyncAltOutlined";
 import { Stack, Typography } from "@mui/material";
 import { forwardRef, useMemo } from "react";
-import OverflowMenu from "../../../components/UI/OverflowMenu";
+
+import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 
 export enum EMenuService {
   INFO = "INFO",

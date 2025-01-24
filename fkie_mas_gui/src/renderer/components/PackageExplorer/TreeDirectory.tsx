@@ -1,9 +1,10 @@
-import { RosPackage } from "@/renderer/models";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { forwardRef, LegacyRef, useCallback, useEffect, useMemo, useState } from "react";
-import { generateUniqueId } from "../../utils";
+
+import { RosPackage } from "@/renderer/models";
+import { generateUniqueId } from "@/renderer/utils";
 import FileTreeItem from "./FileTreeItem";
 import FolderTreeItem from "./FolderTreeItem";
 import PackageTreeItem from "./PackageTreeItem";

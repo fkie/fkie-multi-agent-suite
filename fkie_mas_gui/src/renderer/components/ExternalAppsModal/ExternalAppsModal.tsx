@@ -20,9 +20,10 @@ import {
   Typography,
 } from "@mui/material";
 import { ForwardedRef, useCallback, useContext, useRef, useState } from "react";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
-import { generateUniqueId } from "../../utils";
+
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { generateUniqueId } from "@/renderer/utils";
 import DraggablePaper from "../UI/DraggablePaper";
 import SelectDomainIdModal from "./SelectDomainIdModal";
 

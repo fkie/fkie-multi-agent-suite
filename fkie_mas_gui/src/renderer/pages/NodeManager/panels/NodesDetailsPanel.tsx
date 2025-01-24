@@ -1,4 +1,3 @@
-import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import {
   Alert,
   AlertTitle,
@@ -18,14 +17,18 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
-import { CopyButton, Tag, colorFromHostname, getDiagnosticStyle } from "../../../components";
-import { LoggingContext } from "../../../context/LoggingContext";
-import { NavigationContext } from "../../../context/NavigationContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import useLocalStorage from "../../../hooks/useLocalStorage";
-import { RosNode, RosNodeStatus, RosTopic, RosTopicId, getDiagnosticLevelName, getFileName } from "../../../models";
-import { generateUniqueId } from "../../../utils";
+
+import { colorFromHostname, getDiagnosticStyle } from "@/renderer/components/UI/Colors";
+import CopyButton from "@/renderer/components/UI/CopyButton";
+import Tag from "@/renderer/components/UI/Tag";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { NavigationContext } from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { RosNode, RosNodeStatus, RosTopic, RosTopicId, getDiagnosticLevelName, getFileName } from "@/renderer/models";
+import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
+import { generateUniqueId } from "@/renderer/utils";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import OverflowMenuService, { EMenuService } from "./OverflowMenuService";
@@ -141,7 +144,7 @@ export default function NodesDetailsPanel(): JSX.Element {
     if (rosTopicType === EMenuTopic.ECHO) {
       defaultNoData = false;
     }
-    rosCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
+    navCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
   }
 
   function onServiceClick(rosServiceType: EMenuService, service: string, msgType: string, providerId: string): void {
@@ -230,9 +233,9 @@ export default function NodesDetailsPanel(): JSX.Element {
             </Typography>
           </Stack>
 
-          {node && node.diagnosticLevel && node.diagnosticLevel > 0 && (
-            <Typography variant="body1" style={getDiagnosticStyle(node.diagnosticLevel)} marginBottom={1}>
-              {getDiagnosticLevelName(node.diagnosticLevel)}: {node.diagnosticMessage}
+          {(node.diagnosticLevel || 0) > 0 && (
+            <Typography variant="body1" style={getDiagnosticStyle(node.diagnosticLevel || 0)} marginBottom={1}>
+              {getDiagnosticLevelName(node.diagnosticLevel || 0)}: {node.diagnosticMessage}
             </Typography>
           )}
 
@@ -257,7 +260,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <Tag color="default" title="Lifecycle:" text={`${node.lifecycle_state}`} wrap />
                 </Stack>
               )}
-              {node.lifecycle_available_transitions && (
+              {(node.lifecycle_available_transitions || []).length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag
                     color="default"

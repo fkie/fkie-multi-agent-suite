@@ -1,11 +1,13 @@
 import { Alert, AlertTitle, Box } from "@mui/material";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import TerminalClient from "../../../components/TerminalClient/TerminalClient";
-import { colorFromHostname } from "../../../components/UI/Colors";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
-import { CmdType, Provider } from "../../../providers";
+
+import TerminalClient from "@/renderer/components/TerminalClient/TerminalClient";
+import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import CmdType from "@/renderer/providers/CmdType";
+import Provider from "@/renderer/providers/Provider";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
 
 interface SingleTerminalPanelProps {

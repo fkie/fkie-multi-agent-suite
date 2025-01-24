@@ -4,7 +4,8 @@ import { Box, Card, CardActions, Collapse, IconButton, Paper, Stack, Typography 
 import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
 import React, { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
-import { SettingsContext } from "../../context/SettingsContext";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { levelColorsWbg } from "./Colors";
 
 interface LoggingDetailsComponentProps {

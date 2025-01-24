@@ -1,14 +1,15 @@
-import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
-import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Alert, AlertTitle, Box, IconButton, Stack, Tooltip } from "@mui/material";
 import { useContext, useEffect, useMemo, useReducer, useState } from "react";
-import SearchBar from "../../../components/UI/SearchBar";
-import { DEFAULT_BUG_TEXT, LoggingContext } from "../../../context/LoggingContext";
-import { RosContext } from "../../../context/RosContext";
-import { SettingsContext } from "../../../context/SettingsContext";
+
+import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
+import SearchBar from "@/renderer/components/UI/SearchBar";
+import { DEFAULT_BUG_TEXT, LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
 
 type TRootData = {
   provider: Provider;

@@ -7,9 +7,10 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 
 import { ITerminalOptions, ITheme } from "@xterm/xterm";
 import { useContext } from "react";
-import { SettingsContext } from "../../context/SettingsContext";
-import { CmdType } from "../../providers";
-import Provider from "../../providers/Provider";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { CmdType } from "@/renderer/providers";
+import Provider from "@/renderer/providers/Provider";
 import { ClientOptions, Terminal } from "./Terminal";
 
 // TODO: Add parameter for this

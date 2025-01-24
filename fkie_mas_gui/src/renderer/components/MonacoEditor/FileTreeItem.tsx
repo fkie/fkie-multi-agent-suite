@@ -1,7 +1,3 @@
-import LoggingContext from "@/renderer/context/LoggingContext";
-import { getFileExtension, getFileName } from "@/renderer/models";
-import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
-import { TLaunchArg } from "@/types";
 import TurnSlightLeftIcon from "@mui/icons-material/TurnSlightLeft";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
@@ -16,6 +12,11 @@ import {
 import React, { forwardRef, LegacyRef, useContext } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { FileIcon } from "react-file-icon";
+
+import LoggingContext from "@/renderer/context/LoggingContext";
+import { getFileExtension, getFileName } from "@/renderer/models";
+import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
+import { TLaunchArg } from "@/types";
 import fileIconStyles from "./FileIconStyles";
 import { TLaunchIncludeItem } from "./types";
 

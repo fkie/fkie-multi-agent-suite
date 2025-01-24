@@ -2,6 +2,7 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { blue, red } from "@mui/material/colors";
 import { forwardRef, LegacyRef } from "react";
+
 import CopyButton from "../UI/CopyButton";
 import StyledRootTreeItem from "./StyledRootTreeItem";
 

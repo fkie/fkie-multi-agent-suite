@@ -4,11 +4,8 @@
     "vite-env.d.ts",
     "src/index.d.ts",
     "src/preload/**/*.ts",
-    "src/preload/*.d.ts",
-    "src/renderer/**/*",
+    "src/renderer/**/*.ts",
     "src/renderer/**/*.tsx",
-    "src/renderer/**/**/*.tsx",
-    "src/renderer/**/**/**/*.tsx",
     "src/types/**/*.ts"
   ],
   "compilerOptions": {

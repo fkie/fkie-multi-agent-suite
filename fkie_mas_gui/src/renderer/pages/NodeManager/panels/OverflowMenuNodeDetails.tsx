@@ -1,7 +1,8 @@
 import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
 import { useMemo } from "react";
-import OverflowMenu from "../../../components/UI/OverflowMenu";
-import useLocalStorage from "../../../hooks/useLocalStorage";
+
+import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 
 export default function OverflowMenuNodeDetails(): JSX.Element {
   const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);

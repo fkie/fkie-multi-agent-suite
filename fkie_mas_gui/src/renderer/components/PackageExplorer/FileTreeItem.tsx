@@ -1,9 +1,10 @@
-import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
-import { getFileExtension, PathItem } from "@/renderer/models";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { forwardRef, LegacyRef, useState } from "react";
 import { FileIcon } from "react-file-icon";
+
+import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
+import { getFileExtension, PathItem } from "@/renderer/models";
 import CopyButton from "../UI/CopyButton";
 import defaultFileIconStyles from "./FileIconDefaultStyles";
 import StyledTreeItem from "./StyledTreeItem";

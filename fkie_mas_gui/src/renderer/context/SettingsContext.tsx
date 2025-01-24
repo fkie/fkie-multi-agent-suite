@@ -1,7 +1,8 @@
 import { JSONObject, JSONValue } from "@/types";
 import React, { createContext, useMemo, useReducer } from "react";
-import useLocalStorage from "../hooks/useLocalStorage";
-import URI from "../models/uris";
+
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import URI from "@/renderer/models/uris";
 
 export const getDefaultPortFromRos: (
   connectionType: string,
@@ -175,7 +176,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   ntpServer: {
     label: "NTP Server",
-    placeholder: "...",
+    placeholder: "@/renderer.",
     freeSolo: true,
     type: "string[]",
     default: ["ntp.ubuntu.com"],

@@ -1,7 +1,8 @@
-import { TRosMessageStruct } from "@/renderer/models";
 import { Autocomplete, FormLabel, Stack, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
-import useLocalStorage from "../../../../hooks/useLocalStorage";
+
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { TRosMessageStruct } from "@/renderer/models";
 
 interface StringInputProps {
   id: string;

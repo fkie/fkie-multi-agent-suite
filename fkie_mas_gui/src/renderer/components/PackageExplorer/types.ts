@@ -1,4 +1,4 @@
-import { PathItem } from "../../models";
+import { PathItem } from "@/renderer/models";
 
 export type TPackageItemsTree = { [name: string]: TPackageTreeItem[] };
 

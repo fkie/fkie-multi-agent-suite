@@ -5,7 +5,8 @@ import {
   UseTreeItem2IconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useContext } from "react";
-import { LoggingContext } from "../../context/LoggingContext";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
 import StyledTreeItem from "./StyledTreeItem";
 
 interface ServiceGroupTreeItemProps {

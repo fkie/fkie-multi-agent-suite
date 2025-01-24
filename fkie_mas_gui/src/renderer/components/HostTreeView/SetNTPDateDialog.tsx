@@ -1,6 +1,7 @@
 import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { forwardRef, useContext, useEffect, useState } from "react";
-import { SettingsContext } from "../../context/SettingsContext";
+
+import { SettingsContext } from "@/renderer/context/SettingsContext";
 
 interface SetNTPDateDialogProps {
   open: boolean;

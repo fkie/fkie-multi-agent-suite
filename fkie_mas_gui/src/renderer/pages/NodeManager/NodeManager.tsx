@@ -1,6 +1,3 @@
-import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
-import { EventProviderAuthRequest } from "@/renderer/providers/events";
-import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
@@ -48,19 +45,24 @@ import {
 } from "flexlayout-react";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import ExternalAppsModal from "../../components/ExternalAppsModal/ExternalAppsModal";
-import ProviderSelectionModal from "../../components/SelectionModal/ProviderSelectionModal";
-import DraggablePaper from "../../components/UI/DraggablePaper";
-import { AutoUpdateContext } from "../../context/AutoUpdateContext";
-import { ElectronContext } from "../../context/ElectronContext";
-import { LoggingContext } from "../../context/LoggingContext";
-import { ModifiedTabsInfo, MonacoContext } from "../../context/MonacoContext";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
-import useLocalStorage from "../../hooks/useLocalStorage";
-import { getBaseName } from "../../models";
-import { CmdType, Provider } from "../../providers";
-import { getRosNameAbb } from "../../utils";
+
+import ExternalAppsModal from "@/renderer/components/ExternalAppsModal/ExternalAppsModal";
+import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
+import ProviderSelectionModal from "@/renderer/components/SelectionModal/ProviderSelectionModal";
+import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
+import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
+import { ElectronContext } from "@/renderer/context/ElectronContext";
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { ModifiedTabsInfo, MonacoContext } from "@/renderer/context/MonacoContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { getBaseName } from "@/renderer/models";
+import { CmdType, Provider } from "@/renderer/providers";
+import { EventProviderAuthRequest } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
+import { getRosNameAbb } from "@/renderer/utils";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import {
   EVENT_CLOSE_COMPONENT,
@@ -99,7 +101,7 @@ export default function NodeManager(): JSX.Element {
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const monacoCtx = useContext(MonacoContext);
-  // const navCtx = useContext(NavigationContext);
+  const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const [layoutJson, setLayoutJson] = useLocalStorage<IJsonModel>("layout", DEFAULT_LAYOUT);
   const [model, setModel] = useState<Model>(Model.fromJson(layoutJson));
@@ -149,7 +151,7 @@ export default function NodeManager(): JSX.Element {
   }
 
   useEffect(() => {
-    rosCtx.setLayoutModel(model);
+    navCtx.setLayoutModel(model);
   }, [model]);
 
   useEffect(() => {

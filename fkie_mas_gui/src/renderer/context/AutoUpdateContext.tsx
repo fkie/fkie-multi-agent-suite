@@ -1,7 +1,8 @@
-import { TAutoUpdateManager } from "@/types";
 import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import useLocalStorage from "../hooks/useLocalStorage";
+
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { TAutoUpdateManager } from "@/types";
 import { LoggingContext } from "./LoggingContext";
 import { SettingsContext } from "./SettingsContext";
 

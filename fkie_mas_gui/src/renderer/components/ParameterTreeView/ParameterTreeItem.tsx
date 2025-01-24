@@ -1,9 +1,10 @@
-import { RosParameter } from "@/renderer/models";
-import { RosParameterRange } from "@/renderer/models/RosParameter";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, Tooltip, Typography } from "@mui/material";
 import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState } from "react";
-import { LoggingContext } from "../../context/LoggingContext";
+
+import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { RosParameter } from "@/renderer/models";
+import { RosParameterRange } from "@/renderer/models/RosParameter";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
 

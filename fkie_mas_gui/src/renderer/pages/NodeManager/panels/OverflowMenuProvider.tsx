@@ -1,6 +1,7 @@
 import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
 import { forwardRef, useMemo } from "react";
-import OverflowMenu from "../../../components/UI/OverflowMenu";
+
+import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 
 export enum EMenuProvider {
   INFO = "INFO",

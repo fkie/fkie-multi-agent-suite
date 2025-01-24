@@ -6,7 +6,8 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import TroubleshootOutlinedIcon from "@mui/icons-material/TroubleshootOutlined";
 import { Stack, Typography } from "@mui/material";
 import { forwardRef, useMemo } from "react";
-import OverflowMenu from "../../../components/UI/OverflowMenu";
+
+import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 
 export enum EMenuTopic {
   INFO = "INFO",

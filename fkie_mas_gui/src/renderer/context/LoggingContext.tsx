@@ -1,12 +1,13 @@
-import { JSONObject, TResult } from "@/types";
 import Fade from "@mui/material/Fade";
 import { VariantType, useSnackbar } from "notistack";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
-import LoggingDetailsComponent from "../components/UI/LoggingDetailsComponent";
-import { LogEvent, LoggingLevel } from "../models";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "../pages/NodeManager/layout/LayoutDefines";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../pages/NodeManager/layout/events";
+
+import LoggingDetailsComponent from "@/renderer/components/UI/LoggingDetailsComponent";
+import { LogEvent, LoggingLevel } from "@/renderer/models";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "@/renderer/pages/NodeManager/layout/LayoutDefines";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import { JSONObject, TResult } from "@/types";
 import { SettingsContext } from "./SettingsContext";
 
 export interface ILoggingContext {
