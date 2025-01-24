@@ -127,14 +127,22 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
     [messageStruct.value]
   );
 
+  function structToSearchableString(msgStruct: TRosMessageStruct): string {
+    if (msgStruct) {
+      const subStr = msgStruct.def?.map((item: TRosMessageStruct) => structToSearchableString(item)).join(" ") || "";
+      return `${msgStruct.name} ${msgStruct.type} ${subStr}`;
+    }
+    return "";
+  }
+
   // component visibility based on filter input text
   const [isVisible, setVisible] = useState("");
   useEffect(() => {
     let vis = "";
-    if (filterText.length > 1) {
+    if (filterText.length > 0) {
       // TODO: improve struct search by ignoring non-visible fields
       const re = new RegExp(filterText, "i");
-      const pos = JSON.stringify(messageStruct).search(re);
+      const pos = structToSearchableString(messageStruct).search(re);
       vis = pos !== -1 ? "" : "none";
     }
     setVisible(vis);
@@ -167,6 +175,9 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
 
   // create element depending on the base type defined in Components
   if (typeof Components[fieldType] !== "undefined") {
+    if (isVisible !== "") {
+      return <></>;
+    }
     return React.createElement(Components[fieldType], {
       id: idSuffix,
       messageStruct,

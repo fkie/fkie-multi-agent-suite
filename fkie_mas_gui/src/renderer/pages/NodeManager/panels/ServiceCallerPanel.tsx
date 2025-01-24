@@ -130,7 +130,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
 
   // debounced filter callback
   const onUpdateInputElements = useCallback(
-    (searchText) => {
+    (searchText: string) => {
       if (!serviceStruct) return;
       setInputElements(
         <InputElements
