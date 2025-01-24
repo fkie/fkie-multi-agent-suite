@@ -654,7 +654,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
               }}
             />
           ) : (
-            <Stack direction="row">
+            <Stack direction="row" alignItems="center">
               <Typography fontWeight="bold">{currentMessageType}</Typography>
               <IconButton
                 onClick={() => {
