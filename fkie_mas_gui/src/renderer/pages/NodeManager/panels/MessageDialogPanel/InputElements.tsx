@@ -1,6 +1,5 @@
 import { TRosMessageStruct } from "@/renderer/models";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
-import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import {
   Alert,
   AlertTitle,
@@ -79,18 +78,10 @@ interface InputElementsProps {
   filterText?: string;
   expanded?: boolean;
   showRoot?: boolean;
-  onCopyToClipboard?: () => void;
 }
 
 export default function InputElements(props: InputElementsProps): JSX.Element {
-  const {
-    messageStruct,
-    parentName = "undefined",
-    filterText = "",
-    expanded = true,
-    showRoot = true,
-    onCopyToClipboard = (): void => {},
-  } = props;
+  const { messageStruct, parentName = "undefined", filterText = "", expanded = true, showRoot = true } = props;
 
   const [arrayCount, setArrayCount] = useState<number>(0);
   const [idSuffix] = useState<string>(`${parentName}-${messageStruct.name}`);
@@ -194,7 +185,6 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
             messageStruct={struct}
             filterText={filterText}
             expanded={false}
-            onCopyToClipboard={onCopyToClipboard}
           />
         ))}
       </Stack>
@@ -263,16 +253,6 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
               >
                 {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
               </FormLabel>
-              {!messageStruct.name && (
-                <Stack
-                  onClick={(event) => {
-                    onCopyToClipboard();
-                    event.stopPropagation();
-                  }}
-                >
-                  <ContentCopyOutlinedIcon fontSize="inherit" />
-                </Stack>
-              )}
               {messageStruct.is_array ? (
                 <ButtonGroup sx={{ maxHeight: "24px" }}>
                   <Button

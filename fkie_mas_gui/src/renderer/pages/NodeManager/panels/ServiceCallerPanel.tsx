@@ -1,4 +1,5 @@
 import { Provider } from "@/renderer/providers";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
@@ -10,6 +11,7 @@ import {
   CircularProgress,
   Divider,
   FormLabel,
+  IconButton,
   Stack,
   Tooltip,
   Typography,
@@ -62,7 +64,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   }, 100);
 
   // get item history after the history was loaded
-  const updateHistory = useDebounceCallback(() => {
+  const updateHistory = useCallback(() => {
     if (!serviceStruct) return;
     let historyInStruct = history[serviceType];
     let hasType = true;
@@ -82,10 +84,10 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
       delete history[serviceType];
     }
     setHistory(history);
-  }, 100);
+  }, [serviceStruct, history, setHistory]);
 
   // get item history after the history was loaded
-  const clearHistory = useDebounceCallback(() => {
+  const clearHistory = useCallback(() => {
     if (!serviceStruct) return;
     const historyInStruct = history[serviceType];
     if (historyInStruct && historyInStruct.length > 0) {
@@ -93,15 +95,14 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
       setHistory(history);
       setHistoryLength(historyInStruct.length);
     }
-  }, 300);
+  }, [history, serviceStruct]);
 
   // create string from message struct and copy it to clipboard
-  const onCopyToClipboard = useDebounceCallback(() => {
-    if (!serviceStruct) return;
-    const json = rosMessageStructToString(serviceStruct, false, true);
-    navigator.clipboard.writeText(`${serviceType} ${json}`);
+  const onCopyToClipboard = useCallback(() => {
+    const json = serviceStruct ? rosMessageStructToString(serviceStruct, false, false) : "{}";
+    navigator.clipboard.writeText(`${serviceName} ${serviceType} "${json}"`);
     logCtx.success(`service call input copied!`);
-  }, 300);
+  }, [serviceStruct]);
 
   const getServiceStructData = useCallback(async () => {
     if (serviceName) {
@@ -119,7 +120,6 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
                 messageStruct={srvStruct.data}
                 parentName={srvStruct.data.type ? srvStruct.data.type : `${serviceName}[${serviceType}]`}
                 filterText={searchTerm}
-                onCopyToClipboard={onCopyToClipboard}
               />
             );
           }
@@ -129,18 +129,20 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   }, [serviceName, providerId, rosCtx]);
 
   // debounced filter callback
-  const onUpdateInputElements = useDebounceCallback((searchText) => {
-    if (!serviceStruct) return;
-    setInputElements(
-      <InputElements
-        key={serviceStruct.type}
-        messageStruct={serviceStruct}
-        parentName={serviceStruct.type ? serviceStruct.type : `${serviceName}[${serviceType}]`}
-        filterText={searchText}
-        onCopyToClipboard={onCopyToClipboard}
-      />
-    );
-  }, 300);
+  const onUpdateInputElements = useCallback(
+    (searchText) => {
+      if (!serviceStruct) return;
+      setInputElements(
+        <InputElements
+          key={serviceStruct.type}
+          messageStruct={serviceStruct}
+          parentName={serviceStruct.type ? serviceStruct.type : `${serviceName}[${serviceType}]`}
+          filterText={searchText}
+        />
+      );
+    },
+    [serviceStruct]
+  );
 
   async function handleCallService(): Promise<void> {
     setResultError("");
@@ -286,12 +288,6 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   return (
     <Box ref={ref} height="100%" overflow="auto" alignItems="center" sx={getHostStyle()}>
       <Stack spacing={1} margin={1}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography fontWeight="bold">{serviceName}</Typography>
-          <Typography color="grey" fontSize="0.8em">
-            {provider?.name()}
-          </Typography>
-        </Stack>
         {serviceStruct && (serviceStruct.def || []).length > 0 && (
           <Stack direction="row" spacing={1}>
             <SearchBar
@@ -308,10 +304,18 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
             />
           </Stack>
         )}
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography fontWeight="bold">{serviceName}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography color="grey" fontSize="0.8em">
+            {provider?.name()}
+          </Typography>
+        </Stack>
         <Stack direction="row" spacing={2} display="flex" alignItems="center">
           {historyLength > 0 && (
             <Stack direction="column" spacing={1} alignItems="left">
-              <FormLabel>Publish history</FormLabel>
+              <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>call history</FormLabel>
               <ButtonGroup sx={{ maxHeight: "24px" }}>
                 {historyLength > 0 && (
                   <Tooltip title="reset values" enterDelay={500} disableInteractive>
@@ -358,15 +362,29 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
               )}`}</div>
             </Stack>
           ) : (
-            <Button
-              type="submit"
-              variant="contained"
-              color="success"
-              onClick={handleCallService}
-              disabled={serviceStruct?.type === undefined}
-            >
-              Call Service
-            </Button>
+            <Stack direction="row" spacing="0.5em">
+              <Button
+                type="submit"
+                variant="contained"
+                color="success"
+                onClick={handleCallService}
+                disabled={serviceStruct?.type === undefined}
+              >
+                Call Service
+              </Button>
+              <Tooltip title="Copy service name, type and data fields" placement="bottom">
+                <IconButton
+                  color="default"
+                  onClick={(event) => {
+                    onCopyToClipboard();
+                    event?.stopPropagation();
+                  }}
+                  size="small"
+                >
+                  <ContentCopyOutlinedIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           )}
         </Box>
         <Divider />

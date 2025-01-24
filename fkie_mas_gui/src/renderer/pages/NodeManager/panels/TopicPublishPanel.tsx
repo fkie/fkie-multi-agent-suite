@@ -218,7 +218,6 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
               parentName={msgStruct.data.type ? msgStruct.data.type : `${currentTopicName}[${currentMessageType}]`}
               filterText={searchTerm}
               showRoot={false}
-              onCopyToClipboard={onCopyToClipboard}
             />
           );
         }
@@ -237,7 +236,6 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
             parentName={messageStruct.type ? messageStruct.type : `${topicName}[${currentMessageType}]`}
             filterText={searchText}
             showRoot={false}
-            onCopyToClipboard={onCopyToClipboard}
           />
         );
       } else {
