@@ -114,7 +114,7 @@ export default function About(): JSX.Element {
                   Version {auCtx.updateAvailable?.version} downloaded
                 </Typography>
                 <Button color="primary" onClick={() => auCtx.requestInstallUpdate()} variant="text">
-                  Restart and Install
+                  Restart required
                 </Button>
               </Stack>
             )}
