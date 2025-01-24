@@ -15,6 +15,13 @@ const darkThemeDef: ThemeOptionsExt = {
     mode: "dark",
     background: {
       default: background,
+      paper: "#282828",
+    },
+    text: {
+      primary: "#d1d1d1",
+    },
+    action: {
+      active: "#d1d1d1",
     },
   },
   typography: {
@@ -32,7 +39,7 @@ const darkThemeDef: ThemeOptionsExt = {
         body: {
           // flexlayout-react theme changes
           "& .flexlayout__layout": {
-            "--color-text": "#eeeeee",
+            "--color-text": "#d1d1d1",
             "--color-background": "black",
             "--color-base": "black",
             "--color-1": "#121212",
@@ -55,7 +62,7 @@ const darkThemeDef: ThemeOptionsExt = {
             // '--color-popup-unselected-background': 'white',
             // '--color-popup-selected-background': 'var(--color-3)',
             "--color-edge-marker": "gray",
-            "--color-edge-icon": "#eee",
+            "--color-edge-icon": "#d1d1d1",
           },
           "& .flexlayout__tabset_header": {
             boxShadow: "inset 0 0 3px 0 rgba(136, 136, 136, 0.54)",

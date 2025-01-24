@@ -14,9 +14,11 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 
+import SettingsContext from "@/renderer/context/SettingsContext";
 import { TRosMessageStruct } from "@/renderer/models";
+import { blue } from "@mui/material/colors";
 import BoolInput from "./BoolInput";
 import StringInput from "./StringInput";
 
@@ -34,7 +36,7 @@ const Accordion = styled((props: AccordionProps) => <MuiAccordion disableGutters
 );
 
 const AccordionSummary = styled((props: AccordionSummaryProps) => <MuiAccordionSummary {...props} />)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 255, 255, .05)" : "rgba(0, 0, 0, .03)",
+  // backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 255, 255, .05)" : "rgba(0, 0, 0, .03)",
   flexDirection: "row-reverse",
   "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
     transform: "rotate(90deg)",
@@ -84,12 +86,18 @@ interface InputElementsProps {
 export default function InputElements(props: InputElementsProps): JSX.Element {
   const { messageStruct, parentName = "undefined", filterText = "", expanded = true, showRoot = true } = props;
 
+  const settingsCtx = useContext(SettingsContext);
   const [arrayCount, setArrayCount] = useState<number>(0);
   const [idSuffix] = useState<string>(`${parentName}-${messageStruct.name}`);
   const [expandedElement, setExpanded] = useState<boolean>(
     expanded || (messageStruct.type !== "std_msgs/Header" && messageStruct.type !== "builtin_interfaces/Time")
   );
   const [useNow, setUseNow] = useState<boolean>(messageStruct.useNow || false);
+  const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+
+  useEffect(() => {
+    setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+  }, [settingsCtx.changed]);
 
   useEffect(() => {
     if (messageStruct?.value !== undefined) {
@@ -216,80 +224,58 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
           }}
           sx={{ display: `${isVisible}` }}
         >
-          <AccordionSummary
-            // aria-controls="ttyd_panel-content"
-            id={`accordion-summary-${idSuffix}`}
-            sx={{ pl: 0 }}
-            expandIcon={
-              <ArrowForwardIosSharpIcon
-                sx={{ fontSize: "0.9rem" }}
-                // use this onclick action to collapse by click on the arrow
-                // onClick={() => {
-                //   toggleAccordion();
-                // }}
-              />
-            }
-          >
-            <Stack direction="row" spacing={1} sx={{ width: "100%" }} alignItems="center">
-              <FormLabel
-                sx={{
-                  typography: "body1",
-                  color: "#000080",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  minWidth: "5em",
-                }}
-              >
-                {messageStruct.name && `${messageStruct.name}`}
-                {!messageStruct.name && `${messageStruct.type}`}
-              </FormLabel>
-              <FormLabel
-                sx={{
-                  fontSize: "0.8em",
-                  fontWeight: "bold",
-                  color: "#3cb371",
-                }}
-              >
-                {messageStruct.is_array && `[${arrayCount > 0 ? arrayCount : ""}]`}
-              </FormLabel>
-              <FormLabel
-                sx={{
-                  typography: "body1",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  fontSize: "0.8em",
-                  minWidth: "2em",
-                }}
-              >
-                {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
-              </FormLabel>
-              {messageStruct.is_array ? (
-                <ButtonGroup sx={{ maxHeight: "24px" }}>
-                  <Button
-                    onClick={(event) => {
-                      addArrayElement();
-                      setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
-                      event.stopPropagation();
-                    }}
-                  >
-                    +
-                  </Button>
-                  <Button
-                    onClick={(event) => {
-                      if (arrayCount > 0) {
-                        removeArrayElement();
-                        setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
-                        event.stopPropagation();
-                      }
-                    }}
-                  >
-                    -
-                  </Button>
-                </ButtonGroup>
-              ) : (
-                messageStruct.type === "builtin_interfaces/Time" && (
+          <Stack direction="row" alignItems="center" sx={{ backgroundColor: backgroundColor }}>
+            <AccordionSummary
+              // aria-controls="ttyd_panel-content"
+              id={`accordion-summary-${idSuffix}`}
+              sx={{ pl: 0 }}
+              expandIcon={
+                <ArrowForwardIosSharpIcon
+                  sx={{ fontSize: "0.9rem" }}
+                  // use this onclick action to collapse by click on the arrow
+                  // onClick={() => {
+                  //   toggleAccordion();
+                  // }}
+                />
+              }
+            >
+              <Stack direction="row" spacing={1} sx={{ width: "100%" }} alignItems="center">
+                <FormLabel
+                  sx={{
+                    typography: "body1",
+                    color: blue[800],
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    minWidth: "5em",
+                  }}
+                >
+                  {messageStruct.name && `${messageStruct.name}`}
+                  {!messageStruct.name && `${messageStruct.type}`}
+                </FormLabel>
+                <FormLabel
+                  sx={{
+                    fontSize: "0.8em",
+                    fontWeight: "bold",
+                    color: "#3cb371",
+                  }}
+                >
+                  {messageStruct.is_array && `[${arrayCount > 0 ? arrayCount : ""}]`}
+                </FormLabel>
+                <FormLabel
+                  sx={{
+                    typography: "body1",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    fontSize: "0.8em",
+                    minWidth: "2em",
+                  }}
+                >
+                  {messageStruct.name && messageStruct.type && `${messageStruct.type}`}
+                </FormLabel>
+
+                {!messageStruct.is_array && messageStruct.type === "builtin_interfaces/Time" && (
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -306,10 +292,34 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
                     label="use now"
                     labelPlacement="end"
                   />
-                )
-              )}
-            </Stack>
-          </AccordionSummary>
+                )}
+              </Stack>
+            </AccordionSummary>
+            {messageStruct.is_array && (
+              <ButtonGroup sx={{ maxHeight: "24px" }}>
+                <Button
+                  onClick={(event) => {
+                    addArrayElement();
+                    setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
+                    event.stopPropagation();
+                  }}
+                >
+                  +
+                </Button>
+                <Button
+                  onClick={(event) => {
+                    if (arrayCount > 0) {
+                      removeArrayElement();
+                      setArrayCount((messageStruct.value as TRosMessageStruct[]).length);
+                      event.stopPropagation();
+                    }
+                  }}
+                >
+                  -
+                </Button>
+              </ButtonGroup>
+            )}
+          </Stack>
           <AccordionDetails id={`accordion-details-${idSuffix}`}>
             <Stack direction="column" spacing={1}>
               {!messageStruct.is_array &&
