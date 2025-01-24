@@ -844,7 +844,7 @@ class LaunchServicer(LoggingEventHandler):
                 if result_array:
                     result[field['name']] = result_array
             else:
-                if 'useNow' in field:
+                if 'useNow' in field and os.environ.get('ROS_DISTRO') != 'galactic':
                     result[field['name']] = "now"
                 else:
                     sub_result = self._str_from_dict(field['def'])
