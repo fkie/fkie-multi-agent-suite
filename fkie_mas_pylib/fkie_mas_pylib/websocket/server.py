@@ -15,8 +15,19 @@ from typing import Callable
 from typing import Tuple
 from typing import Union
 import websockets
-import websockets.sync
-import websockets.sync.server
+try:
+    import websockets.sync
+    import websockets.sync.server
+except Exception as wse:
+    try:
+        import sys
+        from importlib.metadata import version
+        print(f"installed python3-websockets: {version('websockets')}, minimum required: 12.0", file=sys.stderr)
+        print(f"please install: pip install \"websockets>=12.0\"", file=sys.stderr)
+    except:
+        raise wse
+    exit(-1)
+
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.interface import SelfAllEncoder
 from fkie_mas_pylib.websocket.handler import WebSocketHandler
