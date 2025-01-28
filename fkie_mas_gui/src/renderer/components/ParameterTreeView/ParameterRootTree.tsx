@@ -137,7 +137,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     if (newType !== undefined) {
       parameter.type = newType;
     }
-    console.log(`parameter.type: ${parameter.type}; newValue: '${newValue}' ${typeof newValue}`);
     if (newValue === undefined || (["int", "float", "bool"].includes(parameter.type) && `${newValue}`.length === 0)) {
       // do not update parameter if new value is undefined or
       // not valid integer, float or boolean

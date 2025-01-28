@@ -194,11 +194,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
       const newFullPrefix: string = `${fullPrefix}/${groupName}`;
-      let topicValues = value.filter((item) => !item.isGroup);
-      // avoid groups with one item inside
-      if (value.length - topicValues.length === 1) {
-        topicValues = value;
-      }
+      const topicValues = value.filter((item) => !item.isGroup);
       const groupValues = value.filter((item) => !topicValues.includes(item));
       if (groupValues.length > 0) {
         const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
@@ -501,7 +497,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm, filteredTopics]);
 
   const createPanel = useMemo(() => {
     return (
