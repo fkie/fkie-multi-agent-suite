@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.1.3 - 28.01.2025
+
+Fixed search in topics panel
+Convert numbers to valid values before set parameter
+Start subscriber with qos parameters
+Added warning about wrong websockets version (in daemon)
+
 ## 4.1.2 - 24.01.2025
 
 Fixed: show topics with different message type on same topic

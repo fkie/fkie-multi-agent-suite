@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.2 (28.01.2025)
+------------------
+Start subscriber using qos parameter
+
 4.1.1 (24.01.2025)
 ------------------
 Added test node for parameter
