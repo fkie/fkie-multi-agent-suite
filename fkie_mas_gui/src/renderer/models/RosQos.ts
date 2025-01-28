@@ -129,7 +129,7 @@ export function durabilityToString(value: number): string {
     case DURABILITY.TRANSIENT_LOCAL:
       return "TRANSIENT_LOCAL";
     case DURABILITY.VOLATILE:
-      return "BEST_EFFORT";
+      return "VOLATILE";
   }
   return "UNKNOWN";
 }

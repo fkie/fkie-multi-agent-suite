@@ -32,7 +32,7 @@ from rosidl_runtime_py import get_service_interfaces
 from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
-from fkie_mas_pylib.interface.runtime_interface import RosNode
+from fkie_mas_pylib.interface.runtime_interface import RosQos
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
 from fkie_mas_pylib.interface.launch_interface import LaunchCallService
 from fkie_mas_pylib.interface.launch_interface import LaunchFile
@@ -1005,6 +1005,13 @@ class LaunchServicer(LoggingEventHandler):
         args.append(f'--window={request.filter.window}')
         if request.tcp_no_delay:
             args.append('--tcp_no_delay')
+        if request.qos:
+            if request.qos.durability:
+                args.append(f'--qos-durability={RosQos.durabilityToString(request.qos.durability)}')
+            if request.qos.reliability:
+                args.append(f'--qos-reliability={RosQos.reliabilityToString(request.qos.reliability)}')
+            if request.qos.liveliness:
+                args.append(f'--qos-liveliness={RosQos.livelinessToString(request.qos.liveliness)}')
 
         # run on local host
         screen_prefix = ' '.join([screen.get_cmd(fullname)])

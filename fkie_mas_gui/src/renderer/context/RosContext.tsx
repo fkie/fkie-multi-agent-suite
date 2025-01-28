@@ -12,6 +12,7 @@ import {
   PATH_EVENT_TYPE,
   ProviderLaunchConfiguration,
   RosNode,
+  RosQos,
   SubscriberFilter,
   SubscriberNode,
   getFileName,
@@ -65,7 +66,13 @@ export interface IRosProviderContext {
   getProviderById: (providerId: string, includeNotAvailable?: boolean) => Provider | undefined;
   getProviderByHost: (hostName: string) => Provider | null;
   getLocalProvider: () => Provider[];
-  registerSubscriber: (providerId: string, topic: string, messageType: string, filter: SubscriberFilter) => void;
+  registerSubscriber: (
+    providerId: string,
+    topic: string,
+    messageType: string,
+    filter: SubscriberFilter,
+    qos: RosQos | undefined
+  ) => void;
   unregisterSubscriber: (providerId: string, topic: string) => void;
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
   isLocalHost: (host: string) => boolean;
@@ -914,7 +921,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     providerId: string,
     topic: string,
     messageType: string,
-    filter: SubscriberFilter
+    filter: SubscriberFilter,
+    qos: RosQos | undefined
   ): Promise<void> {
     const provider = getProviderById(providerId) as Provider;
     if (!provider) {
@@ -924,6 +932,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
     // start ros node with given subscriber
     const sNode = new SubscriberNode(topic, messageType);
+    sNode.qos = qos;
     if (filter !== undefined) {
       sNode.filter = filter;
     }

@@ -34,7 +34,7 @@ import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { RosNode, SubscriberEvent, SubscriberFilter } from "@/renderer/models";
+import { RosNode, RosQos, SubscriberEvent, SubscriberFilter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "@/renderer/providers/eventTypes";
@@ -153,6 +153,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     // Get messageType from node list of the provider
     const nodeList: RosNode[] | undefined = rosCtx.mapProviderRosNodes.get(selectedProvider);
     // TODO: select QoS depending on publishers QoS, see choose_qos: https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
+    let qos: RosQos | undefined = undefined;
     nodeList?.forEach((node) => {
       node.subscribers?.forEach((topic) => {
         if (msgType === "" && topicName === topic.name) {
@@ -161,8 +162,19 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
       });
       if (msgType === "") {
         node.publishers?.forEach((topic) => {
-          if (msgType === "" && topicName === topic.name) {
-            msgType = topic.msg_type;
+          if (topicName === topic.name) {
+            if (msgType === "") {
+              msgType = topic.msg_type;
+            }
+          }
+        });
+      }
+    });
+    provider.rosTopics.forEach((topic) => {
+      if (topic.name === topicName) {
+        topic.publisher?.forEach((pub) => {
+          if (qos === undefined && pub.qos) {
+            qos = pub.qos;
           }
         });
       }
@@ -170,7 +182,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     if (msgType) {
       logCtx.debug(`register subscriber to topic ${topicName}`);
       const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize);
-      rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg);
+      rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg, qos);
       setSubscribed(true);
     }
   }, [topicName, rosCtx.mapProviderRosNodes, rosCtx.registerSubscriber, pause, subscribed, setSubscribed]);
