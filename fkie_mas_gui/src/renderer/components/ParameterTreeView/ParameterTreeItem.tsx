@@ -23,6 +23,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);
   const [value, setValue] = useState(paramInfo.value);
+  const [typedValue, setTypedValue] = useState<string | number | boolean | string[]>(toTypedValue(paramInfo.value));
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");
   const [showDescription, setShowDescription] = useState<boolean>(false);
@@ -31,11 +32,26 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     const nameParts = paramInfo.name.replaceAll("/", ".").replaceAll("..", ".").split(".");
     setName(`${nameParts.pop()}`);
     setNamespace(namespacePart ? `${namespacePart}.` : "");
+    setTypedValue(toTypedValue(value));
   }, []);
+
+  useEffect(() => {
+    setTypedValue(toTypedValue(value));
+  }, [value]);
+
+  function toTypedValue(value): string | number | boolean | string[] {
+    if (paramInfo.type === "float") {
+      return parseFloat(value) || 0.0;
+    } else if (paramInfo.type === "int") {
+      return parseInt(value) | 0;
+    }
+    return value;
+  }
 
   function handleKey(event: React.KeyboardEvent): void {
     if (event.key === "Enter") {
-      updateParameter(paramInfo, value, paramInfo.type);
+      updateParameter(paramInfo, typedValue, paramInfo.type);
+      setValue(typedValue);
       setChanged(false);
     } else if (event.key === "Escape") {
       setValue(paramInfo.value);
@@ -55,7 +71,8 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
   function onLeave(): void {
     if (changed) {
-      updateParameter(paramInfo, value, paramInfo.type);
+      updateParameter(paramInfo, typedValue, paramInfo.type);
+      setValue(typedValue);
       setChanged(false);
     }
   }
@@ -235,7 +252,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     }
 
     return inputElement;
-  }, [paramInfo, value]);
+  }, [paramInfo, value, typedValue]);
 
   return (
     <StyledTreeItem
@@ -258,7 +275,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
           }}
         >
           <Grid2 container spacing={2} sx={{ flexGrow: 1 }}>
-            <Grid2 size={3}>
+            <Grid2 sx={{ flexGrow: 1 }} size={4}>
               <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
                 <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
                   {namespace}
@@ -323,7 +340,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                 )}
               </Stack>
             </Grid2>
-            <Grid2 size={9}>
+            <Grid2 size={6}>
               <Stack direction="row" sx={{ alignItems: "center" }}>
                 {rosVersion === "1" && parameterType ? (
                   <OverflowMenu

@@ -134,10 +134,24 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       );
       return;
     }
-    parameter.value = newValue;
-    if (newType) {
+    if (newType !== undefined) {
       parameter.type = newType;
     }
+    console.log(`parameter.type: ${parameter.type}; newValue: '${newValue}' ${typeof newValue}`);
+    if (newValue === undefined || (["int", "float", "bool"].includes(parameter.type) && `${newValue}`.length === 0)) {
+      // do not update parameter if new value is undefined or
+      // not valid integer, float or boolean
+      if (parameter.type === "float") {
+        parameter.value = 0.0;
+      } else if (parameter.type === "int") {
+        parameter.value = 0;
+      } else if (parameter.type === "bool") {
+        parameter.value = false;
+      }
+    } else {
+      parameter.value = newValue;
+    }
+
     const result = await provider.setParameter(parameter.name, parameter.type, `${parameter.value}`, parameter.node);
 
     if (result.result) {
