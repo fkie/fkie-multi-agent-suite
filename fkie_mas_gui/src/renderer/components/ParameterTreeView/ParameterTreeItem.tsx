@@ -7,18 +7,20 @@ import { RosParameter } from "@/renderer/models";
 import { RosParameterRange } from "@/renderer/models/RosParameter";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
+import { Provider } from "@/renderer/providers";
+import RosContext from "@/renderer/context/RosContext";
 
 interface ParameterTreeItemProps {
   itemId: string;
   namespacePart: string;
   paramInfo: RosParameter;
-  updateParameter: (param: RosParameter, value: string | boolean | number | string[], valueType?: string) => void;
-  rosVersion?: string;
+  provider: Provider;
 }
 
 const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(function ParameterTreeItem(props, ref) {
-  const { itemId, namespacePart, paramInfo, updateParameter = (): void => {}, rosVersion = "" } = props;
+  const { itemId, namespacePart, paramInfo, provider } = props;
 
+  const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);
@@ -46,6 +48,47 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
       return parseInt(value) | 0;
     }
     return value;
+  }
+
+  // callback when updating a parameter
+  async function updateParameter(
+    parameter: RosParameter,
+    newValue: string | boolean | number | string[],
+    newType?: string
+  ): Promise<void> {
+    if (!provider.isAvailable()) return;
+
+    if (!provider.setParameter) {
+      logCtx.error(
+        `Provider ${rosCtx.getProviderName(parameter.providerId)} does not support [setParameter] method`,
+        ""
+      );
+      return;
+    }
+    if (newType !== undefined) {
+      parameter.type = newType;
+    }
+    if (newValue === undefined || (["int", "float", "bool"].includes(parameter.type) && `${newValue}`.length === 0)) {
+      // do not update parameter if new value is undefined or
+      // not valid integer, float or boolean
+      if (parameter.type === "float") {
+        parameter.value = 0.0;
+      } else if (parameter.type === "int") {
+        parameter.value = 0;
+      } else if (parameter.type === "bool") {
+        parameter.value = false;
+      }
+    } else {
+      parameter.value = newValue;
+    }
+
+    const result = await provider.setParameter(parameter.name, parameter.type, `${parameter.value}`, parameter.node);
+
+    if (result.result) {
+      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
+    } else {
+      logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`);
+    }
   }
 
   function handleKey(event: React.KeyboardEvent): void {
@@ -225,11 +268,12 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
       inputElement = (
         <Switch
           id={`input-${paramInfo.id}`}
-          checked={paramInfo.value ? true : false}
+          checked={typedValue ? true : false}
           size="small"
           disabled={paramInfo.readonly}
           onChange={(event) => {
             updateParameter(paramInfo, event.target.checked, "bool");
+            setValue(event.target.checked);
           }}
         />
       );
@@ -342,7 +386,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             </Grid2>
             <Grid2 size={6}>
               <Stack direction="row" sx={{ alignItems: "center" }}>
-                {rosVersion === "1" && parameterType ? (
+                {provider.rosVersion === "1" && parameterType ? (
                   <OverflowMenu
                     icon={
                       <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">

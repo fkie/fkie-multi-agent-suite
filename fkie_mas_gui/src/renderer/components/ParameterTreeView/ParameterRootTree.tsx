@@ -8,7 +8,6 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
-import RosContext from "@/renderer/context/RosContext";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { findIn } from "@/renderer/utils";
@@ -45,7 +44,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
-  const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
 
   const [itemId] = useState<string>(rosNode ? rosNode.idGlobal : provider.id);
@@ -118,47 +116,6 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       getParameterList();
     }
   }, [forceReload]);
-
-  // callback when updating a parameter
-  async function updateParameter(
-    parameter: RosParameter,
-    newValue: string | boolean | number | string[],
-    newType?: string
-  ): Promise<void> {
-    if (!provider.isAvailable()) return;
-
-    if (!provider.setParameter) {
-      logCtx.error(
-        `Provider ${rosCtx.getProviderName(parameter.providerId)} does not support [setParameter] method`,
-        DEFAULT_BUG_TEXT
-      );
-      return;
-    }
-    if (newType !== undefined) {
-      parameter.type = newType;
-    }
-    if (newValue === undefined || (["int", "float", "bool"].includes(parameter.type) && `${newValue}`.length === 0)) {
-      // do not update parameter if new value is undefined or
-      // not valid integer, float or boolean
-      if (parameter.type === "float") {
-        parameter.value = 0.0;
-      } else if (parameter.type === "int") {
-        parameter.value = 0;
-      } else if (parameter.type === "bool") {
-        parameter.value = false;
-      }
-    } else {
-      parameter.value = newValue;
-    }
-
-    const result = await provider.setParameter(parameter.name, parameter.type, `${parameter.value}`, parameter.node);
-
-    if (result.result) {
-      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
-    } else {
-      logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`);
-    }
-  }
 
   // create tree based on parameter namespace
   // parameters are grouped only if more then one is in the group
@@ -248,10 +205,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           itemId={treeItem.paramInfo.id}
           namespacePart={rootPath}
           paramInfo={treeItem.paramInfo}
-          updateParameter={(param: RosParameter, value: string | boolean | number | string[], valueType?: string) =>
-            updateParameter(param, value, valueType)
-          }
-          rosVersion={provider.rosVersion}
+          provider={provider}
         />
       );
     } else {
