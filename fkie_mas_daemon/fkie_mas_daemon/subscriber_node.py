@@ -447,7 +447,8 @@ class RosSubscriberLauncher:
         self._no_arr = request.no_arr
         self._no_str = request.no_str
         self._hz = request.hz
-        self._array_items_count = request.arrayItemsCount
+        if hasattr(request, "arrayItemsCount"):
+            self._array_items_count = request.arrayItemsCount
         if self._window != request.window:
             self._window = request.window
             if self._window == 0:
