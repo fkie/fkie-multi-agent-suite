@@ -527,7 +527,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         treePath = child.treePath;
         node = child.node;
         namespacePart = `${namespacePart}${name}/`;
-        name = `${name}/${child.name}`;
+        name = child.name;
       }
       const itemId = treePath;
       if (node && children && children.length === 0) {
@@ -549,13 +549,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         );
       }
       // valid children means that item is a group
-      const groupName = name; // treePath.split("/").pop();
       newKeyNodeList.push({ key: itemId, idGlobal: undefined });
       return (
         <GroupItem
           key={itemId}
           itemId={itemId}
-          groupName={groupName}
+          groupName={`${namespacePart}${name}`}
           icon={GroupIcon(children, settingsCtx.get("useDarkMode") as boolean)}
           countChildren={NodesCount(children)}
           onDoubleClick={(event: React.MouseEvent, id: string) => {
