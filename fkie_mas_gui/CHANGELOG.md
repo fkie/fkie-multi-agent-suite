@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.2.0 - 30.01.2025
+
+Added parameter to set the length of the arrays for topic echo
+Added error report for list parameters
+Check parameter after value was set
+Fixed sort items in package explorer
+Fixed launch ros2 nodes with launch prefix
+Fixed update boolean parameter state in the gui
+
 ## 4.1.3 - 28.01.2025
 
 Fixed search in topics panel

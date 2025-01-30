@@ -143,7 +143,10 @@ export function xor(a1: boolean, a2: boolean): boolean {
 }
 
 export function nodeNameWithoutNamespace(node: RosNode): string {
+  console.log(`node.namespace: ${node.namespace}`);
+
   const name = node.namespace && node.namespace !== "/" ? node.name.replace(node.namespace, "") : node.name;
+  console.log(`  name: ${name}`);
   return name[0] === "/" ? name.slice(1) : name;
 }
 

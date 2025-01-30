@@ -1,6 +1,13 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+4.2.0 (30.01.2025)
+------------------
+* Added parameter to set the length of the arrays for topic echo
+* Added error report for list parameters
+* Check parameter after value was set
+
 4.1.1 (24.01.2025)
 ------------------
 * Fixed set array parameter

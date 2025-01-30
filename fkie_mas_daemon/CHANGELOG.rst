@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.0 (30.01.2025)
+------------------
+* Added parameter to set the length of the arrays for topic echo
+* Added error report for list parameters
+* Check parameter after value was set
+
 4.1.2 (28.01.2025)
 ------------------
 Start subscriber using qos parameter
