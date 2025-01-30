@@ -78,15 +78,19 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
         uriPath: createUriPath(file.inc_path),
         file: file,
       };
-      if (file.rec_depth - 1 === currentFile.file.rec_depth) {
+      let curDepth = currentFile.file.rec_depth || 0;
+      const fileDepth = file.rec_depth || 0;
+      if (fileDepth - 1 === curDepth) {
         currentFile.children.push(incItem);
-      } else if (file.rec_depth - 1 > currentFile.file.rec_depth) {
+      } else if (fileDepth - 1 > curDepth) {
         currentFile = currentFile.children.slice(-1)[0];
         currentFile.children.push(incItem);
       } else {
         currentFile = rootItem;
-        while (file.rec_depth - 1 > currentFile.file.rec_depth) {
+        curDepth = currentFile.file.rec_depth || 0;
+        while (fileDepth - 1 > curDepth) {
           currentFile = currentFile.children.slice(-1)[0];
+          curDepth = currentFile.file.rec_depth || 0;
         }
         currentFile.children.push(incItem);
       }
@@ -96,10 +100,11 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
 
   /** Create from SimpleTreeView from given root item */
   const includeFilesToTree = useCallback(
-    function (item: TLaunchIncludeItem, lineNumberCount: number, parentItems: string[] = []): JSX.Element {
+    (item: TLaunchIncludeItem, lineNumber: number, parentItems: string[] = []): JSX.Element => {
       // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!item) return <></>;
-      const pathList: string[] = [...parentItems, `${item.file.inc_path}-${item.file.line_number + lineNumberCount}`];
+      const id = `${lineNumber}-${item.file.inc_path}-${item.file.line_number}`;
+      const pathList: string[] = [...parentItems, id];
       const selected =
         selectedUriPath === item.uriPath &&
         // compare launchArgs if there are several files with the same name
@@ -110,20 +115,20 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
       }
       return (
         <FileTreeItem
-          key={`${item.file.inc_path}-${item.file.line_number + lineNumberCount}`}
+          key={id}
           tabId={tabId}
-          itemId={`${item.file.inc_path}-${item.file.line_number + lineNumberCount}`}
+          itemId={id}
           item={item}
           modified={modifiedUriPaths.includes(item.uriPath)}
           selected={selected}
         >
           {item.children.map((child) => {
-            return includeFilesToTree(child, lineNumberCount + item.file.line_number, pathList);
+            return includeFilesToTree(child, item.file.line_number, pathList);
           })}
         </FileTreeItem>
       );
     },
-    [logCtx, modifiedUriPaths, selectedUriPath, tabId, launchArgs]
+    [modifiedUriPaths, tabId, rootFilePath, launchArgs, selectedUriPath]
   );
 
   return (
@@ -155,7 +160,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
           return includeFilesToTree(includeRoot, 0);
         }
         return <></>;
-      }, [includeFilesToTree, includeRoot])}
+      }, [includeFilesToTree, includeRoot, selectedUriPath])}
     </SimpleTreeView>
   );
 });
