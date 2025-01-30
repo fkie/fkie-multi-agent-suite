@@ -73,6 +73,7 @@ class RosSubscriberLauncher:
         self._no_str = parsed_args.no_str
         self._hz = parsed_args.hz
         self._window = parsed_args.window
+        self._array_items_count = parsed_args.array_items_count
         if self._window == 0:
             self._window = self.DEFAULT_WINDOWS_SIZE
         self._tcp_no_delay = parsed_args.tcp_no_delay
@@ -326,8 +327,10 @@ class RosSubscriberLauncher:
                             help='Exclude string fields.')
         parser.add_argument('--hz', nargs='?', type=int, default=1,
                             help='Rate to forward messages. Ignored on latched topics. Disabled by 0.')
-        parser.add_argument('--window', nargs='?', type=int, default=1,
+        parser.add_argument('--window', nargs='?', type=int, default=0,
                             help='window size, in # of messages, for calculating rate.')
+        parser.add_argument('--array_items_count', nargs='?', type=int, default=15,
+                            help='Maximum array length in messages reported to the gui')
         parser.add_argument('--tcp_no_delay', action='store_true',
                             help='use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).')
         self.add_qos_arguments(parser, 'subscribe', 'sensor_data')
@@ -351,7 +354,7 @@ class RosSubscriberLauncher:
         event.latched = self._latched
         if not self._no_data:
             event.data = json.loads(json.dumps(
-                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
+                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count}))
         event.count = self._count_received
         self._calc_stats(data, event)
         timeouted = self._hz == 0
@@ -444,6 +447,7 @@ class RosSubscriberLauncher:
         self._no_arr = request.no_arr
         self._no_str = request.no_str
         self._hz = request.hz
+        self._array_items_count = request.arrayItemsCount
         if self._window != request.window:
             self._window = request.window
             if self._window == 0:

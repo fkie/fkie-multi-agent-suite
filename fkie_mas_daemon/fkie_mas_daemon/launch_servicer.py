@@ -1003,6 +1003,7 @@ class LaunchServicer(LoggingEventHandler):
             args.append('--no_str')
         args.append(f'--hz={request.filter.hz}')
         args.append(f'--window={request.filter.window}')
+        args.append(f'--array_items_count={request.filter.arrayItemsCount}')
         if request.tcp_no_delay:
             args.append('--tcp_no_delay')
         if request.qos:

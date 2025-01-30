@@ -514,12 +514,14 @@ class SubscriberFilter:
         no_str: bool = False,
         hz: float = 1,
         window: int = 0,
+        arrayItemsCount: int = 15
     ) -> None:
         self.no_data = no_data
         self.no_arr = no_arr
         self.no_str = no_str
         self.hz = hz
         self.window = window
+        self.arrayItemsCount = arrayItemsCount
 
 
 class SubscriberNode:

@@ -1320,6 +1320,7 @@ class LaunchServicer(LoggingEventHandler):
             startcfg.args.append("--nostr")
         startcfg.args.append(f"--hz={request.filter.hz}")
         startcfg.args.append(f"--window={request.filter.window}")
+        startcfg.args.append(f'--array_items_count={request.filter.arrayItemsCount}')
         if request.filter.no_str:
             startcfg.args.append("--no_str")
         if request.tcp_no_delay:

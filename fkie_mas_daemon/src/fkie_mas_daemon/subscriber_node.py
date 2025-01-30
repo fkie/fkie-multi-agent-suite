@@ -39,11 +39,13 @@ def str2bool(v):
 class MsgEncoder(json.JSONEncoder):
     def __init__(self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True, allow_nan: bool = True, sort_keys: bool = False, indent: Union[int, str, None] = None, separators: Union[Tuple[str, str], None] = None, default: Union[Callable[..., Any], None] = None,
                  no_arr: bool = True,
-                 no_str: bool = True) -> None:
+                 no_str: bool = True,
+                 array_items_count: int = 15) -> None:
         super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular,
                          allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators, default=default)
         self.no_arr = no_arr
         self.no_str = no_str
+        self.array_items_count = array_items_count
 
     def default(self, obj):
         result = {}
@@ -51,11 +53,11 @@ class MsgEncoder(json.JSONEncoder):
             # obj_bytes = [byte for byte in obj]
             obj_bytes = []
             for byte in obj:
-                if len(obj_bytes) >= 10:
+                if len(obj_bytes) >= self.array_items_count:
+                    obj_bytes.append(f'another {len(obj) - len(obj_bytes)} discarded by MAS')
                     break
-                obj_bytes.append(byte)
-            result = ', '.join(map(str, obj_bytes))
-            result = result + f'...(of {len(obj)} values)'
+                obj_bytes.append(str(byte))
+            result = obj_bytes
         else:
             for key in obj.__slots__:
                 skip = False
@@ -90,6 +92,7 @@ class SubscriberNode:
         self._window = parsed_args.window
         if self._window == 0:
             self._window = self.DEFAULT_WINDOWS_SIZE
+        self._array_items_count = parsed_args.array_items_count
         self._tcp_no_delay = parsed_args.tcp_no_delay
         self._ws_port = parsed_args.ws_port
         self._first_msg_ts = 0
@@ -141,6 +144,8 @@ class SubscriberNode:
                             help='Rate to forward messages. Ignored on latched topics. Disabled by 0.')
         parser.add_argument('--window', nargs='?', type=int, default=1,
                             help='window size, in # of messages, for calculating rate.')
+        parser.add_argument('--array_items_count', nargs='?', type=int, default=15,
+                            help='Maximum array length in messages reported to the gui')
         parser.add_argument('--tcp_no_delay', action='store_true',
                             help='use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).')
         # parser.add_argument('--use_sim_time', type=str2bool, nargs='?', const=True, default=False, help='Enable ROS simulation time (Only ROS2).')
@@ -164,7 +169,7 @@ class SubscriberNode:
         event.latched = self._latched
         if not self._no_data:
             event.data = json.loads(json.dumps(
-                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
+                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count}))
         event.count = self._count_received
         self._calc_stats(data, event)
         timeouted = self._hz == 0
@@ -252,6 +257,7 @@ class SubscriberNode:
         self._no_arr = request.no_arr
         self._no_str = request.no_str
         self._hz = request.hz
+        self._array_items_count = request.arrayItemsCount
         if self._window != request.window:
             self._window = request.window
             if self._window == 0:

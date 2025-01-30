@@ -19,11 +19,13 @@ import numpy
 class MsgEncoder(json.JSONEncoder):
     def __init__(self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True, allow_nan: bool = True, sort_keys: bool = False, indent: Union[int, str, None] = None, separators: Union[Tuple[str, str], None] = None, default: Union[Callable[..., Any], None] = None,
                  no_arr: bool = True,
-                 no_str: bool = True) -> None:
+                 no_str: bool = True,
+                 array_items_count: int = 15) -> None:
         super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular,
                          allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators, default=default)
         self.no_arr = no_arr
         self.no_str = no_str
+        self.array_items_count = array_items_count
 
     def default(self, obj):
         result = {}
@@ -39,11 +41,11 @@ class MsgEncoder(json.JSONEncoder):
                 if (not self.no_arr):
                     obj_bytes = []
                     for byte in item:
-                        if len(obj_bytes) >= 5:
+                        if len(obj_bytes) >= self.array_items_count:
+                            obj_bytes.append(f'another {len(item) - len(obj_bytes)} discarded by MAS')
                             break
-                        obj_bytes.append(byte)
-                    result[key] = ', '.join(
-                        map(str, obj_bytes)) + f'...(of {len(item)} values)'
+                        obj_bytes.append(str(byte))
+                    result[key] = obj_bytes
             elif isinstance(item, numpy.ndarray):
                 if (not self.no_arr):
                     result[key] = item.tolist()

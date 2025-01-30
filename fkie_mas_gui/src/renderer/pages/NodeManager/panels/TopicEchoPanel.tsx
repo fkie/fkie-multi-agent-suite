@@ -34,6 +34,7 @@ import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { RosNode, RosQos, SubscriberEvent, SubscriberFilter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
@@ -77,6 +78,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   // TODO add option to change window size to echo topics
   const [windowSize /*, setWindowSize*/] = useState<number>(0);
   const [msgCount, setMsgCount] = useState<number>(10);
+  const [arrayItemsCount, setArrayItemsCount] = useLocalStorage<number>(`TopicEcho:arrayLimit:${defaultTopic}`, 15);
   const [pause, setPause] = useState<boolean>(false);
   // const [receivedIndex, setReceivedIndex] = useState(0);
   const [qosAnchorEl, setQosAnchorEl] = useState(null);
@@ -130,9 +132,9 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   useEffect(() => {
     const provider = rosCtx.getProviderById(selectedProvider);
     if (!provider) return;
-    const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize);
+    const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount);
     rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
-  }, [noData, noArr, noStr, hz, windowSize]);
+  }, [noData, noArr, noStr, hz, windowSize, arrayItemsCount]);
 
   function close(): void {
     if (rosCtx) {
@@ -181,7 +183,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     });
     if (msgType) {
       logCtx.debug(`register subscriber to topic ${topicName}`);
-      const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize);
+      const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount);
       rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg, qos);
       setSubscribed(true);
     }
@@ -501,6 +503,32 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
             })}
           </Select>
         </Tooltip>
+        <Tooltip
+          title="count of displayed array values"
+          placement="right"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <Select
+            id="select-array-count"
+            autoWidth={false}
+            value={arrayItemsCount.toString()}
+            onChange={(event) => {
+              setArrayItemsCount(parseInt(event.target.value));
+            }}
+            size="small"
+            sx={{ fontSize: "0.5em" }}
+          >
+            {[0, 5, 15, 25, 55, 155].map((value) => {
+              return (
+                <MenuItem key={`array-count-${value}`} value={value} sx={{ fontSize: "0.5em" }}>
+                  {value.toString()}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </Tooltip>
         {/* <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
         <ProviderSelector
           defaultProvider={selectedProvider}
@@ -518,6 +546,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     pause,
     tooltipDelay,
     msgCount,
+    arrayItemsCount,
     qosAnchorEl,
     openQos,
     showStatistics,
