@@ -19,20 +19,6 @@ import TreeDirectory from "./TreeDirectory";
 import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "./types";
 
 /**
- * Sorting function used for comparing two package objects
- */
-function comparePathItems(a: PathItem, b: PathItem): number {
-  if (a.name && b.name) {
-    return a.name?.localeCompare(b.name);
-  } else if (a.name) {
-    return -1;
-  } else if (b.name) {
-    return 1;
-  }
-  return 0;
-}
-
-/**
  * Sorting function used for comparing two package items (files/directories)
  */
 function comparePackageItems(a: RosPackage, b: RosPackage): number {
@@ -203,8 +189,6 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
       pathItemMap.set(f.id, f);
       return f;
     });
-
-    itemList.sort(comparePathItems);
 
     const packageTree: TPackageTreeItem[] = [];
     const level: TPackageTree = { packageTree };

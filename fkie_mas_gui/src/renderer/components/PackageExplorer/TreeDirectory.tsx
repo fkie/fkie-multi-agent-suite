@@ -110,43 +110,51 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
   /**
    * Build the tree structure for files and directories
    */
-  function buildTreePackageItems(packageName: string, pathId: string, treeItem: TPackageTreeItem): JSX.Element {
-    if (!treeItem) {
-      console.error("Invalid item ", packageName, treeItem);
-      return <div key={`${pathId}#${generateUniqueId()}`} />;
-    }
-    const { name, children, file } = treeItem;
-
-    if (file && children && children.length === 0) {
-      // no children means that [item.value] is a file
+  function buildPackageTree(treeItems: TPackageTreeItem[], pathId: string): JSX.Element[] {
+    const folders = treeItems.filter((item) => item.children && item.children.length > 0);
+    folders.sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+    const jsxFolders = folders.map((group) => {
+      const newPathId = `${pathId}#${group.name}`;
       return (
-        <FileTreeItem
-          key={`${pathId}#${file.id}`}
-          itemId={`${file.id}`}
-          file={file}
-          onDoubleClick={(labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) =>
-            handleFileDoubleClick(labelText, itemId, ctrlKey, shiftKey, altKey)
-          }
-        />
+        // valid children means that item is a directory
+        <FolderTreeItem
+          key={newPathId}
+          itemId={newPathId}
+          directoryName={group.name.replace("/", "")}
+          path={""}
+          onDoubleClick={(directoryName: string, itemId: string) => handleFolderDoubleClick(directoryName, itemId)}
+          onClick={(directoryName: string, id: string) => handleFolderClick(directoryName, id)}
+        >
+          {buildPackageTree(group.children, newPathId)}
+        </FolderTreeItem>
       );
-    }
+    });
 
-    const newPathId = `${pathId}#${name}`;
-    return (
-      // valid children means that item is a directory
-      <FolderTreeItem
-        key={newPathId}
-        itemId={newPathId}
-        directoryName={name.replace("/", "")}
-        path={""}
-        onDoubleClick={(directoryName: string, itemId: string) => handleFolderDoubleClick(directoryName, itemId)}
-        onClick={(directoryName: string, id: string) => handleFolderClick(directoryName, id)}
-      >
-        {children.map((tItem) => {
-          return buildTreePackageItems(packageName, newPathId, tItem);
-        })}
-      </FolderTreeItem>
-    );
+    const files = treeItems.filter((item) => item.file && item.children.length === 0);
+    files.sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+    // we do not need to sort files, they are sorted while get files
+    const jsxFiles = files.map((item) => {
+      if (item.file) {
+        // no children means that [item.value] is a file
+        return (
+          <FileTreeItem
+            key={`${pathId}#${item.file.id}`}
+            itemId={`${item.file.id}`}
+            file={item.file}
+            onDoubleClick={(labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) =>
+              handleFileDoubleClick(labelText, itemId, ctrlKey, shiftKey, altKey)
+            }
+          />
+        );
+      }
+      console.error("Invalid item in package tree", item);
+      return <div key={`${pathId}#${generateUniqueId()}`} />;
+    });
+    return [...jsxFolders, ...jsxFiles];
   }
 
   /**
@@ -196,11 +204,7 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
                 path={selectedPackage?.path as string}
                 exists={itemTree ? true : false}
               >
-                {itemTree &&
-                  itemTree.children &&
-                  itemTree.children.map((item) => {
-                    return buildTreePackageItems(packageName, packageName, item);
-                  })}
+                {itemTree && itemTree.children && buildPackageTree(itemTree.children, packageName)}
               </PackageTreeItem>
             );
           });
