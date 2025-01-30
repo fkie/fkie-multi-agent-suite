@@ -1,4 +1,5 @@
 from typing import List
+from typing import Tuple
 from typing import Union
 from rclpy.node import Node
 
@@ -19,13 +20,13 @@ class ROS2Parameters:
         param_list = self.interface.list()
         return param_list
 
-    def getNodeParameters(self, nodes: List[str]) -> List[RosParameter]:
+    def getNodeParameters(self, nodes: List[str]) -> Tuple[List[RosParameter], List[str]]:
         '''
         Return a list with all registered parameters values and types for a given Node
         '''
         param_list: List[RosParameter] = []
-        param_list = self.interface.list(nodes)
-        return param_list
+        param_list, errors = self.interface.list(nodes)
+        return param_list, errors
 
     def setParameter(self, parameter: RosParameter) -> Union[RosParameter, None]:
         '''

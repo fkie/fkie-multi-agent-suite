@@ -96,6 +96,11 @@ type TProviderDiscoveryReady = {
   status: boolean;
 };
 
+export type TParamListResult = {
+  params: RosParameter[];
+  errors: string[];
+};
+
 export type TConCallback = {
   uri: string;
   callback: (msg: JSONObject) => void;
@@ -1891,20 +1896,31 @@ export default class Provider implements IProvider {
   /**
    * Return a list with all registered parameters values and types
    */
-  public getParameterList: () => Promise<RosParameter[]> = async () => {
+  public getParameterList: () => Promise<TParamListResult> = async () => {
     const result = await this.makeCall("ros.parameters.get_list", [], true, 10000).then((value: TResultData) => {
       if (value.result) {
         // update with id
-        const paramList = [
-          ...((value.data as RosParameter[])?.map((item) => {
-            item.id = `${item.node}#${item.name}`;
-            return item;
-          }) || []),
-        ];
-        return paramList;
+        if ((value.data as TParamListResult)?.params) {
+          const paramList = [
+            ...(((value.data as TParamListResult)?.params as RosParameter[])?.map((item) => {
+              item.id = `${item.node}#${item.name}`;
+              return item;
+            }) || []),
+          ];
+          return { params: paramList, errors: (value.data as TParamListResult)?.errors || [] };
+        } else {
+          // old style
+          const paramList = [
+            ...((value.data as RosParameter[])?.map((item) => {
+              item.id = `${item.node}#${item.name}`;
+              return item;
+            }) || []),
+          ];
+          return { params: paramList, errors: [] };
+        }
       }
       this.logger?.debug(`Provider [${this.name()}]: Error at getParameterList()`, `${value.message}`);
-      return [];
+      return { params: [], errors: [value.message] };
     });
     return Promise.resolve(result);
   };
@@ -1912,21 +1928,32 @@ export default class Provider implements IProvider {
   /**
    * Return a list with all registered parameters values and types for a list of nodes
    */
-  public getNodeParameters: (nodes: string[]) => Promise<RosParameter[]> = async (nodes) => {
+  public getNodeParameters: (nodes: string[]) => Promise<TParamListResult> = async (nodes) => {
     const result = await this.makeCall(URI.ROS_PARAMETERS_GET_NODE_PARAMETERS, [nodes], false, 60000).then(
       (value: TResultData) => {
         if (value.result) {
           // update with id
-          const paramList = [
-            ...((value.data as RosParameter[])?.map((item) => {
-              item.id = `${item.node}#${item.name}`;
-              return item;
-            }) || []),
-          ];
-          return paramList;
+          if ((value.data as TParamListResult)?.params) {
+            const paramList = [
+              ...(((value.data as TParamListResult)?.params as RosParameter[])?.map((item) => {
+                item.id = `${item.node}#${item.name}`;
+                return item;
+              }) || []),
+            ];
+            return { params: paramList, errors: (value.data as TParamListResult)?.errors || [] };
+          } else {
+            // old style
+            const paramList = [
+              ...((value.data as RosParameter[])?.map((item) => {
+                item.id = `${item.node}#${item.name}`;
+                return item;
+              }) || []),
+            ];
+            return { params: paramList, errors: [] };
+          }
         }
         this.logger?.debug(`Provider [${this.name()}]: Error at stopNode()`, `${value.message}`);
-        return [];
+        return { params: [], errors: [value.message] };
       }
     );
     return Promise.resolve(result);

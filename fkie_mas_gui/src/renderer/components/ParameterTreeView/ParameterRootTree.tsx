@@ -10,6 +10,7 @@ import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } fro
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
+import { TParamListResult } from "@/renderer/providers/Provider";
 import { findIn } from "@/renderer/utils";
 import ParameterGroupTreeItem from "./ParameterGroupTreeItem";
 import ParameterTreeItem from "./ParameterTreeItem";
@@ -54,6 +55,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   const [expandedFiltered, setExpandedFiltered] = useState<string[]>([itemId]);
   const [searched, setSearched] = useState<string>(filterText);
   const [selectedItem, setSelectedItem] = useState<string>("");
+  const [requestError, setRequestError] = useState<string>("");
   const [requesting, setRequesting] = useState<boolean>(false);
 
   useEffect(() => {
@@ -87,22 +89,23 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       logCtx.error(`Provider ${provider.name()} does not support [getNodeParameters] method`, DEFAULT_BUG_TEXT);
       return;
     }
+    setRequestError("");
     setRosParameters(undefined);
     setRequesting(true);
-    const paramList: RosParameter[] = await (rosNode
+    const paramResult: TParamListResult = await (rosNode
       ? provider.getNodeParameters([rosNode.name])
       : provider.getParameterList());
     // sort parameter by name
-    paramList.sort(function (a, b) {
+    paramResult.params.sort(function (a, b) {
       const an = `${a.node}/${a.name}`;
       const bn = `${b.node}/${b.name}`;
       return an.localeCompare(bn);
     });
-    // paramList.map((p) => {
-    //   return p;
-    // });
-    setRosParameters(paramList);
-    setRosParametersFiltered(filterParameters(searched, paramList));
+    setRosParameters(paramResult.params);
+    setRosParametersFiltered(filterParameters(searched, paramResult.params));
+    if (paramResult.errors.length > 0) {
+      setRequestError(paramResult.errors.join(";\n"));
+    }
     setRequesting(false);
   }, [provider, rosNode, searched, setRosParameters, setRosParametersFiltered, filterParameters]);
 
@@ -273,13 +276,14 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         providerName={provider.name()}
         countChildren={rosParameters ? rosParameters.length : 0}
         requestData={requesting}
+        requestError={requestError}
       >
         {(tree || []).map((item) => {
           return paramTreeToStyledItems("", item);
         })}
       </ParameterGroupTreeItem>
     );
-  }, [tree, requesting]);
+  }, [tree, requesting, requestError]);
 
   return (
     <Box ref={ref}>

@@ -2,6 +2,7 @@ import json
 import time
 import yaml
 from typing import List
+from typing import Tuple
 from typing import Union
 import rclpy
 from rclpy.node import Node
@@ -32,8 +33,9 @@ class ParameterInterface:
         self.param_prefixes = []  # Only list parameters with the provided prefixes
         self.global_node = global_node
 
-    def list(self, nodes: List[str] = None) -> List[RosParameter]:
+    def list(self, nodes: List[str] = None) -> Tuple[List[RosParameter], List[str]]:
         param_list: List[RosParameter] = []
+        errors = []
 
         # get nodes and services
         node_names = get_node_names(
@@ -54,6 +56,7 @@ class ParameterInterface:
                                               ListParameters, ListParameters.Request())
                 if not ready:
                     Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
+                    errors.append(f"service '{service_name}' is not ready, skip")
 
         # wait until all clients have been called
         wait_until_futures_done(wait_futures)
@@ -71,6 +74,7 @@ class ParameterInterface:
                         f"{self.__class__.__name__}:-> failed to list parameter calling '{wait_future.service_name}': '{exception}'")
             else:
                 Log.warn(f"{self.__class__.__name__}:-> Timeout while calling '{wait_future.service_name}'")
+                errors.append(f"Timeout while calling '{wait_future.service_name}'")
             wait_future.client.destroy()
 
         # get parameter values
@@ -84,6 +88,7 @@ class ParameterInterface:
                                           GetParameters, request)
             if not ready:
                 Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
+                errors.append(f"service '{service_name}' is not ready, skip")
 
         # wait until all clients have been called
         wait_until_futures_done(wait_futures)
@@ -103,6 +108,7 @@ class ParameterInterface:
                         f"{self.__class__.__name__}:-> failed to get parameter calling '{wait_future.service_name}': '{exception}'")
             else:
                 Log.warn(f"{self.__class__.__name__}:-> Timeout while calling '{wait_future.service_name}'")
+                errors.append(f"Timeout while calling '{wait_future.service_name}'")
             wait_future.client.destroy()
 
         # get parameter descriptions
@@ -116,6 +122,7 @@ class ParameterInterface:
                                           DescribeParameters, request)
             if not ready:
                 Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
+                errors.append(f"service '{service_name}' is not ready, skip")
 
         # wait until all clients have been called
         wait_until_futures_done(wait_futures)
@@ -145,11 +152,13 @@ class ParameterInterface:
                 except Exception as exception:
                     Log.warn(
                         f"{self.__class__.__name__}:-> failed to get parameter calling '{wait_future.service_name}': '{exception}'")
+                    errors.append(f"failed to get parameter calling '{wait_future.service_name}': '{exception}'")
             else:
                 Log.warn(f"{self.__class__.__name__}:-> Timeout while calling '{wait_future.service_name}'")
+                errors.append(f"Timeout while calling '{wait_future.service_name}'")
             wait_future.client.destroy()
 
-        return param_list
+        return param_list, errors
 
     def get(self, _parameter: RosParameter) -> Union[RosParameter, None]:
         node_name = self._get_node_name(_parameter)

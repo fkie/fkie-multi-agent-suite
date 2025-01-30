@@ -1,4 +1,5 @@
-import { Box, CircularProgress, Stack, SvgIconTypeMap, Typography } from "@mui/material";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { Box, CircularProgress, Stack, SvgIconTypeMap, Tooltip, Typography } from "@mui/material";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
   TreeItem2SlotProps,
@@ -18,6 +19,7 @@ interface ParameterGroupTreeItemProps {
   icon?: OverridableComponent<SvgIconTypeMap> | null;
   countChildren: number;
   requestData: boolean;
+  requestError?: string;
   providerName?: string;
   children: React.ReactNode;
 }
@@ -31,6 +33,7 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
       countChildren,
       icon = null,
       requestData,
+      requestError = "",
       providerName,
       ...children
     } = props;
@@ -100,6 +103,11 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
                 {groupName}
               </Typography>
               {requestData && <CircularProgress size="1em" />}
+              {requestError && (
+                <Tooltip title={requestError} placement="bottom" disableInteractive>
+                  <WarningAmberIcon color="warning" fontSize="inherit" />
+                </Tooltip>
+              )}
             </Stack>
             <Stack
               direction="row"

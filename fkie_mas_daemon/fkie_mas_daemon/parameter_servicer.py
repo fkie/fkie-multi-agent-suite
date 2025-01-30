@@ -43,13 +43,14 @@ class ParameterServicer:
         Return a list with all registered parameters values and types for a given Node
         '''
         p_list = []
+        errors = []
         try:
             Log.info(f'ros.parameters.get_node_parameters: Getting parameters for nodes: [{nodes}] ')
-            p_list = self._handler.getNodeParameters(nodes)
+            p_list, errors = self._handler.getNodeParameters(nodes)
         except Exception:
             import traceback
             print(traceback.format_exc())
-        return json.dumps(p_list, cls=SelfEncoder)
+        return json.dumps({"params": p_list, "errors": errors}, cls=SelfEncoder)
 
     def setParameter(self, paramName: str, paramType: str, paramValue: str, nodeName: str) -> str:
         '''
