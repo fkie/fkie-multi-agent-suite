@@ -3,12 +3,12 @@ import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, Tooltip, Typograp
 import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
+import RosContext from "@/renderer/context/RosContext";
 import { RosParameter } from "@/renderer/models";
 import { RosParameterRange } from "@/renderer/models/RosParameter";
+import { Provider } from "@/renderer/providers";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
-import { Provider } from "@/renderer/providers";
-import RosContext from "@/renderer/context/RosContext";
 
 interface ParameterTreeItemProps {
   itemId: string;
@@ -68,6 +68,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     if (newType !== undefined) {
       parameter.type = newType;
     }
+    const oldValue = parameter.value;
     if (newValue === undefined || (["int", "float", "bool"].includes(parameter.type) && `${newValue}`.length === 0)) {
       // do not update parameter if new value is undefined or
       // not valid integer, float or boolean
@@ -86,15 +87,23 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
     if (result.result) {
       logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
+      if (result.value) {
+        setValue(result.value);
+        parameter.value = result.value;
+      }
+      if (result.value_type) {
+        paramInfo.type = result.value_type;
+      }
     } else {
       logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`);
+      parameter.value = oldValue;
+      setValue(oldValue);
     }
   }
 
   function handleKey(event: React.KeyboardEvent): void {
     if (event.key === "Enter") {
       updateParameter(paramInfo, typedValue, paramInfo.type);
-      setValue(typedValue);
       setChanged(false);
     } else if (event.key === "Escape") {
       setValue(paramInfo.value);
@@ -115,7 +124,6 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   function onLeave(): void {
     if (changed) {
       updateParameter(paramInfo, typedValue, paramInfo.type);
-      setValue(typedValue);
       setChanged(false);
     }
   }

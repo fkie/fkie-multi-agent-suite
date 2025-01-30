@@ -62,11 +62,14 @@ class ParameterServicer:
             Log.info(
                 f'ros.parameters.set_parameter: [{parameter.node}:{parameter.name}] to {parameter.value} [typeof: {type(parameter.value)}|type:{parameter.type}]')
             res = self._handler.setParameter(parameter)
-            result = {"result": res, "message" : ""}
+            if res is not None:
+                result = {"result": True, "message": "", "value": res.value, "value_type": res.get_type()}
+            else:
+                result = {"result": False, "message": "", "param": res}
         except Exception as error:
             import traceback
             print(traceback.format_exc())
-            result = {"result": False, "message" : f"{error}"}
+            result = {"result": False, "message": f"{error}"}
         return json.dumps(result, cls=SelfEncoder)
 
     def deleteParameters(self, parameters: List[str], nodeName: str):
@@ -77,9 +80,9 @@ class ParameterServicer:
         try:
             Log.info(f'ros.parameters.delete_parameters: Removing [{parameters}] ')
             res = self._handler.deleteParameter(parameters, nodeName)
-            result = {"result": res, "message" : ""}
+            result = {"result": res, "message": ""}
         except Exception as error:
             import traceback
             print(traceback.format_exc())
-            result = {"result": False, "message" : f"{error}"}
+            result = {"result": False, "message": f"{error}"}
         return json.dumps(result, cls=SelfEncoder)

@@ -151,6 +151,24 @@ class ParameterInterface:
 
         return param_list
 
+    def get(self, _parameter: RosParameter) -> Union[RosParameter, None]:
+        node_name = self._get_node_name(_parameter)
+        if node_name is None:
+            return False
+
+        parameter_name = _parameter.name.replace(f'{node_name}/', '')
+        response = self.call_get_parameters(
+            node=self.global_node, node_name=node_name, parameters=[parameter_name])
+
+        # output response
+        if response is None or len(response.values) == 0:
+            return None
+
+        for parameter in response.values:
+            return RosParameter(node_name, parameter_name, self._get_value(parameter), self._get_type(parameter))
+
+        raise Exception(f"Get parameter failed: {parameter_name}")
+
     def set(self, _parameter: RosParameter) -> bool:
         node_name = self._get_node_name(_parameter)
         if node_name is None:
@@ -312,8 +330,35 @@ class ParameterInterface:
         Log.debug(f"{self.__class__.__name__}:  set_parameters '{service_name}'")
         request = SetParameters.Request()
         request.parameters = parameters
-        ready = create_service_future(self.global_node, wait_futures, "set_parameters", node_name, service_name,
+        ready = create_service_future(node, wait_futures, "set_parameters", node_name, service_name,
                                       SetParameters, request)
+        if not ready:
+            Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
+
+        # wait until all clients have been called
+        wait_until_futures_done(wait_futures)
+
+        # read set parameter responses
+        for wait_future in wait_futures:
+            if wait_future.finished:
+                response = wait_future.future.result()
+                if response:
+                    return response
+            else:
+                wait_future.client.destroy()
+                # raise Exception(f"Timeout while calling '{wait_future.service_name}'")
+        return None
+
+    def call_get_parameters(self, *, node, node_name: str, parameters: List[str]):
+        # create client
+        wait_futures: List[WaitFuture] = []
+        # create clients for nodes which have the service
+        service_name = f'{node_name}/get_parameters'
+        Log.debug(f"{self.__class__.__name__}:  get_parameters '{service_name}'")
+        request = GetParameters.Request()
+        request.names = parameters
+        ready = create_service_future(node, wait_futures, "get_parameter", node_name, service_name,
+                                      GetParameters, request)
         if not ready:
             Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
 

@@ -1,4 +1,5 @@
 from typing import List
+from typing import Union
 from rclpy.node import Node
 
 from fkie_mas_pylib.parameters.ros2_parameter_interface import ParameterInterface
@@ -26,11 +27,13 @@ class ROS2Parameters:
         param_list = self.interface.list(nodes)
         return param_list
 
-    def setParameter(self, parameter: RosParameter) -> bool:
+    def setParameter(self, parameter: RosParameter) -> Union[RosParameter, None]:
         '''
         Set the value of a parameter
         '''
-        return self.interface.set(parameter)
+        if self.interface.set(parameter):
+            return self.interface.get(parameter)
+        return None
 
     def deleteParameter(self, parameters: List[str], nodeName: str) -> bool:
         '''

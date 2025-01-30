@@ -1,4 +1,5 @@
 import { JSONObject, TResult, TResultData, TSystemInfo, TTag } from "@/types";
+import { TResultParam } from "@/types/TResultParam";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
 import { TagColors, colorFromHostname } from "../components/UI/Colors";
@@ -1939,14 +1940,14 @@ export default class Provider implements IProvider {
     paramType: string,
     paramValue: string,
     nodeName: string
-  ) => Promise<TResult> = async (paramName, paramType, paramValue, nodeName) => {
+  ) => Promise<TResultParam> = async (paramName, paramType, paramValue, nodeName) => {
     const setResult = await this.makeCall(
       URI.ROS_PARAMETERS_SET_PARAMETER,
       [paramName, paramType, paramValue, nodeName],
       true
     ).then((value: TResultData) => {
       if (value.result) {
-        const setResponse = value.data as TResult;
+        const setResponse = value.data as TResultParam;
         return setResponse;
       }
       this.logger?.debug(`Provider [${this.name()}]: Error at setParameter()`, `${value.message}`);
