@@ -1007,13 +1007,16 @@ class LaunchServicer(LoggingEventHandler):
             args.append(f'--array_items_count={request.filter.arrayItemsCount}')
         if request.tcp_no_delay:
             args.append('--tcp_no_delay')
-        if request.qos:
+        if hasattr(request, "qos") and request.qos:
             if request.qos.durability:
                 args.append(f'--qos-durability={RosQos.durabilityToString(request.qos.durability)}')
             if request.qos.reliability:
                 args.append(f'--qos-reliability={RosQos.reliabilityToString(request.qos.reliability)}')
             if request.qos.liveliness:
                 args.append(f'--qos-liveliness={RosQos.livelinessToString(request.qos.liveliness)}')
+        else:
+            # TODO wait for publisher and detect qos
+            pass
 
         # run on local host
         screen_prefix = ' '.join([screen.get_cmd(fullname)])
