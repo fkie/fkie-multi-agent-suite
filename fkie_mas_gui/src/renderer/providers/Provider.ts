@@ -1262,6 +1262,25 @@ export default class Provider implements IProvider {
                 });
               } else {
                 launchNode.parameters?.forEach((p: RosParameter) => {
+                  if (p.type.indexOf("yaml") >= 0) {
+                    let allNodes = p.value["/**"];
+                    if (!allNodes && launchNode.node_name) {
+                      allNodes = p.value[launchNode.node_name];
+                    }
+                    if (!allNodes && launchNode.node_name) {
+                      // TODO: split node name and get the path step by step from: {ns: {node: {ros__parameters}}}
+                    }
+                    if (allNodes) {
+                      const rosParameters = allNodes["ros__parameters"];
+                      if (rosParameters) {
+                        const capabilityGroup = rosParameters["capability_group"];
+                        if (capabilityGroup) {
+                          const ns = "";
+                          nodeGroup = { namespace: ns, name: `{${capabilityGroup}}` };
+                        }
+                      }
+                    }
+                  }
                   nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
                 });
               }
