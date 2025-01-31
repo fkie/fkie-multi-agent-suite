@@ -309,7 +309,13 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     char hostname_chars[HOST_NAME_MAX];
     gethostname(hostname_chars, HOST_NAME_MAX);
-    std::string hostname(hostname_chars);
+    // ROS_IP and ROS_HOSTNAME are optional environment variable that sets the declared network
+    // address of a ROS Node or tool.The options are mutually exclusive, if both are set
+    // ROS_HOSTNAME will take precedence
+    char *ip_val = getenv("ROS_IP");
+    std::string hostname(ip_val == NULL ? std::string(hostname_chars) : std::string(ip_val));
+    char *host_val = getenv("ROS_HOSTNAME");
+    hostname = host_val == NULL ? std::string(hostname) : std::string(host_val);
     // remove domain suffix
     std::regex const IP4_PATTERN{"^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"};
     std::smatch m;
