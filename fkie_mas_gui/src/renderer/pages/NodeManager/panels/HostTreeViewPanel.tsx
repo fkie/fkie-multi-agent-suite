@@ -185,36 +185,8 @@ export default function HostTreeViewPanel(): JSX.Element {
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data: EventProviderRosNodes) => {
-      // node of the provider are updated
-      // generate group labels for each node
-      // and put in our providerNodes list
+      // put in our providerNodes list
       const { provider, nodes } = data;
-      const namespaceSystemNodes = settingsCtx.get("namespaceSystemNodes") as string;
-      const newNodes: RosNode[] = [];
-      nodes.forEach((node) => {
-        if (node.system_node && namespaceSystemNodes) {
-          // for system nodes, e.g.: /{SYSTEM}/ns
-          node.group = namespaceSystemNodes;
-          if (node.namespace != "/") {
-            node.group += node.namespace;
-          }
-        } else {
-          // for nodes, e.g.: /robot_ns/{CAP_GROUP}/sub_ns
-          let groupNamespace = "";
-          let groupName = "";
-          let nodeRestNamespace = "";
-          if (node.capabilityGroup.namespace) {
-            groupNamespace = `${node.capabilityGroup.namespace}`;
-            nodeRestNamespace = node.namespace.replace(groupNamespace, "");
-          }
-          if (node.capabilityGroup.name) {
-            groupName = `/${node.capabilityGroup.name}`;
-          }
-          node.group = `${groupNamespace}${groupName}${nodeRestNamespace}`;
-        }
-        newNodes.push(node);
-      });
-      // update state only for this provider
       // TODO: should we remove closed/lost provider infos
       setProviderNodes((oldValues) => [
         ...oldValues.filter((item) => {
@@ -222,7 +194,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         }),
         {
           providerId: provider.id,
-          nodes: newNodes,
+          nodes: nodes,
         },
       ]);
     },

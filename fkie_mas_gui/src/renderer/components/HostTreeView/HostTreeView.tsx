@@ -22,8 +22,8 @@ import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
 
 function compareTreeItems(a: NodeTreeItem, b: NodeTreeItem): number {
   // place system groups are at the end
-  const aSystem = a.treePath.includes("{SYSTEM}");
-  const bSystem = b.treePath.includes("{SYSTEM}");
+  const aSystem = a.treePath.includes("{SYSTEM}") || a.treePath.includes("{SPAM}");
+  const bSystem = b.treePath.includes("{SYSTEM}") || b.treePath.includes("{SPAM}");
   if (aSystem && !bSystem) {
     return 1;
   }
@@ -111,6 +111,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         }
         if (node.capabilityGroup.name) {
           groupName = `/${node.capabilityGroup.name}`;
+        }
+        if (groupName.length === 0) {
+          const nodeName = nodeNameWithoutNamespace(node);
+          if (nodeName.startsWith("transform_listener_")) {
+            groupName = "/{SPAM}";
+          }
         }
         nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;
       }
