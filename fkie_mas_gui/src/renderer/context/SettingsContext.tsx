@@ -68,6 +68,7 @@ export interface ISettingsParam {
   max?: number;
   cb?: (get: (attribute: string) => JSONValue | undefined, set: (attribute: string, value: JSONValue) => void) => void;
   validate?: (value: JSONValue) => JSONValue;
+  isValid?: (value: JSONValue) => boolean;
 }
 
 export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
@@ -274,6 +275,40 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     default: true,
     type: "boolean",
     description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",
+  },
+  spamNodes: {
+    label: "Spam Nodes",
+    freeSolo: true,
+    type: "string",
+    default: ".*_impl_,/*_ros2cli",
+    description: "Nodes to be placed in a {SPAM} group.",
+    isValid: (value: JSONValue) => {
+      let result = true;
+      const splits: string[] = (value as string).split(",");
+      splits.forEach((item) => {
+        try {
+          new RegExp(`/(${item})/`);
+          return true;
+        } catch (error) {
+          result = false;
+          return false;
+        }
+      });
+      return result;
+    },
+    validate: (value: JSONValue) => {
+      const splits: string[] = (value as string).split(",");
+      const validEntries = splits.filter((item) => {
+        try {
+          new RegExp(`/(${item})/`);
+          return true;
+        } catch (error) {
+          console.log(`error while test`);
+        }
+        return false;
+      });
+      return validEntries.join(",");
+    },
   },
   editorOpenExternal: {
     label: "Open editor in external window by default",

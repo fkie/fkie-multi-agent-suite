@@ -22,8 +22,8 @@ import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
 
 function compareTreeItems(a: NodeTreeItem, b: NodeTreeItem): number {
   // place system groups are at the end
-  const aSystem = a.treePath.includes("{SYSTEM}") || a.treePath.includes("{SPAM}");
-  const bSystem = b.treePath.includes("{SYSTEM}") || b.treePath.includes("{SPAM}");
+  const aSystem = a.treePath.match(/({SYSTEM})|({SPAM})/);
+  const bSystem = b.treePath.match(/({SYSTEM})|({SPAM})/);
   if (aSystem && !bSystem) {
     return 1;
   }
@@ -92,9 +92,11 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     // ...and keep a list of the tree nodes
     const nodeTree: NodeTreeItem[] = [];
     const level: NodeTree = { nodeTree };
+    const spamNodesParam = settingsCtx.get("spamNodes") as string;
+    const cliInSpam = spamNodesParam.indexOf("_ros2cli") > -1;
     nodes.forEach((node: RosNode) => {
       let nodePath = node.providerId || "";
-      if (node.system_node && namespaceSystemNodes) {
+      if (node.system_node && namespaceSystemNodes && !(cliInSpam && node.name.startsWith("/_ros2cli"))) {
         // for system nodes, e.g.: /{SYSTEM}/ns
         nodePath += namespaceSystemNodes;
         if (node.namespace != "/") {
@@ -113,9 +115,18 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           groupName = `/${node.capabilityGroup.name}`;
         }
         if (groupName.length === 0) {
+          // check if this node should be placed in SPAM group
           const nodeName = nodeNameWithoutNamespace(node);
-          if (nodeName.startsWith("transform_listener_")) {
-            groupName = "/{SPAM}";
+          const spamNodes = spamNodesParam
+            .split(",")
+            .filter((item) => item.length > 0)
+            .map((item) => `(${item})`)
+            .join("|");
+          if (spamNodes.length > 0) {
+            const re = new RegExp(String.raw`${spamNodes}`, "g");
+            if (nodeName.match(re)) {
+              groupName = "/{SPAM}";
+            }
           }
         }
         nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;

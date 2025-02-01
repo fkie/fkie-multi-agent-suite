@@ -22,7 +22,7 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 
 import { ISettingsParam, SettingsContext } from "@/renderer/context/SettingsContext";
 import { JSONValue } from "@/types";
@@ -79,6 +79,8 @@ export default function GuiPanel(): JSX.Element {
   const [grouped, setGrouped] = useState<IGroupEntry[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [filter, setFilter] = useState("");
+  const [values] = useState<{ [x: string]: JSONValue | undefined }>({});
+  const [valuesChanged, forceValuesUpdate] = useReducer((x) => x + 1, 0);
 
   function handleChange(panel: string): void {
     if (expanded.includes(panel)) {
@@ -91,6 +93,7 @@ export default function GuiPanel(): JSX.Element {
   function createGroups(): void {
     const groupedDict: { [group: string]: { name: string; param: ISettingsParam }[] } = {};
     settingsCtx.getParamList().forEach(({ name, param }) => {
+      values[name] = settingsCtx.get(name);
       if (filter.length <= 1 || name.toLocaleLowerCase().includes(filter)) {
         const group = param.group ? param.group : "Application";
         if (!groupedDict[group]) {
@@ -402,11 +405,16 @@ export default function GuiPanel(): JSX.Element {
                                 size="small"
                                 variant="outlined"
                                 fullWidth={true}
+                                error={param.isValid && !param.isValid(values[name] as string)}
                                 onChange={(e) => {
                                   const value = `${e.target.value}`;
-                                  settingsCtx.set(name, param.validate ? param.validate(value) : value);
+                                  if (param.isValid && param.isValid(value)) {
+                                    settingsCtx.set(name, param.validate ? param.validate(value) : value);
+                                  }
+                                  values[name] = value;
+                                  forceValuesUpdate();
                                 }}
-                                value={settingsCtx.get(name)}
+                                value={values[name]}
                                 sx={{ marginRight: "0.5em" }}
                                 // helperText={param.description}
                               />
@@ -436,7 +444,7 @@ export default function GuiPanel(): JSX.Element {
         </Box>
       </Stack>
     );
-  }, [grouped, expanded]);
+  }, [grouped, expanded, valuesChanged]);
 
   return generateContent;
 }
