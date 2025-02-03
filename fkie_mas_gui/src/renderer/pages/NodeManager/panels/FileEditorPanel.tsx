@@ -89,6 +89,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
   const panelRef = useRef<HTMLDivElement>();
   const infoRef = useRef<HTMLDivElement>();
+  const alertRef = useRef<HTMLDivElement>();
   const resizeObserver = useRef<ResizeObserver>();
   const componentWillUnmount = useRef(false);
   const [fontSize, setFontSize] = useState<number>(settingsCtx.get("fontSize") as number);
@@ -592,10 +593,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   useEffect(() => {
     if (!panelSize) return;
     const infoHeight: number = infoRef.current ? infoRef.current?.getBoundingClientRect().height : 0;
-    setEditorHeight(panelSize.height - infoHeight);
+    const alertHeight: number = alertRef.current ? alertRef.current?.getBoundingClientRect().height : 0;
+    setEditorHeight(panelSize.height - infoHeight - alertHeight);
     setEditorWidth(panelSize.width - sideBarWidth);
     setPanelHeight(panelSize.height);
-  }, [sideBarWidth, panelSize]);
+  }, [sideBarWidth, panelSize, activeModel]);
 
   useEffect(() => {
     // add resize observer to update size of monaco editor ad side bars
@@ -1220,13 +1222,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             </Alert>
           )}
           {activeModel && isReadOnly(activeModel.path) ? (
-            <Alert severity="info" style={{ minWidth: 0 }}>
+            <Alert ref={alertRef as ForwardedRef<HTMLDivElement>} severity="info" style={{ minWidth: 0 }}>
               {`no write permissions for ${activeModel.path.split(":")[1]}`}
             </Alert>
           ) : (
             activeModel?.path &&
             installPathsWarn.includes(activeModel?.path) && (
-              <Alert severity="warning" style={{ minWidth: 0 }}>
+              <Alert ref={alertRef as ForwardedRef<HTMLDivElement>} severity="warning" style={{ minWidth: 0 }}>
                 {`${activeModel?.path.split(":")[1]} is located in 'install' path. The changes could be lost after rebuilding packages. You can build your packages with '--symlink-install' to edit your launch files in your sources.`}
               </Alert>
             )
