@@ -503,9 +503,7 @@ class RosStateJsonify:
     def _qos_compatibility2str(self, qc: QoSCompatibility) -> str:
         if qc == QoSCompatibility.OK:
             return "ok"
-        elif qc == QoSCompatibility.Warning:
-            return "warning"
-        return "error"
+        return "warning"
 
     def _guid_to_str(self, guid: List[int]) -> ParticipantGid:
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist()[0:12])
