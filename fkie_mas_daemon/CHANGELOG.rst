@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.1 (03.02.2025)
+------------------
+* fixed start subscriber without qos (ROS2)
+
 4.2.0 (30.01.2025)
 ------------------
 * Added parameter to set the length of the arrays for topic echo

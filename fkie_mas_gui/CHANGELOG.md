@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.2.1 - 03.02.2025
+
+Added SPAM group and capability_group for ros2 nodes
+Fixed select current file in explorer of the file editor
+Do not save empty parameters in the history of the start dialog
+Fixed editor height when a hint is displayed
+Fixed start subscriber without qos
+Fixed discovery name if ROS_IP is set
+Fixed file selection in editor
+
 ## 4.2.0 - 30.01.2025
 
 Added parameter to set the length of the arrays for topic echo
