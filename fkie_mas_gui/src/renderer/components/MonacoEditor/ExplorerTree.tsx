@@ -3,7 +3,6 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { LaunchArgument, LaunchIncludedFile } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
@@ -15,7 +14,9 @@ export function equalLaunchArgs(launchArgs: TLaunchArg[], argList: LaunchArgumen
   if (launchArgs && launchArgs.length > 0) {
     const notEqual = argList?.filter((item) => {
       // ignore args with not resolved statements
-      const found = launchArgs.filter((li) => li.name === item.name && li.value === item.value);
+      const found = launchArgs.filter(
+        (li) => li.name === item.name && (li.value === item.value || (!li.value && !item.value))
+      );
       return !(found.length > 0 || item.value?.search("/\\$\\(") !== -1);
     });
     return notEqual.length === 0;
@@ -43,7 +44,6 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
     launchArgs = [],
     modifiedUriPaths = [],
   } = props;
-  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const [includeRoot, setIncludeRoot] = useState<TLaunchIncludeItem>();
   const [expandedExplorerResults, setExpandedExplorerResults] = useState<string[]>([]);
