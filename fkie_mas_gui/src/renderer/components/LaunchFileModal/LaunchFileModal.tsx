@@ -193,7 +193,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
           // update history
           let hList: string[] = argHistory[arg.name];
           if (hList !== undefined) {
-            hList = hList.filter((value) => value !== arg.value);
+            hList = hList.filter((value) => value != null && `${value}`.length > 0 && value !== arg.value);
           } else {
             hList = [];
           }
