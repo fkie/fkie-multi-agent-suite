@@ -1867,7 +1867,7 @@ export default class Provider implements IProvider {
           }
           return value.data as LoggerConfig[];
         }
-        this.logger?.debug(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`);
+        this.logger?.warn(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`, true);
         return [];
       }
     );
@@ -1883,8 +1883,8 @@ export default class Provider implements IProvider {
         if (value.result) {
           return value.data as Result;
         }
-        this.logger?.debug(`Provider [${this.name()}]: Error at getNodeLoggers()`, `${value.message}`);
-        return new Result(false, `Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`);
+        this.logger?.debug(`Provider [${this.name()}]: Error at setNodeLoggers()`, `${value.message}`);
+        return new Result(false, `Provider [${this.name()}]: Error at setNodeLoggers(): ${value.message}`);
       }
     );
     return Promise.resolve(result);
