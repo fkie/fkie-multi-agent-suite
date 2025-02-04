@@ -110,30 +110,20 @@ export function removeDDSuid(item: string): string {
 export function getRosNameAbb(name: string): string {
   if (!name) return name;
   const base = name.replace(/^.*[\\/]/, "").replace(/@.*/, "");
+  if (base.length <= 5) return base;
   if (base) {
-    let name = base
+    let result = base
       .split("_")
       .map((item) => item[0])
       .join("");
-    if (name.length < 2) {
-      const midMatch = base.match(/^.*(\d+).*?/);
-      if (midMatch) {
-        name += midMatch[1];
-        const index = base.indexOf(midMatch[1]);
-        if (base.length > index + 1) {
-          name += base[index + 1];
-        }
-      }
-    }
-    if (name.length < 3) {
-      name += base[base.length - 1];
-    }
     // check if ends with number
-    const lastMatch = base.match(/^.*(\d+)$/);
-    if (lastMatch) {
-      name += lastMatch[1];
+    const lastMatch = base.match(/[^0-9]*([0-9]+)$/);
+    let lastChars = base[base.length - 1];
+    if (lastMatch && lastMatch[1].length <= 2) {
+      lastChars = lastMatch[1];
     }
-    return name;
+    result += `..${lastChars}`;
+    return result;
   }
   return name;
 }
