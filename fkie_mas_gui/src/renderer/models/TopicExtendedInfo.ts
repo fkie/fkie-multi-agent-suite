@@ -16,6 +16,8 @@ export default class TopicExtendedInfo {
 
   hasQos: boolean = false;
 
+  hasIncompatibleQos: boolean = false;
+
   publishers: EndpointExtendedInfo[] = [];
 
   subscribers: EndpointExtendedInfo[] = [];
@@ -39,6 +41,9 @@ export default class TopicExtendedInfo {
       if (pub.qos) {
         this.hasQos = true;
       }
+      if (pub.incompatible_qos && pub.incompatible_qos.length > 0) {
+        this.hasIncompatibleQos = true;
+      }
     });
   }
 
@@ -52,6 +57,9 @@ export default class TopicExtendedInfo {
       }
       if (sub.qos) {
         this.hasQos = true;
+      }
+      if (sub.incompatible_qos && sub.incompatible_qos.length > 0) {
+        this.hasIncompatibleQos = true;
       }
     });
   }

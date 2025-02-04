@@ -1,4 +1,5 @@
-import { Box, Stack, Typography } from "@mui/material";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
+import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import {
   TreeItem2SlotProps,
   UseTreeItem2ContentSlotOwnProps,
@@ -14,11 +15,12 @@ interface TopicGroupTreeItemProps {
   rootPath: string;
   groupName: string;
   countChildren: number;
+  hasIncompatibleQos: boolean;
   children: React.ReactNode;
 }
 
 const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(function TopicGroupTreeItem(props, ref) {
-  const { itemId, rootPath, groupName, countChildren, ...children } = props;
+  const { itemId, rootPath, groupName, countChildren, hasIncompatibleQos, ...children } = props;
 
   const logCtx = useContext(LoggingContext);
 
@@ -73,6 +75,11 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
               >
                 {groupName}
               </Typography>
+              {hasIncompatibleQos && (
+                <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
+                </Tooltip>
+              )}
               {/* {topicInfo && topicInfo.subscribers.filter((sub) => sub.incompatible_qos?.length > 0).length > 0 && (
                 <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
                   <LinkOffIcon style={{ fontWeight: "inherit", color: "red" }} />

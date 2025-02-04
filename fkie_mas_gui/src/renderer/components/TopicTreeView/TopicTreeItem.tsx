@@ -79,7 +79,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
         sub.info.incompatible_qos?.forEach((item) => inQos.push(item));
       });
     setIncompatibleQos(inQos);
-  }, []);
+  }, [topicInfo]);
 
   function addQosValue(
     value: string | number | undefined,
@@ -118,6 +118,11 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
           index += 1;
           return (
             <Stack key={`qos-reliability-${key}`} direction="row" spacing={"0.2em"}>
+              {index > 1 && (
+                <Typography variant="body2" color="inherit">
+                  +
+                </Typography>
+              )}
               <Typography variant="body2" color="inherit">
                 {reliabilityToString(parseInt(key))}
               </Typography>
@@ -263,13 +268,13 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                 >
                   {name}
                 </Typography>
+                {incompatibleQos.length > 0 && (
+                  <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
+                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
+                  </Tooltip>
+                )}
               </Stack>
               {/* {requestData && <CircularProgress size="1em" />} */}
-              {incompatibleQos.length > 0 && (
-                <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
-                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
-                </Tooltip>
-              )}
             </Stack>
             <Stack
               direction="row"
@@ -386,14 +391,6 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
               {topicInfo?.hasQos && createReliabilityItem}
               {topicInfo?.hasQos && createDurabilityItem}
               {topicInfo?.hasQos && createLivelinessItem}
-
-              {incompatibleQos.map((item) => {
-                return (
-                  <Typography key={`incompatible-qos-${item.node_id}`} fontSize="small">
-                    {`${item.compatibility}`}: {item.reason}
-                  </Typography>
-                );
-              })}
             </Stack>
           )}
           <Menu

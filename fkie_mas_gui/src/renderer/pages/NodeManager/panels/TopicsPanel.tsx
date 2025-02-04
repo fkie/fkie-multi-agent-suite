@@ -38,6 +38,7 @@ type TTreeItem = {
   msgType: string;
   groupKeys: string[];
   topicInfo: TopicExtendedInfo | null;
+  hasIncompatibleQos: boolean;
 };
 
 type TProviderDescription = {
@@ -214,6 +215,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         }
         // if all topics of the group have same message id, show it in the group info
         let msgType: string | undefined = undefined;
+        let hasIncompatibleQos: boolean = false;
         groupValues.map((item) => {
           if (msgType === undefined) {
             msgType = item.topicInfo.msgType;
@@ -221,6 +223,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             if (msgType !== "") {
               msgType = "";
             }
+          }
+          if (item.topicInfo.hasIncompatibleQos) {
+            hasIncompatibleQos = item.topicInfo.hasIncompatibleQos;
           }
         });
         newFilteredTopics.push({
@@ -232,6 +237,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           msgType: msgType ? msgType : "",
           groupKeys: groupKeys,
           topicInfo: null,
+          hasIncompatibleQos: hasIncompatibleQos,
         } as TTreeItem);
       }
       topicValues.forEach((item) => {
@@ -244,6 +250,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           msgType: item.topicInfo.msgType,
           groupKeys: groupKeys,
           topicInfo: item.topicInfo,
+          hasIncompatibleQos: item.topicInfo.hasIncompatibleQos,
         } as TTreeItem);
         count += 1;
         // if (item.topicInfo.providerName !== groupName) {
@@ -335,6 +342,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             rootPath={rootPath}
             groupName={treeItem.groupName}
             countChildren={treeItem.count}
+            hasIncompatibleQos={treeItem.hasIncompatibleQos}
           >
             {treeItem.topics.map((subItem) => {
               return topicTreeToStyledItems("", subItem, selectedItem);
