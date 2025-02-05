@@ -844,7 +844,7 @@ class LaunchServicer(LoggingEventHandler):
                 if result_array:
                     result[field['name']] = result_array
             else:
-                if 'useNow' in field and os.environ.get('ROS_DISTRO') != 'galactic':
+                if 'useNow' in field and os.environ.get('ROS_DISTRO') != 'galactic' and field['useNow']:
                     result[field['name']] = "now"
                 else:
                     sub_result = self._str_from_dict(field['def'])
@@ -945,8 +945,9 @@ class LaunchServicer(LoggingEventHandler):
                 data = json.loads(request.data)
                 set_message_fields(service_request, self._str_from_dict(data))
             except Exception as e:
+                import traceback
+                print(traceback.format_exc())
                 result.error_msg = 'Failed to populate field: {0}'.format(e)
-
             try:
                 response = nmd.launcher.call_service(request.service_name, sub_class, service_request, 5)
             except Exception as e:
@@ -956,6 +957,7 @@ class LaunchServicer(LoggingEventHandler):
                 result.valid = True
         except Exception as err:
             import traceback
+            print(traceback.format_exc())
             result.error_msg = repr(err)
         finally:
             nmd.ros_node.destroy_client(request.service_name)
