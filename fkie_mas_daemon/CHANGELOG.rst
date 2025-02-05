@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.2 (05.02.2025)
+------------------
+* fixed call service with useNow parameter
+
 4.2.1 (03.02.2025)
 ------------------
 * fixed start subscriber without qos (ROS2)

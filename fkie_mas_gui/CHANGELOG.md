@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.2.2 - 05.02.2025
+
+Added: show incompatible QoS warning at group level
+Added: show warning if logger is not supported
+Changed calculation of the abbreviation of the tab name
+Fixed qos incompatibility check for jazzy
+Fixed call service with useNow parameter
+
 ## 4.2.1 - 03.02.2025
 
 Added SPAM group and capability_group for ros2 nodes
