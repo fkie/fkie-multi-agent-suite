@@ -392,7 +392,7 @@ export class Terminal extends React.Component<Props, XtermState> {
             <AlertTitle>TTYD Daemon on {this.props.wsUrl} is not available</AlertTitle>
             <Typography>
               If you want to check this terminal, please start the terminal manager daemon on the host using{" "}
-              <RocketLaunchIcon fontSize="inherit" /> 'Hosts' panel or manually:
+              <RocketLaunchIcon fontSize="inherit" /> in 'Hosts' panel or manually:
             </Typography>
             <Typography sx={{ ml: "1em" }}>ttyd --writable --port 7681 bash</Typography>
             <Typography sx={{ mt: "1em" }}>
