@@ -672,7 +672,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 return false;
               } else {
                 logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
-                provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartDaemon.message);
+                provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDaemon.message);
                 allStarted = false;
                 return false;
               }
@@ -700,7 +700,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 return false;
               } else {
                 logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
-                provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartDiscovery.message);
+                provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDiscovery.message);
                 allStarted = false;
                 return false;
               }
@@ -729,7 +729,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 return false;
               } else {
                 logCtx.error(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
-                provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartSync.message);
+                provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartSync.message);
                 allStarted = false;
                 return false;
               }
@@ -759,9 +759,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 return false;
               } else {
                 logCtx.error(`Failed to start terminal on host '${config.host}'`, resultStartTerminal.message);
-                provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, resultStartTerminal.message);
                 allStarted = false;
-                return false;
               }
             }
           }
