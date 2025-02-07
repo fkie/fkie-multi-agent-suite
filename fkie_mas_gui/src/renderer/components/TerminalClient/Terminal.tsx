@@ -8,7 +8,8 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 import CloseIcon from "@mui/icons-material/Close";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import LastPageIcon from "@mui/icons-material/LastPage";
-import { Alert, AlertTitle, Box, IconButton, Stack } from "@mui/material";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import { Alert, AlertTitle, Box, IconButton, Link, Stack, Typography } from "@mui/material";
 import { FitAddon } from "@xterm/addon-fit";
 import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -388,8 +389,18 @@ export class Terminal extends React.Component<Props, XtermState> {
       <Stack width="100%" height="100%" alignItems="center">
         {!state.opened && (
           <Alert severity="info">
-            <AlertTitle>TTYD Daemon is not available</AlertTitle>
-            If you want to check this terminal, please start the terminal manager daemon on the host.
+            <AlertTitle>TTYD Daemon on {this.props.wsUrl} is not available</AlertTitle>
+            <Typography>
+              If you want to check this terminal, please start the terminal manager daemon on the host using{" "}
+              <RocketLaunchIcon fontSize="inherit" /> 'Hosts' panel or manually:
+            </Typography>
+            <Typography sx={{ ml: "1em" }}>ttyd --writable --port 7681 bash</Typography>
+            <Typography sx={{ mt: "1em" }}>
+              Install instructions:{" "}
+              <Link mt={2} href="https://github.com/tsl0922/ttyd" target="_blank" color="inherit">
+                https://github.com/tsl0922/ttyd
+              </Link>
+            </Typography>
           </Alert>
         )}
 
