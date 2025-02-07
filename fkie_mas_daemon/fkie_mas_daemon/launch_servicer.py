@@ -240,7 +240,11 @@ class LaunchServicer(LoggingEventHandler):
     def _remove_launch_from_observer(self, launch_config: LaunchConfig):
         try:
             for path in self._observed_launch_files[launch_config.filename]:
-                self._remove_file_from_observe(path)
+                try:
+                    self._remove_file_from_observe(path)
+                except Exception as e:
+                    Log.error(
+                        f"{self.__class__.__name__}: _remove_file_from_observe {path}:\n{e}")
             del self._observed_launch_files[launch_config.filename]
         except Exception as e:
             Log.error(
@@ -481,13 +485,16 @@ class LaunchServicer(LoggingEventHandler):
         cfgid = CfgId(request.path, '')
         if cfgid in self._loaded_files:
             try:
-                self._remove_launch_from_observer(self._loaded_files[cfgid])
-                del self._loaded_files[cfgid]
-                result.status.code = 'OK'
-
-                # notify GUI about changes
-                self.websocket.publish('ros.launch.changed', {
-                                       'path': request.path, 'action': 'unloaded'})
+                if cfgid in self._loaded_files:
+                    self._remove_launch_from_observer(self._loaded_files[cfgid])
+                    del self._loaded_files[cfgid]
+                    result.status.code = 'OK'
+                    # notify GUI about changes
+                    self.websocket.publish('ros.launch.changed', {
+                                        'path': request.path, 'action': 'unloaded'})
+                else:
+                    result.status.code = 'ERROR'
+                    result.status.msg = f"{request.path} not found"
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)
