@@ -126,12 +126,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
             </Alert>
           )}
 
-          {!currentHost && (
-            <Alert severity="info">
-              <AlertTitle>{`Invalid provider: [${providerId}]`}</AlertTitle>
-              Please report this bug.
-            </Alert>
-          )}
+          {!currentHost && <Alert severity="info">Wait until the provider is initialized: [${providerId}]</Alert>}
 
           {currentHost && nodeName && initialCommands.length > 0 && type !== CmdType.CMD && (
             <TerminalClient

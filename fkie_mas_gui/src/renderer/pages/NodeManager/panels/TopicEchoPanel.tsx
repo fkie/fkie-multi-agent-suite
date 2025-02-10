@@ -10,7 +10,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import StopIcon from "@mui/icons-material/Stop";
 import {
   Alert,
-  AlertTitle,
   Box,
   Button,
   Divider,
@@ -639,8 +638,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
           {history && !noData && generateJsonTopics}
           {!currentProvider && (
             <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
-              <AlertTitle>{`Invalid provider: [${selectedProvider}]`}</AlertTitle>
-              Please report this bug.
+              <Alert severity="info">Wait until the provider is initialized: [${selectedProvider}]</Alert>
             </Alert>
           )}
         </Stack>
