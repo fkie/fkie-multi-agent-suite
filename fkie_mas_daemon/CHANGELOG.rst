@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.3 (10.02.2025)
+------------------
+* fixed unload not existing files
+
 4.2.2 (05.02.2025)
 ------------------
 * fixed call service with useNow parameter

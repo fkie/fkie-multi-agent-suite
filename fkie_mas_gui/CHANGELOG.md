@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.2.3 - 10.02.2025
+
+Extended hint for TTYD Daemon if ttyd is not available
+Fixed unload not existing files
+Fixed start if ttyd not available
+Fixed daemon min version
+
 ## 4.2.2 - 05.02.2025
 
 Added: show incompatible QoS warning at group level
