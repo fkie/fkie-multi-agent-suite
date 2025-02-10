@@ -171,7 +171,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               icon = (
                 <Tooltip
                   key={`icon-${node.id}`}
-                  title={`Executable '${launchInfo.executable}' or package '${launchInfo.package_name}' not found`}
+                  title={`Executable '${launchInfo.executable}' or package '${JSON.stringify(launchInfo.package_name)}' not found`}
                   placement="left"
                   disableInteractive
                 >
