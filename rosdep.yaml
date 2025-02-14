@@ -1,0 +1,2 @@
+fkie_mas_msgs:
+    ubuntu: [ros-galactic-fkie-mas-msgs, ros-noetic-fkie-mas-msgs, ros-jazzy-fkie-mas-msgs]
