@@ -26,3 +26,8 @@ lib*.so.*
 generated/
 .vscode/
 *.code-workspace
+debian
+.pybuild
+.obj-*
+*.deb
+*.ddeb

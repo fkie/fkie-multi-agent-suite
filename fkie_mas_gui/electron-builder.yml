@@ -35,6 +35,8 @@ dmg:
 linux:
   target:
     - AppImage
+    - deb
+  executableName: mas-gui
   maintainer: fkie.cms
   category: Development
   synopsis: Manage and control ROS nodes

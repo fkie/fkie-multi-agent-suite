@@ -2,7 +2,7 @@
 <package format="3">
   <name>fkie_mas_msgs</name>
   <description>
-     The messages required by multimaster packages.
+     The messages required by multi agent suite packages.
   </description>
   <version>3.1.0</version>
   <license>MIT</license>

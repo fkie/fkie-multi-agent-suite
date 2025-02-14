@@ -8,8 +8,6 @@
 
 import os
 import unittest
-import time
-import rospkg
 
 from fkie_mas_pylib.system import ros1_masteruri
 from fkie_mas_pylib.system import url
