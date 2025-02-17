@@ -8,6 +8,8 @@ if [ ! -f /etc/ros/rosdep/sources.list.d/10-mas.list ]; then
   sudo chown $USER /etc/ros/rosdep/sources.list.d/10-mas.list
   echo "yaml https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/rosdep.yaml" > /etc/ros/rosdep/sources.list.d/10-mas.list
   rosdep update --include-eol-distros
+  echo "Install required dependencies"
+  sudo apt install -y python3-bloom python3-rosdep fakeroot debhelper dh-python
 fi
 
 function clean () {
