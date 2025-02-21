@@ -394,7 +394,7 @@ export class Terminal extends React.Component<Props, XtermState> {
               If you want to check this terminal, please start the terminal manager daemon on the host using{" "}
               <RocketLaunchIcon fontSize="inherit" /> in 'Hosts' panel or manually:
             </Typography>
-            <Typography sx={{ ml: "1em" }}>ttyd --writable --port 7681 bash</Typography>
+            <Typography sx={{ ml: "1em" }}>ttyd --writable --port 8681 bash</Typography>
             <Typography sx={{ mt: "1em" }}>
               Install instructions:{" "}
               <Link mt={2} href="https://github.com/tsl0922/ttyd" target="_blank" color="inherit">

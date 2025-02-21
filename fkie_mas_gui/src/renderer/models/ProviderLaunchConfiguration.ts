@@ -46,7 +46,7 @@ export default class ProviderLaunchConfiguration {
     enable: boolean;
     port?: number;
     path?: string;
-  } = { enable: true, path: "ttyd", port: 7681 };
+  } = { enable: true, path: "ttyd", port: 8681 };
 
   force: {
     stop: boolean;
@@ -79,7 +79,7 @@ export default class ProviderLaunchConfiguration {
   };
 
   public terminalStartCmd(): TResult {
-    const portNumber = this.terminal.port || 7681;
+    const portNumber = this.terminal.port || 8681;
     const ttydPath = this.terminal.path || "ttyd";
     const ttydCmd = `${ttydPath} --writable --port ${portNumber} bash`;
     let cmd = "";

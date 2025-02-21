@@ -28,6 +28,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
     const [initialCommands, setInitialCommands] = useState<string[]>([]);
     const [providerName, setProviderName] = useState("");
     const [currentHost, setCurrentHost] = useState<string>();
+    const [ttydPort, setTtydPort] = useState<number>(8681);
     const [lastScreenUsed, setLastScreenUsed] = useState("");
     const [tokenUrl, setTokenUrl] = useState(providerId);
     const [errorHighlighting, setErrorHighlighting] = useState(false);
@@ -91,6 +92,18 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
       }
     }, [initializeTerminal, lastScreenUsed, nodeName, providerId, rosCtx.mapProviderRosNodes, screen, type]);
 
+    const updateTTYDPort = useCallback(() => {
+      const ttydNodes = rosCtx.mapProviderRosNodes.get(providerId)?.filter((n) => {
+        return n.name.startsWith("/ttyd-");
+      });
+      if (ttydNodes && ttydNodes?.length > 0) {
+        const splits = ttydNodes[0].name.split("-");
+        if (splits && splits.length > 1) {
+          setTtydPort(parseInt(splits[1]));
+        }
+      }
+    }, [rosCtx.mapProviderRosNodes]);
+
     // load commands initially
     useEffect(() => {
       initializeTerminal(screen);
@@ -99,6 +112,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
     // update the terminal every time the node screen changes
     useEffect(() => {
       updateScreenName();
+      updateTTYDPort();
     }, [rosCtx.mapProviderRosNodes]);
 
     const getHostStyle = useCallback(
@@ -132,7 +146,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
             <TerminalClient
               key={`term-${id}`}
               tokenUrl={tokenUrl}
-              wsUrl={`ws://${currentHost}:7681/ws`}
+              wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
               type={type}
               initialCommands={initialCommands}
               name={`${nodeName}`}
@@ -147,7 +161,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
             <TerminalClient
               key={`term-cmd-${id}`}
               tokenUrl={`${cmd.replaceAll("/", " ")}`}
-              wsUrl={`ws://${currentHost}:7681/ws`}
+              wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
               type={type}
               initialCommands={initialCommands}
               name={`${cmd.replaceAll("/", " ")}`}
@@ -162,7 +176,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
             <TerminalClient
               key={`term-terminal-${id}`}
               tokenUrl={`${cmd.replaceAll("/", " ")}`}
-              wsUrl={`ws://${currentHost}:7681/ws`}
+              wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
               type={type}
               initialCommands={initialCommands}
               name={`bash`}
@@ -179,7 +193,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
               type={type}
               tokenUrl={tokenUrl}
               provider={rosCtx.getProviderById(cmd)}
-              wsUrl={`ws://${currentHost}:7681/ws`}
+              wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
               initialCommands={initialCommands}
               name={`bash`}
               errorHighlighting={errorHighlighting}
@@ -191,7 +205,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
           )}
         </Box>
       );
-    }, [cmd, currentHost, id, initialCommands, nodeName, providerId, settingsCtx, tokenUrl, type]);
+    }, [cmd, currentHost, id, initialCommands, nodeName, providerId, settingsCtx, tokenUrl, type, ttydPort]);
 
     return createTerminalView;
   }
