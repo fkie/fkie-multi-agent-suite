@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if ! command -v jq &> /dev/null; then
+    echo "jq is not installed. Please install jq to run the script."
+    echo "sudo apt install jq"
+    exit 1
+fi
+
 TMP_DIR=./tmp-mas
 
 RELEASES_URL="https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases"
