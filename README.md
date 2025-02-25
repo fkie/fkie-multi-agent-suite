@@ -26,6 +26,12 @@ pip install "websockets>=12.0"
 
 > In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. Tests must show whether it is necessary to prepend **RMW_IMPLEMENTATION=rmw_fastrtps_cpp**. Under Ubuntu 20.04 with ROS-galactic this leads to problems with the communication between discovery and daemon.
 
+### Install debian packages from github
+
+```bash
+wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
+```
+
 ### Build ROS FKIE packages
 
 You can run the following commands to setup a build from source:
