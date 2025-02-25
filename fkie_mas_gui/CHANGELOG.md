@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2.4 - 25.02.2025
+
+Changed default ttyd port
+Fixed ttyd port determination if not default port is used
+Added script to create debian packages for all mas packages
+
 ## 4.2.3 - 10.02.2025
 
 Extended hint for TTYD Daemon if ttyd is not available
