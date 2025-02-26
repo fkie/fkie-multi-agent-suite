@@ -10,6 +10,34 @@ Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this 
 
 The communication between the GUI and the Daemon (on each host) is based on WebSockets on port **35430+(ROS_DOMAIN_ID)**, 35430+255+(ROS_DOMAIN_ID)+101*(ROS_MASTER_URI_PORT-11311) with ROS1. These ports should be open in the firewall.
 
+> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. Tests must show whether it is necessary to prepend **RMW_IMPLEMENTATION=rmw_fastrtps_cpp**. Under Ubuntu 20.04 with ROS-galactic this leads to problems with the communication between discovery and daemon.
+
+
+### Install debian packages from github
+
+For Ubuntu 20.04 and 24.04 there are Debian packages on Github that can be installed with the following command:
+
+```bash
+wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
+```
+
+You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
+Currently there is no debian package, so you have to install it with
+
+```bash
+sudo snap install ttyd --classic
+```
+
+### Run
+
+```bash
+mas-gui
+```
+
+## Alternative Install
+
+Using AppImage and source build
+
 ### Install dependencies
 
 You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
@@ -24,15 +52,6 @@ sudo snap install ttyd --classic
 pip install "websockets>=12.0"
 ```
 
-> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. Tests must show whether it is necessary to prepend **RMW_IMPLEMENTATION=rmw_fastrtps_cpp**. Under Ubuntu 20.04 with ROS-galactic this leads to problems with the communication between discovery and daemon.
-
-### Install debian packages from github
-
-For Ubuntu 20.04 and 24.04 there are Debian packages on Github that can be installed with the following command:
-
-```bash
-wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
-```
 
 ### Build ROS FKIE packages
 
@@ -63,6 +82,16 @@ colcon build --packages-up-to fkie_mas_daemon
 curl -s https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest | grep "browser_download_url.*mas-gui.AppImage" | cut -d : -f 2,3 | tr -d \" | wget --show-progress -i -
 chmod +x ./mas-gui.AppImage
 mv ./mas-gui.AppImage ~/.local/bin/.
+```
+
+### Run
+
+```bash
+mas-gui.AppImage
+```
+in Ubuntu 24.04
+```bash
+mas-gui.AppImage --no-sandbox
 ```
 
 **For known issues and other build and launch options that affect GUI, see [fkie_mas_gui](https://github.com/fkie/fkie-multi-agent-suite/tree/master/fkie_mas_gui#readme)**

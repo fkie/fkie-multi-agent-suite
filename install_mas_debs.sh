@@ -73,9 +73,8 @@ function get_package() {
     fi
 }
 
-echo "Get GUI package for Multi-Agent-Suite"
-
 if [[ "$1" != "no-gui" ]]; then
+    echo "Get GUI package for Multi-Agent-Suite"
     get_package "fkie-mas-gui"
 fi
 

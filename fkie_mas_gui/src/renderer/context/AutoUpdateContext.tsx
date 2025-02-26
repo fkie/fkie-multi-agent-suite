@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { TAutoUpdateManager } from "@/types";
+import packageJson from "../../../package.json";
 import { LoggingContext } from "./LoggingContext";
 import { SettingsContext } from "./SettingsContext";
 
@@ -17,6 +18,8 @@ export interface IAutoUpdateContext {
   updateError: string;
   requestInstallUpdate: () => void;
   requestedInstallUpdate: boolean;
+  isAppImage: boolean;
+  installDebian: (gui: boolean, ros: boolean) => void;
 }
 
 export const DEFAULT = {
@@ -30,6 +33,8 @@ export const DEFAULT = {
   updateError: "",
   requestInstallUpdate: (): void => {},
   requestedInstallUpdate: false,
+  isAppImage: true,
+  installDebian: (): void => {},
 };
 
 interface IAutoUpdateProviderComponent {
@@ -49,6 +54,7 @@ export function AutoUpdateProvider({
   const [downloadProgress, setDownloadProgress] = useState<ProgressInfo | null>(null);
   const [updateError, setUpdateError] = useState<string>("");
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
+  const [isAppImage, setIsAppImage] = useState<boolean>(true);
   const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release">("AutoUpdate:updateChannel", "release");
 
   function checkForUpdate(channel?: "prerelease" | "release"): void {
@@ -62,6 +68,51 @@ export function AutoUpdateProvider({
     }
     autoUpdateManager?.checkForUpdate();
   }
+
+  function installDebian(gui: boolean, ros: boolean): void {
+    logCtx.info(
+      `start update for gui(${gui}) on ros(${ros}) on channel (${updateChannel}) to version (${updateAvailable?.version})`,
+      "",
+      true
+    );
+    //TODO
+    //navCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
+  }
+
+  const fetchRelease = async (channel?: "prerelease" | "release"): Promise<void> => {
+    try {
+      setUpdateError("");
+      console.log(`${channel}`);
+      if (channel === "release") {
+        const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest");
+        if (!response.ok) {
+          setUpdateError("Network error");
+        }
+        const data = await response.json();
+        if (data.name !== packageJson.version) {
+          setUpdateAvailable({ version: data.name, releaseDate: data.published_at } as UpdateInfo);
+        }
+      } else {
+        const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases");
+        if (!response.ok) {
+          setUpdateError("Network error");
+        }
+        const data = await response.json();
+        const prereleases = data.filter((release) => release.prerelease);
+        if (prereleases.length > 0) {
+          if (prereleases[0].name !== packageJson.version) {
+            setUpdateAvailable({ version: prereleases[0].name, releaseDate: data.published_at } as UpdateInfo);
+          }
+        } else {
+          setUpdateError("No prereleases found");
+        }
+      }
+    } catch (error) {
+      setUpdateError(error.message);
+    } finally {
+      setCheckingForUpdate(false);
+    }
+  };
 
   function requestInstallUpdate(): void {
     setUpdateError("");
@@ -107,6 +158,10 @@ export function AutoUpdateProvider({
     autoUpdateManager?.onUpdateError((message) => {
       setUpdateError(message);
       logCtx.debug("update failed", message);
+      if (message.includes("APPIMAGE")) {
+        setIsAppImage(false);
+        fetchRelease(updateChannel);
+      }
     });
 
     if (settingsCtx.get("checkForUpdates")) {
@@ -126,6 +181,8 @@ export function AutoUpdateProvider({
       updateError,
       requestedInstallUpdate,
       requestInstallUpdate,
+      isAppImage,
+      installDebian,
     }),
     [autoUpdateManager, checkingForUpdate, updateAvailable, downloadProgress, updateError, requestedInstallUpdate]
   );

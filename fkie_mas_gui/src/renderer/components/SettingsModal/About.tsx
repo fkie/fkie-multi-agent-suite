@@ -111,16 +111,22 @@ export default function About(): JSX.Element {
             {auCtx?.updateAvailable?.version && (
               <Stack spacing={0.2} direction="row" alignItems="center">
                 <Typography variant="body1" color="green">
-                  Version {auCtx.updateAvailable?.version} downloaded
+                  Version {auCtx.updateAvailable?.version} available
                 </Typography>
-                <Button color="primary" onClick={() => auCtx.requestInstallUpdate()} variant="text">
-                  Restart required
-                </Button>
+                {auCtx.isAppImage ? (
+                  <Button color="primary" onClick={() => auCtx.requestInstallUpdate()} variant="text">
+                    Restart required
+                  </Button>
+                ) : (
+                  <Button color="primary" onClick={() => auCtx.installDebian(true, true)} variant="text">
+                    Update
+                  </Button>
+                )}
               </Stack>
             )}
           </Stack>
         )}
-        {auCtx.autoUpdateManager && auCtx.updateChannel === "prerelease" && (
+        {auCtx.autoUpdateManager && auCtx.isAppImage && auCtx.updateChannel === "prerelease" && (
           <Typography ml="1em" variant="body1" color="orange">
             You must switch to the 'prerelease' branch for Daemon and Discovery
           </Typography>

@@ -711,7 +711,11 @@ export default function NodeManager(): JSX.Element {
       // add update button in the bottom border
       if (auCtx.updateAvailable) {
         renderValues.buttons.push(
-          <Tooltip title={`new version ${auCtx.updateAvailable.version} available`} placement="top">
+          <Tooltip
+            key="update-available"
+            title={`new version ${auCtx.updateAvailable.version} available`}
+            placement="top"
+          >
             <Button
               style={{ textTransform: "none" }}
               onClick={() => {
