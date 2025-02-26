@@ -2,16 +2,6 @@
 # sudo rosdep init
 # rosdep update --include-eol-distros
 
-if [ ! -f /etc/ros/rosdep/sources.list.d/10-mas.list ]; then
-  echo "Create rosdep entries for mas packages:"
-  sudo touch /etc/ros/rosdep/sources.list.d/10-mas.list
-  sudo chown $USER /etc/ros/rosdep/sources.list.d/10-mas.list
-  echo "yaml https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/rosdep.yaml" > /etc/ros/rosdep/sources.list.d/10-mas.list
-  rosdep update --include-eol-distros
-  echo "Install required dependencies"
-  sudo apt install -y python3-bloom python3-rosdep fakeroot debhelper dh-python
-fi
-
 function clean () {
   echo "Remove debian build files"
   rm -fr fkie_mas_msgs/debian
@@ -19,11 +9,17 @@ function clean () {
   rm -fr fkie_mas_pylib/debian
   rm -fr fkie_mas_pylib/.pybuild
   rm -fr fkie_mas_pylib/.pytest_cache
+  rm -fr fkie_mas_pylib/.obj-*
+  rm -fr fkie_mas_pylib/fkie_mas_pylib.egg-info
   rm -fr fkie_mas_daemon/debian
   rm -fr fkie_mas_daemon/.pybuild
   rm -fr fkie_mas_daemon/.pytest_cache
+  rm -fr fkie_mas_daemon/.obj-*
+  rm -fr fkie_mas_daemon/fkie_mas_daemon.egg-info
   rm -fr fkie_mas_discovery/debian
   rm -fr fkie_mas_discovery/.obj-*
+  rm -fr fkie_mas_sync/debian
+  rm -fr fkie_mas_sync/.obj-*
   rm -fr fkie_mas_meta/debian
   rm -fr fkie_mas_meta/.obj-*
   echo "Clean finished"
@@ -50,23 +46,43 @@ if [ ! -z "$1" ]; then
   ROS_DISTRO="$1"
 fi
 
-OS_VERSION=`lsb_release -c -s`
-if [ "$ROS_DISTRO" == "galactic" ]; then
-  OS_VERSION="focal"
-elif [ "$ROS_DISTRO" == "jazzy" ]; then
-  OS_VERSION="noble"
+DEP_INSTALLED=$(dpkg -l | grep debhelper)
+if [ -z "$DEP_INSTALLED" ]; then
+    echo "Install required dependencies"
+    sudo apt install -y python3-bloom python3-rosdep fakeroot debhelper dh-python
+fi
+
+ROSDEP_REPO="/etc/ros/rosdep/sources.list.d/11-mas-$ROS_DISTRO.list"
+
+if [ -z "$ROS_DISTRO" ]; then
+  echo "unknown ROS_DISTRO, exit!"
+fi
+
+if [ ! -f $ROSDEP_REPO ]; then
+  echo "Create rosdep entries for mas packages:"
+  sudo rm -fr "/etc/ros/rosdep/sources.list.d/11-mas-*"
+  sudo touch $ROSDEP_REPO
+  sudo chown $USER $ROSDEP_REPO
+  echo "yaml https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/rosdep/$ROS_DISTRO.yaml" > $ROSDEP_REPO
+  rosdep update --include-eol-distros
+fi
+
+if [ ! -z "$2" ]; then
+  OS_VERSION="$1"
+else
+  OS_VERSION=`lsb_release -c -s`
 fi
 
 clean
 
-echo "Create debian packages for --os-version $OS_VERSION --ros-distro $ROS_DISTRO"
+echo -e "Create debian packages for --os-version \e[36m$OS_VERSION\e[0m --ros-distro \e[36m$ROS_DISTRO\e[0m"
 
 cd fkie_mas_msgs && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 cd fkie_mas_pylib && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 cd fkie_mas_discovery && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 cd fkie_mas_daemon && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 # cd fkie_mas_meta && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
-if [ "$ROS_DISTRO" == "galactic" ]; then
+if [ "$ROS_DISTRO" == "noetic" ]; then
   cd fkie_mas_sync && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 fi
 

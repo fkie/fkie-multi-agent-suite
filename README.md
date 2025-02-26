@@ -28,6 +28,8 @@ pip install "websockets>=12.0"
 
 ### Install debian packages from github
 
+For Ubuntu 20.04 and 24.04 there are Debian packages on Github that can be installed with the following command:
+
 ```bash
 wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
 ```

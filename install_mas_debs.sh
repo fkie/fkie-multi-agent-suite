@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if ! command -v jq &> /dev/null; then
-    echo "jq is not installed. Please install jq to run the script."
+    echo -e "\e[31mjq is not installed. Please install jq to run the script.\e[0m"
     echo "sudo apt install jq"
     exit 1
 fi
@@ -13,19 +13,19 @@ RELEASES=$(curl -s "$RELEASES_URL")
 
 # Check whether the releases have been successfully retrieved
 if [ $? -ne 0 ]; then
-    echo "Error when retrieving the releases."
+    echo -e "\e[31mError when retrieving the releases from github.com\e[0m"
     exit 1
 fi
 
 function get_package() {
     PACKAGE=$1
+    OS_CODENAME=$2
     DEB_URL=""
 
     # Search for the file in the releases
     LATEST_VERSION=""
-
     while read -r ASSET_NAME FILE_URL; do
-        if [[ "$ASSET_NAME" == $PACKAGE*.deb ]]; then
+        if [[ "$ASSET_NAME" == $PACKAGE*$OS_CODENAME*.deb ]]; then
             VERSION=$(echo "$ASSET_NAME" | grep -oP '\d+\.\d+\.\d+')
             FILE_FOUND=true
             if [[ -n "$VERSION" ]]; then
@@ -43,7 +43,7 @@ function get_package() {
         # Check whether the latest version is already installed.
         if dpkg -l | grep -q "$PACKAGE"; then
             echo "$PACKAGE already installed."
-            INSTALLED_VERSION=$(dpkg -l | grep "$PACKAGE" | grep -oP '\d+\.\d+\.\d+')
+            INSTALLED_VERSION=$(dpkg -l | grep "$PACKAGE" | grep -oP '\d+\.\d+.\d+' | sed -r "s/-/\./")
             echo "  Installed version: $INSTALLED_VERSION"
 
             # Extract latest version
@@ -53,7 +53,7 @@ function get_package() {
                 echo "  The latest version is already installed, skip"
                 DEB_FILE=
             else
-                echo "  A new version is available: $LATEST_VERSION."
+                echo "  A new version is available: $LATEST_VERSION"
             fi
         else
             echo "$PACKAGE is not installed."
@@ -66,41 +66,62 @@ function get_package() {
             curl -L -O "$DEB_URL"
             echo -n " ./$DEB_FILE"
             cd ..
-            echo "download finished"
+            echo -e "download finished"
         fi
     else
-        echo "No .deb-file found."
+        echo -e "\e[31mNo .deb-file for '$PACKAGE' found.\e[0m"
     fi
 }
 
+echo "Get GUI package for Multi-Agent-Suite"
+
 if [[ "$1" != "no-gui" ]]; then
     get_package "fkie-mas-gui"
-    # get_package "python3-websockets"
-    # get_package "ttyd"
 fi
-if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "jazzy" ]]; then
-    get_package "ros-$ROS_DISTRO-fkie-mas-msgs"
-    get_package "ros-$ROS_DISTRO-fkie-mas-pylib"
-    get_package "ros-$ROS_DISTRO-fkie-mas-discovery"
-    get_package "ros-$ROS_DISTRO-fkie-mas-daemon"
+
+echo "Get dependency packages for Multi-Agent-Suite"
+
+OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
+if [[ "$OS_CODENAME" == "focal" || "$OS_CODENAME" == "noble" ]]; then
+    echo "detected OS_CODENAME=$OS_CODENAME"
+else
+    echo -e "\e[31mdebian packages are only available for focal and noble, exit\e[0m"
+    exit 1
+fi
+
+get_package "python3-websockets" $OS_CODENAME
+get_package "ttyd" $OS_CODENAME
+
+echo "Get ROS packages for Multi-Agent-Suite"
+
+if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "jazzy" ]]; then
+    echo "detected ROS_DISTRO=$ROS_DISTRO"
+    get_package "ros-$ROS_DISTRO-fkie-mas-msgs" $OS_CODENAME
+    get_package "ros-$ROS_DISTRO-fkie-mas-pylib" $OS_CODENAME
+    get_package "ros-$ROS_DISTRO-fkie-mas-discovery" $OS_CODENAME
+    get_package "ros-$ROS_DISTRO-fkie-mas-daemon" $OS_CODENAME
     if [[ "$ROS_DISTRO" == "noetic" ]]; then
-        get_package "ros-$ROS_DISTRO-fkie-mas-sync"
+        get_package "ros-$ROS_DISTRO-fkie-mas-sync" $OS_CODENAME
     fi
 else
-    echo "no valid ROS_DISTRO (noetic or jazzy) detected."
+    if [ -z "$ROS_DISTRO" ]; then
+        echo -e "\e[31mROS_DISTRO is not set\e[0m"
+    else
+        echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
+    fi
 fi
 
-if [ ! -z "$DEB_FILE" ]; then
-    echo "install packages"
-
-    # Install the debian package
-    sudo dpkg -i -R $TMP_DIR
+if [ -d "$TMP_DIR" ]; then
+    echo "Install packages"
 
     # Fix dependencies
-    sudo apt-get install -f
+    if sudo apt install $TMP_DIR/*; then
+        echo -e "\e[32mInstallation completed.\e[0m"
+    else
+        echo -e "\e[31mInstallation failed\e[0m"
+    fi
     # Cleanup
     rm -fr "$TMP_DIR"
-    echo "Installation completed."
 else
-    echo "Nothing to do."
+    echo -e "Nothing to install."
 fi
