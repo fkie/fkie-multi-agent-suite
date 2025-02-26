@@ -1,0 +1,19 @@
+fkie_mas_msgs:
+    ubuntu:
+      focal: [ros-noetic-fkie-mas-msgs]
+
+fkie_mas_pylib:
+    ubuntu:
+      focal: [ros-noetic-fkie-mas-pylib]
+
+fkie_mas_daemon:
+    ubuntu:
+      focal: [ros-noetic-fkie-mas-daemon]
+
+fkie_mas_discovery:
+    ubuntu:
+      focal: [ros-noetic-fkie-mas-discovery]
+
+fkie_mas_sync:
+    ubuntu:
+      focal: [ros-noetic-fkie-mas-sync]
