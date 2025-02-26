@@ -68,12 +68,12 @@ class LaunchConfigException(Exception):
     pass
 
 
-def perform_to_string(context: launch.LaunchContext, value: Union[List[List], List[launch.Substitution], str, None]) -> Union[str, None]:
+def perform_to_string(context: launch.LaunchContext, value: Union[List[List], List[launch.Substitution], str, None], sep: str = ' ') -> Union[str, None]:
     result = ''
     if isinstance(value, str):
         result = value
     elif isinstance(value, List):
-        result += ' '.join([perform_to_string(context, val) for val in value])
+        result += sep.join([perform_to_string(context, val, sep='') for val in value])
     elif value and isinstance(value, launch.Substitution):
         try:
             result += context.perform_substitution(value)
@@ -810,7 +810,7 @@ class LaunchConfig(object):
     def nodes(self) -> List[LaunchNodeWrapper]:
         return self._nodes
 
-    @ property
+    @property
     def filename(self) -> Text:
         '''
         Returns an existing path with file name or an empty string.
@@ -828,7 +828,7 @@ class LaunchConfig(object):
         raise LaunchConfigException(
             'launch file %s not found!' % self.__launch_file)
 
-    @ property
+    @property
     def launchname(self):
         '''
         Returns the name of the launch file with extension, e.g. 'test.launch'
@@ -837,7 +837,7 @@ class LaunchConfig(object):
         '''
         return os.path.basename(self.__launch_file)
 
-    @ property
+    @property
     def packagename(self):
         '''
         Returns the name of the package containing the launch file or None.
@@ -896,7 +896,7 @@ class LaunchConfig(object):
     #         value = argv_defaults[arg]
     #         arg_match = re.search(r"\$\(\s*arg\s*", value)
 
-    @ classmethod
+    @classmethod
     def get_launch_arguments(cls, context: LaunchContext, filename: str, provided_args: list) -> List[LaunchArgument]:
         '''
         :param list(fkie_mas_pylib.interface.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
