@@ -1,19 +1,15 @@
 fkie_mas_msgs:
     ubuntu:
       focal: [ros-galactic-fkie-mas-msgs]
-      noble: [ros-jazzy-fkie-mas-msgs]
 
 fkie_mas_pylib:
     ubuntu:
       focal: [ros-galactic-fkie-mas-pylib]
-      noble: [ros-jazzy-fkie-mas-pylib]
 
 fkie_mas_daemon:
     ubuntu:
       focal: [ros-galactic-fkie-mas-daemon]
-      noble: [ros-jazzy-fkie-mas-daemon]
 
 fkie_mas_discovery:
     ubuntu:
       focal: [ros-galactic-fkie-mas-discovery]
-      noble: [ros-jazzy-fkie-mas-discovery]
