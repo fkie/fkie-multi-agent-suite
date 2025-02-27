@@ -44,7 +44,7 @@
 using namespace std::chrono_literals;
 using namespace fkie_mas_msgs::msg;
 
-using paricipant_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, ParticipantEntitiesInfo>;
+using participant_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, ParticipantEntitiesInfo>;
 
 /**
  * Get a value from a environment variable
@@ -83,7 +83,7 @@ public:
         publisher_ = this->create_publisher<fkie_mas_msgs::msg::ChangedState>("~/changed", qos_settings);
         RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/ChangedState]", this->publisher_->get_topic_name());
         service_ = this->create_service<fkie_mas_msgs::srv::GetParticipants>("~/get_participants",
-                                                                             std::bind(&CustomParticipantListener::get_pparticipants,
+                                                                             std::bind(&CustomParticipantListener::get_participants,
                                                                                        this,
                                                                                        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         RCLCPP_INFO(get_logger(), "  service: %s [fkie_mas_msgs/msg/GetParticipants]", this->service_->get_service_name());
@@ -116,7 +116,7 @@ public:
         // std::lock_guard<std::mutex> lock(internalMutex_);
         if (eprosima::fastrtps::rtps::MATCHED_MATCHING == info.status)
         {
-            // std::cout << "mathed subscription " << info.remoteEndpointGuid << std::endl;
+            // std::cout << "matched subscription " << info.remoteEndpointGuid << std::endl;
             // publishers_.insert(info.remoteEndpointGuid);
         }
         else if (eprosima::fastrtps::rtps::REMOVED_MATCHING == info.status)
@@ -197,15 +197,15 @@ public:
         publisher_->publish(msg);
     }
 
-    void get_pparticipants(const std::shared_ptr<rmw_request_id_t>,
+    void get_participants(const std::shared_ptr<rmw_request_id_t>,
                            const std::shared_ptr<fkie_mas_msgs::srv::GetParticipants::Request>,
                            const std::shared_ptr<fkie_mas_msgs::srv::GetParticipants::Response> response)
     {
         RCLCPP_INFO(get_logger(), "Request get_participants");
         std::lock_guard<std::mutex> guard(mutex_);
-        for (auto itdp = discoveredParticipants_.begin(); itdp != discoveredParticipants_.end(); itdp++)
+        for (auto it_dp = discoveredParticipants_.begin(); it_dp != discoveredParticipants_.end(); it_dp++)
         {
-            response->participants.push_back(itdp->second);
+            response->participants.push_back(it_dp->second);
         }
         RCLCPP_INFO(get_logger(), " request get_participants handled with %lu participants", response->participants.size());
         RCLCPP_DEBUG(get_logger(), "rosgraph: service response state with %lu participants", response->participants.size());
@@ -291,7 +291,7 @@ private:
     rclcpp::Service<fkie_mas_msgs::srv::GetParticipants>::SharedPtr service_;
     std::string daemon_topic_;
     double stamp_;
-    paricipant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
+    participant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
 };
 
 #include <iostream>
