@@ -6,6 +6,24 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
+usage() {
+    echo "Parameters:"
+    echo "  -g      install only GUI relevant packages"
+    echo "  -r      do not install GUI packages"
+    echo "  -p      install prerelease packages"
+    exit 1
+}
+
+while getopts grph  flag; do
+    case "${flag}" in
+        g) NO_ROS=true;;
+        r) NO_GUI=true;;
+        p) PRERELEASE=true;;
+        h) usage ;;
+        *) usage ;;
+    esac
+done
+
 TMP_DIR=./tmp-mas
 
 RELEASES_URL="https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases"
@@ -15,6 +33,13 @@ RELEASES=$(curl -s "$RELEASES_URL")
 if [ $? -ne 0 ]; then
     echo -e "\e[31mError when retrieving the releases from github.com\e[0m"
     exit 1
+fi
+
+if [ -z "$PRERELEASE" ]; then
+    # remove prereleases
+    RELEASES=$(echo "$RELEASES" | jq -r '[.[] | select(.prerelease==false)'])
+else
+    echo -e "\e[36mInstall also prereleases!\e[0m"
 fi
 
 function get_package() {
@@ -73,40 +98,42 @@ function get_package() {
     fi
 }
 
-if [[ "$1" != "no-gui" ]]; then
+if [[ -z $NO_GUI ]]; then
     echo "Get GUI package for Multi-Agent-Suite"
     get_package "fkie-mas-gui"
 fi
 
-echo "Get dependency packages for Multi-Agent-Suite"
+if [[ -z $NO_ROS ]]; then
+    echo "Get dependency packages for Multi-Agent-Suite"
 
-OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
-if [[ "$OS_CODENAME" == "focal" || "$OS_CODENAME" == "noble" ]]; then
-    echo "detected OS_CODENAME=$OS_CODENAME"
-else
-    echo -e "\e[31mdebian packages are only available for focal and noble, exit\e[0m"
-    exit 1
-fi
-
-get_package "python3-websockets" $OS_CODENAME
-get_package "ttyd" $OS_CODENAME
-
-echo "Get ROS packages for Multi-Agent-Suite"
-
-if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "jazzy" ]]; then
-    echo "detected ROS_DISTRO=$ROS_DISTRO"
-    get_package "ros-$ROS_DISTRO-fkie-mas-msgs" $OS_CODENAME
-    get_package "ros-$ROS_DISTRO-fkie-mas-pylib" $OS_CODENAME
-    get_package "ros-$ROS_DISTRO-fkie-mas-discovery" $OS_CODENAME
-    get_package "ros-$ROS_DISTRO-fkie-mas-daemon" $OS_CODENAME
-    if [[ "$ROS_DISTRO" == "noetic" ]]; then
-        get_package "ros-$ROS_DISTRO-fkie-mas-sync" $OS_CODENAME
-    fi
-else
-    if [ -z "$ROS_DISTRO" ]; then
-        echo -e "\e[31mROS_DISTRO is not set\e[0m"
+    OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
+    if [[ "$OS_CODENAME" == "focal" || "$OS_CODENAME" == "noble" ]]; then
+        echo -e "detected OS_CODENAME=\e[36m$OS_CODENAME\e[0m"
     else
-        echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
+        echo -e "\e[31mdebian packages are only available for focal and noble, exit\e[0m"
+        exit 1
+    fi
+
+    get_package "python3-websockets" $OS_CODENAME
+    get_package "ttyd" $OS_CODENAME
+
+    echo "Get ROS packages for Multi-Agent-Suite"
+
+    if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "jazzy" ]]; then
+        echo -e "detected ROS_DISTRO=\e[36m$ROS_DISTRO\e[0m"
+        get_package "ros-$ROS_DISTRO-fkie-mas-msgs" $OS_CODENAME
+        get_package "ros-$ROS_DISTRO-fkie-mas-pylib" $OS_CODENAME
+        get_package "ros-$ROS_DISTRO-fkie-mas-discovery" $OS_CODENAME
+        get_package "ros-$ROS_DISTRO-fkie-mas-daemon" $OS_CODENAME
+        if [[ "$ROS_DISTRO" == "noetic" ]]; then
+            get_package "ros-$ROS_DISTRO-fkie-mas-sync" $OS_CODENAME
+        fi
+    else
+        if [ -z "$ROS_DISTRO" ]; then
+            echo -e "\e[31mROS_DISTRO is not set\e[0m"
+        else
+            echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
+        fi
     fi
 fi
 
