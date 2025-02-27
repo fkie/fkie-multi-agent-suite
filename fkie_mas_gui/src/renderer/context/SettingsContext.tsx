@@ -215,7 +215,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   tooltipEnterDelay: {
     label: "The number of milliseconds to wait before showing the tooltip.",
     type: "none",
-    default: 1500,
+    default: 500,
   },
   actionOnChangeLaunch: {
     label: "Action on loaded launch file change detection",

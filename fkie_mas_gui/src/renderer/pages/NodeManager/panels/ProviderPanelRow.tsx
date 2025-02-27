@@ -505,7 +505,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                     provider.id,
                     "",
                     "",
-                    "",
+                    "wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh | bash -s -- -r",
                     event.nativeEvent.shiftKey,
                     event.nativeEvent.ctrlKey
                   );

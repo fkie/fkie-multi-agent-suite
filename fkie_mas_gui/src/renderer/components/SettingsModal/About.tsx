@@ -6,6 +6,7 @@ import PropTypes from "prop-types";
 import { useContext, useState } from "react";
 
 import { AutoUpdateContext } from "@/renderer//context/AutoUpdateContext";
+import LoggingContext from "@/renderer/context/LoggingContext";
 import licenses from "@/renderer/deps-licenses.json";
 import packageJson from "../../../../package.json";
 import CopyButton from "../UI/CopyButton";
@@ -28,6 +29,7 @@ LinearProgressWithLabel.propTypes = {
 
 export default function About(): JSX.Element {
   const auCtx = useContext(AutoUpdateContext);
+  const logCtx = useContext(LoggingContext);
   const [openErrorTooltip, setOpenErrorTooltip] = useState(false);
 
   return (
@@ -118,7 +120,27 @@ export default function About(): JSX.Element {
                     Restart required
                   </Button>
                 ) : (
-                  <Button color="primary" onClick={() => auCtx.installDebian(true, true)} variant="text">
+                  <Button
+                    color="primary"
+                    onClick={async () => {
+                      // open terminal for update
+                      try {
+                        // create a terminal command
+                        const result = await window.commandExecutor?.exec(
+                          null,
+                          `wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh | bash`
+                          // `wget -Nnv https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh && bash ./install_mas_debs.sh; rm -fr ./install_mas_debs.sh`
+                        );
+                        console.log(`UPDATE: ${JSON.stringify(result)}`);
+                        if (!result?.result) {
+                          logCtx.error(`Can't open external terminal for an update`, `${result?.message}`, true);
+                        }
+                      } catch (error) {
+                        logCtx.error(`Can't open external terminal for an update`, `${error}`, true);
+                      }
+                    }}
+                    variant="text"
+                  >
                     Update
                   </Button>
                 )}

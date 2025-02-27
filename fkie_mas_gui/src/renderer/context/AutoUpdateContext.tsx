@@ -20,6 +20,7 @@ export interface IAutoUpdateContext {
   requestedInstallUpdate: boolean;
   isAppImage: boolean;
   installDebian: (gui: boolean, ros: boolean) => void;
+  setLocalProviderId: (providerId: string) => void;
 }
 
 export const DEFAULT = {
@@ -35,6 +36,7 @@ export const DEFAULT = {
   requestedInstallUpdate: false,
   isAppImage: true,
   installDebian: (): void => {},
+  setLocalProviderId: (): void => {},
 };
 
 interface IAutoUpdateProviderComponent {
@@ -54,6 +56,7 @@ export function AutoUpdateProvider({
   const [downloadProgress, setDownloadProgress] = useState<ProgressInfo | null>(null);
   const [updateError, setUpdateError] = useState<string>("");
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
+  const [localProviderId, setLocalProviderId] = useState<string>("");
   const [isAppImage, setIsAppImage] = useState<boolean>(true);
   const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release">("AutoUpdate:updateChannel", "release");
 
@@ -63,10 +66,14 @@ export function AutoUpdateProvider({
     setUpdateError("");
     setCheckingForUpdate(false);
     setDownloadProgress(null);
-    if (channel) {
-      autoUpdateManager?.setChannel(channel);
+    if (isAppImage) {
+      if (channel) {
+        autoUpdateManager?.setChannel(channel);
+      }
+      autoUpdateManager?.checkForUpdate();
+    } else {
+      fetchRelease(channel);
     }
-    autoUpdateManager?.checkForUpdate();
   }
 
   function installDebian(gui: boolean, ros: boolean): void {
@@ -82,6 +89,7 @@ export function AutoUpdateProvider({
   const fetchRelease = async (channel?: "prerelease" | "release"): Promise<void> => {
     try {
       setUpdateError("");
+      setCheckingForUpdate(true);
       console.log(`${channel}`);
       if (channel === "release") {
         const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest");
@@ -160,7 +168,6 @@ export function AutoUpdateProvider({
       logCtx.debug("update failed", message);
       if (message.includes("APPIMAGE")) {
         setIsAppImage(false);
-        fetchRelease(updateChannel);
       }
     });
 
@@ -183,6 +190,7 @@ export function AutoUpdateProvider({
       requestInstallUpdate,
       isAppImage,
       installDebian,
+      setLocalProviderId,
     }),
     [autoUpdateManager, checkingForUpdate, updateAvailable, downloadProgress, updateError, requestedInstallUpdate]
   );
