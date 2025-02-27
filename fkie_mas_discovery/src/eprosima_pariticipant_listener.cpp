@@ -304,6 +304,7 @@ void signalHandler(int signum)
 
 int main(int argc, char *argv[])
 {
+    setenv("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp", true);
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
     rclcpp::init(argc, argv);
