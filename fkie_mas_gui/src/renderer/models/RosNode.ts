@@ -78,6 +78,8 @@ export default class RosNode {
    */
   location: string | string[];
 
+  isLocal: boolean = false;
+
   /**
    * (optional) name of the provider that returned the node
    */

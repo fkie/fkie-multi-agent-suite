@@ -736,6 +736,7 @@ export default class Provider implements IProvider {
       pid: number;
       masteruri: string;
       location: string;
+      is_local: boolean;
       publishers: RosTopicId[];
       subscribers: RosTopicId[];
       services: RosTopicId[];
@@ -808,6 +809,7 @@ export default class Provider implements IProvider {
             // add screens
             // TODO: Filter screens that belongs to the same master URI
             rn.screens = n.screens;
+            rn.isLocal = n.is_local;
             nodeList.set(n.id, rn);
           });
 
@@ -2079,8 +2081,7 @@ export default class Provider implements IProvider {
         if (
           (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
           (n.location instanceof String && n.location === "remote") ||
-          (n.location instanceof Array &&
-            !n.location.some((loc) => loc.startsWith("SHM") || loc.startsWith("UDPv4:[127.0.0.1]")))
+          !n.isLocal
         ) {
           ignored = true;
         }
