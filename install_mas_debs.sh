@@ -11,14 +11,16 @@ usage() {
     echo "  -g      install only GUI relevant packages"
     echo "  -r      do not install GUI packages"
     echo "  -p      install prerelease packages"
+    echo "  -w      wait for key press to quit"
     exit 1
 }
 
-while getopts grph  flag; do
+while getopts grphw  flag; do
     case "${flag}" in
         g) NO_ROS=true;;
         r) NO_GUI=true;;
         p) PRERELEASE=true;;
+        w) WAIT_FOR_KEY=true;;
         h) usage ;;
         *) usage ;;
     esac
@@ -152,4 +154,7 @@ if [ -d "$TMP_DIR" ]; then
 else
     echo -e "Nothing to install."
 fi
-read  -n 1 -p "Press <any key> to quit"
+
+if [[ ! -z $WAIT_FOR_KEY ]]; then
+    read  -n 1 -p "Press <any key> to quit"
+fi
