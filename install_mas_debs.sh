@@ -143,6 +143,7 @@ if [ -d "$TMP_DIR" ]; then
     # Fix dependencies
     if sudo apt install $TMP_DIR/*; then
         echo -e "\e[32mInstallation completed.\e[0m"
+        echo -e "\e[32mRestart mas nodes, please!.\e[0m"
     else
         echo -e "\e[31mInstallation failed\e[0m"
     fi
@@ -151,3 +152,4 @@ if [ -d "$TMP_DIR" ]; then
 else
     echo -e "Nothing to install."
 fi
+read  -n 1 -p "Press <any key> to quit"
