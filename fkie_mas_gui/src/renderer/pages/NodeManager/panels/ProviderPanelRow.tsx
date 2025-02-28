@@ -31,6 +31,7 @@ import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import semver from "semver";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
@@ -52,7 +53,7 @@ interface ProviderPanelRowProps {
 
 export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Element {
   const { provider } = props;
-
+  const auCtx = useContext(AutoUpdateContext);
   const rosCtx = useContext(RosContext);
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
@@ -505,7 +506,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                     provider.id,
                     "",
                     "",
-                    "wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh | bash -s -- -r",
+                    auCtx.getUpdateCli(false, true),
                     event.nativeEvent.shiftKey,
                     event.nativeEvent.ctrlKey
                   );

@@ -6,7 +6,6 @@ import PropTypes from "prop-types";
 import { useContext, useState } from "react";
 
 import { AutoUpdateContext } from "@/renderer//context/AutoUpdateContext";
-import LoggingContext from "@/renderer/context/LoggingContext";
 import licenses from "@/renderer/deps-licenses.json";
 import packageJson from "../../../../package.json";
 import CopyButton from "../UI/CopyButton";
@@ -29,8 +28,9 @@ LinearProgressWithLabel.propTypes = {
 
 export default function About(): JSX.Element {
   const auCtx = useContext(AutoUpdateContext);
-  const logCtx = useContext(LoggingContext);
-  const [openErrorTooltip, setOpenErrorTooltip] = useState(false);
+  const [openErrorTooltip, setOpenErrorTooltip] = useState(auCtx.updateError ? true : false);
+
+  const updateCli = auCtx.getUpdateCli(true, true);
 
   return (
     <Stack height="100%" padding="0.3em">
@@ -41,7 +41,7 @@ export default function About(): JSX.Element {
             Version:
           </Typography>
           <Typography variant="body1">{packageJson.version}</Typography>
-          {!auCtx.checkingForUpdate && (
+          {auCtx.autoUpdateManager && !auCtx.checkingForUpdate && (
             <Button color="primary" onClick={() => auCtx.checkForUpdate()} variant="text">
               check for updates
             </Button>
@@ -123,21 +123,7 @@ export default function About(): JSX.Element {
                   <Button
                     color="primary"
                     onClick={async () => {
-                      // open terminal for update
-                      try {
-                        // create a terminal command
-                        const result = await window.commandExecutor?.exec(
-                          null,
-                          `wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh | bash`
-                          // `wget -Nnv https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh && bash ./install_mas_debs.sh; rm -fr ./install_mas_debs.sh`
-                        );
-                        console.log(`UPDATE: ${JSON.stringify(result)}`);
-                        if (!result?.result) {
-                          logCtx.error(`Can't open external terminal for an update`, `${result?.message}`, true);
-                        }
-                      } catch (error) {
-                        logCtx.error(`Can't open external terminal for an update`, `${error}`, true);
-                      }
+                      auCtx.installDebian(true, true);
                     }}
                     variant="text"
                   >
@@ -153,12 +139,30 @@ export default function About(): JSX.Element {
             You must switch to the 'prerelease' branch for Daemon and Discovery
           </Typography>
         )}
-        {openErrorTooltip && (
+        {openErrorTooltip && auCtx.isAppImage && (
           <Stack ml="1em" direction="row" alignItems="center">
             <CopyButton value={auCtx.updateError} />
             <Typography variant="body1" color="red">
               {auCtx.updateError}
             </Typography>
+          </Stack>
+        )}
+        {openErrorTooltip && !auCtx.isAppImage && (
+          <Stack ml="1em" direction="column" justifyItems="left">
+            <Typography variant="body1" color="red">
+              {auCtx.updateError}
+            </Typography>
+          </Stack>
+        )}
+        {!auCtx.isAppImage && (
+          <Stack ml="1em" direction="column" justifyItems="left">
+            <Typography variant="body1">Manual update in the terminal of your choice:</Typography>
+            <Stack ml="1em" direction="row" alignItems="center">
+              <CopyButton value={updateCli} />
+              <Typography variant="body1" color="grey">
+                {updateCli}
+              </Typography>
+            </Stack>
           </Stack>
         )}
       </Stack>

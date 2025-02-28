@@ -4,7 +4,10 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { TAutoUpdateManager } from "@/types";
 import packageJson from "../../../package.json";
+import { CmdType } from "../providers";
 import { LoggingContext } from "./LoggingContext";
+import NavigationContext from "./NavigationContext";
+import RosContext from "./RosContext";
 import { SettingsContext } from "./SettingsContext";
 
 export interface IAutoUpdateContext {
@@ -19,6 +22,7 @@ export interface IAutoUpdateContext {
   requestInstallUpdate: () => void;
   requestedInstallUpdate: boolean;
   isAppImage: boolean;
+  getUpdateCli: (gui: boolean, ros: boolean) => string;
   installDebian: (gui: boolean, ros: boolean) => void;
   setLocalProviderId: (providerId: string) => void;
 }
@@ -35,6 +39,9 @@ export const DEFAULT = {
   requestInstallUpdate: (): void => {},
   requestedInstallUpdate: false,
   isAppImage: true,
+  getUpdateCli: (): string => {
+    return "";
+  },
   installDebian: (): void => {},
   setLocalProviderId: (): void => {},
 };
@@ -49,7 +56,10 @@ export function AutoUpdateProvider({
   children,
 }: IAutoUpdateProviderComponent): ReturnType<React.FC<IAutoUpdateProviderComponent>> {
   const logCtx = useContext(LoggingContext);
+  const navCtx = useContext(NavigationContext);
+  const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
+  const [checkedChannel, setCheckedChannel] = useState<string>("");
   const [autoUpdateManager, setAutoUpdateManager] = useState<TAutoUpdateManager | null>(null);
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(null);
@@ -59,6 +69,14 @@ export function AutoUpdateProvider({
   const [localProviderId, setLocalProviderId] = useState<string>("");
   const [isAppImage, setIsAppImage] = useState<boolean>(true);
   const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release">("AutoUpdate:updateChannel", "release");
+
+  function getUpdateCli(gui: boolean, ros: boolean): string {
+    const prereleaseOpt = updateChannel === "prerelease" ? " -p" : "";
+    const noGuiOpt = !gui ? " -r" : "";
+    const noRosOpt = !ros ? " -g" : "";
+    const args = prereleaseOpt || noGuiOpt || noRosOpt ? ` -s -- ${prereleaseOpt}${noGuiOpt}${noRosOpt}` : "";
+    return `wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prereleaseOpt ? "devel" : "master"}/install_mas_debs.sh | bash${args}`;
+  }
 
   function checkForUpdate(channel?: "prerelease" | "release"): void {
     logCtx.info(`Check for new ${updateChannel} on https://github.com/fkie/fkie-multi-agent-suite`, "", false);
@@ -72,7 +90,7 @@ export function AutoUpdateProvider({
       }
       autoUpdateManager?.checkForUpdate();
     } else {
-      fetchRelease(channel);
+      fetchRelease(channel ? channel : updateChannel);
     }
   }
 
@@ -80,17 +98,21 @@ export function AutoUpdateProvider({
     logCtx.info(
       `start update for gui(${gui}) on ros(${ros}) on channel (${updateChannel}) to version (${updateAvailable?.version})`,
       "",
-      true
+      false
     );
-    //TODO
-    //navCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
+    setUpdateError("");
+    const providerId = getLocalProviderId();
+    if (providerId) {
+      navCtx.openTerminal(CmdType.TERMINAL, providerId, "", "", getUpdateCli(gui, ros), false, false);
+    } else {
+      setUpdateError("Could not connect to the local TTYD. Please start the local TTYD.");
+    }
   }
 
-  const fetchRelease = async (channel?: "prerelease" | "release"): Promise<void> => {
+  const fetchRelease = async (channel: "prerelease" | "release"): Promise<void> => {
     try {
       setUpdateError("");
       setCheckingForUpdate(true);
-      console.log(`${channel}`);
       if (channel === "release") {
         const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest");
         if (!response.ok) {
@@ -115,6 +137,7 @@ export function AutoUpdateProvider({
           setUpdateError("No prereleases found");
         }
       }
+      setCheckedChannel(channel);
     } catch (error) {
       setUpdateError(error.message);
     } finally {
@@ -132,8 +155,16 @@ export function AutoUpdateProvider({
     if (updateChannel != channelType) {
       setChannel(channelType);
       autoUpdateManager?.setChannel(channelType);
-      checkForUpdate(channelType);
+      // checkForUpdate(channelType);
     }
+  }
+
+  function getLocalProviderId(): string {
+    const localProvider = rosCtx.getLocalProvider();
+    if (localProvider.length > 0) {
+      return localProvider[0].id;
+    }
+    return "";
   }
 
   useEffect(() => {
@@ -150,10 +181,12 @@ export function AutoUpdateProvider({
     });
     autoUpdateManager?.onUpdateAvailable((info) => {
       setUpdateAvailable(info);
+      setCheckedChannel(updateChannel);
       logCtx.info(`New version ${info.version} available!`, "");
     });
     autoUpdateManager?.onUpdateNotAvailable(() => {
       setUpdateAvailable(null);
+      setCheckedChannel(updateChannel);
     });
     autoUpdateManager?.onDownloadProgress((info) => {
       setDownloadProgress(info);
@@ -171,10 +204,25 @@ export function AutoUpdateProvider({
       }
     });
 
-    if (settingsCtx.get("checkForUpdates")) {
+    if (settingsCtx.get("checkForUpdates") && !checkedChannel) {
       checkForUpdate(updateChannel);
     }
   }, [autoUpdateManager]);
+
+  useEffect(() => {
+    if (!localProviderId) {
+      const localProvider = rosCtx.getLocalProvider();
+      if (localProvider.length > 0) {
+        setLocalProviderId(localProvider[0].id);
+      }
+    }
+  }, [rosCtx.providersConnected]);
+
+  useEffect(() => {
+    if (localProviderId && updateChannel !== checkedChannel) {
+      checkForUpdate(updateChannel);
+    }
+  }, [localProviderId, updateChannel, checkedChannel]);
 
   const attributesMemo = useMemo(
     () => ({
@@ -189,6 +237,7 @@ export function AutoUpdateProvider({
       requestedInstallUpdate,
       requestInstallUpdate,
       isAppImage,
+      getUpdateCli,
       installDebian,
       setLocalProviderId,
     }),
