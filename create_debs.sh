@@ -68,7 +68,7 @@ if [ ! -f $ROSDEP_REPO ]; then
 fi
 
 if [ ! -z "$2" ]; then
-  OS_VERSION="$1"
+  OS_VERSION="$2"
 else
   OS_VERSION=`lsb_release -c -s`
 fi
