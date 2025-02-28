@@ -36,7 +36,6 @@
 #include "fkie_mas_msgs/msg/gid.hpp"
 #include "fkie_mas_msgs/msg/participant_entities_info.hpp"
 #include "fkie_mas_msgs/msg/participants.hpp"
-#include "fkie_mas_msgs/srv/get_participants.hpp"
 
 #include "rclcpp/node.hpp"
 #include "rclcpp/publisher.hpp"
