@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.4 (28.02.2025)
+------------------
+* Fixed split string arrays in parameter and publisher dialogs by a comma, but not if the comma is inside '"'
+* Fixed launch if used find-pkg-share
+
 4.2.3 (10.02.2025)
 ------------------
 * fixed unload not existing files

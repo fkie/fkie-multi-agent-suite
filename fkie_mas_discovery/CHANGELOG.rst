@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.0.2 (28.02.2025)
+------------------
+* Added RMW_IMPLEMENTATION=rmw_fastrtps_cpp in code
+
 4.0.1 (03.02.2025)
 ------------------
 * fixed discovery name if ROS_IP is set

@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.1 (28.02.2025)
+------------------
+* Fixed split string arrays in parameter and publisher dialogs by a comma, but not if the comma is inside '"'
+
 4.2.0 (30.01.2025)
 ------------------
 * Added parameter to set the length of the arrays for topic echo

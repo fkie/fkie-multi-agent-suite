@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.2.5 - 28.02.2025
+
+Added update check for latest github version if we don't use appImage
+Added update of the debian packages via github
+Added script to install debian packages from github
+Added mas-gui arguments to update debian packages
+Fixed show local nodes with cyclon dds
+Fixed split string arrays in parameter and publisher dialogs by a comma, but not if the comma is inside '"'
+Fixed launch if used find-pkg-share
+Added RMW_IMPLEMENTATION=rmw_fastrtps_cpp in mas-discovery code
+
 ## 4.2.4 - 25.02.2025
 
 Changed default ttyd port
