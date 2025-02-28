@@ -447,3 +447,44 @@ export default class CommandExecutor implements TCommandExecutor {
     return config;
   }
 }
+
+export async function updateDebianPackages(prerelease: boolean = false): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const stdioOptions: StdioOptions | undefined = ["inherit", "pipe", "pipe"];
+      const child = spawn(
+        "/usr/bin/wget",
+        [
+          "-qO",
+          "-",
+          `https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prerelease ? "devel" : "master"}/install_mas_debs.sh`,
+          "|",
+          "bash",
+        ],
+        {
+          shell: true,
+          stdio: stdioOptions,
+          detached: false,
+        }
+      );
+
+      child.on("close", (code) => {
+        resolve(code === 0);
+      });
+      child.stdout?.on("data", function (data) {
+        log.info(`${data}`.trim());
+      });
+      child.stderr?.on("data", function (data) {
+        log.info(`${data}`.trim());
+      });
+
+      child.on("error", (error) => {
+        log.error(`${error}`);
+        resolve(false);
+      });
+    } catch (error) {
+      log.error(`${error}`);
+      resolve(false);
+    }
+  });
+}

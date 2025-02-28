@@ -69,7 +69,7 @@ function get_package() {
 
         # Check whether the latest version is already installed.
         if dpkg -l | grep -q "$PACKAGE"; then
-            echo "$PACKAGE already installed."
+            echo -e "\e[35m$PACKAGE\e[0m already installed."
             INSTALLED_VERSION=$(dpkg -l | grep "$PACKAGE" | grep -oP '\d+\.\d+.\d+' | sed -r "s/-/\./")
             echo "  Installed version: $INSTALLED_VERSION"
 
@@ -83,7 +83,7 @@ function get_package() {
                 echo "  A new version is available: $LATEST_VERSION"
             fi
         else
-            echo "$PACKAGE is not installed."
+            echo -e "\e[35m$PACKAGE\e[0m is not installed."
         fi
 
         if [ ! -z "$DEB_FILE" ]; then

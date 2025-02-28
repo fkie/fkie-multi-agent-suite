@@ -3,14 +3,21 @@ import log from "electron-log";
 
 export const ARGUMENTS = {
   SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES: "show-output-from-background-processes",
+  UPDATE_MAS_DEBIAN_PACKAGES: "update-debs",
+  UPDATE_MAS_DEBIAN_PRERELEASE_PACKAGES: "update-debs-prerelease",
 };
 
 /**
  * Register one command line argument and log its value
  */
-function registerArgument(name: string, value: string): void {
-  app.commandLine.appendSwitch(name, value);
-  log.info(` --${name}: ${value}`);
+function registerArgument(name: string, value: string | null): void {
+  if (value !== null) {
+    app.commandLine.appendSwitch(name, value);
+    log.info(` --${name}: ${value}`);
+  } else {
+    app.commandLine.appendArgument(name);
+    log.info(` --${name}`);
+  }
 }
 
 /**
@@ -21,6 +28,8 @@ export function registerArguments(): void {
 
   // Program arguments
   registerArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES, "true");
+  registerArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PACKAGES, null);
+  registerArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PRERELEASE_PACKAGES, null);
 }
 
 /**

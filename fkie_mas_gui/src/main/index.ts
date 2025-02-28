@@ -8,13 +8,18 @@
  */
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
 import { BrowserWindow, app, shell } from "electron";
+import log from "electron-log";
 import { join } from "path";
-import { registerArguments } from "./CommandLineInterface";
+import { ARGUMENTS, hasArgument, registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
+import { updateDebianPackages } from "./IPC/CommandExecutor";
 import MenuBuilder from "./menu";
 import windowStateKeeper from "./windowStateKeeper";
 // import installer from 'electron-devtools-installer'
 // import electrondebug from 'electron-debug'
+
+const installUpdates = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PACKAGES);
+const installPrerelease = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PRERELEASE_PACKAGES);
 
 // Disable security warnings and set react app path on dev env
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
@@ -51,6 +56,13 @@ if (process.env.NODE_ENV === "production") {
 // }
 
 const createWindow = async (): Promise<void> => {
+  if (installUpdates || installPrerelease) {
+    log.info(`update debian packages from github`);
+    if (installPrerelease) log.info(`  -> use prerelease channel`);
+    await updateDebianPackages(installPrerelease);
+    app.exit();
+  }
+
   // if (isDebug) {
   //   await installExtensions()
   // }
