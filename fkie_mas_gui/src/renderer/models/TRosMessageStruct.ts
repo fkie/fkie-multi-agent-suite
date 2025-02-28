@@ -28,7 +28,6 @@ export function rosMessageStructToString(
             const value_matches = (field.value as string)?.match(/(?:[^\s,"']+|"[^"]*")+/g);
             const values = value_matches
               ? value_matches.map((item) => {
-                console.log(`ITEM: ${item}`);
                   return item.trim().replace(/^"|"$/g, "").replace('"', "");
                 })
               : [];
