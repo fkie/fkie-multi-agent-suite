@@ -36,7 +36,7 @@ from fkie_mas_pylib.service.future import WaitFuture
 from fkie_mas_pylib.service.future import create_service_future
 from fkie_mas_pylib.service.future import wait_until_futures_done
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
-from fkie_mas_msgs.srv import GetParticipants
+from fkie_mas_msgs.msg import Participants
 
 import fkie_mas_daemon as nmd
 
@@ -151,6 +151,14 @@ class RosStateJsonify:
     def get_topics(self) -> Dict[str, RosTopic]:
         return self._ros_topic_dict
 
+    def apply_participants(self, msg: Participants):
+        # update the participant info (IP addresses)
+        new_ros_state = {}
+        for participant in msg.participants:
+            guid = self._guid_to_str(participant.guid)
+            new_ros_state[guid] = participant
+        self._participant_infos = new_ros_state
+
     def get_nodes_as_json(self, update_participants: bool) -> List[RosNode]:
         Log.debug(f"{self.__class__.__name__}: create graph for websocket")
         starts = time.time()
@@ -164,15 +172,9 @@ class RosStateJsonify:
         wait_futures: List[WaitFuture] = []
         cached_data.screens = screen.get_active_screens()
 
-        if update_participants or len(self._participant_infos) == 0:
-            Log.debug(f"{self.__class__.__name__}:  update_participant infos calling '{self._get_participants_service_name}'")
-            ready = create_service_future(nmd.ros_node, wait_futures, "participants", "", self._get_participants_service_name,
-                                          GetParticipants, GetParticipants.Request())
-            if not ready:
-                Log.debug(f"{self.__class__.__name__}:    service '{self._get_participants_service_name}' is not ready, skip")
+        if update_participants:
             self._ros_service_dict: Dict[str, RosService] = {}
             self._ros_topic_dict: Dict[str, RosTopic] = {}
-
 
         topic_list = nmd.ros_node.get_topic_names_and_types(True)
         for topic_name, topic_types in topic_list:
@@ -251,7 +253,8 @@ class RosStateJsonify:
                                 incompatible_qos.append(IncompatibleQos(
                                     qp.node.id, self._qos_compatibility2str(compatibility), reason))
                         if not self._has_endpoint_info(ros_node.id, tp.subscriber):
-                            endpoint_info = EndpointInfo(ros_node.id, self._get_qos(sub_info.qos_profile), incompatible_qos)
+                            endpoint_info = EndpointInfo(ros_node.id, self._get_qos(
+                                sub_info.qos_profile), incompatible_qos)
                             tp.subscriber.append(endpoint_info)
                         self._ros_topic_dict[ros_topic_id_str] = tp
                         if not self._has_topic_id(ros_topic_id, ros_node.subscribers):
@@ -305,24 +308,7 @@ class RosStateJsonify:
             Log.warn(f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec")
         # handle response
         for wait_future in wait_futures:
-            if wait_future.type == "participants":
-                if wait_future.finished:
-                    try:
-                        response = wait_future.future.result()
-                        if response:
-                            # update the participant info (IP addresses)
-                            new_ros_state = {}
-                            for participant in response.participants:
-                                guid = self._guid_to_str(participant.guid)
-                                new_ros_state[guid] = participant
-                            self._participant_infos = new_ros_state
-                    except Exception as exception:
-                        Log.warn(
-                            f"{self.__class__.__name__}:-> failed to update participants calling '{wait_future.service_name}': '{exception}'")
-                else:
-                    Log.warn(f"{self.__class__.__name__}:-> Timeout while update participants calling '{wait_future.service_name}'")
-                wait_future.client.destroy()
-            elif wait_future.type == "composable":
+            if wait_future.type == "composable":
                 self._update_composable_node(self._composable_nodes, wait_future)
             elif wait_future.type == "lc_state":
                 self._update_lifecycle_state(result, wait_future)
@@ -416,7 +402,6 @@ class RosStateJsonify:
             if node_id == item.node_id:
                 return True
         return False
-
 
     def _is_local_composable_service(self, service_name, ros_node: RosNode) -> bool:
         if service_name.endswith('/_container/list_nodes') and ros_node.is_local:

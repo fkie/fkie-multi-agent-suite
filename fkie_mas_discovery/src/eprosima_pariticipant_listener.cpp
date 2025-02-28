@@ -35,6 +35,7 @@
 #include "fkie_mas_msgs/msg/changed_state.hpp"
 #include "fkie_mas_msgs/msg/gid.hpp"
 #include "fkie_mas_msgs/msg/participant_entities_info.hpp"
+#include "fkie_mas_msgs/msg/participants.hpp"
 #include "fkie_mas_msgs/srv/get_participants.hpp"
 
 #include "rclcpp/node.hpp"
@@ -74,19 +75,12 @@ public:
                                                                                              eprosima::fastrtps::ParticipantListener(),
                                                                                              eprosima::fastrtps::SubscriberListener()
     {
-        rclcpp::QoS qos_settings(10);
-        // qos_settings.reliable();
-        // qos_settings.transient_local();
-        // qos_settings.keep_last(1);
         on_shutdown = false;
         RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
-        publisher_ = this->create_publisher<fkie_mas_msgs::msg::ChangedState>("~/changed", qos_settings);
+        publisher_ = this->create_publisher<fkie_mas_msgs::msg::ChangedState>("~/changed", rclcpp::QoS(10));
         RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/ChangedState]", this->publisher_->get_topic_name());
-        service_ = this->create_service<fkie_mas_msgs::srv::GetParticipants>("~/get_participants",
-                                                                             std::bind(&CustomParticipantListener::get_participants,
-                                                                                       this,
-                                                                                       std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-        RCLCPP_INFO(get_logger(), "  service: %s [fkie_mas_msgs/msg/GetParticipants]", this->service_->get_service_name());
+        publisher_participants_ = this->create_publisher<fkie_mas_msgs::msg::Participants>("~/participants", rclcpp::QoS(1).reliable().transient_local().keep_last(1));
+        RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/Participants]", this->publisher_participants_->get_topic_name());
         daemon_topic_ = std::string("rt") + this->publisher_->get_topic_name();
         participant_ = nullptr;
         eprosima::fastrtps::ParticipantAttributes participant_attr;
@@ -197,18 +191,16 @@ public:
         publisher_->publish(msg);
     }
 
-    void get_participants(const std::shared_ptr<rmw_request_id_t>,
-                           const std::shared_ptr<fkie_mas_msgs::srv::GetParticipants::Request>,
-                           const std::shared_ptr<fkie_mas_msgs::srv::GetParticipants::Response> response)
+    // not mutex locked!!!
+    void publish_participants()
     {
-        RCLCPP_INFO(get_logger(), "Request get_participants");
-        std::lock_guard<std::mutex> guard(mutex_);
+        fkie_mas_msgs::msg::Participants msg;
         for (auto it_dp = discoveredParticipants_.begin(); it_dp != discoveredParticipants_.end(); it_dp++)
         {
-            response->participants.push_back(it_dp->second);
+            msg.participants.push_back(it_dp->second);
         }
-        RCLCPP_INFO(get_logger(), " request get_participants handled with %lu participants", response->participants.size());
-        RCLCPP_DEBUG(get_logger(), "rosgraph: service response state with %lu participants", response->participants.size());
+        RCLCPP_INFO(get_logger(), " publish update with with %lu participants", msg.participants.size());
+        publisher_participants_->publish(msg);
     }
 
     void onParticipantDiscovery(
@@ -254,6 +246,7 @@ public:
                 pi.unicast_locators.push_back(to_string(*i));
             }
             discoveredParticipants_[info.info.m_guid] = pi;
+            publish_participants();
             break;
         }
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
@@ -268,6 +261,7 @@ public:
                 RCLCPP_INFO(get_logger(), "onParticipantDiscovery: remove participant %s:", to_string(info.info.m_guid).c_str());
                 discoveredParticipants_.erase(itp);
             }
+            publish_participants();
             break;
         }
         default:
@@ -288,7 +282,7 @@ private:
     bool on_shutdown;
     eprosima::fastrtps::Participant *participant_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
     rclcpp::Publisher<fkie_mas_msgs::msg::ChangedState>::SharedPtr publisher_;
-    rclcpp::Service<fkie_mas_msgs::srv::GetParticipants>::SharedPtr service_;
+    rclcpp::Publisher<fkie_mas_msgs::msg::Participants>::SharedPtr publisher_participants_;
     std::string daemon_topic_;
     double stamp_;
     participant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);

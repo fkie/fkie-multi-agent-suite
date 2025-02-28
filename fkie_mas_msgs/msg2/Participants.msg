@@ -1,2 +1,1 @@
----
 ParticipantEntitiesInfo[] participants

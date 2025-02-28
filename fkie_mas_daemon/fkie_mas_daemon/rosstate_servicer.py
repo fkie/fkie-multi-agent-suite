@@ -13,6 +13,7 @@ from fkie_mas_daemon.rosstate_jsonify import ParticipantGid
 import fkie_mas_daemon as nmd
 from fkie_mas_msgs.msg import Endpoint
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
+from fkie_mas_msgs.msg import Participants
 from fkie_mas_msgs.msg import ChangedState
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_pylib.websocket.server import WebSocketServer
@@ -66,6 +67,7 @@ class RosStateServicer:
         self._ros_node_list_mutex = threading.RLock()
         self.service_name_get_p = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/get_participants"
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
+        self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
         self._update_participants = True
@@ -98,12 +100,18 @@ class RosStateServicer:
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                           # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
+        qos_participants_profile = QoSProfile(depth=10,
+                                          durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                          history=QoSHistoryPolicy.KEEP_LAST,
+                                          reliability=QoSReliabilityPolicy.RELIABLE)
         Log.info(f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
         self.sub_discovered_state = nmd.ros_node.create_subscription(
             ChangedState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
         Log.info(f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
+        self.sub_participants = nmd.ros_node.create_subscription(
+            Participants, self.topic_name_participants, self._on_msg_participants, qos_profile=qos_participants_profile)
         self._lock_check = threading.RLock()
         self._thread_check_discovery_node = threading.Thread(target=self._check_discovery_node, daemon=True)
         self._thread_check_discovery_node.start()
@@ -187,7 +195,7 @@ class RosStateServicer:
 
     def _on_msg_state(self, msg: ChangedState):
         '''
-        The method to handle the received Log messages.
+        The method to handle the DDS changes.
         :param msg: the received message
         :type msg: fkie_mas_msgs.ChangedState
         '''
@@ -205,9 +213,18 @@ class RosStateServicer:
             with self._lock_check:
                 self._ts_state_updated = time.time()
 
+    def _on_msg_participants(self, msg: Participants):
+        '''
+        The method to handle the Participants.
+        :param msg: the received message
+        :type msg: fkie_mas_msgs.Participants
+        '''
+        with self._ros_node_list_mutex:
+            self._state_jsonify.apply_participants(msg)
+
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
-        The method to handle the received Log messages.
+        The method to handle the received Endpoints messages.
         :param msg: the received message
         :type msg: fkie_mas_msgs.Endpoint<XXX>
         '''
