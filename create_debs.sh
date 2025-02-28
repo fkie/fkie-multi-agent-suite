@@ -2,6 +2,28 @@
 # sudo rosdep init
 # rosdep update --include-eol-distros
 
+usage() {
+    echo "Parameters:"
+    echo "  -c      remove all build files"
+    echo "  -d      remove all debian files"
+    echo "  -o      os version code"
+    echo "  -r      ros distro code"
+    echo "  -u      force update rosdep files"
+    exit 1
+}
+
+while getopts hcdo:r:u  flag; do
+    case "${flag}" in
+        c) CLEAN=true;;
+        d) CLEAN_DEB=true;;
+        o) OS_VERSION=$OPTARG;;
+        r) ROS_DISTRO=$OPTARG;;
+        u) FORCE_UPDATE_ROSDEP=true;;
+        h) usage ;;
+        *) usage ;;
+    esac
+done
+
 function clean () {
   echo "Remove debian build files"
   rm -fr fkie_mas_msgs/debian
@@ -32,19 +54,18 @@ function clean-deb () {
   echo "Clean finished"
 }
 
-if [ "$1" == "clean" ]; then
+if [ ! -z "$CLEAN" ]; then
   clean
+  if [ ! -z "$CLEAN_DEB" ]; then
+    clean-deb
+  fi
   exit 0
 fi
-if [ "$1" == "clean-deb" ]; then
+if [ ! -z "$CLEAN_DEB" ]; then
   clean-deb
   exit 0
 fi
 
-
-if [ ! -z "$1" ]; then
-  ROS_DISTRO="$1"
-fi
 
 DEP_INSTALLED=$(dpkg -l | grep debhelper)
 if [ -z "$DEP_INSTALLED" ]; then
@@ -58,18 +79,16 @@ if [ -z "$ROS_DISTRO" ]; then
   echo "unknown ROS_DISTRO, exit!"
 fi
 
-if [ ! -f $ROSDEP_REPO ]; then
+if [ ! -f $ROSDEP_REPO ] || [ ! -z $FORCE_UPDATE_ROSDEP ]; then
   echo "Create rosdep entries for mas packages:"
-  sudo rm -fr "/etc/ros/rosdep/sources.list.d/11-mas-*"
+  sudo rm -fr /etc/ros/rosdep/sources.list.d/11-mas-*
   sudo touch $ROSDEP_REPO
   sudo chown $USER $ROSDEP_REPO
   echo "yaml https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/rosdep/$ROS_DISTRO.yaml" > $ROSDEP_REPO
   rosdep update --include-eol-distros
 fi
 
-if [ ! -z "$2" ]; then
-  OS_VERSION="$2"
-else
+if [ -z "$OS_VERSION" ]; then
   OS_VERSION=`lsb_release -c -s`
 fi
 
