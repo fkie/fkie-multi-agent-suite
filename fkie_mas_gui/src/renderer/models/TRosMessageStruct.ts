@@ -24,7 +24,14 @@ export function rosMessageStructToString(
       if (field.value || withEmptyFields) {
         if (field.value || typeof field.value === "boolean" || field.type.startsWith("bool")) {
           if (field.is_array) {
-            const values = field.value ? (field.value as string).split(/\s*,\s*/) : [];
+            // split by ",", but not if comma is inside '"'
+            const value_matches = (field.value as string)?.match(/(?:[^\s,"']+|"[^"]*")+/g);
+            const values = value_matches
+              ? value_matches.map((item) => {
+                console.log(`ITEM: ${item}`);
+                  return item.trim().replace(/^"|"$/g, "").replace('"', "");
+                })
+              : [];
             // TODO: add check for arrays with constant length
             result[field.name] = values.map((element) => {
               return str2typedValue(element, field.type);

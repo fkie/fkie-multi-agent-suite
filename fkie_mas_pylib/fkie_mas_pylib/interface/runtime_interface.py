@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import platform
@@ -249,7 +250,7 @@ class RosParameter:
         elif self.type == 'list':
             return [a.strip() for a in self.value.split(",")]
         elif self.type == 'str[]':
-            return [a.strip() for a in self.value.split(",")]
+            return [a.strip() for a in list(csv.reader([self.value.replace(', "', ',"')]))[0]]
         elif self.type == 'int[]':
             return [int(a.strip()) for a in self.value.split(",")]
         elif self.type == 'float[]':

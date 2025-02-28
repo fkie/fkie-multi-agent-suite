@@ -39,6 +39,7 @@ class TestParameter(Node):
         self.declare_parameter('array.bool', [True, False])
         self.declare_parameter('array.double', [1.1, 2.2, 3.3])
         self.declare_parameter('array.integer', [1, 2, 3])
+        self.declare_parameter('array.string', ["one", "two", "with space"])
         self.declare_parameter('error.while.set.bool', True)
 
         # Register a callback function that will be called whenever there is an attempt to
@@ -66,7 +67,7 @@ class TestParameter(Node):
                 self.get_logger().info("Parameter array.integer has changed. The new value is: %s" % param.value)
             if param.name == "error.while.set.bool":
                 result.successful = False
-            print(f"param: {param.name} [{param.type_}](double: {Parameter.Type.DOUBLE}) - {result.successful}")
+            print(f"param: {param.name} [{param.type_}] {param.value} - {result.successful}")
         return result
 
     def on_string(self, msg: String):

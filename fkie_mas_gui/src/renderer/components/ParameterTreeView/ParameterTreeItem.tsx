@@ -20,15 +20,31 @@ interface ParameterTreeItemProps {
 const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(function ParameterTreeItem(props, ref) {
   const { itemId, namespacePart, paramInfo, provider } = props;
 
+  function fixStringArray(val: string | number | boolean | string[]): string | number | boolean | string[] {
+    if (Array.isArray(val)) {
+      return val.map((v) => {
+        if (typeof v === "string") {
+          return v.includes(",") || v.includes("'") ? `"${v}"` : v;
+        }
+        return v;
+      });
+    }
+    return val;
+  }
+
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);
-  const [value, setValue] = useState(paramInfo.value);
+  const [value, setValue] = useState(fixStringArray(paramInfo.value));
   const [typedValue, setTypedValue] = useState<string | number | boolean | string[]>(toTypedValue(paramInfo.value));
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");
   const [showDescription, setShowDescription] = useState<boolean>(false);
+
+  function updateValue(val: string | number | boolean | string[]): void {
+    setValue(fixStringArray(val));
+  }
 
   useEffect(() => {
     const nameParts = paramInfo.name.replaceAll("/", ".").replaceAll("..", ".").split(".");
@@ -88,7 +104,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     if (result.result) {
       logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
       if (result.value) {
-        setValue(result.value);
+        updateValue(result.value);
         parameter.value = result.value;
       }
       if (result.value_type) {
@@ -97,7 +113,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     } else {
       logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`);
       parameter.value = oldValue;
-      setValue(oldValue);
+      updateValue(oldValue);
     }
   }
 
@@ -106,19 +122,19 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
       updateParameter(paramInfo, typedValue, paramInfo.type);
       setChanged(false);
     } else if (event.key === "Escape") {
-      setValue(paramInfo.value);
+      updateValue(paramInfo.value);
       setChanged(false);
     }
   }
 
   function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void {
     setChanged(true);
-    setValue(event.target.value);
+    updateValue(event.target.value);
   }
 
   function handleSliderChange(_event: Event, newValue: number | number[]): void {
     setChanged(true);
-    setValue(newValue as number);
+    updateValue(newValue as number);
   }
 
   function onLeave(): void {
@@ -281,7 +297,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
           disabled={paramInfo.readonly}
           onChange={(event) => {
             updateParameter(paramInfo, event.target.checked, "bool");
-            setValue(event.target.checked);
+            updateValue(event.target.checked);
           }}
         />
       );

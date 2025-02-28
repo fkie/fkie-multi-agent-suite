@@ -7,10 +7,10 @@
 # ****************************************************************************
 
 import asyncio
+import csv
 import json
 import os
 import re
-import rclpy
 import shlex
 import sys
 import traceback
@@ -833,7 +833,7 @@ class LaunchServicer(LoggingEventHandler):
                     base_type = field['type'].replace(r'/\[\d*\]/', '')
                     if field['is_array']:
                         # parse to array
-                        listvals = field['value'].split(',')
+                        listvals = [a.strip() for a in list(csv.reader([field['value'].replace(', "', ',"')]))[0]]
                         result[field['name']] = [self.str2typedValue(
                             n, base_type) for n in listvals]
                     else:
