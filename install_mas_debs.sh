@@ -26,7 +26,7 @@ while getopts grphw  flag; do
     esac
 done
 
-TMP_DIR=./tmp-mas
+TMP_DIR=/tmp/mas-debs
 
 RELEASES_URL="https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases"
 RELEASES=$(curl -s "$RELEASES_URL")
