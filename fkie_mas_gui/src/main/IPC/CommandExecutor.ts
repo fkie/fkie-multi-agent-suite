@@ -329,11 +329,15 @@ export default class CommandExecutor implements TCommandExecutor {
             });
           }
         });
-      } catch (error: any) {
+      } catch (error) {
+        let errorMessage = "Failed to execute remote command";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
         log.info("CommandExecutor - exec error: ", error);
         resolve({
           result: false,
-          message: error.message,
+          message: errorMessage,
           command,
         });
       }

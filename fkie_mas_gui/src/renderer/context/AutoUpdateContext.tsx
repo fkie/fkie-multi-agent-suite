@@ -139,7 +139,11 @@ export function AutoUpdateProvider({
       }
       setCheckedChannel(channel);
     } catch (error) {
-      setUpdateError(error.message);
+      let errorMessage = "Failed to fetch release";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      setUpdateError(errorMessage);
     } finally {
       setCheckingForUpdate(false);
     }
