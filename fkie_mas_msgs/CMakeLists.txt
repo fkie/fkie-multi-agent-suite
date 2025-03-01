@@ -23,6 +23,7 @@ if ( ament_cmake_FOUND )
       "msg2/Gid.msg"
       "msg2/ParticipantEntitiesInfo.msg"
       "msg2/Participants.msg"
+      "srv/GetParticipants.srv"
       "srv/ListNodes.srv"
       "srv/LoadLaunch.srv"
       "srv/Task.srv"
