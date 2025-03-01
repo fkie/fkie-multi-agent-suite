@@ -57,10 +57,10 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [nodesShow, setNodesShow] = useState<RosNode[]>([]);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
 
-  const [showNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);
+  const [showNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", true);
   const [showPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
   const [showSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
-  const [showServices] = useLocalStorage("NodesDetailsPanel:showServices", false);
+  const [showServices] = useLocalStorage("NodesDetailsPanel:showServices", true);
   const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
   const [showPaths] = useLocalStorage("NodesDetailsPanel:showPaths", true);
   const [showLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
