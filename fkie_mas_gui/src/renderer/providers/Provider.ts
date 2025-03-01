@@ -881,7 +881,7 @@ export default class Provider implements IProvider {
   /**
    * Get list of available packages using the uri 'ros.packages.get_list'
    */
-  public getPackageList: () => Promise<RosPackage[]> = async () => {
+  public getPackageList: (force: boolean) => Promise<RosPackage[]> = async (force) => {
     const comparePackages: (a: RosPackage, b: RosPackage) => number = (a, b) => {
       if (a.path < b.path) {
         return -1;
@@ -892,7 +892,7 @@ export default class Provider implements IProvider {
       return 0;
     };
     this.packages = [];
-    const result = await this.makeCall("ros.packages.get_list", [], true).then((value: TResultData) => {
+    const result = await this.makeCall("ros.packages.get_list", [force], true).then((value: TResultData) => {
       if (value.result) {
         const rosPackageList: RosPackage[] = (value.data as RosPackage[]) || [];
         return rosPackageList.sort(comparePackages);

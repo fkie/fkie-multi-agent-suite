@@ -39,7 +39,7 @@ function createXMLDependencyProposals(
       label: "node",
       kind: monaco.languages.CompletionItemKind.Function,
       documentation: "Add a new ROS node",
-      insertText: 'node name="${1:NAME}" pkg="${2:PACKAGE}" exec="${3:TYPE}"></node',
+      insertText: 'node name="${1:NAME}" pkg="${2:PACKAGE}" type="${3:TYPE}"></node',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },

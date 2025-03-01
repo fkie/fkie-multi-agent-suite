@@ -48,14 +48,11 @@ class FileServicer:
 
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         Log.info(
-            f"{self.__class__.__name__}: Request to [ros.packages.get_list]")
-        clear_cache = False
+            f"{self.__class__.__name__}: Request to [ros.packages.get_list], force: {clear_cache}")
         if clear_cache:
             try:
-                from roslaunch import substitution_args
                 import rospkg
-
-                substitution_args._rospack = rospkg.RosPack()
+                _rospack = rospkg.RosPack()
             except Exception as err:
                 Log.warn(
                     f"{self.__class__.__name__}: Cannot reset package cache: {err}"

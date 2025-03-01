@@ -34,10 +34,11 @@ function comparePackageItems(a: RosPackage, b: RosPackage): number {
 interface PackageExplorerProps {
   packageList: RosPackage[];
   selectedProvider?: string;
+  reloadPackage: number;
 }
 
 const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(function PackageExplorer(props, ref) {
-  const { packageList = [], selectedProvider = "" } = props;
+  const { packageList = [], selectedProvider = "", reloadPackage = 0 } = props;
 
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
@@ -62,6 +63,10 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
   }, [settingsCtx.changed]);
+
+  useEffect(() => {
+    handleOnSelectPackage(selectedPackage);
+  }, [reloadPackage])
 
   /**
    * Keep history of latest launched files.
