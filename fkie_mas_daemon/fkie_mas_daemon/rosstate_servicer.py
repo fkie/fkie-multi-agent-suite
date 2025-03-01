@@ -146,7 +146,7 @@ class RosStateServicer:
         while not self._on_shutdown:
             if self.topic_state_publisher_count:
                 # check if we have a discovery node
-                if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
+                if nmd.ros_node.count_publishers(self.topic_name_state) == 0 and nmd.ros_node.count_publishers(self.topic_name_participants) == 0:
                     self.topic_state_publisher_count = 0
                     self.publish_discovery_state()
                     with self._lock_check:
@@ -221,6 +221,9 @@ class RosStateServicer:
         '''
         with self._ros_node_list_mutex:
             self._state_jsonify.apply_participants(msg)
+        if not self.topic_state_publisher_count:
+            self.topic_state_publisher_count = 1
+            self.publish_discovery_state()
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
