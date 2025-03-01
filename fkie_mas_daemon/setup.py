@@ -50,7 +50,8 @@ else:
              ['resource/' + package_name]),
             (f'share/{package_name}', ['package.xml']),
             (f'share/{package_name}/test/launch',
-             ['tests/launch/test_composable_launch.py', 'tests/launch/test_included_launch.py']),
+             ['tests/launch/test_composable_launch.py', 'tests/launch/test_included_launch.py',
+             'tests/launch/autostart.launch.xml', 'tests/launch/params.yaml']),
             # (f'share/{package_name}/tests/resources', resource_files),
             (f'lib/{package_name}',
              ['scripts/mas-remote-node.py', 'scripts/mas-respawn'])

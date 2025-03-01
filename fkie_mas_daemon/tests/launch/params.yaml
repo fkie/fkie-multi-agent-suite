@@ -1,0 +1,4 @@
+rviz:
+  ros__parameters:
+    param:
+      value: "test"
