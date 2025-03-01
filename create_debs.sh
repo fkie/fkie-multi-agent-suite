@@ -105,4 +105,5 @@ if [ "$ROS_DISTRO" == "noetic" ]; then
   cd fkie_mas_sync && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 fi
 
+clean
 rm -fr ./*-dbgsym_*.ddeb
