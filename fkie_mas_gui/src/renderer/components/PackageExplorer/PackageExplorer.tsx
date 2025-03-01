@@ -66,7 +66,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
 
   useEffect(() => {
     handleOnSelectPackage(selectedPackage);
-  }, [reloadPackage])
+  }, [reloadPackage]);
 
   /**
    * Keep history of latest launched files.

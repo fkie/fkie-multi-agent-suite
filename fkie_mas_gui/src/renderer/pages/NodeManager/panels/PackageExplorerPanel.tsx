@@ -1,6 +1,6 @@
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Alert, AlertTitle, Box, FormControl, IconButton, Stack, Tooltip } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import PackageExplorer from "@/renderer/components/PackageExplorer/PackageExplorer";
@@ -17,6 +17,7 @@ export default function PackageExplorerPanel(): JSX.Element {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [reloadPackagesVar, forceReloadPackage] = useReducer((x) => x + 1, 0);
   const [packageList, setPackageList] = useState<RosPackage[]>([]);
   const [showReloadButton, setShowReloadButton] = useState(false);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -36,7 +37,7 @@ export default function PackageExplorerPanel(): JSX.Element {
     const provider = rosCtx.getProviderById(providerId);
     if (!provider) return;
     if (!provider.packages || force) {
-      const pl = await provider.getPackageList();
+      const pl = await provider.getPackageList(force);
       setPackageList(() => pl);
     } else {
       setPackageList(() => (provider.packages ? provider.packages : []));
@@ -58,7 +59,13 @@ export default function PackageExplorerPanel(): JSX.Element {
   });
 
   const createPackageExplorer = useMemo(() => {
-    return <PackageExplorer selectedProvider={selectedProvider} packageList={packageList} />;
+    return (
+      <PackageExplorer
+        selectedProvider={selectedProvider}
+        packageList={packageList}
+        reloadPackage={reloadPackagesVar}
+      />
+    );
   }, [selectedProvider, packageList]);
 
   const getHostStyle = useCallback(
@@ -107,6 +114,7 @@ export default function PackageExplorerPanel(): JSX.Element {
                   size="small"
                   onClick={() => {
                     updatePackageList(selectedProvider, true);
+                    forceReloadPackage();
                   }}
                 >
                   <RefreshIcon fontSize="inherit" />

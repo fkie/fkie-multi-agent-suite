@@ -46,6 +46,10 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
+import {
+  createDocumentSymbolsR2,
+  createXMLDependencyProposalsR2,
+} from "@/renderer/components/MonacoEditor/XmlLaunchProposalsR2";
 
 type TActiveModel = {
   path: string;
@@ -785,6 +789,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     if (provider && provider.packages) {
       packages = provider.packages;
     }
+    const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
     ["xml", "launch", "python"].forEach((e) => {
       // Add Completion provider for XML and launch files
@@ -805,7 +810,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 suggestions:
                   e === "python"
                     ? createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages)
-                    : createXMLDependencyProposals(monaco, range, clipTextSuggest, packages),
+                    : isRos2
+                      ? createXMLDependencyProposalsR2(monaco, range, clipTextSuggest, packages)
+                      : createXMLDependencyProposals(monaco, range, clipTextSuggest, packages),
               };
             }
             getClipboardTextForSuggest();
@@ -832,7 +839,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           monaco.languages.registerDocumentSymbolProvider(e, {
             displayName: "ROS Symbols",
             provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
-              return createDocumentSymbols(model);
+              return isRos2 ? createDocumentSymbolsR2(model) : createDocumentSymbols(model);
             },
           })
         );
