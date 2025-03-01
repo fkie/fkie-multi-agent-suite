@@ -97,7 +97,9 @@ clean
 echo -e "Create debian packages for --os-version \e[36m$OS_VERSION\e[0m --ros-distro \e[36m$ROS_DISTRO\e[0m"
 
 cd fkie_mas_msgs && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
+sudo apt install ./ros-$ROS_DISTRO-fkie-mas-msgs_*
 cd fkie_mas_pylib && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
+sudo apt install ./ros-$ROS_DISTRO-fkie-mas-msgs_*
 cd fkie_mas_discovery && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 cd fkie_mas_daemon && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 # cd fkie_mas_meta && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
@@ -107,3 +109,4 @@ fi
 
 clean
 rm -fr ./*-dbgsym_*.ddeb
+sudo apt install ./ros-$ROS_DISTRO-fkie-mas-*
