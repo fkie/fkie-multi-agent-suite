@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.2.6 - 01.03.2025
+
+Prepand RMW_IMPLEMENTATION=rmw_fastrtps_cpp for discovery node
+Replaced get_participants service by latched paticipants topic for communication between daemon and discovery
+
 ## 4.2.5 - 28.02.2025
 
 Added update check for latest github version if we don't use appImage

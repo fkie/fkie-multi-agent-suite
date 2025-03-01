@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.2.0 (01.03.2025)
+------------------
+* Added new Participants message
+
 3.1.0 (12.01.2025)
 ------------------
 * Added new service GetParticipants

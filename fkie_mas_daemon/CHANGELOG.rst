@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.0 (01.03.2025)
+------------------
+* Replaced get_participants service by latched paticipants topic for communication between daemon and discovery
+
 4.2.4 (28.02.2025)
 ------------------
 * Fixed split string arrays in parameter and publisher dialogs by a comma, but not if the comma is inside '"'

@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.0 (01.03.2025)
+------------------
+* Replaced get_participants service by latched paticipants topic for communication between daemon and discovery
+
 4.0.2 (28.02.2025)
 ------------------
 * Added RMW_IMPLEMENTATION=rmw_fastrtps_cpp in code
