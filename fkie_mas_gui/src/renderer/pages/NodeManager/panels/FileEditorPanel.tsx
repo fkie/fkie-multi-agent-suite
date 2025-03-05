@@ -6,7 +6,7 @@ import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
 import { Alert, CircularProgress, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { IDisposable, Position, editor } from "monaco-editor/esm/vs/editor/editor.api";
+import { CancellationToken, IDisposable, Position, editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 import { ForwardedRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
@@ -16,10 +16,15 @@ import ExplorerTree, { equalLaunchArgs } from "@/renderer/components/MonacoEdito
 import { createPythonLaunchProposals } from "@/renderer/components/MonacoEditor/PythonLaunchProposals";
 import SearchTree from "@/renderer/components/MonacoEditor/SearchTree";
 import XmlBeautify from "@/renderer/components/MonacoEditor/XmlBeautify";
+import { Ros2XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighterR2";
 import {
   createDocumentSymbols,
   createXMLDependencyProposals,
 } from "@/renderer/components/MonacoEditor/XmlLaunchProposals";
+import {
+  createDocumentSymbolsR2,
+  createXMLDependencyProposalsR2,
+} from "@/renderer/components/MonacoEditor/XmlLaunchProposalsR2";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -46,10 +51,6 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
-import {
-  createDocumentSymbolsR2,
-  createXMLDependencyProposalsR2,
-} from "@/renderer/components/MonacoEditor/XmlLaunchProposalsR2";
 
 type TActiveModel = {
   path: string;
@@ -784,6 +785,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // !=> the goto functionality is provided by clickRequest
     if (!monaco) return;
 
+    monaco.languages.register({ id: "ros2xml" });
+    monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
+    monaco.languages.setLanguageConfiguration("ros2xml", { comments: { blockComment: ["<!--", "-->"] } });
+
+    // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
     const provider = rosCtx.getProviderById(providerId, true);
     if (provider && provider.packages) {
@@ -791,7 +797,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
-    ["xml", "launch", "python"].forEach((e) => {
+    ["ros2xml", "launch", "python"].forEach((e) => {
       // Add Completion provider for XML and launch files
       addMonacoDisposable(
         monaco.languages.registerCompletionItemProvider(e, {
@@ -844,7 +850,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           })
         );
         addMonacoDisposable(
-          monaco.languages.registerDocumentFormattingEditProvider("xml", {
+          monaco.languages.registerDocumentFormattingEditProvider("ros2xml", {
             async provideDocumentFormattingEdits(
               model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
             ) {
@@ -1244,7 +1250,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             key="editor"
             height={editorHeight}
             width={editorWidth}
-            theme={settingsCtx.get("useDarkMode") ? "vs-dark" : "light"}
+            theme={settingsCtx.get("useDarkMode") ? "vs-ros-dark" : "vs-ros-light"}
             onMount={(editor: editor.IStandaloneCodeEditor) => handleEditorDidMount(editor)}
             onChange={(value: string | undefined, ev: editor.IModelContentChangedEvent) =>
               handleEditorChange(value, ev)

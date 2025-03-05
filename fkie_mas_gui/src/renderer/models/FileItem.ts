@@ -151,7 +151,7 @@ export default class FileItem {
 //   Objective-C
 
 export const FileLanguageAssociations: Record<string, string> = {
-  xml: "xml",
+  xml: "ros2xml",
   world: "xml",
   launch: "xml",
   urdf: "xml",

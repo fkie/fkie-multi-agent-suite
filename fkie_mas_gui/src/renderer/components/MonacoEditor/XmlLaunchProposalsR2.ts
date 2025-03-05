@@ -135,6 +135,77 @@ export function createXMLDependencyProposalsR2(
       insertText: 'param name="nm/kill_on_stop" value="300" /',
       range,
     },
+    {
+      label: "find-pkg-prefix",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the install prefix path of the given package. Forward and backwards slashes will be resolved to the local filesystem convention. Substitution will fail if the package cannot be found.",
+      insertText: "find-pkg-prefix ${1:<pkg-name>})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "find-pkg-share",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the share directory path of the given package. The share directory includes the package’s name, e.g. <prefix>/share/<pkg-name>. Forward and backwards slashes will be resolved to the local filesystem convention. Substitution will fail if the package cannot be found.",
+      insertText: "find-pkg-share ${1:<pkg-name>})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "find-exec",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the path to the executable in the local filesystem. Executables are looked up in the PATH environment variable. Forward and backwards slashes will be resolved to the local filesystem convention. Substitution will fail if the executable cannot be found.",
+      insertText: "find-exec ${1:<exec-name>})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "exec-in-package",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the path to the executable in the local filesystem. Executables are looked up in the lib directory of the package. Substitution will fail if the executable cannot be found.",
+      insertText: "exec-in-package ${1:<exec-name>} ${2:<package-name>})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "var",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the value of the launch configuration variable. Substitution will fail if the named argument does not exist.",
+      insertText: "var ${1:<name>})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "env",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the value of the given environment variable Substitution will fail if the variable is not set, unless a default value is provided.",
+      insertText: "env ${1:<env-var>} ${2:[default-value]})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "eval",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation:
+        "Substituted by the evaluated python expression. Substitution will fail if python fails to evaluate the expression.",
+      insertText: "eval ${1:<python-expression>})",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "dirname",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation: "Substituted by the current launch file directory name. Substitution will always succeed.",
+      insertText: "dirname)",
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
     ...packageSuggestions,
   ];
 }

@@ -117,6 +117,38 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   useEffect(() => {
     monaco?.languages.typescript.javascriptDefaults.setEagerModelSync(true);
     monaco?.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+    Monaco.loader.init().then((monaco) => {
+      monaco.editor.defineTheme("vs-ros-light", {
+        base: "vs",
+        inherit: true,
+        colors: {},
+        rules: [
+          { token: "delimiter.start", foreground: "#008000", fontStyle: "bold" },
+          { token: "delimiter.end", foreground: "#008000", fontStyle: "bold" },
+          { token: "tag", foreground: "#008000", fontStyle: "bold" },
+          { token: "attribute.name", foreground: "#7D9029" },
+          { token: "attribute.value", foreground: "#BA2121" },
+          { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
+          { token: "subst.arg", foreground: "#BA2121", fontStyle: "bold" },
+          { token: "comment", foreground: "#666666", fontStyle: "italic" },
+        ],
+      });
+      monaco.editor.defineTheme("vs-ros-dark", {
+        base: "vs-dark",
+        inherit: true,
+        colors: {},
+        rules: [
+          { token: "delimiter.start", foreground: "#008000", fontStyle: "bold" },
+          { token: "delimiter.end", foreground: "#008000", fontStyle: "bold" },
+          { token: "tag", foreground: "#008000", fontStyle: "bold" },
+          { token: "attribute.name", foreground: "#7D9029" },
+          // { token: "attribute.value", foreground: "#BA2121" },
+          { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
+          { token: "subst.arg", foreground: "#996633", fontStyle: "bold" },
+          { token: "comment", foreground: "#999999", fontStyle: "italic" },
+        ],
+      });
+    });
   }, [monaco]);
 
   const updateModifiedFiles = useCallback(
