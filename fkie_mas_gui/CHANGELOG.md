@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.2.7 - 06.03.2025
+
+Improved ctrl+click to open included files
+Use own method to get included files in XML format
+Added highlighting for ros2 xml launch file
+Added xml proposals for ros2
+Force reload current path if package list was refreshed
+Changed default state of visible node details
+
 ## 4.2.6 - 01.03.2025
 
 Prepand RMW_IMPLEMENTATION=rmw_fastrtps_cpp for discovery node

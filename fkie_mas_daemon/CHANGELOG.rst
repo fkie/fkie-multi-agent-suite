@@ -2,9 +2,13 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.1 (06.03.2025)
+------------------
+* Use own method to get included files in XML format
+
 4.3.0 (01.03.2025)
 ------------------
-* Replaced get_participants service by latched paticipants topic for communication between daemon and discovery
+* Replaced get_participants service by latched participants topic for communication between daemon and discovery
 
 4.2.4 (28.02.2025)
 ------------------
