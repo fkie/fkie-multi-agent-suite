@@ -9,6 +9,7 @@ import {
   MenuItem,
   SxProps,
   Theme,
+  Tooltip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { OverridableStringUnion } from "@mui/types";
@@ -31,6 +32,7 @@ const StyledBadge = styled(Badge)((/*{ theme }*/) => ({
 
 export type OverflowMenuItem = {
   key: string;
+  tooltip?: string;
   name: string | React.ReactNode;
   onClick: (event?: React.MouseEvent) => void;
 };
@@ -43,7 +45,9 @@ interface OverflowMenuProps {
   colorizeItems?: boolean;
   disabled?: boolean;
   size?: OverridableStringUnion<"small" | "medium" | "large", IconButtonPropsSizeOverrides>;
+  autoClick?: boolean;
   sx?: SxProps<Theme>;
+  tooltip?: string;
 }
 
 const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function OverflowMenu(props, ref) {
@@ -55,6 +59,8 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
     colorizeItems = false,
     disabled = false,
     size = "small",
+    autoClick = false,
+    tooltip = "",
     sx = { padding: 0, margin: 0 },
   } = props;
 
@@ -63,8 +69,13 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   function handleClick(event): void {
-    setAnchorEl(event.currentTarget);
-    event.stopPropagation();
+    if (autoClick && options.length > 1) {
+      setAnchorEl(event.currentTarget);
+      event.stopPropagation();
+    } else if (autoClick && options.length === 1) {
+      options[0].onClick(event);
+      handleClose(event);
+    }
   }
   function handleClose(event): void {
     setAnchorEl(null);
@@ -92,20 +103,22 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
       sx={{ fontSize: "inherit" }}
       onClick={(event) => event.stopPropagation()}
     >
-      <IconButton
-        aria-label={`${id}-icon`}
-        id={`${id}-icon`}
-        size={size}
-        sx={sx}
-        aria-controls={open ? "long-menu" : undefined}
-        aria-expanded={open ? "true" : undefined}
-        aria-haspopup="true"
-        disabled={disabled}
-        onClick={handleClick}
-        onMouseDown={handleClick}
-      >
-        {icon}
-      </IconButton>
+      <Tooltip title={tooltip || ""} disableInteractive>
+        <IconButton
+          aria-label={`${id}-icon`}
+          id={`${id}-icon`}
+          size={size}
+          sx={sx}
+          aria-controls={open ? "long-menu" : undefined}
+          aria-expanded={open ? "true" : undefined}
+          aria-haspopup="true"
+          disabled={disabled}
+          onClick={handleClick}
+          onMouseDown={handleClick}
+        >
+          {icon}
+        </IconButton>
+      </Tooltip>
       <Menu
         id={`${id}-menu`}
         // size="small"
@@ -119,16 +132,18 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
       >
         {options.map((option: OverflowMenuItem) => {
           return (
-            <MenuItem
-              key={option.key}
-              sx={getSxPropByName(option.name)}
-              onClick={(event) => {
-                option.onClick(event);
-                handleClose(event);
-              }}
-            >
-              <ListItemText>{option.name}</ListItemText>
-            </MenuItem>
+            <Tooltip key={option.key} title={option.tooltip || ""} disableInteractive>
+              <MenuItem
+                key={option.key}
+                sx={getSxPropByName(option.name)}
+                onClick={(event) => {
+                  option.onClick(event);
+                  handleClose(event);
+                }}
+              >
+                <ListItemText>{option.name}</ListItemText>
+              </MenuItem>
+            </Tooltip>
           );
         })}
       </Menu>

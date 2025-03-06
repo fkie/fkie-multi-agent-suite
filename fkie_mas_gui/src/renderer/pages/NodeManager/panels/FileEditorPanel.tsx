@@ -6,7 +6,7 @@ import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
 import { Alert, CircularProgress, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { CancellationToken, IDisposable, Position, editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
+import { CancellationToken, IDisposable, Uri, editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 import { ForwardedRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
@@ -25,6 +25,7 @@ import {
   createDocumentSymbolsR2,
   createXMLDependencyProposalsR2,
 } from "@/renderer/components/MonacoEditor/XmlLaunchProposalsR2";
+import { OverflowMenu } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -45,6 +46,7 @@ import {
   EVENT_EDITOR_SELECT_RANGE,
   TEventEditorSelectRange,
   eventCloseComponent,
+  eventEditorSelectRange,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { Provider } from "@/renderer/providers";
 import { EventProviderPathEvent } from "@/renderer/providers/events";
@@ -56,11 +58,6 @@ type TActiveModel = {
   path: string;
   modified: boolean;
   model: editor.ITextModel;
-};
-
-type TIncludeDecoration = {
-  resource: string;
-  range: TFileRange;
 };
 
 type TModelVersion = {
@@ -80,6 +77,23 @@ interface FileEditorPanelProps {
   currentFilePath: string;
   fileRange: TFileRange | null;
   launchArgs: TLaunchArg[];
+}
+
+export class IncludesProvider implements languages.LinkProvider {
+  public modelLinks: { [id: string]: languages.ILink[] } = {};
+
+  public provideLinks: (
+    model: editor.ITextModel,
+    token: CancellationToken
+  ) => languages.ProviderResult<languages.ILinksList> = (model) => {
+    return { links: this.modelLinks[model.uri.path] };
+  };
+  // public resolveLink: (link: languages.ILink, token: CancellationToken) => languages.ProviderResult<languages.ILink> = (
+  //   link,
+  //   token
+  // ) => {
+  //   return link;
+  // };
 }
 
 export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Element {
@@ -127,7 +141,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState<IDisposable[]>([]);
   const [monacoViewStates] = useState(new Map());
-  const [clickRequest, setClickRequest] = useState<Position | null>(null);
 
   const [enableGlobalSearch, setEnableGlobalSearch] = useState(false);
   const [enableExplorer, setEnableExplorer] = useState(false);
@@ -139,10 +152,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [modifiedFiles, setModifiedFiles] = useState<string[]>([]);
   const [savedModelVersions, setSavedModelVersions] = useState<TModelVersion[]>([]);
   const [includedFiles, setIncludedFiles] = useState<LaunchIncludedFile[]>([]);
-  const [includeDecorations, setIncludeDecorations] = useState<TIncludeDecoration[]>([]);
   const [notificationDescription, setNotificationDescription] = useState("");
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [selectParentFiles, setSelectParentFiles] = useState<LaunchIncludedFile[]>([]);
+
+  const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
@@ -212,28 +227,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     [openFiles]
   );
 
-  /**
-   * Returns include path if position is on the include declaration, overwise undefined.
-   * @param position - Mouse cursor position
-   */
-  const getIncludeResource = useCallback(
-    function (position: Position): string | undefined {
-      const declarations = includeDecorations.filter((item) => {
-        return (
-          item.range.startLineNumber <= position.lineNumber &&
-          position.lineNumber <= item.range.endLineNumber &&
-          item.range.startColumn <= position.column &&
-          position.column <= item.range.endColumn
-        );
-      });
-      if (declarations.length > 0) {
-        return declarations[0].resource;
-      }
-      return undefined;
-    },
-    [includeDecorations]
-  );
-
   const addMonacoDisposable = useCallback(
     function (disposable: IDisposable): void {
       setMonacoDisposables((prev) => [...prev, disposable]);
@@ -258,35 +251,31 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }
 
   // update decorations for included files
-  function updateIncludeDecorations(model: editor.ITextModel | null, includedFilesList: LaunchIncludedFile[]): void {
+  const updateIncludeDecorations = useCallback(function (
+    model: editor.ITextModel | null,
+    includedFilesList: LaunchIncludedFile[]
+  ): void {
     if (!model) return;
-    // prepare file decorations
-    const newIncludeDecorations: TIncludeDecoration[] = [];
-    const newDecorators: editor.IModelDeltaDecoration[] = [];
+    // filter files
+    const newLinks: languages.ILink[] = [];
     if (includedFilesList) {
       includedFilesList.forEach((f: LaunchIncludedFile) => {
         const path = model.uri.path.split(":")[1];
-        if (path !== f.inc_path) {
+        if (path === f.path && path !== f.inc_path) {
           const matches = model.findMatches(f.raw_inc_path, false, false, false, null, true);
           if (matches.length > 0) {
             matches.forEach((match) => {
-              // Add a different style to "clickable" definitions
-              newDecorators.push({
+              newLinks.push({
                 range: match.range,
-                options: { inlineClassName: "filePathDecoration" },
-              });
-              newIncludeDecorations.push({
-                resource: f.inc_path,
-                range: match.range,
+                url: `${model.uri.path.split(":")[0]}:${f.inc_path}`,
               });
             });
           }
         }
       });
     }
-    model.deltaDecorations([], newDecorators);
-    setIncludeDecorations(newIncludeDecorations);
-  }
+    includesProvider.modelLinks[model.uri.path] = newLinks;
+  }, []);
 
   const isModified = useCallback(
     function (model: editor.ITextModel): boolean {
@@ -305,6 +294,22 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       setOpenFiles((prev) => [...prev.filter((item) => item.path !== result.model?.uri.path), newFileItem]);
     }
   }
+
+  useEffect(() => {
+    // update parent files
+    const pathSplits = activeModel?.model.uri.path.split(":");
+    if (pathSplits && pathSplits.length > 1) {
+      const path = pathSplits[1];
+      const parentPaths = includedFiles.filter((item) => {
+        if (path === item.inc_path) {
+          // check args to select the correct file, if the same file included twice
+          return equalLaunchArgs(currentLaunchArgs, item.args || []);
+        }
+        return false;
+      });
+      setSelectParentFiles(parentPaths);
+    }
+  }, [activeModel, includedFiles, currentLaunchArgs]);
 
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
@@ -353,7 +358,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         modified: isModified(result.model),
         model: result.model,
       });
-
       // update modified files for the user info in the info bar
       updateModifiedFiles();
 
@@ -440,17 +444,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
     }
   });
-
-  useEffect(() => {
-    // test on each click
-    if (clickRequest) {
-      const resource = getIncludeResource(clickRequest);
-      if (resource) {
-        setEditorModel(resource);
-      }
-      setClickRequest(null);
-    }
-  }, [clickRequest, getIncludeResource]);
 
   useEffect(() => {
     updateModifiedFiles();
@@ -782,7 +775,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }
 
   function configureMonacoEditor(): void {
-    // !=> the goto functionality is provided by clickRequest
     if (!monaco) return;
 
     monaco.languages.register({ id: "ros2xml" });
@@ -795,6 +787,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     if (provider && provider.packages) {
       packages = provider.packages;
     }
+
+    addMonacoDisposable(
+      monaco.editor.registerLinkOpener({
+        open(resource: Uri): boolean | Promise<boolean> {
+          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, resource.path.split(":")[1], null));
+          return true;
+        },
+      })
+    );
+
+    ["ros2xml", "launch", "python"].forEach((e) => {
+      addMonacoDisposable(monaco.languages.registerLinkProvider(e, includesProvider));
+    });
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
     ["ros2xml", "launch", "python"].forEach((e) => {
@@ -828,16 +833,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           },
         })
       );
-
-      // register definition providers
-      // this will add "Go To Definition" capability to the monacoCtx.monaco editor
-      // for file extensions "xml" and "launch"
-      // addMonacoDisposable(
-      //   monaco.languages.registerDefinitionProvider(e, {
-      //     provideDefinition: provideDefinitionFunction,
-      //   }),
-      // );
-      // !=> the goto functionality is provided by clickRequest
 
       // Add symbols XML and launch files
       if (e !== "python") {
@@ -930,7 +925,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     editorRef.current.onMouseDown((event) => {
       // handle CTRL+click to open included files
       if (event.event.ctrlKey) {
-        setClickRequest(event.target.position);
+        // setClickRequest(event.target.position);
       }
     });
     configureMonacoEditor();
@@ -1115,39 +1110,29 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title="Open parent file" disableInteractive>
-              <IconButton
-                edge="end"
-                aria-label="Open parent file"
-                onClick={async () => {
-                  const pathSplits = activeModel?.path.split(":");
-                  if (pathSplits && pathSplits.length > 1) {
-                    const path = pathSplits[1];
-                    const parentPaths = includedFiles.filter((item) => {
-                      if (path === item.inc_path) {
-                        // check args to select the correct file, if the same file included twice
-                        return equalLaunchArgs(currentLaunchArgs, item.args || []);
-                      }
-                      return false;
+
+            <OverflowMenu
+              icon={<UpgradeIcon style={{ fontSize: "0.8em" }} />}
+              tooltip="Open parent file"
+              autoClick={true}
+              options={selectParentFiles.map((item) => {
+                return {
+                  name: getFileName(item.path),
+                  tooltip: item.path,
+                  key: item.path,
+                  onClick: (): void => {
+                    setEditorModel(item.path, {
+                      startLineNumber: item.line_number,
+                      endLineNumber: item.line_number,
+                      startColumn: 0,
+                      endColumn: 0,
                     });
-                    parentPaths.forEach(async (item) => {
-                      const result = await setEditorModel(`${pathSplits[0]}:${item.path}`, null, [], false);
-                      if (result) {
-                        logCtx.success(`Parent file opened [${getFileName(path)}]`);
-                        setEditorModel(item.path, {
-                          startLineNumber: item.line_number,
-                          endLineNumber: item.line_number,
-                          startColumn: 0,
-                          endColumn: 0,
-                        });
-                      }
-                    });
-                  }
-                }}
-              >
-                <UpgradeIcon style={{ fontSize: "0.8em" }} />
-              </IconButton>
-            </Tooltip>
+                  },
+                };
+              })}
+              id="path-options"
+            />
+
             <Tooltip title="Drop unsaved changes and reload current file from host" disableInteractive>
               <IconButton
                 edge="end"
