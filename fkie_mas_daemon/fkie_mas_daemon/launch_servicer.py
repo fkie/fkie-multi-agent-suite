@@ -646,9 +646,12 @@ class LaunchServicer(LoggingEventHandler):
             f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{path}]")
         result = []
         try:
-            return self._loaded_files[CfgId(request.path, '')]._included_files
+            cfg = self._loaded_files[CfgId(request.path, '')]
+            if cfg.launch_type == 'python':
+                return cfg._included_files
         except:
             pass
+        # This part is executed if the launch file is not loaded or is of type XML
         # TODO add parser for python launch files
         try:
             search_in_ext = SEARCH_IN_EXT

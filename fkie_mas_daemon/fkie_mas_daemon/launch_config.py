@@ -455,7 +455,7 @@ class LaunchConfig(object):
     A class to handle the ROS configuration stored in launch file.
     '''
 
-    def __init__(self, launch_file, *, context=None, package=None, daemonuri='', launch_arguments: List[Tuple[Text, Text]] = []):
+    def __init__(self, launch_file: str, *, context=None, package=None, daemonuri='', launch_arguments: List[Tuple[Text, Text]] = []):
         '''
         Creates the LaunchConfig object. The launch file will be not loaded on
         creation, first on request of roscfg value.
@@ -473,6 +473,9 @@ class LaunchConfig(object):
         self.__launch_file = launch_file
         self.__package = ros_pkg.get_name(os.path.dirname(self.__launch_file))[
             0] if package is None else package
+        self.launch_type = 'python'
+        if self.__launch_file.endswith('.xml') or self.__launch_file.endswith('.launch'):
+            self.launch_type = 'xml'
         self._nodes: List[LaunchNodeWrapper] = []
         self.__nmduri = daemonuri
         self.provided_launch_arguments = launch_arguments
@@ -552,10 +555,23 @@ class LaunchConfig(object):
             return self.__launch_description
 
     def find_definition(self, content, identifier, start=0, include_close_bracket=True):
+        identifier_pattern = None
+        if self.launch_type == 'xml':
+            # TODO: search for includes in XML files
+            return -1, -1, ""
+        elif self.launch_type == 'python':
+            if identifier == 'include':
+                identifier_pattern = re.compile(
+                    rf"[^#]\sIncludeLaunchDescription\s*?\(", re.DOTALL | re.MULTILINE | re.S)
+            elif identifier == 'group':
+                identifier_pattern = re.compile(rf"[^#]\sGroupAction\s*?\(", re.DOTALL | re.MULTILINE | re.S)
+            else:
+                identifier_pattern = re.compile(rf"[^#]\s{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
+        else:
+            identifier_pattern = re.compile(rf"[^#]\s{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
         line_number = -1
         end_position = -1
         raw_text = ""
-        identifier_pattern = re.compile(rf"[^#]\s{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
         match = identifier_pattern.search(content, start)
         if match is not None:
             open_brackets = 0
@@ -636,7 +652,7 @@ class LaunchConfig(object):
                                 file_size = os.path.getsize(inc_file_name)
                                 used_path = os.path.realpath(inc_file_name)
                             include_line_number, position_in_file, raw_text = self.find_definition(
-                                file_content, 'IncludeLaunchDescription', position_in_file)
+                                file_content, 'include', position_in_file)
                             launch_inc_file = LaunchIncludedFile(path=current_file,
                                                                  line_number=include_line_number,
                                                                  inc_path=inc_file_name,
@@ -650,7 +666,7 @@ class LaunchConfig(object):
                             self._included_files.append(launch_inc_file)
                         elif isinstance(entity, launch.actions.group_action.GroupAction):
                             include_line_number, position_in_file, raw_text = self.find_definition(
-                                file_content, 'GroupAction', position_in_file)
+                                file_content, 'group', position_in_file)
                         continue
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:
@@ -739,7 +755,7 @@ class LaunchConfig(object):
                             file_size = os.path.getsize(entity.launch_description_source.location)
                             used_path = os.path.realpath(entity.launch_description_source.location)
                         include_line_number, position_in_file, raw_text = self.find_definition(
-                            file_content, 'IncludeLaunchDescription', position_in_file)
+                            file_content, 'include', position_in_file)
                         inc_launch_arguments = []
                         if cfg_actions is not None:
                             for cac in cfg_actions:
@@ -788,7 +804,7 @@ class LaunchConfig(object):
                     if current_file:
                         self.context.extend_locals({'current_launch_file_path': current_file})
                     include_line_number, position_in_file, raw_text = self.find_definition(
-                        file_content, 'GroupAction', position_in_file, include_close_bracket=False)
+                        file_content, 'group', position_in_file, include_close_bracket=False)
                     self._load(entity, launch_description=current_launch_description,
                                current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file)
                 elif hasattr(entity, 'execute'):
