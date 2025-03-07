@@ -16,8 +16,11 @@ jobs:
         with:
           target-ros2-distro: jazzy
           skip-tests: true
+      - uses: actions/checkout@v4
+        with:
+          path: fkie-multi-agent-suite
       - uses: actions/setup-node@v4
       - run: |
           npm install
           npm run build:linux
-        working-directory: ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/src/fkie-multi-agent-suite/fkie_mas_gui
+        working-directory: fkie-multi-agent-suite/fkie_mas_gui
