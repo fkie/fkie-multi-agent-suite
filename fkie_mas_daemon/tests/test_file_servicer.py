@@ -9,12 +9,16 @@
 from io import FileIO
 import os
 import unittest
-import time
 import json
 from types import SimpleNamespace
 
 from fkie_mas_pylib.launch import xml
-from fkie_mas_daemon.file_servicer import FileServicer
+TEST_ROS1 = True
+try:
+    TEST_ROS1 = os.environ["ROS_DISTRO"] == "noetic"
+    from fkie_mas_daemon.file_servicer import FileServicer
+except ModuleNotFoundError:
+    TEST_ROS1 = False
 
 PKG = 'fkie_mas_daemon'
 

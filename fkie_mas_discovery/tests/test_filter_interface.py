@@ -9,10 +9,15 @@
 import os
 import unittest
 
-from fkie_mas_discovery.filter_interface import FilterInterface
+TEST_ROS1 = True
+
+try:
+    TEST_ROS1 = os.environ["ROS_DISTRO"] == "noetic"
+    from fkie_mas_discovery.filter_interface import FilterInterface
+except ModuleNotFoundError:
+    TEST_ROS1 = False
 
 PKG = 'fkie_mas_discovery'
-
 
 class TestFilterInterface(unittest.TestCase):
     '''
@@ -22,6 +27,8 @@ class TestFilterInterface(unittest.TestCase):
         pass
 
     def test_do_not_sync(self):
+        if not TEST_ROS1:
+            return
         fi = FilterInterface()
 
         fi.load(mastername='testmaster',

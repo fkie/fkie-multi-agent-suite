@@ -9,7 +9,11 @@
 import os
 import unittest
 
-from fkie_mas_pylib.system import ros1_masteruri
+TEST_ROS1=True
+try:
+    from fkie_mas_pylib.system import ros1_masteruri
+except ModuleNotFoundError:
+    TEST_ROS1 = False
 from fkie_mas_pylib.system import url
 
 PKG = 'fkie_mas_daemon'
@@ -21,7 +25,8 @@ class TestUrlLib(unittest.TestCase):
 
     def setUp(self):
         self.test_include_file = "%s/resources/include_dummy.launch" % os.getcwd()
-        self.master_port = url.get_port(ros1_masteruri.from_master(True))
+        if TEST_ROS1:
+            self.master_port = url.get_port(ros1_masteruri.from_master(True))
 
     def tearDown(self):
         pass
