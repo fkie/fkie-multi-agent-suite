@@ -23,7 +23,9 @@ jobs:
         with:
           path: fkie-multi-agent-suite
       - name: Create debian packages
-        run: bash create_debs.sh
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          bash create_debs.sh
         shell: bash
         working-directory: fkie-multi-agent-suite
       - name: Upload debs to release
