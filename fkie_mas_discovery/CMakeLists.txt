@@ -25,7 +25,6 @@ if(POLICY CMP0057)
 endif()
 
 find_package(ament_cmake QUIET)
-find_package(fkie_mas_msgs REQUIRED)
 
 if ( ament_cmake_FOUND )
 
@@ -40,10 +39,11 @@ if ( ament_cmake_FOUND )
     find_package(rmw_fastrtps_cpp REQUIRED)
     find_package(rmw_fastrtps_shared_cpp REQUIRED)
     find_package(lifecycle_msgs REQUIRED)
+    find_package(fkie_mas_msgs REQUIRED)
 
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
-    find_package(catkin REQUIRED COMPONENTS fkie_mas_pylib rosgraph roslib rospy std_srvs)
+    find_package(catkin REQUIRED COMPONENTS fkie_mas_msgs fkie_mas_pylib rosgraph roslib rospy std_srvs)
     find_package(GTest)
 
     message(STATUS "--------------------------------------------------\nFKIE MAS Discovery is being built using CATKIN.\n--------------------------------------------------")
