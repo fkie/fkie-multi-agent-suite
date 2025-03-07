@@ -8,6 +8,9 @@ jobs:
       matrix:
         env:
           - {ROS_DISTRO: noetic}
+          - {ROS_DISTRO: humble}
+          - {ROS_DISTRO: jazzy}
+          - {ROS_DISTRO: rolling}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
