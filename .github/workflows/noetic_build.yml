@@ -11,7 +11,7 @@ jobs:
       - uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: noetic
-      - run: sudo pip install "websockets>=13.0" --break-system-packages
+      - run: sudo pip install "websockets>=13.0"
       - uses: ros-tooling/action-ros-ci@v0.4
         with:
           target-ros1-distro: noetic
