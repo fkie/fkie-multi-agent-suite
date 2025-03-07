@@ -1,0 +1,26 @@
+name: Jazzy Create Debs
+
+on: 
+  push:
+    tags:
+      - v*
+
+jobs:
+  jazzy:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:noble
+    steps:
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: jazzy
+      - run: sudo pip install "websockets>=13.0" --break-system-packages
+      - uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros2-distro: jazzy
+          skip-tests: true
+      - name: Create debian packages
+        run: bash create_debs.sh
+        shell: bash
+        working-directory: ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/src/fkie-multi-agent-suite
+
