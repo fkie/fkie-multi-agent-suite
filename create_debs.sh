@@ -109,4 +109,4 @@ fi
 
 clean
 rm -fr ./*-dbgsym_*.ddeb
-sudo apt install ./ros-$ROS_DISTRO-fkie-mas-*
+sudo apt install -y ./ros-$ROS_DISTRO-fkie-mas-*
