@@ -1,0 +1,17 @@
+name: Noetic Build
+
+on: [push, pull_request]
+
+jobs:
+  noetic:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:focal
+    steps:
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: noetic
+      - run: sudo pip install "websockets>=13.0" --break-system-packages
+      - uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros1-distro: noetic
