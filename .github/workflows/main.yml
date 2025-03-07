@@ -12,6 +12,8 @@ jobs:
           - {ROS_DISTRO: jazzy}
           - {ROS_DISTRO: rolling}
     runs-on: ubuntu-latest
+    env:
+      - AFTER_INSTALL_TARGET_DEPENDENCIES: 'pip install "websockets>=12.0"'
     steps:
       - uses: actions/checkout@v2
       - uses: 'ros-industrial/industrial_ci@master'
