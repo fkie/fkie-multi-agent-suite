@@ -19,8 +19,18 @@ jobs:
         with:
           target-ros2-distro: jazzy
           skip-tests: true
+      - uses: actions/checkout@v4
+        with:
+          path: fkie-multi-agent-suite
       - name: Create debian packages
         run: bash create_debs.sh
         shell: bash
-        working-directory: ${{ steps.action_ros_ci_step.outputs.ros-workspace-directory-name }}/src/fkie-multi-agent-suite
+        working-directory: fkie-multi-agent-suite
+      - name: Upload debs to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: fkie-multi-agent-suite/ros-jazzy-fkie-mas-*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
 
