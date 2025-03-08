@@ -18,7 +18,7 @@ jobs:
           node-version: '22.x'
       - run: npm install
         working-directory: fkie-multi-agent-suite/fkie_mas_gui
-      - run: npm run build:linux
+      - run: npm run build:linux --if-present
         working-directory: fkie-multi-agent-suite/fkie_mas_gui
       - name: Upload debs to release ${{ github.ref }}
         uses: svenstaro/upload-release-action@v2

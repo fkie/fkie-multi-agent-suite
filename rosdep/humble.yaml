@@ -1,0 +1,15 @@
+fkie_mas_msgs:
+    ubuntu:
+      jammy: [ros-humble-fkie-mas-msgs]
+
+fkie_mas_pylib:
+    ubuntu:
+      jammy: [ros-humble-fkie-mas-pylib]
+
+fkie_mas_daemon:
+    ubuntu:
+      jammy: [ros-humble-fkie-mas-daemon]
+
+fkie_mas_discovery:
+    ubuntu:
+      jammy: [ros-humble-fkie-mas-discovery]
