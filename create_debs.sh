@@ -99,11 +99,12 @@ echo -e "Create debian packages for --os-version \e[36m$OS_VERSION\e[0m --ros-di
 cd fkie_mas_msgs && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 sudo apt install ./ros-$ROS_DISTRO-fkie-mas-msgs_*
 cd fkie_mas_pylib && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
-sudo apt install ./ros-$ROS_DISTRO-fkie-mas-msgs_*
+sudo apt install ./ros-$ROS_DISTRO-fkie-mas-pylib_*
 cd fkie_mas_discovery && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 cd fkie_mas_daemon && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 # cd fkie_mas_meta && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 if [ "$ROS_DISTRO" == "noetic" ]; then
+  sudo apt install ./ros-$ROS_DISTRO-fkie-mas-discovery_*
   cd fkie_mas_sync && bloom-generate rosdebian --os-version $OS_VERSION --ros-distro $ROS_DISTRO && fakeroot debian/rules binary && cd ..
 fi
 

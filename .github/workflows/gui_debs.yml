@@ -20,6 +20,8 @@ jobs:
         working-directory: fkie-multi-agent-suite/fkie_mas_gui
       - run: npm run build:linux --if-present
         working-directory: fkie-multi-agent-suite/fkie_mas_gui
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload debs to release ${{ github.ref }}
         uses: svenstaro/upload-release-action@v2
         with:
