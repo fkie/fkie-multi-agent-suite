@@ -1,0 +1,41 @@
+name: Gui Create Packages
+
+on: 
+  push:
+    tags:
+      - v*
+
+jobs:
+  node-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: fkie-multi-agent-suite
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - run: npm install
+        working-directory: fkie-multi-agent-suite/fkie_mas_gui
+      - run: npm run build:linux
+        working-directory: fkie-multi-agent-suite/fkie_mas_gui
+      - name: Upload debs to release ${{ github.ref }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: fkie-multi-agent-suite/fkie_mas_gui/dist/fkie-mas-gui_*
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+      - name: Upload AppImage to release ${{ github.ref }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: fkie-multi-agent-suite/fkie_mas_gui/dist/mas-gui.AppImage
+          tag: ${{ github.ref }}
+          overwrite: true
+      - name: Upload latest-linux.yml to release ${{ github.ref }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: fkie-multi-agent-suite/fkie_mas_gui/dist/latest-linux.yml
+          tag: ${{ github.ref }}
+          overwrite: true
