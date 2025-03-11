@@ -17,17 +17,10 @@ The communication between the GUI and the Daemon (on each host) is based on WebS
 
 ### Install debian packages from github
 
-For Ubuntu 20.04 and 24.04 there are Debian packages on Github that can be installed with the following command:
+For Ubuntu 20.04, 22.04 and 24.04 there are Debian packages on Github that can be installed with the following command:
 
 ```bash
 wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
-```
-
-You need a running [TTYD](https://github.com/tsl0922/ttyd) to show screen or log output of the nodes.
-Currently there is no debian package, so you have to install it with
-
-```bash
-sudo snap install ttyd --classic
 ```
 
 ### Run
