@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2.8 - 14.03.2025
+
+Updated readme
+Added workflows to create debian packages for jazzy, humble, noetic and gui
+Fixed docker build with new version using debian packages
+
 ## 4.2.7 - 06.03.2025
 
 Improved ctrl+click to open included files
@@ -12,7 +18,7 @@ Changed default state of visible node details
 ## 4.2.6 - 01.03.2025
 
 Prepand RMW_IMPLEMENTATION=rmw_fastrtps_cpp for discovery node
-Replaced get_participants service by latched paticipants topic for communication between daemon and discovery
+Replaced get_participants service by latched participants topic for communication between daemon and discovery
 
 ## 4.2.5 - 28.02.2025
 
