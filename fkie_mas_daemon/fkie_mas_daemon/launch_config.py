@@ -165,7 +165,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self.launch_context_arg = getattr(self._launch_context.locals, 'launch_arguments', None)
             self.file_name = self.launch_name
         self.composable_container: str = composable_container
-        self.launch_prefix = self._get_launch_prefix()
         self.parameters_tmp = self._get_parameter_arguments()
         self.parameters = []
         for p in self.parameters_tmp:
@@ -605,6 +604,7 @@ class LaunchConfig(object):
         print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
         file_content = ""
+        launch_prefix = ""
         if sub_obj is None:
             sub_obj = self.__launch_description
             self.context.extend_locals({'launch_file_path': self.filename})
@@ -693,6 +693,8 @@ class LaunchConfig(object):
                         # actions = entity.execute(self.context)
                         node = LaunchNodeWrapper(
                             entity, current_launch_description, self.context, position_in_file=position_in_file)
+                        if launch_prefix:
+                            node.launch_prefix = launch_prefix
                         self._nodes.append(node)
                         # for action in actions:
                         #    if isinstance(action, launch_ros.actions.LoadComposableNodes):
@@ -811,6 +813,9 @@ class LaunchConfig(object):
                     print(f"  ***debug launch loading: {indent} parse execute entity: {entity}")
                     try:
                         entity.execute(self.__launch_context)
+                        name = perform_substitutions(self.context, getattr(entity, 'name', ''))
+                        if name == "launch-prefix":
+                            launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
                     except:
                         import traceback
                         print(traceback.format_exc())
