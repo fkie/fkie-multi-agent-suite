@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.2.9 - 14.03.2025
+
+Workaround for launch-prefix in jazzy
+Fixed open humburger menus
+
 ## 4.2.8 - 14.03.2025
 
 Updated readme
