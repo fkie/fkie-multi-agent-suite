@@ -80,12 +80,10 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
                 initializeTerminal(n.screens[0]);
               }
             } else if (!n.screens || n.screens.length === 0) {
-              if (lastScreenUsed !== "") {
-                // Open Log if no screen is available
-                setInitialCommands(() => []);
-                initializeTerminal("");
-                setErrorHighlighting(true);
-              }
+              // Open Log if no screen is available
+              setInitialCommands(() => []);
+              initializeTerminal("");
+              setErrorHighlighting(true);
             }
           }
         });
