@@ -21,8 +21,6 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
   
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname/,
 
-  qualifiedName: /(?:[\w.-]+:)?[\w.-]+/,
-
   // The main tokenizer for our languages
   tokenizer: {
     root: [
@@ -145,23 +143,6 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [/(>)/, [{ token: "delimiter.end", bracket: "@close" }]],
       [/<!--/, "comment", "@comment"],
 
-      // Meta tags - instruction
-      [
-        /(<\?)(@qualifiedName)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "metatag.instruction", next: "@tag" },
-        ],
-      ],
-
-      // Meta tags - declaration
-      [
-        /(<!)(@qualifiedName)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "metatag.declaration", next: "@tag" },
-        ],
-      ],
     ],
     tag: [
       [/[ \t\r\n]+/, ""],
