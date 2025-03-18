@@ -33,7 +33,8 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
-  const [label, setLabel] = useState(serviceInfo.name);
+  const [name, setName] = useState<string>("");
+  const [namespace, setNamespace] = useState<string>("");
   // state variables to show/hide extended info
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
   const [selected, setSelected] = useState(false);
@@ -59,12 +60,9 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
   useEffect(() => {
     if (!rootPath) return;
     if (!serviceInfo) return;
-
-    if (serviceInfo?.name === rootPath) {
-      setLabel(serviceInfo.providerName);
-    } else {
-      setLabel(serviceInfo.name.slice(rootPath.length + 1));
-    }
+    const nameParts = serviceInfo.name.split("/");
+    setName(`${nameParts.pop()}`);
+    setNamespace(rootPath ? `${rootPath}/` : rootPath ? "" : "");
   }, [rootPath, serviceInfo.name, serviceInfo]);
 
   useEffect(() => {
@@ -117,20 +115,34 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
             }}
           >
             <Stack spacing={1} direction="row" sx={getHostStyle()}>
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: "inherit" }}
-                onClick={(e) => {
-                  if (e.detail === 2) {
-                    navigator.clipboard.writeText(serviceInfo.name);
-                    logCtx.success(`${serviceInfo.name} copied!`);
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                {label}
-              </Typography>
-              {/* {requestData && <CircularProgress size="1em" />} */}
+              <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "inherit", userSelect: "none" }}
+                  onClick={(e) => {
+                    if (e.detail === 2) {
+                      navigator.clipboard.writeText(serviceInfo.name);
+                      logCtx.success(`${serviceInfo.name} copied!`);
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {namespace}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}
+                  onClick={(e) => {
+                    if (e.detail === 2) {
+                      navigator.clipboard.writeText(serviceInfo.name);
+                      logCtx.success(`${serviceInfo.name} copied!`);
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {name}
+                </Typography>
+              </Stack>
             </Stack>
             <Stack
               direction="row"

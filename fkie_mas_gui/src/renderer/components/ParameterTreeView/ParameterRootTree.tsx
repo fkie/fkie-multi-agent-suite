@@ -8,6 +8,7 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
+import SettingsContext from "@/renderer/context/SettingsContext";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { TParamListResult } from "@/renderer/providers/Provider";
@@ -46,6 +47,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const logCtx = useContext(LoggingContext);
+  const settingsCtx = useContext(SettingsContext);
 
   const [itemId] = useState<string>(rosNode ? rosNode.idGlobal : provider.id);
   const [rosParameters, setRosParameters] = useState<RosParameter[]>();
@@ -57,6 +59,13 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [requestError, setRequestError] = useState<string>("");
   const [requesting, setRequesting] = useState<boolean>(false);
+  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
+    settingsCtx.get("avoidGroupWithOneItem") as string
+  );
+
+  useEffect(() => {
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
+  }, [settingsCtx.changed]);
 
   useEffect(() => {
     setSearched(filterText);
@@ -99,7 +108,13 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
     paramResult.params.sort(function (a, b) {
       const an = `${a.node}/${a.name}`;
       const bn = `${b.node}/${b.name}`;
-      return an.localeCompare(bn);
+      // sort groups first
+      const aCountSep = (an.match(/\/|\./g) || []).length;
+      const bCountSep = (bn.match(/\/|\./g) || []).length;
+      if (aCountSep === bCountSep) {
+        return an.localeCompare(bn);
+      }
+      return aCountSep < bCountSep ? 1 : -1;
     });
     setRosParameters(paramResult.params);
     setRosParametersFiltered(filterParameters(searched, paramResult.params));
@@ -212,7 +227,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         />
       );
     } else {
-      if (treeItem.params.length === 1) {
+      if (avoidGroupWithOneItem && treeItem.params.length === 1) {
         // avoid groups with one item
         return paramTreeToStyledItems(
           rootPath.length > 0 ? `${rootPath}.${treeItem.groupName}` : treeItem.groupName,
@@ -283,7 +298,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
         })}
       </ParameterGroupTreeItem>
     );
-  }, [tree, requesting, requestError]);
+  }, [tree, requesting, requestError, avoidGroupWithOneItem]);
 
   return (
     <Box ref={ref}>
