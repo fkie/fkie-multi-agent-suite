@@ -4,7 +4,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
   ignoreCase: true,
 
-  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push_ros_namespace/,
+  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push_ros_namespace|xml/,
 
   qualifiedIncludeAttrs: /file/,
   qualifiedArgAttrs: /name|default/,
@@ -17,6 +17,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualifiedSetEnvAttrs: /name|value|if|unless/,
   qualifiedUnsetEnvAttrs: /name|if|unless/,
   qualifiedPushRosNamespaceAttrs: /namespace/,
+  qualifiedXmlAttrs: /version/,
   // TODO: find where scoped, ros_args, sep goes
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
@@ -101,6 +102,13 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@namespacetags" },
+        ],
+      ],
+      [
+        /(<\?)(xml)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@xmltags" },
         ],
       ],
 
@@ -380,6 +388,26 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       ],
       [
         /(@qualifiedPushRosNamespaceAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    xmltags: [
+      [/[ \t\r\n]+/, ""],
+      [
+        /(@qualifiedXmlAttrs)(\s*=\s*)(")/,
+        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedXmlAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [

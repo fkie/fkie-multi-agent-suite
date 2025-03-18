@@ -17,6 +17,7 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
   qualifiedGroupAttrs: /ns|clear_params/,
   qualifiedTestAttrs: /pkg|test-name|type|name|args|clear_params|cwd|launch-prefix|ns|retry|time-limit/,
   qualifiedArgAttrs: /name|default|value|doc/,
+  qualifiedXmlAttrs: /version/,
   
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname/,
 
@@ -101,6 +102,13 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@argtags" },
+        ],
+      ],
+      [
+        /(<\?)(xml)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@xmltags" },
         ],
       ],
 
@@ -395,7 +403,26 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
-    
+    xmltags: [
+      [/[ \t\r\n]+/, ""],
+      [
+        /(@qualifiedXmlAttrs)(\s*=\s*)(")/,
+        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedXmlAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
     
     value: [
       [/([^"^$]*)(\$\()/, ["attribute.value", { token: "delimiter.start", bracket: "@open", next: "@subst" }]],
