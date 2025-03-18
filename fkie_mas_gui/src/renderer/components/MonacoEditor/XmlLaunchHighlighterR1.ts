@@ -4,7 +4,7 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
   ignoreCase: true,
 
-  qualifiedTags: /launch|node|machine|remap|env|param|rosparam|group|test|arg/,
+  qualifiedTags: /launch|node|machine|remap|env|param|rosparam|group|test|arg|\?xml/,
 
   qualifiedLaunchAttrs: /depricated/,
   qualifiedMachineAttrs: /name|address|env-loader|default|user|password|timeout|ros-root|ros-package-path/,
@@ -103,7 +103,7 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
-        /(<\?)(xml)/,
+        /(<)(\?xml)/,
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@xmltags" },
