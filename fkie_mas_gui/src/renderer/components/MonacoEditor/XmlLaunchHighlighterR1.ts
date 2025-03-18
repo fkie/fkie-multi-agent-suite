@@ -166,14 +166,6 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
     tag: [
       [/[ \t\r\n]+/, ""],
       [
-        /(@qualifiedMachineAttrs)(\s*=\s*)(")/, // TODO: dont match any attributes
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
-      [
-        /(@qualifiedMachineAttrs)(\s*=\s*)(')/, // TODO: dont match any attributes
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
