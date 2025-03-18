@@ -18,9 +18,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
   qualifiedTestAttrs: /pkg|test-name|type|name|args|clear_params|cwd|launch-prefix|ns|retry|time-limit/,
   qualifiedArgAttrs: /name|default|value|doc/,
   
-  // TODO: Reimplement qualifiedSubs
+  qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname/,
 
   qualifiedName: /(?:[\w.-]+:)?[\w.-]+/,
+
   // The main tokenizer for our languages
   tokenizer: {
     root: [
@@ -103,6 +104,16 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
 
+      // Standard opening tag
+      // For tags without any attributes: (none)
+      [
+        /(<)(@qualifiedTags)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@tag" },
+        ],
+      ],
+
       // Standard closing tag
       [
         /(<)(\/)(@qualifiedTags)(\s*)(>)/,
@@ -147,8 +158,12 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
     tag: [
       [/[ \t\r\n]+/, ""],
       [
-        /(@qualifiedMachineAttrs)(\s*=\s*)(")/,
+        /(@qualifiedMachineAttrs)(\s*=\s*)(")/, // TODO: dont match any attributes
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedMachineAttrs)(\s*=\s*)(')/, // TODO: dont match any attributes
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
         /(\/)(>)/,
@@ -167,6 +182,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
+        /(@qualifiedLaunchAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
@@ -181,6 +200,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [
         /(@qualifiedMachineAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedMachineAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
         /(\/)(>)/,
@@ -199,6 +222,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
+        /(@qualifiedNodeAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
@@ -213,6 +240,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [
         /(@qualifiedIncludeAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedIncludeAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
         /(\/)(>)/,
@@ -231,6 +262,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
+        /(@qualifiedRemapAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
@@ -245,6 +280,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [
         /(@qualifiedEnvAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedEnvAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
         /(\/)(>)/,
@@ -263,6 +302,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
+        /(@qualifiedParamAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
@@ -277,6 +320,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [
         /(@qualifiedRosParamAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedRosParamAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
         /(\/)(>)/,
@@ -295,6 +342,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
+        /(@qualifiedGroupAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
@@ -309,6 +360,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [
         /(@qualifiedTestAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedTestAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
         /(\/)(>)/,
@@ -327,6 +382,10 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
+        /(@qualifiedArgAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
         /(\/)(>)/,
         [
           { token: "tag", bracket: "@close" },
@@ -339,7 +398,16 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
     
     
     value: [
+      [/([^"^$]*)(\$\()/, ["attribute.value", { token: "delimiter.start", bracket: "@open", next: "@subst" }]],
       [/([^"]*)(")/, ["attribute.value", { token: "", bracket: "@close", next: "@pop" }]],
+    ],
+    subst: [
+      [/(@qualifiedSubs)(\s*)([^)]*)/, ["subst.key", "", "subst.arg"]],
+      [/(\))/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    value_sq: [
+      [/([^'^$]*)(\$\()/, ["attribute.value", { token: "delimiter.start", bracket: "@open", next: "@subst" }]],
+      [/([^']*)(')/, ["attribute.value", { token: "", bracket: "@close", next: "@pop" }]],
     ],
     cdata: [
       [/[^\]]+/, ""],

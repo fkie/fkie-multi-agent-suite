@@ -20,6 +20,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   // TODO: find where scoped, ros_args, sep goes
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
+
   qualifiedName: /(?:[\w.-]+:)?[\w.-]+/,
   // The main tokenizer for our languages
   tokenizer: {
@@ -154,11 +155,11 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     tag: [
       [/[ \t\r\n]+/, ""],
       [
-        /(@qualifiedLetAttrs)(\s*=\s*)(")/,
+        /(@qualifiedLetAttrs)(\s*=\s*)(")/, // TODO: dont match any attributes
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
       ],
       [
-        /(@qualifiedLetAttrs)(\s*=\s*)(')/,
+        /(@qualifiedLetAttrs)(\s*=\s*)(')/, // TODO: dont match any attributes
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
