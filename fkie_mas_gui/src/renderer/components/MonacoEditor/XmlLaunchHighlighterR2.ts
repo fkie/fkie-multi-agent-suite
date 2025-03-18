@@ -4,21 +4,23 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
   ignoreCase: true,
 
-  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push_ros_namespace|\?xml/,
+  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push-ros-namespace|\?xml/,
 
-  qualifiedIncludeAttrs: /file/,
-  qualifiedArgAttrs: /name|default/,
-  qualifiedLetAttrs: /name|default|value|description|if|unless/,
-  qualifiedExecutableAttrs: /cmd|cwd|name|launch-prefix|output|shell/,
-  qualifiedNodeAttrs: /pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix|if/,
-  qualifiedParamAttrs: /name|value|value-sep|from/,
-  qualifiedRemapAttrs: /from|to/,
-  qualifiedEnvAttrs: /name|value/,
-  qualifiedSetEnvAttrs: /name|value|if|unless/,
-  qualifiedUnsetEnvAttrs: /name|if|unless/,
-  qualifiedPushRosNamespaceAttrs: /namespace/,
+  qualifiedLaunchAttrs: /if|unless/,
+  qualifiedIncludeAttrs: /if|unless|file/,
+  qualifiedArgAttrs: /if|unless|name|value|default|description/,
+  qualifiedLetAttrs: /if|unless|name|value/,
+  qualifiedExecutableAttrs: /if|unless|cmd|cwd|name|ros_args|args|namespace|launch-prefix|output|shell/,
+  qualifiedNodeAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
+  qualifiedParamAttrs: /if|unless|name|value|sep|from/,
+  qualifiedRemapAttrs: /if|unless|from|to/,
+  qualifiedEnvAttrs: /if|unless|name|value/,
+  qualifiedSetEnvAttrs: /if|unless|name|value/,
+  qualifiedGroupAttrs: /if|unless/,
+  qualifiedUnsetEnvAttrs: /if|unless|name/,
+  qualifiedPushRosNamespaceAttrs: /if|unless|namespace/,
   qualifiedXmlAttrs: /version/,
-  // TODO: find where scoped, ros_args, sep goes
+  // TODO: find where scoped goes
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
 
@@ -26,6 +28,13 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   tokenizer: {
     root: [
       // Opening tags with defined attributes
+      [
+        /(<)(launch)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@launchtags" },
+        ],
+      ],
       [
         /(<)(include)/,
         [
@@ -97,10 +106,17 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
-        /(<)(push_ros_namespace)/,
+        /(<)(push-ros-namespace)/,
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@namespacetags" },
+        ],
+      ],
+      [
+        /(<)(group)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@grouptags" },
         ],
       ],
       [
@@ -146,6 +162,46 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     tag: [
       [/[ \t\r\n]+/, ""],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    launchtags: [
+      [/[ \t\r\n]+/, ""],
+      [
+        /(@qualifiedLaunchAttrs)(\s*=\s*)(")/,
+        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedLaunchAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    grouptags: [
+      [/[ \t\r\n]+/, ""],
+      [
+        /(@qualifiedGroupAttrs)(\s*=\s*)(")/,
+        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+      ],
+      [
+        /(@qualifiedGroupAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
       [
         /(\/)(>)/,
         [
