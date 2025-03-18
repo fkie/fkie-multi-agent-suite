@@ -53,7 +53,7 @@ export interface IRosProviderContext {
   nodeMap: Map<string, RosNode>;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
-  startMasterSync: (host: string, rosVersion: string) => void;
+  startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
   startDynamicReconfigureClient: (nodeName: string, masteruri: string) => Promise<TResult>;
   startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null) => Promise<boolean>;
   removeProvider: (providerId: string) => void;
@@ -511,6 +511,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     const provider = getProviderByHosts(prov.hostnames, prov.connection.port, prov) as Provider;
 
     if (provider.connection.connected()) {
+      provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
       return true;
     }
     try {
@@ -611,14 +612,16 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // return false;
       }
 
-      if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable)) {
+      if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable || config.sync.enable)) {
         // use default configuration if no one is configured to start
         config.daemon.enable = true;
         config.discovery.enable = true;
         config.terminal.enable = true;
       }
 
-      provider.setConnectionState(ConnectionState.STATES.STARTING, "");
+      if (config.daemon.enable || config.discovery.enable) {
+        provider.setConnectionState(ConnectionState.STATES.STARTING, "");
+      }
       // Find running system nodes
       const systemNodes = provider.rosNodes.filter((n) => n.system_node);
       if (config.force.stop && systemNodes?.length > 0) {
@@ -676,6 +679,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
+            } else {
+              logCtx.success(`daemon on host '${config.host}' started successfully`, "");
             }
           }
         } else {
@@ -684,7 +689,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       // Start Discovery
       if (config.discovery.enable) {
-        logCtx.debug(`Starting master-discovery on host '${config.host}'`, "");
+        logCtx.debug(`Starting discovery on host '${config.host}'`, "");
         const cmd = config.masterDiscoveryStartCmd();
         if (cmd.result) {
           const resultStartDiscovery = await window.commandExecutor?.exec(credential, cmd.message);
@@ -704,6 +709,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
+            } else {
+              logCtx.success(`discovery on host '${config.host}' started successfully`, "");
             }
           }
         } else {
@@ -729,10 +736,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 return false;
               } else {
                 logCtx.error(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
-                provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartSync.message);
                 allStarted = false;
-                return false;
               }
+            } else {
+              logCtx.success(`Sync on host '${config.host}' started successfully`, "");
             }
           }
         } else {
@@ -761,6 +768,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 logCtx.error(`Failed to start terminal on host '${config.host}'`, resultStartTerminal.message);
                 allStarted = false;
               }
+            } else {
+              logCtx.success(`ttyd on host '${config.host}' started successfully`, "");
             }
           }
         } else {
@@ -770,9 +779,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
       // wait a little longer to make sure the processes are fully started
       setTimeout(() => {
-        logCtx.success(`Provider on host '${config.host}' started successfully`, "");
+        // logCtx.success(`Provider on host '${config.host}' started successfully`, "");
         connectToProvider(provider);
-      }, 3000);
+      }, 2000);
     } catch (error) {
       logCtx.error(`Error starting host: ${config.host}`, `${error}`);
       allStarted = false;
@@ -823,7 +832,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     return false;
   }
 
-  async function startMasterSync(host: string, rosVersion: string): Promise<boolean> {
+  async function startMasterSync(host: string, rosVersion: string, masteruri?: string): Promise<boolean> {
     if (!window.commandExecutor) return false;
     const isLocal = isLocalHost(host);
     const credential = isLocal ? null : { host: host };
@@ -842,7 +851,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     launchCfg.sync.doNotSync = [];
     launchCfg.sync.syncTopics = [];
     launchCfg.terminal.enable = false;
+    launchCfg.force.start = true;
     launchCfg.force.stop = true;
+    if (masteruri) {
+      launchCfg.ros1MasterUri = { enable: true, uri: masteruri };
+    }
     const cmd = launchCfg.masterSyncStartCmd();
     if (cmd.result) {
       const resultStartSync = await window.commandExecutor?.exec(credential, cmd.message);
