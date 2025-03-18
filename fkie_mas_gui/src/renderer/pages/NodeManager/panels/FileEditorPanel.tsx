@@ -53,6 +53,7 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
+import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighterR1";
 
 type TActiveModel = {
   path: string;
@@ -781,6 +782,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
     monaco.languages.setLanguageConfiguration("ros2xml", { comments: { blockComment: ["<!--", "-->"] } });
 
+    monaco.languages.register({ id: "ros1xml" });
+    monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
+    monaco.languages.setLanguageConfiguration("ros1xml", { comments: { blockComment: ["<!--", "-->"] } });
+
     // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
     const provider = rosCtx.getProviderById(providerId, true);
@@ -797,12 +802,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       })
     );
 
-    ["ros2xml", "launch", "python"].forEach((e) => {
+    ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
       addMonacoDisposable(monaco.languages.registerLinkProvider(e, includesProvider));
     });
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
-    ["ros2xml", "launch", "python"].forEach((e) => {
+    ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
       // Add Completion provider for XML and launch files
       addMonacoDisposable(
         monaco.languages.registerCompletionItemProvider(e, {
@@ -841,6 +846,20 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             displayName: "ROS Symbols",
             provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
               return isRos2 ? createDocumentSymbolsR2(model) : createDocumentSymbols(model);
+            },
+          })
+        );
+        addMonacoDisposable(
+          monaco.languages.registerDocumentFormattingEditProvider("ros1xml", {
+            async provideDocumentFormattingEdits(
+              model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
+            ) {
+              return [
+                {
+                  range: model.getFullModelRange(),
+                  text: formatXml(model.getValue()),
+                },
+              ];
             },
           })
         );
