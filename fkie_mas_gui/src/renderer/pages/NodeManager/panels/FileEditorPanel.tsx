@@ -53,7 +53,7 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
-import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighterR1";
+import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighter";
 
 type TActiveModel = {
   path: string;
