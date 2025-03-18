@@ -142,7 +142,6 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       ],
       [/(@qualifiedTags)(\s*)(>)/, [{ token: "delimiter.end", bracket: "@close" }]],
       [/<!--/, "comment", "@comment"],
-
     ],
     tag: [
       [/[ \t\r\n]+/, ""],
