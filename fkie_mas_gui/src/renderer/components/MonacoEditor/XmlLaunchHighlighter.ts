@@ -6,20 +6,20 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
 
   qualifiedTags: /launch|node|machine|remap|env|param|rosparam|group|test|arg|\?xml/,
 
-  qualifiedLaunchAttrs: /depricated/,
-  qualifiedMachineAttrs: /name|address|env-loader|default|user|password|timeout|ros-root|ros-package-path/,
-  qualifiedNodeAttrs: /pkg|type|name|args|machine|respawn|respawn_delay|required|ns|clear_params|output|cwd|launch-prefix|if/,
-  qualifiedIncludeAttrs: /file|ns|clear_params|pass_all_args/,
-  qualifiedRemapAttrs: /from|to/,
-  qualifiedEnvAttrs: /name|value/,
-  qualifiedParamAttrs: /name|value|type|textfile|binfile|command/,
-  qualifiedRosParamAttrs: /command|file|param|ns|subst_value/,
-  qualifiedGroupAttrs: /ns|clear_params/,
-  qualifiedTestAttrs: /pkg|test-name|type|name|args|clear_params|cwd|launch-prefix|ns|retry|time-limit/,
-  qualifiedArgAttrs: /name|default|value|doc/,
+  qualifiedLaunchAttrs: /if|unless|depricated/,
+  qualifiedMachineAttrs: /if|unless|name|address|env-loader|default|user|password|timeout|ros-root|ros-package-path/,
+  qualifiedNodeAttrs: /if|unless|pkg|type|name|args|machine|respawn|respawn_delay|required|ns|clear_params|output|cwd|launch-prefix/,
+  qualifiedIncludeAttrs: /if|unless|file|ns|clear_params|pass_all_args/,
+  qualifiedRemapAttrs: /if|unless|from|to/,
+  qualifiedEnvAttrs: /if|unless|name|value/,
+  qualifiedParamAttrs: /if|unless|name|value|type|textfile|binfile|command/,
+  qualifiedRosParamAttrs: /if|unless|command|file|param|ns|subst_value/,
+  qualifiedGroupAttrs: /if|unless|ns|clear_params/,
+  qualifiedTestAttrs: /if|unless|pkg|test-name|type|name|args|clear_params|cwd|launch-prefix|ns|retry|time-limit/,
+  qualifiedArgAttrs: /if|unless|name|default|value|doc/,
   qualifiedXmlAttrs: /version/,
   
-  qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname/,
+  qualifiedSubs: /env|optenv|find|anon|arg|eval|dirname/,
 
   // The main tokenizer for our languages
   tokenizer: {
