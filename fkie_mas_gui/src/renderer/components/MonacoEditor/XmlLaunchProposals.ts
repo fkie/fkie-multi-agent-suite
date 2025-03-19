@@ -484,6 +484,15 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
         ns,
         clear_params,
         {
+          label: "file",
+          preselect: true,
+          kind: monaco.languages.CompletionItemKind.Function,
+          documentation: "TODO",
+          insertText: 'file="$(find ${1:PACKAGE})${2:FILE_PATH}"',
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          range,
+        },
+        {
           label: "pass_all_args",
           preselect: true,
           kind: monaco.languages.CompletionItemKind.Function,

@@ -169,7 +169,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
           preselect: true,
           kind: monaco.languages.CompletionItemKind.Function,
           documentation: "Path to the launch file to be included.",
-          insertText: 'file="$(find-pkg-share ${1:PACKAGE_NAME})${2:FILE_PATH}"',
+          insertText: 'file="$(find ${1:PACKAGE})${2:FILE_PATH}"',
           insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
           range,
         },
