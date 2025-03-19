@@ -54,29 +54,34 @@ function createAttributeSuggestionsFromTag(monaco: Monaco, range: TFileRange, li
   return [];
 }
 
+// TODO: this is a pretty long function, maybe sort it into a different file?
 function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: string): languages.CompletionItem[] {
   // return the valid attributes for each tag
+  const all = [
+    {
+      label: "if",
+      preselect: true,
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation: "TODO",
+      insertText: 'if="${arg ${1:VALUE}}"',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+    {
+      label: "unless",
+      preselect: true,
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation: "TODO",
+      insertText: 'unless="${arg ${1:VALUE}}"',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
+  ];
+
   switch(tag) {
     case "launch":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "depricated",
           preselect: true,
@@ -89,24 +94,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "node": 
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "pkg",
           preselect: true,
@@ -227,24 +215,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "machine":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "name",
           preselect: true,
@@ -329,24 +300,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "remap":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "from",
           preselect: true,
@@ -368,24 +322,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "env":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "name",
           preselect: true,
@@ -407,24 +344,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "param":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "name",
           preselect: true,
@@ -482,24 +402,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "rosparam":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "command",
           preselect: true,
@@ -548,24 +451,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "group":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "clear_params",
           preselect: true,
@@ -587,24 +473,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "test":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "pkg",
           preselect: true,
@@ -716,24 +585,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
       ];
     case "arg":
       return [
-        {
-          label: "if",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'if="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
-        {
-          label: "unless",
-          preselect: true,
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: "TODO",
-          insertText: 'unless="${arg ${1:VALUE}}"',
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          range,
-        },
+        ...all,
         {
           label: "name",
           preselect: true,
