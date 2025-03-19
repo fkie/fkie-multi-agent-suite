@@ -6,6 +6,27 @@ import { editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
 
+function createXMLDependencyProposals(
+  monaco: Monaco,
+  range: TFileRange,
+  clipText: string,
+  packages: RosPackage[]
+): languages.CompletionItem[] {
+  // returning a static list of proposals, valid for ROS launch and XML  files
+
+  // TODO: Unused function. Can it be removed?
+  function getParamName(defaultValue: string | undefined): string | undefined {
+    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
+    return text || defaultValue;
+  }
+  
+  // List of suggestions
+  return [
+    ...createTagSuggestions(monaco, range),
+    ...createPackageList(packages, monaco, range),
+  ];
+}
+
 function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
   const result = packages?.map((item: RosPackage) => {
     console.log(`create package : ${item.name}`);
@@ -20,21 +41,16 @@ function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileR
   return result ? result : [];
 }
 
-function createXMLDependencyProposals(
-  monaco: Monaco,
-  range: TFileRange,
-  clipText: string,
-  packages: RosPackage[]
-): languages.CompletionItem[] {
-  // returning a static list of proposals, valid for ROS launch and XML  files
-
-  function getParamName(defaultValue: string | undefined): string | undefined {
-    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
-    return text || defaultValue;
-  }
-
-  const packageSuggestions = createPackageList(packages, monaco, range);
+function createTagSuggestions(monaco: Monaco, range: TFileRange) {
   return [
+    {
+      label: "launch",
+      kind: monaco.languages.CompletionItemKind.Function,
+      documentation: "Create a new launch configuration",
+      insertText: 'launch></launch>',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    },
     {
       label: "node",
       kind: monaco.languages.CompletionItemKind.Function,
@@ -139,7 +155,6 @@ function createXMLDependencyProposals(
       insertText: 'param name="nm/kill_on_stop" value="300" />',
       range,
     },
-    ...packageSuggestions,
   ];
 }
 
