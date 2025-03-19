@@ -831,7 +831,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 case "ros1xml":
                   return { suggestions: createXMLDependencyProposals(monaco, range, lineContent, clipTextSuggest, packages) };
                 case "ros2xml":
-                  return { suggestions: createXMLDependencyProposalsR2(monaco, range, clipTextSuggest, packages) };
+                  return { suggestions: createXMLDependencyProposalsR2(monaco, range, lineContent, clipTextSuggest, packages) };
               }
             }
             getClipboardTextForSuggest();

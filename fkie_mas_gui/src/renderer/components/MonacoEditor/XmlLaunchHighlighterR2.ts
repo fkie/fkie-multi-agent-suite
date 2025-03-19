@@ -6,6 +6,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
 
   qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push-ros-namespace|\?xml/,
 
+  // TODO: launch requires attribute "version"
   qualifiedLaunchAttrs: /if|unless/,
   qualifiedIncludeAttrs: /if|unless|file/,
   qualifiedArgAttrs: /if|unless|name|value|default|description/,
