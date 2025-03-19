@@ -397,7 +397,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange) {
     {
       label: "executable cwd",
       kind: monaco.languages.CompletionItemKind.Function,
-      documentation: "Add a new executable",
+      documentation: "Add a new executable with working directory",
       insertText: 'executable cmd="${1:COMMAND}" cwd="${1:WORKING_DIRECTORY}" />',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
@@ -405,7 +405,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange) {
     {
       label: "executable args",
       kind: monaco.languages.CompletionItemKind.Function,
-      documentation: "Add a new executable",
+      documentation: "Add a new executable with arguments",
       insertText: 'executable cmd="${1:COMMAND}" args="${1:ARGUMENTS}" />',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
@@ -421,7 +421,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange) {
     {
       label: "param sep",
       kind: monaco.languages.CompletionItemKind.Function,
-      documentation: "Add a new ROS parameter",
+      documentation: "Add a new ROS parameter with value separator",
       insertText: 'param name="${1:NAME}" value="${2:VALUE}" value-sep="${3:SEPARATOR}" />',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
@@ -460,7 +460,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange) {
     {
       label: "group ns",
       kind: monaco.languages.CompletionItemKind.Function,
-      documentation: "Add a new group statement",
+      documentation: "Add a new group statement with namespace",
       insertText: 'group>\n  <push_ros_namespace namespace="${1:NAMESPACE}"/>\n</group>',
       range,
     },
