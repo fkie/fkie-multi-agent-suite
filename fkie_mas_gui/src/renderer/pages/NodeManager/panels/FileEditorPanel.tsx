@@ -822,14 +822,15 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
             if (clipTextReadyForSuggest) {
               clipTextReadyForSuggest = false;
-              return {
-                suggestions:
-                  e === "python"
-                    ? createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages)
-                    : isRos2
-                      ? createXMLDependencyProposalsR2(monaco, range, clipTextSuggest, packages)
-                      : createXMLDependencyProposals(monaco, range, clipTextSuggest, packages),
-              };
+
+              switch(e) {
+                case "python":
+                  return { suggestions: createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages) };
+                case "ros1xml":
+                  return { suggestions: createXMLDependencyProposals(monaco, range, clipTextSuggest, packages) };
+                case "ros2xml":
+                  return { suggestions: createXMLDependencyProposalsR2(monaco, range, clipTextSuggest, packages) };
+              }
             }
             getClipboardTextForSuggest();
             return {
