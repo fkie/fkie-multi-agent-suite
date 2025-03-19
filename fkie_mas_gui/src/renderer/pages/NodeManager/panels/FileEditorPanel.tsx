@@ -54,6 +54,7 @@ import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
 import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighter";
+import { PythonLanguage } from "@/renderer/components/MonacoEditor/PythonLaunchHighlighter";
 
 type TActiveModel = {
   path: string;
@@ -785,6 +786,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     monaco.languages.register({ id: "ros1xml" });
     monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
     monaco.languages.setLanguageConfiguration("ros1xml", { comments: { blockComment: ["<!--", "-->"] } });
+
+    monaco.languages.register({ id: "python" });
+    monaco.languages.setMonarchTokensProvider("python", PythonLanguage);
 
     // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
