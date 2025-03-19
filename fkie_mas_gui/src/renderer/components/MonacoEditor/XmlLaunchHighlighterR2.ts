@@ -164,7 +164,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
 
     // Standard tag
     tag: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(\/)(>)/,
         [
@@ -178,7 +178,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
 
     // Per tag attributes
     launchtags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedLaunchAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -198,7 +198,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     grouptags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedGroupAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -218,7 +218,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     includetags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedIncludeAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -238,7 +238,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     argtags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedArgAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -258,7 +258,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     lettags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedLetAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -278,7 +278,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     executabletags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedExecutableAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -298,7 +298,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     nodetags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedNodeAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -318,7 +318,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     paramtags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedParamAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -338,7 +338,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     remaptags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedRemapAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -358,7 +358,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     envtags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedEnvAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -378,7 +378,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     setenvtags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedSetEnvAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -398,7 +398,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     unsetenvtags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedUnsetEnvAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -418,7 +418,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     namespacetags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedPushRosNamespaceAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -438,7 +438,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
     xmltags: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [
         /(@qualifiedXmlAttrs)(\s*=\s*)(")/,
         ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
@@ -476,7 +476,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\]/, ""],
     ],
     whitespace: [
-      [/[ \t\r\n]+/, ""],
+      [/\s+/, ""],
       [/<!--/, { token: "comment", bracket: "@open", next: "@comment" }],
     ],
 
