@@ -27,7 +27,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   // The main tokenizer for our languages
   tokenizer: {
     root: [
-      // Opening tags with defined attributes
+      // Opening tags with their corresponding attribute options
       [
         /(<)(launch)/,
         [
@@ -128,7 +128,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       ],
 
       // Standard opening tag
-      // For tags without any attributes: launch, group
+      // For tags without any attributes: (none)
       [
         /(<)(@qualifiedTags)/,
         [
@@ -160,6 +160,8 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/(@qualifiedTags)(\s*)(>)/, [{ token: "delimiter.end", bracket: "@close" }]],
       [/<!--/, "comment", "@comment"],
     ],
+
+    // Standard tag
     tag: [
       [/[ \t\r\n]+/, ""],
       [
@@ -172,6 +174,8 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
+
+    // Per tag attributes
     launchtags: [
       [/[ \t\r\n]+/, ""],
       [
