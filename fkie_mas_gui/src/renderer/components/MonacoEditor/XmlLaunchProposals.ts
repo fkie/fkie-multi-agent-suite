@@ -44,7 +44,7 @@ function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileR
 }
 
 function createAttributeSuggestionsFromTag(monaco: Monaco, range: TFileRange, lineContent: string): languages.CompletionItem[] {
-  const tags= ["launch", "node", "machine", "remap", "env", "param", "rosparam", "group", "test", "arg"]
+  const tags= ["launch", "node", "machine", "remap", "env", "param", "rosparam", "group", "test", "arg", "include"]
 
   for (const tag in tags) {
     // if a tag is found, add its attributes as suggestions
@@ -478,6 +478,21 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
           range,
         },
       ];
+    case "include":
+      return [
+        ...all,
+        ns,
+        clear_params,
+        {
+          label: "pass_all_args",
+          preselect: true,
+          kind: monaco.languages.CompletionItemKind.Function,
+          documentation: "TODO",
+          insertText: 'pass_all_args="${1:VALUE}"',
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          range,
+        },
+      ]
 
     // or return nothing (which should never happen)
     default: return [];
