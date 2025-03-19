@@ -9,6 +9,7 @@ import { TFileRange } from "@/types";
 function createXMLDependencyProposals(
   monaco: Monaco,
   range: TFileRange,
+  lineContent: string,
   clipText: string,
   packages: RosPackage[]
 ): languages.CompletionItem[] {
@@ -22,6 +23,7 @@ function createXMLDependencyProposals(
   
   // List of suggestions
   return [
+    ...createAttributeSuggestionsFromTag(monaco, range, lineContent),
     ...createTagSuggestions(monaco, range),
     ...createPackageList(packages, monaco, range),
   ];
@@ -39,6 +41,37 @@ function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileR
     };
   });
   return result ? result : [];
+}
+
+function createAttributeSuggestionsFromTag(monaco: Monaco, range: TFileRange, lineContent: string): languages.CompletionItem[] {
+  const tags= ["launch", "node", "machine", "remap", "env", "param", "rosparam", "group", "test", "arg"]
+
+  for (const tag in tags) {
+    // if a tag is found, add its attributes as suggestions
+    if (lineContent.includes("<" + tags[tag])) return createAttributeSuggestions(monaco, range, tags[tag])
+  }
+  // otherwise return nothing
+  return [];
+}
+
+function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: string): languages.CompletionItem[] {
+  // return the valid attributes for each tag
+  switch(tag) {
+    case "launch":
+      return [
+        {
+          label: "depricated",
+          preselect: true,
+          kind: monaco.languages.CompletionItemKind.Function,
+          documentation: "Add a deprication message to the launch configuration",
+          insertText: 'depricated="${1:MESSAGE}"',
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          range,
+        },
+      ];
+    // or return nothing (which should never happen)
+    default: return [];
+  }
 }
 
 function createTagSuggestions(monaco: Monaco, range: TFileRange) {

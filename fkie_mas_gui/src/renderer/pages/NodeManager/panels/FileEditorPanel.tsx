@@ -820,6 +820,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               endColumn: word.endColumn,
             };
 
+            const lineContent = model.getLineContent(position.lineNumber);
+
             if (clipTextReadyForSuggest) {
               clipTextReadyForSuggest = false;
 
@@ -827,7 +829,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 case "python":
                   return { suggestions: createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages) };
                 case "ros1xml":
-                  return { suggestions: createXMLDependencyProposals(monaco, range, clipTextSuggest, packages) };
+                  return { suggestions: createXMLDependencyProposals(monaco, range, lineContent, clipTextSuggest, packages) };
                 case "ros2xml":
                   return { suggestions: createXMLDependencyProposalsR2(monaco, range, clipTextSuggest, packages) };
               }
