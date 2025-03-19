@@ -4,7 +4,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
   ignoreCase: true,
 
-  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push-ros-namespace|\?xml/,
+  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push_ros_namespace|\?xml/,
 
   // TODO: launch requires attribute "version"
   qualifiedLaunchAttrs: /if|unless/,
@@ -107,7 +107,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
-        /(<)(push-ros-namespace)/,
+        /(<)(push_ros_namespace)/,
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@namespacetags" },

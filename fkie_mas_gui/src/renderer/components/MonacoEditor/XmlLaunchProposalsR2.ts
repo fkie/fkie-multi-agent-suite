@@ -44,7 +44,7 @@ function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileR
 }
 
 function createAttributeSuggestionsFromTag(monaco: Monaco, range: TFileRange, lineContent: string): languages.CompletionItem[] {
-  const tags= ["launch", "include", "group", "let", "arg", "executable", "node", "param", "remap", "env", "set_env", "unset_env", "push-ros-namespace"]
+  const tags= ["launch", "include", "group", "let", "arg", "executable", "node", "param", "remap", "env", "set_env", "unset_env", "push_ros_namespace"]
 
   for (const tag in tags) {
     // if a tag is found, add its attributes as suggestions
@@ -268,11 +268,11 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
           range,
         },
         {
-          label: "sep",
+          label: "value-sep",
           preselect: true,
           kind: monaco.languages.CompletionItemKind.Function,
           documentation: "TODO",
-          insertText: 'sep="${1:SEPARATOR}"',
+          insertText: 'value-sep="${1:SEPARATOR}"',
           insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
           range,
         },
@@ -343,7 +343,7 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
           range,
         },
       ];
-    case "push-ros-namespace":
+    case "push_ros_namespace":
       return [
         ...all,
         {
