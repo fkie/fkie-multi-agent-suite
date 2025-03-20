@@ -12,21 +12,46 @@ usage() {
     echo "  -r      do not install GUI packages"
     echo "  -p      install prerelease packages"
     echo "  -w      wait for key press to quit"
+    echo "  -f      Force the installation of debian packages, even if the packages have been cloned into the workspace."
     echo "  -e      removes fkie mas packages. ttyd and python3-websockets are not uninstalled."
     exit 1
 }
 
-while getopts grphwe  flag; do
+while getopts grphwfe  flag; do
     case "${flag}" in
         g) NO_ROS=true;;
         r) NO_GUI=true;;
         p) PRERELEASE=true;;
         w) WAIT_FOR_KEY=true;;
+        f) FORCE_INSTALL=true;;
         e) UNINSTALL=true;;
         h) usage ;;
         *) usage ;;
     esac
 done
+
+# check for OS and ROS_DISTRO
+if [[ -z $NO_ROS ]]; then
+    OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
+    if [[ "$OS_CODENAME" == "focal"  || "$OS_CODENAME" == "jammy" || "$OS_CODENAME" == "noble" ]]; then
+        echo -e "detected OS_CODENAME=\e[36m$OS_CODENAME\e[0m"
+    else
+        echo -e "\e[31mdebian packages are only available for focal, jammy and noble, exit\e[0m"
+        exit 1
+    fi
+
+    if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "jazzy" ]]; then
+        echo -e "detected ROS_DISTRO=\e[36m$ROS_DISTRO\e[0m"
+    else
+        if [ -z "$ROS_DISTRO" ]; then
+            echo -e "\e[31mROS_DISTRO is not set, please set up your ROS environment first.\e[0m"
+            exit 1
+        else
+            echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
+            exit 1
+        fi
+    fi
+fi
 
 if [[ ! -z $UNINSTALL ]]; then
     OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
@@ -36,6 +61,18 @@ if [[ ! -z $UNINSTALL ]]; then
     exit 0
 fi
 
+if [[ "$ROS_DISTRO" != "noetic" ]]; then
+    PACKAGE_PATH=$(ros2 pkg prefix fkie_mas_daemon)
+    if [ ! -z "$PACKAGE_PATH" ]; then
+        if [[ "$PACKAGE_PATH" == *"/install/"* ]]; then
+            echo -e "\e[31mYou are using MAS packages in your workspace. Please update them with git and rebuild them.\e[0m"
+            echo -e "\e[31mOr remove them from the workspace to install them as debian packages.\e[0m"
+            if [ -z $FORCE_INSTALL ]; then
+                exit 1
+            fi
+        fi
+    fi
+fi
 
 TMP_DIR=/tmp/mas-debs
 
@@ -130,23 +167,13 @@ if [[ -z $NO_ROS ]]; then
     get_package "python3-websockets" $OS_CODENAME
 
     echo "Get ROS packages for Multi-Agent-Suite"
-
-    if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "jazzy" ]]; then
-        echo -e "detected ROS_DISTRO=\e[36m$ROS_DISTRO\e[0m"
-        get_package "ros-$ROS_DISTRO-fkie-mas-msgs" $OS_CODENAME
-        get_package "ros-$ROS_DISTRO-fkie-mas-pylib" $OS_CODENAME
-        get_package "ros-$ROS_DISTRO-fkie-mas-discovery" $OS_CODENAME
-        get_package "ros-$ROS_DISTRO-fkie-mas-daemon" $OS_CODENAME
-        if [[ "$ROS_DISTRO" == "noetic" ]]; then
-            get_package "ros-$ROS_DISTRO-fkie-mas-sync" $OS_CODENAME
-        fi
-    else
-        if [ -z "$ROS_DISTRO" ]; then
-            echo -e "\e[31mROS_DISTRO is not set, please set up your ROS environment first.\e[0m"
-            exit 1
-        else
-            echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
-        fi
+    echo -e "detected ROS_DISTRO=\e[36m$ROS_DISTRO\e[0m"
+    get_package "ros-$ROS_DISTRO-fkie-mas-msgs" $OS_CODENAME
+    get_package "ros-$ROS_DISTRO-fkie-mas-pylib" $OS_CODENAME
+    get_package "ros-$ROS_DISTRO-fkie-mas-discovery" $OS_CODENAME
+    get_package "ros-$ROS_DISTRO-fkie-mas-daemon" $OS_CODENAME
+    if [[ "$ROS_DISTRO" == "noetic" ]]; then
+        get_package "ros-$ROS_DISTRO-fkie-mas-sync" $OS_CODENAME
     fi
 fi
 
