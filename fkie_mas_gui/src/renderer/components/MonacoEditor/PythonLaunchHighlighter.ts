@@ -151,8 +151,17 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 	tokenizer: {
 		root: [
 
+			// IMPORTS
+			[/(\w+)(,)/, ['attribute.name', 'delimiter']],
+			[/(from)(\ \w+\.?\w+)/, ['tag', 'attribute.name']],
+			[/(import)(\ \w+)/, ['tag', 'attribute.name']],
+			[/(as)(\ \w+)/, ['tag', 'attribute.name']],
+
+			// for return values => return foo
+			[/(return)(\ [a-z]\w+)/, ['tag', 'attribute.name']], // first character has to be lowercase
+
 			// for values => : foo
-			[/(\:)(\ ?\w*)/, ['delimiter', 'attribute.name']],
+			[/(\:)(\ ?[a-z]\w+)/, ['delimiter', 'attribute.name']], // first character has to be lowercase
 
 			// for values => , foo but not , 'foo'
 			[/(\,)(\ ?\w*)/, ['delimiter', 'attribute.name']],
@@ -169,12 +178,12 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 				[
 					'subst.arg', 
 					'delimiter',
-					'attribute.name', // TODO: dont match strings
+					'attribute.name', // TODO: dont match strings (when in single line)
 					'delimiter'
 				]
 			],
 
-			// for functions => foo(
+			// for functions => foo( | Bar(
 			[/(\w+)(\()/, 
 				[
 					'subst.arg', 
@@ -182,8 +191,14 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 				]
 			],
 
+			// for values => = bar
+			[/(=)(\ ?\w.+)/, ['delimiter', 'attribute.name']],
+
 			// for values => foo =
 			[/(\w+)(\ ?=)/, ['attribute.name', 'delimiter']],
+
+			// for values => foo.bar.
+			[/(\w+)(\.)/, ['attribute.name', 'delimiter']],
 			
 			[/[a-zA-Z]\w*/, {
 				cases: {
