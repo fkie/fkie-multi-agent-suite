@@ -31,7 +31,7 @@ done
 if [[ ! -z $UNINSTALL ]]; then
     OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
     echo "Uninstall packages of the Multi-Agent-Suite"
-    sudo apt remove fkie-mas-gui ros-*-fkie-mas*
+    sudo apt remove fkie-mas-gui *fkie-mas-*
     echo -e "\e[32mfinished.\e[0m"
     exit 0
 fi
@@ -142,7 +142,8 @@ if [[ -z $NO_ROS ]]; then
         fi
     else
         if [ -z "$ROS_DISTRO" ]; then
-            echo -e "\e[31mROS_DISTRO is not set\e[0m"
+            echo -e "\e[31mROS_DISTRO is not set, please set up your ROS environment first.\e[0m"
+            exit 1
         else
             echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
         fi
