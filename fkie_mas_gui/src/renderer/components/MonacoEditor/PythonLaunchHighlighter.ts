@@ -150,6 +150,13 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 
 	tokenizer: {
 		root: [
+
+			// for values => : foo
+			[/(\:)(\ ?\w*)/, ['delimiter', 'attribute.name']],
+
+			// for values => , foo but not , 'foo'
+			[/(\,)(\ ?\w*)/, ['delimiter', 'attribute.name']],
+
 			{ include: '@whitespace' },
 			{ include: '@numbers' },
 			{ include: '@strings' },
