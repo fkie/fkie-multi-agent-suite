@@ -157,9 +157,32 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 			[/[,:;]/, 'delimiter'],
 			[/[{}\[\]()]/, '@brackets'],
 
-			[/@[a-zA-Z_]\w*/, 'tag'],
-			[/[a-zA-Z_]\w*/, {
-				cases: { '@keywords': 'tag', }
+			// for functions => foo(<content>)
+			[/(\w+)(\()(.*|)(\))/s, 
+				[
+					'subst.arg', 
+					'delimiter',
+					'attribute.name', // TODO: dont match strings
+					'delimiter'
+				]
+			],
+
+			// for functions => foo(
+			[/(\w+)(\()/, 
+				[
+					'subst.arg', 
+					'delimiter',
+				]
+			],
+
+			// for values => foo =
+			[/(\w+)(\ ?=)/, ['attribute.name', 'delimiter']],
+			
+			[/[a-zA-Z]\w*/, {
+				cases: {
+					'@keywords': 'tag',
+					'@default': 'identifier'
+				}
 			}],
 		],
 
