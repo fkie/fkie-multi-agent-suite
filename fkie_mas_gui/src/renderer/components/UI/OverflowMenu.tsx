@@ -69,7 +69,7 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   function handleClick(event): void {
-    if (autoClick || options.length > 1) {
+    if (options.length > 1) {
       setAnchorEl(event.currentTarget);
       event.stopPropagation();
     } else if (autoClick || options.length === 1) {
