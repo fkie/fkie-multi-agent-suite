@@ -1,6 +1,6 @@
 name: Humble Create Debs
 
-on: 
+on:
   push:
     tags:
       - v*
@@ -8,6 +8,8 @@ on:
 jobs:
   humble:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: ubuntu:jammy
     steps:

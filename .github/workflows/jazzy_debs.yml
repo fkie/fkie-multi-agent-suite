@@ -1,6 +1,6 @@
 name: Jazzy Create Debs
 
-on: 
+on:
   push:
     tags:
       - v*
@@ -8,6 +8,8 @@ on:
 jobs:
   jazzy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: ubuntu:noble
     steps:

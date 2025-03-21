@@ -1,6 +1,6 @@
 name: Galactic Create Debs
 
-on: 
+on:
   push:
     tags:
       - v*
@@ -8,6 +8,8 @@ on:
 jobs:
   galactic:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: ubuntu:focal
     steps:

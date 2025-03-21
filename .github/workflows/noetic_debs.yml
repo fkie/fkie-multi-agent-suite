@@ -1,6 +1,6 @@
 name: Noetic Create Debs
 
-on: 
+on:
   push:
     tags:
       - v*
@@ -8,6 +8,8 @@ on:
 jobs:
   noetic:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: ubuntu:focal
     steps:

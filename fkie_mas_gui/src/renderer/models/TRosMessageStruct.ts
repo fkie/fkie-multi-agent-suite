@@ -28,7 +28,7 @@ export function rosMessageStructToString(
             const value_matches = (field.value as string)?.match(/(?:[^\s,"']+|"[^"]*")+/g);
             const values = value_matches
               ? value_matches.map((item) => {
-                  return item.trim().replace(/^"|"$/g, "").replace('"', "");
+                  return item.trim().replaceAll(/^"|"$/g, "");
                 })
               : [];
             // TODO: add check for arrays with constant length
