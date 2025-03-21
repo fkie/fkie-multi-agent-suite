@@ -112,7 +112,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const infoRef = useRef<HTMLDivElement>();
   const alertRef = useRef<HTMLDivElement>();
   const resizeObserver = useRef<ResizeObserver>();
-  const componentWillUnmount = useRef(false);
   const [fontSize, setFontSize] = useState<number>(settingsCtx.get("fontSize") as number);
   const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage<number>(
     "Editor:sideBarWidth",
@@ -135,7 +134,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [providerName, setProviderName] = useState<string>("");
   const [providerHost, setProviderHost] = useState<string>("");
   const [packageName, setPackageName] = useState<string>("");
-  const [initialized, setInitialized] = useState<boolean>(false);
   const [activeModel, setActiveModel] = useState<TActiveModel>();
   const [currentFile, setCurrentFile] = useState({ name: "", requesting: false });
   const [openFiles, setOpenFiles] = useState<TFileItem[]>([]);
@@ -143,6 +141,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState<IDisposable[]>([]);
   const [monacoViewStates] = useState(new Map());
+  const [modelLinks] = useState({});
 
   const [enableGlobalSearch, setEnableGlobalSearch] = useState(false);
   const [enableExplorer, setEnableExplorer] = useState(false);
@@ -159,7 +158,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [selectParentFiles, setSelectParentFiles] = useState<LaunchIncludedFile[]>([]);
 
-  const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
+  // const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
@@ -276,7 +275,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         }
       });
     }
-    includesProvider.modelLinks[model.uri.path] = newLinks;
+    modelLinks[model.uri.path] = newLinks;
   }, []);
 
   const isModified = useCallback(
@@ -609,42 +608,36 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
     return (): void => {
       // update state to unmount and disconnect from resize observer
-      componentWillUnmount.current = true;
       if (resizeObserver.current) {
         resizeObserver.current.disconnect();
       }
+
+      // clear monaco disposables:
+      // disposable objects includes autocomplete, code definition and editor actions
+      monacoDisposables.forEach((d) => {
+        d?.dispose;
+      })
+      setMonacoDisposables([]);
+      // dispose all own models
+      if (monaco) {
+        ownUriPaths.forEach((uriPath) => {
+          const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
+          if (model) {
+            model.dispose();
+          }
+        });
+        setOwnUriPaths([]);
+        // remove undefined models
+        monaco.editor.getModels().forEach((model) => {
+          if (model.getValue().length === 0 && model.uri.path.indexOf(":") === -1) {
+            model.dispose();
+          }
+        });
+      }
+      // remove modified files from context
+      monacoCtx.updateModifiedFiles(tabId, "", []);
     };
   }, []);
-
-  useEffect(() => {
-    return (): void => {
-      // This line only evaluates to true after the componentWillUnmount happens
-      if (componentWillUnmount.current) {
-        // clear monaco disposables:
-        //    disposable objects includes autocomplete, code definition and editor actions
-        monacoDisposables.forEach((d) => {
-          d?.dispose();
-        });
-        // dispose all own models
-        if (monaco) {
-          ownUriPaths.forEach((uriPath) => {
-            const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
-            if (model) {
-              model.dispose();
-            }
-          });
-          // remove undefined models
-          monaco.editor.getModels().forEach((model) => {
-            if (model.getValue().length === 0 && model.uri.path.indexOf(":") === -1) {
-              model.dispose();
-            }
-          });
-        }
-        // remove modified files from context
-        monacoCtx.updateModifiedFiles(tabId, "", []);
-      }
-    };
-  }, [monacoDisposables, monaco, ownUriPaths, monacoCtx, tabId]);
 
   function onKeyDown(event: React.KeyboardEvent): void {
     if (event.ctrlKey && event.shiftKey && event.key === "E") {
@@ -807,7 +800,14 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     );
 
     ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
-      addMonacoDisposable(monaco.languages.registerLinkProvider(e, includesProvider));
+      addMonacoDisposable(
+        monaco.languages.registerLinkProvider(e, {
+          provideLinks: (model) => {
+            const links = modelLinks[model.uri.path];
+            return { links: links ? links : [] };
+          }
+        } as languages.LinkProvider)
+      );
     });
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
@@ -947,21 +947,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   // initialization of provider definitions
   useEffect(() => {
-    if (initialized || !editorRef.current || !monaco) return;
-    editorRef.current.onMouseDown((event) => {
-      // handle CTRL+click to open included files
-      if (event.event.ctrlKey) {
-        // setClickRequest(event.target.position);
-      }
-    });
+    if (!editorRef.current || !monaco) return;
     configureMonacoEditor();
-    setInitialized(true);
     loadFiles();
-    // uncomment to show supported actions
-    // editorRef.current.getSupportedActions().forEach((value) => {
-    //   console.log(value);
-    // });
-  }, [initialized, monaco, loadFiles]);
+  }, [editorRef.current]);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
