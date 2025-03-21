@@ -157,14 +157,20 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 			[/(import)(\ \w+)/, ['tag', 'attribute.name']],
 			[/(as)(\ \w+)/, ['tag', 'attribute.name']],
 
+			// alternative import regex: /\b(from|import|as)\b(\s[\w\.]+)?/ || /\b(from|import|as)\b(\s[\w\.]+)/
+
 			// for return values => return foo
 			[/(return)(\ [a-z]\w+)/, ['tag', 'attribute.name']], // first character has to be lowercase
+
+			// alternative return regex: /\breturn\b\s+([a-z]\w*)/
 
 			// for values => : foo
 			[/(\:)(\ ?[a-z]\w+)/, ['delimiter', 'attribute.name']], // first character has to be lowercase
 
 			// for values => , foo but not , 'foo'
 			[/(\,)(\ ?\w*)/, ['delimiter', 'attribute.name']],
+
+			// alternative value regex: /, (\b[a-zA-Z_]\w*\b)/
 
 			{ include: '@whitespace' },
 			{ include: '@numbers' },
@@ -194,11 +200,17 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 			// for values => = bar
 			[/(=)(\ ?\w.+)/, ['delimiter', 'attribute.name']],
 
+			// alternative regex: /(=)(\s?[a-zA-Z_]\w*)/
+
 			// for values => foo =
 			[/(\w+)(\ ?=)/, ['attribute.name', 'delimiter']],
 
+			// alternative regex: /([a-zA-Z_]\w*\s?)(=)/
+
 			// for values => foo.bar.
 			[/(\w+)(\.)/, ['attribute.name', 'delimiter']],
+
+			// alternative regex: /([a-zA-Z_]\w*)(\.)/
 			
 			[/[a-zA-Z]\w*/, {
 				cases: {
