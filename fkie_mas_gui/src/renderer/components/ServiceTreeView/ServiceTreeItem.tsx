@@ -58,7 +58,6 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
   );
 
   useEffect(() => {
-    if (!rootPath) return;
     if (!serviceInfo) return;
     const nameParts = serviceInfo.name.split("/");
     setName(`${nameParts.pop()}`);
