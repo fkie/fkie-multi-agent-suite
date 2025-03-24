@@ -67,8 +67,12 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [availableProviders, setAvailableProviders] = useState<TProviderDescription[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<boolean>(
+    settingsCtx.get("avoidGroupWithOneItem") as boolean
+  );
 
   useEffect(() => {
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
   }, [settingsCtx, settingsCtx.changed]);
 
@@ -116,7 +120,13 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     // sort topics by name
     const newTopics = Array.from(newTopicsMap.values());
     newTopics.sort(function (a, b) {
-      return a.name.localeCompare(b.name);
+      // sort groups first
+      const aCountSep = (a.name.match(/\//g) || []).length;
+      const bCountSep = (b.name.match(/\//g) || []).length;
+      if (aCountSep === bCountSep) {
+        return a.name.localeCompare(b.name);
+      }
+      return aCountSep < bCountSep ? 1 : -1;
     });
     setTopics(newTopics);
   }
@@ -327,7 +337,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         />
       );
     } else {
-      if (treeItem.topics.length === 1) {
+      if (avoidGroupWithOneItem && treeItem.topics.length === 1) {
         // avoid groups with one item
         return topicTreeToStyledItems(
           rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
@@ -505,7 +515,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm, filteredTopics]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm, filteredTopics, avoidGroupWithOneItem]);
 
   const createPanel = useMemo(() => {
     return (
@@ -555,7 +565,16 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         </Stack>
       </Box>
     );
-  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, topicForSelected, settingsCtx.changed]);
+  }, [
+    rootDataList,
+    expanded,
+    expandedFiltered,
+    searchTerm,
+    selectedItem,
+    topicForSelected,
+    settingsCtx.changed,
+    avoidGroupWithOneItem,
+  ]);
   return createPanel;
 });
 

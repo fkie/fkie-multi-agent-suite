@@ -27,7 +27,7 @@ import { LoggingContext } from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { RosNode } from "@/renderer/models";
+import { RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import SingleTerminalPanel from "@/renderer/pages/NodeManager/panels/SingleTerminalPanel";
@@ -130,7 +130,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
   const getMasterSyncNode = useCallback(
     function (providerId: string): RosNode | undefined {
       const foundSyncNode = rosCtx.mapProviderRosNodes.get(providerId)?.find((node) => {
-        return node.id.includes(`/mas_sync`);
+        return node.id.includes(`/mas_sync`) && node.status === RosNodeStatus.RUNNING;
       });
       return foundSyncNode;
     },
@@ -143,10 +143,10 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       if (syncNode) {
         stopNodes([syncNode.idGlobal]);
       } else {
-        rosCtx.startMasterSync(provider.connection.host, provider.rosVersion);
+        rosCtx.startMasterSync(provider.connection.host, provider.rosVersion, provider.rosState?.masteruri);
       }
     },
-    [getMasterSyncNode, rosCtx, stopNodes]
+    [getMasterSyncNode, rosCtx.mapProviderRosNodes, stopNodes]
   );
 
   /**

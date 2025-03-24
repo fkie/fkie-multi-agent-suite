@@ -130,7 +130,7 @@ export function AutoUpdateProvider({
         const data = await response.json();
         const prereleases = data.filter((release) => release.prerelease);
         if (prereleases.length > 0) {
-          if (prereleases[0].name !== packageJson.version) {
+          if (prereleases[0].name.localeCompare(packageJson.version) === 1) {
             setUpdateAvailable({ version: prereleases[0].name, releaseDate: data.published_at } as UpdateInfo);
           }
         } else {

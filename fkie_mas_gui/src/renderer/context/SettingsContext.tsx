@@ -271,7 +271,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "Each host shows all nodes visible to it",
   },
   avoidGroupWithOneItem: {
-    label: "Avoid groups with one item (only Nodes panel)",
+    label: "Avoid groups with one item",
     default: true,
     type: "boolean",
     description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",

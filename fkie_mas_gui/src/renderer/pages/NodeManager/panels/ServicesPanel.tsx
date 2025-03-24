@@ -52,11 +52,15 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<boolean>(
+    settingsCtx.get("avoidGroupWithOneItem") as boolean
+  );
 
   useEffect(() => {
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
-  }, [settingsCtx.changed]);
+  }, [settingsCtx, settingsCtx.changed]);
 
   function genKey(items: string[]): string {
     return `${items.join("#")}`;
@@ -91,7 +95,13 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
 
     const newServices: ServiceExtendedInfo[] = Array.from(newServicesMap.values());
     newServices.sort(function (a, b) {
-      return a.name.localeCompare(b.name);
+      // sort groups first
+      const aCountSep = (a.name.match(/\//g) || []).length;
+      const bCountSep = (b.name.match(/\//g) || []).length;
+      if (aCountSep === bCountSep) {
+        return a.name.localeCompare(b.name);
+      }
+      return aCountSep < bCountSep ? 1 : -1;
     });
     setServices(newServices);
   }
@@ -167,20 +177,23 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   // create tree based on service namespace
   // services are grouped only if more then one is in the group
   function fillTree(fullPrefix: string, serviceGroup: ServiceExtendedInfo[], itemId: string): TTreeItem {
-    const byPrefixP1 = new Map<string, { restNameSuffix: string; serviceInfo: ServiceExtendedInfo }[]>();
+    const byPrefixP1 = new Map<
+      string,
+      { restNameSuffix: string; serviceInfo: ServiceExtendedInfo; isGroup: boolean }[]
+    >();
     // create a map with simulated tree for the namespaces of the service list
     serviceGroup.forEach((serviceInfo) => {
       const nameSuffix = serviceInfo.id.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
-      if (restName.length > 0) {
+      if (restName.length > 1) {
         const restNameSuffix = restName.join("/");
         if (byPrefixP1.has(groupName)) {
-          byPrefixP1.get(groupName)?.push({ restNameSuffix, serviceInfo });
+          byPrefixP1.get(groupName)?.push({ restNameSuffix, serviceInfo, isGroup: true });
         } else {
-          byPrefixP1.set(groupName, [{ restNameSuffix, serviceInfo }]);
+          byPrefixP1.set(groupName, [{ restNameSuffix, serviceInfo, isGroup: true }]);
         }
       } else {
-        byPrefixP1.set(groupName, [{ restNameSuffix: "", serviceInfo }]);
+        byPrefixP1.set(`${groupName}#${serviceInfo.srvType}`, [{ restNameSuffix: "", serviceInfo, isGroup: false }]);
       }
     });
 
@@ -191,8 +204,11 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     byPrefixP1.forEach((value, groupName) => {
       // don't create group with one parameter
       const newFullPrefix = `${fullPrefix}/${groupName}`;
-      if (value.length > 1) {
-        const groupKey = itemId ? `${itemId}-${groupName}` : groupName;
+      const serviceValues = value.filter((item) => !item.isGroup);
+      const groupValues = value.filter((item) => !serviceValues.includes(item));
+
+      if (groupValues.length > 0) {
+        const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
         groupKeys.push(groupKey);
         const groupServices = value.map((item) => {
           return item.serviceInfo;
@@ -209,7 +225,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         }
         // if all services of the group have same message id, show it in the group info
         let srvType: string | undefined = undefined;
-        value.map((item) => {
+        groupValues.map((item) => {
           if (srvType === undefined) {
             srvType = item.serviceInfo.srvType;
           } else if (srvType !== item.serviceInfo.srvType) {
@@ -220,31 +236,33 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         });
         newFilteredServices.push({
           groupKey: groupKey,
-          groupName: `/${groupName}`,
+          groupName: groupName,
           services: subResult.services,
           count: subResult.count,
-          fullPrefix: newFullPrefix,
+          fullPrefix: fullPrefix,
           srvType: srvType ? srvType : "",
           groupKeys: groupKeys,
           serviceInfo: null,
         } as TTreeItem);
-      } else {
+      }
+      serviceValues.forEach((item) => {
         newFilteredServices.push({
           groupKey: "",
           groupName: "",
           services: [],
           count: 0,
-          fullPrefix: newFullPrefix,
-          srvType: value[0].serviceInfo.srvType,
+          fullPrefix: fullPrefix,
+          srvType: item.serviceInfo.srvType,
           groupKeys: groupKeys,
-          serviceInfo: value[0].serviceInfo,
+          serviceInfo: item.serviceInfo,
         } as TTreeItem);
-        if (value[0].serviceInfo.providerName !== groupName) {
-          // since the same service can be on multiple provider
-          // we count only services
-          count += 1;
-        }
-      }
+        count += 1;
+      });
+      // if (value[0].serviceInfo.providerName !== groupName) {
+      //   // since the same service can be on multiple provider
+      //   // we count only services
+      //   count += 1;
+      // }
     });
     return { services: newFilteredServices, count, groupKeys } as TTreeItem;
   }
@@ -258,33 +276,45 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     }
   }, [filteredServices]);
 
-  const serviceTreeToStyledItems = useCallback((rootPath: string, treeItem: TTreeItem, selectedItem: string) => {
-    if (treeItem.serviceInfo) {
-      return (
-        <ServiceTreeItem
-          key={genKey([treeItem.serviceInfo.name, treeItem.srvType, treeItem.serviceInfo.providerId])}
-          itemId={genKey([treeItem.serviceInfo.name, treeItem.srvType, treeItem.serviceInfo.providerId])}
-          rootPath={rootPath}
-          serviceInfo={treeItem.serviceInfo}
-          selectedItem={selectedItem}
-        />
-      );
-    } else {
-      return (
-        <ServiceGroupTreeItem
-          key={treeItem.groupKey}
-          itemId={treeItem.groupKey}
-          rootPath={rootPath}
-          groupName={treeItem.groupName}
-          countChildren={treeItem.count}
-        >
-          {treeItem.services.map((subItem) => {
-            return serviceTreeToStyledItems(treeItem.fullPrefix, subItem, selectedItem);
-          })}
-        </ServiceGroupTreeItem>
-      );
-    }
-  }, []);
+  const serviceTreeToStyledItems = useCallback(
+    (rootPath: string, treeItem: TTreeItem, selectedItem: string) => {
+      if (treeItem.serviceInfo) {
+        return (
+          <ServiceTreeItem
+            key={genKey([treeItem.serviceInfo.name, treeItem.srvType, treeItem.serviceInfo.providerId])}
+            itemId={genKey([treeItem.serviceInfo.name, treeItem.srvType, treeItem.serviceInfo.providerId])}
+            rootPath={rootPath}
+            serviceInfo={treeItem.serviceInfo}
+            selectedItem={selectedItem}
+          />
+        );
+      } else {
+        if (avoidGroupWithOneItem && treeItem.services.length === 1) {
+          // avoid groups with one item
+          return serviceTreeToStyledItems(
+            rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
+            treeItem.services[0],
+            selectedItem
+          );
+        } else {
+          return (
+            <ServiceGroupTreeItem
+              key={treeItem.groupKey}
+              itemId={treeItem.groupKey}
+              rootPath={rootPath}
+              groupName={treeItem.groupName}
+              countChildren={treeItem.count}
+            >
+              {treeItem.services.map((subItem) => {
+                return serviceTreeToStyledItems("", subItem, selectedItem);
+              })}
+            </ServiceGroupTreeItem>
+          );
+        }
+      }
+    },
+    [avoidGroupWithOneItem]
+  );
 
   useEffect(() => {
     const selectedServices = filteredServices.filter((item) => {
@@ -394,7 +424,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm, avoidGroupWithOneItem]);
 
   const createPanel = useMemo(() => {
     return (
@@ -439,7 +469,16 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         </Stack>
       </Box>
     );
-  }, [rootDataList, expanded, expandedFiltered, searchTerm, selectedItem, serviceForSelected, settingsCtx.changed]);
+  }, [
+    rootDataList,
+    expanded,
+    expandedFiltered,
+    searchTerm,
+    selectedItem,
+    serviceForSelected,
+    settingsCtx.changed,
+    avoidGroupWithOneItem,
+  ]);
   return createPanel;
 });
 

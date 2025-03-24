@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.2.11 - 21.03.2025
+
+Fixed no visible service names
+
+## 4.2.10 - 21.03.2025
+
+Added check during update whether mas packages are in the workspace
+Changed group behavior for topics, services and parameters
+No downgrade to prerelease
+Fixed: button to open parent file
+Fixed: set sync parameter when starting from MAS-GUI, see issue #5
+Fixed: open log in a red screen if screen not available
+
 ## 4.2.9 - 14.03.2025
 
 Workaround for launch-prefix in jazzy

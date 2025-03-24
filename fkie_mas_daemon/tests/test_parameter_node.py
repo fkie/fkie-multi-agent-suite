@@ -36,10 +36,10 @@ class TestParameter(Node):
         self.declare_parameter('no.step.double', 2.5, double_wo_step_descriptor)
         self.declare_parameter('string', 'Robot Name', string_descriptor)
         self.declare_parameter('single.string', 'With Namespace')
-        self.declare_parameter('array.bool', [True, False])
-        self.declare_parameter('array.double', [1.1, 2.2, 3.3])
-        self.declare_parameter('array.integer', [1, 2, 3])
-        self.declare_parameter('array.string', ["one", "two", "with space"])
+        self.declare_parameter('other_array.bool', [True, False])
+        self.declare_parameter('number_array.double', [1.1, 2.2, 3.3])
+        self.declare_parameter('number_array.integer', [1, 2, 3])
+        self.declare_parameter('other_array.string', ["one", "two", "with space"])
         self.declare_parameter('error.while.set.bool', True)
 
         # Register a callback function that will be called whenever there is an attempt to

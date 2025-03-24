@@ -151,6 +151,13 @@ export default class ProviderLaunchConfiguration {
     return { result: true, message: cmd } as TResult;
   }
 
+  public fixStringArray(val: string | number | boolean | string[]): string | number | boolean | string[] {
+    if (Array.isArray(val)) {
+      return val.map((v) => `'${v}'`).join();
+    }
+    return val;
+  }
+
   /** Generate start command for a master sync node */
   public masterSyncStartCmd(): TResult {
     if (this.rosVersion === "1") {
@@ -161,11 +168,11 @@ export default class ProviderLaunchConfiguration {
       const nameArg = `--name=${namespace}/${dName}`;
       const doNotSyncParam =
         this.sync.doNotSync && this.sync.doNotSync?.length > 0
-          ? `_do_not_sync:=[${this.sync.doNotSync?.toString()}]`
+          ? `_do_not_sync:=[${this.fixStringArray(this.sync.doNotSync)?.toString()}]`
           : " ";
       const syncTopicsParam =
         this.sync.syncTopics && this.sync.syncTopics?.length > 0
-          ? `_sync_topics:=[${this.sync.syncTopics?.toString()}]`
+          ? `_sync_topics:=[${this.fixStringArray(this.sync.syncTopics)?.toString()}]`
           : " ";
       let cmdMasterSync = "";
       const forceArg = this.force.start ? "--force " : "";

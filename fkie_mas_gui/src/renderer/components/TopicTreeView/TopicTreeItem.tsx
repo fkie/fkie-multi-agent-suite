@@ -29,7 +29,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
   const [name, setName] = useState<string>("");
-  const [namespace, setNamespace] = useState("");
+  const [namespace, setNamespace] = useState<string>("");
   // state variables to show/hide extended info
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
   const [selected, setSelected] = useState(false);
