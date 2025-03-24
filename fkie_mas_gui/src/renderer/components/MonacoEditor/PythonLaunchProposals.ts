@@ -30,7 +30,7 @@ function createRosList(clipText: string, monaco: Monaco, range: TFileRange): lan
     return text || defaultValue;
   }
 
-  return  [
+  return [
     {
       label: "Node",
       kind: monaco.languages.CompletionItemKind.Snippet,
