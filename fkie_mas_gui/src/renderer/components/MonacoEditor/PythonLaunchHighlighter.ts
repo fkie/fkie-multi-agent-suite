@@ -153,24 +153,16 @@ export const PythonLanguage: languages.IMonarchLanguage = {
 
 			// IMPORTS
 			[/(\w+)(,)/, ['attribute.name', 'delimiter']],
-			[/(from)(\ \w+\.?\w+)/, ['tag', 'attribute.name']],
-			[/(import)(\ \w+)/, ['tag', 'attribute.name']],
-			[/(as)(\ \w+)/, ['tag', 'attribute.name']],
-
-			// alternative import regex: /\b(from|import|as)\b(\s[\w\.]+)?/ || /\b(from|import|as)\b(\s[\w\.]+)/
+			[/\b(import|as|from)\b(\ \w+\.?\w+)/, ['tag', 'attribute.name']],
 
 			// for return values => return foo
-			[/(return)(\ [a-z]\w+)/, ['tag', 'attribute.name']], // first character has to be lowercase
-
-			// alternative return regex: /\breturn\b\s+([a-z]\w*)/
+			[/(\breturn\b)(\ [a-z]\w+)/, ['tag', 'attribute.name']], // first character has to be lowercase
 
 			// for values => : foo
 			[/(\:)(\ ?[a-z]\w+)/, ['delimiter', 'attribute.name']], // first character has to be lowercase
 
 			// for values => , foo but not , 'foo'
-			[/(\,)(\ ?\w*)/, ['delimiter', 'attribute.name']],
-
-			// alternative value regex: /, (\b[a-zA-Z_]\w*\b)/
+			[/(,)(\ ?\b[a-zA-Z_]\w*\b)/, ['delimiter', 'attribute.name']],
 
 			{ include: '@whitespace' },
 			{ include: '@numbers' },
