@@ -13,19 +13,11 @@ export function createXMLDependencyProposalsR2(
   clipText: string,
   packages: RosPackage[]
 ): languages.CompletionItem[] {
-  // returning a static list of proposals, valid for ROS launch and XML  files
-
-  // TODO: Unused function. Can it be removed?
-  function getParamName(defaultValue: string | undefined): string | undefined {
-    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
-    return text || defaultValue;
-  }
-
   // List of suggestions
   return [
     ...createAttributeSuggestionsFromTag(monaco, range, lineContent),
-    ...createTagSuggestions(monaco, range),
-    ...createPackageList(packages, monaco, range)
+    ...createTagSuggestions(monaco, range, clipText),
+    ...createPackageList(packages, monaco, range),
   ];
 }
 
@@ -356,7 +348,12 @@ function createAttributeSuggestions(monaco: Monaco, range: TFileRange, tag: stri
   }
 }
 
-function createTagSuggestions(monaco: Monaco, range: TFileRange) {
+function createTagSuggestions(monaco: Monaco, range: TFileRange, clipText: string): languages.CompletionItem[] {
+  function getParamName(defaultValue: string | undefined): string | undefined {
+    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
+    return text || defaultValue;
+  }
+
   return [
     {
       label: "launch",
@@ -410,7 +407,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange) {
       label: "param",
       kind: monaco.languages.CompletionItemKind.Function,
       documentation: "Add a new ROS parameter",
-      insertText: 'param name="${1:NAME}" value="\${2:VALUE}" />',
+      insertText: `param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" /`,
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
@@ -418,7 +415,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange) {
       label: "param sep",
       kind: monaco.languages.CompletionItemKind.Function,
       documentation: "Add a new ROS parameter with value separator",
-      insertText: 'param name="${1:NAME}" value="${2:VALUE}" value-sep="${3:SEPARATOR}" />',
+      insertText: `param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" value-sep="\${3:SEPARATOR}" />`,
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
