@@ -886,7 +886,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         );
       }
     });
+  }
 
+  function addContextMenu(): void {
+    if (!monaco) return;
     if (editorRef.current) {
       addMonacoDisposable(
         editorRef.current?.addAction({
@@ -898,7 +901,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           ],
           precondition: undefined,
           keybindingContext: undefined,
-          contextMenuGroupId: "navigation",
+          contextMenuGroupId: "1_modification",
           contextMenuOrder: 1.0,
           run: async (editorInstance: editor.ICodeEditor) => {
             const model = editorInstance.getModel();
@@ -907,6 +910,23 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             }
           },
         } as editor.IActionDescriptor)
+      );
+      addMonacoDisposable(
+        editorRef.current.addAction({
+          id: "toggle line comment",
+          label: "Toggle line comment",
+          keybindings: [
+            // eslint-disable-next-line no-bitwise
+            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit7,
+          ],
+          precondition: undefined,
+          keybindingContext: undefined,
+          contextMenuGroupId: "1_modification",
+          contextMenuOrder: 2.0,
+          run: async (editorInstance: editor.ICodeEditor) => {
+            editorInstance.trigger("toggle line comment", "editor.action.commentLine", {});
+          },
+        })
       );
       addMonacoDisposable(
         editorRef.current.addAction({
@@ -922,23 +942,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           // contextMenuOrder: 1.0,
           run: async (editorInstance: editor.ICodeEditor) => {
             editorInstance.trigger("open command palette", "editor.action.quickCommand", {});
-          },
-        })
-      );
-      addMonacoDisposable(
-        editorRef.current.addAction({
-          id: "toggle line comment",
-          label: "Toggle line comment",
-          keybindings: [
-            // eslint-disable-next-line no-bitwise
-            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit7,
-          ],
-          precondition: undefined,
-          keybindingContext: undefined,
-          // contextMenuGroupId: "none",
-          // contextMenuOrder: 1.0,
-          run: async (editorInstance: editor.ICodeEditor) => {
-            editorInstance.trigger("toggle line comment", "editor.action.commentLine", {});
           },
         })
       );
@@ -971,6 +974,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
+    addContextMenu();
   }
 
   return (
