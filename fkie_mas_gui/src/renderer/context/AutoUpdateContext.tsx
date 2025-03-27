@@ -1,5 +1,6 @@
 import { ProgressInfo, UpdateInfo } from "electron-updater";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import semver from "semver";
 
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { TAutoUpdateManager } from "@/types";
@@ -130,7 +131,7 @@ export function AutoUpdateProvider({
         const data = await response.json();
         const prereleases = data.filter((release) => release.prerelease);
         if (prereleases.length > 0) {
-          if (prereleases[0].name.localeCompare(packageJson.version) === 1) {
+          if (semver.gt(prereleases[0].name, packageJson.version)) {
             setUpdateAvailable({ version: prereleases[0].name, releaseDate: data.published_at } as UpdateInfo);
           }
         } else {
