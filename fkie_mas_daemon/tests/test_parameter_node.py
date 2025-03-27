@@ -5,12 +5,14 @@ Create a ROS2 node with different parameters to test the MAS GUI
 """
 
 import rclpy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from rclpy.node import Node
 from rcl_interfaces.msg import ParameterDescriptor
 from rcl_interfaces.msg import SetParametersResult
 from rcl_interfaces.msg import FloatingPointRange
 from rcl_interfaces.msg import IntegerRange
 from rclpy.parameter import Parameter
+import rclpy.qos
 from std_msgs.msg import Int32
 from std_msgs.msg import String
 from typing import List
@@ -49,6 +51,11 @@ class TestParameter(Node):
         # create test subscriptions
         self.sub_string = self.create_subscription(String, "one/two/test/sub", self.on_string, 10)
         self.sub_int = self.create_subscription(Int32, "two/test/int", self.on_int, 10)
+        qos_profile = QoSProfile(reliability=ReliabilityPolicy.RELIABLE,
+                                 durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                                 history=HistoryPolicy.KEEP_LAST,
+                                 depth=1)
+        self.pub_data = self.create_publisher(String, 'pub', qos_profile)
 
     def parameter_change_callback(self, params: List[Parameter]) -> SetParametersResult:
         result = SetParametersResult()
@@ -68,6 +75,9 @@ class TestParameter(Node):
             if param.name == "error.while.set.bool":
                 result.successful = False
             print(f"param: {param.name} [{param.type_}] {param.value} - {result.successful}")
+        msg = String()
+        msg.data = f"changed parameter {param.name}"
+        self.pub_data.publish(msg)
         return result
 
     def on_string(self, msg: String):
@@ -75,6 +85,7 @@ class TestParameter(Node):
 
     def on_int(self, msg: String):
         print(f"received int32 message: {msg}")
+
 
 def main(args=None):
     rclpy.init(args=args)
