@@ -2,6 +2,7 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { Autocomplete, Box, Button, IconButton, Link, Stack, TextField, Typography } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
+import { MuiMarkdown } from "mui-markdown";
 import PropTypes from "prop-types";
 import { useContext, useState } from "react";
 
@@ -163,6 +164,16 @@ export default function About(): JSX.Element {
                 {updateCli}
               </Typography>
             </Stack>
+          </Stack>
+        )}
+        {auCtx?.updateAvailable?.releaseNotes && (
+          <Stack ml="1em" mt="0.6em" spacing={0.2} color="grey" direction="column">
+            <MuiMarkdown>
+              {(auCtx?.updateAvailable?.releaseNotes as string)
+                .replace("Changes", `Changes in version ${auCtx?.updateAvailable?.version}:`)
+                .replace("\r\n\r\n", "<br/>")
+                .replaceAll("\r\n", "<br/>")}
+            </MuiMarkdown>
           </Stack>
         )}
       </Stack>

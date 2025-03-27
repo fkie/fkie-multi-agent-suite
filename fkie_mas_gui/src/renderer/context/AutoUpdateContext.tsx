@@ -121,7 +121,11 @@ export function AutoUpdateProvider({
         }
         const data = await response.json();
         if (data.name !== packageJson.version) {
-          setUpdateAvailable({ version: data.name, releaseDate: data.published_at } as UpdateInfo);
+          setUpdateAvailable({
+            version: data.name,
+            releaseDate: data.published_at,
+            releaseNotes: data.body,
+          } as UpdateInfo);
         }
       } else {
         const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases");
@@ -132,7 +136,12 @@ export function AutoUpdateProvider({
         const prereleases = data.filter((release) => release.prerelease);
         if (prereleases.length > 0) {
           if (semver.gt(prereleases[0].name, packageJson.version)) {
-            setUpdateAvailable({ version: prereleases[0].name, releaseDate: data.published_at } as UpdateInfo);
+            console.log(`${prereleases[0].body}`);
+            setUpdateAvailable({
+              version: prereleases[0].name,
+              releaseDate: prereleases[0].published_at,
+              releaseNotes: prereleases[0].body,
+            } as UpdateInfo);
           }
         } else {
           setUpdateError("No prereleases found");
