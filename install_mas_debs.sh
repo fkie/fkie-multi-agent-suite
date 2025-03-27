@@ -104,7 +104,7 @@ function get_package() {
             VERSION=$(echo "$ASSET_NAME" | grep -oP '\d+\.\d+\.\d+')
             FILE_FOUND=true
             if [[ -n "$VERSION" ]]; then
-                if [[ "$LATEST_VERSION" < "$VERSION" ]]; then
+                if [[ ! -n "$LATEST_VERSION" ]] || dpkg --compare-versions $LATEST_VERSION lt $VERSION; then
                     LATEST_VERSION="$VERSION"
                     DEB_URL="$FILE_URL"
                 fi
