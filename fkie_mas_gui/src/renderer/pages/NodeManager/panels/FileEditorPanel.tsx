@@ -53,6 +53,8 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
+import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighter";
+import { PythonLanguage } from "@/renderer/components/MonacoEditor/PythonLaunchHighlighter";
 
 type TActiveModel = {
   path: string;
@@ -110,7 +112,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const infoRef = useRef<HTMLDivElement>();
   const alertRef = useRef<HTMLDivElement>();
   const resizeObserver = useRef<ResizeObserver>();
-  const componentWillUnmount = useRef(false);
   const [fontSize, setFontSize] = useState<number>(settingsCtx.get("fontSize") as number);
   const [savedSideBarUserWidth, setSavedSideBarUserWidth] = useLocalStorage<number>(
     "Editor:sideBarWidth",
@@ -133,7 +134,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [providerName, setProviderName] = useState<string>("");
   const [providerHost, setProviderHost] = useState<string>("");
   const [packageName, setPackageName] = useState<string>("");
-  const [initialized, setInitialized] = useState<boolean>(false);
   const [activeModel, setActiveModel] = useState<TActiveModel>();
   const [currentFile, setCurrentFile] = useState({ name: "", requesting: false });
   const [openFiles, setOpenFiles] = useState<TFileItem[]>([]);
@@ -141,6 +141,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState<IDisposable[]>([]);
   const [monacoViewStates] = useState(new Map());
+  const [modelLinks] = useState({});
 
   const [enableGlobalSearch, setEnableGlobalSearch] = useState(false);
   const [enableExplorer, setEnableExplorer] = useState(false);
@@ -157,7 +158,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [selectParentFiles, setSelectParentFiles] = useState<LaunchIncludedFile[]>([]);
 
-  const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
+  // const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
@@ -274,7 +275,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         }
       });
     }
-    includesProvider.modelLinks[model.uri.path] = newLinks;
+    modelLinks[model.uri.path] = newLinks;
   }, []);
 
   const isModified = useCallback(
@@ -607,42 +608,36 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
     return (): void => {
       // update state to unmount and disconnect from resize observer
-      componentWillUnmount.current = true;
       if (resizeObserver.current) {
         resizeObserver.current.disconnect();
       }
+
+      // clear monaco disposables:
+      // disposable objects includes autocomplete, code definition and editor actions
+      monacoDisposables.forEach((d) => {
+        d?.dispose;
+      })
+      setMonacoDisposables([]);
+      // dispose all own models
+      if (monaco) {
+        ownUriPaths.forEach((uriPath) => {
+          const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
+          if (model) {
+            model.dispose();
+          }
+        });
+        setOwnUriPaths([]);
+        // remove undefined models
+        monaco.editor.getModels().forEach((model) => {
+          if (model.getValue().length === 0 && model.uri.path.indexOf(":") === -1) {
+            model.dispose();
+          }
+        });
+      }
+      // remove modified files from context
+      monacoCtx.updateModifiedFiles(tabId, "", []);
     };
   }, []);
-
-  useEffect(() => {
-    return (): void => {
-      // This line only evaluates to true after the componentWillUnmount happens
-      if (componentWillUnmount.current) {
-        // clear monaco disposables:
-        //    disposable objects includes autocomplete, code definition and editor actions
-        monacoDisposables.forEach((d) => {
-          d?.dispose();
-        });
-        // dispose all own models
-        if (monaco) {
-          ownUriPaths.forEach((uriPath) => {
-            const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
-            if (model) {
-              model.dispose();
-            }
-          });
-          // remove undefined models
-          monaco.editor.getModels().forEach((model) => {
-            if (model.getValue().length === 0 && model.uri.path.indexOf(":") === -1) {
-              model.dispose();
-            }
-          });
-        }
-        // remove modified files from context
-        monacoCtx.updateModifiedFiles(tabId, "", []);
-      }
-    };
-  }, [monacoDisposables, monaco, ownUriPaths, monacoCtx, tabId]);
 
   function onKeyDown(event: React.KeyboardEvent): void {
     if (event.ctrlKey && event.shiftKey && event.key === "E") {
@@ -781,6 +776,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
     monaco.languages.setLanguageConfiguration("ros2xml", { comments: { blockComment: ["<!--", "-->"] } });
 
+    monaco.languages.register({ id: "ros1xml" });
+    monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
+    monaco.languages.setLanguageConfiguration("ros1xml", { comments: { blockComment: ["<!--", "-->"] } });
+
+    monaco.languages.register({ id: "python" });
+    monaco.languages.setMonarchTokensProvider("python", PythonLanguage);
+
     // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
     const provider = rosCtx.getProviderById(providerId, true);
@@ -797,12 +799,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       })
     );
 
-    ["ros2xml", "launch", "python"].forEach((e) => {
-      addMonacoDisposable(monaco.languages.registerLinkProvider(e, includesProvider));
+    ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
+      addMonacoDisposable(
+        monaco.languages.registerLinkProvider(e, {
+          provideLinks: (model) => {
+            const links = modelLinks[model.uri.path];
+            return { links: links ? links : [] };
+          }
+        } as languages.LinkProvider)
+      );
     });
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
-    ["ros2xml", "launch", "python"].forEach((e) => {
+    ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
       // Add Completion provider for XML and launch files
       addMonacoDisposable(
         monaco.languages.registerCompletionItemProvider(e, {
@@ -815,16 +824,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               endColumn: word.endColumn,
             };
 
+            const lineContent = model.getLineContent(position.lineNumber);
+
             if (clipTextReadyForSuggest) {
               clipTextReadyForSuggest = false;
-              return {
-                suggestions:
-                  e === "python"
-                    ? createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages)
-                    : isRos2
-                      ? createXMLDependencyProposalsR2(monaco, range, clipTextSuggest, packages)
-                      : createXMLDependencyProposals(monaco, range, clipTextSuggest, packages),
-              };
+
+              switch(e) {
+                case "python":
+                  return { suggestions: createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages) };
+                case "ros1xml":
+                  return { suggestions: createXMLDependencyProposals(monaco, range, lineContent, clipTextSuggest, packages) };
+                case "ros2xml":
+                  return { suggestions: createXMLDependencyProposalsR2(monaco, range, lineContent, clipTextSuggest, packages) };
+              }
             }
             getClipboardTextForSuggest();
             return {
@@ -841,6 +853,20 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             displayName: "ROS Symbols",
             provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
               return isRos2 ? createDocumentSymbolsR2(model) : createDocumentSymbols(model);
+            },
+          })
+        );
+        addMonacoDisposable(
+          monaco.languages.registerDocumentFormattingEditProvider("ros1xml", {
+            async provideDocumentFormattingEdits(
+              model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
+            ) {
+              return [
+                {
+                  range: model.getFullModelRange(),
+                  text: formatXml(model.getValue()),
+                },
+              ];
             },
           })
         );
@@ -921,21 +947,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   // initialization of provider definitions
   useEffect(() => {
-    if (initialized || !editorRef.current || !monaco) return;
-    editorRef.current.onMouseDown((event) => {
-      // handle CTRL+click to open included files
-      if (event.event.ctrlKey) {
-        // setClickRequest(event.target.position);
-      }
-    });
+    if (!editorRef.current || !monaco) return;
     configureMonacoEditor();
-    setInitialized(true);
     loadFiles();
-    // uncomment to show supported actions
-    // editorRef.current.getSupportedActions().forEach((value) => {
-    //   console.log(value);
-    // });
-  }, [initialized, monaco, loadFiles]);
+  }, [editorRef.current]);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {

@@ -153,7 +153,7 @@ export default class FileItem {
 export const FileLanguageAssociations: Record<string, string> = {
   xml: "ros2xml",
   world: "xml",
-  launch: "xml",
+  launch: "ros1xml",
   urdf: "xml",
   srdf: "xml",
   xacro: "xml",

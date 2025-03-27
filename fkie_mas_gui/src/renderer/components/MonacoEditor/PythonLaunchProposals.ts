@@ -4,36 +4,6 @@ import { languages } from "monaco-editor/esm/vs/editor/editor.api";
 import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
 
-const word_pattern = /(?<word>\w+)/gm;
-
-function createWordList(text: string, monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
-  const words = text.match(word_pattern);
-  const result = [...new Set(words)].map((word) => {
-    return {
-      label: `${word}`,
-      kind: monaco.languages.CompletionItemKind.Text,
-      insertText: `${word}`,
-      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-      range,
-    };
-  });
-  return result;
-}
-
-function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
-  const result = packages?.map((item: RosPackage) => {
-    console.log(`create package : ${item.name}`);
-    return {
-      label: `${item.name}`,
-      kind: monaco.languages.CompletionItemKind.Field,
-      insertText: `${item.name}`,
-      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-      range,
-    };
-  });
-  return result ? result : [];
-}
-
 // Method,Function,Constructor,Field,Variable,Class,Struct,Interface,Module,Property,Event,Operator,Unit,Value,Constant,Enum,EnumMember,Keyword,Text,Color,File,Reference,Customcolor,Folder,TypeParameter,User,Issue,Snippet
 
 export function createPythonLaunchProposals(
@@ -45,13 +15,21 @@ export function createPythonLaunchProposals(
 ): languages.CompletionItem[] {
   // returning a static list of proposals, valid for ROS launch and XML  files
 
+  // List of suggestions
+  return [
+    ...createFunctionList(text, monaco, range),
+    ...createRosList(clipText, monaco, range),
+    ...createPackageList(packages, monaco, range),
+    ...createWordList(text, monaco, range),
+  ];
+}
+
+function createRosList(clipText: string, monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
   function getClip(defaultValue: string | undefined): string | undefined {
     const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
     return text || defaultValue;
   }
 
-  const wordSuggestions = createWordList(text, monaco, range);
-  const packageSuggestions = createPackageList(packages, monaco, range);
   return [
     {
       label: "Node",
@@ -100,7 +78,46 @@ export function createPythonLaunchProposals(
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
-    ...packageSuggestions,
-    ...wordSuggestions,
   ];
+}
+
+function createFunctionList(text: string, monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
+  const functions = text.match(/(\w+\()/gm);
+  const result = [...new Set(functions)].map((func) => {
+    return {
+      label: `${func})`,
+      kind: monaco.languages.CompletionItemKind.Function,
+      insertText: `${func}\${1:})`,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    };
+  });
+  return result ? result : [];
+}
+
+function createWordList(text: string, monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
+  const words = text.match(/([a-zA-Z_-]+\s)/gm);
+  const result = [...new Set(words)].map((word) => {
+    return {
+      label: `${word}`,
+      kind: monaco.languages.CompletionItemKind.Text,
+      insertText: `${word}`,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    };
+  });
+  return result ? result : [];
+}
+
+function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
+  const result = packages?.map((item: RosPackage) => {
+    return {
+      label: `${item.name}`,
+      kind: monaco.languages.CompletionItemKind.Field,
+      insertText: `${item.name}`,
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      range,
+    };
+  });
+  return result ? result : [];
 }
