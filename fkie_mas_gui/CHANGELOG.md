@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.2.12 - 27.03.2025
+
+Added view of changes when a new update is available
+Fixed editor context menu
+Fixed open parameter if host is selected
+Fixed version compare in update tab
+Fixed version compare in install script
+Improved python highlighter
+Improved highlighter for ROS2 XML launch files
+Improved highlighter for ROS1 XML launch files
+Improved ROS1 suggestions in XML launch files
+Improved ROS2 suggestions in XML launch files
+
 ## 4.2.11 - 21.03.2025
 
 Fixed no visible service names
