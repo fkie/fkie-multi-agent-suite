@@ -350,7 +350,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               EVENT_OPEN_COMPONENT,
               eventOpenComponent(
                 `parameter-provider-${provider}`,
-                `${provider}`,
+                `${provider.name()}`,
                 <ParameterPanel nodes={[]} providers={[providerId]} />,
                 true,
                 openLocation,

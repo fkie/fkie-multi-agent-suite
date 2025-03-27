@@ -93,7 +93,15 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
       providers.forEach((providerId) => {
         const provider: Provider | undefined = rosCtx.getProviderById(providerId);
         if (provider) {
-          newRootData.push({ provider: provider, rosNode: undefined, updateOnCreate: true } as TRootData);
+          if (provider.rosVersion === "1") {
+            newRootData.push({ provider: provider, rosNode: undefined, updateOnCreate: true } as TRootData);
+          } else {
+            provider.rosNodes.map((item) => {
+              if (item.status === RosNodeStatus.RUNNING) {
+                newRootData.push({ provider: provider, rosNode: item, updateOnCreate: false } as TRootData);
+              }
+            });
+          }
         }
       });
       setRootData(newRootData);

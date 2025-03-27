@@ -47,6 +47,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   }
 
   useEffect(() => {
+    if (!paramInfo.name) return;
     const nameParts = paramInfo.name.replaceAll("/", ".").replaceAll("..", ".").split(".");
     setName(`${nameParts.pop()}`);
     setNamespace(namespacePart ? `${namespacePart}.` : "");
