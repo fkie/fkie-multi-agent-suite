@@ -13,7 +13,6 @@ import Tooltip from "@mui/material/Tooltip";
 import { forwardRef, useCallback, useContext } from "react";
 
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
 
