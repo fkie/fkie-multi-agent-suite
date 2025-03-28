@@ -1,12 +1,23 @@
 <launch>
 
   <arg name="global_frame" default="world"/>
+  <set_env name="TEST" value="VALUE" />
+  <group>
+    <set_env name="TEST1" value="VALUE" />
+    <unset_env name="NAME" />
+    <node name="rviz" pkg="rviz" exec="rviz2" args="pub topic_name std_msgs/String 'Started' -r 1 ">
+      <param name="capability_group" value="gui" />
+      <param from="$(find-pkg-share fkie_mas_daemon)/test/launch/params.yaml"/>
+    </node>
+  </group>
 
-  <node name="rviz" pkg="rviz" exec="rviz2" args="pub topic_name std_msgs/String 'Started' -r 1 ">
-    <param name="capability_group" value="gui" />
-    <param from="$(find-pkg-share fkie_mas_daemon)/test/launch/params.yaml"/>
-  </node>
+  <group>
+    <set_env name="TEST2" value="VALUE" />
+    <unset_env name="SCM_CHECK" />
+    <executable cmd="env" />
+  </group>
 
   <include file="$(find-pkg-share fkie_mas_daemon)/test/launch/included.launch.xml">
   </include>
+
 </launch>

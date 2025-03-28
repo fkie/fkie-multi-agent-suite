@@ -15,7 +15,7 @@ import shlex
 import sys
 import traceback
 from importlib import import_module
-from launch.launch_context import LaunchContext
+# from launch.launch_context import LaunchContext
 from typing import Dict
 from typing import List
 from watchdog.observers import Observer
@@ -62,6 +62,7 @@ from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
 from fkie_mas_pylib.websocket.server import WebSocketServer
 
 from .launch_config import LaunchConfig
+from .launch_context import LaunchContext
 from .launch_validator import LaunchValidator
 
 import fkie_mas_daemon as nmd
@@ -125,10 +126,6 @@ class LaunchServicer(LoggingEventHandler):
         Log.info("Create ROS2 launch servicer")
         LoggingEventHandler.__init__(self)
         self._watchdog_observer = Observer()
-        # to be able to use LaunchContext in a thread we need a valid asyncio.AbstractEventLoop from main thread
-        # this is used by LaunchContext internal queue
-        self.__launch_context = LaunchContext(argv=sys.argv[1:])
-        self.__launch_context._set_asyncio_loop(asyncio.get_event_loop())
         self.ws_port = ws_port
         self.xml_validator = LaunchValidator()
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
@@ -377,8 +374,8 @@ class LaunchServicer(LoggingEventHandler):
             # test for required args
             provided_args = [arg.name for arg in request.args]
             # get the list with needed launch args
-            req_args = LaunchConfig.get_launch_arguments(
-                self.__launch_context, launchfile, request.args)
+            launch_context = LaunchContext(argv=sys.argv[1:])
+            req_args = LaunchConfig.get_launch_arguments(launch_context, launchfile, request.args)
             # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
@@ -392,7 +389,7 @@ class LaunchServicer(LoggingEventHandler):
             launch_arguments = [(arg.name, arg.value) for arg in request.args if hasattr(arg, "value")]
             # context=self.__launch_context
             launch_config = LaunchConfig(
-                launchfile, context=self.__launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
+                launchfile, context=launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
             Log.debug(f"{self.__class__.__name__}: daemonuri: {daemonuri}")
             # _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
@@ -441,8 +438,9 @@ class LaunchServicer(LoggingEventHandler):
                 self._remove_launch_from_observer(old_launch)
                 old_launch.unload()
                 # use argv from already open file
+                launch_context = LaunchContext(argv=sys.argv[1:])
                 launch_config = LaunchConfig(
-                    old_launch.filename, context=self.__launch_context, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
+                    old_launch.filename, context=launch_context, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 # stored_roscfg = cfg.roscfg
                 # argv = cfg.argv
@@ -491,7 +489,7 @@ class LaunchServicer(LoggingEventHandler):
                     result.status.code = 'OK'
                     # notify GUI about changes
                     self.websocket.publish('ros.launch.changed', {
-                                        'path': request.path, 'action': 'unloaded'})
+                        'path': request.path, 'action': 'unloaded'})
                 else:
                     result.status.code = 'ERROR'
                     result.status.msg = f"{request.path} not found"

@@ -7,4 +7,10 @@
       <param from="$(find-pkg-share fkie_mas_daemon)/test/launch/params.yaml"/>
     </node>
   </group>
+  <group>
+  <set_env name="TEST_INC" value="VALUE" />
+  <unset_env name="SCM_CHECK" />
+    <executable cmd="env" name="env_inc"/>
+  </group>
+
 </launch>
