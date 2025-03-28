@@ -252,10 +252,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }
 
   // update decorations for included files
-  const updateIncludeDecorations = useCallback(function (
+  const updateIncludeDecorations = async function (
     model: editor.ITextModel | null,
     includedFilesList: LaunchIncludedFile[]
-  ): void {
+  ): Promise<void> {
     if (!model) return;
     // filter files
     const newLinks: languages.ILink[] = [];
@@ -276,7 +276,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       });
     }
     modelLinks[model.uri.path] = newLinks;
-  }, []);
+  };
 
   const isModified = useCallback(
     function (model: editor.ITextModel): boolean {
@@ -471,6 +471,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           { path: editorModel.uri.path, version: editorModel.getAlternativeVersionId() } as TModelVersion,
         ]);
         setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
+        await getIncludedFiles();
       } else {
         logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
       }
@@ -540,6 +541,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             window.editorManager?.changed(id, activeModel.path, true);
           }
         }
+        updateIncludeDecorations(activeModel?.model, includedFiles);
       }
     },
     [activeModel, setActiveModel, monacoCtx.getModel, updateModifiedFiles]
@@ -670,7 +672,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   //  - check if include files are available (for xml and launch files for example)
   //  -   if available, download all include files and create their corresponding models
   // We download the models per request. On recursive text search all files will be downloaded
-  function loadFiles(): void {
+  async function loadFiles(): Promise<void> {
     if (!editorRef.current) {
       return;
     }
@@ -727,27 +729,36 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         setNotificationDescription("");
         return;
       }
-
-      // if file is a launch or XML, try to fetch included files
-      const request = new LaunchIncludedFilesRequest();
-      request.path = rootFilePath;
-      request.unique = false;
-      request.recursive = true;
-      const includedFilesLocal = await provider.launchGetIncludedFiles(request);
-      if (includedFilesLocal) {
-        // filter unique file names (in case multiple imports)
-        const uniqueIncludedFiles = [rootFilePath];
-        includedFilesLocal.forEach((f) => {
-          if (!uniqueIncludedFiles.includes(f.inc_path)) uniqueIncludedFiles.push(f.inc_path);
-        });
-
-        // get file content and create corresponding monaco models on demand
-
-        setIncludedFiles(includedFilesLocal);
-      }
+      await getIncludedFiles(provider);
       setNotificationDescription("");
     }
     getFileAndIncludesAsync(provider);
+  }
+
+  async function getIncludedFiles(provider?: Provider): Promise<void> {
+    if (!provider) {
+      provider = rosCtx.getProviderById(providerId);
+    }
+    if (!provider) {
+      setNotificationDescription(`Provider with id ${providerId} not available`);
+      return;
+    }
+    // if file is a launch or XML, try to fetch included files
+    const request = new LaunchIncludedFilesRequest();
+    request.path = rootFilePath;
+    request.unique = false;
+    request.recursive = true;
+    const includedFilesLocal = await provider.launchGetIncludedFiles(request);
+    if (includedFilesLocal) {
+      // filter unique file names (in case multiple imports)
+      const uniqueIncludedFiles = [rootFilePath];
+      includedFilesLocal.forEach((f) => {
+        if (!uniqueIncludedFiles.includes(f.inc_path)) uniqueIncludedFiles.push(f.inc_path);
+      });
+
+      // get file content and create corresponding monaco models on demand
+      setIncludedFiles(includedFilesLocal);
+    }
   }
 
   // get text from clipboard for suggestions
