@@ -58,6 +58,7 @@ export class SaveResult {
 export interface IMonacoContext {
   monaco: Monaco.Monaco | null;
   updateModifiedFiles: (tabId: string, providerId: string, uriPaths: string[]) => void;
+  clearModifiedTabs: (tabIds: ModifiedTabsInfo[]) => void;
   getModifiedTabs: () => ModifiedTabsInfo[];
   getModifiedFilesByTab: (tabId: string) => ModifiedTabsInfo | undefined;
   saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
@@ -77,6 +78,7 @@ export interface IMonacoProvider {
 export const DEFAULT_MONACO = {
   monaco: null,
   updateModifiedFiles: (): void => {},
+  clearModifiedTabs: (): void => {},
   getModifiedTabs: (): ModifiedTabsInfo[] => [],
   getModifiedFilesByTab: (): ModifiedTabsInfo | undefined => undefined,
   saveModifiedFilesOfTabId: (): Promise<SaveResult[]> => {
@@ -167,6 +169,19 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       }
     },
     [setModifiedFiles]
+  );
+
+  const clearModifiedTabs = useCallback(
+    function (tabIds?: ModifiedTabsInfo[]): void {
+      if (tabIds && tabIds.length > 0) {
+        setModifiedFiles((prev) => {
+          return prev.filter((item) => tabIds.filter((tabI) => tabI.tabId === item.tabId).length === 0);
+        });
+      } else {
+        setModifiedFiles([]);
+      }
+    },
+    [modifiedFiles]
   );
 
   const getModifiedTabs = useCallback(
@@ -301,6 +316,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       setModifiedFiles,
       getModifiedTabs,
       updateModifiedFiles,
+      clearModifiedTabs,
       getModifiedFilesByTab,
       saveModifiedFilesOfTabId,
       createUriPath,
@@ -313,6 +329,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       setModifiedFiles,
       getModifiedTabs,
       updateModifiedFiles,
+      clearModifiedTabs,
       getModifiedFilesByTab,
       saveModifiedFilesOfTabId,
       createUriPath,

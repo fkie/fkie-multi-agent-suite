@@ -164,6 +164,7 @@ export default function EditorApp(): JSX.Element {
               <Button
                 color="warning"
                 onClick={() => {
+                  monacoCtx.clearModifiedTabs(modifiedEditorTabs);
                   setModifiedEditorTabs([]);
                   window.editorManager?.close(launchInfo.id);
                 }}

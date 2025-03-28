@@ -930,6 +930,7 @@ export default function NodeManager(): JSX.Element {
                 modifiedEditorTabs.forEach((tab) => {
                   model.doAction(Actions.deleteTab(tab.tabId));
                 });
+                monacoCtx.clearModifiedTabs(modifiedEditorTabs);
                 setModifiedEditorTabs([]);
               }}
             >
