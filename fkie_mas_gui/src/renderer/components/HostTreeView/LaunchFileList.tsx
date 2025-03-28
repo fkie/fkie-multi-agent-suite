@@ -47,7 +47,6 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
   } = props;
 
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
   /**
@@ -57,7 +56,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
     async function (provId: string, launchContent: LaunchContent, external: boolean): Promise<void> {
       navCtx.openEditor(provId, launchContent.path, launchContent.path, null, [], external);
     },
-    [rosCtx]
+    [navCtx]
   );
 
   /**

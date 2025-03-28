@@ -640,7 +640,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
                   onMouseOver={(event: React.MouseEvent) => {
                     event.stopPropagation();
                   }}
-                  providerId={item.providerId as string}
+                  providerId={p.id}
                   launchContentList={p.launchFiles}
                   selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
                     selectNodesFromLaunch(providerId, launch)
