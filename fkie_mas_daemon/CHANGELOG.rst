@@ -1,6 +1,10 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4.3.3 (28.03.2025)
+------------------
+* Handle set_env and unset_env of the launch files
+
 4.3.2 (14.03.2025)
 ------------------
 * Workaround for launch-prefix in jazzy

@@ -1,8 +1,12 @@
 # Changelog
 
-## 4.2.12 - 27.03.2025
+## 4.2.12 - 28.03.2025
 
+Added support for set_env and unset_env in launch file
 Added view of changes when a new update is available
+Fixed expand some type of arrays in echo dialog
+Fixed links to included files were not updated when file were changed
+Fixed “don't save” was not noted
 Fixed editor context menu
 Fixed open parameter if host is selected
 Fixed version compare in update tab
