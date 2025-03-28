@@ -282,7 +282,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
               size: number; // Object's size or array's length
             }) => {
               if (params.indexOrName === undefined) return false;
-              if (Array.isArray(params.node) && params.node.length === 0) return true;
+              // if (Array.isArray(params.node) && params.node.length === 0) return true;
               return collapsedKeys.includes(params.indexOrName);
             }}
             onCollapse={(params: {
