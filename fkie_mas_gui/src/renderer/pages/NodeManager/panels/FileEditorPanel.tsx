@@ -13,9 +13,11 @@ import SplitPane, { Pane, SashContent } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 
 import ExplorerTree, { equalLaunchArgs } from "@/renderer/components/MonacoEditor/ExplorerTree";
+import { PythonLanguage } from "@/renderer/components/MonacoEditor/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "@/renderer/components/MonacoEditor/PythonLaunchProposals";
 import SearchTree from "@/renderer/components/MonacoEditor/SearchTree";
 import XmlBeautify from "@/renderer/components/MonacoEditor/XmlBeautify";
+import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighter";
 import { Ros2XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighterR2";
 import {
   createDocumentSymbols,
@@ -53,8 +55,6 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
-import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighter";
-import { PythonLanguage } from "@/renderer/components/MonacoEditor/PythonLaunchHighlighter";
 
 type TActiveModel = {
   path: string;
@@ -616,7 +616,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       // disposable objects includes autocomplete, code definition and editor actions
       monacoDisposables.forEach((d) => {
         d?.dispose;
-      })
+      });
       setMonacoDisposables([]);
       // dispose all own models
       if (monaco) {
@@ -805,7 +805,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           provideLinks: (model) => {
             const links = modelLinks[model.uri.path];
             return { links: links ? links : [] };
-          }
+          },
         } as languages.LinkProvider)
       );
     });
@@ -829,13 +829,25 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             if (clipTextReadyForSuggest) {
               clipTextReadyForSuggest = false;
 
-              switch(e) {
+              switch (e) {
                 case "python":
-                  return { suggestions: createPythonLaunchProposals(monaco, range, clipTextSuggest, model.getValue(), packages) };
+                  return {
+                    suggestions: createPythonLaunchProposals(
+                      monaco,
+                      range,
+                      clipTextSuggest,
+                      model.getValue(),
+                      packages
+                    ),
+                  };
                 case "ros1xml":
-                  return { suggestions: createXMLDependencyProposals(monaco, range, lineContent, clipTextSuggest, packages) };
+                  return {
+                    suggestions: createXMLDependencyProposals(monaco, range, lineContent, clipTextSuggest, packages),
+                  };
                 case "ros2xml":
-                  return { suggestions: createXMLDependencyProposalsR2(monaco, range, lineContent, clipTextSuggest, packages) };
+                  return {
+                    suggestions: createXMLDependencyProposalsR2(monaco, range, lineContent, clipTextSuggest, packages),
+                  };
               }
             }
             getClipboardTextForSuggest();
