@@ -73,7 +73,7 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
       setAnchorEl(event.currentTarget);
       event.stopPropagation();
     } else if (autoClick || options.length === 1) {
-      options[0].onClick(event);
+      options[0]?.onClick(event);
       handleClose(event);
     }
   }
