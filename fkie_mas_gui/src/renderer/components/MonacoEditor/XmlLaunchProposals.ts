@@ -23,7 +23,6 @@ function createXMLDependencyProposals(
 
 function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
   const result = packages?.map((item: RosPackage) => {
-    console.log(`create package : ${item.name}`);
     return {
       label: `${item.name}`,
       kind: monaco.languages.CompletionItemKind.Field,

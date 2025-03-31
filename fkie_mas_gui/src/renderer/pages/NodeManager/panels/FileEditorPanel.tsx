@@ -783,13 +783,25 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   function configureMonacoEditor(): void {
     if (!monaco) return;
 
+    monaco.languages.getLanguages
+
     monaco.languages.register({ id: "ros2xml" });
     monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
-    monaco.languages.setLanguageConfiguration("ros2xml", { comments: { blockComment: ["<!--", "-->"] } });
+    monaco.languages.setLanguageConfiguration("ros2xml", {
+      comments: { blockComment: ["<!--", "-->"] },
+      autoClosingPairs: [{ open: "<", close: ">" }, { open: '"', close: '"' }, { open: "'", close: "'" }],
+      brackets: [["<", ">"]],
+      onEnterRules: [{beforeText: />/, afterText: /<\//, action: { indentAction: 2 }}],
+    });
 
     monaco.languages.register({ id: "ros1xml" });
     monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
-    monaco.languages.setLanguageConfiguration("ros1xml", { comments: { blockComment: ["<!--", "-->"] } });
+    monaco.languages.setLanguageConfiguration("ros1xml", {
+      comments: { blockComment: ["<!--", "-->"] },
+      autoClosingPairs: [{ open: "<", close: ">" }, { open: '"', close: '"' }],
+      brackets: [["<", ">"]],
+      onEnterRules: [{beforeText: />/, afterText: /<\//, action: { indentAction: 2 }}],
+    });
 
     monaco.languages.register({ id: "python" });
     monaco.languages.setMonarchTokensProvider("python", PythonLanguage);
@@ -974,7 +986,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   // initialization of provider definitions
   useEffect(() => {
     if (!editorRef.current || !monaco) return;
-    configureMonacoEditor();
+    //configureMonacoEditor(); # Moved to handleEditorDidMount() 
     loadFiles();
   }, [editorRef.current]);
 
@@ -997,6 +1009,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
+    configureMonacoEditor();
     addContextMenu();
   }
 

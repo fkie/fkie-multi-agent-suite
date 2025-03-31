@@ -23,7 +23,6 @@ export function createXMLDependencyProposalsR2(
 
 function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
   const result = packages?.map((item: RosPackage) => {
-    console.log(`create package : ${item.name}`);
     return {
       label: `${item.name}`,
       kind: monaco.languages.CompletionItemKind.Field,
@@ -391,7 +390,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange, clipText: strin
       label: "executable cwd",
       kind: monaco.languages.CompletionItemKind.Function,
       documentation: "Add a new executable with working directory",
-      insertText: 'executable cmd="${1:COMMAND}" cwd="${1:WORKING_DIRECTORY}" />',
+      insertText: 'executable cmd="${1:COMMAND}" cwd="${2:WORKING_DIRECTORY}" />',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
@@ -399,7 +398,7 @@ function createTagSuggestions(monaco: Monaco, range: TFileRange, clipText: strin
       label: "executable args",
       kind: monaco.languages.CompletionItemKind.Function,
       documentation: "Add a new executable with arguments",
-      insertText: 'executable cmd="${1:COMMAND}" args="${1:ARGUMENTS}" />',
+      insertText: 'executable cmd="${1:COMMAND}" args="${2:ARGUMENTS}" />',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },
