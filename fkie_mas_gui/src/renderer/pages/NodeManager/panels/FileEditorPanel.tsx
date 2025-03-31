@@ -783,8 +783,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   function configureMonacoEditor(): void {
     if (!monaco) return;
 
-    monaco.languages.getLanguages
-
     monaco.languages.register({ id: "ros2xml" });
     monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
     monaco.languages.setLanguageConfiguration("ros2xml", {
