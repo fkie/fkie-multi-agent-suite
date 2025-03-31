@@ -2,7 +2,6 @@ import { TFileRange } from "@/types/FileRange";
 import { Monaco } from "@monaco-editor/react";
 
 export function getTagAttributeProposals(monaco: Monaco, range: TFileRange) {
-
     function createProposal(label: string, insertText: string, documentation: string) {
         return {
             label: label,
@@ -146,42 +145,32 @@ export function getTagProposals(monaco: Monaco, range: TFileRange, clipText: str
             range,
         }
     }
-  
-    if (lineContent.includes("<")) return [
-        createProposal("launch", 'launch>\n  ${1:}\n</launch', "Create a new launch configuration"),
-        createProposal("node", 'node name="${1:NAME}" pkg="${2:PACKAGE}" type="${3:TYPE}" />\n  \n</node', "Add a new ROS node"),
-        createProposal("machine", 'machine name="${1:NAME}" address="${2:ADDRESS}" /', "Machine the ROS Node runs on"),
-        createProposal("env", 'env name="${1:NAME}" value="${2:VALUE}" /', "Machine the ROS Node runs on"),
-        createProposal("param", `param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" /`, "Add a new ROS parameter"),
-        createProposal("rosparam", 'rosparam subst_value="true" />\n  ${1:}\n</rosparam', "Add a new ROS parameter"),
-        createProposal("rosparam command", 'rosparam command="load" file="$(find ${1:PACKAGE})/config/${2:FILE}.yaml" subst_value="true" clear_params="true" /', "Add a new ROS parameter"),
-        createProposal("arg value", 'arg name="${1:NAME}" value="${2:VALUE}" /', "Add a new ROS argument with value"),
-        createProposal("arg default", 'arg name="${1:NAME}" default="${2:DEFAULT}" /', "Add a new ROS argument with default"),
-        createProposal("include", 'include file="$(find ${1:PACKAGE})/launch/${2:FILE}" /', "Add a new include statement"),
-        createProposal("group", "group>\n  ${1:}\n</group", "Add a new group statement"),
-        createProposal("group ns", 'group ns="${1:NAMESPACE}" />\n  ${2:}\n</group', "Add a new group statement with namespace"),
-        createProposal("remap", 'remap from="${1:FROM}" to="${2:TO}" /', "Add a new remap statement"),
-        createProposal("GDB Launch Prefix", 'launch-prefix="gdb -ex run -ex bt -batch --args"', "GDB Launch Prefix"),
-        createProposal("nm/associations", 'nm/associations="NODE1,NODE2" /', "Associated ROS-Nodes are started before the node itself and stopped after the node."),
-        createProposal("nm/kill_on_stop", 'nm/kill_on_stop="300" /', "Kill the node after defined time in milliseconds"),
-    ];
-    else return [
-        createProposal("launch", '<launch>\n  ${1:}\n</launch>', "Create a new launch configuration"),
-        createProposal("node", '<node name="${1:NAME}" pkg="${2:PACKAGE}" type="${3:TYPE}" />\n  \n</node>', "Add a new ROS node"),
-        createProposal("machine", '<machine name="${1:NAME}" address="${2:ADDRESS}" />', "Machine the ROS Node runs on"),
-        createProposal("env", '<env name="${1:NAME}" value="${2:VALUE}" />', "Machine the ROS Node runs on"),
-        createProposal("param", `<param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" />`, "Add a new ROS parameter"),
-        createProposal("rosparam", '<rosparam subst_value="true" />\n  ${1:}\n</rosparam>', "Add a new ROS parameter"),
-        createProposal("rosparam command", '<rosparam command="load" file="$(find ${1:PACKAGE})/config/${2:FILE}.yaml" subst_value="true" clear_params="true" />', "Add a new ROS parameter"),
-        createProposal("arg value", '<arg name="${1:NAME}" value="${2:VALUE}" />', "Add a new ROS argument with value"),
-        createProposal("arg default", '<arg name="${1:NAME}" default="${2:DEFAULT}" />', "Add a new ROS argument with default"),
-        createProposal("include", '<include file="$(find ${1:PACKAGE})/launch/${2:FILE}" />', "Add a new include statement"),
-        createProposal("group", "<group>\n  ${1:}\n</group>", "Add a new group statement"),
-        createProposal("group ns", '<group ns="${1:NAMESPACE}" />\n  ${2:}\n</group>', "Add a new group statement with namespace"),
-        createProposal("remap", '<remap from="${1:FROM}" to="${2:TO}" />', "Add a new remap statement"),
-        createProposal("GDB Launch Prefix", 'launch-prefix="gdb -ex run -ex bt -batch --args"', "GDB Launch Prefix"),
-        createProposal("nm/associations", 'nm/associations="NODE1,NODE2" /', "Associated ROS-Nodes are started before the node itself and stopped after the node."),
-        createProposal("nm/kill_on_stop", 'nm/kill_on_stop="300" /', "Kill the node after defined time in milliseconds"),
+
+    var open = "<";
+    var close = ">";
+
+    if (lineContent.charAt(range.startColumn-2) === "<") {
+        open = "";
+        close = "";
+    }
+
+    return [
+        createProposal("launch", `${open}launch>\n  \${1:}\n</launch${close}`, "Create a new launch configuration"),
+        createProposal("node", `${open}node name="\${1:NAME}" pkg="\${2:PACKAGE}" type=" \${3:TYPE}" />\n  \n</node${close}`, "Add a new ROS node"),
+        createProposal("machine", `${open}machine name="\${1:NAME}" address="\${2:ADDRESS}" /${close}`, "Machine the ROS Node runs on"),
+        createProposal("env", `${open}env name="\${1:NAME}" value="\${2:VALUE}" /${close}`, "Machine the ROS Node runs on"),
+        createProposal("param", `${open}param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" /${close}`, "Add a new ROS parameter"),
+        createProposal("rosparam", `${open}rosparam subst_value="true" />\n  \${1:}\n</rosparam${close}`, "Add a new ROS parameter"),
+        createProposal("rosparam command", `${open}rosparam command="load" file="$(find \${1:PACKAGE})/config/\${2:FILE}.yaml" subst_value="true" clear_params="true" /${close}`, "Add a new ROS parameter"),
+        createProposal("arg value", `${open}arg name="\${1:NAME}" value="\${2:VALUE}" /${close}`, "Add a new ROS argument with value"),
+        createProposal("arg default", `${open}arg name="\${1:NAME}" default="\${2:DEFAULT}" /${close}`, "Add a new ROS argument with default"),
+        createProposal("include", `${open}include file="$(find \${1:PACKAGE})/launch/\${2:FILE}" /${close}`, "Add a new include statement"),
+        createProposal("group", `${open}group>\n  \${1:}\n</group${close}`, "Add a new group statement"),
+        createProposal("group ns", `${open}group ns="\${1:NAMESPACE}" />\n  \${2:}\n</group${close}`, "Add a new group statement with namespace"),
+        createProposal("remap", `${open}remap from="\${1:FROM}" to="\${2:TO}" /${close}`, "Add a new remap statement"),
+        createProposal("GDB Launch Prefix", `${open}launch-prefix="gdb -ex run -ex bt -batch --args"${close}`, "GDB Launch Prefix"),
+        createProposal("nm/associations", `${open}nm/associations="NODE1,NODE2" /${close}`, "Associated ROS-Nodes are started before the node itself and stopped after the node."),
+        createProposal("nm/kill_on_stop", `${open}nm/kill_on_stop="300" /${close}`, "Kill the node after defined time in milliseconds"),
     ]
   }
   
