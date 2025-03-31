@@ -617,7 +617,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       // clear monaco disposables:
       // disposable objects includes autocomplete, code definition and editor actions
       monacoDisposables.forEach((d) => {
-        d?.dispose;
+        d?.dispose();
       });
       setMonacoDisposables([]);
       // dispose all own models
@@ -984,7 +984,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   // initialization of provider definitions
   useEffect(() => {
     if (!editorRef.current || !monaco) return;
-    //configureMonacoEditor(); # Moved to handleEditorDidMount() 
+    configureMonacoEditor();
     loadFiles();
   }, [editorRef.current]);
 
@@ -1007,7 +1007,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
-    configureMonacoEditor();
     addContextMenu();
   }
 
