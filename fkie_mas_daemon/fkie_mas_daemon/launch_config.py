@@ -9,10 +9,7 @@
 from pathlib import Path
 
 from typing import Dict
-from typing import Iterable
 from typing import List
-from numbers import Number
-from typing import Optional
 from typing import Set
 from typing import Text
 from typing import Tuple
@@ -30,16 +27,12 @@ import launch
 from launch.launch_context import LaunchContext
 from launch.launch_description_sources import get_launch_description_from_any_launch_file
 from launch.frontend.parser import Parser
-from launch.launch_description_sources import get_launch_description_from_frontend_launch_file
-from launch.launch_description_sources import AnyLaunchDescriptionSource
-from launch.actions.include_launch_description import IncludeLaunchDescription
 from launch.substitutions.substitution_failure import SubstitutionFailure
 import launch.utilities
 from launch.utilities import normalize_to_list_of_substitutions
 from launch_ros.utilities.evaluate_parameters import evaluate_parameters
 from launch_ros.utilities import to_parameters_list
 from launch.utilities import perform_substitutions
-from launch.launch_description import LaunchDescription
 import launch_ros
 import composition_interfaces.srv
 from launch_ros.parameter_descriptions import ParameterFile
@@ -637,6 +630,8 @@ class LaunchConfig(object):
         elif hasattr(sub_obj, 'entities'):
             print(f"  ***debug launch loading: {indent}GET ENTITY")
             entities = getattr(sub_obj, 'entities')
+        else:
+            entities = sub_obj
         if entities is not None:
             for entity in entities:
                 print(f"  ***debug launch loading: {indent}perform entity: {entity}")
@@ -835,10 +830,18 @@ class LaunchConfig(object):
                     try:
 
                         # entity._perform_substitutions(self.context)
-                        entity.execute(self.context)
-                        name = perform_substitutions(self.context, getattr(entity, 'name', ''))
-                        if name == "launch-prefix":
-                            launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
+                        exec_result = entity.execute(self.context)
+                        if not exec_result:
+                            name = perform_substitutions(self.context, getattr(entity, 'name', ''))
+                            if name == "launch-prefix":
+                                launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
+                        else:
+                            print(f"  ***debug execute result: {exec_result}; {dir(exec_result)}")
+                            if not isinstance(exec_result, List):
+                                exec_result = [exec_result]
+                            self._load(exec_result, launch_description=current_launch_description,
+                                        current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file)
+
                     except:
                         import traceback
                         print(traceback.format_exc())
