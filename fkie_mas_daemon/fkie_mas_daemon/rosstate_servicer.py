@@ -286,6 +286,19 @@ class RosStateServicer:
         if not logger_names or len(loggers) == 0:
             logger_names = [name.replace("/", ".").strip("."), "rcl"]
         loggerConfigs: List[LoggerConfig] = []
+        # get logger names if loggers list is empty
+        if len(loggers) == 0:
+            try:
+                service_name = '%s/logger_list' % name
+                request_list = GetLoggerLevels.Request()
+                request_list.names = []
+                get_logger = nmd.launcher.call_service(service_name, GetLoggerLevels, request_list)
+                if get_logger:
+                    for logger in get_logger.levels:
+                        logger_names.append(logger.name)
+            except:
+                pass
+        # get current logger levels
         service_name = '%s/get_logger_levels' % name
         request_list = GetLoggerLevels.Request()
         request_list.names = logger_names
