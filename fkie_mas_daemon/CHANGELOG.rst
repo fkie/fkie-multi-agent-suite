@@ -1,6 +1,14 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+4.3.4 (02.04.2025)
+------------------
+* Added support for action feedback subscription and send_goal call
+* Added handle of proprietary service call for '%s/logger_list' to get list of all available logger names
+* Fixed start nodes with complex executables, like 'ruby $(which gz) sim'
+* Fixed launch configuration with OpaqueFunction
+
 4.3.3 (28.03.2025)
 ------------------
 * Handle set_env and unset_env of the launch files

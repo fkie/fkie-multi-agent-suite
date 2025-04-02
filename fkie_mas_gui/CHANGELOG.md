@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.2.13 - 02.04.2025
+
+Added support for action feedback subscription and send_goal call
+Added handle of proprietary service call for '%s/logger_list' to get list of all available logger names
+Added dynamic open and close brackets for xml launch files
+Changed tab names (added option to remove namespaces)
+Fixed start nodes with complex executables, like 'ruby $(which gz) sim'
+Fixed launch configuration with OpaqueFunction
+Fixed namespaces of services
+
 ## 4.2.12 - 28.03.2025
 
 Added support for set_env and unset_env in launch file
