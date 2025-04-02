@@ -6,7 +6,6 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
 
   qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push_ros_namespace|\?xml/,
 
-  // TODO: launch requires attribute "version"
   qualifiedLaunchAttrs: /if|unless/,
   qualifiedIncludeAttrs: /if|unless|file/,
   qualifiedArgAttrs: /if|unless|name|value|default|description/,
@@ -17,11 +16,10 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualifiedRemapAttrs: /if|unless|from|to/,
   qualifiedEnvAttrs: /if|unless|name|value/,
   qualifiedSetEnvAttrs: /if|unless|name|value/,
-  qualifiedGroupAttrs: /if|unless/,
+  qualifiedGroupAttrs: /if|unless|scoped/,
   qualifiedUnsetEnvAttrs: /if|unless|name/,
   qualifiedPushRosNamespaceAttrs: /if|unless|namespace/,
   qualifiedXmlAttrs: /version/,
-  // TODO: find where scoped goes
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
 

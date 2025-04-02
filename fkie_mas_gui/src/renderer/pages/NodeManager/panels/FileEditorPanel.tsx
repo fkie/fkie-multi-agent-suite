@@ -617,7 +617,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       // clear monaco disposables:
       // disposable objects includes autocomplete, code definition and editor actions
       monacoDisposables.forEach((d) => {
-        d?.dispose;
+        d?.dispose();
       });
       setMonacoDisposables([]);
       // dispose all own models
@@ -785,11 +785,21 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
     monaco.languages.register({ id: "ros2xml" });
     monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
-    monaco.languages.setLanguageConfiguration("ros2xml", { comments: { blockComment: ["<!--", "-->"] } });
+    monaco.languages.setLanguageConfiguration("ros2xml", {
+      comments: { blockComment: ["<!--", "-->"] },
+      autoClosingPairs: [{ open: "<", close: ">" }, { open: '"', close: '"' }, { open: "'", close: "'" }],
+      brackets: [["<", ">"]],
+      onEnterRules: [{beforeText: />/, afterText: /<\//, action: { indentAction: 2 }}],
+    });
 
     monaco.languages.register({ id: "ros1xml" });
     monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
-    monaco.languages.setLanguageConfiguration("ros1xml", { comments: { blockComment: ["<!--", "-->"] } });
+    monaco.languages.setLanguageConfiguration("ros1xml", {
+      comments: { blockComment: ["<!--", "-->"] },
+      autoClosingPairs: [{ open: "<", close: ">" }, { open: '"', close: '"' }],
+      brackets: [["<", ">"]],
+      onEnterRules: [{beforeText: />/, afterText: /<\//, action: { indentAction: 2 }}],
+    });
 
     monaco.languages.register({ id: "python" });
     monaco.languages.setMonarchTokensProvider("python", PythonLanguage);
