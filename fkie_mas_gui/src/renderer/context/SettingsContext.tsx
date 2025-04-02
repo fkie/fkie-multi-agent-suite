@@ -276,6 +276,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",
   },
+  tabFullName: {
+    label: "Show tab names with namespace",
+    default: true,
+    type: "boolean",
+    description: "",
+  },
   spamNodes: {
     label: "Spam Nodes",
     freeSolo: true,

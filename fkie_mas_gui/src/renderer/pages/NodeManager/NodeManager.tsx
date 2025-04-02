@@ -62,7 +62,7 @@ import { getBaseName } from "@/renderer/models";
 import { CmdType, Provider } from "@/renderer/providers";
 import { EventProviderAuthRequest } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
-import { getRosNameAbb } from "@/renderer/utils";
+import { basename } from "@/renderer/utils";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import {
   EVENT_CLOSE_COMPONENT,
@@ -111,9 +111,11 @@ export default function NodeManager(): JSX.Element {
   const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
   const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [tabFullName, setTabFullName] = useState<boolean>(settingsCtx.get("tabFullName") as boolean);
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+    setTabFullName(settingsCtx.get("tabFullName") as boolean);
   }, [settingsCtx.changed]);
 
   function hasTab(layout, tabId): boolean {
@@ -460,7 +462,7 @@ export default function NodeManager(): JSX.Element {
     ) {
       renderValues.content = (
         <Tooltip title={renderValues.name} placement="bottom" disableInteractive>
-          <Typography>{getRosNameAbb(renderValues.name)}</Typography>
+          <Typography>{tabFullName ? renderValues.name : basename(renderValues.name)}</Typography>
         </Tooltip>
       );
     }
