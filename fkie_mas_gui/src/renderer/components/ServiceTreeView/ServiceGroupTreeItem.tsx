@@ -23,10 +23,6 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
 
     const logCtx = useContext(LoggingContext);
 
-    function getHostStyle(): object {
-      return { flexGrow: 1, alignItems: "center" };
-    }
-
     // avoid selection if collapse icon was clicked
     let toggled = false;
     const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
@@ -61,10 +57,10 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
                 pr: 0,
               }}
             >
-              <Stack spacing={1} direction="row" sx={getHostStyle()}>
-                {/* <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                {rootPath}
-              </Typography> */}
+              <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+                <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                  {rootPath.length > 0 ? `${rootPath}/` : ""}
+                </Typography>
                 <Typography
                   variant="body2"
                   sx={{ fontWeight: "inherit", userSelect: "none" }}
@@ -76,7 +72,7 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
                     }
                   }}
                 >
-                  {groupName.startsWith("/") ? groupName.slice(1) : groupName}
+                  {groupName}
                 </Typography>
                 {/* {requestData && <CircularProgress size="1em" />} */}
               </Stack>
