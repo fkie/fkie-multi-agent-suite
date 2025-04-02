@@ -114,8 +114,11 @@ class RosStateJsonify:
         if result:
             result = result.replace('::', '/')
             result = result.replace('/dds_', '')
-            # result = result.replace('/msg/dds_', '')
-            # result = result.replace('/srv/dds_', '')
+            last_slash_index = result.rfind('/')
+            if last_slash_index != -1:
+                underscore_index = result.rfind('_', last_slash_index)
+                # if underscore_index != -1:
+                #     result = result[:underscore_index]
             result = result.rstrip('_')
         return result
 
@@ -135,7 +138,7 @@ class RosStateJsonify:
             if result[-len(suffix):] == suffix:
                 result = result[:-len(suffix)]
                 break
-        return cls.get_message_type(result)
+        return result
 
     def is_location_local(self, location: str):
         if 'SHM' in location:

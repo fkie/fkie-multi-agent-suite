@@ -14,11 +14,10 @@ import signal
 import sys
 import time
 import traceback
-from importlib import import_module
-from types import SimpleNamespace
 from typing import Optional
 import rclpy
 from rclpy.duration import Duration
+from rosidl_runtime_py.utilities import get_message
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
@@ -98,17 +97,7 @@ class RosSubscriberLauncher:
         Log.set_ros2_logging_node(self.ros_node)
 
         Log.info(f"start ROS subscriber for {self._topic}[{self._message_type}]")
-        splitted_type = self._message_type.replace('/', '.').rsplit('.', 1)
-        splitted_type.reverse()
-        module = import_module(splitted_type.pop())
-        sub_class = getattr(module, splitted_type.pop())
-        while splitted_type:
-            sub_class = getattr(sub_class, splitted_type.pop())
-        if sub_class is None:
-            raise ImportError(
-                f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
-
-        self.__msg_class = sub_class
+        self.__msg_class = get_message(self._message_type)
         qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
         self.sub = nmd.ros_node.create_subscription(
             self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)

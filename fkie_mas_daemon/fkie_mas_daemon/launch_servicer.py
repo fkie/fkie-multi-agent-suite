@@ -6,7 +6,6 @@
 #
 # ****************************************************************************
 
-import asyncio
 import csv
 import json
 import os
@@ -16,6 +15,7 @@ import sys
 import traceback
 from importlib import import_module
 # from launch.launch_context import LaunchContext
+
 from typing import Dict
 from typing import List
 from watchdog.observers import Observer
@@ -27,6 +27,8 @@ from rosidl_runtime_py import set_message_fields
 from rosidl_runtime_py import get_action_interfaces
 from rosidl_runtime_py import get_message_interfaces
 from rosidl_runtime_py import get_service_interfaces
+from rosidl_runtime_py.utilities import get_action
+from rosidl_runtime_py.utilities import get_service
 
 
 from fkie_mas_pylib import ros_pkg
@@ -897,24 +899,43 @@ class LaunchServicer(LoggingEventHandler):
             import traceback
             print(traceback.format_exc())
 
+    def _get_srv_class(self, srv_type: str):
+        from example_interfaces.action import Fibonacci
+        is_action = False
+        if srv_type.find("/action/") != -1:
+            is_action = True
+            is_action_result = False
+            is_action_goal = False
+            if srv_type.endswith("_GetResult"):
+                is_action_result = True
+                srv_type = srv_type.replace("_GetResult", "")
+            elif srv_type.endswith("_SendGoal"):
+                is_action_goal = True
+                srv_type = srv_type.replace("_SendGoal", "")
+        if is_action:
+            sub_class = get_action(srv_type)
+        else:
+            sub_class = get_service(srv_type)
+        request_class = None
+        if is_action:
+            if is_action_result:
+                request_class = sub_class.Result
+            elif is_action_goal:
+                request_class = sub_class.Goal
+        else:
+            request_class = sub_class.Request
+        return request_class, sub_class if is_action else None
+
     def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
         Log.debug(
             f"{self.__class__.__name__}: Request to [ros.launch.get_srv_struct]: srv [{srv_type}]")
         result = LaunchMessageStruct(srv_type)
         try:
-            splitted_type = srv_type.replace('/', '.').rsplit('.', 1)
-            splitted_type.reverse()
-            module = import_module(splitted_type.pop())
-            sub_class = getattr(module, splitted_type.pop())
-            while splitted_type:
-                sub_class = getattr(sub_class, splitted_type.pop())
-            if sub_class is None:
-                result.error_msg = f"invalid service type: '{srv_type}'. If this is a valid service type, perhaps you need to run 'colcon build'"
+            request_class, action_class = self._get_srv_class(srv_type)
+            if not hasattr(request_class, 'get_fields_and_field_types'):
+                result.error_msg = f"unexpected service class: '{request_class}', no 'get_fields_and_field_types' attribute found!"
                 return json.dumps(result, cls=SelfEncoder)
-            if not hasattr(sub_class.Request, 'get_fields_and_field_types'):
-                result.error_msg = f"unexpected service class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
-                return json.dumps(result, cls=SelfEncoder)
-            field_and_types = sub_class.Request.get_fields_and_field_types()
+            field_and_types = request_class.get_fields_and_field_types()
             msg_dict = {'type': srv_type,
                         'name': '',
                         'def': self._expand_fields(field_and_types)}
@@ -934,21 +955,9 @@ class LaunchServicer(LoggingEventHandler):
         request = request_json
         result = LaunchMessageStruct(request.srv_type)
         try:
-            splitted_type = request.srv_type.replace('/', '.').split('.')
-            splitted_type.reverse()
-            module = import_module(splitted_type.pop())
-            sub_class = getattr(module, splitted_type.pop())
-            while splitted_type:
-                sub_class = getattr(sub_class, splitted_type.pop())
-            if sub_class is None:
-                result.error_msg = f"invalid service type: '{request.srv_type}'. If this is a valid service type, perhaps you need to run 'colcon build'"
-                return json.dumps(result, cls=SelfEncoder)
-            if not hasattr(sub_class.Request, 'get_fields_and_field_types'):
-                result.error_msg = f"unexpected service class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
-                return json.dumps(result, cls=SelfEncoder)
-
+            request_class, action_class = self._get_srv_class(request.srv_type)
             # create request message
-            service_request = sub_class.Request()
+            service_request = request_class()
             try:
                 data = json.loads(request.data)
                 set_message_fields(service_request, self._str_from_dict(data))
@@ -957,7 +966,10 @@ class LaunchServicer(LoggingEventHandler):
                 print(traceback.format_exc())
                 result.error_msg = 'Failed to populate field: {0}'.format(e)
             try:
-                response = nmd.launcher.call_service(request.service_name, sub_class, service_request, 5)
+                if action_class or request.service_name.find("/_action/") != -1:
+                    response = nmd.launcher.call_action(request.service_name, action_class, service_request, 5)
+                else:
+                    response = nmd.launcher.call_service(request.service_name, request_class, service_request, 5)
             except Exception as e:
                 result.error_msg = 'Exception while calling service: %r' % e
             else:

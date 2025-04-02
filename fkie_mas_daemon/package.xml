@@ -31,6 +31,7 @@
 
   <depend condition="$ROS_VERSION == 2">launch</depend>
   <depend condition="$ROS_VERSION == 2">launch_xml</depend>
+  <depend condition="$ROS_VERSION == 2">rosidl_runtime_py</depend>
 
   <depend>screen</depend>
 
