@@ -94,17 +94,12 @@ export default class XmlBeautify {
         str += shift[deep] + ar[ix];
         inComment = true;
         // end comment  or <![CDATA[...]]> //
-        if (
-          ar[ix].search(/-->/) > -1 ||
-          ar[ix].search(/--!>/) > -1 ||
-          ar[ix].search(/\]>/) > -1 ||
-          ar[ix].search(/!DOCTYPE/) > -1
-        ) {
+        if (ar[ix].search(/-->|--!>/) > -1 || ar[ix].search(/\]>/) > -1 || ar[ix].search(/!DOCTYPE/) > -1) {
           inComment = false;
         }
       }
       // end comment  or <![CDATA[...]]> //
-      else if (ar[ix].search(/-->/) > -1 || ar[ix].search(/--!>/) > -1 || ar[ix].search(/\]>/) > -1) {
+      else if (ar[ix].search(/-->|--!>/) > -1 || ar[ix].search(/\]>/) > -1) {
         str += ar[ix];
         inComment = false;
       }
