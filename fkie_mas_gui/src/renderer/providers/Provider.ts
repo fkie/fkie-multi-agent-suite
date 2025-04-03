@@ -1222,6 +1222,7 @@ export default class Provider implements IProvider {
         emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
 
         const capabilityGroupParamName = `/${this.settings.get("capabilityGroupParameter")}`;
+        const nodeGroups: { [nodeName: string]: { namespace?: string; name?: string } } = {};
         // update nodes
         // Add nodes from launch files to the list of nodes
         this.launchFiles.forEach((launchFile) => {
@@ -1286,7 +1287,9 @@ export default class Provider implements IProvider {
                   nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
                 });
               }
-
+              if (launchNode.node_name && nodeGroup.name) {
+                nodeGroups[launchNode.node_name] = nodeGroup;
+              }
               let associations: string[] = [];
               launchFile.associations?.forEach((item) => {
                 if (item.node === uniqueNodeName) {
@@ -1341,6 +1344,10 @@ export default class Provider implements IProvider {
         // set tags for nodelets/composable and other tags)
         const composableManagers: string[] = [];
         this.rosNodes.forEach((n) => {
+          const nodeGroup = nodeGroups[n.name];
+          if (nodeGroup) {
+            n.capabilityGroup = nodeGroup;
+          }
           // Check if this is a nodelet/composable and assign tags accordingly.
           const composableParents = n.getAllContainers();
           const tags: TTag[] = [];
