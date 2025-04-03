@@ -22,8 +22,8 @@ import { forwardRef, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import Provider from "@/renderer/providers/Provider";
-import { EVENT_PROVIDER_NODE_STARTED } from "@/renderer/providers/eventTypes";
-import { EventProviderNodeStarted } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_NODE_BINARY_MODIFIED, EVENT_PROVIDER_NODE_STARTED } from "@/renderer/providers/eventTypes";
+import { EventProviderNodeBinaryModified, EventProviderNodeStarted } from "@/renderer/providers/events";
 
 interface RestartNodesComponentProps {
   id: SnackbarKey | undefined;
@@ -75,14 +75,26 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
       (data: EventProviderNodeStarted) => {
         if (data.provider.id === provider.id) {
           // remote node from checked and currentNodeList
-          setChecked(checked.filter((value) => value !== data.node.id));
-          const newNodeList = currentNodeList.filter((value) => value !== data.node.id);
+          setChecked((prev) => prev.filter((value) => value !== data.node.name));
+          const newNodeList = currentNodeList.filter((value) => value !== data.node.name);
           if (newNodeList.length > 0) {
-            setCurrentNodeList(currentNodeList.filter((value) => value !== data.node.id));
+            setCurrentNodeList(currentNodeList.filter((value) => value !== data.node.name));
           } else {
             // close this alert if all nodes are started on another way, e.g. restart button.
             handleDismiss();
           }
+        }
+      },
+      [checked, currentNodeList]
+    );
+
+    // remove nodes started from this list to close this alert if the list is empty
+    useCustomEventListener(
+      EVENT_PROVIDER_NODE_BINARY_MODIFIED,
+      (data: EventProviderNodeBinaryModified) => {
+        if (data.provider.id === provider.id) {
+          setChecked((prev) => [...prev, ...data.nodeNames.filter((name) => !prev.includes(name))]);
+          setCurrentNodeList((prev) => [...prev, ...data.nodeNames.filter((name) => !prev.includes(name))]);
         }
       },
       [checked, currentNodeList]
@@ -113,7 +125,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                 <ExpandMoreIcon fontSize="inherit" />
               </IconButton>
 
-              <Typography variant="subtitle1">{message}</Typography>
+              <Typography variant="subtitle1">{`${message} Do you want to restart ${currentNodeList.length} nodes on: `}</Typography>
               <Typography variant="subtitle1" fontWeight="bold">
                 {provider.name()}
               </Typography>

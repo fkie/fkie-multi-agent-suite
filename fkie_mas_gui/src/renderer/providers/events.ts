@@ -181,6 +181,17 @@ export class EventProviderNodeStarted {
   }
 }
 
+export class EventProviderNodeBinaryModified {
+  provider: Provider;
+
+  nodeNames: string[];
+
+  constructor(provider: Provider, nodeNames: string[]) {
+    this.provider = provider;
+    this.nodeNames = nodeNames;
+  }
+}
+
 export class EventProviderLaunchLoaded {
   provider: Provider;
 

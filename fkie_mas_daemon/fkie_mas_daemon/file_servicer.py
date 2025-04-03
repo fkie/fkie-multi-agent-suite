@@ -113,19 +113,22 @@ class FileServicer:
             )
             ros_log = get_ros_logfile(node)
             resultDelete = True
-            message = ''
+            message = f"remove files: '{screen_log}' ,'{ros_log}'"
+            Log.debug(
+                f"{self.__class__.__name__}:   remove files: '{screen_log}' ,'{ros_log}'"
+            )
             if (os.path.exists(screen_log)):
                 try:
                     os.remove(screen_log)
                 except OSError as error:
                     resultDelete = False
-                    message += f"Can not remove {screen_log}: {error}. "
+                    message += f"; Can not remove {screen_log}: {error}. "
             if (os.path.exists(ros_log)):
                 try:
                     os.remove(ros_log)
                 except OSError as error:
                     resultDelete = False
-                    message += f"Can not remove {ros_log}: {error}. "
+                    message += f"; Can not remove {ros_log}: {error}. "
             log_path_item = LogPathClearResult(
                 node,
                 result=resultDelete,

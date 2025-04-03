@@ -22,6 +22,7 @@ import Provider from "@/renderer/providers/Provider";
 import {
   EVENT_PROVIDER_AUTH_REQUEST,
   EVENT_PROVIDER_DISCOVERED,
+  EVENT_PROVIDER_NODE_BINARY_MODIFIED,
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_RESTART_NODES,
@@ -32,6 +33,7 @@ import {
 import {
   EventProviderAuthRequest,
   EventProviderDiscovered,
+  EventProviderNodeBinaryModified,
   EventProviderPathEvent,
   EventProviderRemoved,
   EventProviderRestartNodes,
@@ -481,7 +483,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // check if nodes have to be restarted
         if (result.reply && result.reply.changed_nodes && result.reply.changed_nodes.length > 0) {
           // ask use if nodes should be restarted
-          enqueueSnackbar(`Do you want to restart ${result.reply.changed_nodes.length} nodes on: `, {
+          emitCustomEvent(
+            EVENT_PROVIDER_NODE_BINARY_MODIFIED,
+            new EventProviderNodeBinaryModified(provider, result.reply.changed_nodes)
+          );
+          enqueueSnackbar(`Configuration changed!`, {
             persist: true,
             anchorOrigin: {
               vertical: "top",
@@ -1069,8 +1075,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         });
       });
       if (nodes.length > 0) {
+        emitCustomEvent(EVENT_PROVIDER_NODE_BINARY_MODIFIED, new EventProviderNodeBinaryModified(data.provider, nodes));
         // ask use if nodes should be restarted
-        enqueueSnackbar(`Binary changed, do you want to restart ${nodes.length} nodes on: `, {
+        enqueueSnackbar(`Binary changed!`, {
           persist: true,
           anchorOrigin: {
             vertical: "top",
