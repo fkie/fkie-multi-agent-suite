@@ -2,8 +2,8 @@
 
 ## 4.2.14 - 03.04.2025
 
-6ae788a fixed assign capability group to all affected nodes
-1a37ef7 fixed restart nodes dialog. Now all changed nodes should be added to the question.
+Fixed assign capability group to all affected nodes
+Fixed restart nodes dialog, now all changed nodes should be added to the question
 
 ## 4.2.13 - 02.04.2025
 

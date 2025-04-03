@@ -2,7 +2,7 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-4.3.4 (03.04.2025)
+4.3.5 (03.04.2025)
 ------------------
 * Added more info to clear logs reply
 
