@@ -480,7 +480,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
 
     comment: [
       [/[^<-]+/, "comment.content"],
-      [/-->/, { token: "comment", bracket: "@close", next: "@pop" }],
+      [/-->|--!>/, { token: "comment", bracket: "@close", next: "@pop" }],
       [/<!--/, "comment.content.invalid"],
       [/[<-]/, "comment.content"],
     ],

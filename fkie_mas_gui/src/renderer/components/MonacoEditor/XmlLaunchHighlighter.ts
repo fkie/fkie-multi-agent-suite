@@ -18,7 +18,7 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
   qualifiedTestAttrs: /if|unless|pkg|test-name|type|name|args|clear_params|cwd|launch-prefix|ns|retry|time-limit/,
   qualifiedArgAttrs: /if|unless|name|default|value|doc/,
   qualifiedXmlAttrs: /version/,
-  
+
   qualifiedSubs: /env|optenv|find|anon|arg|eval|dirname/,
 
   // The main tokenizer for our languages
@@ -399,7 +399,7 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
-    
+
     value: [
       [/([^"^$]*)(\$\()/, ["attribute.value", { token: "delimiter.start", bracket: "@open", next: "@subst" }]],
       [/([^"]*)(")/, ["attribute.value", { token: "", bracket: "@close", next: "@pop" }]],
@@ -424,7 +424,7 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
 
     comment: [
       [/[^<-]+/, "comment.content"],
-      [/-->/, { token: "comment", bracket: "@close", next: "@pop" }],
+      [/-->|--!>/, { token: "comment", bracket: "@close", next: "@pop" }],
       [/<!--/, "comment.content.invalid"],
       [/[<-]/, "comment.content"],
     ],
