@@ -16,7 +16,7 @@
   },
   "main": "./out/main/index.js",
   "scripts": {
-    "format": "prettier --write .",
+    "format": "biome check --write .",
     "lint": "eslint . --fix",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
@@ -34,6 +34,7 @@
     "build:linux:publish": "electron-vite build && electron-builder --linux --publish always"
   },
   "dependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@emotion/react": "^11.14.0",
