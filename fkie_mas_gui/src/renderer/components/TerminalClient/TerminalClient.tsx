@@ -68,8 +68,8 @@ interface ITerminalClient {
   name: string;
   errorHighlighting: boolean;
   provider?: Provider;
-  onIncomingData?: (data: string) => void | null;
-  onCtrlD?: (wsUrl: string, tokenUrl: string) => void | null;
+  onIncomingData?: (data: string) => undefined;
+  onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined;
 }
 
 export default function TerminalClient(props: ITerminalClient): JSX.Element {

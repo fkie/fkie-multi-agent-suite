@@ -42,7 +42,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
 
-  function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel | undefined, isDarkMode: boolean = false): string {
+  function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel | undefined, isDarkMode = false): string {
     switch (diagnosticLevel) {
       case DiagnosticLevel.OK:
         return isDarkMode ? green[600] : green[500];
@@ -57,7 +57,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
     }
   }
 
-  function getColorFromLifecycle(state: string, isDarkMode: boolean = false): string {
+  function getColorFromLifecycle(state: string, isDarkMode = false): string {
     switch (state) {
       case "unconfigured":
         return isDarkMode ? blue[600] : blue[500];
@@ -71,77 +71,76 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         return isDarkMode ? yellow[600] : yellow[500];
     }
   }
-  function getNodeIcon(node: RosNode, isDarkMode: boolean = false): JSX.Element {
+  function getNodeIcon(node: RosNode, isDarkMode = false): JSX.Element {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
         const color = getColorFromDiagnostic(node.diagnosticLevel, isDarkMode);
         if (!node.lifecycle_state) {
           return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
-        } else {
-          const colorBorder = getColorFromLifecycle(node.lifecycle_state, isDarkMode);
-          const iconState = (
-            <Tooltip
-              key={`tooltip-icon-${node.id}`}
-              title={`Lifecycle state: '${node.lifecycle_state}'`}
-              placement="left"
-              disableInteractive
-            >
-              <CircleIcon
-                style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
-                sx={{
-                  border: 3,
-                  borderRadius: "100%",
-                  borderColor: colorBorder,
-                }}
-              />
-            </Tooltip>
-          );
-          // add menu to change the lifecycle state
-          return node.lifecycle_available_transitions && node.lifecycle_available_transitions?.length > 0 ? (
-            <OverflowMenu
-              icon={iconState}
-              options={node.lifecycle_available_transitions?.map((item) => {
-                return {
-                  name: item.label,
-                  key: item.label,
-                  onClick: async function (): Promise<void> {
-                    const provider = rosCtx.getProviderById(node.providerId as string, true);
-                    await provider?.callService(
-                      new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
-                        type: "lifecycle_msgs/srv/ChangeState",
-                        name: "",
-                        useNow: false,
-                        def: [
-                          {
-                            name: "transition",
-                            useNow: false,
-                            def: [
-                              {
-                                name: "id",
-                                useNow: false,
-                                def: [],
-                                type: "uint8",
-                                is_array: false,
-                                value: `${item.id}`,
-                              },
-                              { name: "label", useNow: false, def: [], type: "string", is_array: false },
-                            ],
-                            type: "lifecycle_msgs/Transition",
-                            is_array: false,
-                          },
-                        ],
-                        is_array: false,
-                      } as TRosMessageStruct)
-                    );
-                  },
-                };
-              })}
-              id={`lifecycle-menu-${node.id}`}
-            />
-          ) : (
-            iconState
-          );
         }
+        const colorBorder = getColorFromLifecycle(node.lifecycle_state, isDarkMode);
+        const iconState = (
+          <Tooltip
+            key={`tooltip-icon-${node.id}`}
+            title={`Lifecycle state: '${node.lifecycle_state}'`}
+            placement="left"
+            disableInteractive
+          >
+            <CircleIcon
+              style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
+              sx={{
+                border: 3,
+                borderRadius: "100%",
+                borderColor: colorBorder,
+              }}
+            />
+          </Tooltip>
+        );
+        // add menu to change the lifecycle state
+        return node.lifecycle_available_transitions && node.lifecycle_available_transitions?.length > 0 ? (
+          <OverflowMenu
+            icon={iconState}
+            options={node.lifecycle_available_transitions?.map((item) => {
+              return {
+                name: item.label,
+                key: item.label,
+                onClick: async (): Promise<void> => {
+                  const provider = rosCtx.getProviderById(node.providerId as string, true);
+                  await provider?.callService(
+                    new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
+                      type: "lifecycle_msgs/srv/ChangeState",
+                      name: "",
+                      useNow: false,
+                      def: [
+                        {
+                          name: "transition",
+                          useNow: false,
+                          def: [
+                            {
+                              name: "id",
+                              useNow: false,
+                              def: [],
+                              type: "uint8",
+                              is_array: false,
+                              value: `${item.id}`,
+                            },
+                            { name: "label", useNow: false, def: [], type: "string", is_array: false },
+                          ],
+                          type: "lifecycle_msgs/Transition",
+                          is_array: false,
+                        },
+                      ],
+                      is_array: false,
+                    } as TRosMessageStruct)
+                  );
+                },
+              };
+            })}
+            id={`lifecycle-menu-${node.id}`}
+          />
+        ) : (
+          iconState
+        );
       }
 
       case RosNodeStatus.DEAD: {
@@ -163,26 +162,25 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         if ((node.screens || []).length === 1) {
           const color = isDarkMode ? green[600] : green[500];
           return <DvrIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
-        } else {
-          const color = isDarkMode ? grey[600] : grey[500];
-          let icon = <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
-          node.launchInfo.forEach((launchInfo) => {
-            if (launchInfo.cmd?.includes("ros2 run")) {
-              icon = (
-                <Tooltip
-                  key={`icon-${node.id}`}
-                  title={`Executable '${launchInfo.executable}' or package '${JSON.stringify(launchInfo.package_name)}' not found`}
-                  placement="left"
-                  disableInteractive
-                >
-                  <NewReleasesTwoToneIcon style={{ marginRight: 0.5, width: 20, color: color }} />
-                </Tooltip>
-              );
-            }
-          });
-
-          return icon;
         }
+        const color = isDarkMode ? grey[600] : grey[500];
+        let icon = <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+        for (const launchInfo of node.launchInfo.values()) {
+          if (launchInfo.cmd?.includes("ros2 run")) {
+            icon = (
+              <Tooltip
+                key={`icon-${node.id}`}
+                title={`Executable '${launchInfo.executable}' or package '${JSON.stringify(launchInfo.package_name)}' not found`}
+                placement="left"
+                disableInteractive
+              >
+                <NewReleasesTwoToneIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+              </Tooltip>
+            );
+          }
+        }
+
+        return icon;
       }
 
       default: {
@@ -195,10 +193,12 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
   const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
   }, [settingsCtx, settingsCtx.changed]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setNodeIcon(getNodeIcon(node, isDarkMode));
     setLabelText(nodeNameWithoutNamespace(node));
