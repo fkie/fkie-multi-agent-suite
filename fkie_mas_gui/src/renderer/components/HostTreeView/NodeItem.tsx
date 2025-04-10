@@ -25,6 +25,7 @@ interface NodeItemProps {
   node: RosNode;
   namespacePart: string;
   onDoubleClick: (event: React.MouseEvent, id: string) => void;
+  onMiddleClick: (event: React.MouseEvent, id: string) => void;
   onShowLoggersClick: (event: React.MouseEvent, itemId: string) => void;
 }
 
@@ -34,6 +35,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
     node,
     namespacePart = "",
     onDoubleClick = (): void => {},
+    onMiddleClick = (): void => {},
     onShowLoggersClick = (): void => {},
     ...other
   } = props;
@@ -219,6 +221,14 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               if (onDoubleClick) {
                 onDoubleClick(event, itemId);
                 event.stopPropagation();
+              }
+            }}
+            onMouseDown={(event) => {
+              if (event.button === 1) {
+                if (onMiddleClick) {
+                  onMiddleClick(event, itemId);
+                  event.stopPropagation();
+                }
               }
             }}
             flexGrow="1"

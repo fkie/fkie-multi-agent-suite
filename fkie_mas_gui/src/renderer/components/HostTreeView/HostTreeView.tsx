@@ -36,9 +36,11 @@ function compareTreeItems(a: NodeTreeItem, b: NodeTreeItem): number {
 function compareTreeProvider(a: NodeTreeItem, b: NodeTreeItem): number {
   if (a.providerName && b.providerName) {
     return a.providerName?.localeCompare(b.providerName);
-  } else if (a.providerName) {
+  }
+  if (a.providerName) {
     return -1;
-  } else if (b.providerName) {
+  }
+  if (b.providerName) {
     return 1;
   }
   return 0;
@@ -79,6 +81,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     settingsCtx.get("avoidGroupWithOneItem") as string
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
   }, [settingsCtx.changed]);
@@ -94,12 +97,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     const level: NodeTree = { nodeTree };
     const spamNodesParam = settingsCtx.get("spamNodes") as string;
     const cliInSpam = spamNodesParam.indexOf("_ros2cli") > -1;
-    nodes.forEach((node: RosNode) => {
+    for (const node of nodes) {
       let nodePath = node.providerId || "";
       if (node.system_node && namespaceSystemNodes && !(cliInSpam && node.name.startsWith("/_ros2cli"))) {
         // for system nodes, e.g.: /{SYSTEM}/ns
         nodePath += namespaceSystemNodes;
-        if (node.namespace != "/") {
+        if (node.namespace !== "/") {
           nodePath += node.namespace;
         }
       } else {
@@ -131,7 +134,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         }
         nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;
       }
-      nodePath += "/" + node.idGlobal;
+      nodePath += `/${node.idGlobal}`;
       if (!nodeItemMap.has(node.idGlobal)) {
         nodeItemMap.set(node.idGlobal, node);
         nodePath.split("/").reduce((r: NodeTree, name, idx, a) => {
@@ -169,7 +172,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           return r[name];
         }, level);
       }
-    });
+    }
     setProviderNodeTree((prevTree) => {
       if (prevTree.length === 0) {
         // use either the expanded state or the key of the node tree (expand the first layer)
@@ -198,7 +201,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Callback when items on the tree are double clicked
    */
   const handleDoubleClick = useCallback(
-    function (_event: React.MouseEvent, id: string): void {
+    (_event: React.MouseEvent, id: string): void => {
       if (!expanded || !id) {
         return;
       }
@@ -223,10 +226,39 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   );
 
   /**
+   * Get nodes for selected ids
+   */
+  const getNodeIdsFromTreeIds = useCallback(
+    (itemIds: string[]): string[] => {
+      let nodeList: string[] = [];
+      for (const item of itemIds) {
+        nodeList = [
+          ...nodeList,
+          ...keyNodeList
+            .filter((entry) => {
+              if (entry.key.includes("#")) {
+                return entry.key === item;
+              }
+              return entry.key.startsWith(item);
+            })
+            .map((entry) => {
+              return entry.idGlobal ? entry.idGlobal : "";
+            }),
+        ];
+      }
+      // filter duplicate entries
+      return [...new Set(nodeList)];
+    },
+    [keyNodeList]
+  );
+
+  /**
    * Callback when items on the tree are double clicked
    */
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const handleDoubleClickOnNode = useCallback(
-    function (event: React.MouseEvent, id: string): void {
+    (event: React.MouseEvent, id: string): void => {
       const nodeIds = getNodeIdsFromTreeIds([id]);
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
@@ -235,8 +267,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             if (event.nativeEvent.ctrlKey && !node.system_node) {
               // stop node
               stopNodes([node.idGlobal]);
-            } else {
-              node.screens?.forEach((screen) => {
+            } else if (node.screens) {
+              for (const screen of node.screens) {
                 navCtx.openTerminal(
                   CmdType.SCREEN,
                   node.providerId as string,
@@ -246,7 +278,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
                   event.nativeEvent.shiftKey,
                   event.nativeEvent.ctrlKey
                 );
-              });
+              }
             }
           } else {
             if (event.nativeEvent.ctrlKey && !node.system_node) {
@@ -267,11 +299,37 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         }
       });
     },
-    [rosCtx.nodeMap]
+    [rosCtx.nodeMap, keyNodeList]
+  );
+
+  /**
+   * Callback when items on the tree are middle clicked
+   */
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  const handleMiddleClickOnNode = useCallback(
+    (event: React.MouseEvent, id: string): void => {
+      const nodeIds = getNodeIdsFromTreeIds([id]);
+      nodeIds.map((nodeId) => {
+        const node = rosCtx.nodeMap.get(nodeId);
+        if (node) {
+          navCtx.openTerminal(
+            CmdType.SCREEN,
+            node.providerId as string,
+            node.name,
+            "",
+            "",
+            event.nativeEvent.shiftKey,
+            event.nativeEvent.ctrlKey
+          );
+        }
+      });
+    },
+    [rosCtx.nodeMap, keyNodeList, getNodeIdsFromTreeIds]
   );
 
   const handleClickOnLoggers = useCallback(
-    function (_event: React.MouseEvent, id: string): void {
+    (_event: React.MouseEvent, id: string): void => {
       if (showLoggers) {
         const nodeIds = getNodeIdsFromTreeIds([id]);
         showLoggers(nodeIds);
@@ -284,9 +342,9 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Function to get all the IDs belonging to a list of parent IDs
    */
   const getParentAndChildrenIds = useCallback(
-    function (parentIds: string[]): string[] {
+    (parentIds: string[]): string[] => {
       let allIds = parentIds;
-      parentIds.forEach((id) => {
+      for (const id of parentIds) {
         const parsedId = id.split("#");
         // a group (with children) must have 1 substring
         if (parsedId.length === 1) {
@@ -296,36 +354,9 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             allIds = [...allIds, ...childrenIds];
           }
         }
-      });
+      }
       // remove multiple copies of a selected item
       return [...new Set(allIds)];
-    },
-    [keyNodeList]
-  );
-
-  /**
-   * Get nodes for selected ids
-   */
-  const getNodeIdsFromTreeIds = useCallback(
-    function (itemIds: string[]): string[] {
-      let nodeList: string[] = [];
-      itemIds.forEach((item) => {
-        nodeList = [
-          ...nodeList,
-          ...keyNodeList
-            .filter((entry) => {
-              if (entry.key.includes("#")) {
-                return entry.key === item;
-              }
-              return entry.key.startsWith(item);
-            })
-            .map((entry) => {
-              return entry.idGlobal ? entry.idGlobal : "";
-            }),
-        ];
-      });
-      // filter duplicate entries
-      return [...new Set(nodeList)];
     },
     [keyNodeList]
   );
@@ -335,11 +366,11 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    */
   function getProvidersFromIds(itemIds: string[]): string[] {
     const provList: string[] = [];
-    itemIds.forEach((item) => {
+    for (const item of itemIds) {
       if (!item.includes("#") && !item.includes("/")) {
         provList.push(item);
       }
-    });
+    }
     return provList;
   }
 
@@ -347,7 +378,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Callback when items on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    function (_event: React.SyntheticEvent, itemIds: string[]): void {
+    (_event: React.SyntheticEvent, itemIds: string[]): void => {
       // update selected state
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
@@ -356,22 +387,22 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         // in the case of multiple selection (CTRL or SHIFT modifiers):
         if (selectedIds.length > 1) {
           // if a group was previously selected but not anymore, deselect all its children
-          prevSelected.forEach((prevId) => {
+          for (const prevId of prevSelected) {
             const prevParsedId = prevId.split("#");
             if (prevParsedId.length === 2 && !selectedIds.includes(prevId)) {
               selectedIds = selectedIds.filter((e) => !e.startsWith(prevId));
             }
-          });
+          }
           // remove group selection if a node in it was deselected
-          prevSelected.forEach((prevId) => {
+          for (const prevId of prevSelected) {
             if (!selectedIds.some((id) => id === prevId)) {
-              selectedIds.forEach((id) => {
+              for (const id of selectedIds) {
                 if (prevId.startsWith(id)) {
                   selectedIds = selectedIds.filter((e) => e !== id);
                 }
-              });
+              }
             }
-          });
+          }
         }
         // add child items for selected groups
         return getParentAndChildrenIds(selectedIds);
@@ -405,39 +436,38 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
-  const updateSelectedNodeIds = useCallback(
-    function (): void {
-      setSelectedItems((prevItems) => [
-        ...getParentAndChildrenIds(
-          prevItems.map((selItem) => {
-            const selItemSplitted = keyToNodeName(selItem);
-            if (selItemSplitted.isValidNode) {
-              const newKey = keyNodeList.filter((keyItem) => {
-                const keyItemSplitted = keyToNodeName(keyItem.key);
-                if (keyItemSplitted.isValidNode) {
-                  return (
-                    selItemSplitted.provider === keyItemSplitted.provider &&
-                    selItemSplitted.node_name === keyItemSplitted.node_name
-                  );
-                }
-                return false;
-              });
-              if (newKey.length > 0) {
-                return newKey[0].key;
+  const updateSelectedNodeIds = useCallback((): void => {
+    setSelectedItems((prevItems) => [
+      ...getParentAndChildrenIds(
+        prevItems.map((selItem) => {
+          const selItemSplitted = keyToNodeName(selItem);
+          if (selItemSplitted.isValidNode) {
+            const newKey = keyNodeList.filter((keyItem) => {
+              const keyItemSplitted = keyToNodeName(keyItem.key);
+              if (keyItemSplitted.isValidNode) {
+                return (
+                  selItemSplitted.provider === keyItemSplitted.provider &&
+                  selItemSplitted.node_name === keyItemSplitted.node_name
+                );
               }
+              return false;
+            });
+            if (newKey.length > 0) {
+              return newKey[0].key;
             }
-            return selItem;
-          })
-        ),
-      ]);
-    },
-    [getParentAndChildrenIds, rosCtx.mapProviderRosNodes]
-  );
+          }
+          return selItem;
+        })
+      ),
+    ]);
+  }, [getParentAndChildrenIds, keyNodeList, rosCtx.mapProviderRosNodes]);
 
   /**
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     updateSelectedNodeIds();
   }, [
@@ -448,6 +478,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   /**
    * effect to update parent selected nodes when the tree selection changes
    */
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (onNodeSelect) {
       onNodeSelect(getNodeIdsFromTreeIds(selectedItems));
@@ -461,7 +493,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Callback when the event of removing a launch file is triggered
    */
   const onRemoveLaunch = useCallback(
-    async function (providerId: string, path: string, masteruri: string): Promise<void> {
+    async (providerId: string, path: string, masteruri: string): Promise<void> => {
       const provider: Provider | undefined = rosCtx.getProviderById(providerId, true);
       if (!provider || !provider.launchUnloadFile) return;
 
@@ -482,7 +514,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           logCtx.error("Could not remove launch file", `Error: ${resultLaunchUnloadFile.status.msg}`);
         }
       } else {
-        logCtx.error("Invalid reply from [launchUnloadFile]", `This is probably a bug, please report it as issue.`);
+        logCtx.error("Invalid reply from [launchUnloadFile]", "This is probably a bug, please report it as issue.");
       }
     },
     [logCtx, rosCtx.providers]
@@ -492,7 +524,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Callback when the event of reloading a launch file is triggered
    */
   const onReloadLaunch = useCallback(
-    async function (providerId: string, path: string, masteruri: string): Promise<void> {
+    async (providerId: string, path: string, masteruri: string): Promise<void> => {
       console.debug(`unused masteruri: ${masteruri}`);
       await rosCtx.reloadLaunchFile(providerId, path);
     },
@@ -503,19 +535,21 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Select all nodes on the tree, that belongs to a given launch file and provider
    */
   const selectNodesFromLaunch = useCallback(
-    function (providerId: string, launch: LaunchContent): void {
+    (providerId: string, launch: LaunchContent): void => {
       let treeNodes: string[] = [];
       // launch file contains the names of the nodes
       // find ros nodes with this name
       const providerNodes = rosCtx.mapProviderRosNodes.get(providerId);
-      providerNodes?.forEach((treeNode) => {
-        const nodes = launch.nodes?.filter((lNode) => {
-          return lNode.node_name === treeNode.name;
-        });
-        if ((nodes || []).length > 0) {
-          treeNodes = [...treeNodes, treeNode.idGlobal];
+      if (providerNodes) {
+        for (const treeNode of providerNodes.values()) {
+          const nodes = launch.nodes?.filter((lNode) => {
+            return lNode.node_name === treeNode.name;
+          });
+          if ((nodes || []).length > 0) {
+            treeNodes = [...treeNodes, treeNode.idGlobal];
+          }
         }
-      });
+      }
       // get the tree ids for the nodes ids
       const newSelItems = keyNodeList
         .filter((kNode) => {
@@ -531,7 +565,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Create elements of the tree view component
    */
   const buildHostTreeViewItem = useCallback(
-    function (providerId: string, treeItem: NodeTreeItem, newKeyNodeList: KeyTreeItem[]): JSX.Element {
+    (providerId: string, treeItem: NodeTreeItem, newKeyNodeList: KeyTreeItem[]): JSX.Element => {
       if (!treeItem) {
         console.error("Invalid item ", providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
@@ -561,6 +595,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             node={node}
             namespacePart={namespacePart}
             onDoubleClick={(event: React.MouseEvent, itemId: string) => handleDoubleClickOnNode(event, itemId)}
+            onMiddleClick={(event: React.MouseEvent, itemId: string) => handleMiddleClickOnNode(event, itemId)}
             onShowLoggersClick={(event: React.MouseEvent, itemId: string) => handleClickOnLoggers(event, itemId)}
           />
         );
@@ -587,8 +622,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     [
       // do not include keyNodeList
       settingsCtx,
-      handleDoubleClick,
       selectedItems,
+      rosCtx.nodeMap,
       // NodesCount,
     ]
   );
@@ -616,7 +651,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           let providerIsAvailable = false;
           const p = rosCtx.getProviderById(item.providerId as string, true);
-          if (p && p.isAvailable()) {
+          if (p?.isAvailable()) {
             providerIsAvailable = true;
           }
           if (!p) {
@@ -670,6 +705,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     selectedItems,
     rosCtx,
     settingsCtx.changed,
+    rosCtx.nodeMap,
     // handleToggle, <= causes too many re-renders
     // handleSelect, <= causes too many re-renders
     // getMasterSyncNode,     <= causes too many re-renders
