@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.6 (10.04.2025)
+------------------
+* Added parameter change detection on reload file
+* Fixed update of available screens
+* Fixed call service, it was brocken after added action handling
+
 4.3.5 (03.04.2025)
 ------------------
 * Added more info to clear logs reply

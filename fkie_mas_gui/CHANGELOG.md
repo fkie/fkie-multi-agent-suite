@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.2.15 - 10.04.2025
+
+Added middle click on node to open screen
+Added parameter change detection on reload file
+Focus load button in launch dialog by default
+Fixed update of available screens
+Fixed call service, it was brocken after added action handling
+
 ## 4.2.14 - 03.04.2025
 
 Fixed assign capability group to all affected nodes

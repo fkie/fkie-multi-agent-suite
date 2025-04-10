@@ -55,8 +55,8 @@ interface Props {
   initialCommands: string[];
   name: string;
   type: CmdType;
-  onIncomingData?: (data: string) => undefined | null;
-  onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined | null;
+  onIncomingData?: (data: string) => undefined;
+  onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined;
   settingsCtx: ISettingsContext;
   provider?: Provider;
 }
