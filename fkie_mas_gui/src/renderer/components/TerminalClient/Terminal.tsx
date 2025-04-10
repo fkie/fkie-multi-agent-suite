@@ -24,14 +24,14 @@ import { CmdType } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import SearchBar from "../UI/SearchBar";
 
-const enum Command {
+enum Command {
   // server side
   OUTPUT = "0",
   SET_WINDOW_TITLE = "1",
   SET_PREFERENCES = "2",
 }
 
-const enum CommandClient {
+enum CommandClient {
   // client side
   INPUT = "0",
   RESIZE_TERMINAL = "1",
@@ -55,8 +55,8 @@ interface Props {
   initialCommands: string[];
   name: string;
   type: CmdType;
-  onIncomingData?: (data: string) => void | null;
-  onCtrlD?: (wsUrl: string, tokenUrl: string) => void | null;
+  onIncomingData?: (data: string) => undefined | null;
+  onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined | null;
   settingsCtx: ISettingsContext;
   provider?: Provider;
 }
@@ -93,13 +93,13 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private settingsCtx: ISettingsContext | null = null;
 
-  private fontSize: number = 14;
+  private fontSize = 14;
 
-  private searchText: string = "";
+  private searchText = "";
 
   private resizeObserver: ResizeObserver | null = null;
 
-  private gotFocus: boolean = false;
+  private gotFocus = false;
 
   private lastContainerSize: { width: number; height: number } = {
     width: 0,
@@ -274,10 +274,10 @@ export class Terminal extends React.Component<Props, XtermState> {
       if (ev.type === "keydown") {
         for (const i in keyMap) {
           if (
-            keyMap[i].key == ev.key &&
-            keyMap[i].shiftKey == ev.shiftKey &&
-            keyMap[i].ctrlKey == ev.ctrlKey &&
-            keyMap[i].altKey == ev.altKey
+            keyMap[i].key === ev.key &&
+            keyMap[i].shiftKey === ev.shiftKey &&
+            keyMap[i].ctrlKey === ev.ctrlKey &&
+            keyMap[i].altKey === ev.altKey
           ) {
             keyMap[i].callback();
             ev.preventDefault();
@@ -330,16 +330,16 @@ export class Terminal extends React.Component<Props, XtermState> {
     // send initial commands to terminal
     const { initialCommands } = this.props;
     if (initialCommands) {
-      initialCommands.forEach((command) => {
+      for (const command of initialCommands) {
         this.socket?.send(textEncoder.encode(CommandClient.INPUT + command));
         // this.onTerminalData(command);
-      });
+      }
     }
     if (this.type === CmdType.SET_TIME && this.provider) {
       if (await this.provider.updateTimeDiff()) {
         this.socket?.send(
           textEncoder.encode(
-            CommandClient.INPUT + `sudo /bin/date -s ${new Date(this.provider.timestamp).toISOString()}\n\r`
+            `${CommandClient.INPUT}sudo /bin/date -s ${new Date(this.provider.timestamp).toISOString()}\n\r`
           )
         );
       }
@@ -484,7 +484,7 @@ export class Terminal extends React.Component<Props, XtermState> {
           height={state.opened ? "100%" : 0}
           visibility={state.opened ? "visible" : "hidden"}
           overflow="auto"
-        ></Box>
+        />
       </Stack>
     );
   }
