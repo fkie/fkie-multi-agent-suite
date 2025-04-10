@@ -42,6 +42,7 @@ from launch_ros.substitutions.find_package import FindPackage
 from launch_ros.utilities import make_namespace_absolute
 from launch_ros.utilities import prefix_namespace
 from launch_ros.utilities.normalize_parameters import normalize_parameter_dict
+from launch_ros.substitutions.executable_in_package import ExecutableInPackage
 
 from fkie_mas_pylib.interface.runtime_interface import RosParameter
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
@@ -71,7 +72,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         for val in value:
             sep = ' '
             if isinstance(val, List) and len(val) == 1:
-                if issubclass(type(val[0]), FindPackage):
+                if issubclass(type(val[0]), FindPackage) and not issubclass(type(val[0]), ExecutableInPackage):
                     sep = ''
                 item = perform_substitutions(context, val)
                 result += item + sep
@@ -81,7 +82,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         try:
             result += context.perform_substitution(value)
         except (SubstitutionFailure, LookupError) as err:
-            if isinstance(value, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
+            if isinstance(value, ExecutableInPackage):
                 executable = perform_substitutions(context, value.executable)
                 package = perform_substitutions(context, value.package)
                 result += f"ros2 run {package} {executable}"
