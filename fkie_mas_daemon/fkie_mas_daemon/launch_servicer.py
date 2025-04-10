@@ -6,6 +6,55 @@
 #
 # ****************************************************************************
 
+import fkie_mas_daemon as nmd
+from .launch_validator import LaunchValidator
+from .launch_context import LaunchContext
+from .launch_config import LaunchConfig
+from fkie_mas_pylib.websocket.server import WebSocketServer
+from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
+from fkie_mas_pylib.system.url import equal_uri
+from fkie_mas_pylib.system.host import is_local
+from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.system import exceptions
+from fkie_mas_pylib.names import ns_join
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.launch import xml
+from fkie_mas_pylib.defines import SEARCH_IN_EXT
+from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
+from fkie_mas_pylib.interface.launch_interface import LaunchPublishMessage
+from fkie_mas_pylib.interface.launch_interface import LaunchMessageStruct
+from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFile
+from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFilesRequest
+from fkie_mas_pylib.interface.launch_interface import LaunchInterpretPathReply
+from fkie_mas_pylib.interface.launch_interface import LaunchInterpretPathRequest
+from fkie_mas_pylib.interface.launch_interface import LaunchNodeReply
+from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
+from fkie_mas_pylib.interface.launch_interface import LaunchNode
+from fkie_mas_pylib.interface.launch_interface import LaunchAssociations
+from fkie_mas_pylib.interface.launch_interface import LaunchContent
+from fkie_mas_pylib.interface.launch_interface import LaunchLoadReply
+from fkie_mas_pylib.interface.launch_interface import LaunchLoadRequest
+from fkie_mas_pylib.interface.launch_interface import LaunchFile
+from fkie_mas_pylib.interface.launch_interface import LaunchCallService
+from fkie_mas_pylib.interface.launch_interface import LaunchArgument
+from fkie_mas_pylib.interface.runtime_interface import RosQos
+from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib import ros_pkg
+from rosidl_runtime_py.utilities import is_service
+from rosidl_runtime_py.utilities import get_message
+from rosidl_runtime_py.utilities import get_service
+from rosidl_runtime_py.utilities import get_interface
+from rosidl_runtime_py.utilities import get_action
+from rosidl_runtime_py import get_service_interfaces
+from rosidl_runtime_py import get_message_interfaces
+from rosidl_runtime_py import get_action_interfaces
+from rosidl_runtime_py import set_message_fields
+from rosidl_runtime_py import message_to_ordereddict
+import rosidl_parser.definition
+from watchdog.events import FileSystemEvent
+from watchdog.events import LoggingEventHandler
+from watchdog.observers import Observer
 import csv
 import json
 import os
@@ -18,56 +67,10 @@ from importlib import import_module
 
 from typing import Dict
 from typing import List
-from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
-from watchdog.events import FileSystemEvent
-import rosidl_parser.definition
-from rosidl_runtime_py import message_to_ordereddict
-from rosidl_runtime_py import set_message_fields
-from rosidl_runtime_py import get_action_interfaces
-from rosidl_runtime_py import get_message_interfaces
-from rosidl_runtime_py import get_service_interfaces
-from rosidl_runtime_py.utilities import get_action
-from rosidl_runtime_py.utilities import get_service
-
-
-from fkie_mas_pylib import ros_pkg
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
-from fkie_mas_pylib.interface.runtime_interface import RosQos
-from fkie_mas_pylib.interface.launch_interface import LaunchArgument
-from fkie_mas_pylib.interface.launch_interface import LaunchCallService
-from fkie_mas_pylib.interface.launch_interface import LaunchFile
-from fkie_mas_pylib.interface.launch_interface import LaunchLoadRequest
-from fkie_mas_pylib.interface.launch_interface import LaunchLoadReply
-from fkie_mas_pylib.interface.launch_interface import LaunchContent
-from fkie_mas_pylib.interface.launch_interface import LaunchAssociations
-from fkie_mas_pylib.interface.launch_interface import LaunchNode
-from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
-from fkie_mas_pylib.interface.launch_interface import LaunchNodeReply
-from fkie_mas_pylib.interface.launch_interface import LaunchInterpretPathRequest
-from fkie_mas_pylib.interface.launch_interface import LaunchInterpretPathReply
-from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFilesRequest
-from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFile
-from fkie_mas_pylib.interface.launch_interface import LaunchMessageStruct
-from fkie_mas_pylib.interface.launch_interface import LaunchPublishMessage
-from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
-from fkie_mas_pylib.defines import SEARCH_IN_EXT
-from fkie_mas_pylib.launch import xml
-from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.names import ns_join
-from fkie_mas_pylib.system import exceptions
-from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.system.host import is_local
-from fkie_mas_pylib.system.url import equal_uri
-from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
-from fkie_mas_pylib.websocket.server import WebSocketServer
-
-from .launch_config import LaunchConfig
-from .launch_context import LaunchContext
-from .launch_validator import LaunchValidator
-
-import fkie_mas_daemon as nmd
+from typing import Tuple
+from typing import Type
+ActionClass = Type
+ActionRequestClass = Type
 
 
 class CfgId(object):
@@ -514,7 +517,6 @@ class LaunchServicer(LoggingEventHandler):
             lc = self._loaded_files[cfgid]
             reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.daemonuri, host='',  # lc.host,
                                      nodes=[], parameters=[], associations=[])
-
             # Add launch arguments
             for name, p in lc.provided_launch_arguments:
                 reply_lc.args.append(LaunchArgument(
@@ -522,40 +524,7 @@ class LaunchServicer(LoggingEventHandler):
 
             nodes = lc.nodes()
             for item in nodes:
-                node_fullname = item.node_name
-                # is_executable = type(
-                #     item.node) == launch.actions.execute_process.ExecuteProcess
-                # composable_container = ''
-                # if item.composable_container is not None:
-                #     # get composable container name
-                #     composable_container = LaunchConfig.get_name_from_node(
-                #         item.composable_container)
-                # ni = lmsg.NodeInfo(name=node_fullname, is_executable=is_executable,
-                #                   composable_container=composable_container)
-                # add composable nodes to container
-                # for cn in item.composable_nodes:
-                #    ni.composable_nodes.extend(
-                #        [LaunchConfig.get_name_from_node(cn)])
                 reply_lc.nodes.append(item)
-                # reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
-                #                                      node_namespace='',
-                #                                      package=item.node_package,
-                #                                      node_type=item.node_executable,
-                #                                      args=shlex.join(item.arguments),
-                #                                      respawn=item.respawn,
-                #                                      respawn_delay=item.respawn_delay,
-                #                                      launch_prefix=item.prefix,
-                #                                      file_name=cfgid.path,
-                #                                      launch_name=cfgid.path))
-                # TODO: add composable nodes to container
-                # for cn in item.composable_nodes:
-                #    reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
-
-            # Add parameter values
-            # for name, p in lc.xxx:
-            #    reply_lc.parameters.append(RosParameter(name, p.value))
-            # print('nodes', reply_lc.nodes)
-            # TODO: add assosiations
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
 
@@ -745,19 +714,14 @@ class LaunchServicer(LoggingEventHandler):
             f"{self.__class__.__name__}: Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
         result = LaunchMessageStruct(msg_type)
         try:
-            splitted_type = msg_type.replace('/', '.').rsplit('.', 1)
-            splitted_type.reverse()
-            module = import_module(splitted_type.pop())
-            sub_class = getattr(module, splitted_type.pop())
-            while splitted_type:
-                sub_class = getattr(sub_class, splitted_type.pop())
-            if sub_class is None:
-                result.error_msg = f"invalid message type: '{msg_type}'. If this is a valid message type, perhaps you need to run 'colcon build'"
+            if self._is_action_type(msg_type):
+                action_class, msg_class = self._get_action_types(msg_type)
+            else:
+                msg_class = get_message(msg_type)
+            if not hasattr(msg_class, 'get_fields_and_field_types'):
+                result.error_msg = f"unexpected message class: '{msg_class}', no 'get_fields_and_field_types' attribute found!"
                 return json.dumps(result, cls=SelfEncoder)
-            if not hasattr(sub_class, 'get_fields_and_field_types'):
-                result.error_msg = f"unexpected message class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
-                return json.dumps(result, cls=SelfEncoder)
-            field_and_types = sub_class.get_fields_and_field_types()
+            field_and_types = msg_class.get_fields_and_field_types()
             msg_dict = {'type': msg_type,
                         'name': '',
                         'def': self._expand_fields(field_and_types)}
@@ -899,39 +863,47 @@ class LaunchServicer(LoggingEventHandler):
             import traceback
             print(traceback.format_exc())
 
-    def _get_srv_class(self, srv_type: str):
-        from example_interfaces.action import Fibonacci
-        is_action = False
-        if srv_type.find("/action/") != -1:
-            is_action = True
-            is_action_result = False
-            is_action_goal = False
-            if srv_type.endswith("_GetResult"):
-                is_action_result = True
-                srv_type = srv_type.replace("_GetResult", "")
-            elif srv_type.endswith("_SendGoal"):
-                is_action_goal = True
-                srv_type = srv_type.replace("_SendGoal", "")
-        if is_action:
-            sub_class = get_action(srv_type)
+    def _is_action_type(self, identifier: str) -> bool:
+        return identifier.find("/action/") != -1
+
+    def _get_action_types(self, identifier: str) -> Tuple[ActionClass, ActionRequestClass]:
+        is_action_result = False
+        is_action_goal = False
+        is_action_feedback = False
+        normalized_identifier = identifier
+        if identifier.endswith("_GetResult"):
+            is_action_result = True
+            normalized_identifier = identifier.replace("_GetResult", "")
+        elif identifier.endswith("_SendGoal"):
+            is_action_goal = True
+            normalized_identifier = identifier.replace("_SendGoal", "")
+        elif identifier.endswith("_FeedbackMessage"):
+            is_action_feedback = True
+            normalized_identifier = identifier.replace("_FeedbackMessage", "")
+        # cancel goal is of type srv not action :/
+        if identifier.find("/srv/CancelGoal") != -1:
+            action_class = get_service(normalized_identifier)
         else:
-            sub_class = get_service(srv_type)
-        request_class = None
-        if is_action:
-            if is_action_result:
-                request_class = sub_class.Result
-            elif is_action_goal:
-                request_class = sub_class.Goal
+            action_class = get_action(normalized_identifier)
+
+        if is_action_result:
+            request_class = action_class.Result
+        elif is_action_goal:
+            request_class = action_class.Goal
+        elif is_action_feedback:
+            request_class = action_class.Feedback
         else:
-            request_class = sub_class.Request
-        return request_class, sub_class if is_action else None
+            request_class = action_class
+        return action_class, request_class
 
     def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
-        Log.debug(
-            f"{self.__class__.__name__}: Request to [ros.launch.get_srv_struct]: srv [{srv_type}]")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.get_srv_struct]: srv [{srv_type}]")
         result = LaunchMessageStruct(srv_type)
         try:
-            request_class, action_class = self._get_srv_class(srv_type)
+            if self._is_action_type(srv_type):
+                action_class, request_class = self._get_action_types(srv_type)
+            else:
+                request_class = get_service(srv_type).Request
             if not hasattr(request_class, 'get_fields_and_field_types'):
                 result.error_msg = f"unexpected service class: '{request_class}', no 'get_fields_and_field_types' attribute found!"
                 return json.dumps(result, cls=SelfEncoder)
@@ -950,35 +922,28 @@ class LaunchServicer(LoggingEventHandler):
 
     def call_service(self, request_json: LaunchCallService) -> None:
         # Convert input dictionary into a proper python object
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.launch.call_service]: {request_json}")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.launch.call_service]: {request_json}")
         request = request_json
         result = LaunchMessageStruct(request.srv_type)
         try:
-            request_class, action_class = self._get_srv_class(request.srv_type)
-            # create request message
-            service_request = request_class()
-            try:
+            # action looks like a service, but need a special handling
+            if self._is_action_type(request.srv_type) or request.service_name.find("/_action/") != -1:
+                action_class, request_class = self._get_action_types(request.srv_type)
+                service_request = request_class()
+                data = json.loads(request.data)
+                response = nmd.launcher.call_action(request.service_name, action_class, service_request, 5)
+            else:
+                # call service
+                request_class = get_service(request.srv_type)
+                service_request = request_class.Request()
                 data = json.loads(request.data)
                 set_message_fields(service_request, self._str_from_dict(data))
-            except Exception as e:
-                import traceback
-                print(traceback.format_exc())
-                result.error_msg = 'Failed to populate field: {0}'.format(e)
-            try:
-                if action_class or request.service_name.find("/_action/") != -1:
-                    response = nmd.launcher.call_action(request.service_name, action_class, service_request, 5)
-                else:
-                    response = nmd.launcher.call_service(request.service_name, request_class, service_request, 5)
-            except Exception as e:
-                result.error_msg = 'Exception while calling service: %r' % e
-            else:
-                result.data = message_to_ordereddict(response)
-                result.valid = True
-        except Exception as err:
-            import traceback
-            print(traceback.format_exc())
-            result.error_msg = repr(err)
+                response = nmd.launcher.call_service(request.service_name, request_class, service_request, 5)
+        except Exception as e:
+            result.error_msg = 'Exception while calling service: %r' % e
+        else:
+            result.data = message_to_ordereddict(response)
+            result.valid = True
         finally:
             nmd.ros_node.destroy_client(request.service_name)
         return json.dumps(result, cls=SelfEncoder)
