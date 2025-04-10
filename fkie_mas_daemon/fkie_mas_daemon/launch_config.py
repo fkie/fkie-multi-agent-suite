@@ -118,8 +118,8 @@ def perform_to_tuple_list(context: launch.LaunchContext, value: Union[List[Tuple
 
 class LaunchNodeWrapper(LaunchNodeInfo):
 
-    _unique_names: Set[str] = set()
-    _remapped_names: Dict[str, Set[str]] = {}
+    # _unique_names: Set[str] = set()
+    # _remapped_names: Dict[str, Set[str]] = {}
 
     def __init__(self, entity: launch.actions.ExecuteProcess, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext, composable_container: str = None, environment: Dict = {}, position_in_file=0) -> None:
         self._entity = entity
@@ -264,15 +264,15 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                 "endColumn": end_column,
             }
 
-    def __del__(self):
-        try:
-            LaunchNodeWrapper._unique_names.remove(self.unique_name)
-            Log.debug(f"removed from unique {self.unique_name}")
-        except (ValueError, KeyError):
-            # remove index
-            LaunchNodeWrapper._remapped_names[self.node_name].remove(
-                self.unique_name)
-            Log.debug(f"removed from remapped {self.unique_name}")
+    # def __del__(self):
+    #     try:
+    #         LaunchNodeWrapper._unique_names.remove(self.unique_name)
+    #         Log.debug(f"removed from unique {self.unique_name}")
+    #     except (ValueError, KeyError):
+    #         # remove index
+    #         LaunchNodeWrapper._remapped_names[self.node_name].remove(
+    #             self.unique_name)
+    #         Log.debug(f"removed from remapped {self.unique_name}")
 
     def _get_node_executable(self):
         if getattr(self, 'executable', ''):
@@ -367,21 +367,24 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                      (type(self._entity), dir(self._entity)))
         # check for unique name
         unique_name = result
-        if result in LaunchNodeWrapper._unique_names:
-            # the name already exists! create a unique one
-            name_set = set()
-            if result in LaunchNodeWrapper._remapped_names:
-                name_set = LaunchNodeWrapper._remapped_names[result]
-            else:
-                LaunchNodeWrapper._remapped_names[result] = name_set
-            index = 2
-            unique_name = f"{result}_{index}"
-            while unique_name in name_set:
-                index += 1
-                unique_name = f"{result}_{index}"
-            name_set.add(unique_name)
-        else:
-            LaunchNodeWrapper._unique_names.add(result)
+        # remove unique name generation... it cause problems while reload launch file
+        # since we need the node to detect changes, the nodes from new launch file increase the index
+
+        # if result in LaunchNodeWrapper._unique_names:
+        #     # the name already exists! create a unique one
+        #     name_set = set()
+        #     if result in LaunchNodeWrapper._remapped_names:
+        #         name_set = LaunchNodeWrapper._remapped_names[result]
+        #     else:
+        #         LaunchNodeWrapper._remapped_names[result] = name_set
+        #     index = 2
+        #     unique_name = f"{result}_{index}"
+        #     while unique_name in name_set:
+        #         index += 1
+        #         unique_name = f"{result}_{index}"
+        #     name_set.add(unique_name)
+        # else:
+        #     LaunchNodeWrapper._unique_names.add(result)
         Log.info(f"create node wrapper with name '{result}'")
         return (result, unique_name, name_configured)
 
