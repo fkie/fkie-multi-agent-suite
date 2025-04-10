@@ -47,8 +47,9 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   const [currentArgs, setCurrentArgs] = useState<LaunchArgumentWithHistory[]>([]);
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const getLaunchFile = useCallback(
-    async function (file: string): Promise<void> {
+    async (file: string): Promise<void> => {
       const provider = rosCtx.getProviderById(selectedProvider, true);
       if (!provider || !provider.isAvailable()) return;
 
@@ -97,24 +98,26 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
 
           // set default values to arguments in form
           const argList: LaunchArgumentWithHistory[] = [];
-          result.args?.forEach((arg) => {
-            const argValue: string = !arg.value ? (arg.default_value as string) : arg.value;
-            let historyList = argHistory[arg.name];
-            if (historyList === undefined) {
-              historyList = [];
-              // historyList = options.filter((value) => value !== argValue);
+          if (result.args) {
+            for (const arg of result.args) {
+              const argValue: string = !arg.value ? (arg.default_value as string) : arg.value;
+              let historyList = argHistory[arg.name];
+              if (historyList === undefined) {
+                historyList = [];
+                // historyList = options.filter((value) => value !== argValue);
+              }
+              // complement history with initial values in case they have never been used
+              historyList = [...new Set([...historyList, argValue])];
+              argList.push({
+                name: arg.name,
+                value: argValue || "",
+                history: historyList,
+                choices: arg.choices,
+                default_value: undefined,
+                description: undefined,
+              });
             }
-            // complement history with initial values in case they have never been used
-            historyList = [...new Set([...historyList, argValue])];
-            argList.push({
-              name: arg.name,
-              value: argValue || "",
-              history: historyList,
-              choices: arg.choices,
-              default_value: undefined,
-              description: undefined,
-            });
-          });
+          }
           setCurrentArgs(argList);
 
           setMessageLaunchLoaded("");
@@ -161,96 +164,95 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   );
 
   // The user clicked on launch, fill arguments a make a request to provider
-  const launchSelectedFile = useCallback(
-    async function (): Promise<void> {
-      if (!selectedLaunch) return;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  const launchSelectedFile = useCallback(async (): Promise<void> => {
+    if (!selectedLaunch) return;
 
-      const provider = rosCtx.getProviderById(selectedProvider, true);
-      if (!provider || !provider.isAvailable()) return;
+    const provider = rosCtx.getProviderById(selectedProvider, true);
+    if (!provider || !provider.isAvailable()) return;
 
-      if (provider.launchLoadFile) {
-        /*
-         * ros_package -
-         * launch - Launch file in the package path.
-         * path - if set, this will be used instead of package/launch
-         * @param {LaunchArgument[]} args - Arguments to load the launch file.
-         * @param {boolean} force_first_file - If True, use first file if more than one was found in the package.
-         * @param {boolean} request_args - If True, the launch file will not be loaded, only launch arguments are requested.
-         * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
-         * host - Start nodes of this file on specified host.
-         * */
-        const rosPackage = ""; // ROS package name.
-        const launch = ""; // Launch file in the package path.
-        const path = selectedLaunch.paths && selectedLaunch.paths.length > 0 ? selectedLaunch.paths[0] : "";
-        const forceFirstFile = true;
-        const requestArgs = false;
+    if (provider.launchLoadFile) {
+      /*
+       * ros_package -
+       * launch - Launch file in the package path.
+       * path - if set, this will be used instead of package/launch
+       * @param {LaunchArgument[]} args - Arguments to load the launch file.
+       * @param {boolean} force_first_file - If True, use first file if more than one was found in the package.
+       * @param {boolean} request_args - If True, the launch file will not be loaded, only launch arguments are requested.
+       * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
+       * host - Start nodes of this file on specified host.
+       * */
+      const rosPackage = ""; // ROS package name.
+      const launch = ""; // Launch file in the package path.
+      const path = selectedLaunch.paths && selectedLaunch.paths.length > 0 ? selectedLaunch.paths[0] : "";
+      const forceFirstFile = true;
+      const requestArgs = false;
 
-        // fill arguments
-        const args: LaunchArgument[] = [];
+      // fill arguments
+      const args: LaunchArgument[] = [];
 
-        currentArgs.forEach((arg) => {
-          args.push(new LaunchArgument(arg.name, arg.value));
-          // update history
-          let hList: string[] = argHistory[arg.name];
-          if (hList !== undefined) {
-            hList = hList.filter((value) => value != null && `${value}`.length > 0 && value !== arg.value);
-          } else {
-            hList = [];
-          }
-          hList.unshift(arg.value);
-          hList = hList.slice(0, 10);
-          argHistory[arg.name] = hList;
-        });
-        setArgHistory({ ...argHistory });
-
-        const request = new LaunchLoadRequest(
-          rosPackage,
-          launch,
-          path,
-          args,
-          forceFirstFile,
-          requestArgs,
-          provider.rosState.masteruri ? provider.rosState.masteruri : "",
-          provider.host()
-        );
-
-        const resultLaunchLoadFile = await provider.launchLoadFile(request, false);
-
-        if (!resultLaunchLoadFile) {
-          logCtx.error(
-            `Invalid response for [launchLoadFile], check DAEMON screen output`,
-            "Please check your provider configuration"
-          );
-        } else if (resultLaunchLoadFile.status.code === "OK") {
-          setOpen(false);
-          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
-        } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
-          setMessageLaunchLoaded("Please fill all arguments");
+      for (const arg of currentArgs) {
+        args.push(new LaunchArgument(arg.name, arg.value));
+        // update history
+        let hList: string[] = argHistory[arg.name];
+        if (hList !== undefined) {
+          hList = hList.filter((value) => value != null && `${value}`.length > 0 && value !== arg.value);
         } else {
-          setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
-          logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`);
+          hList = [];
         }
-      } else {
+        hList.unshift(arg.value);
+        hList = hList.slice(0, 10);
+        argHistory[arg.name] = hList;
+      }
+      setArgHistory({ ...argHistory });
+
+      const request = new LaunchLoadRequest(
+        rosPackage,
+        launch,
+        path,
+        args,
+        forceFirstFile,
+        requestArgs,
+        provider.rosState.masteruri ? provider.rosState.masteruri : "",
+        provider.host()
+      );
+
+      const resultLaunchLoadFile = await provider.launchLoadFile(request, false);
+
+      if (!resultLaunchLoadFile) {
         logCtx.error(
-          `The provider [${selectedProvider}] does not support [launchLoadFile]`,
+          "Invalid response for [launchLoadFile], check DAEMON screen output",
           "Please check your provider configuration"
         );
+      } else if (resultLaunchLoadFile.status.code === "OK") {
+        setOpen(false);
+        logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+      } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
+        setMessageLaunchLoaded("Please fill all arguments");
+      } else {
+        setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
+        logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`);
       }
+    } else {
+      logCtx.error(
+        `The provider [${selectedProvider}] does not support [launchLoadFile]`,
+        "Please check your provider configuration"
+      );
+    }
 
-      // clear launch objects
-      setSelectedLaunch(null);
-      setSelectedLaunchFile(undefined);
+    // clear launch objects
+    setSelectedLaunch(null);
+    setSelectedLaunchFile(undefined);
 
-      onLaunchCallback();
+    onLaunchCallback();
 
-      // trigger node's update (will force a reload using useEffect hook)
-      // rosCtx.updateNodeList(provider.name());
-      // rosCtx.updateLaunchList(provider.name());
-    },
-    [currentArgs, argHistory, selectedLaunch, selectedProvider, setSelectedLaunchFile, setArgHistory]
-  );
+    // trigger node's update (will force a reload using useEffect hook)
+    // rosCtx.updateNodeList(provider.name());
+    // rosCtx.updateLaunchList(provider.name());
+  }, [currentArgs, argHistory, selectedLaunch, selectedProvider, logCtx.success, setSelectedLaunchFile, setArgHistory]);
 
   // Request file and load arguments
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     getLaunchFile(selectedLaunchFile.path);
   }, [selectedLaunchFile]);
@@ -261,9 +263,9 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   }
 
   const deleteHistoryOption = useCallback(
-    function (argName: string, option: string): void {
-      setCurrentArgs(
-        currentArgs.map((arg) => {
+    (argName: string, option: string): void => {
+      setCurrentArgs((prev) =>
+        prev.map((arg) => {
           if (arg.name === argName) {
             arg.history = arg.history.filter((value) => value !== option);
           }
@@ -281,11 +283,11 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       }
       setArgHistory(newHistory);
     },
-    [argHistory, currentArgs, setArgHistory, setCurrentArgs]
+    [argHistory, setArgHistory]
   );
 
   const openFileDialog = useCallback(
-    async function (argName: string, argValue: string): Promise<void> {
+    async (argName: string, argValue: string): Promise<void> => {
       let defaultPath = lastOpenPath;
       if (!defaultPath && argValue.startsWith("/")) {
         defaultPath = argValue;
@@ -352,7 +354,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
             <Stack>
               {currentArgs.map((arg) => {
                 const optionsTmp = arg.choices ? arg.choices : arg.history;
-                const options = optionsTmp.map((value) => (value ? value : ""));
+                const options = optionsTmp.filter((value) => value);
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
                     {options.length > 1 && (
@@ -510,7 +512,6 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       </DialogContent>
       <DialogActions>
         <Button
-          autoFocus
           onClick={() => {
             setOpen(false);
             setSelectedLaunch(null);
@@ -518,7 +519,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
         >
           Cancel
         </Button>
-        <Button color="success" variant="contained" onClick={launchSelectedFile}>
+        <Button autoFocus color="success" variant="contained" onClick={launchSelectedFile}>
           Load
         </Button>
       </DialogActions>
