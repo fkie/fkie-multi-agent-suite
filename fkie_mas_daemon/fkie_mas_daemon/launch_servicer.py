@@ -441,18 +441,66 @@ class LaunchServicer(LoggingEventHandler):
             old_launch = self._loaded_files[cfgid]
             try:
                 self._remove_launch_from_observer(old_launch)
-                old_launch.unload()
                 # use argv from already open file
                 launch_context = LaunchContext(argv=sys.argv[1:])
                 launch_config = LaunchConfig(
                     old_launch.filename, context=launch_context, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
                 self._loaded_files[cfgid] = launch_config
-                # stored_roscfg = cfg.roscfg
-                # argv = cfg.argv
-                # cfg.load(argv)
                 result.status.code = 'OK'
-                # TODO: added change detection for nodes parameters
-                # notify GUI about changes
+                # change detection for nodes parameters
+                old_nodes = old_launch.nodes()
+                new_nodes = launch_config.nodes()
+                nodes2start = []
+                for new_node in new_nodes:
+                    found = False
+                    for old_node in old_nodes:
+                        if new_node.node_name == old_node.node_name:
+                            found = True
+                            if new_node.env and old_node.env:
+                                if len(set(new_node.env.values()) - set(old_node.env.values())) > 0:
+                                    nodes2start.append(new_node.node_name)
+                                    break
+                            if new_node.launch_prefix != old_node.launch_prefix:
+                                nodes2start.append(new_node.node_name)
+                                break
+                            if new_node.cmd != old_node.cmd:
+                                new_matches = re.findall(r'--params-file\s+([^\s]+)', new_node.cmd)
+                                old_matches = re.findall(r'--params-file\s+([^\s]+)', old_node.cmd)
+                                if len(new_matches) != len(old_matches):
+                                    nodes2start.append(new_node.node_name)
+                                    break
+                                else:
+                                    normalized_new_cmd = new_node.cmd
+                                    normalized_old_cmd = old_node.cmd
+                                    added = False
+                                    # we need to compare the content of the parameter files
+                                    for a,b in zip(new_matches, old_matches):
+                                        content1 = ""
+                                        content2 = ""
+                                        with open(a, 'r') as f1, open(b, 'r') as f2:
+                                            content1 = f1.read()
+                                            content2 = f2.read()
+                                        if content1 != content2:
+                                            nodes2start.append(new_node.node_name)
+                                            added = True
+                                            break
+                                        else:
+                                            normalized_new_cmd = normalized_new_cmd.replace(a, '')
+                                            normalized_old_cmd = normalized_old_cmd.replace(b, '')
+                                    if not added and normalized_new_cmd != normalized_old_cmd:
+                                        nodes2start.append(new_node.node_name)
+                                        break
+                            if new_node.additional_env and old_node.additional_env:
+                                if len(set(new_node.additional_env.values()) - set(old_node.additional_env.values())) > 0:
+                                    nodes2start.append(new_node.node_name)
+                                    break
+                    if not found:
+                        nodes2start.append(new_node.node_name)
+                # filter out anonymous nodes
+                for n in nodes2start:
+                    if not re.search(r"\d{3,6}_\d{10,}", n):
+                        result.changed_nodes.append(n)                # notify GUI about changes
+                old_launch.unload()
                 self.websocket.publish('ros.launch.changed', {
                                        'path': request.path, 'action': 'reloaded'})
                 self._add_launch_to_observer(launch_config)
@@ -535,7 +583,6 @@ class LaunchServicer(LoggingEventHandler):
         # Covert input dictionary into a proper python object
         request = request_json
         result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
-
         try:
             launch_configs = []
             if request.opt_launch:
