@@ -74,6 +74,7 @@ class RosStateServicer:
         self._force_refresh = False
         self._ts_state_updated = 0
         self._ts_state_notified = 0
+        self._last_seen_participant_count = 0
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
         self._on_shutdown = False
@@ -158,8 +159,18 @@ class RosStateServicer:
                 if self._ts_state_updated > self._ts_state_notified:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                         update_ros_state = True
+            send_notification = False
+            participant_count = None
             # as some services are called during the update, it may take some time
             if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
+                send_notification = True
+            else:
+                participant_count = len(nmd.ros_node.get_node_names())
+                if self._last_seen_participant_count != participant_count:
+                    send_notification = True
+            if send_notification:
+                if participant_count is not None:
+                    self._last_seen_participant_count = participant_count
                 self._force_refresh = False
                 # trigger screen servicer to update
                 nmd.launcher.server.screen_servicer.system_change()

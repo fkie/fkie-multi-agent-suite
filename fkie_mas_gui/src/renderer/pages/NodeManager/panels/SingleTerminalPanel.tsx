@@ -34,12 +34,13 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
     const [errorHighlighting, setErrorHighlighting] = useState(false);
     const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
       setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     }, [settingsCtx.changed]);
 
     const initializeTerminal = useCallback(
-      async (newScreen: string = "") => {
+      async (newScreen = "") => {
         // get current provider
         const provider: Provider | undefined = rosCtx.getProviderById(providerId);
 
@@ -68,25 +69,29 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
     const updateScreenName = useCallback(() => {
       // node changed, update the screen for the current node
       if (nodeName && type === CmdType.SCREEN) {
-        rosCtx.mapProviderRosNodes.get(providerId)?.forEach((n) => {
-          if (n.name === nodeName) {
-            // TODO: How to handle multiple screens? For now just do this for nodes with a single screen.
-            if (n.screens && n.screens.length > 0) {
-              setErrorHighlighting(false);
-              if (n.screens[0] !== screen && n.screens[0] !== lastScreenUsed) {
-                // screen changed, reload the component
-                // [lastScreenUsed] prevents unnecessary reloads
-                setInitialCommands(() => []);
-                initializeTerminal(n.screens[0]);
-              }
-            } else if (!n.screens || n.screens.length === 0) {
-              // Open Log if no screen is available
-              setInitialCommands(() => []);
-              initializeTerminal("");
-              setErrorHighlighting(true);
+        const nodes = rosCtx.mapProviderRosNodes.get(providerId);
+        const screens: string[] = [];
+        if (nodes) {
+          for (const n of nodes) {
+            if (n.name === nodeName && n.screens) {
+              screens.push(...n.screens);
             }
           }
-        });
+        }
+        if (!screens.includes(screen) && !screens.includes(lastScreenUsed)) {
+          if (screens.length > 0) {
+            // screen changed, reload the component
+            // [lastScreenUsed] prevents unnecessary reloads
+            setInitialCommands(() => []);
+            initializeTerminal(screens[0]);
+            setErrorHighlighting(false);
+          } else {
+            // Open Log if no screen is available
+            setInitialCommands(() => []);
+            initializeTerminal("");
+            setErrorHighlighting(true);
+          }
+        }
       }
     }, [initializeTerminal, lastScreenUsed, nodeName, providerId, rosCtx.mapProviderRosNodes, screen, type]);
 
@@ -97,22 +102,25 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
       if (ttydNodes && ttydNodes?.length > 0) {
         const splits = ttydNodes[0].name.split("-");
         if (splits && splits.length > 1) {
-          setTtydPort(parseInt(splits[1]));
+          setTtydPort(Number.parseInt(splits[1]));
         }
       }
-    }, [rosCtx.mapProviderRosNodes]);
+    }, [providerId, rosCtx.mapProviderRosNodes]);
 
     // load commands initially
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
       initializeTerminal(screen);
     }, []);
 
     // update the terminal every time the node screen changes
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
       updateScreenName();
       updateTTYDPort();
     }, [rosCtx.mapProviderRosNodes]);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     const getHostStyle = useCallback(
       function getHostStyle(): object {
         if (providerName && settingsCtx.get("colorizeHosts")) {
@@ -126,9 +134,10 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
         }
         return { flexGrow: 1, backgroundColor: backgroundColor };
       },
-      [providerName, settingsCtx.changed]
+      [providerName, backgroundColor, settingsCtx.changed]
     );
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     const createTerminalView = useMemo(() => {
       return (
         <Box ref={ref} key={id} width="100%" height="100%" overflow="auto" alignItems={"center"} sx={getHostStyle()}>
@@ -177,7 +186,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
               wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
               type={type}
               initialCommands={initialCommands}
-              name={`bash`}
+              name={"bash"}
               errorHighlighting={errorHighlighting}
               onCtrlD={() => {
                 window.terminalManager?.close(id);
@@ -193,7 +202,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
               provider={rosCtx.getProviderById(cmd)}
               wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
               initialCommands={initialCommands}
-              name={`bash`}
+              name={"bash"}
               errorHighlighting={errorHighlighting}
               onCtrlD={() => {
                 window.terminalManager?.close(id);
@@ -203,7 +212,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
           )}
         </Box>
       );
-    }, [cmd, currentHost, id, initialCommands, nodeName, providerId, settingsCtx, tokenUrl, type, ttydPort]);
+    }, [ref, cmd, currentHost, id, initialCommands, nodeName, providerId, tokenUrl, type, ttydPort, errorHighlighting]);
 
     return createTerminalView;
   }
