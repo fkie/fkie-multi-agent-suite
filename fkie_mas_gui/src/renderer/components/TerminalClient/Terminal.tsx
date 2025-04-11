@@ -81,6 +81,10 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private searchAddonOptions: ISearchOptions;
 
+  private searchLineNumberAddon: SearchAddon = new SearchAddon();
+
+  private searchLineNumberAddonOptions: ISearchOptions;
+
   private webglAddon: WebglAddon = new WebglAddon();
 
   private unicode11Addon = new Unicode11Addon();
@@ -134,6 +138,20 @@ export class Terminal extends React.Component<Props, XtermState> {
         activeMatchColorOverviewRuler: "#d81e00",
       },
     };
+    this.searchLineNumberAddonOptions = {
+      regex: true,
+      caseSensitive: false,
+
+      // decoration
+      decorations: {
+        matchBackground: "#004C99",
+        matchBorder: "#004C99",
+        matchOverviewRuler: "#004C99",
+        activeMatchBorder: "#004C99",
+        activeMatchBackground: "#004C99",
+        activeMatchColorOverviewRuler: "#004C99",
+      },
+    };
     // TODO Add setting for this parameter
     this.type = props.type;
     this.provider = props.provider;
@@ -165,10 +183,11 @@ export class Terminal extends React.Component<Props, XtermState> {
     termOptions.allowProposedApi = true;
     this.terminal = new XTerminal(termOptions);
 
-    const { terminal, fitAddon, searchAddon, webglAddon, unicode11Addon } = this;
+    const { terminal, fitAddon, searchAddon, searchLineNumberAddon, webglAddon, unicode11Addon } = this;
 
     terminal.loadAddon(fitAddon);
     terminal.loadAddon(searchAddon);
+    terminal.loadAddon(searchLineNumberAddon);
     terminal.loadAddon(new WebLinksAddon());
     terminal.loadAddon(unicode11Addon);
     webglAddon.onContextLoss((/*event*/) => {
@@ -380,6 +399,9 @@ export class Terminal extends React.Component<Props, XtermState> {
       this.terminal?.focus();
       this.gotFocus = true;
     }
+    // search for all numbers of the format ':1234:' or ': 1234:'
+    const { searchLineNumberAddon, searchLineNumberAddonOptions } = this;
+    searchLineNumberAddon.findNext(/(?::+\s*)(\d+)(?::+)/.source, searchLineNumberAddonOptions);
   }
 
   render(): JSX.Element {
