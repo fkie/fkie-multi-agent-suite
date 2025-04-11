@@ -1,5 +1,17 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { Box, Grid2, IconButton, Input, Slider, Stack, Switch, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Grid2,
+  IconButton,
+  Input,
+  Menu,
+  MenuItem,
+  Slider,
+  Stack,
+  Switch,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -41,11 +53,13 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");
   const [showDescription, setShowDescription] = useState<boolean>(false);
+  const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
   function updateValue(val: string | number | boolean | string[]): void {
     setValue(fixStringArray(val));
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (!paramInfo.name) return;
     const nameParts = paramInfo.name.replaceAll("/", ".").replaceAll("..", ".").split(".");
@@ -60,9 +74,10 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
   function toTypedValue(value): string | number | boolean | string[] {
     if (paramInfo.type === "float") {
-      return parseFloat(value) || 0.0;
-    } else if (paramInfo.type === "int") {
-      return parseInt(value) | 0;
+      return Number.parseFloat(value) || 0.0;
+    }
+    if (paramInfo.type === "int") {
+      return Number.parseInt(value) | 0;
     }
     return value;
   }
@@ -254,26 +269,25 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             />
           </Stack>
         );
-      } else {
-        inputElement = (
-          <Input
-            type="number"
-            id={`input-${paramInfo.id}`}
-            size="small"
-            value={value}
-            placeholder={JSON.stringify(value)}
-            // InputProps={{ inputProps: { min: 0, max: 99 } }}
-            fullWidth
-            inputProps={{
-              type: "number",
-            }}
-            disabled={paramInfo.readonly}
-            onChange={(event) => handleChange(event)}
-            onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
-            onBlur={() => onLeave()}
-          />
-        );
       }
+      inputElement = (
+        <Input
+          type="number"
+          id={`input-${paramInfo.id}`}
+          size="small"
+          value={value}
+          placeholder={JSON.stringify(value)}
+          // InputProps={{ inputProps: { min: 0, max: 99 } }}
+          fullWidth
+          inputProps={{
+            type: "number",
+          }}
+          disabled={paramInfo.readonly}
+          onChange={(event) => handleChange(event)}
+          onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
+          onBlur={() => onLeave()}
+        />
+      );
     } else if (["list", "str[]", "int[]", "float[]", "bool[]"].includes(parameterType)) {
       // TODO: show proper list/arrays
       inputElement = (
@@ -293,7 +307,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
       inputElement = (
         <Switch
           id={`input-${paramInfo.id}`}
-          checked={typedValue ? true : false}
+          checked={!!typedValue}
           size="small"
           disabled={paramInfo.readonly}
           onChange={(event) => {
@@ -321,7 +335,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     }
 
     return inputElement;
-  }, [paramInfo, value, typedValue]);
+  }, [paramInfo, value, typedValue, parameterType]);
 
   return (
     <StyledTreeItem
@@ -341,6 +355,17 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             if (!["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Tab"].includes(e.key)) {
               e.stopPropagation();
             }
+          }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            setContextMenu(
+              contextMenu === null
+                ? {
+                    mouseX: event.clientX + 2,
+                    mouseY: event.clientY - 6,
+                  }
+                : null
+            );
           }}
         >
           <Grid2 container spacing={2} sx={{ flexGrow: 1 }}>
@@ -430,6 +455,31 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
               </Stack>
             </Grid2>
           </Grid2>
+          <Menu
+            open={contextMenu != null}
+            onClose={() => setContextMenu(null)}
+            anchorReference="anchorPosition"
+            anchorPosition={contextMenu != null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
+          >
+            <MenuItem
+              sx={{ fontSize: "0.8em" }}
+              onClick={async () => {
+                navigator.clipboard.writeText(paramInfo.name);
+                setContextMenu(null);
+              }}
+            >
+              Copy parameter name
+            </MenuItem>
+            <MenuItem
+              sx={{ fontSize: "0.8em" }}
+              onClick={async () => {
+                navigator.clipboard.writeText(JSON.stringify(paramInfo.value));
+                setContextMenu(null);
+              }}
+            >
+              Copy parameter value
+            </MenuItem>
+          </Menu>
         </Box>
       }
     />
