@@ -53,6 +53,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
     [settingsCtx.changed]
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     // update state variables to show/hide extended info
     if (selectedItem !== itemId) {
@@ -66,20 +67,26 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
       }
       setSelected(true);
     }
-  }, [selectedItem]);
+  }, [selectedItem /** selected, itemId, showExtendedInfo */]);
 
   useEffect(() => {
     const nameParts = topicInfo.name.split("/");
     setName(`${nameParts.pop()}`);
     setNamespace(rootPath ? `${rootPath}/` : rootPath ? "" : "");
     const inQos: IncompatibleQos[] = [];
-    topicInfo?.subscribers
-      .filter((sub) => sub.info.incompatible_qos && sub.info.incompatible_qos.length > 0)
-      .forEach((sub) => {
-        sub.info.incompatible_qos?.forEach((item) => inQos.push(item));
-      });
+
+    const subscribersWithInCQos = topicInfo?.subscribers.filter(
+      (sub) => sub.info.incompatible_qos && sub.info.incompatible_qos.length > 0
+    );
+    for (const sub of subscribersWithInCQos) {
+      if (sub.info.incompatible_qos) {
+        for (const item of sub.info.incompatible_qos) {
+          inQos.push(item);
+        }
+      }
+    }
     setIncompatibleQos(inQos);
-  }, [topicInfo]);
+  }, [topicInfo, rootPath]);
 
   function addQosValue(
     value: string | number | undefined,
@@ -99,15 +106,16 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createReliabilityItem = useMemo((): JSX.Element => {
     const values: { [key: string]: { nodeId: string; type: string }[] } = {};
 
-    topicInfo.publishers.forEach((pub) => {
+    for (const pub of topicInfo.publishers) {
       addQosValue(pub.info.qos?.reliability, pub.info.node_id, "pub", values);
-    });
-    topicInfo.subscribers.forEach((sub) => {
+    }
+    for (const sub of topicInfo.subscribers) {
       addQosValue(sub.info.qos?.reliability, sub.info.node_id, "sub", values);
-    });
+    }
     let index = 0;
     return (
       <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
@@ -124,7 +132,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                 </Typography>
               )}
               <Typography variant="body2" color="inherit">
-                {reliabilityToString(parseInt(key))}
+                {reliabilityToString(Number.parseInt(key))}
               </Typography>
               {index > 1 && (
                 <Typography variant="body2" color="inherit">
@@ -138,15 +146,16 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
     );
   }, [topicInfo]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createDurabilityItem = useMemo((): JSX.Element => {
     const values: { [key: string]: { nodeId: string; type: string }[] } = {};
 
-    topicInfo.publishers.forEach((pub) => {
+    for (const pub of topicInfo.publishers) {
       addQosValue(pub.info.qos?.durability, pub.info.node_id, "pub", values);
-    });
-    topicInfo.subscribers.forEach((sub) => {
+    }
+    for (const sub of topicInfo.subscribers) {
       addQosValue(sub.info.qos?.durability, sub.info.node_id, "sub", values);
-    });
+    }
     let index = 0;
     return (
       <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
@@ -158,7 +167,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
           return (
             <Stack key={`qos-durability-${key}`} direction="row" spacing={"0.2em"}>
               <Typography variant="body2" color="inherit">
-                {durabilityToString(parseInt(key))}
+                {durabilityToString(Number.parseInt(key))}
               </Typography>
               {index > 1 && (
                 <Typography variant="body2" color="inherit">
@@ -172,15 +181,16 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
     );
   }, [topicInfo]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createLivelinessItem = useMemo((): JSX.Element => {
     const values: { [key: string]: { nodeId: string; type: string }[] } = {};
 
-    topicInfo.publishers.forEach((pub) => {
+    for (const pub of topicInfo.publishers) {
       addQosValue(pub.info.qos?.liveliness, pub.info.node_id, "pub", values);
-    });
-    topicInfo.subscribers.forEach((sub) => {
+    }
+    for (const sub of topicInfo.subscribers) {
       addQosValue(sub.info.qos?.liveliness, sub.info.node_id, "sub", values);
-    });
+    }
     let index = 0;
     return (
       <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
@@ -192,7 +202,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
           return (
             <Stack key={`qos-liveliness-${key}`} direction="row" spacing={"0.2em"}>
               <Typography variant="body2" color="inherit">
-                {livelinessToString(parseInt(key))}
+                {livelinessToString(Number.parseInt(key))}
               </Typography>
               {index > 1 && (
                 <Typography variant="body2" color="inherit">
@@ -269,7 +279,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                   {name}
                 </Typography>
                 {incompatibleQos.length > 0 && (
-                  <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
+                  <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
                     <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
                   </Tooltip>
                 )}

@@ -13,7 +13,7 @@ interface StringInputProps {
 export default function StringInput(props: StringInputProps): JSX.Element {
   const { id, messageStruct, filterText = "" } = props;
 
-  const [historyStruct, setHistoryStruct] = useLocalStorage(`MessageStruct:history`, {});
+  const [historyStruct, setHistoryStruct] = useLocalStorage("MessageStruct:history", {});
   const [history, setHistory] = useState<string[]>([]);
   const [value, setValue] = useState<string>(messageStruct?.value ? (messageStruct.value as string) : "");
   const [isVisible, setVisible] = useState<string>("");

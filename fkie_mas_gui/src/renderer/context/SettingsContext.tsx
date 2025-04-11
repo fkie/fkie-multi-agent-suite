@@ -309,7 +309,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
           new RegExp(`/(${item})/`);
           return true;
         } catch (error) {
-          console.log(`error while test`);
+          console.log("error while test");
         }
         return false;
       });

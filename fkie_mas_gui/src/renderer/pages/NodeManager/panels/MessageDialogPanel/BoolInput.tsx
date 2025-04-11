@@ -16,7 +16,7 @@ export default function BoolInput(props: BoolInputProps): JSX.Element {
 
   useEffect(() => {
     if (messageStruct?.value !== undefined) {
-      if (typeof messageStruct.value == "boolean") {
+      if (typeof messageStruct.value === "boolean") {
         setValue(messageStruct.value);
       } else {
         setValue(messageStruct.value as string);
