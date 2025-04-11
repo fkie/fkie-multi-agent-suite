@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.2.16 - 11.04.2025
+
+Added context menu to parameter items
+Added colorization for line numbers in terminal tab
+
 ## 4.2.15 - 10.04.2025
 
 Added middle click on node to open screen
