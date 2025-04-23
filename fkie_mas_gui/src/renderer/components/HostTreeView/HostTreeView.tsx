@@ -607,7 +607,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           key={itemId}
           itemId={itemId}
           groupName={`${namespacePart}${name}`}
-          icon={GroupIcon(children, settingsCtx.get("useDarkMode") as boolean)}
+          icon={<GroupIcon treeItems={children} isDarkMode={settingsCtx.get("useDarkMode") as boolean} />}
           countChildren={NodesCount(children)}
           onDoubleClick={(event: React.MouseEvent, id: string) => {
             handleDoubleClick(event, id);
