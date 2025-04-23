@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 import { JSONObject } from "@/types";
+import RosQos from "./RosQos";
 
 /**
  * LaunchPublishMessage models the message to publish to a ROS topic.
@@ -50,6 +51,11 @@ export default class LaunchPublishMessage {
    */
   substitute_keywords: boolean;
 
+  /**
+   * Quality of service subscription options (Only ROS2).
+   */
+  qos: RosQos | undefined;
+
   constructor(
     topic_name: string,
     msg_type: string,
@@ -59,7 +65,8 @@ export default class LaunchPublishMessage {
     latched: boolean,
     verbose: boolean,
     use_rostime: boolean,
-    substitute_keywords: boolean
+    substitute_keywords: boolean,
+    qos: RosQos = new RosQos()
   ) {
     this.topic_name = topic_name;
     this.msg_type = msg_type;
@@ -70,5 +77,6 @@ export default class LaunchPublishMessage {
     this.verbose = verbose;
     this.use_rostime = use_rostime;
     this.substitute_keywords = substitute_keywords;
+    this.qos = qos;
   }
 }

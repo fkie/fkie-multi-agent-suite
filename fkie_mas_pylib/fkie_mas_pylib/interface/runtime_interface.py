@@ -111,6 +111,7 @@ class RosQos:
         self.lifespan = lifespan
         self.avoid_ros_namespace_conventions = avoid_ros_namespace_conventions
 
+    @staticmethod
     def reliabilityToString(value: int) -> str:
         if value == RosQos.RELIABILITY.SYSTEM_DEFAULT:
             return "system_default"
@@ -120,6 +121,7 @@ class RosQos:
             return "best_effort"
         return "best_available"
 
+    @staticmethod
     def durabilityToString(value: int) -> str:
         if value == RosQos.DURABILITY.SYSTEM_DEFAULT:
             return "system_default"
@@ -129,6 +131,7 @@ class RosQos:
             return "volatile"
         return "best_available"
 
+    @staticmethod
     def livelinessToString(value: int) -> str:
         if value == RosQos.LIVELINESS.SYSTEM_DEFAULT:
             return "system_default"
@@ -139,8 +142,18 @@ class RosQos:
         if value == RosQos.LIVELINESS.MANUAL_BY_TOPIC:
             return "manual_by_topic"
         return "best_available"
-    
 
+    @staticmethod
+    def historyToString(value: int) -> str:
+        if value == RosQos.HISTORY.SYSTEM_DEFAULT:
+            return "system_default"
+        if value == RosQos.HISTORY.KEEP_LAST:
+            return "keep_last"
+        if value == RosQos.HISTORY.KEEP_ALL:
+            return "keep_all"
+        if value == RosQos.HISTORY.UNKNOWN:
+            return "unknown"
+        return "unknown"
 
 class IncompatibleQos:
     def __init__(self, node_id: str, compatibility: str, reason: str) -> None:

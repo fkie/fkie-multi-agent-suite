@@ -85,7 +85,7 @@ export default class RosQos {
 
   deadline: RosDuration;
 
-  lease_duration: RosDuration;
+  liveliness_lease_duration: RosDuration;
 
   lifespan: RosDuration;
 
@@ -96,7 +96,7 @@ export default class RosQos {
     liveliness: number = LIVELINESS.SYSTEM_DEFAULT,
     reliability: number = RELIABILITY.RELIABLE,
     deadline: RosDuration = new RosDuration(),
-    lease_duration: RosDuration = new RosDuration(),
+    liveliness_lease_duration: RosDuration = new RosDuration(),
     lifespan: RosDuration = new RosDuration()
   ) {
     this.durability = durability;
@@ -105,45 +105,90 @@ export default class RosQos {
     this.liveliness = liveliness;
     this.reliability = reliability;
     this.deadline = deadline;
-    this.lease_duration = lease_duration;
+    this.liveliness_lease_duration = liveliness_lease_duration;
     this.lifespan = lifespan;
   }
+
+  toString(): string {
+    let result = "";
+    if (this.depth != 10) {
+      result += `--qos-depth ${this.depth} `;
+    }
+    if (this.durability < DURABILITY.UNKNOWN) {
+      result += `--qos-durability ${durabilityToString(this.durability)} `;
+    }
+    if (this.reliability < RELIABILITY.UNKNOWN) {
+      result += `--qos-reliability ${reliabilityToString(this.reliability)} `;
+    }
+    if (this.liveliness < LIVELINESS.UNKNOWN) {
+      result += `--qos-liveliness ${livelinessToString(this.liveliness)} `;
+    }
+    if (this.history < HISTORY.UNKNOWN) {
+      result += `--qos-history ${historyToString(this.history)} `;
+    }
+    return result;
+  }
+}
+
+export function qosFromJson(obj: RosQos | undefined): RosQos {
+  if (obj) {
+    return new RosQos(
+      obj.durability | DURABILITY.VOLATILE,
+      obj.history | HISTORY.KEEP_LAST,
+      obj.depth | 10,
+      obj.liveliness | LIVELINESS.SYSTEM_DEFAULT,
+      obj.reliability | RELIABILITY.RELIABLE
+    );
+  }
+  return new RosQos();
 }
 
 export function reliabilityToString(value: number): string {
   switch (value) {
     case RELIABILITY.SYSTEM_DEFAULT:
-      return "SYSTEM_DEFAULT";
+      return "system_default";
     case RELIABILITY.RELIABLE:
-      return "RELIABLE";
+      return "reliable";
     case RELIABILITY.BEST_EFFORT:
-      return "BEST_EFFORT";
+      return "best_effort";
   }
-  return "UNKNOWN";
+  return "unknown";
 }
 
 export function durabilityToString(value: number): string {
   switch (value) {
     case DURABILITY.SYSTEM_DEFAULT:
-      return "SYSTEM_DEFAULT";
+      return "system_default";
     case DURABILITY.TRANSIENT_LOCAL:
-      return "TRANSIENT_LOCAL";
+      return "transient_local";
     case DURABILITY.VOLATILE:
-      return "VOLATILE";
+      return "volatile";
   }
-  return "UNKNOWN";
+  return "unknown";
 }
 
 export function livelinessToString(value: number): string {
   switch (value) {
     case LIVELINESS.SYSTEM_DEFAULT:
-      return "SYSTEM_DEFAULT";
+      return "system_default";
     case LIVELINESS.AUTOMATIC:
-      return "AUTOMATIC";
+      return "automatic";
     case LIVELINESS.MANUAL_BY_NODE:
-      return "MANUAL_BY_NODE";
+      return "manual_by_node";
     case LIVELINESS.MANUAL_BY_TOPIC:
-      return "MANUAL_BY_TOPIC";
+      return "manual_by_topic";
   }
-  return "UNKNOWN";
+  return "unknown";
+}
+
+export function historyToString(value: number): string {
+  switch (value) {
+    case HISTORY.SYSTEM_DEFAULT:
+      return "system_default";
+    case HISTORY.KEEP_LAST:
+      return "keep_last";
+    case HISTORY.KEEP_ALL:
+      return "keep_all";
+  }
+  return "unknown";
 }

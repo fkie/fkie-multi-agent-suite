@@ -29,7 +29,8 @@ import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
-import { LaunchPublishMessage, rosMessageStructToString, TRosMessageStruct } from "@/renderer/models";
+import { LaunchPublishMessage, rosMessageStructToString, RosQos, TRosMessageStruct } from "@/renderer/models";
+import { qosFromJson } from "@/renderer/models/RosQos";
 import { Provider } from "@/renderer/providers";
 import { JSONObject } from "@/types";
 import InputElements from "./MessageDialogPanel/InputElements";
@@ -160,7 +161,10 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   const onCopyToClipboard = useCallback((): void => {
     if (!messageStruct) return;
     const json: string = rosMessageStructToString(messageStruct, false, false) as string;
-    navigator.clipboard.writeText(`${currentTopicName} ${currentMessageType} '${json}'`);
+    const qos: RosQos | undefined = findQoSFromSub();
+    navigator.clipboard.writeText(
+      `${currentTopicName} ${qos ? qosFromJson(qos).toString() : ""} ${currentMessageType} '${json}'`
+    );
     logCtx.success(`message publish object copied!`);
   }, [messageStruct, currentTopicName, currentMessageType]);
 
@@ -308,6 +312,35 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     }
   }, [provider, rosCtx.mapProviderRosNodes, topicName]);
 
+  function findQoSFromSub(): RosQos | undefined {
+    // find first available subscriber with QoS
+    let qos: RosQos | undefined = undefined;
+    const topics = provider?.rosTopics || [];
+    for (const topic of topics) {
+      if (topic.name === currentTopicName) {
+        const subscribers = topic.subscriber || [];
+        for (const sub of subscribers) {
+          if (qos === undefined && sub.qos) {
+            qos = sub.qos;
+          }
+        }
+      }
+    }
+    if (!qos) {
+      for (const topic of topics) {
+        if (topic.name === currentTopicName) {
+          const publishers = topic.publisher || [];
+          for (const pub of publishers) {
+            if (qos === undefined && pub.qos) {
+              qos = pub.qos;
+            }
+          }
+        }
+      }
+    }
+    return qos;
+  }
+
   async function handleStartPublisher(): Promise<void> {
     if (!messageStruct) return;
     setStartPublisherDescription("Starting publisher...");
@@ -335,6 +368,9 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     if (!once && !latched) {
       rate = parseFloat(publishRate);
     }
+    // find first available subscriber with QoS
+    const qos: RosQos | undefined = findQoSFromSub();
+
     await provider?.publishMessage(
       new LaunchPublishMessage(
         currentTopicName,
@@ -345,7 +381,8 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
         latched,
         false,
         false,
-        substituteKeywords
+        substituteKeywords,
+        qos
       )
     );
     // close modal

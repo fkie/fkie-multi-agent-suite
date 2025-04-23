@@ -20,6 +20,7 @@ from numbers import Number
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
 from fkie_mas_pylib.interface import SelfEncoder
 from .runtime_interface import RosParameter
+from .runtime_interface import RosQos
 
 
 class LaunchReturnStatus:
@@ -467,7 +468,9 @@ class LaunchPublishMessage:
                  latched: bool = False,
                  verbose: bool = False,
                  use_rostime: bool = False,
-                 substitute_keywords: bool = True) -> None:
+                 substitute_keywords: bool = True,
+                 qos: RosQos = RosQos()
+                 ) -> None:
         '''
         Publisher configuration.
         :param str topic_name: the ROS topic name.
@@ -479,6 +482,7 @@ class LaunchPublishMessage:
         :param bool verbose: print verbose output.
         :param bool use_rostime: use rostime for time stamps, else walltime is used.
         :param bool substitute_keywords: When publishing with a rate, performs keyword ('now' or 'auto') substitution for each message.
+        :param RosQos qos: Quality of service subscription options (Only ROS2).
         '''
         self.topic_name = topic_name
         self.msg_type = msg_type
@@ -489,6 +493,7 @@ class LaunchPublishMessage:
         self.verbose = verbose
         self.use_rostime = use_rostime
         self.substitute_keywords = substitute_keywords
+        self.qos = qos
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

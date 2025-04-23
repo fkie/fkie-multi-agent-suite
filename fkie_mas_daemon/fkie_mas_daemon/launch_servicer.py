@@ -474,7 +474,7 @@ class LaunchServicer(LoggingEventHandler):
                                     normalized_old_cmd = old_node.cmd
                                     added = False
                                     # we need to compare the content of the parameter files
-                                    for a,b in zip(new_matches, old_matches):
+                                    for a, b in zip(new_matches, old_matches):
                                         content1 = ""
                                         content2 = ""
                                         with open(a, 'r') as f1, open(b, 'r') as f2:
@@ -899,7 +899,23 @@ class LaunchServicer(LoggingEventHandler):
             opt_str += f' -n {fullname}'
             data = json.loads(request.data)
             topic_params = self._str_from_dict(data)
-            pub_cmd = f"pub {opt_str} {request.topic_name} {request.msg_type} \"{topic_params}\""
+            qos_params = ""
+            if hasattr(request, "qos"):
+                default_qos = RosQos()
+                if hasattr(request.qos, "durability") and request.qos.durability != default_qos.durability:
+                    qos_params += f"--qos-durability {RosQos.durabilityToString(request.qos.durability)} "
+                if hasattr(request.qos, "reliability") and request.qos.reliability != default_qos.reliability:
+                    qos_params += f"--qos-reliability {RosQos.reliabilityToString(request.qos.reliability)} "
+                if hasattr(request.qos, "liveliness") and request.qos.liveliness != default_qos.liveliness:
+                    qos_params += f"--qos-liveliness {RosQos.livelinessToString(request.qos.liveliness)} "
+                if hasattr(request.qos, "history") and request.qos.history != default_qos.history and request.qos.history < RosQos.HISTORY.UNKNOWN:
+                    qos_params += f"--qos-history {RosQos.historyToString(request.qos.history)} "
+                if hasattr(request.qos, "depth") and request.qos.depth != default_qos.depth:
+                    qos_params += f"--qos-depth {request.qos.depth} "
+                if hasattr(request.qos, "liveliness_lease_duration"):
+                    if hasattr(request.qos.liveliness_lease_duration, "sec") and request.qos.liveliness_lease_duration.sec != default_qos.liveliness_lease_duration.sec:
+                        qos_params += f"--qos-liveliness-lease-duration-seconds {request.qos.liveliness_lease_duration} "
+            pub_cmd = f"pub {opt_str} {qos_params} {request.topic_name} {request.msg_type} \"{topic_params}\""
             screen_prefix = ' '.join([screen.get_cmd(fullname)])
             cmd = ' '.join([screen_prefix, 'ros2', 'topic', pub_cmd])
             Log.info(
