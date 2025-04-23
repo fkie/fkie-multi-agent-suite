@@ -609,14 +609,15 @@ class LaunchConfig(object):
         environment = os.environ.copy()
         self._load(current_file=self.filename)
         # restore environment after file was loaded. To avoid interaction if multiple files are loaded.
-        os.environ = environment
+        os.environ.clear()
+        os.environ.update(environment)
 
     def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0) -> None:
         print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
         file_content = ""
         launch_prefix = ""
-        environment = dict(os.environ)
+        environment = os.environ
         if sub_obj is None:
             sub_obj = self.__launch_description
             self.context.extend_locals({'launch_file_path': self.filename})

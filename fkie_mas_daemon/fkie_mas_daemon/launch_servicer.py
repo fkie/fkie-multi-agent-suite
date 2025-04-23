@@ -491,7 +491,7 @@ class LaunchServicer(LoggingEventHandler):
                                         nodes2start.append(new_node.node_name)
                                         break
                             if new_node.additional_env and old_node.additional_env:
-                                if len(set(new_node.additional_env.values()) - set(old_node.additional_env.values())) > 0:
+                                if len(set(new_node.additional_env) - set(old_node.additional_env)) > 0:
                                     nodes2start.append(new_node.node_name)
                                     break
                     if not found:
