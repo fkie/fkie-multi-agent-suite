@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2.17 - 23.04.2025
+
+Propagate lifecycle status to group view
+Use QoS of available topics on start a new publisher
+Fixed reloading of python launch files that use or modify environment variables
+
 ## 4.2.16 - 11.04.2025
 
 Added context menu to parameter items

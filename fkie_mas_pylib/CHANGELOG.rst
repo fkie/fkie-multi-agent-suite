@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.2 (23.04.2025)
+------------------
+* Updated interface of LaunchPublishMessage to use QoS on start a new publisher
+
 4.2.1 (28.02.2025)
 ------------------
 * Fixed split string arrays in parameter and publisher dialogs by a comma, but not if the comma is inside '"'

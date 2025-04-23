@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.7 (23.04.2025)
+------------------
+* Use QoS of available topics on start a new publisher
+* Fixed reloading of python launch files that use or modify environment variables
+
 4.3.6 (10.04.2025)
 ------------------
 * Added parameter change detection on reload file
