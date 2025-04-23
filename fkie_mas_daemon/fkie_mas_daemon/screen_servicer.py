@@ -167,7 +167,10 @@ class ScreenServicer:
                     Log.info(
                         f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig_obj.name}")
                     for parent_pid in reversed(parents2kill):
-                        os.kill(parent_pid, sig_obj)
+                        if hasattr(parent_pid, "pid"):
+                            os.kill(parent_pid.pid, sig_obj)
+                        else:
+                            os.kill(parent_pid, sig_obj)
                 successCur = True
             if not successCur:
                 Log.info(
