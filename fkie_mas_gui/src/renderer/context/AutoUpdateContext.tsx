@@ -133,14 +133,14 @@ export function AutoUpdateProvider({
           setUpdateError("Network error");
         }
         const data = await response.json();
-        const prereleases = data.filter((release) => release.prerelease);
-        if (prereleases.length > 0) {
-          if (semver.gt(prereleases[0].name, packageJson.version)) {
-            console.log(`${prereleases[0].body}`);
+        // take the first version, regardless of whether it is labeled as a pre-release version
+        if (data.length > 0) {
+          if (semver.gt(data[0].name, packageJson.version)) {
+            console.log(`${data[0].body}`);
             setUpdateAvailable({
-              version: prereleases[0].name,
-              releaseDate: prereleases[0].published_at,
-              releaseNotes: prereleases[0].body,
+              version: data[0].name,
+              releaseDate: data[0].published_at,
+              releaseNotes: data[0].body,
             } as UpdateInfo);
           }
         } else {
