@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.2.18 - 25.04.2025
+
+Changed parameter of less command to display log file in terminal
+Improved line number highlighting in terminal
+Fixed: change log command in settings
+Fixed: launch nodes with args if it contains find-pkg-share
+Fixed: install latest version even if the prerelease channel is selected
+
 ## 4.2.17 - 23.04.2025
 
 Propagate lifecycle status to group view

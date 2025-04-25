@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.8 (25.04.2025)
+------------------
+* Fixed: launch nodes with args if it contains find-pkg-share
+
 4.3.7 (23.04.2025)
 ------------------
 * Use QoS of available topics on start a new publisher
