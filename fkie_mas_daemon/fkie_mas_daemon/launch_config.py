@@ -68,36 +68,31 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
     result = ''
     if isinstance(value, str):
         result = value
-    elif isinstance(value, List) and len(value) > 1:
+    elif isinstance(value, List) and len(value) > 0:
         for val in value:
             sep = ' '
-            if isinstance(val, List) and len(val) == 1:
-                if issubclass(type(val[0]), FindPackage) and not issubclass(type(val[0]), ExecutableInPackage):
-                    sep = ''
-                item = perform_substitutions(context, val)
+            if isinstance(val, List):
+                item = ""
+                try:
+                    item = perform_substitutions(context, val)
+                except (SubstitutionFailure, LookupError) as err:
+                    # if executable is not found we replace it by "ros2 run" command to visualize the error in the MAS gui
+                    if isinstance(val[0], ExecutableInPackage):
+                        executable = perform_substitutions(context, val[0].executable)
+                        package = perform_substitutions(context, val[0].package)
+                        item = f"ros2 run {package} {executable}"
+                    else:
+                        raise err
+                except Exception as err:
+                    import traceback
+                    print(traceback.format_exc())
+                    raise LaunchConfigException(err)
+                # TODO: should we fix command lines with {data: xyz}
+                # if ' ' in item and '{' in item:
+                #     item = f"'{item}'"
                 result += item + sep
             else:
                 result += perform_to_string(context, val)
-    elif value and isinstance(value, launch.Substitution):
-        try:
-            result += context.perform_substitution(value)
-        except (SubstitutionFailure, LookupError) as err:
-            if isinstance(value, ExecutableInPackage):
-                executable = perform_substitutions(context, value.executable)
-                package = perform_substitutions(context, value.package)
-                result += f"ros2 run {package} {executable}"
-            else:
-                raise err
-        except Exception as err:
-            import traceback
-            print(traceback.format_exc())
-            raise LaunchConfigException(err)
-        if ' ' in result and '{' in result:
-            result = f"'{result}'"
-    elif value and isinstance(value[0], launch.Substitution):
-        result += perform_substitutions(context, value)
-        if ' ' in result and '{' in result:
-            result = f"'{result}'"
     elif value is not None:
         Log.warn("IGNORED while perform_to_string", value)
     else:
