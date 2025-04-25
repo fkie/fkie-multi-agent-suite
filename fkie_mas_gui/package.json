@@ -69,7 +69,7 @@
     "react-draggable": "^4.4.6",
     "react-file-icon": "^1.5.0",
     "react-json-tree": "^0.19.0",
-    "react-router-dom": "^6.28.1",
+    "react-router-dom": "^7.5.2",
     "react-virtuoso": "^4.12.3",
     "react-window": "^1.8.11",
     "react18-json-view": "^0.2.9",
