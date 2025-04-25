@@ -188,7 +188,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     label: "Log command prefix",
     description: "Terminal command to display the log file. The file name is appended.",
     type: "string",
-    default: "/usr/bin/less -fLnQrSU +G",
+    default: "/usr/bin/less -fLQR +G",
     group: "Parametrization",
   },
   color: {
