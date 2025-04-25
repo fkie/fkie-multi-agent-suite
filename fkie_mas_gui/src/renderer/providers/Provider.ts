@@ -1286,6 +1286,10 @@ export default class Provider implements IProvider {
                   }
                   nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
                 });
+                const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
+                if (env_capability_group) {
+                  nodeGroup = { namespace: "", name: `{${env_capability_group}}` };
+                }
               }
               if (launchNode.node_name && nodeGroup.name) {
                 nodeGroups[launchNode.node_name] = nodeGroup;

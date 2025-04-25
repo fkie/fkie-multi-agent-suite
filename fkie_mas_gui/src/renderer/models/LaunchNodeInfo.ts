@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 
-import { TFileRange, TLaunchArg } from "@/types";
+import { JSONObject, TFileRange, TLaunchArg } from "@/types";
 import RosParameter from "./RosParameter";
 
 /**
@@ -29,7 +29,7 @@ export default class LaunchNodeInfo {
 
   parameters: RosParameter[] | null;
 
-  env: unknown[] | null;
+  env: JSONObject | null;
 
   additional_env: unknown[] | null;
 
@@ -75,7 +75,7 @@ export default class LaunchNodeInfo {
     args: string | null = null,
     remap_args: unknown[] | null = null,
     parameters: RosParameter[] | null = null,
-    env: unknown[] | null = null,
+    env: JSONObject | null = null,
     additional_env: unknown[] | null = null,
     launch_prefix: string | null = null,
     output: string | null = null,
