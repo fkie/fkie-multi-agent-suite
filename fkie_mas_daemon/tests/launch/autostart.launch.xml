@@ -17,7 +17,9 @@
     <executable cmd="env" />
   </group>
 
-  <include file="$(find-pkg-share fkie_mas_daemon)/test/launch/included.launch.xml">
-  </include>
-
+  <group>
+    <set_env name="MAS_CAPABILITY_GROUP" value="includes" />
+    <include file="$(find-pkg-share fkie_mas_daemon)/test/launch/included.launch.xml">
+    </include>
+  </group>
 </launch>
