@@ -408,7 +408,7 @@ export default function GuiPanel(): JSX.Element {
                                 error={param.isValid && !param.isValid(values[name] as string)}
                                 onChange={(e) => {
                                   const value = `${e.target.value}`;
-                                  if (param.isValid && param.isValid(value)) {
+                                  if (!param.isValid || (param.isValid && param.isValid(value))) {
                                     settingsCtx.set(name, param.validate ? param.validate(value) : value);
                                   }
                                   values[name] = value;
