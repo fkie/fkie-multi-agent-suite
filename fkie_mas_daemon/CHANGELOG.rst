@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.9 (29.04.2025)
+------------------
+* Fixed: return real paths for included launch files
+
 4.3.8 (25.04.2025)
 ------------------
 * Fixed: launch nodes with args if it contains find-pkg-share

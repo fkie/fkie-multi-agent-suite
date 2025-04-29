@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.2.19 - 29.04.2025
+
+Changed: showRemoteNodes button removed; unconnected providers with remote nodes are now displayed
+Introduced MAS_CAPABILITY_GROUP environment variable
+Added proposal for MAS_CAPABILITY_GROUP in editor
+Fixed: change launch arguments using wheel in  a dialog with a lot of arguments
+Fixed: close on double ESC or onExit without saving editor changes
+Fixed: highlighting of the push-ros-namespace
+Fixed: detect changed files; return real paths for launch files
+Fixed: load launch files with deep include tree
+Use local monaco editor instead to download it
+
 ## 4.2.18 - 25.04.2025
 
 Changed parameter of less command to display log file in terminal
