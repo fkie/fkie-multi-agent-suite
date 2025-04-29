@@ -204,21 +204,21 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }, [selectionRange]);
 
   const handleChangeExplorer = useCallback(
-    function (isExpanded: boolean): void {
+    (isExpanded: boolean): void => {
       setEnableExplorer(isExpanded);
     },
     [setEnableExplorer]
   );
 
   const handleChangeSearch = useCallback(
-    function (isExpanded: boolean): void {
+    (isExpanded: boolean): void => {
       setEnableGlobalSearch(isExpanded);
     },
     [setEnableGlobalSearch]
   );
 
   const isReadOnly = useCallback(
-    function (path: string): boolean {
+    (path: string): boolean => {
       const files = openFiles.filter((item) => item.path === path);
       if (files.length > 0) {
         return files[0].file.readonly;
@@ -229,14 +229,14 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   );
 
   const addMonacoDisposable = useCallback(
-    function (disposable: IDisposable): void {
+    (disposable: IDisposable): void => {
       setMonacoDisposables((prev) => [...prev, disposable]);
     },
     [setMonacoDisposables]
   );
 
   // update modified files in this panel and context
-  function updateModifiedFiles(): void {
+  const updateModifiedFiles = useCallback(() => {
     if (!monaco) return;
     const newModifiedFiles = monaco.editor
       .getModels()
@@ -249,37 +249,37 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       });
     setModifiedFiles(newModifiedFiles);
     monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }
+  }, [monaco, tabId, providerId, ownUriPaths, monacoCtx.updateModifiedFiles]);
 
   // update decorations for included files
-  const updateIncludeDecorations = async function (
+  const updateIncludeDecorations = async (
     model: editor.ITextModel | null,
     includedFilesList: LaunchIncludedFile[]
-  ): Promise<void> {
+  ): Promise<void> => {
     if (!model) return;
     // filter files
     const newLinks: languages.ILink[] = [];
     if (includedFilesList) {
-      includedFilesList.forEach((f: LaunchIncludedFile) => {
+      for (const f of includedFilesList) {
         const path = model.uri.path.split(":")[1];
         if (path === f.path && path !== f.inc_path) {
           const matches = model.findMatches(f.raw_inc_path, false, false, false, null, true);
           if (matches.length > 0) {
-            matches.forEach((match) => {
+            for (const match of matches) {
               newLinks.push({
                 range: match.range,
                 url: `${model.uri.path.split(":")[0]}:${f.inc_path}`,
               });
-            });
+            }
           }
         }
-      });
+      }
     }
     modelLinks[model.uri.path] = newLinks;
   };
 
   const isModified = useCallback(
-    function (model: editor.ITextModel): boolean {
+    (model: editor.ITextModel): boolean => {
       const item: TModelVersion | undefined = savedModelVersions.find((item) => item.path === model.uri.path);
       if (item) {
         return item.version !== model.getAlternativeVersionId();
@@ -314,12 +314,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   // set the current model to the editor based on [uriPath], and update its decorations
   const setEditorModel = useCallback(
-    async function (
+    async (
       uriPath: string,
       range: TFileRange | null = null,
       launchArgs: TLaunchArg[] = [],
       forceReload: boolean = false
-    ): Promise<boolean> {
+    ): Promise<boolean> => {
       if (!uriPath) return false;
       setCurrentFile({ name: getFileName(uriPath), requesting: true });
       setNotificationDescription("Getting file from provider...");
@@ -463,7 +463,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         if (!savedFiles.includes(editorModel.uri.path)) {
           setSavedFiles([...savedFiles, editorModel.uri.path]);
         }
-        logCtx.success(`Successfully saved file`, `path: ${path}`);
+        logCtx.success("Successfully saved file", `path: ${path}`);
         setSavedModelVersions((prev) => [
           ...prev.filter((item) => {
             return item.path !== editorModel.uri.path;
@@ -493,7 +493,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   function cleanUpXmlComment(changes, model): void {
     // replace all '--' by '- - ' in XML comments
     if (!model) return;
-    if (changes.length != 2) return;
+    if (changes.length !== 2) return;
     let addedComment = false;
     if (
       changes.filter((entry) => {
@@ -518,7 +518,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }
 
   const handleEditorChange = useCallback(
-    async function (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> {
+    async (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> => {
       // update activeModel modified flag only once
       cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
@@ -583,11 +583,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     const uriPath = monacoCtx.createUriPath(tabId, rootFilePath);
     const newOwnUris = [uriPath];
     ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
-    includedFiles.forEach((file) => {
+    for (const file of includedFiles) {
       const incUriPath = monacoCtx.createUriPath(tabId, file.inc_path);
       newOwnUris.push(incUriPath);
       ownUriToPackageDict[incUriPath] = provider.getPackageName(file.inc_path);
-    });
+    }
     setOwnUriPaths(newOwnUris);
   }, [includedFiles, rootFilePath, editorRef.current]);
 
@@ -616,25 +616,25 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
       // clear monaco disposables:
       // disposable objects includes autocomplete, code definition and editor actions
-      monacoDisposables.forEach((d) => {
+      for (const d of monacoDisposables) {
         d?.dispose();
-      });
+      }
       setMonacoDisposables([]);
       // dispose all own models
       if (monaco) {
-        ownUriPaths.forEach((uriPath) => {
+        for (const uriPath of ownUriPaths) {
           const model = monaco.editor.getModel(monaco.Uri.file(uriPath));
           if (model) {
             model.dispose();
           }
-        });
+        }
         setOwnUriPaths([]);
         // remove undefined models
-        monaco.editor.getModels().forEach((model) => {
+        for (const model of monaco.editor.getModels()) {
           if (model.getValue().length === 0 && model.uri.path.indexOf(":") === -1) {
             model.dispose();
           }
-        });
+        }
       }
       // remove modified files from context
       monacoCtx.updateModifiedFiles(tabId, "", []);
@@ -736,10 +736,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }
 
   async function getIncludedFiles(provider?: Provider): Promise<void> {
-    if (!provider) {
-      provider = rosCtx.getProviderById(providerId);
-    }
-    if (!provider) {
+    const prov = provider || rosCtx.getProviderById(providerId);
+    if (!prov) {
       setNotificationDescription(`Provider with id ${providerId} not available`);
       return;
     }
@@ -748,13 +746,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     request.path = rootFilePath;
     request.unique = false;
     request.recursive = true;
-    const includedFilesLocal = await provider.launchGetIncludedFiles(request);
+    const includedFilesLocal = await prov.launchGetIncludedFiles(request);
     if (includedFilesLocal) {
       // filter unique file names (in case multiple imports)
       const uniqueIncludedFiles = [rootFilePath];
-      includedFilesLocal.forEach((f) => {
+      for (const f of includedFilesLocal) {
         if (!uniqueIncludedFiles.includes(f.inc_path)) uniqueIncludedFiles.push(f.inc_path);
-      });
+      }
 
       // get file content and create corresponding monaco models on demand
       setIncludedFiles(includedFilesLocal);
@@ -787,18 +785,25 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
     monaco.languages.setLanguageConfiguration("ros2xml", {
       comments: { blockComment: ["<!--", "-->"] },
-      autoClosingPairs: [{ open: "<", close: ">" }, { open: '"', close: '"' }, { open: "'", close: "'" }],
+      autoClosingPairs: [
+        { open: "<", close: ">" },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+      ],
       brackets: [["<", ">"]],
-      onEnterRules: [{beforeText: />/, afterText: /<\//, action: { indentAction: 2 }}],
+      onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
     });
 
     monaco.languages.register({ id: "ros1xml" });
     monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
     monaco.languages.setLanguageConfiguration("ros1xml", {
       comments: { blockComment: ["<!--", "-->"] },
-      autoClosingPairs: [{ open: "<", close: ">" }, { open: '"', close: '"' }],
+      autoClosingPairs: [
+        { open: "<", close: ">" },
+        { open: '"', close: '"' },
+      ],
       brackets: [["<", ">"]],
-      onEnterRules: [{beforeText: />/, afterText: /<\//, action: { indentAction: 2 }}],
+      onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
     });
 
     monaco.languages.register({ id: "python" });
@@ -807,7 +812,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
     const provider = rosCtx.getProviderById(providerId, true);
-    if (provider && provider.packages) {
+    if (provider?.packages) {
       packages = provider.packages;
     }
 
@@ -820,7 +825,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       })
     );
 
-    ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
+    for (const e of ["ros2xml", "ros1xml", "launch", "python"]) {
       addMonacoDisposable(
         monaco.languages.registerLinkProvider(e, {
           provideLinks: (model) => {
@@ -829,10 +834,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           },
         } as languages.LinkProvider)
       );
-    });
+    }
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
-    ["ros2xml", "ros1xml", "launch", "python"].forEach((e) => {
+    for (const e of ["ros2xml", "ros1xml", "launch", "python"]) {
       // Add Completion provider for XML and launch files
       addMonacoDisposable(
         monaco.languages.registerCompletionItemProvider(e, {
@@ -918,7 +923,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           })
         );
       }
-    });
+    }
   }
 
   function addContextMenu(): void {

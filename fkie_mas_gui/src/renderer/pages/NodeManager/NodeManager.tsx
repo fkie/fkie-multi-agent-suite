@@ -882,7 +882,7 @@ export default function NodeManager(): JSX.Element {
           }
         }}
       />
-      {electronCtx.terminateSubprocesses && monacoCtx.getModifiedTabs().length === 0 && rosCtx.providers.length > 0 && (
+      {electronCtx.terminateSubprocesses && modifiedEditorTabs.length === 0 && rosCtx.providers.length > 0 && (
         // check for unsaved files before quit gui
         <ProviderSelectionModal
           title="Select providers to shut down"
@@ -900,7 +900,17 @@ export default function NodeManager(): JSX.Element {
       {modifiedEditorTabs.length > 0 && (
         <Dialog
           open={modifiedEditorTabs.length > 0}
-          onClose={() => setModifiedEditorTabs([])}
+          onClose={() => {
+            setModifiedEditorTabs([]);
+            electronCtx.cancelCloseApp();
+          }}
+          onAbort={() => {
+            setModifiedEditorTabs([]);
+            electronCtx.cancelCloseApp();
+          }}
+          onFocus={() => {
+            electronCtx.cancelCloseTimer();
+          }}
           fullWidth
           scroll="paper"
           maxWidth="sm"
@@ -929,9 +939,9 @@ export default function NodeManager(): JSX.Element {
             <Button
               color="warning"
               onClick={() => {
-                modifiedEditorTabs.forEach((tab) => {
+                for (const tab of modifiedEditorTabs) {
                   model.doAction(Actions.deleteTab(tab.tabId));
-                });
+                }
                 monacoCtx.clearModifiedTabs(modifiedEditorTabs);
                 setModifiedEditorTabs([]);
               }}
@@ -961,13 +971,13 @@ export default function NodeManager(): JSX.Element {
                 );
                 // TODO inform about error on failed save
                 let failed = false;
-                result.forEach((item) => {
+                for (const item of result) {
                   if (item[0].result) {
                     model.doAction(Actions.deleteTab(item[0].tabId));
                   } else {
                     failed = true;
                   }
-                });
+                }
                 if (failed) {
                   electronCtx.cancelCloseApp();
                 }
