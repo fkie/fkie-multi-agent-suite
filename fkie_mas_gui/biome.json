@@ -42,6 +42,9 @@
       },
       "complexity": {
         "useLiteralKeys": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
       }
     }
   },
