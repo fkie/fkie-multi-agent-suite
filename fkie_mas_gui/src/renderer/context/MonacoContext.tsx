@@ -1,8 +1,35 @@
 /* eslint-disable max-classes-per-file */
-import * as Monaco from "@monaco-editor/react";
-import { editor } from "monaco-editor";
+import * as MonacoReact from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
+
+self.MonacoEnvironment = {
+  getWorker(_, label): Worker {
+    if (label === "json") {
+      return new jsonWorker();
+    }
+    if (label === "css" || label === "scss" || label === "less") {
+      return new cssWorker();
+    }
+    if (label === "html" || label === "handlebars" || label === "razor") {
+      return new htmlWorker();
+    }
+    if (label === "typescript" || label === "javascript") {
+      return new tsWorker();
+    }
+    return new editorWorker();
+  },
+};
+
+// use local monaco editor sources
+// see: https://github.com/suren-atoyan/monaco-react?tab=readme-ov-file#loader-config
+MonacoReact.loader.config({ monaco });
 
 import { FileItem, FileLanguageAssociations } from "@/renderer/models";
 import {
@@ -16,7 +43,7 @@ import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 
 export type TModelResult = {
-  model: editor.ITextModel | null;
+  model: monaco.editor.ITextModel | null;
   file: FileItem | null;
   error: string;
 };
@@ -56,7 +83,7 @@ export class SaveResult {
 }
 
 export interface IMonacoContext {
-  monaco: Monaco.Monaco | null;
+  monaco: MonacoReact.Monaco | null;
   updateModifiedFiles: (tabId: string, providerId: string, uriPaths: string[]) => void;
   clearModifiedTabs: (tabIds: ModifiedTabsInfo[]) => void;
   getModifiedTabs: () => ModifiedTabsInfo[];
@@ -68,8 +95,8 @@ export interface IMonacoContext {
     providerId: string,
     path: string,
     forceReload: boolean
-  ) => Promise<{ model: editor.ITextModel | null; file: FileItem | null; error: string }>;
-  createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
+  ) => Promise<{ model: monaco.editor.ITextModel | null; file: FileItem | null; error: string }>;
+  createModel: (tabId: string, file: FileItem) => monaco.editor.ITextModel | null;
 }
 
 export interface IMonacoProvider {
@@ -91,13 +118,13 @@ export const DEFAULT_MONACO = {
       file: null,
       error: "",
     } as TModelResult),
-  createModel: (): editor.ITextModel | null => null,
+  createModel: (): monaco.editor.ITextModel | null => null,
 };
 
 export const MonacoContext = createContext<IMonacoContext>(DEFAULT_MONACO);
 
 export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.FC<IMonacoProvider>> {
-  const monaco = Monaco.useMonaco();
+  const monaco = MonacoReact.useMonaco();
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
 
@@ -119,7 +146,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   useEffect(() => {
     monaco?.languages.typescript.javascriptDefaults.setEagerModelSync(true);
     monaco?.languages.typescript.typescriptDefaults.setEagerModelSync(true);
-    Monaco.loader.init().then((monaco) => {
+    MonacoReact.loader.init().then((monaco) => {
       monaco.editor.defineTheme("vs-ros-light", {
         base: "vs",
         inherit: true,
@@ -218,7 +245,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
             if (providerObj) {
               const saveResult = await providerObj.saveFileContent(fileToSave);
               if (saveResult.bytesWritten > 0) {
-                logCtx.success(`Successfully saved file`, `path: ${path}`);
+                logCtx.success("Successfully saved file", `path: ${path}`);
                 saveItem.result = true;
               } else {
                 saveItem.message = `Error while save file ${path}: ${saveResult.error}`;
@@ -249,7 +276,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   /**
    * Return a monaco model from a given path
    */
-  function getModelFromPath(tabId: string, path: string): editor.ITextModel | null {
+  function getModelFromPath(tabId: string, path: string): monaco.editor.ITextModel | null {
     if (!monaco) return null;
     if (!path || path.length === 0) return null;
     let modelUri = path;
@@ -264,7 +291,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
    * Create a new monaco model from a given file
    * @param file - Original file
    */
-  function createModel(tabId: string, file: FileItem): editor.ITextModel | null {
+  function createModel(tabId: string, file: FileItem): monaco.editor.ITextModel | null {
     if (!monaco) return null;
     const pathUri = monaco.Uri.file(createUriPath(tabId, file.path));
     // create monaco model, if it does not exists yet
@@ -284,8 +311,8 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     providerId: string,
     path: string,
     forceReload: boolean
-  ): Promise<{ model: editor.ITextModel | null; file: FileItem | null; error: string }> {
-    let model: editor.ITextModel | null = getModelFromPath(tabId, path);
+  ): Promise<{ model: monaco.editor.ITextModel | null; file: FileItem | null; error: string }> {
+    let model: monaco.editor.ITextModel | null = getModelFromPath(tabId, path);
     if (!model || forceReload) {
       const provider = rosCtx.getProviderById(providerId, false);
       if (!provider) {
@@ -302,9 +329,8 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
           );
         }
         return Promise.resolve({ model: model, file, error });
-      } else {
-        console.error(`Could not open included file: [${file.fileName}]: ${error}`);
       }
+      console.error(`Could not open included file: [${file.fileName}]: ${error}`);
     }
     return Promise.resolve({ model: model, file: null, error: "" });
   }
