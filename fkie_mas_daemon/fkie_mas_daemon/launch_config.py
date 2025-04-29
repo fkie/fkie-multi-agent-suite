@@ -94,7 +94,20 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
             else:
                 result += perform_to_string(context, val)
     elif value is not None:
-        Log.warn("IGNORED while perform_to_string", value)
+        try:
+            item = perform_substitutions(context, [value])
+        except (SubstitutionFailure, LookupError) as err:
+            # if executable is not found we replace it by "ros2 run" command to visualize the error in the MAS gui
+            if isinstance(value, ExecutableInPackage):
+                executable = perform_substitutions(context, value.executable)
+                package = perform_substitutions(context, value.package)
+                item = f"ros2 run {package} {executable}"
+            else:
+                raise err
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+            raise LaunchConfigException(err)
     else:
         result = None
     return result
@@ -858,8 +871,6 @@ class LaunchConfig(object):
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file)
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
-            if len(indent) > 10:
-                raise
 
     def nodes(self) -> List[LaunchNodeWrapper]:
         return self._nodes
@@ -911,12 +922,12 @@ class LaunchConfig(object):
             default_value = None
             if argument_action.default_value is not None:
                 default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
-            arg = LaunchArgument(name=argument_action.name,
-                                 value=value,
-                                 default_value=default_value,
-                                 description=argument_action.description,
-                                 choices=argument_action.choices)
-            result.append(arg)
+                arg = LaunchArgument(name=argument_action.name,
+                                    value=value,
+                                    default_value=default_value,
+                                    description=argument_action.description,
+                                    choices=argument_action.choices)
+                result.append(arg)
         return result
 
     def get_node(self, name: str) -> Union[LaunchNodeWrapper, None]:

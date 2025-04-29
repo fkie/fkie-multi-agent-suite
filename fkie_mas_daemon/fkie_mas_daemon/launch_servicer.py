@@ -388,7 +388,7 @@ class LaunchServicer(LoggingEventHandler):
                         result.args.extend(req_args)
                         result.status.code = 'PARAMS_REQUIRED'
                         Log.debug(
-                            f"{self.__class__.__name__}: ..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; privided args {provided_args}")
+                            f"{self.__class__.__name__}: ..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; provided args {provided_args}")
                         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
             launch_arguments = [(arg.name, arg.value) for arg in request.args if hasattr(arg, "value")]
