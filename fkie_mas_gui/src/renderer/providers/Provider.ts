@@ -9,7 +9,6 @@ import {
   DaemonVersion,
   DiagnosticArray,
   FileItem,
-  LaunchArgument,
   LaunchCallService,
   LaunchContent,
   LaunchFile,
@@ -222,8 +221,6 @@ export default class Provider implements IProvider {
 
   startConfiguration: ProviderLaunchConfiguration | null = null;
 
-  showRemoteNodes: boolean = false;
-
   // started echo topics to the received echo events
   private echoTopics: string[] = [];
 
@@ -346,10 +343,11 @@ export default class Provider implements IProvider {
     cmd: string
   ) => Promise<CmdTerminal> = async (type, nodeName = "", topicName = "", screenName = "", cmd = "") => {
     const result = new CmdTerminal();
-    if (type === CmdType.SCREEN && screenName === "") {
-      type = CmdType.LOG;
+    let cmdType = type;
+    if (cmdType === CmdType.SCREEN && screenName === "") {
+      cmdType = CmdType.LOG;
     }
-    switch (type) {
+    switch (cmdType) {
       case CmdType.CMD: {
         const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
         result.cmd = cmd ? `${prefix}${cmd}` : `${prefix}/bin/bash`;
@@ -371,7 +369,7 @@ export default class Provider implements IProvider {
           result.screen = createdScreenName;
         }
         break;
-      case CmdType.LOG:
+      case CmdType.LOG: {
         // eslint-disable-next-line no-case-declarations
         const logPaths = await this.getLogPaths([nodeName]);
         if (logPaths.length > 0) {
@@ -380,6 +378,7 @@ export default class Provider implements IProvider {
           result.log = logPaths[0].screen_log;
         }
         break;
+      }
       case CmdType.ECHO: {
         if (this.rosState.ros_version === "1") {
           result.cmd = `rostopic echo ${topicName}`;
@@ -458,7 +457,7 @@ export default class Provider implements IProvider {
   public close: () => void = async () => {
     let closeError = "";
     await this.connection.close().catch((error) => {
-      console.error(`Provider: error when close:`, error);
+      console.error("Provider: error when close:", error);
       closeError = error;
     });
     this.setConnectionState(
@@ -514,7 +513,7 @@ export default class Provider implements IProvider {
       }
     );
     if (rosProviders.length > 0) {
-      this.logger?.debug(`Providers updated for [${this.name()}]`, ``);
+      this.logger?.debug(`Providers updated for [${this.name()}]`, "");
       if (this.rosVersion === "1") {
         this.discovery = true;
       }
@@ -522,7 +521,7 @@ export default class Provider implements IProvider {
       // Update list of providers
       let oldRemoteProviders = this.remoteProviders;
       this.remoteProviders = [];
-      rosProviders.forEach((p: RosProviderState) => {
+      for (const p of rosProviders) {
         // the remote provider list should contain at least the details to itself (origin === true)
         if (p.origin) {
           // apply remote attributes to new current provider
@@ -559,13 +558,13 @@ export default class Provider implements IProvider {
           np.discovered = [this.id];
           this.remoteProviders.push(np);
         }
-      });
-      this.remoteProviders.forEach((np) => {
+      }
+      for (const np of this.remoteProviders) {
         emitCustomEvent(EVENT_PROVIDER_DISCOVERED, new EventProviderDiscovered(np, this));
-      });
-      oldRemoteProviders.forEach((p) => {
+      }
+      for (const p of oldRemoteProviders) {
         emitCustomEvent(EVENT_PROVIDER_REMOVED, new EventProviderRemoved(p, this));
-      });
+      }
       this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
       return Promise.resolve(true);
     }
@@ -715,7 +714,7 @@ export default class Provider implements IProvider {
       this.timeDiff = this.calcTimeDiff(startTs, endTs, providerResponse.timestamp);
       this.logger?.debug(
         `Time difference to [${this.name()}]: approx. ${this.timeDiff}, returned from daemon: ${providerResponse.diff}`,
-        ``
+        ""
       );
       emitCustomEvent(EVENT_PROVIDER_TIME_DIFF, new EventProviderTimeDiff(this, this.timeDiff));
       return Promise.resolve(true);
@@ -750,7 +749,7 @@ export default class Provider implements IProvider {
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [forceRefresh], true).then((value: TResultData) => {
       if (value.result) {
-        return value.data as unknown as IRosNode[];
+        return (value.data as unknown as IRosNode[]) || [];
       }
       if (`${value.message}`.includes("wamp.error.no_such_procedure")) {
         this.discovery = false;
@@ -763,62 +762,60 @@ export default class Provider implements IProvider {
       // cast incoming object into a proper representation
       const nodeList = new Map<string, RosNode>();
       try {
-        if (rawNodeList) {
-          rawNodeList.forEach((n: IRosNode) => {
-            let status = RosNodeStatus.UNKNOWN;
-            if (n.status && n.status === "running") status = RosNodeStatus.RUNNING;
-            else if (n.status && n.status === "inactive") status = RosNodeStatus.INACTIVE;
-            else if (n.status && n.status === "not_monitored") status = RosNodeStatus.NOT_MONITORED;
-            else if (n.status && n.status === "dead") status = RosNodeStatus.DEAD;
-            else status = RosNodeStatus.UNKNOWN;
+        for (const n of rawNodeList) {
+          let status = RosNodeStatus.UNKNOWN;
+          if (n.status && n.status === "running") status = RosNodeStatus.RUNNING;
+          else if (n.status && n.status === "inactive") status = RosNodeStatus.INACTIVE;
+          else if (n.status && n.status === "not_monitored") status = RosNodeStatus.NOT_MONITORED;
+          else if (n.status && n.status === "dead") status = RosNodeStatus.DEAD;
+          else status = RosNodeStatus.UNKNOWN;
 
-            const rn = new RosNode(
-              n.id,
-              n.name,
-              n.namespace,
-              n.node_API_URI,
-              status,
-              n.pid,
-              n.masteruri,
-              n.location,
-              n.system_node
-            );
+          const rn = new RosNode(
+            n.id,
+            n.name,
+            n.namespace,
+            n.node_API_URI,
+            status,
+            n.pid,
+            n.masteruri,
+            n.location,
+            n.system_node
+          );
 
-            // determine GUID of ROS2 nodes. It is the UUID after last '-' in id
-            const idSplitted = n.id.split("-");
-            if (idSplitted.length > 1) {
-              rn.guid = idSplitted[idSplitted.length - 1];
-            }
-            if (n.is_container) {
-              rn.is_container = n.is_container;
-            }
-            if (n.container_name) {
-              rn.container_name = n.container_name;
-            }
-            if (n.lifecycle_state) {
-              rn.lifecycle_state = n.lifecycle_state;
-            }
-            if (n.lifecycle_available_transitions) {
-              rn.lifecycle_available_transitions = n.lifecycle_available_transitions.map((item) => {
-                return { label: item[0], id: item[1] };
-              });
-            }
-            rn.publishers = n.publishers;
-            rn.subscribers = n.subscribers;
-            rn.services = n.services;
-            // add screens
-            // TODO: Filter screens that belongs to the same master URI
-            rn.screens = n.screens;
-            rn.isLocal = n.is_local;
-            nodeList.set(n.id, rn);
-          });
-
-          this.logger?.debug(`Nodes updated for [${this.name()}]`, ``);
-          if (this.rosVersion === "1") {
-            this.discovery = rawNodeList.length > 0;
+          // determine GUID of ROS2 nodes. It is the UUID after last '-' in id
+          const idSplitted = n.id.split("-");
+          if (idSplitted.length > 1) {
+            rn.guid = idSplitted[idSplitted.length - 1];
           }
-          return Array.from(nodeList.values());
+          if (n.is_container) {
+            rn.is_container = n.is_container;
+          }
+          if (n.container_name) {
+            rn.container_name = n.container_name;
+          }
+          if (n.lifecycle_state) {
+            rn.lifecycle_state = n.lifecycle_state;
+          }
+          if (n.lifecycle_available_transitions) {
+            rn.lifecycle_available_transitions = n.lifecycle_available_transitions.map((item) => {
+              return { label: item[0], id: item[1] };
+            });
+          }
+          rn.publishers = n.publishers;
+          rn.subscribers = n.subscribers;
+          rn.services = n.services;
+          // add screens
+          // TODO: Filter screens that belongs to the same master URI
+          rn.screens = n.screens;
+          rn.isLocal = n.is_local;
+          nodeList.set(n.id, rn);
         }
+
+        this.logger?.debug(`Nodes updated for [${this.name()}]`, "");
+        if (this.rosVersion === "1") {
+          this.discovery = rawNodeList.length > 0;
+        }
+        return Array.from(nodeList.values());
       } catch (error) {
         this.logger?.error(`Provider [${this.name()}]: Error at getNodeList()`, `${error}`);
         return Promise.resolve([]);
@@ -926,12 +923,13 @@ export default class Provider implements IProvider {
       if (value.result) {
         const fileList: PathItem[] = [];
         const uniquePaths: string[] = [];
-        (value.data as PathItem[]).forEach((p: PathItem) => {
+        const pathItems = (value.data as PathItem[]) || [];
+        for (const p of pathItems) {
           if (!uniquePaths.includes(p.path)) {
             fileList.push(new PathItem(p.path, p.mtime, p.size, p.type, this.connection.host));
             uniquePaths.push(p.path);
           }
-        });
+        }
         return fileList;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getPackageList()`, `${value.message}`);
@@ -950,9 +948,10 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_PATH_GET_LOG_PATHS, [nodes], true).then((value: TResultData) => {
       if (value.result) {
         const logPathList: LogPathItem[] = [];
-        (value.data as LogPathItem[]).forEach((p: LogPathItem) => {
+        const logPathItems = (value.data as LogPathItem[]) || [];
+        for (const p of logPathItems) {
           logPathList.push(new LogPathItem(p.node, p.screen_log, p.screen_log_exists, p.ros_log, p.ros_log_exists));
-        });
+        }
         return logPathList;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getLogPaths()`, `${value.message}`);
@@ -972,13 +971,14 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_PATH_CLEAR_LOG_PATHS, [nodes], true).then((value: TResultData) => {
       if (value.result) {
         const logPathList: TResultClearPath[] = [];
-        (value.data as TResultClearPath[]).forEach((p: TResultClearPath) => {
+        const clearPathResults = (value.data as TResultClearPath[]) || [];
+        for (const p of clearPathResults) {
           logPathList.push({
             node: p.node,
             result: p.result,
             message: p.message,
           });
-        });
+        }
         return logPathList;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at clearLogPaths()`, `${value.message}`);
@@ -1098,6 +1098,7 @@ export default class Provider implements IProvider {
           n.system_node = true;
         }
         n.screens = screen.screens;
+        n.isLocal = true;
         this.rosNodes.push(n);
       }
     });
@@ -1152,7 +1153,8 @@ export default class Provider implements IProvider {
       }
     }
     // update the screens
-    diags.status?.forEach((status) => {
+    const diagStatus = diags.status || [];
+    for (const status of diagStatus) {
       const matchingNode = this.rosNodes.find((node) => node.id === status.name);
       if (matchingNode) {
         matchingNode.diagnosticLevel = status.level;
@@ -1171,7 +1173,7 @@ export default class Provider implements IProvider {
           }
         }
       }
-    });
+    }
     // emitCustomEvent(
     //   EVENT_PROVIDER_DIAGNOSTICS,
     //   new EventProviderDiagnostics(this, diags),
@@ -1194,10 +1196,10 @@ export default class Provider implements IProvider {
         const launchList: LaunchContent[] = [];
 
         if (parsedList) {
-          parsedList.forEach((parsed: LaunchContent) => {
+          for (const parsed of parsedList) {
             // filter only the launch files associated to the provider
             if (this.rosState.masteruri && parsed.masteruri !== this.rosState.masteruri) {
-              return;
+              return false;
             }
             launchList.push(
               new LaunchContent(
@@ -1209,14 +1211,13 @@ export default class Provider implements IProvider {
                 parsed.parameters?.map((p) => {
                   if (this.rosVersion === "1") {
                     return new RosParameter("", p.name, p.value, p.type, this.id);
-                  } else {
-                    return new RosParameter("", p[0], p[1], "", this.id);
                   }
+                  return new RosParameter("", p[0], p[1], "", this.id);
                 }) || [],
                 parsed.associations || []
               )
             );
-          });
+          }
         }
         this.launchFiles = launchList;
         emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
@@ -1225,8 +1226,9 @@ export default class Provider implements IProvider {
         const nodeGroups: { [nodeName: string]: { namespace?: string; name?: string } } = {};
         // update nodes
         // Add nodes from launch files to the list of nodes
-        this.launchFiles.forEach((launchFile) => {
-          launchFile.nodes?.forEach((launchNode: LaunchNodeInfo) => {
+        for (const launchFile of this.launchFiles) {
+          const nodes: LaunchNodeInfo[] = launchFile.nodes || [];
+          for (const [idxLn, launchNode] of nodes.entries()) {
             // get parameter of a node and determine the capability group parameter
             const nodeParameters: RosParameter[] = [];
             let nodeGroup: { namespace?: string; name?: string } = {};
@@ -1237,12 +1239,13 @@ export default class Provider implements IProvider {
             if (uniqueNodeName) {
               const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
-              if (this.rosVersion == "1") {
-                launchFile.parameters?.forEach((p: RosParameter) => {
+              if (this.rosVersion === "1") {
+                const parameters: RosParameter[] = launchNode.parameters || [];
+                for (const p of parameters) {
                   if (nodesParametersFound) {
                     // skip parse further parameter if we found one and next was not in node namespace
                     // assumption: parameters are sorted
-                    return;
+                    // break;
                   } else if (p.name.startsWith(uniqueNodeName)) {
                     nodeParameters.push(p);
                     if (p.name === capabilityGroupOfNode) {
@@ -1262,9 +1265,10 @@ export default class Provider implements IProvider {
                       nodeGroup = { namespace: namespace, name: `{${p.value}}` };
                     }
                   }
-                });
+                }
               } else {
-                launchNode.parameters?.forEach((p: RosParameter) => {
+                const parameters: RosParameter[] = launchNode.parameters || [];
+                for (const p of parameters) {
                   if (p.type.indexOf("yaml") >= 0) {
                     let allNodes = p.value["/**"];
                     if (!allNodes && launchNode.node_name) {
@@ -1285,7 +1289,7 @@ export default class Provider implements IProvider {
                     }
                   }
                   nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
-                });
+                }
                 const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
                 if (env_capability_group) {
                   nodeGroup = { namespace: "", name: `{${env_capability_group}}` };
@@ -1295,13 +1299,14 @@ export default class Provider implements IProvider {
                 nodeGroups[launchNode.node_name] = nodeGroup;
               }
               let associations: string[] = [];
-              launchFile.associations?.forEach((item) => {
+              const lAssociations = launchFile.associations || [];
+              for (const item of lAssociations) {
                 if (item.node === uniqueNodeName) {
                   associations = item.nodes || [];
                 }
-              });
-              launchNode.associations = associations;
-              launchNode.parameters = nodeParameters;
+              }
+              nodes[idxLn].associations = associations;
+              nodes[idxLn].parameters = nodeParameters;
 
               //launchPaths
               //parameters
@@ -1332,6 +1337,7 @@ export default class Provider implements IProvider {
                 n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
                 n.providerName = this.name();
                 n.providerId = this.id;
+                n.isLocal = true;
                 if (nodeGroup.name) {
                   n.capabilityGroup = nodeGroup;
                 }
@@ -1342,20 +1348,20 @@ export default class Provider implements IProvider {
                 this.rosNodes.push(n);
               }
             }
-          });
-        });
+          }
+        }
 
         // set tags for nodelets/composable and other tags)
         const composableManagers: string[] = [];
-        this.rosNodes.forEach((n) => {
+        for (const [idx, n] of this.rosNodes.entries()) {
           const nodeGroup = nodeGroups[n.name];
           if (nodeGroup) {
-            n.capabilityGroup = nodeGroup;
+            this.rosNodes[idx].capabilityGroup = nodeGroup;
           }
           // Check if this is a nodelet/composable and assign tags accordingly.
           const composableParents = n.getAllContainers();
           const tags: TTag[] = [];
-          composableParents.forEach((item) => {
+          for (const item of composableParents) {
             const composableParent = item.split("|").slice(-1).at(0);
             if (composableParent) {
               if (!composableManagers.includes(composableParent)) {
@@ -1368,7 +1374,7 @@ export default class Provider implements IProvider {
                 tooltip: `Composable node, container: ${composableParent}`,
               });
             }
-          });
+          }
           // mark nodes with same GUID
           if (n.guid && this.sameIdDict[n.guid]?.length > 1) {
             tags.push({
@@ -1386,11 +1392,11 @@ export default class Provider implements IProvider {
           }
 
           if (tags.length > 0) {
-            n.tags = tags;
+            this.rosNodes[idx].tags = tags;
           }
-        });
+        }
         // Assign tags to the found nodelet/composable managers.
-        composableManagers.forEach((managerId) => {
+        for (const managerId of composableManagers) {
           const node = this.rosNodes.find((n) => n.id === managerId || n.name === managerId);
           if (node) {
             const tag: TTag = {
@@ -1405,7 +1411,7 @@ export default class Provider implements IProvider {
               node.tags.unshift(tag);
             }
           }
-        });
+        }
 
         this.daemon = true;
         const changed = this.applyScreens(this.screens);
@@ -1435,39 +1441,24 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_INCLUDED_FILES, [request], true).then(
       (value: TResultData) => {
         if (value.result) {
-          const parsedList = value.data as LaunchIncludedFile[];
+          const parsedList = (value.data as LaunchIncludedFile[]) || [];
           const launchList: LaunchIncludedFile[] = [];
 
-          if (parsedList) {
-            parsedList.forEach(
-              (lf: {
-                path: string;
-                line_number: number;
-                inc_path: string;
-                exists: boolean;
-                raw_inc_path: string;
-                rec_depth: number;
-                args: LaunchArgument[] | undefined;
-                default_inc_args: LaunchArgument[] | undefined;
-                size: number;
-                conditional_excluded: boolean;
-              }) => {
-                launchList.push(
-                  new LaunchIncludedFile(
-                    this.connection.host,
-                    lf.path,
-                    lf.line_number,
-                    lf.inc_path,
-                    lf.exists,
-                    lf.raw_inc_path,
-                    lf.rec_depth,
-                    lf.args || [],
-                    lf.default_inc_args || [],
-                    lf.size,
-                    lf.conditional_excluded
-                  )
-                );
-              }
+          for (const lf of parsedList) {
+            launchList.push(
+              new LaunchIncludedFile(
+                this.connection.host,
+                lf.path,
+                lf.line_number,
+                lf.inc_path,
+                lf.exists,
+                lf.raw_inc_path,
+                lf.rec_depth,
+                lf.args || [],
+                lf.default_inc_args || [],
+                lf.size,
+                lf.conditional_excluded
+              )
             );
           }
           return launchList;
@@ -1756,7 +1747,7 @@ export default class Provider implements IProvider {
         }
         return {
           success: false,
-          message: `Start Node: Invalid response`,
+          message: "Start Node: Invalid response",
           details: `Node: ${node.id} Details: ${response.status.msg}`,
           response,
         };
@@ -1820,11 +1811,11 @@ export default class Provider implements IProvider {
   private getScreenList: () => Promise<ScreensMapping[] | null> = async () => {
     const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], true).then((value: TResultData) => {
       if (value.result) {
-        const screenMappings = value.data as ScreensMapping[];
+        const screenMappings = (value.data as ScreensMapping[]) || [];
         const screenList: ScreensMapping[] = [];
-        screenMappings?.forEach((p: ScreensMapping) => {
+        for (const p of screenMappings) {
           screenList.push(new ScreensMapping(p.name, p.screens || []));
-        });
+        }
         return screenList;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getScreenList()`, `${value.message}`);
@@ -1875,7 +1866,7 @@ export default class Provider implements IProvider {
         if (value.result) {
           // handle the result of type: {result: bool, message: str}
           if (!Array.isArray(value.data) && !value.result) {
-            this.logger?.error(`Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`, ``);
+            this.logger?.error(`Provider [${this.name()}]: Error at getNodeLoggers(): ${value.message}`, "");
             return [];
           }
           return value.data as LoggerConfig[];
@@ -1940,16 +1931,15 @@ export default class Provider implements IProvider {
             }) || []),
           ];
           return { params: paramList, errors: (value.data as TParamListResult)?.errors || [] };
-        } else {
-          // old style
-          const paramList = [
-            ...((value.data as RosParameter[])?.map((item) => {
-              item.id = `${item.node}#${item.name}`;
-              return item;
-            }) || []),
-          ];
-          return { params: paramList, errors: [] };
         }
+        // old style
+        const paramList = [
+          ...((value.data as RosParameter[])?.map((item) => {
+            item.id = `${item.node}#${item.name}`;
+            return item;
+          }) || []),
+        ];
+        return { params: paramList, errors: [] };
       }
       this.logger?.debug(`Provider [${this.name()}]: Error at getParameterList()`, `${value.message}`);
       return { params: [], errors: [value.message] };
@@ -1973,16 +1963,15 @@ export default class Provider implements IProvider {
               }) || []),
             ];
             return { params: paramList, errors: (value.data as TParamListResult)?.errors || [] };
-          } else {
-            // old style
-            const paramList = [
-              ...((value.data as RosParameter[])?.map((item) => {
-                item.id = `${item.node}#${item.name}`;
-                return item;
-              }) || []),
-            ];
-            return { params: paramList, errors: [] };
           }
+          // old style
+          const paramList = [
+            ...((value.data as RosParameter[])?.map((item) => {
+              item.id = `${item.node}#${item.name}`;
+              return item;
+            }) || []),
+          ];
+          return { params: paramList, errors: [] };
         }
         this.logger?.debug(`Provider [${this.name()}]: Error at stopNode()`, `${value.message}`);
         return { params: [], errors: [value.message] };
@@ -2087,15 +2076,25 @@ export default class Provider implements IProvider {
     const nl = nlUnfiltered.filter((n) => {
       let ignored = false;
 
-      // exclude nodes belonging to a different provider
-      if (!this.showRemoteNodes) {
-        if (
-          (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
-          (n.location instanceof String && n.location === "remote") ||
-          !n.isLocal
-        ) {
-          ignored = true;
-        }
+      // ignore nodes, which belongs to a discovered remote provider.
+      // Otherwise, the node is displayed under Not connected host.
+      if (
+        (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
+        (n.location instanceof String && n.location === "remote") ||
+        !n.isLocal
+      ) {
+        ignored = true;
+        ignored =
+          this.remoteProviders.filter((prov) => {
+            for (const nodeLocation of n.location) {
+              for (const provName of prov.hostnames) {
+                if (nodeLocation.includes(provName)) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          }).length > 0;
       }
 
       // update the list with same GUIDs
@@ -2108,15 +2107,16 @@ export default class Provider implements IProvider {
         }
       }
       // exclude ignored nodes
-      this.IGNORED_NODES.forEach((ignoredNode) => {
+      for (const ignoredNode of this.IGNORED_NODES) {
         if (n.name.indexOf(ignoredNode) !== -1) ignored = true;
-      });
+      }
       return !ignored;
     });
 
     const dynamicReconfigureNodes = new Set<string>();
 
     // check if nodes are not available or run in other host (not monitoring)
+    // biome-ignore lint/complexity/noForEach: <explanation>
     nl.forEach((n) => {
       // idGlobal should be the same for life of the node on remote host
       n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
@@ -2162,7 +2162,8 @@ export default class Provider implements IProvider {
         }
       }
       // check if the node has dynamic reconfigure service
-      n.services?.forEach((service: RosTopicId) => {
+      const services: RosTopicId[] = n.services || [];
+      for (const service of services) {
         if (service.name.endsWith("/set_parameters")) {
           const serviceNs = service.name.slice(0, -15);
           n.dynamicReconfigureServices.push(serviceNs);
@@ -2170,8 +2171,9 @@ export default class Provider implements IProvider {
             dynamicReconfigureNodes.add(serviceNs);
           }
         }
-      });
+      }
     });
+    // biome-ignore lint/complexity/noForEach: <explanation>
     nl.forEach((n) => {
       if (dynamicReconfigureNodes.has(n.name)) {
         n.dynamicReconfigureServices.push(n.name);
@@ -2278,10 +2280,10 @@ export default class Provider implements IProvider {
       .then(() => {
         // await this.connection.connection.closeRegistrations();
         this.logger?.info(`register callbacks for ${this.id}`, "", false);
-        this.getCallbacks().forEach((item: TConCallback) => {
+        for (const item of this.getCallbacks()) {
           this.logger?.info(`  register callback for ${item.uri}`, "", false);
           this.registerCallback(item.uri, item.callback);
-        });
+        }
         return true;
       });
     return false;
@@ -2293,7 +2295,7 @@ export default class Provider implements IProvider {
    * Execute a call considering [callAttempts] and [delayCallAttempts]
    */
   private makeCall: (uri: string, args: unknown[], lockRequest: boolean, timeout?: number) => Promise<TResultData> =
-    async (uri, args, lockRequest = true, timeout) => {
+    async (uri, args, lockRequest = true, timeout = undefined) => {
       if (!this.isAvailable()) {
         return {
           result: false,
@@ -2314,7 +2316,7 @@ export default class Provider implements IProvider {
         _args: unknown[],
         currentAttempt?: number,
         _timeout?: number
-      ) => Promise<TResultData> = async (_uri, _args, currentAttempt = 0, _timeout) => {
+      ) => Promise<TResultData> = async (_uri, _args, currentAttempt = 0, _timeout = undefined) => {
         try {
           const r = await this.connection.call(_uri, _args, _timeout).catch((err) => {
             // TODO

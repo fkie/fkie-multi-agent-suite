@@ -12,7 +12,7 @@ import { getFileName, LaunchContent, LaunchFile, RosNode } from "@/renderer/mode
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType, Provider } from "@/renderer/providers";
-import { generateUniqueId, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
+import { generateUniqueId, idFromDDSLocations, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
 import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
@@ -98,7 +98,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     const spamNodesParam = settingsCtx.get("spamNodes") as string;
     const cliInSpam = spamNodesParam.indexOf("_ros2cli") > -1;
     for (const node of nodes) {
-      let nodePath = node.providerId || "";
+      let remoteLocationId = "";
+      if (!node.isLocal) {
+        // adds a new provider, which has no mas daemon and discovery
+        remoteLocationId = idFromDDSLocations(Array.isArray(node.location) ? node.location : [node.location]);
+      }
+      let nodePath = node.isLocal && node.providerId ? node.providerId : remoteLocationId;
       if (node.system_node && namespaceSystemNodes && !(cliInSpam && node.name.startsWith("/_ros2cli"))) {
         // for system nodes, e.g.: /{SYSTEM}/ns
         nodePath += namespaceSystemNodes;
@@ -162,8 +167,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
                 treePath,
                 children: r[name].nodeTree,
                 node: null,
-                providerId: idx === 0 ? node.providerId : undefined,
-                providerName: idx === 0 ? node.providerName : undefined,
+                providerId: idx === 0 ? remoteLocationId || node.providerId : undefined,
+                providerName: idx === 0 ? remoteLocationId || node.providerName : undefined,
                 name: idx === 0 ? node.providerName || "" : a.slice(idx, idx + 1).join("/"), // top level is the provider
               });
               expandedGroups.push(treePath);
@@ -650,12 +655,19 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       >
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           let providerIsAvailable = false;
-          const p = rosCtx.getProviderById(item.providerId as string, true);
+          let p = rosCtx.getProviderById(item.providerId as string, false);
           if (p?.isAvailable()) {
             providerIsAvailable = true;
           }
           if (!p) {
-            return "";
+            // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
+            // We create a new "not connected" provider.
+            if (item.providerId) {
+              p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
+              p.id = item.providerId;
+            } else {
+              return "";
+            }
           }
           // loop through available hosts
           return (

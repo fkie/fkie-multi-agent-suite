@@ -34,7 +34,7 @@ const getGroupLifecycleStatus: (treeItems: NodeTreeItem[]) => number = (treeItem
         groupStatus = childrenStatus;
       }
     }
-    if (treeItem.node && treeItem.node.lifecycle_state) {
+    if (treeItem.node?.lifecycle_state) {
       switch (treeItem.node.lifecycle_state) {
         case "unconfigured":
           groupStatus = GroupLifecycleStatus.NOT_CONFIGURED;
@@ -64,7 +64,7 @@ const getGroupLifecycleStatus: (treeItems: NodeTreeItem[]) => number = (treeItem
 const getGroupStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
   let groupStatus = GroupStatus.ALL_INACTIVE;
   let allRunning = true;
-  treeItems.forEach((treeItem) => {
+  for (const treeItem of treeItems) {
     if (treeItem.children && treeItem.children.length > 0) {
       const childrenStatus = getGroupStatus(treeItem.children);
       if (childrenStatus !== GroupStatus.ALL_INACTIVE) {
@@ -82,7 +82,7 @@ const getGroupStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
     } else if (treeItem.node) {
       allRunning = false;
     }
-  });
+  }
   if (groupStatus === GroupStatus.SOME_RUNNING && allRunning) {
     groupStatus = GroupStatus.ALL_RUNNING;
   }
@@ -91,7 +91,7 @@ const getGroupStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
 
 const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = (treeItems) => {
   let groupLevel = DiagnosticLevel.OK;
-  treeItems.forEach((treeItem) => {
+  for (const treeItem of treeItems) {
     if (treeItem.children && treeItem.children.length > 0) {
       const childrenLevel = getGroupDiagnosticLevel(treeItem.children);
       groupLevel = getMaxDiagnosticLevel(groupLevel, childrenLevel) || DiagnosticLevel.OK;
@@ -99,7 +99,7 @@ const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = 
     if (treeItem.node) {
       groupLevel = getMaxDiagnosticLevel(groupLevel, treeItem.node.diagnosticLevel) || DiagnosticLevel.OK;
     }
-  });
+  }
   return groupLevel;
 };
 
@@ -166,7 +166,7 @@ interface GroupIconProps {
   isDarkMode: boolean;
 }
 
-export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function GroupIcon(props) {
+export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function GroupIcon(props, ref) {
   const { treeItems, isDarkMode = false } = props;
   const groupStatus = getGroupStatus(treeItems);
   const groupLifecycleStatus = getGroupLifecycleStatus(treeItems);
@@ -223,6 +223,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
   }
   return (
     <Tooltip
+      ref={ref}
       key={`tooltip-icon-${groupLifecycleStatus}`}
       title={`Lifecycle state: '${getNameFromLifecycle(groupLifecycleStatus)}'`}
       placement="left"
@@ -244,13 +245,13 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
 export function NodesCount(children: NodeTreeItem[]): number {
   let result = 0;
   let itemsCount = 0;
-  children.forEach((treeItem: NodeTreeItem) => {
+  for (const treeItem of children) {
     if (treeItem.children && treeItem.children.length > 0) {
       result += NodesCount(treeItem.children);
     } else {
       itemsCount += 1;
     }
-  });
+  }
   return result + itemsCount;
 }
 

@@ -4,7 +4,6 @@ import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import DvrIcon from "@mui/icons-material/Dvr";
-import LocalPlayOutlinedIcon from "@mui/icons-material/LocalPlayOutlined";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
@@ -25,7 +24,6 @@ import {
   LinearProgress,
   Paper,
   Stack,
-  ToggleButton,
   Tooltip,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
@@ -102,7 +100,6 @@ export default function HostTreeViewPanel(): JSX.Element {
   const navCtx = useContext(NavigationContext);
 
   // state variables
-  const [showRemoteNodes, setShowRemoteNodes] = useState<boolean>(settingsCtx.get("showRemoteNodes") as boolean);
   const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState<boolean>(
     settingsCtx.get("showButtonsForKeyModifiers") as boolean
   );
@@ -136,8 +133,8 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [nodesAwaitModal, setNodesAwaitModal] = useState<RosNode[]>([]);
   const [editNodeWithMultipleLaunchInfos, setEditNodeWithMultipleLaunchInfos] = useState<TMenuOptionsEditor>();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    setShowRemoteNodes(settingsCtx.get("showRemoteNodes") as boolean);
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
@@ -149,12 +146,12 @@ export default function HostTreeViewPanel(): JSX.Element {
   const getNodesFromIds = useCallback(
     (itemIds: string[]) => {
       const nodeList: RosNode[] = [];
-      itemIds.forEach((item) => {
+      for (const item of itemIds) {
         const node = rosCtx.nodeMap.get(item);
         if (node) {
           nodeList.push(node);
         }
-      });
+      }
       return nodeList;
     },
     [rosCtx.nodeMap]
@@ -168,17 +165,19 @@ export default function HostTreeViewPanel(): JSX.Element {
   // search in the origin node list and create a new tree
   const onSearch = useDebounceCallback((searchTerm: string) => {
     const newVisibleNodes: RosNode[] = [];
-    providerNodes.forEach((item) => {
+    for (const item of providerNodes) {
       const { nodes } = item;
-      nodes.forEach((node) => {
+      const filteredNodes = nodes.filter((node) => {
         // filter nodes by user text
         if (searchTerm.length > 0) {
           const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName, node.guid || ""]);
-          if (!isMatch) return;
+          return isMatch;
         }
-        newVisibleNodes.push(node);
+        return true;
       });
-    });
+
+      newVisibleNodes.push(...filteredNodes);
+    }
     setVisibleNodes(newVisibleNodes);
   }, 300);
 
@@ -217,12 +216,12 @@ export default function HostTreeViewPanel(): JSX.Element {
   const handleNodesSelect = useCallback(
     (itemIds: string[]) => {
       const selectedNoes: string[] = [];
-      itemIds.forEach((id) => {
+      for (const id of itemIds) {
         const n = rosCtx.nodeMap.get(id);
         if (n) {
           selectedNoes.push(id);
         }
-      });
+      }
       navCtx.setSelectedNodes(selectedNoes);
     },
     [navCtx, rosCtx.nodeMap]
@@ -235,12 +234,12 @@ export default function HostTreeViewPanel(): JSX.Element {
     // set the selected nodes
     const selectedProvidersLocal: string[] = [];
     // update setSelectedNodes based on trees selectedItems
-    providerIds.forEach((id: string) => {
+    for (const id of providerIds) {
       // search selected host
       if (rosCtx.getProviderById(id)) {
         selectedProvidersLocal.push(id);
       }
-    });
+    }
     navCtx.setSelectedProviders(selectedProvidersLocal);
   }
 
@@ -322,7 +321,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   function createParameterPanel(nodes: RosNode[], providers: string[]): void {
     const openLocation: string = LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation") as string];
     const params: { name: string; callback: () => void }[] = [];
-    nodes.forEach((node) => {
+    for (const node of nodes) {
       params.push({
         name: node.name,
         callback: () => {
@@ -339,8 +338,8 @@ export default function HostTreeViewPanel(): JSX.Element {
           );
         },
       });
-    });
-    providers.forEach((providerId) => {
+    }
+    for (const providerId of providers) {
       const provider = rosCtx.getProviderById(providerId);
       if (provider) {
         params.push({
@@ -360,13 +359,13 @@ export default function HostTreeViewPanel(): JSX.Element {
           },
         });
       }
-    });
+    }
     if (params.length >= 3) {
       setNodeParams(params);
     } else {
-      params.forEach((item) => {
+      for (const item of params) {
         item.callback();
-      });
+      }
     }
   }
 
@@ -390,10 +389,10 @@ export default function HostTreeViewPanel(): JSX.Element {
   }
 
   function updateWithAssociations(nodes: RosNode[], depth?: number): RosNode[] {
-    if (depth === undefined) depth = 0;
-    if (depth > 10) return [...nodes];
+    const _depth = depth || 0;
+    if (_depth > 10) return [...nodes];
     const newNodeList: RosNode[] = [];
-    nodes.forEach((node) => {
+    for (const node of nodes) {
       if (node.launchInfo.size > 0) {
         const associations: string[] =
           node.launchInfo.size === 1
@@ -402,22 +401,22 @@ export default function HostTreeViewPanel(): JSX.Element {
         if (associations) {
           const provider = rosCtx.getProviderById(node.providerId);
           if (provider) {
-            associations.forEach((asNodeName: string) => {
+            for (const asNodeName of associations) {
               const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
-              const asNodesRec = updateWithAssociations(asNodes, depth + 1);
-              asNodesRec.forEach((asNode) => {
+              const asNodesRec = updateWithAssociations(asNodes, _depth + 1);
+              for (const asNode of asNodesRec) {
                 if (!newNodeList.find((n) => n.name === asNode.name)) {
                   newNodeList.push(asNode);
                 }
-              });
-            });
+              }
+            }
           }
         }
       }
       if (!newNodeList.find((n) => n.name === node.name)) {
         newNodeList.push(node);
       }
-    });
+    }
     return newNodeList;
   }
 
@@ -467,13 +466,12 @@ export default function HostTreeViewPanel(): JSX.Element {
         node2Start.push(node);
       }
     };
-    nodeList.forEach((node) => {
+    for (const node of nodeList) {
       // ignore running and nodes already in the queue
       if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
         skippedNodes.set(node.name, "already running");
       } else if (
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
+        queueItemsQueueMain?.find((elem) => {
           return elem.action === "START" && elem.node?.name === node.name;
         })
       ) {
@@ -495,14 +493,14 @@ export default function HostTreeViewPanel(): JSX.Element {
         // no launch files
         withNoLaunch.push(node.name);
       }
-    });
+    }
     if (skippedNodes.size > 0) {
       logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
     }
     if (withNoLaunch.length > 0) {
-      withNoLaunch.forEach((nodeName) => {
+      for (const nodeName of withNoLaunch) {
         skippedNodes.set(nodeName, "no launch file");
-      });
+      }
       logCtx.debug(`No launch file for ${withNoLaunch.length} nodes found`, JSON.stringify(node2Start));
     }
     if (withMultiLaunch.length > 0) {
@@ -566,7 +564,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     const nodes2stop: RosNode[] = [];
     const skippedNodes: Map<string, string> = new Map();
     const nodeList = updateWithAssociations(nodes);
-    nodeList.forEach((node) => {
+    for (const node of nodeList) {
       // we stop system nodes only when they are individually selected
       if (node.system_node && nodeList.length > 1) {
         // skip system nodes
@@ -574,8 +572,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       } else if (onlyWithLaunch && node.launchInfo.size === 0) {
         skippedNodes.set(node.name, "stop only with launch files");
       } else if (
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
+        queueItemsQueueMain?.find((elem) => {
           return elem.action === "STOP" && elem.node?.name === node.name;
         })
       ) {
@@ -588,7 +585,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       } else {
         skippedNodes.set(node.name, "not running");
       }
-    });
+    }
     if (skippedNodes.size > 0) {
       logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
     }
@@ -599,18 +596,18 @@ export default function HostTreeViewPanel(): JSX.Element {
     );
     let maxKillTime = -1;
     // add kill on stop commands
-    nodes2stop.forEach((node) => {
+    for (const node of nodes2stop) {
       if (node.pid) {
         let killTime: number = -1;
-        node.launchInfo.forEach((launchInfo) => {
-          launchInfo.parameters?.forEach((param) => {
+        for (const launchInfo of node.launchInfo.values()) {
+          for (const param of launchInfo.parameters || []) {
             // TODO: search for kill parameter in ros2
             if (param.name.endsWith("/nm/kill_on_stop")) {
               if (killTime === -1)
-                killTime = typeof param.value === "string" ? parseInt(param.value) : (param.value as number);
+                killTime = typeof param.value === "string" ? Number.parseInt(param.value) : (param.value as number);
             }
-          });
-        });
+          }
+        }
 
         if (killTime > -1) {
           if (maxKillTime < killTime) {
@@ -621,7 +618,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           }, killTime);
         }
       }
-    });
+    }
     if (restart) {
       if (maxKillTime > -1) {
         // wait until all timers are expired before start nodes if kill timer was used while stop nodes
@@ -672,8 +669,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       // we kill system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
       if (
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
+        queueItemsQueueMain?.find((elem) => {
           return elem.action === "KILL" && elem.node?.name === node.name;
         })
       ) {
@@ -719,8 +715,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       // not supported for ROS2
       if (!node.masteruri) return;
       if (
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
+        queueItemsQueueMain?.find((elem) => {
           return elem.action === "UNREGISTER" && elem.node?.name === node.name;
         })
       ) {
@@ -760,8 +755,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    */
   function startDynamicReconfigure(service: string, masteruri: string): void {
     if (
-      queueItemsQueueMain &&
-      queueItemsQueueMain.find((elem) => {
+      queueItemsQueueMain?.find((elem) => {
         return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
       })
     ) {
@@ -779,7 +773,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       if (!result.result) {
         addStatusQueueMain("DYNAMIC_RECONFIGURE", service, false, result.message);
       } else {
-        addStatusQueueMain("DYNAMIC_RECONFIGURE", service, true, `dynamic reconfigure started`);
+        addStatusQueueMain("DYNAMIC_RECONFIGURE", service, true, "dynamic reconfigure started");
       }
     }
     return Promise.resolve();
@@ -806,7 +800,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           }
         })
       ).catch((error) => {
-        logCtx.error(`Could not clear logs for providers`, error);
+        logCtx.error("Could not clear logs for providers", error);
       });
     }
   }
@@ -820,8 +814,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       // we unregister system nodes only when they are individually selected
       if (node.system_node && nodes.length > 1) return;
       if (
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
+        queueItemsQueueMain?.find((elem) => {
           return elem.action === "CLEAR_LOG" && elem.node?.name === node.name;
         })
       ) {
@@ -860,10 +853,10 @@ export default function HostTreeViewPanel(): JSX.Element {
   }
 
   function refreshAllProvider(forceRefresh: boolean): void {
-    rosCtx.providersConnected.forEach((p) => {
+    for (const p of rosCtx.providersConnected) {
       p.updateRosNodes({}, forceRefresh);
       p.updateTimeDiff();
-    });
+    }
   }
 
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
@@ -919,34 +912,34 @@ export default function HostTreeViewPanel(): JSX.Element {
       }
     } else {
       // queue is finished, print failed results
-      ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"].forEach((action) => {
+      for (const action of ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"]) {
         const failed = failedQueueMain(action);
         if (failed.length > 0) {
           const infoDict = {};
-          failed.forEach((item) => {
+          for (const item of failed) {
             infoDict[item.itemName] = item.message;
-          });
+          }
           logCtx.warn(`Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`, JSON.stringify(infoDict), true);
         }
-      });
+      }
       // queue is finished, print success results
-      [
+      for (const action of [
         ["STOP", "stopped"],
         ["START", "started"],
         ["KILL", "killed"],
         ["UNREGISTER", "unregistered"],
         ["CLEAR_LOG", "logs cleared"],
         ["DYNAMIC_RECONFIGURE", "dynamic reconfigure started"],
-      ].forEach((action) => {
+      ]) {
         const success = successQueueMain(action[0]);
         if (success.length > 0) {
           const infoDict = {};
-          success.forEach((item) => {
+          for (const item of success) {
             infoDict[item.itemName] = item.message;
-          });
+          }
           logCtx.success(`${success.length} nodes ${action[1]}`, JSON.stringify(infoDict), true);
         }
-      });
+      }
       // clear queue and results
       clearQueueMain();
       return Promise.resolve();
@@ -957,17 +950,6 @@ export default function HostTreeViewPanel(): JSX.Element {
   useEffect(() => {
     performQueueMain(indexQueueMain);
   }, [indexQueueMain]);
-
-  function showRemoteOnAllProvider(state: boolean): void {
-    rosCtx.providersConnected.forEach((p) => {
-      p.showRemoteNodes = state;
-    });
-  }
-
-  useEffect(() => {
-    showRemoteOnAllProvider(showRemoteNodes);
-    refreshAllProvider(false);
-  }, [showRemoteNodes]);
 
   const createButtonBox = useMemo(() => {
     const selectedNodes = getSelectedNodes();
@@ -1130,18 +1112,18 @@ export default function HostTreeViewPanel(): JSX.Element {
                 onClick={() => {
                   let countDri = 0;
                   const driItems: RosNode[] = [];
-                  getSelectedNodes().forEach((node) => {
+                  for (const node of getSelectedNodes()) {
                     countDri += node.dynamicReconfigureServices.length;
                     driItems.push(node);
-                  });
+                  }
                   if (countDri > 2) {
                     setDynamicReconfigureItems(driItems);
                   } else {
-                    driItems.forEach((node) => {
-                      node.dynamicReconfigureServices.forEach((dri) => {
+                    for (const node of driItems) {
+                      for (const dri of node.dynamicReconfigureServices) {
                         startDynamicReconfigure(dri, node.masteruri);
-                      });
-                    });
+                      }
+                    }
                   }
                 }}
                 // disabled={
@@ -1165,23 +1147,23 @@ export default function HostTreeViewPanel(): JSX.Element {
               onClick={(event) => {
                 if (navCtx.selectedProviders?.length > 0) {
                   const screens: TMenuOptionsScreen[] = []; // {node : string, screen: string, callback: () => void, external: boolean}
-                  navCtx.selectedProviders?.forEach((providerId) => {
+                  for (const providerId of navCtx.selectedProviders || []) {
                     const prov = rosCtx.getProviderById(providerId);
-                    prov?.screens.forEach((screenMap) => {
-                      screenMap.screens?.forEach((screen) => {
+                    for (const screenMap of prov?.screens || []) {
+                      for (const screen of screenMap.screens || []) {
                         screens.push({
                           nodeName: screenMap.name,
-                          providerId: prov?.id,
+                          providerId: prov?.id || "",
                           screen: screen,
                           external: event.nativeEvent.shiftKey,
                         });
-                      });
-                    });
+                      }
+                    }
                     setNodeScreens(screens);
-                  });
+                  }
                 } else {
                   const screens: TMenuOptionsScreen[] = []; // {node : string, screen: string, callback: () => void, external: boolean}
-                  getSelectedNodes().forEach((node) => {
+                  for (const node of getSelectedNodes()) {
                     if (node.screens && node.screens.length === 1) {
                       // 1 screen available
                       screens.push({
@@ -1238,11 +1220,11 @@ export default function HostTreeViewPanel(): JSX.Element {
                         },
                       });
                     }
-                  });
+                  }
                   if (screens.length >= 3) {
                     setNodeScreens(screens);
                   } else {
-                    screens.forEach((item) => {
+                    for (const item of screens) {
                       if (item.callback) {
                         item.callback();
                       } else {
@@ -1254,7 +1236,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                           item.external
                         );
                       }
-                    });
+                    }
                   }
                 }
               }}
@@ -1275,7 +1257,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 const logs: TMenuOptionsNode[] = []; // {node : string, callback: () => void}
-                getSelectedNodes().forEach((node) => {
+                for (const node of getSelectedNodes()) {
                   logs.push({
                     node: node,
                     callback: () => {
@@ -1289,13 +1271,13 @@ export default function HostTreeViewPanel(): JSX.Element {
                       );
                     },
                   });
-                });
+                }
                 if (logs.length >= 3) {
                   setNodeLogs(logs);
                 } else {
-                  logs.forEach((item) => {
+                  for (const item of logs) {
                     item.callback();
-                  });
+                  }
                 }
               }}
             >
@@ -1311,20 +1293,20 @@ export default function HostTreeViewPanel(): JSX.Element {
               disabled={selectedNodes.length === 0}
               onClick={() => {
                 const loggers: TMenuOptionsNode[] = []; // {node : string, callback: () => void}
-                getSelectedNodes().forEach((node) => {
+                for (const node of getSelectedNodes()) {
                   loggers.push({
                     node: node,
                     callback: () => {
                       createLoggerPanel(node);
                     },
                   });
-                });
+                }
                 if (loggers.length >= 3) {
                   setNodeLoggers(loggers);
                 } else {
-                  loggers.forEach((item) => {
+                  for (const item of loggers) {
                     item.callback();
-                  });
+                  }
                 }
               }}
             >
@@ -1370,7 +1352,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                 disabled={navCtx.selectedProviders?.length === 0}
                 onClick={(event) => {
                   // open a new terminal for each selected provider
-                  navCtx.selectedProviders.forEach((providerId) => {
+                  for (const providerId of navCtx.selectedProviders) {
                     createSingleTerminalPanel(
                       CmdType.TERMINAL,
                       providerId,
@@ -1379,7 +1361,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                       event.nativeEvent.shiftKey,
                       event.nativeEvent.ctrlKey
                     );
-                  });
+                  }
                 }}
               >
                 <TerminalIcon fontSize="inherit" />
@@ -1402,22 +1384,6 @@ export default function HostTreeViewPanel(): JSX.Element {
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
         {indexQueueMain < 0 && (
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip
-              title="Each host shows all nodes visible to it"
-              placement="left"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <ToggleButton
-                size="small"
-                value="showRemoteNodes"
-                selected={showRemoteNodes}
-                onChange={() => setShowRemoteNodes(!showRemoteNodes)}
-              >
-                <LocalPlayOutlinedIcon sx={{ fontSize: "inherit" }} />
-              </ToggleButton>
-            </Tooltip>
             <Tooltip
               title="Reload node list"
               placement="left"
@@ -1511,12 +1477,12 @@ export default function HostTreeViewPanel(): JSX.Element {
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
-            items.forEach((item) => {
+            for (const item of items) {
               const nodeWithOpt = nodeParams.find((nodeItem) => `${nodeItem.name}` === item);
-              if (nodeWithOpt && nodeWithOpt.callback) {
+              if (nodeWithOpt?.callback) {
                 nodeWithOpt.callback();
               }
-            });
+            }
             setNodeParams([]);
           }}
           onCancelCallback={() => {
@@ -1532,7 +1498,7 @@ export default function HostTreeViewPanel(): JSX.Element {
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
-            items.forEach((item) => {
+            for (const item of items) {
               const nodeWithOpt = nodeScreens.find(
                 (nodeScreen) => `${nodeScreen.nodeName} [${nodeScreen.screen}]` === item
               );
@@ -1549,7 +1515,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                   );
                 }
               }
-            });
+            }
             setNodeScreens([]);
           }}
           onCancelCallback={() => {
@@ -1565,12 +1531,12 @@ export default function HostTreeViewPanel(): JSX.Element {
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
-            items.forEach((item) => {
+            for (const item of items) {
               const nodeWithOpt = nodeLogs.find((logItem) => `${logItem.node.name}` === item);
-              if (nodeWithOpt && nodeWithOpt.callback) {
+              if (nodeWithOpt?.callback) {
                 nodeWithOpt.callback();
               }
-            });
+            }
             setNodeLogs([]);
           }}
           onCancelCallback={() => {
@@ -1586,12 +1552,12 @@ export default function HostTreeViewPanel(): JSX.Element {
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
-            items.forEach((item) => {
+            for (const item of items) {
               const nodeWithOpt = nodeLogs.find((nodeItem) => `${nodeItem.node.name}` === item);
-              if (nodeWithOpt && nodeWithOpt.callback) {
+              if (nodeWithOpt?.callback) {
                 nodeWithOpt.callback();
               }
-            });
+            }
             setNodeLoggers([]);
           }}
           onCancelCallback={() => {
@@ -1609,14 +1575,14 @@ export default function HostTreeViewPanel(): JSX.Element {
           useRadioGroup
           onConfirmCallback={(items) => {
             const useLaunchFiles = {};
-            items.forEach((item) => {
-              item.list.forEach((launch) => {
+            for (const item of items) {
+              for (const launch of item.list) {
                 const node = nodeMultiLaunches.find((n) => n.name.includes(item.title));
                 if (node) {
                   useLaunchFiles[node.name] = launch;
                 }
-              });
-            });
+              }
+            }
             // setNodesToStart(nodesAwaitModal);
             startNodesWithLaunchCheck(nodesAwaitModal, false, useLaunchFiles);
             setNodeMultiLaunches([]);
@@ -1639,8 +1605,8 @@ export default function HostTreeViewPanel(): JSX.Element {
           ]}
           useRadioGroup
           onConfirmCallback={(items) => {
-            items.forEach((item) => {
-              item.list.forEach((launch) => {
+            for (const item of items) {
+              for (const launch of item.list) {
                 const launchInfo = editNodeWithMultipleLaunchInfos.node.launchInfo.get(launch);
                 navCtx.openEditor(
                   editNodeWithMultipleLaunchInfos.node.providerId,
@@ -1650,8 +1616,8 @@ export default function HostTreeViewPanel(): JSX.Element {
                   launchInfo?.launch_context_arg as TLaunchArg[],
                   editNodeWithMultipleLaunchInfos.external
                 );
-              });
-            });
+              }
+            }
             setEditNodeWithMultipleLaunchInfos(undefined);
           }}
           onCancelCallback={() => {
@@ -1670,12 +1636,12 @@ export default function HostTreeViewPanel(): JSX.Element {
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
-            items.forEach((item) => {
+            for (const item of items) {
               const node = dynamicReconfigureItems.find((node) => node.name === item.title);
-              item.list.forEach((dri) => {
+              for (const dri of item.list) {
                 startDynamicReconfigure(dri, node?.masteruri || "");
-              });
-            });
+              }
+            }
             setDynamicReconfigureItems([]);
           }}
           onCancelCallback={() => {

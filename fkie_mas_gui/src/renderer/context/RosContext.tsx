@@ -1136,23 +1136,27 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           let removed = false;
           if (providersRemoved.length > 0) {
             // remove not used nodes fom nodeMap
-            providersRemoved.forEach((provId) => {
+            for (const provId of providersRemoved) {
               if (id.startsWith(provId)) {
                 removed = true;
               }
-            });
+            }
           }
           if (!removed) {
             newNodeMap.set(id, node);
           }
         }
       });
+
       newMap.set(data.provider.id, data.nodes);
       data.nodes.forEach((node) => {
         newNodeMap.set(node.idGlobal, node);
       });
       setNodeMap(newNodeMap);
-      logCtx.debug(`ros nodes updated for ${data.provider.id}: ${data.nodes.length} nodes`, "");
+      logCtx.debug(
+        `ros nodes updated for ${data.provider.id}: ${data.nodes.length} nodes`,
+        `${JSON.stringify(data.nodes)}`
+      );
       // logCtx.debug(`ros nodes updated for ${data.provider.id}: ${JSON.stringify(data.nodes)}`, "");
 
       setMapProviderRosNodes(newMap);

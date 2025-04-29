@@ -223,11 +223,11 @@ export default class RosNode {
     if (this.container_name) {
       result.push(this.container_name);
     }
-    this.launchInfo.forEach((launchInfo) => {
+    for (const launchInfo of this.launchInfo.values()) {
       if (launchInfo.composable_container && !result.includes(launchInfo.composable_container)) {
         result.push(launchInfo.composable_container);
       }
-    });
+    }
     return result;
   }
 }

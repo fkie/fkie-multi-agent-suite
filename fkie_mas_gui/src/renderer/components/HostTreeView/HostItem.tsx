@@ -128,9 +128,9 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
    * Check if provider has master sync on
    */
   const getMasterSyncNode = useCallback(
-    function (providerId: string): RosNode | undefined {
+    (providerId: string): RosNode | undefined => {
       const foundSyncNode = rosCtx.mapProviderRosNodes.get(providerId)?.find((node) => {
-        return node.id.includes(`/mas_sync`) && node.status === RosNodeStatus.RUNNING;
+        return node.id.includes("/mas_sync") && node.status === RosNodeStatus.RUNNING;
       });
       return foundSyncNode;
     },
@@ -138,7 +138,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
   );
 
   const toggleMasterSync = useCallback(
-    function (provider: Provider): void {
+    (provider: Provider): void => {
       const syncNode: RosNode | undefined = getMasterSyncNode(provider.id);
       if (syncNode) {
         stopNodes([syncNode.idGlobal]);
@@ -146,7 +146,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
         rosCtx.startMasterSync(provider.connection.host, provider.rosVersion, provider.rosState?.masteruri);
       }
     },
-    [getMasterSyncNode, rosCtx.mapProviderRosNodes, stopNodes]
+    [getMasterSyncNode, stopNodes, rosCtx.startMasterSync]
   );
 
   /**
@@ -181,7 +181,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       }
       return {};
     },
-    [settingsCtx.changed]
+    [settingsCtx.changed, settingsCtx.get]
   );
 
   // avoid selection if collapse icon was clicked
@@ -252,7 +252,6 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
                   }}
                   open={openTimeButton}
                   anchorEl={anchorRef.current}
-                  role={undefined}
                   transition
                   disablePortal
                 >
@@ -328,8 +327,14 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
             {provider.name()}
 
             {getProviderTags(provider).map((tag: TTag) => (
-              <Stack key={tag.id}>
-                <Tooltip key={tag.id} title={`${tag.tooltip}`} placement="left" disableInteractive>
+              <Tooltip
+                key={tag.id}
+                sx={{ marginLeft: "0.1em" }}
+                title={`${tag.tooltip}`}
+                placement="left"
+                disableInteractive
+              >
+                <Box>
                   {typeof tag.data === "string" ? (
                     <Tag
                       text={tag.data}
@@ -347,8 +352,8 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
                   ) : (
                     tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
                   )}
-                </Tooltip>
-              </Stack>
+                </Box>
+              </Tooltip>
             ))}
           </Stack>
         </Box>

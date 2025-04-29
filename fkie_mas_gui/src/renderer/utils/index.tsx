@@ -141,3 +141,14 @@ export function basename(name: string): string {
   const result: string = name?.split(/[/.]+/).slice(-1)[0];
   return result;
 }
+
+export function idFromDDSLocations(locations: string[]): string {
+  for (const l of locations) {
+    if (!l.includes("SHM")) {
+      const items = l.split(":");
+      items.pop();
+      return items.join(":");
+    }
+  }
+  return `${locations}`;
+}

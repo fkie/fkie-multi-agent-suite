@@ -16,7 +16,7 @@ export const getDefaultPortFromRos: (
   let uriShift = 0;
   if (ros1MasterUri && ros1MasterUri !== "default") {
     // shift port if ROS_MASTER_URI has not a default port
-    uriShift = (parseInt(ros1MasterUri.split(":").slice(-1)[0]) - 11311) * 101;
+    uriShift = (Number.parseInt(ros1MasterUri.split(":").slice(-1)[0]) - 11311) * 101;
   }
   return rosVersion === "2" ? 35430 + networkId : 35685 + uriShift + networkId;
 };
@@ -264,12 +264,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "",
     group: "Window behavior",
   },
-  showRemoteNodes: {
-    label: "Show remote nodes",
-    default: false,
-    type: "none",
-    description: "Each host shows all nodes visible to it",
-  },
   avoidGroupWithOneItem: {
     label: "Avoid groups with one item",
     default: true,
@@ -291,7 +285,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     isValid: (value: JSONValue) => {
       let result = true;
       const splits: string[] = (value as string).split(",");
-      splits.forEach((item) => {
+      for (const item of splits) {
         try {
           new RegExp(`/(${item})/`);
           return true;
@@ -299,7 +293,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
           result = false;
           return false;
         }
-      });
+      }
       return result;
     },
     validate: (value: JSONValue) => {
@@ -390,9 +384,9 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
 
   function getParamList(): { name: string; param: ISettingsParam }[] {
     const params: { name: string; param: ISettingsParam }[] = [];
-    Object.keys(SETTINGS_DEF).forEach(function (key) {
+    for (const key of Object.keys(SETTINGS_DEF)) {
       params.push({ name: key, param: SETTINGS_DEF[key] });
-    });
+    }
     return params;
   }
 

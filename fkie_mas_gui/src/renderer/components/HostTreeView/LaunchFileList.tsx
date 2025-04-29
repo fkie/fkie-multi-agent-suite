@@ -52,7 +52,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host
    */
   const createFileEditorPanel = useCallback(
-    async function (provId: string, launchContent: LaunchContent, external: boolean): Promise<void> {
+    async (provId: string, launchContent: LaunchContent, external: boolean): Promise<void> => {
       navCtx.openEditor(provId, launchContent.path, launchContent.path, null, [], external);
     },
     [navCtx]
