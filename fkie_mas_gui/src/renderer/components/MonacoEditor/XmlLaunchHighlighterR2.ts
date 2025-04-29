@@ -4,7 +4,8 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
   ignoreCase: true,
 
-  qualifiedTags: /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push_ros_namespace|\?xml/,
+  qualifiedTags:
+    /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push-ros-namespace|\?xml/,
 
   qualifiedLaunchAttrs: /if|unless/,
   qualifiedIncludeAttrs: /if|unless|file/,
@@ -177,10 +178,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     // Per tag attributes
     launchtags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedLaunchAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedLaunchAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedLaunchAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -197,10 +195,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     grouptags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedGroupAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedGroupAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedGroupAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -217,10 +212,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     includetags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedIncludeAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedIncludeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedIncludeAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -237,10 +229,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     argtags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedArgAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedArgAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedArgAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -257,10 +246,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     lettags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedLetAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedLetAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedLetAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -297,10 +283,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     nodetags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedNodeAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedNodeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedNodeAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -317,10 +300,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     paramtags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedParamAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedParamAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedParamAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -337,10 +317,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     remaptags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedRemapAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedRemapAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedRemapAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -357,10 +334,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     envtags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedEnvAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedEnvAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedEnvAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -377,10 +351,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     setenvtags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedSetEnvAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedSetEnvAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedSetEnvAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
@@ -437,10 +408,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     ],
     xmltags: [
       [/\s+/, ""],
-      [
-        /(@qualifiedXmlAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
+      [/(@qualifiedXmlAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedXmlAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
