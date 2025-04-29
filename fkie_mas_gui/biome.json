@@ -37,7 +37,11 @@
     "rules": {
       "recommended": true,
       "style": {
-        "useImportType": "off"
+        "useImportType": "off",
+        "noInferrableTypes": "off"
+      },
+      "complexity": {
+        "useLiteralKeys": "warn"
       }
     }
   },
