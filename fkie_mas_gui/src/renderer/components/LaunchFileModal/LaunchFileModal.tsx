@@ -45,6 +45,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   const [argHistory, setArgHistory] = useLocalStorage<{ [key: string]: string[] }>("history:loadLaunchArgs", {});
   const [lastOpenPath, setLastOpenPath] = useLocalStorage("lastOpenPath", "");
   const [currentArgs, setCurrentArgs] = useState<LaunchArgumentWithHistory[]>([]);
+  const [scrollBar, setScrollBar] = useState<string>("auto");
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -345,7 +346,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
         Launch file
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ overflow: scrollBar }}>
         {selectedLaunch && (
           <Stack>
             {selectedLaunch.paths && selectedLaunch.paths.length > 0 && (
@@ -458,6 +459,12 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
                               return item;
                             })
                           );
+                        }}
+                        onMouseEnter={() => {
+                          setScrollBar("hidden");
+                        }}
+                        onMouseLeave={() => {
+                          setScrollBar("auto");
                         }}
                       />
                     )}
