@@ -164,7 +164,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.respawn = self._get_respawn()
         self.respawn_delay = self._get_respawn_delay()
         if isinstance(self._launch_description, launch.actions.IncludeLaunchDescription):
-            self.file_name = self._launch_description._get_launch_file()
+            # we use only real path paths!
+            self.file_name = os.path.realpath(self._launch_description._get_launch_file())
             self.launch_name = getattr(self._launch_context.locals, 'launch_file_path', None)
             # add launch arguments used to load the included file
             if self._launch_description.launch_arguments:
@@ -678,8 +679,8 @@ class LaunchConfig(object):
                             file_content, 'include', position_in_file)
                         launch_inc_file = LaunchIncludedFile(path=current_file,
                                                              line_number=include_line_number,
-                                                             inc_path=inc_file_name,
-                                                             exists=used_path,
+                                                             inc_path=used_path,
+                                                             exists=inc_file_exists,
                                                              raw_inc_path=raw_text,
                                                              rec_depth=depth+1,
                                                              args=[],
@@ -778,8 +779,8 @@ class LaunchConfig(object):
                     used_path = entity.launch_description_source.location
                     if os.path.exists(entity.launch_description_source.location):
                         inc_file_exists = True
-                        file_size = os.path.getsize(entity.launch_description_source.location)
-                        used_path = os.path.realpath(entity.launch_description_source.location)
+                        used_path = os.path.realpath(used_path)
+                        file_size = os.path.getsize(used_path)
                     include_line_number, position_in_file, raw_text = self.find_definition(
                         file_content, 'include', position_in_file)
                     inc_launch_arguments = []
