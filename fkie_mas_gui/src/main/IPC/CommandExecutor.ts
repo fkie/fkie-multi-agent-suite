@@ -409,7 +409,7 @@ export default class CommandExecutor implements TCommandExecutor {
         "/usr/bin/ssh",
         "-aqtxXC",
         "-oClearAllForwardings=yes",
-        "-oConnectTimeout=5",
+        "-oConnectTimeout=30",
         "-oStrictHostKeyChecking=no",
         "-oVerifyHostKeyDNS=no",
         "-oCheckHostIP=no",
