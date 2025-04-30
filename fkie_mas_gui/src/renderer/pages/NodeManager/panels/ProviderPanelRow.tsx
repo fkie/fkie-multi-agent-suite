@@ -502,7 +502,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 onClick={(event) => {
                   // open terminal for update
                   navCtx.openTerminal(
-                    CmdType.TERMINAL,
+                    CmdType.CMD,
                     provider.id,
                     "",
                     "",

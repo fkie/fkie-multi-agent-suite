@@ -401,7 +401,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
     // search for all numbers of the format ':1234:' or ': 1234:'
     const { searchLineNumberAddon, searchLineNumberAddonOptions } = this;
-    searchLineNumberAddon.findNext(/(?::+)(\d+)(?:$|:)/.source, searchLineNumberAddonOptions);
+    searchLineNumberAddon.findNext(/(?::+)(\d+)(?:$|:!\d)/.source, searchLineNumberAddonOptions);
   }
 
   render(): JSX.Element {
