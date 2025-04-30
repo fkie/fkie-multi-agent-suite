@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.10 (30.04.2025)
+------------------
+* Fixed read capability group parameter of composable nodes
+* Updated hostname detection for providers
+
 4.3.9 (29.04.2025)
 ------------------
 * Fixed: return real paths for included launch files

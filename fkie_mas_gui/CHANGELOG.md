@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.2.20 - 30.04.2025
+
+Added MAS_KILL_ON_STOP environment variable
+Added timer for starting nodes with timer action
+Fixed read capability group parameter of composable nodes
+Fixed scroll in update terminal
+Added option install selected version to install script
+Updated hostname detection for providers
+
 ## 4.2.19 - 29.04.2025
 
 Changed: showRemoteNodes button removed; unconnected providers with remote nodes are now displayed
