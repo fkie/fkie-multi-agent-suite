@@ -178,9 +178,9 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self.launch_context_arg = getattr(self._launch_context.locals, 'launch_arguments', None)
             self.file_name = self.launch_name
         self.composable_container: str = composable_container
-        self.parameters_tmp = self._get_parameter_arguments()
+        self._parameters_tmp = self._get_parameter_arguments()
         self.parameters = []
-        for p in self.parameters_tmp:
+        for p in self._parameters_tmp:
             if isinstance(p, tuple) and p[0].startswith("/"):
                 if os.path.exists(p[0]):
                     print(f"open: {p[0]}")
@@ -193,8 +193,16 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                             pass
                 self.parameters.append(RosParameter(node_name, p[0], p[1]))
                 continue
-            print(f"new parameter type: {type(p)}: {p}")
-            self.parameters.append(p)
+            elif isinstance(p, dict):
+                for key, val in p.items():
+                    if isinstance(key, tuple) and isinstance(key[0], launch.substitutions.text_substitution.TextSubstitution) and not isinstance(val.value, list):
+                        # TODO: add parameter of the type launch.substitutions.launch_configuration.LaunchConfiguration
+                        p_name = key[0].text
+                        p_val = val.value
+                        self.parameters.append(RosParameter(node_name, p_name, p_val))
+                continue
+            print(f"ignored new parameter type: {type(p)}: {p}")
+            # self.parameters.append(p)
 
         self.args = self._get_arguments()
         self.cmd = perform_to_string(self._launch_context, getattr(self._entity, 'cmd', None))
@@ -316,7 +324,12 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         return getattr(self._entity, '_ExecuteProcess__respawn_delay', None)
 
     def _get_parameter_arguments(self):
-        return getattr(self._entity, '_Node__expanded_parameter_arguments', [])
+        pp = getattr(self._entity, '_Node__expanded_parameter_arguments', [])
+        if len(pp) == 0 and hasattr(self._entity, "parameters"):
+            # returns the parameter of the composable node that is different from the rest!
+            if self._entity.parameters is not None:
+                return self._entity.parameters
+        return pp
 
     def _get_arguments(self):
         return getattr(self._entity, '_Node__arguments', [])
