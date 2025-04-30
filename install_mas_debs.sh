@@ -12,12 +12,13 @@ usage() {
     echo "  -r      do not install GUI packages"
     echo "  -p      install prerelease packages"
     echo "  -w      wait for key press to quit"
-    echo "  -f      Force the installation of debian packages, even if the packages have been cloned into the workspace."
+    echo "  -f      force the installation of debian packages, even if the packages have been cloned into the workspace."
     echo "  -e      removes fkie mas packages. ttyd and python3-websockets are not uninstalled."
+    echo "  -s      install selected release."
     exit 1
 }
 
-while getopts grphwfe  flag; do
+while getopts grphwfes:  flag; do
     case "${flag}" in
         g) NO_ROS=true;;
         r) NO_GUI=true;;
@@ -25,6 +26,7 @@ while getopts grphwfe  flag; do
         w) WAIT_FOR_KEY=true;;
         f) FORCE_INSTALL=true;;
         e) UNINSTALL=true;;
+        s) FORCE_VERSION=$OPTARG;;
         h) usage ;;
         *) usage ;;
     esac
@@ -85,12 +87,19 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ -z "$PRERELEASE" ]; then
-    # remove prereleases
-    RELEASES=$(echo "$RELEASES" | jq -r '[.[] | select(.prerelease==false)'])
+if [ -z $FORCE_VERSION]; then
+    if [ -z "$PRERELEASE" ]; then
+        # remove prereleases
+        RELEASES=$(echo "$RELEASES" | jq -r '[.[] | select(.prerelease==false)'])
+    else
+        echo -e "\e[36mInstall also prereleases!\e[0m"
+    fi
 else
-    echo -e "\e[36mInstall also prereleases!\e[0m"
+    echo -e "\e[36mSelect release for installation: $FORCE_VERSION\e[0m"
+    RELEASES=$(echo "$RELEASES" | jq -r --arg FORCE_VERSION "$FORCE_VERSION" '[.[] | select(.name==$FORCE_VERSION)'])
+    echo -e "$RELEASES"
 fi
+
 
 function get_package() {
     PACKAGE=$1
