@@ -556,6 +556,7 @@ export default class Provider implements IProvider {
           oldRemoteProviders = oldRemoteProviders.filter((orp) => orp.url() !== np.url());
           np.rosState = p;
           np.discovered = [this.id];
+          np.hostnames = p.hostnames;
           this.remoteProviders.push(np);
         }
       }

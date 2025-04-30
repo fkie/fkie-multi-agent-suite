@@ -298,6 +298,12 @@ def get_local_addresses() -> List[str]:
         else:
             local_addrs = [host[4][0] for host in socket.getaddrinfo(
                 socket.gethostname(), 0, socket.AF_INET, 0, socket.SOL_TCP)]
+    if local_addrs:
+        local_addrs_wo_127 = []
+        for addr in local_addrs:
+            if not addr.startswith('127.') and not addr == '::1':
+                local_addrs_wo_127.append(addr)
+        local_addrs = local_addrs_wo_127
     _local_addrs = local_addrs
     return local_addrs
 

@@ -19,6 +19,8 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReli
 from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_pylib.system.url import get_port
 from fkie_mas_pylib.system.host import get_hostname
+from fkie_mas_pylib.system.host import get_host_name
+from fkie_mas_pylib.system.host import get_local_addresses
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
 from fkie_mas_pylib.defines import NM_NAMESPACE
@@ -40,6 +42,7 @@ from typing import Union
 import os
 import json
 import signal
+import socket
 import threading
 import time
 
@@ -102,9 +105,9 @@ class RosStateServicer:
                                           # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
         qos_participants_profile = QoSProfile(depth=10,
-                                          durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                          history=QoSHistoryPolicy.KEEP_LAST,
-                                          reliability=QoSReliabilityPolicy.RELIABLE)
+                                              durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                              history=QoSHistoryPolicy.KEEP_LAST,
+                                              reliability=QoSReliabilityPolicy.RELIABLE)
         Log.info(f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
         self.sub_discovered_state = nmd.ros_node.create_subscription(
             ChangedState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
@@ -119,14 +122,22 @@ class RosStateServicer:
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
+        local_hostname = get_host_name()
         for uri, endpoint in endpoints.items():
             origin = uri == nmd.launcher.server.uri
+            hostname = get_hostname(endpoint.uri)
+            hostnames = [hostname]
+            if hostname == local_hostname:
+                hostnames.extend(get_local_addresses())
+            else:
+                hostnames.append(socket.gethostbyname(hostname))
             provider = RosProvider(
                 name=endpoint.name,
-                host=get_hostname(endpoint.uri),
+                host=hostname,
                 port=get_port(endpoint.uri),
                 origin=origin,
-                hostnames=[get_hostname(endpoint.uri)])
+                hostnames=list(set(hostnames))
+            )
             result.append(provider)
         return result
 

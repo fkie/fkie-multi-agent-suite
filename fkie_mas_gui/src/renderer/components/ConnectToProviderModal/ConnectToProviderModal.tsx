@@ -457,7 +457,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
 
       // create launch configuration
       hosts.forEach((host) => {
-        const launchCfg: ProviderLaunchConfiguration = createLaunchConfigFor(host.ip ? host.ip : host.host);
+        const launchCfg: ProviderLaunchConfiguration = createLaunchConfigFor(host.host);
         launchConfigs.push(launchCfg);
       });
 
@@ -502,7 +502,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       await Promise.all(
         hosts.map(async (remoteHost: THostIp) => {
           let host: string = remoteHost.host;
-          if (remoteHost.ip) host = remoteHost.ip;
+          if (remoteHost.host) host = remoteHost.host;
           setStartProviderDescription(`Connecting to ${host} ...`);
           console.log(`connecting to ${host}:${port}`);
           const newProvider = new Provider(
