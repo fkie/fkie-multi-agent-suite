@@ -21,6 +21,7 @@ import os
 import re
 import shlex
 import sys
+import threading
 import time
 
 from ament_index_python.packages import PackageNotFoundError
@@ -133,6 +134,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self._entity = entity
         self._launch_description = launch_description
         self._launch_context = launch_context
+        self.timer_period = 0
         if isinstance(self._entity, launch_ros.actions.Node):
             # Prepare the ros_specific_arguments list and add it to the context so that the
             # LocalSubstitution placeholders added to the the cmd can be expanded using the contents.
@@ -634,7 +636,7 @@ class LaunchConfig(object):
         os.environ.clear()
         os.environ.update(environment)
 
-    def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0) -> None:
+    def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0, timer_period=0) -> None:
         print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
         file_content = ""
@@ -730,6 +732,7 @@ class LaunchConfig(object):
                     # actions = entity.execute(self.context)
                     node = LaunchNodeWrapper(
                         entity, current_launch_description, self.context, environment=environment, position_in_file=position_in_file)
+                    node.timer_period = timer_period
                     if launch_prefix:
                         node.launch_prefix = launch_prefix
                     self._nodes.append(node)
@@ -738,8 +741,10 @@ class LaunchConfig(object):
 
                     if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
                         for cn in entity._ComposableNodeContainer__composable_node_descriptions:
-                            self._nodes.append(LaunchNodeWrapper(
-                                cn, current_launch_description, self.context, composable_container=node.unique_name, environment=environment, position_in_file=position_in_file))
+                            node = LaunchNodeWrapper(cn, current_launch_description, self.context,
+                                                     composable_container=node.unique_name, environment=environment, position_in_file=position_in_file)
+                            node.timer_period = timer_period
+                            self._nodes.append(node)
                 except (SubstitutionFailure, PackageNotFoundError) as err:
                     raise err
                 except:
@@ -753,6 +758,7 @@ class LaunchConfig(object):
                     if isinstance(entity._LoadComposableNodes__target_container, launch_ros.actions.ComposableNodeContainer):
                         node = LaunchNodeWrapper(
                             entity._LoadComposableNodes__target_container, current_launch_description, self.context, environment=environment, position_in_file=position_in_file)
+                        node.timer_period = timer_period
                         self._nodes.append(node)
                         container_name = node.node_name
                     else:
@@ -760,11 +766,14 @@ class LaunchConfig(object):
                         container_name = make_namespace_absolute(perform_substitutions(self.context, subs))
                     node = LaunchNodeWrapper(cn, current_launch_description, self.context,
                                              composable_container=container_name, environment=environment, position_in_file=position_in_file)
+                    node.timer_period = timer_period
                     self._nodes.append(node)
             elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
                 print(f"  ***debug launch loading: {indent}  add execute process")
-                self._nodes.append(LaunchNodeWrapper(entity, current_launch_description,
-                                                     self.context, environment=environment, position_in_file=position_in_file))
+                node = LaunchNodeWrapper(entity, current_launch_description,
+                                         self.context, environment=environment, position_in_file=position_in_file)
+                node.timer_period = timer_period
+                self._nodes.append(node)
             elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
                 # if entity.default_value is not None:
                 #     print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
@@ -834,7 +843,7 @@ class LaunchConfig(object):
                                                          )
                     self._included_files.append(launch_inc_file)
                     self._load(entity, launch_description=entity, current_file=entity._get_launch_file(),
-                               indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1, start_position_in_file=0)
+                               indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1, start_position_in_file=0, timer_period=timer_period)
                     if current_file:
                         self.context.extend_locals({'current_launch_file_path': current_file})
                 except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
@@ -846,7 +855,16 @@ class LaunchConfig(object):
                 include_line_number, position_in_file, raw_text = self.find_definition(
                     file_content, 'group', position_in_file, include_close_bracket=False)
                 self._load(entity, launch_description=current_launch_description,
-                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file)
+                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
+            elif isinstance(entity, launch.actions.timer_action.TimerAction):
+                print(f"  ***debug launch loading: {indent} timer period: {entity.period}")
+                self.context.extend_locals({'timer_period': entity.period})
+                print(f"  ***debug launch loading: {indent} actions count: {len(entity.actions)}")
+                self._load(entity.actions, launch_description=current_launch_description, current_file=current_file,
+                           indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=entity.period)
+                # period: Union[float, SomeSubstitutionsType],
+                # actions: Iterable[LaunchDescriptionEntity],
+                # cancel_on_shutdown: Union[bool, SomeSubstitutionsType] = True,
             elif isinstance(entity, launch.actions.set_environment_variable.SetEnvironmentVariable):
                 if hasattr(entity, 'execute'):
                     entity.execute(self.context)
@@ -874,7 +892,7 @@ class LaunchConfig(object):
                         if not isinstance(exec_result, List):
                             exec_result = [exec_result]
                         self._load(exec_result, launch_description=current_launch_description,
-                                   current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file)
+                                   current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
 
                 except:
                     import traceback
@@ -882,7 +900,7 @@ class LaunchConfig(object):
             else:
                 print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,
-                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file)
+                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
 
@@ -937,10 +955,10 @@ class LaunchConfig(object):
             if argument_action.default_value is not None:
                 default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
                 arg = LaunchArgument(name=argument_action.name,
-                                    value=value,
-                                    default_value=default_value,
-                                    description=argument_action.description,
-                                    choices=argument_action.choices)
+                                     value=value,
+                                     default_value=default_value,
+                                     description=argument_action.description,
+                                     choices=argument_action.choices)
                 result.append(arg)
         return result
 
@@ -954,7 +972,7 @@ class LaunchConfig(object):
         Log.warn("Node '%s' NOT found" % name)
         return None
 
-    def run_node(self, name: str) -> str:
+    def run_node(self, name: str, ignore_timer=False) -> str:
         '''
         Start a node local
 
@@ -965,6 +983,11 @@ class LaunchConfig(object):
         node: LaunchNodeWrapper = self.get_node(name)
         if node is None:
             raise exceptions.StartException(f"Node '{name}' in '{self.filename}' not found!")
+        if node.timer_period > 0 and not ignore_timer:
+            t = threading.Timer(node.timer_period, self.run_node, args=(name, True))
+            t.start()
+            # TODO: add executable to observed files
+            return f"{name} will be started in {node.timer_period} seconds"
         if node.composable_container:
             # load plugin in container
             Log.info(f"Load node='{node.unique_name}'; as plugin into container='{node.composable_container}';")

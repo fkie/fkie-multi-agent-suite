@@ -5,7 +5,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   ignoreCase: true,
 
   qualifiedTags:
-    /launch|include|group|let|arg|executable|node|param|remap|env|sev_env|unset_env|push-ros-namespace|\?xml/,
+    /launch|include|group|let|arg|executable|param|remap|env|sev_env|unset_env|push-ros-namespace|timer|node_container|node|composable_node|extra_arg|\?xml/,
 
   qualifiedLaunchAttrs: /if|unless/,
   qualifiedIncludeAttrs: /if|unless|file/,
@@ -13,6 +13,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualifiedLetAttrs: /if|unless|name|value/,
   qualifiedExecutableAttrs: /if|unless|cmd|cwd|name|ros_args|args|namespace|launch-prefix|output|shell/,
   qualifiedNodeAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
+  qualifiedNodeContainerAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
   qualifiedParamAttrs: /if|unless|name|value|sep|from/,
   qualifiedRemapAttrs: /if|unless|from|to/,
   qualifiedEnvAttrs: /if|unless|name|value/,
@@ -64,7 +65,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
-        /(<)(node)/,
+        /(<)(node )/,
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@nodetags" },

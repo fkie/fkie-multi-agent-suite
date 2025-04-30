@@ -611,9 +611,12 @@ class LaunchServicer(LoggingEventHandler):
                 result.launch_files.append(launch_configs[0].filename)
                 executable_path = launch_configs[0].run_node(request.name)
                 if executable_path:
-                    if request.name not in self._node_exec:
-                        self._node_exec[request.name] = executable_path
-                        self._add_file_to_observe(executable_path)
+                    if os.path.exists(executable_path):
+                        if request.name not in self._node_exec:
+                            self._node_exec[request.name] = executable_path
+                            self._add_file_to_observe(executable_path)
+                    else:
+                        result.status.msg = executable_path
                 Log.debug(f'Node={request.name}; start finished')
                 result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:

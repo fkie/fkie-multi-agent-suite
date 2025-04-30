@@ -102,7 +102,9 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
           'cmd="${1:VALUE}"',
           "Path to the executable or a command-line if a shell is used to launch"
         ),
-        createProposal("shell", 'shell="${1:USE_SHELL}"', "Whether to use a shell to launch or not"),
+        createProposal("shell", 'shell="${1:true}"', "Whether to use a shell to launch or not"),
+        createProposal("sigkill_timeout", 'sigkill_timeout="${1:4.0}"', ""),
+        createProposal("sigterm_timeout", 'sigterm_timeout="${1:7.0}"', ""),
       ],
     },
     {
@@ -254,6 +256,7 @@ export function getTagProposals(
       `${open}param name="nm/kill_on_stop" value="300" /${close}`,
       "Kill the node after defined time in milliseconds"
     ),
+    createProposal("timer", `${open}timer period="\${1:5}">\n   \n</timer${close}`, ""),
     createProposal(
       "find-pkg-prefix",
       "find-pkg-prefix ${1:PACKAGE})",
