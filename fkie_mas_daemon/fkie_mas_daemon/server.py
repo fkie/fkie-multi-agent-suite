@@ -75,7 +75,7 @@ class Server:
                     0, self.ros_domain_id)
             )
         self.name = get_host_name()
-        self.uri = f"ws://{get_host_name()}:{self.ws_port}"
+        self.uri = f"ws://{self.name}:{self.ws_port}"
         self._timer_ws_ready = None
         self.monitor_servicer = MonitorServicer(
             self._settings, self.ws_server)
