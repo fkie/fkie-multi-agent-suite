@@ -105,10 +105,11 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
       if (!item) return <></>;
       const id = `${lineNumber}-${item.file.inc_path}-${item.file.line_number}`;
       const pathList: string[] = [...parentItems, id];
-      const selected =
-        selectedUriPath === item.uriPath &&
-        // compare launchArgs if there are several files with the same name
-        (selectedUriPath.endsWith(`:${rootFilePath}`) || equalLaunchArgs(launchArgs, item.file.args || []));
+      const selected = selectedUriPath === item.uriPath;
+      // TODO: fix compare launch arguments
+      // selectedUriPath === item.uriPath &&
+      // // compare launchArgs if there are several files with the same name
+      // (item.uriPath.endsWith(`:${rootFilePath}`) || equalLaunchArgs(launchArgs, item.file.args || []));
       if (selected) {
         // expand all items from root to the selected item
         setExpandedExplorerResults(pathList);

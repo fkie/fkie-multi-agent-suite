@@ -690,7 +690,7 @@ class LaunchServicer(LoggingEventHandler):
                     file_size = os.path.getsize(inc_file.inc_path)
                 lincf = LaunchIncludedFile(path=inc_file.path_or_str,
                                            line_number=inc_file.line_number,
-                                           inc_path=inc_file.inc_path,
+                                           inc_path=os.path.realpath(inc_file.inc_path),
                                            exists=inc_file.exists,
                                            raw_inc_path=inc_file.raw_inc_path,
                                            rec_depth=inc_file.rec_depth,

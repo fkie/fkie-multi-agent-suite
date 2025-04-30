@@ -333,13 +333,13 @@ export function getTagProposals(
       "GDB Launch Prefix"
     ),
     createProposal(
-      "nm/associations",
-      `${open}nm/associations="NODE1,NODE2" /${close}`,
+      "mas/associations",
+      `${open}mas/associations="NODE1,NODE2" /${close}`,
       "Associated ROS-Nodes are started before the node itself and stopped after the node."
     ),
     createProposal(
-      "nm/kill_on_stop",
-      `${open}nm/kill_on_stop="300" /${close}`,
+      "mas/kill_on_stop",
+      `${open}mas/kill_on_stop="300" /${close}`,
       "Kill the node after defined time in milliseconds"
     ),
   ];

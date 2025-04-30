@@ -252,8 +252,8 @@ export function getTagProposals(
       "Associated ROS-Nodes are started before the node itself and stopped after the node"
     ),
     createProposal(
-      "nm/kill_on_stop",
-      `${open}param name="nm/kill_on_stop" value="300" /${close}`,
+      "mas/kill_on_stop",
+      `${open}param name="mas/kill_on_stop" value="300" /${close}`,
       "Kill the node after defined time in milliseconds"
     ),
     createProposal("timer", `${open}timer period="\${1:5}">\n   \n</timer${close}`, ""),
@@ -301,6 +301,11 @@ export function getTagProposals(
       "MAS_CAPABILITY_GROUP",
       `<set_env name="MAS_CAPABILITY_GROUP" value="\${1:NAME}" />`,
       "Sets the capability group in the MAS GUI for all nodes that have defined this environment variable."
+    ),
+    createProposal(
+      "MAS_KILL_ON_STOP",
+      `<set_env name="MAS_KILL_ON_STOP" value="\${1:300}" />`,
+      "Kills all nodes after X[ms] which are affected by this environment variable."
     ),
   ];
 }
