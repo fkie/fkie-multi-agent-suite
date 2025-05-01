@@ -235,6 +235,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     [setMonacoDisposables]
   );
 
+  const isModified = useCallback(
+    (model: editor.ITextModel): boolean => {
+      const item: TModelVersion | undefined = savedModelVersions.find((item) => {
+        return item.path === model.uri.path;
+      });
+      if (item) {
+        return item.version !== model.getAlternativeVersionId();
+      }
+      return model.getAlternativeVersionId() > 1;
+    },
+    [savedModelVersions]
+  );
+
   // update modified files in this panel and context
   const updateModifiedFiles = useCallback(() => {
     if (!monaco) return;
@@ -249,7 +262,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       });
     setModifiedFiles(newModifiedFiles);
     monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }, [monaco, tabId, providerId, ownUriPaths, monacoCtx.updateModifiedFiles]);
+  }, [monaco, tabId, providerId, ownUriPaths, monacoCtx.updateModifiedFiles, isModified]);
 
   // update decorations for included files
   const updateIncludeDecorations = async (
@@ -277,17 +290,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
     modelLinks[model.uri.path] = newLinks;
   };
-
-  const isModified = useCallback(
-    (model: editor.ITextModel): boolean => {
-      const item: TModelVersion | undefined = savedModelVersions.find((item) => item.path === model.uri.path);
-      if (item) {
-        return item.version !== model.getAlternativeVersionId();
-      }
-      return model.getAlternativeVersionId() > 1;
-    },
-    [savedModelVersions]
-  );
 
   function updateOpenFiles(result: TModelResult): void {
     if (result && result.file !== null && result.model && result.model.uri.path) {
@@ -450,35 +452,39 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     updateModifiedFiles();
   }, [savedModelVersions]);
 
-  async function saveCurrentFile(editorModel: editor.ITextModel): Promise<void> {
-    const path = editorModel.uri.path.split(":")[1];
-    // TODO change encoding if the file is encoded as HEX
-    const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
-    const providerObj = rosCtx.getProviderById(providerId, true);
-    if (providerObj) {
-      const saveResult = await providerObj.saveFileContent(fileToSave);
-      if (saveResult.bytesWritten > 0) {
-        const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
-        window.editorManager?.changed(id, path, false);
-        if (!savedFiles.includes(editorModel.uri.path)) {
-          setSavedFiles([...savedFiles, editorModel.uri.path]);
+  const saveCurrentFile = useCallback(
+    async (editorModel: editor.ITextModel): Promise<void> => {
+      const path = editorModel.uri.path.split(":")[1];
+      // TODO change encoding if the file is encoded as HEX
+      const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
+      const providerObj = rosCtx.getProviderById(providerId, true);
+      if (providerObj) {
+        const saveResult = await providerObj.saveFileContent(fileToSave);
+        if (saveResult.bytesWritten > 0) {
+          const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
+          window.editorManager?.changed(id, path, false);
+          // update saved file to avoid reload of the current editing file
+          if (!savedFiles.includes(editorModel.uri.path)) {
+            setSavedFiles([...savedFiles, editorModel.uri.path]);
+          }
+          logCtx.success("Successfully saved file", `path: ${path}`);
+          setSavedModelVersions((prev) => [
+            ...prev.filter((item) => {
+              return item.path !== editorModel.uri.path;
+            }),
+            { path: editorModel.uri.path, version: editorModel.getAlternativeVersionId() } as TModelVersion,
+          ]);
+          setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
+          await getIncludedFiles();
+        } else {
+          logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
         }
-        logCtx.success("Successfully saved file", `path: ${path}`);
-        setSavedModelVersions((prev) => [
-          ...prev.filter((item) => {
-            return item.path !== editorModel.uri.path;
-          }),
-          { path: editorModel.uri.path, version: editorModel.getAlternativeVersionId() } as TModelVersion,
-        ]);
-        setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
-        await getIncludedFiles();
       } else {
-        logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
+        logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`);
       }
-    } else {
-      logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`);
-    }
-  }
+    },
+    [providerId, savedFiles, rootFilePath, rosCtx.getProviderById]
+  );
 
   const debouncedWidthUpdate = useDebounceCallback((newWidth) => {
     setEditorWidth(newWidth);

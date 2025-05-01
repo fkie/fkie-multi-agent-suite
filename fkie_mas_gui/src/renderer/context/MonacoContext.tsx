@@ -181,7 +181,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   }, [monaco]);
 
   const updateModifiedFiles = useCallback(
-    function (tabId: string, providerId: string, uriPaths: string[]): void {
+    (tabId: string, providerId: string, uriPaths: string[]): void => {
       if (uriPaths.length > 0) {
         // add to the list
         const newFilesInfo: ModifiedTabsInfo = new ModifiedTabsInfo(tabId, providerId, uriPaths);
@@ -199,7 +199,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   );
 
   const clearModifiedTabs = useCallback(
-    function (tabIds?: ModifiedTabsInfo[]): void {
+    (tabIds?: ModifiedTabsInfo[]): void => {
       if (tabIds && tabIds.length > 0) {
         setModifiedFiles((prev) => {
           return prev.filter((item) => tabIds.filter((tabI) => tabI.tabId === item.tabId).length === 0);
@@ -211,22 +211,15 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     [modifiedFiles]
   );
 
-  const getModifiedTabs = useCallback(
-    function (): ModifiedTabsInfo[] {
-      return modifiedFiles;
-    },
-    [modifiedFiles]
-  );
+  const getModifiedTabs = useCallback((): ModifiedTabsInfo[] => modifiedFiles, [modifiedFiles]);
 
   const getModifiedFilesByTab = useCallback(
-    function (tabId: string): ModifiedTabsInfo | undefined {
-      return modifiedFiles.filter((item) => item.tabId === tabId)[0];
-    },
+    (tabId: string): ModifiedTabsInfo | undefined => modifiedFiles.filter((item) => item.tabId === tabId)[0],
     [modifiedFiles]
   );
 
   const saveModifiedFilesOfTabId = useCallback(
-    async function (tabId: string): Promise<SaveResult[]> {
+    async (tabId: string): Promise<SaveResult[]> => {
       if (!monaco) return Promise.resolve([]);
       const result: SaveResult[] = [];
       const tabInfos: ModifiedTabsInfo[] = modifiedFiles.filter((item) => item.tabId === tabId);
