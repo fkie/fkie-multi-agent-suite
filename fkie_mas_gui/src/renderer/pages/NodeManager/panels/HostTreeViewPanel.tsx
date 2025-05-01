@@ -382,7 +382,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         if (!resultStartNode.success) {
           addStatusQueueMain("START", node.name, false, `${resultStartNode.details}`);
         } else {
-          addStatusQueueMain("START", node.name, true, "started");
+          addStatusQueueMain("START", node.name, true, resultStartNode.details || "started");
         }
       }
     }

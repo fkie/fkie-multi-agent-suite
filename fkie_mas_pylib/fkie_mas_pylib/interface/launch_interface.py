@@ -195,6 +195,7 @@ class LaunchNodeInfo:
                  node_namespace: str = None,
                  package_name: str = None,
                  executable: str = None,
+                 timer_period: float = 0,
                  respawn: bool = False,
                  respawn_delay: Number = 0,
                  args: str = None,
@@ -225,6 +226,7 @@ class LaunchNodeInfo:
         self.node_namespace = node_namespace
         self.package_name = package_name
         self.executable = executable
+        self.timer_period = timer_period
         self.unique_name = unique_name
         self.respawn = respawn
         self.respawn_delay = respawn_delay

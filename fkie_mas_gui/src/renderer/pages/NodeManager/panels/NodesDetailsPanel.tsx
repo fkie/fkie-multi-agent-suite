@@ -632,7 +632,15 @@ export default function NodesDetailsPanel(): JSX.Element {
                             </Box>
                           </Typography>
                           {launchInfo.cmd && (
-                            <Stack direction="row" paddingBottom={0.5}>
+                            <Stack direction="column" paddingBottom={0.5}>
+                              {launchInfo.timer_period && launchInfo.timer_period > 0 && (
+                                <Typography variant="caption">
+                                  <Stack direction="row" spacing={0.5}>
+                                    <Box sx={{ fontWeight: "bold", color: "orange" }}>Delayed start:</Box>
+                                    <Box sx={{ fontWeight: "normal" }}>{launchInfo.timer_period} sec</Box>
+                                  </Stack>
+                                </Typography>
+                              )}
                               <Tag
                                 color="default"
                                 title="CMD:"

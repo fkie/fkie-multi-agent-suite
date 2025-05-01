@@ -19,6 +19,8 @@ export default class LaunchNodeInfo {
 
   executable: string | null;
 
+  timer_period: number | null;
+
   respawn: boolean | null;
 
   respawn_delay: number | null;
@@ -70,6 +72,7 @@ export default class LaunchNodeInfo {
     node_namespace: string | null = null,
     package_name: string | null = null,
     executable: string | null = null,
+    timer_period: number | null = null,
     respawn: boolean | null = null,
     respawn_delay: number | null = null,
     args: string | null = null,
@@ -98,6 +101,7 @@ export default class LaunchNodeInfo {
     this.node_namespace = node_namespace;
     this.package_name = package_name;
     this.executable = executable;
+    this.timer_period = timer_period;
     this.respawn = respawn;
     this.respawn_delay = respawn_delay;
     this.args = args;

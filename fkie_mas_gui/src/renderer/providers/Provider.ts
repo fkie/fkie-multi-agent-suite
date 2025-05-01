@@ -1659,7 +1659,7 @@ export default class Provider implements IProvider {
   /**
    * Start a ROS node using a given provider and node object
    */
-  public startNode: (node: RosNode) => Promise<TResultStartNode> = async (node: RosNode) => {
+  public startNode: (node: RosNode) => Promise<TResultStartNode> = async (node) => {
     if (node.providerId !== this.id) {
       return {
         success: false,
@@ -1699,7 +1699,7 @@ export default class Provider implements IProvider {
           return {
             success: true,
             message: `Node started: [${node.id}]`,
-            details: "",
+            details: response.status.msg || "",
             response,
           };
         }
