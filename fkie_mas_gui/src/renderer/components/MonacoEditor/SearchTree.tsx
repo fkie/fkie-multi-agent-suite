@@ -43,7 +43,7 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
       const result = await monacoCtx.getModel(tabId, providerId, uriPath, false);
       if (result.model) {
         const matches: editor.FindMatch[] = result.model.findMatches(searchText, true, isRegex, false, null, false);
-        matches?.forEach((match) => {
+        for (const match of matches || []) {
           const lineNumber = match.range.startLineNumber;
           const text = result.model?.getLineContent(match.range.startLineNumber);
           if (text && !currentIncludedText.has(text)) {
@@ -61,13 +61,13 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
             );
             currentIncludedText.add(text);
           }
-        });
+        }
         setCurrentIndex((prev) => prev + 1);
       }
     }
   }
 
-  const debouncedFindAllMatches = useDebounceCallback(async function (searchText: string): Promise<void> {
+  const debouncedFindAllMatches = useDebounceCallback(async (searchText: string): Promise<void> => {
     setSearchResults([]);
     setCurrentSearchText(searchText);
     if (!searchText) {
@@ -89,14 +89,14 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
 
   useEffect(() => {
     const newSearchTree = {};
-    searchResults.forEach((item) => {
+    for (const item of searchResults) {
       const entry = newSearchTree[item.file];
       if (!entry) {
         newSearchTree[item.file] = [item];
       } else {
         newSearchTree[item.file].push(item);
       }
-    });
+    }
     setGlobalSearchTree(newSearchTree);
     setExpandedSearchResults(Object.keys(newSearchTree));
   }, [searchResults]);

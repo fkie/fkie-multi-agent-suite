@@ -30,9 +30,9 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
       newSelectedProvider = currProv.id;
     } else {
       // get all connected hosts and select the first local host
-      rosCtx.providersConnected.forEach((prov) => {
+      for (const prov of rosCtx.providersConnected) {
         if (currentProvider === "") {
-          if (prov && prov.isLocalHost && !hasLocal) {
+          if (prov?.isLocalHost && !hasLocal) {
             hasLocal = true;
             newSelectedProvider = prov.id;
           }
@@ -40,7 +40,7 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
           newSelectedProvider = currentProvider;
         }
         provNames.push({ name: prov.name(), id: prov.id });
-      });
+      }
     }
     provNames.sort((a, b) => -b.name.localeCompare(a.name));
     if (newSelectedProvider !== currentProvider) {

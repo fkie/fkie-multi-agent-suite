@@ -47,7 +47,7 @@ export default function SubscriberApp(): JSX.Element {
       return;
     }
     document.title = `Echo - ${getFileName(topic)}`;
-    const prov = new SubscriberProvider(settingsCtx, host, "", parseInt(port), false, logCtx);
+    const prov = new SubscriberProvider(settingsCtx, host, "", Number.parseInt(port), false, logCtx);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
       setSubInfo({

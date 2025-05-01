@@ -8,7 +8,7 @@ import {
 } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "path";
+import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
 
 type TEditor = {
@@ -189,7 +189,7 @@ export default class EditorManager implements TEditorManager {
         `${process.env.ELECTRON_RENDERER_URL}/editor.html?id=${id}&host=${host}&port=${port}&root=${path}&path=${launchFile}${fileRangeStr}${launchArgsStr}`
       );
     } else {
-      editorWindow.loadFile(join(__dirname, `../renderer/editor.html`), {
+      editorWindow.loadFile(join(__dirname, "../renderer/editor.html"), {
         query: {
           id: id,
           host: host,

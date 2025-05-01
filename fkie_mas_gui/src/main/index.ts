@@ -9,7 +9,7 @@
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
 import { BrowserWindow, app, shell } from "electron";
 import log from "electron-log";
-import { join } from "path";
+import { join } from "node:path";
 import { ARGUMENTS, hasArgument, registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
 import { updateDebianPackages } from "./IPC/CommandExecutor";
@@ -57,8 +57,8 @@ if (process.env.NODE_ENV === "production") {
 
 const createWindow = async (): Promise<void> => {
   if (installUpdates || installPrerelease) {
-    log.info(`update debian packages from github`);
-    if (installPrerelease) log.info(`  -> use prerelease channel`);
+    log.info("update debian packages from github");
+    if (installPrerelease) log.info("  -> use prerelease channel");
     await updateDebianPackages(installPrerelease);
     app.exit();
   }

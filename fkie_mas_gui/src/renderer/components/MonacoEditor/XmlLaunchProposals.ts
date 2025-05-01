@@ -35,12 +35,17 @@ function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileR
   return result ? result : [];
 }
 
-function createAttributeSuggestionsFromTag(monaco: Monaco, range: TFileRange, lineContent: string): languages.CompletionItem[] {
-  const tags= ["launch", "node", "machine", "remap", "env", "param", "rosparam", "group", "test", "arg", "include"]
+function createAttributeSuggestionsFromTag(
+  monaco: Monaco,
+  range: TFileRange,
+  lineContent: string
+): languages.CompletionItem[] {
+  const tags = ["launch", "node", "machine", "remap", "env", "param", "rosparam", "group", "test", "arg", "include"];
 
   for (const tag in tags) {
     // if a tag is found, add its attributes as suggestions
-    if (lineContent.includes("<" + tags[tag])) return getTagAttributeProposals(monaco, range).find((item) => item.tag === tags[tag])?.proposals || []
+    if (lineContent.includes(`<${tags[tag]}`))
+      return getTagAttributeProposals(monaco, range).find((item) => item.tag === tags[tag])?.proposals || [];
   }
   // otherwise return nothing
   return [];

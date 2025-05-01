@@ -61,7 +61,7 @@ function createAttributeSuggestionsFromTag(
 
   for (const tag in tags) {
     // if a tag is found, add its attributes as suggestions
-    if (lineContent.includes("<" + tags[tag]))
+    if (lineContent.includes(`<${tags[tag]}`))
       return getTagAttributeProposals(monaco, range).find((item) => item.tag === tags[tag])?.proposals || [];
   }
   // otherwise return nothing

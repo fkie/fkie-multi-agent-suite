@@ -69,7 +69,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
   const getLoggers = useCallback(
     async (rosNode: RosNode) => {
       let ownLoggers: LoggerConfig[] = [];
-      if (rosNode && rosNode.providerId) {
+      if (rosNode?.providerId) {
         const provider = rosCtx.getProviderById(rosNode.providerId);
         if (provider) {
           setIsRequesting(true);
@@ -92,11 +92,11 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
       // eslint-disable-next-line no-restricted-syntax
       for (const [key, value] of Object.entries(rosNode.rosLoggers)) {
         let changed = true;
-        ownLoggers.forEach((l) => {
+        for (const l of ownLoggers) {
           if (l.name === key && l.level === value) {
             changed = false;
           }
-        });
+        }
         if (changed) {
           forceUpdateLevels.push({ name: key, level: value as LogLevelType });
         }
@@ -115,12 +115,12 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
   const debouncedCallbackFilterText = useDebounceCallback((searchTerm: string) => {
     if (searchTerm.length > 0) {
       const newFilteredLoggers: LoggerConfig[] = [];
-      loggers.forEach((logger) => {
+      for (const logger of loggers) {
         const isMatch = findIn(searchTerm, [logger.name]);
         if (isMatch) {
           newFilteredLoggers.push(logger);
         }
-      });
+      }
       setLoggersFiltered(newFilteredLoggers);
     } else {
       setLoggersFiltered(loggers);
@@ -129,7 +129,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
 
   useEffect(() => {
     debouncedCallbackFilterText(filterText);
-  }, [loggers, filterText, debouncedCallbackFilterText]);
+  }, [filterText, debouncedCallbackFilterText]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
@@ -159,11 +159,11 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
         );
       }
       // store changed loggers by user
-      changedLoggers.forEach((l) => {
+      for (const l of changedLoggers) {
         if (l.name !== "all") {
           currentNode.rosLoggers[l.name] = l.level;
         }
-      });
+      }
       // set loggers on ros node
       setLoggersOnProvider(
         currentNode,
@@ -215,7 +215,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
       </Stack>
       <Stack direction="row" spacing={0.5} justifyItems="center">
         {addable && !addable && (
-          <Tooltip title={`Add a new logger name`} placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+          <Tooltip title={"Add a new logger name"} placement="bottom" enterDelay={tooltipDelay} disableInteractive>
             <IconButton
               size="small"
               aria-label="add logger name"
@@ -230,7 +230,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
           </Tooltip>
         )}
         <Tooltip
-          title={`Remove last changed levels to prevent change them after node restart!`}
+          title={"Remove last changed levels to prevent change them after node restart!"}
           placement="bottom"
           enterDelay={tooltipDelay}
           disableInteractive

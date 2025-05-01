@@ -601,7 +601,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         let killTime: number = -1;
         for (const launchInfo of node.launchInfo.values()) {
           if (launchInfo.env?.MAS_KILL_ON_STOP) {
-            killTime = parseInt(launchInfo.env.MAS_KILL_ON_STOP as string);
+            killTime = Number.parseInt(launchInfo.env.MAS_KILL_ON_STOP as string);
             console.log(`SET KILL TIME TO: ${killTime}`);
           } else {
             for (const param of launchInfo.parameters || []) {

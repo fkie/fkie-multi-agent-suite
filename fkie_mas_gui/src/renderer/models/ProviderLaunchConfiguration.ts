@@ -23,7 +23,7 @@ export default class ProviderLaunchConfiguration {
   /** ROS version as string of {'1', '2'} */
   rosVersion: string = "1";
 
-  networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : 0;
+  networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : 0;
 
   daemon: {
     enable: boolean;
@@ -98,7 +98,7 @@ export default class ProviderLaunchConfiguration {
 
   public toRos1MasterUriPrefix(ros1MasterUri: { enable: boolean; uri: string }): string {
     let rosMasterUriPrefix = "";
-    if (ros1MasterUri && ros1MasterUri.enable && ros1MasterUri.uri.length > 0 && ros1MasterUri.uri !== "default") {
+    if (ros1MasterUri?.enable && ros1MasterUri.uri.length > 0 && ros1MasterUri.uri !== "default") {
       rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.uri.replace("{HOST}", this.host)} `;
     }
     return rosMasterUriPrefix;

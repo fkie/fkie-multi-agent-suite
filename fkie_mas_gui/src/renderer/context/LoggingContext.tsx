@@ -58,6 +58,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
+    console.log(`debug by uri ${settingsCtx.get("debugByUri")}`);
     setDebugByUri(settingsCtx.get("debugByUri") as string[]);
   }, [settingsCtx, settingsCtx.changed]);
 
@@ -78,6 +79,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
       console.error(level, description, details);
       setCountErrors(countErrors + 1);
     } else if (level === LoggingLevel.WARN) console.warn(level, description, details);
+    else if (level === LoggingLevel.DEBUG) console.debug(level, description, details);
     else console.info(level, description, details);
 
     if (showSnackbar) {
@@ -92,6 +94,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
             onDetailsClick={() => {
               emitCustomEvent(
                 EVENT_OPEN_COMPONENT,
+                // biome-ignore lint/complexity/noUselessFragments: <explanation>
                 eventOpenComponent(LAYOUT_TABS.LOGGING, "Logging Panel", <></>, false, LAYOUT_TAB_SETS.BORDER_BOTTOM)
               );
             }}

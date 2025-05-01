@@ -155,31 +155,31 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     const nodeList: RosNode[] | undefined = rosCtx.mapProviderRosNodes.get(selectedProvider);
     // TODO: select QoS depending on publishers QoS, see choose_qos: https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
     let qos: RosQos | undefined = undefined;
-    nodeList?.forEach((node) => {
-      node.subscribers?.forEach((topic) => {
+    for (const node of nodeList || []) {
+      for (const topic of node.subscribers || []) {
         if (msgType === "" && topicName === topic.name) {
           msgType = topic.msg_type;
         }
-      });
+      }
       if (msgType === "") {
-        node.publishers?.forEach((topic) => {
+        for (const topic of node.publishers || []) {
           if (topicName === topic.name) {
             if (msgType === "") {
               msgType = topic.msg_type;
             }
           }
-        });
+        }
       }
-    });
-    provider.rosTopics.forEach((topic) => {
+    }
+    for (const topic of provider.rosTopics) {
       if (topic.name === topicName) {
-        topic.publisher?.forEach((pub) => {
+        for (const pub of topic.publisher || []) {
           if (qos === undefined && pub.qos) {
             qos = pub.qos;
           }
-        });
+        }
       }
-    });
+    }
     if (msgType) {
       logCtx.debug(`register subscriber to topic ${topicName}`);
       const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount);
@@ -298,7 +298,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
                   }
                 } else {
                   if (collapsedKeys.includes(params.indexOrName)) {
-                    setCollapsedKeys((prev) => prev.filter((item) => item != params.indexOrName));
+                    setCollapsedKeys((prev) => prev.filter((item) => item !== params.indexOrName));
                   }
                 }
               }
@@ -488,7 +488,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
             autoWidth={false}
             value={msgCount.toString()}
             onChange={(event) => {
-              setMsgCount(parseInt(event.target.value));
+              setMsgCount(Number.parseInt(event.target.value));
             }}
             size="small"
             sx={{ fontSize: "0.5em" }}
@@ -514,7 +514,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
             autoWidth={false}
             value={arrayItemsCount.toString()}
             onChange={(event) => {
-              setArrayItemsCount(parseInt(event.target.value));
+              setArrayItemsCount(Number.parseInt(event.target.value));
             }}
             size="small"
             sx={{ fontSize: "0.5em" }}

@@ -93,28 +93,27 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
                 bgcolor: "background.paper",
               }}
             >
-              {list &&
-                list.map((node) => {
-                  const labelId = `checkbox-list-label-${node}`;
+              {list?.map((node) => {
+                const labelId = `checkbox-list-label-${node}`;
 
-                  return (
-                    <ListItem key={node} disablePadding>
-                      <ListItemButton role={undefined} onClick={() => handleToggle(node)} dense>
-                        <ListItemIcon>
-                          <Checkbox
-                            edge="start"
-                            checked={selectedItems.indexOf(node) !== -1}
-                            tabIndex={-1}
-                            disableRipple
-                            inputProps={{ "aria-labelledby": labelId }}
-                            sx={{ padding: 0 }}
-                          />
-                        </ListItemIcon>
-                        <ListItemText id={labelId} primary={node} />
-                      </ListItemButton>
-                    </ListItem>
-                  );
-                })}
+                return (
+                  <ListItem key={node} disablePadding>
+                    <ListItemButton onClick={() => handleToggle(node)} dense>
+                      <ListItemIcon>
+                        <Checkbox
+                          edge="start"
+                          checked={selectedItems.indexOf(node) !== -1}
+                          tabIndex={-1}
+                          disableRipple
+                          inputProps={{ "aria-labelledby": labelId }}
+                          sx={{ padding: 0 }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText id={labelId} primary={node} />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
             </List>
           </DialogContent>
           <FormControlLabel

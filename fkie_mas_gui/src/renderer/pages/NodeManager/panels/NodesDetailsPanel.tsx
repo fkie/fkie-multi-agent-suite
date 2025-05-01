@@ -78,12 +78,12 @@ export default function NodesDetailsPanel(): JSX.Element {
       navCtx.selectedNodes.length > maxNodes ? maxNodes : navCtx.selectedNodes.length
     );
     const nodes: RosNode[] = [];
-    idsToShow.forEach((id) => {
+    for (const id of idsToShow) {
       const n = rosCtx.nodeMap.get(id);
       if (n) {
         nodes.push(n);
       }
-    });
+    }
     setNodesShow(nodes);
   }, [navCtx.selectedNodes, rosCtx.nodeMap]);
 
@@ -104,7 +104,7 @@ export default function NodesDetailsPanel(): JSX.Element {
     openInTerminal: boolean = false
   ): Promise<void> {
     if (rosTopicType === EMenuTopic.clipboard) {
-      if (navigator && navigator.clipboard) {
+      if (navigator?.clipboard) {
         navigator.clipboard.writeText(topic);
         logCtx.success(`${topic} copied!`);
       }
@@ -149,7 +149,7 @@ export default function NodesDetailsPanel(): JSX.Element {
 
   function onServiceClick(rosServiceType: EMenuService, service: string, msgType: string, providerId: string): void {
     if (rosServiceType === EMenuService.clipboard) {
-      if (navigator && navigator.clipboard) {
+      if (navigator?.clipboard) {
         navigator.clipboard.writeText(service);
         logCtx.success(`${service} copied!`);
       }
@@ -686,7 +686,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                                       {typeof parameter.value !== "object" ? (
                                         <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
                                       ) : (
-                                        <TableCell style={{ padding: 0 }}></TableCell>
+                                        <TableCell style={{ padding: 0 }} />
                                       )}
                                     </TableRow>
                                   ))}
@@ -696,9 +696,9 @@ export default function NodesDetailsPanel(): JSX.Element {
                           )}
                         </Stack>
                       );
-                    } else {
-                      return <></>;
                     }
+                    // biome-ignore lint/correctness/useJsxKeyInIterable: <explanation>
+                    return <></>;
                   })}
                 </>
               )}

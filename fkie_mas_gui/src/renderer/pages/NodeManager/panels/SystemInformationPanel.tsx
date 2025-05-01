@@ -79,7 +79,7 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
     }
 
     useEffect(() => {
-      if (provider && provider.isLocalHost) {
+      if (provider?.isLocalHost) {
         setSystemInfoContent(filterNestObject(rosCtx.systemInfo));
       }
     }, [provider, filter, setSystemInfoContent]);
@@ -110,9 +110,9 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
         setProviderDetails(filterNestObject(infoContent));
         // join warnings to one list
         let warnings: SystemWarning[] = [];
-        provider.warnings.forEach((w) => {
+        for (const w of provider.warnings) {
           warnings = [...warnings, ...(w.warnings || [])];
-        });
+        }
         setProviderWarnings(warnings);
       }
     }, [provider, filter]);

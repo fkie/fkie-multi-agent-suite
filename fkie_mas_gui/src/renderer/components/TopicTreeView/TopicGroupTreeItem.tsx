@@ -76,7 +76,7 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
                 {groupName}
               </Typography>
               {hasIncompatibleQos && (
-                <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
+                <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
                   <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
                 </Tooltip>
               )}

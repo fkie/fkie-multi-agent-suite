@@ -18,7 +18,7 @@ export function rosMessageStructToString(
   if (!msgStruct) return "{}";
   const result: { [fieldName: string]: JSONValue | JSONValue[] } = {};
   const struct: TRosMessageStruct[] = Array.isArray(msgStruct) ? msgStruct : msgStruct.def ? msgStruct.def : [];
-  struct.forEach((field: TRosMessageStruct) => {
+  for (const field of struct) {
     if (field.def && field.def.length === 0) {
       // simple types
       if (field.value || withEmptyFields) {
@@ -48,9 +48,9 @@ export function rosMessageStructToString(
       const resultArray: JSONValue | JSONValue[] = [];
       // it is a complex field type
       const val: TRosMessageStruct[] = (field?.value ? field?.value : field.def) as TRosMessageStruct[];
-      val.forEach((arrayElement: TRosMessageStruct) => {
+      for (const arrayElement of val) {
         resultArray.push(rosMessageStructToString(arrayElement, true, withEmptyFields));
-      });
+      }
       // append created array
       if (resultArray.length > 0) {
         result[field.name] = resultArray;
@@ -69,7 +69,7 @@ export function rosMessageStructToString(
         }
       }
     }
-  });
+  }
   return asDict ? result : dictToString(result);
 }
 

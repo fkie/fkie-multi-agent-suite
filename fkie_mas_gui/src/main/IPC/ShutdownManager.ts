@@ -16,7 +16,7 @@ export default class ShutdownManager implements TShutdownManager {
 
   onCloseAppRequest: (callback: TerminateCallback) => void = () => {
     // implemented in preload script
-    console.log(`onCloseAppRequest`);
+    console.log("onCloseAppRequest");
   };
 
   public registerHandlers(): void {

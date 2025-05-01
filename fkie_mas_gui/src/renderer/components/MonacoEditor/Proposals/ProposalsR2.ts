@@ -236,7 +236,7 @@ export function getTagProposals(
     ),
     createProposal(
       "set_env",
-      `${open}set_env name="\${1:NAME}" value="\${1:VALUE}" /${close}`,
+      `${open}set_env name="\${1:NAME}" value="\${2:VALUE}" /${close}`,
       "Allows for modifying an OS process environment"
     ),
     createProposal(

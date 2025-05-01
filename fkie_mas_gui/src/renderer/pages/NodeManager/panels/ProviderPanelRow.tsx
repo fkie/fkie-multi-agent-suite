@@ -223,7 +223,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
       case ConnectionState.STATES.LOST:
       case ConnectionState.STATES.UNSUPPORTED:
       case ConnectionState.STATES.UNREACHABLE:
-      case ConnectionState.STATES.ERRORED:
+      case ConnectionState.STATES.ERRORED: {
         // eslint-disable-next-line no-case-declarations
         let state = provider.connectionState;
         if (provider.connectionState === ConnectionState.STATES.ERRORED) {
@@ -275,6 +275,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
             </Tooltip>
           </Stack>
         );
+      }
       default:
         return (
           <Stack direction="row" alignItems="center">
@@ -347,57 +348,48 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     [settingsCtx.changed]
   );
 
-  const isOlderVersion = useCallback(
-    function (): boolean {
-      try {
-        if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
-          return true;
-        }
-        return semver.gt(settingsCtx.MIN_VERSION_DAEMON, provider.getDaemonReleaseVersion());
-      } catch {
-        // no output on version errors
+  const isOlderVersion = useCallback((): boolean => {
+    try {
+      if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
+        return true;
       }
-      return false;
-    },
-    [settingsCtx.MIN_VERSION_DAEMON, provider]
-  );
+      return semver.gt(settingsCtx.MIN_VERSION_DAEMON, provider.getDaemonReleaseVersion());
+    } catch {
+      // no output on version errors
+    }
+    return false;
+  }, [settingsCtx.MIN_VERSION_DAEMON, provider]);
 
-  const isNewerVersion = useCallback(
-    function (): boolean {
-      try {
-        if (semver.major(settingsCtx.MIN_VERSION_DAEMON) < semver.major(provider.getDaemonReleaseVersion())) {
-          return true;
-        }
-      } catch {
-        // no output on version errors
+  const isNewerVersion = useCallback((): boolean => {
+    try {
+      if (semver.major(settingsCtx.MIN_VERSION_DAEMON) < semver.major(provider.getDaemonReleaseVersion())) {
+        return true;
       }
-      return false;
-    },
-    [settingsCtx.MIN_VERSION_DAEMON, provider]
-  );
+    } catch {
+      // no output on version errors
+    }
+    return false;
+  }, [settingsCtx.MIN_VERSION_DAEMON, provider]);
 
-  const getVersionColor = useCallback(
-    function (): string {
-      try {
-        if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
-          return "grey";
-        }
-        if (semver.major(settingsCtx.MIN_VERSION_DAEMON) !== semver.major(provider.getDaemonReleaseVersion())) {
-          return "red";
-        }
-        if (semver.minor(settingsCtx.MIN_VERSION_DAEMON) !== semver.minor(provider.getDaemonReleaseVersion())) {
-          return "HotPink";
-        }
-        if (semver.patch(settingsCtx.MIN_VERSION_DAEMON) !== semver.patch(provider.getDaemonReleaseVersion())) {
-          return "orange";
-        }
-      } catch {
-        // no output on version errors
+  const getVersionColor = useCallback((): string => {
+    try {
+      if (provider.getDaemonReleaseVersion().indexOf("unknown") > -1) {
+        return "grey";
       }
-      return "grey";
-    },
-    [settingsCtx.MIN_VERSION_DAEMON, provider]
-  );
+      if (semver.major(settingsCtx.MIN_VERSION_DAEMON) !== semver.major(provider.getDaemonReleaseVersion())) {
+        return "red";
+      }
+      if (semver.minor(settingsCtx.MIN_VERSION_DAEMON) !== semver.minor(provider.getDaemonReleaseVersion())) {
+        return "HotPink";
+      }
+      if (semver.patch(settingsCtx.MIN_VERSION_DAEMON) !== semver.patch(provider.getDaemonReleaseVersion())) {
+        return "orange";
+      }
+    } catch {
+      // no output on version errors
+    }
+    return "grey";
+  }, [settingsCtx.MIN_VERSION_DAEMON, provider]);
 
   const getDelayColor = useCallback((delay: number) => {
     if (delay < 0.1) {
@@ -454,7 +446,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 (localhost)
               </Typography>
             )}
-            {provider.rosState.ros_domain_id !== undefined && parseInt(provider.rosState.ros_domain_id) > 0 && (
+            {provider.rosState.ros_domain_id !== undefined && Number.parseInt(provider.rosState.ros_domain_id) > 0 && (
               <Tooltip title={provider.rosVersion === "2" ? "ROS_DOMAIN_ID" : "Network ID"} placement="right">
                 <Typography color="grey" variant="body2">
                   [{provider.rosState.ros_domain_id}]

@@ -51,9 +51,9 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
   function initRadioMap(initList: MapSelectionItem[]): { [key: string]: string[] } {
     // convert list to map the 'title' as key and first list element as item
     const result = {};
-    initList.forEach((o: MapSelectionItem) => {
+    for (const o of initList) {
       [result[o.title]] = o.list;
-    });
+    }
     return result;
   }
 
@@ -149,15 +149,14 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
                           handleRadio(node.title, event.target.value);
                         }}
                       >
-                        {node.list &&
-                          node.list.map((item) => (
-                            <FormControlLabel
-                              key={`label-${item}`}
-                              value={item}
-                              control={<Radio size="small" />}
-                              label={item}
-                            />
-                          ))}
+                        {node.list?.map((item) => (
+                          <FormControlLabel
+                            key={`label-${item}`}
+                            value={item}
+                            control={<Radio size="small" />}
+                            label={item}
+                          />
+                        ))}
                       </RadioGroup>
                     )}
                     {!useRadioGroup &&
@@ -165,7 +164,7 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
                       node.list.map((item) => {
                         return (
                           <ListItem key={item} disablePadding>
-                            <ListItemButton role={undefined} onClick={() => handleToggle(node.title, item)} dense>
+                            <ListItemButton onClick={() => handleToggle(node.title, item)} dense>
                               <ListItemIcon>
                                 <Checkbox
                                   size="small"

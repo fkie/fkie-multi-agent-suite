@@ -145,26 +145,26 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [nodeMap, setNodeMap] = useState(new Map());
 
   useEffect(() => {
-    providers.forEach((provider) => {
+    for (const provider of providers) {
       provider.setSettingsCtx(settingsCtx);
-    });
-  }, [settingsCtx]);
+    }
+  }, [settingsCtx, providers]);
 
   useEffect(() => {
-    providers.forEach((provider) => {
+    for (const provider of providers) {
       provider.setLoggerCtx(logCtx);
-    });
-  }, [logCtx]);
+    }
+  }, [logCtx, providers]);
 
   /** Remove all disconnected provider and their discovered provider. */
   function clearProviders(): void {
     const idsSavedProviders: string[] = [];
     // get ids of providers which are stored local and are connected
-    providers.forEach((prov) => {
+    for (const prov of providers) {
       if (prov.discovered === undefined && prov.connectionState === ConnectionState.STATES.CONNECTED) {
         idsSavedProviders.push(prov.id);
       }
-    });
+    }
     // update discovered lists by removing not connected provider ids
     providers.forEach((prov) => {
       if (prov.discovered !== undefined) {
@@ -203,11 +203,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       return true;
     }
     const localIps: string[] = [];
-    systemInfo?.networkInterfaces?.forEach((ni) => {
+    for (const ni of systemInfo?.networkInterfaces || []) {
       if (host === ni.ip4) {
         localIps.push(ni.ip4);
       }
-    });
+    }
     return localIps.length > 0;
   }
 
@@ -231,7 +231,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Search and return a provider using its host name
    */
   const getProviderByHost = useCallback(
-    function (hostName: string): Provider | null {
+    (hostName: string): Provider | null => {
       if (initialized) {
         const p = providers.find((provider) => {
           return (
@@ -251,7 +251,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Search and return a provider using known hosts and port
    */
   const getProviderByHosts = useCallback(
-    function (hosts: string[], port: number = 0, defaultValue: Provider | null = null): Provider | null {
+    (hosts: string[], port: number = 0, defaultValue: Provider | null = null): Provider | null => {
       const p = providers.find((provider) => {
         let result = true;
         if (port !== 0 && provider.connection.port !== 0) {
@@ -280,15 +280,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   /**
    * Search and return a provider it they are local
    */
-  const getLocalProvider = useCallback(
-    function (): Provider[] {
-      const p = providers.filter((provider) => {
-        return provider.isLocalHost;
-      });
-      return p;
-    },
-    [providers]
-  );
+  const getLocalProvider = useCallback((): Provider[] => {
+    const p = providers.filter((provider) => {
+      return provider.isLocalHost;
+    });
+    return p;
+  }, [providers]);
 
   /**
    * Trigger updateLaunchContent() of the provider.
@@ -312,7 +309,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Trigger updateRosNodes() of the provider.
    */
   const updateNodeList = useCallback(
-    async function (providerId: string): Promise<void> {
+    async (providerId: string): Promise<void> => {
       logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "", false);
       const provider = getProviderById(providerId);
       await provider?.updateRosNodes({}, false);
@@ -324,7 +321,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Trigger updateLaunchContent() of the provider.
    */
   const updateLaunchList = useCallback(
-    async function (providerId: string): Promise<void> {
+    async (providerId: string): Promise<void> => {
       logCtx.debug(`Triggering update of ROS launch files from ${providerId}`, "");
       const provider = getProviderById(providerId);
       await provider?.updateLaunchContent();
@@ -337,27 +334,24 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Useful when new providers wants to be registered
    * as it prevents re-registration of URIs
    */
-  const closeProviders = useCallback(
-    function (): void {
-      providers.forEach((prov) => {
-        prov.close();
-      });
-    },
-    [providers]
-  );
+  const closeProviders = useCallback((): void => {
+    for (const prov of providers) {
+      prov.close();
+    }
+  }, [providers]);
 
   /**
    * Launch a file [filePath] on a given [provider], using arguments [args]
    */
   const launchFile = useCallback(
-    async function (
+    async (
       provider: Provider,
       filePath: string,
       args: LaunchArgument[],
       reload = false
-    ): Promise<TLoadLaunchResult> {
-      if (!filePath) return { success: false, error: `Invalid file path` };
-      if (!provider || !provider.isAvailable()) return { success: false, error: `Invalid/unavailable provider` };
+    ): Promise<TLoadLaunchResult> => {
+      if (!filePath) return { success: false, error: "Invalid file path" };
+      if (!provider || !provider.isAvailable()) return { success: false, error: "Invalid/unavailable provider" };
 
       /*
        * ros_package -
@@ -392,7 +386,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (!resultLaunchLoadFile) {
         return {
           success: false,
-          error: `Invalid response for [launchLoadFile], check DAEMON screen output`,
+          error: "Invalid response for [launchLoadFile], check DAEMON screen output",
           reply: null,
         };
       }
@@ -477,17 +471,17 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
 
       const result = await launchFile(provider, modifiedFile, args, true);
-      if (result && result.success) {
+      if (result?.success) {
         logCtx.success(`Launch file [${getFileName(modifiedFile)}] reloaded`, `File: ${modifiedFile}`);
 
         // check if nodes have to be restarted
-        if (result.reply && result.reply.changed_nodes && result.reply.changed_nodes.length > 0) {
+        if (result.reply?.changed_nodes && result.reply.changed_nodes.length > 0) {
           // ask use if nodes should be restarted
           emitCustomEvent(
             EVENT_PROVIDER_NODE_BINARY_MODIFIED,
             new EventProviderNodeBinaryModified(provider, result.reply.changed_nodes)
           );
-          enqueueSnackbar(`Configuration changed!`, {
+          enqueueSnackbar("Configuration changed!", {
             persist: true,
             anchorOrigin: {
               vertical: "top",
@@ -499,7 +493,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 key,
                 `${message}`,
                 provider,
-                result.reply && result.reply.changed_nodes ? result.reply.changed_nodes : [],
+                result.reply?.changed_nodes ? result.reply.changed_nodes : [],
                 modifiedFile
               ),
           });
@@ -565,13 +559,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   /**
    * Forces an update on the provider list for all connected provider.
    */
-  const refreshProviderList = useDebounceCallback(function (): void {
+  const refreshProviderList = useDebounceCallback((): void => {
     // remove discoverd provider
     const newProviders = providers.filter((prov) => {
       return prov.discovered === undefined;
     });
     setProviders(newProviders);
-    newProviders.forEach((provider) => {
+    for (const provider of newProviders) {
       try {
         provider.updateProviderList();
         provider.getDaemonVersion().catch((err) => {
@@ -580,9 +574,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         });
       } catch (error: unknown) {
         // ignore errors while refresh
-        logCtx.debug(`refreshProviderList failed`, JSON.stringify(error), false);
+        logCtx.debug("refreshProviderList failed", JSON.stringify(error), false);
       }
-    });
+    }
   }, debounceTimeout);
 
   async function startConfig(
@@ -632,10 +626,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       const systemNodes = provider.rosNodes.filter((n) => n.system_node);
       if (config.force.stop && systemNodes?.length > 0) {
         // stop all requested system nodes, daemon as last node
-        let nodesToStop: RosNode[] = [];
-        let syncNode;
-        let daemonNode;
-        let discoveryNode;
+        const nodesToStop: RosNode[] = [];
+        let syncNode: RosNode | undefined;
+        let daemonNode: RosNode | undefined;
+        let discoveryNode: RosNode | undefined;
         if (config.sync.enable) {
           syncNode = systemNodes.find((n) => n.id.includes("mas_sync") || n.id.includes("master_sync"));
         }
@@ -647,9 +641,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
         // we have to stop in right order to be able to use stop_node() method of the provider
         if (config.rosVersion === "1") {
-          nodesToStop = [syncNode, daemonNode, discoveryNode];
+          if (syncNode) nodesToStop.push(syncNode);
+          if (daemonNode) nodesToStop.push(daemonNode);
+          if (discoveryNode) nodesToStop.push(discoveryNode);
         } else {
-          nodesToStop = [discoveryNode, daemonNode];
+          if (discoveryNode) nodesToStop.push(discoveryNode);
+          if (daemonNode) nodesToStop.push(daemonNode);
         }
         await Promise.all(
           nodesToStop.map(async (node) => {
@@ -672,22 +669,20 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartDaemon) {
             if (!resultStartDaemon.result) {
               if (resultStartDaemon.connectConfig) {
-                logCtx.error(`Request password`, `${JSON.stringify(resultStartDaemon.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartDaemon.connectConfig)}`);
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartDaemon.connectConfig)
                 );
                 allStarted = false;
                 return false;
-              } else {
-                logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
-                provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDaemon.message);
-                allStarted = false;
-                return false;
               }
-            } else {
-              logCtx.success(`daemon on host '${config.host}' started successfully`, "");
+              logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
+              provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDaemon.message);
+              allStarted = false;
+              return false;
             }
+            logCtx.success(`daemon on host '${config.host}' started successfully`, "");
           }
         } else {
           logCtx.error(`Failed to create daemon start command: ${cmd.message}`, JSON.stringify(config));
@@ -702,22 +697,20 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartDiscovery) {
             if (!resultStartDiscovery.result) {
               if (resultStartDiscovery.connectConfig) {
-                logCtx.error(`Request password`, `${JSON.stringify(resultStartDiscovery.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartDiscovery.connectConfig)}`);
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartDiscovery.connectConfig)
                 );
                 allStarted = false;
                 return false;
-              } else {
-                logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
-                provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDiscovery.message);
-                allStarted = false;
-                return false;
               }
-            } else {
-              logCtx.success(`discovery on host '${config.host}' started successfully`, "");
+              logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
+              provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDiscovery.message);
+              allStarted = false;
+              return false;
             }
+            logCtx.success(`discovery on host '${config.host}' started successfully`, "");
           }
         } else {
           logCtx.error(`Failed to create discovery start command: ${cmd.message}`, JSON.stringify(config));
@@ -733,17 +726,16 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartSync) {
             if (!resultStartSync.result) {
               if (resultStartSync.connectConfig) {
-                logCtx.error(`Request password`, `${JSON.stringify(resultStartSync.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`);
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartSync.connectConfig)
                 );
                 allStarted = false;
                 return false;
-              } else {
-                logCtx.error(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
-                allStarted = false;
               }
+              logCtx.error(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
+              allStarted = false;
             } else {
               logCtx.success(`Sync on host '${config.host}' started successfully`, "");
             }
@@ -763,17 +755,16 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartTerminal) {
             if (!resultStartTerminal.result) {
               if (resultStartTerminal.connectConfig) {
-                logCtx.error(`Request password`, `${JSON.stringify(resultStartTerminal.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartTerminal.connectConfig)}`);
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartTerminal.connectConfig)
                 );
                 allStarted = false;
                 return false;
-              } else {
-                logCtx.error(`Failed to start terminal on host '${config.host}'`, resultStartTerminal.message);
-                allStarted = false;
               }
+              logCtx.error(`Failed to start terminal on host '${config.host}'`, resultStartTerminal.message);
+              allStarted = false;
             } else {
               logCtx.success(`ttyd on host '${config.host}' started successfully`, "");
             }
@@ -825,7 +816,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       );
       const domainId = provider.rosState?.ros_domain_id;
       if (domainId !== undefined) {
-        defaultCfg.networkId = parseInt(domainId);
+        defaultCfg.networkId = Number.parseInt(domainId);
       }
       defaultCfg.daemon.enable = true;
       defaultCfg.discovery.enable = true;
@@ -868,16 +859,15 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (resultStartSync) {
         if (!resultStartSync.result) {
           if (resultStartSync.connectConfig) {
-            logCtx.error(`Request password`, `${JSON.stringify(resultStartSync.connectConfig)}`);
+            logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`);
             emitCustomEvent(
               EVENT_PROVIDER_AUTH_REQUEST,
               new EventProviderAuthRequest(provider, launchCfg, resultStartSync.connectConfig)
             );
             return false;
-          } else {
-            logCtx.error(`Failed to start sync on host '${launchCfg.host}'`, resultStartSync.message);
-            return false;
           }
+          logCtx.error(`Failed to start sync on host '${launchCfg.host}'`, resultStartSync.message);
+          return false;
         }
       }
     }
@@ -901,7 +891,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (resultStartSync) {
         if (!resultStartSync.result) {
           if (resultStartSync.connectConfig) {
-            logCtx.error(`Request password`, `${JSON.stringify(resultStartSync.connectConfig)}`);
+            logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`);
             emitCustomEvent(
               EVENT_PROVIDER_AUTH_REQUEST,
               new EventProviderAuthRequest(
@@ -911,16 +901,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               )
             );
             return Promise.resolve({ result: false, message: "password requested" });
-          } else {
-            logCtx.error(`Failed to start dynamic reconfigure node on host '${config.host}'`, resultStartSync.message);
-            return Promise.resolve({
-              result: false,
-              message: `Failed to start dynamic reconfigure node on host '${config.host}'`,
-            });
           }
-        } else {
-          return Promise.resolve({ result: true, message: "" });
+          logCtx.error(`Failed to start dynamic reconfigure node on host '${config.host}'`, resultStartSync.message);
+          return Promise.resolve({
+            result: false,
+            message: `Failed to start dynamic reconfigure node on host '${config.host}'`,
+          });
         }
+        return Promise.resolve({ result: true, message: "" });
       }
     }
     return Promise.resolve({ result: false, message: cmd.message });
@@ -1063,8 +1051,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     ) {
       // no affected launch files => it is a binary
       const nodes: string[] = [];
-      data.provider.launchFiles.forEach((launch) => {
-        launch.nodes?.forEach((node) => {
+      for (const launch of data.provider.launchFiles) {
+        for (const node of launch.nodes || []) {
           if (node.executable) {
             if (data.path.srcPath.endsWith(node.executable)) {
               if (node.node_name) {
@@ -1072,12 +1060,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               }
             }
           }
-        });
-      });
+        }
+      }
       if (nodes.length > 0) {
         emitCustomEvent(EVENT_PROVIDER_NODE_BINARY_MODIFIED, new EventProviderNodeBinaryModified(data.provider, nodes));
         // ask use if nodes should be restarted
-        enqueueSnackbar(`Binary changed!`, {
+        enqueueSnackbar("Binary changed!", {
           persist: true,
           anchorOrigin: {
             vertical: "top",
@@ -1089,7 +1077,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         });
       }
     }
-    data.path.affected?.forEach((arg: string) => {
+    for (const arg of data.path.affected || []) {
       enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
         persist: true,
         anchorOrigin: {
@@ -1109,7 +1097,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           );
         },
       });
-    });
+    }
   });
 
   useCustomEventListener(
@@ -1149,14 +1137,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       });
 
       newMap.set(data.provider.id, data.nodes);
-      data.nodes.forEach((node) => {
+      for (const node of data.nodes) {
         newNodeMap.set(node.idGlobal, node);
-      });
+      }
       setNodeMap(newNodeMap);
-      logCtx.debug(
-        `ros nodes updated for ${data.provider.id}: ${data.nodes.length} nodes`,
-        `${JSON.stringify(data.nodes)}`
-      );
       // logCtx.debug(`ros nodes updated for ${data.provider.id}: ${JSON.stringify(data.nodes)}`, "");
 
       setMapProviderRosNodes(newMap);
@@ -1205,12 +1189,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   });
 
   useEffect(() => {
-    providers.forEach((provider) => {
+    for (const provider of providers) {
       if (provider.connectionState === ConnectionState.STATES.UNKNOWN) {
         // we have no configuration => it is a discovered provider => trigger connect to the new provider
         connectToProvider(provider);
       }
-    });
+    }
   }, [providers]);
 
   /** A provider was enqueued. If it is a new one, add it to providers lists. */

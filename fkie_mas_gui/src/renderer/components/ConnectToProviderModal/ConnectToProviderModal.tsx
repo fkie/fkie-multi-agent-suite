@@ -168,7 +168,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     );
 
     DEFAULT_PARAMETER.networkId = import.meta.env.VITE_ROS_DOMAIN_ID
-      ? parseInt(import.meta.env.VITE_ROS_DOMAIN_ID)
+      ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID)
       : optionNetworkId;
     DEFAULT_PARAMETER.rosVersion = import.meta.env.VITE_ROS_VERSION
       ? import.meta.env.VITE_ROS_VERSION
@@ -217,13 +217,13 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       // only add valid ipv4 addresses
       const ipv4format =
         /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-      hostSystem.forEach((h) => {
+      for (const h of hostSystem) {
         const ip = h[0];
         if (ip.match(ipv4format)) {
           const lastName = h[1].split(" ").pop();
           hostListLocal.push({ ip, host: lastName });
         }
-      });
+      }
       hostListLocal.sort((a, b) => -b.host.localeCompare(a.host));
       if (hostListLocal.length === 0) {
         hostListLocal.push({ ip: "127.0.0.1", host: "localhost" });
@@ -236,26 +236,26 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       // trigger add new provider
       const newAcTsSet = new Set<string>();
       const newAcTopicSet = new Set<string>();
-      rosCtx.providersConnected.forEach((prov) => {
-        prov.rosNodes.forEach((node) => {
+      for (const prov of rosCtx.providersConnected) {
+        for (const node of prov.rosNodes) {
           newAcTsSet.add(`${node.name}/*`);
           newAcTopicSet.add(`${node.name}/*`);
-          node.publishers?.forEach((topic) => {
+          for (const topic of node.publishers || []) {
             newAcTsSet.add(topic.name);
             newAcTsSet.add(topic.msg_type);
             newAcTopicSet.add(topic.name);
-          });
-          node.subscribers?.forEach((topic) => {
+          }
+          for (const topic of node.subscribers || []) {
             newAcTsSet.add(topic.name);
             newAcTsSet.add(topic.msg_type);
             newAcTopicSet.add(topic.name);
-          });
-          node.services?.forEach((service) => {
+          }
+          for (const service of node.services || []) {
             newAcTsSet.add(service.name);
             newAcTsSet.add(service.msg_type);
-          });
-        });
-      });
+          }
+        }
+      }
       setTSList(Array.from(newAcTsSet));
       setTopicList(Array.from(newAcTopicSet));
     }
@@ -263,7 +263,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     useEffect(() => {
       updateTopics();
       if (!startParameter.networkId && import.meta.env.VITE_ROS_DOMAIN_ID) {
-        setNetworkId(parseInt(import.meta.env.VITE_ROS_DOMAIN_ID));
+        setNetworkId(Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID));
       }
     }, []);
 
@@ -274,26 +274,23 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     function host2string(host: string | THostIp): string {
       if (Object.keys(host).includes("host")) {
         return `${(host as THostIp).host}`;
-      } else {
-        return host as string;
       }
+      return host as string;
     }
 
     function host2label(host: string | THostIp): string {
       if (Object.keys(host).includes("host")) {
         const ho: THostIp = host as THostIp;
         return `${ho.host}${ho.ip ? ` [${ho.ip}]` : ""}`;
-      } else {
-        return host as string;
       }
+      return host as string;
     }
 
     function host2host(host: string | THostIp): THostIp {
       if (Object.keys(host).includes("host")) {
         return host as THostIp;
-      } else {
-        return { host: host } as THostIp;
       }
+      return { host: host } as THostIp;
     }
 
     function getHosts(): string[] {
@@ -306,9 +303,9 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
 
     function getRobotHosts(): string[] {
       const robotHosts: string[] = [];
-      startParameter.discovery.robotHosts?.forEach((h: string) => {
+      for (const h of startParameter.discovery.robotHosts || []) {
         robotHosts.push(h);
-      });
+      }
       // add temporal values to the list as well
       if (robotHostInputValue.length > 0) robotHosts.push(robotHostInputValue);
       return robotHosts;
@@ -319,7 +316,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     }
 
     const setRosVersion = useCallback(
-      function (rosVersion: string): void {
+      (rosVersion: string): void => {
         startParameter.rosVersion = rosVersion;
         updateStartParameter();
       },
@@ -456,10 +453,10 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       }
 
       // create launch configuration
-      hosts.forEach((host) => {
+      for (const host of hosts) {
         const launchCfg: ProviderLaunchConfiguration = createLaunchConfigFor(host.host);
         launchConfigs.push(launchCfg);
-      });
+      }
 
       // start provider
       let successStart = true;
@@ -781,7 +778,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                             const launchCfg = createLaunchConfigFor(hosts[0]);
                             const commands = createCommandsFor(launchCfg);
                             navigator.clipboard.writeText(commands.join("\n"));
-                            logCtx.success(`Commands copied!`);
+                            logCtx.success("Commands copied!");
                           }
                         }}
                       >

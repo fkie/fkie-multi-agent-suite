@@ -111,30 +111,24 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
     messageStruct.useNow = useNow;
   }, [useNow]);
 
-  const addArrayElement = useCallback(
-    function (): void {
-      if (!messageStruct.value) {
-        messageStruct.value = [];
-      }
-      if (Array.isArray(messageStruct.value)) {
-        messageStruct.value.push(JSON.parse(JSON.stringify(messageStruct.def)));
-      } else {
-        console.error(`can't add array element, it is set to ${messageStruct.value}`);
-      }
-    },
-    [messageStruct]
-  );
+  const addArrayElement = useCallback((): void => {
+    if (!messageStruct.value) {
+      messageStruct.value = [];
+    }
+    if (Array.isArray(messageStruct.value)) {
+      messageStruct.value.push(JSON.parse(JSON.stringify(messageStruct.def)));
+    } else {
+      console.error(`can't add array element, it is set to ${messageStruct.value}`);
+    }
+  }, [messageStruct]);
 
-  const removeArrayElement = useCallback(
-    function (): void {
-      if (Array.isArray(messageStruct.value)) {
-        messageStruct.value.pop();
-      } else {
-        console.error(`can't remove array element, it is set to ${messageStruct.value}`);
-      }
-    },
-    [messageStruct.value]
-  );
+  const removeArrayElement = useCallback((): void => {
+    if (Array.isArray(messageStruct.value)) {
+      messageStruct.value.pop();
+    } else {
+      console.error(`can't remove array element, it is set to ${messageStruct.value}`);
+    }
+  }, [messageStruct.value]);
 
   function structToSearchableString(msgStruct: TRosMessageStruct): string {
     if (msgStruct) {
@@ -341,27 +335,26 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
           </AccordionDetails>
         </Accordion>
       );
-    } else {
-      return (
-        <Stack direction="column" spacing={1}>
-          {!messageStruct.is_array &&
-            !useNow &&
-            messageStruct.def.map((struct: TRosMessageStruct) => (
-              <InputElements
-                key={`input-elements-${messageStruct.name}-${struct.name}`}
-                parentName={idSuffix}
-                messageStruct={struct}
-                filterText={filterText}
-                expanded={false}
-              />
-            ))}
-          {messageStruct.is_array &&
-            messageStruct.value &&
-            arrayCount > 0 &&
-            (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
-        </Stack>
-      );
     }
+    return (
+      <Stack direction="column" spacing={1}>
+        {!messageStruct.is_array &&
+          !useNow &&
+          messageStruct.def.map((struct: TRosMessageStruct) => (
+            <InputElements
+              key={`input-elements-${messageStruct.name}-${struct.name}`}
+              parentName={idSuffix}
+              messageStruct={struct}
+              filterText={filterText}
+              expanded={false}
+            />
+          ))}
+        {messageStruct.is_array &&
+          messageStruct.value &&
+          arrayCount > 0 &&
+          (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
+      </Stack>
+    );
   }
   if (!messageStruct.name) {
     // {`No input for "${messageStruct.type}" defined.`}

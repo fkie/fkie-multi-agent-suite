@@ -1,7 +1,7 @@
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "path";
+import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
 import { ROSInfo } from "./ROSInfo";
 
@@ -140,7 +140,7 @@ export default class TerminalManager implements TTerminalManager {
         `${process.env.ELECTRON_RENDERER_URL}/terminal.html?id=${id}&host=${host}&port=${port}&info=${info}${nodeStr}${screenStr}${cmdStr}`
       );
     } else {
-      window.loadFile(join(__dirname, `../renderer/terminal.html`), {
+      window.loadFile(join(__dirname, "../renderer/terminal.html"), {
         query: {
           id: id,
           host: host,

@@ -124,27 +124,26 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
               bgcolor: "background.paper",
             }}
           >
-            {providers &&
-              providers.map((prov: Provider) => {
-                const labelId = `checkbox-list-label-${prov.id}`;
+            {providers?.map((prov: Provider) => {
+              const labelId = `checkbox-list-label-${prov.id}`;
 
-                return (
-                  <ListItem key={prov.id} disablePadding>
-                    <ListItemButton role={undefined} onClick={() => handleToggle(prov.id)} dense>
-                      <ListItemIcon>
-                        <Checkbox
-                          edge="start"
-                          checked={selectedProviders.findIndex((selProv) => selProv.id === prov.id) !== -1}
-                          tabIndex={-1}
-                          disableRipple
-                          inputProps={{ "aria-labelledby": labelId }}
-                        />
-                      </ListItemIcon>
-                      <ListItemText id={labelId} primary={prov.name()} />
-                    </ListItemButton>
-                  </ListItem>
-                );
-              })}
+              return (
+                <ListItem key={prov.id} disablePadding>
+                  <ListItemButton onClick={() => handleToggle(prov.id)} dense>
+                    <ListItemIcon>
+                      <Checkbox
+                        edge="start"
+                        checked={selectedProviders.findIndex((selProv) => selProv.id === prov.id) !== -1}
+                        tabIndex={-1}
+                        disableRipple
+                        inputProps={{ "aria-labelledby": labelId }}
+                      />
+                    </ListItemIcon>
+                    <ListItemText id={labelId} primary={prov.name()} />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
           </List>
           {showProgress && <LinearProgress variant="determinate" value={progress} />}
         </DialogContent>

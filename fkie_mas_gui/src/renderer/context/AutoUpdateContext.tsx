@@ -166,7 +166,7 @@ export function AutoUpdateProvider({
   }
 
   function setUpdateChannel(channelType: "prerelease" | "release"): void {
-    if (updateChannel != channelType) {
+    if (updateChannel !== channelType) {
       setChannel(channelType);
       autoUpdateManager?.setChannel(channelType);
       // checkForUpdate(channelType);

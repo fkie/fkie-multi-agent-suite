@@ -136,6 +136,7 @@ export default function NodeManager(): JSX.Element {
   function updateFloatButton(layout: IJsonRowNode | IJsonBorderNode | IJsonTabSetNode): boolean {
     if (!layout.children) return false;
     let result = false;
+    // biome-ignore lint/complexity/noForEach: <explanation>
     layout.children.forEach((item) => {
       if (item.type === "tab") {
         if (item.enableFloat !== !window.commandExecutor) {
@@ -159,16 +160,16 @@ export default function NodeManager(): JSX.Element {
   useEffect(() => {
     // check on load if float button should be enabled or not
     let changed: boolean = updateFloatButton(layoutJson.layout);
-    layoutJson.borders?.forEach((border) => {
+    for (const border of layoutJson.borders || []) {
       if (updateFloatButton(border)) {
         changed = true;
       }
-    });
-    layoutJson.layout.children?.forEach((layout) => {
+    }
+    for (const layout of layoutJson.layout.children || []) {
       if (updateFloatButton(layout)) {
         changed = true;
       }
-    });
+    }
     if (changed) {
       setLayoutJson(layoutJson);
       setModel(Model.fromJson(layoutJson));
@@ -180,7 +181,7 @@ export default function NodeManager(): JSX.Element {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set("resetLayout", false);
-      logCtx.success(`Layout reset!`);
+      logCtx.success("Layout reset!");
     }
   }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel, settingsCtx, hasTab, logCtx]);
 
@@ -653,7 +654,7 @@ export default function NodeManager(): JSX.Element {
 
   function onRenderTabSet(node: TabSetNode | BorderNode, renderValues: ITabSetRenderValues): void {
     const children = node.getChildren();
-    children.forEach((child) => {
+    for (const child of children) {
       if (child.getId() === LAYOUT_TABS.NODES) {
         pAddTabStickyButton(
           renderValues.stickyButtons,
@@ -686,7 +687,7 @@ export default function NodeManager(): JSX.Element {
       // if (child.getId() === LAYOUT_TABS.HOSTS) {
       //   renderValues.buttons.push(<SettingsModal key="settings-dialog" />);
       // }
-    });
+    }
     if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
       // add settings to bottom border
       pAddTabStickyButton(
@@ -776,6 +777,7 @@ export default function NodeManager(): JSX.Element {
   const cleanAndSaveLayout = useDebounceCallback(
     (/* model */) => {
       const modelJson = model.toJson();
+      // biome-ignore lint/complexity/noForEach: <explanation>
       modelJson.borders?.forEach((item) => {
         item.selected = -1;
         removeGenericTabs(item);
@@ -820,7 +822,7 @@ export default function NodeManager(): JSX.Element {
           })
         );
       }
-      console.log(`Quit app`);
+      console.log("Quit app");
       electronCtx.shutdownManager?.quitGui();
     },
     [electronCtx]

@@ -204,7 +204,7 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
                 path={selectedPackage?.path as string}
                 exists={itemTree ? true : false}
               >
-                {itemTree && itemTree.children && buildPackageTree(itemTree.children, packageName)}
+                {itemTree?.children && buildPackageTree(itemTree.children, packageName)}
               </PackageTreeItem>
             );
           });

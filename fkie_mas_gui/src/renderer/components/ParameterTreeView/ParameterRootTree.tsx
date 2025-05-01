@@ -105,7 +105,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       ? provider.getNodeParameters([rosNode.name])
       : provider.getParameterList());
     // sort parameter by name
-    paramResult.params.sort(function (a, b) {
+    paramResult.params.sort((a, b) => {
       const an = `${a.node}/${a.name}`;
       const bn = `${b.node}/${b.name}`;
       // sort groups first
@@ -142,7 +142,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       return { params: [], count: 0, groupKeys: [], groupKey: "", groupName: "", fullPrefix: "", paramInfo: null };
     const byPrefixP1: Map<string, { restNameSuffix: string; paramInfo: RosParameter; isGroup: boolean }[]> = new Map();
     // count parameter for each group
-    params.forEach((param) => {
+    for (const param of params) {
       const nodeName = param.node && param.node.length > 0 ? `${param.node}/` : "";
       const nameSuffix = `${nodeName}${param.name}`
         .replace(/\./g, "/")
@@ -159,7 +159,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       } else {
         byPrefixP1.set(groupName, [{ restNameSuffix: "", paramInfo: param, isGroup: false }]);
       }
-    });
+    }
 
     // create result
     let count = 0;
@@ -192,7 +192,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           paramInfo: null,
         } as TTreeItem);
       }
-      paramValues.forEach((item) => {
+      for (const item of paramValues) {
         filteredParams.push({
           groupKey: "",
           groupName: "",
@@ -203,7 +203,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           paramInfo: item.paramInfo,
         } as TTreeItem);
         count += 1;
-      });
+      }
     });
     return { params: filteredParams, count, groupKeys, groupKey: "", groupName: "", fullPrefix: "", paramInfo: null };
   }
@@ -226,31 +226,29 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
           provider={provider}
         />
       );
-    } else {
-      if (avoidGroupWithOneItem && treeItem.params.length === 1) {
-        // avoid groups with one item
-        return paramTreeToStyledItems(
-          rootPath.length > 0 ? `${rootPath}.${treeItem.groupName}` : treeItem.groupName,
-          treeItem.params[0]
-        );
-      } else {
-        return (
-          <ParameterGroupTreeItem
-            key={treeItem.groupKey}
-            itemId={treeItem.groupKey}
-            namespacePart={rootPath}
-            groupName={treeItem.groupName}
-            icon={null}
-            countChildren={treeItem.count}
-            requestData={false}
-          >
-            {treeItem.params.map((subItem) => {
-              return paramTreeToStyledItems("", subItem);
-            })}
-          </ParameterGroupTreeItem>
-        );
-      }
     }
+    if (avoidGroupWithOneItem && treeItem.params.length === 1) {
+      // avoid groups with one item
+      return paramTreeToStyledItems(
+        rootPath.length > 0 ? `${rootPath}.${treeItem.groupName}` : treeItem.groupName,
+        treeItem.params[0]
+      );
+    }
+    return (
+      <ParameterGroupTreeItem
+        key={treeItem.groupKey}
+        itemId={treeItem.groupKey}
+        namespacePart={rootPath}
+        groupName={treeItem.groupName}
+        icon={null}
+        countChildren={treeItem.count}
+        requestData={false}
+      >
+        {treeItem.params.map((subItem) => {
+          return paramTreeToStyledItems("", subItem);
+        })}
+      </ParameterGroupTreeItem>
+    );
   }
 
   useEffect(() => {

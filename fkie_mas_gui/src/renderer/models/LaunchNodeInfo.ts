@@ -68,7 +68,7 @@ export default class LaunchNodeInfo {
   constructor(
     unique_name: string | null,
     node_name: string | null = null,
-    name_configured: string | null,
+    name_configured: string | null = null,
     node_namespace: string | null = null,
     package_name: string | null = null,
     executable: string | null = null,
@@ -82,18 +82,18 @@ export default class LaunchNodeInfo {
     additional_env: unknown[] | null = null,
     launch_prefix: string | null = null,
     output: string | null = null,
-    output_format: string | null,
-    cmd: string | null,
-    cwd: string | null,
-    sigterm_timeout: number | null,
-    sigkill_timeout: number | null,
-    on_exit: unknown[] | null,
+    output_format: string | null = null,
+    cmd: string | null = null,
+    cwd: string | null = null,
+    sigterm_timeout: number | null = null,
+    sigkill_timeout: number | null = null,
+    on_exit: unknown[] | null = null,
     required: boolean | null = null,
     file_name: string | null = null,
     file_range: TFileRange | null = null,
     launch_context_arg: TLaunchArg[] | null = null,
     launch_name: string | null = null,
-    composable_container: string | null
+    composable_container: string | null = null
   ) {
     this.unique_name = unique_name;
     this.node_name = node_name;

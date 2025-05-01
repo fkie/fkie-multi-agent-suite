@@ -161,27 +161,26 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                   margin: 0,
                 }}
               >
-                {currentNodeList &&
-                  currentNodeList.map((node) => {
-                    const labelId = `checkbox-list-label-${node}`;
-                    return (
-                      <ListItem key={node} disablePadding>
-                        <ListItemButton role={undefined} onClick={() => handleToggle(node)} dense>
-                          <ListItemIcon>
-                            <Checkbox
-                              edge="start"
-                              checked={checked.indexOf(node) !== -1}
-                              tabIndex={-1}
-                              disableRipple
-                              inputProps={{ "aria-labelledby": labelId }}
-                              sx={{ padding: 0 }}
-                            />
-                          </ListItemIcon>
-                          <ListItemText id={labelId} primary={node} />
-                        </ListItemButton>
-                      </ListItem>
-                    );
-                  })}
+                {currentNodeList?.map((node) => {
+                  const labelId = `checkbox-list-label-${node}`;
+                  return (
+                    <ListItem key={node} disablePadding>
+                      <ListItemButton onClick={() => handleToggle(node)} dense>
+                        <ListItemIcon>
+                          <Checkbox
+                            edge="start"
+                            checked={checked.indexOf(node) !== -1}
+                            tabIndex={-1}
+                            disableRipple
+                            inputProps={{ "aria-labelledby": labelId }}
+                            sx={{ padding: 0 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText id={labelId} primary={node} />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
               </List>
             </Paper>
           </Collapse>

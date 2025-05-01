@@ -31,7 +31,7 @@ export default class TopicExtendedInfo {
   }
 
   addPublishers(publishers: EndpointInfo[] | undefined, node: RosNode): void {
-    publishers?.forEach((pub: EndpointInfo) => {
+    for (const pub of publishers || []) {
       if (
         this.publishers.filter((item) => item.info.node_id === pub.node_id && item.providerId === node.providerId)
           .length === 0
@@ -44,11 +44,11 @@ export default class TopicExtendedInfo {
       if (pub.incompatible_qos && pub.incompatible_qos.length > 0) {
         this.hasIncompatibleQos = true;
       }
-    });
+    }
   }
 
   addSubscribers(subscribers: EndpointInfo[] | undefined, node: RosNode): void {
-    subscribers?.forEach((sub: EndpointInfo) => {
+    for (const sub of subscribers || []) {
       if (
         this.subscribers.filter((item) => item.info.node_id === sub.node_id && item.providerId === node.providerId)
           .length === 0
@@ -61,7 +61,7 @@ export default class TopicExtendedInfo {
       if (sub.incompatible_qos && sub.incompatible_qos.length > 0) {
         this.hasIncompatibleQos = true;
       }
-    });
+    }
   }
 
   public add(topic: RosTopic, node: RosNode): void {

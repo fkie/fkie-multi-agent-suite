@@ -48,12 +48,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
   const [includeRoot, setIncludeRoot] = useState<TLaunchIncludeItem>();
   const [expandedExplorerResults, setExpandedExplorerResults] = useState<string[]>([]);
 
-  const createUriPath = useCallback(
-    function (path: string): string {
-      return `/${tabId}:${path}`;
-    },
-    [tabId]
-  );
+  const createUriPath = useCallback((path: string): string => `/${tabId}:${path}`, [tabId]);
 
   useEffect(() => {
     const provider: Provider | undefined = rosCtx.getProviderById(providerId, true);
@@ -72,7 +67,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
       } as LaunchIncludedFile,
     } as TLaunchIncludeItem;
     let currentFile: TLaunchIncludeItem = rootItem;
-    includedFiles.forEach((file) => {
+    for (const file of includedFiles) {
       const incItem: TLaunchIncludeItem = {
         children: [],
         uriPath: createUriPath(file.inc_path),
@@ -94,7 +89,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
         }
         currentFile.children.push(incItem);
       }
-    });
+    }
     setIncludeRoot(rootItem);
   }, [includedFiles, providerId, rootFilePath, rosCtx]);
 

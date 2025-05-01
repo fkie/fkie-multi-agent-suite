@@ -111,7 +111,7 @@ export default class RosQos {
 
   toString(): string {
     let result = "";
-    if (this.depth != 10) {
+    if (this.depth !== 10) {
       result += `--qos-depth ${this.depth} `;
     }
     if (this.durability < DURABILITY.UNKNOWN) {

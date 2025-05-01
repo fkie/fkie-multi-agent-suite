@@ -40,7 +40,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
 
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
-  const [history, setHistory] = useLocalStorage(`ServiceStruct:history`, {});
+  const [history, setHistory] = useLocalStorage("ServiceStruct:history", {});
   const [historyLength, setHistoryLength] = useState(0);
   const rosCtx = useContext(RosContext);
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,7 +102,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   const onCopyToClipboard = useCallback(() => {
     const json = serviceStruct ? rosMessageStructToString(serviceStruct, false, false) : "{}";
     navigator.clipboard.writeText(`${serviceName} ${serviceType} "${json}"`);
-    logCtx.success(`service call input copied!`);
+    logCtx.success("service call input copied!");
   }, [serviceStruct]);
 
   const getServiceStructData = useCallback(async () => {
@@ -402,7 +402,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
           </Stack>
         )}
         {inputElements}
-        <>---</>
+        ---
         {!serviceStruct && (
           <Alert severity="error" style={{ minWidth: 0 }}>
             <AlertTitle>{`Service definition for ${serviceName}[${serviceType}] not found!`}</AlertTitle>

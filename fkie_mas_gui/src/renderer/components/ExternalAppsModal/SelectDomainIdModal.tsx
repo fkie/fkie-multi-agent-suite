@@ -51,7 +51,7 @@ const SelectDomainIdModal = forwardRef<HTMLDivElement, SelectDomainIdModalProps>
         <DialogContent>
           <Stack>
             <Autocomplete
-              key={`autocomplete-publisher-name`}
+              key={"autocomplete-publisher-name"}
               size="small"
               fullWidth
               autoHighlight

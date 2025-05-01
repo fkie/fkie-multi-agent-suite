@@ -1,7 +1,7 @@
 import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "path";
+import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
 
 type TSubscriber = {
@@ -127,7 +127,7 @@ export default class SubscriberManager implements TSubscriberManager {
         `${process.env.ELECTRON_RENDERER_URL}/subscriber.html?id=${id}&host=${host}&port=${port}&topic=${topic}&showOptions=${showOptions}&noData=${noData}`
       );
     } else {
-      window.loadFile(join(__dirname, `../renderer/subscriber.html`), {
+      window.loadFile(join(__dirname, "../renderer/subscriber.html"), {
         query: {
           id: id,
           host: host,

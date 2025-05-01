@@ -200,7 +200,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
 
     // create a tree structure
     // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
-    itemList.forEach((item) => {
+    for (const item of itemList) {
       item.relativePath?.split("/").reduce((prev: TPackageTree, name, i, a) => {
         if (!prev[name]) {
           prev[name] = { packageTree: [] };
@@ -230,7 +230,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
 
         return prev[name];
       }, level);
-    });
+    }
 
     const pit: TPackageItemsTree = {};
     // eslint-disable-next-line prefer-destructuring
@@ -252,7 +252,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
 
     const searchResult: RosPackage[] = [];
     const includedPackages: string[] = [];
-    packageList.forEach((p) => {
+    for (const p of packageList) {
       if (
         p.name.indexOf(searchText) !== -1 &&
         !includedPackages.includes(p.name) // prevent duplicates
@@ -260,7 +260,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
         searchResult.push(p);
         includedPackages.push(p.name);
       }
-    });
+    }
 
     const sortedPackages = searchResult.sort(comparePackageItems);
     setPackageListFiltered(sortedPackages);
@@ -270,7 +270,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
    * Callback when files on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    function (itemId: string): void {
+    (itemId: string): void => {
       const callbackFile: PathItem | undefined = packageItemList.find((item) => item.id === itemId);
       if (callbackFile) {
         setSelectedFile(callbackFile);
@@ -291,7 +291,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
    * Callback when files are double-clicked by the user
    */
   const onFileDoubleClick = useCallback(
-    function (_label: string, itemId: string, _ctrlKey: boolean, shiftKey: boolean): void {
+    (_label: string, itemId: string, _ctrlKey: boolean, shiftKey: boolean): void => {
       const callbackFile = packageItemList.find((item) => item.id === itemId);
       if (!callbackFile) return;
 
@@ -311,10 +311,9 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
             path: packages[0].path,
           } as RosPackage);
           return;
-        } else {
-          logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`);
-          return;
         }
+        logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`);
+        return;
       }
       if (isFileLaunch) {
         setSelectedLaunchFile({ ...callbackFile });
@@ -325,7 +324,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
       // edit file using monaco editor panel
       onEditFile(callbackFile, shiftKey);
     },
-    [packageItemList, onEditFile, packageList, handleOnSelectPackage]
+    [packageItemList, packageList]
   );
 
   return (
@@ -428,7 +427,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
             >
               <span>
                 <IconButton
-                  disabled={!(selectedFile && selectedFile.path)}
+                  disabled={!selectedFile?.path}
                   size="small"
                   aria-label="copy"
                   onClick={() => {

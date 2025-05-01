@@ -113,20 +113,20 @@ export default class XmlBeautify {
         if (!inComment) deep--;
       }
       // <elm> //
-      else if (ar[ix].search(/<\w/) > -1 && ar[ix].search(/<\//) == -1 && ar[ix].search(/\/>/) == -1) {
-        str = !inComment ? (str += shift[deep++] + ar[ix]) : (str += ar[ix]);
+      else if (ar[ix].search(/<\w/) > -1 && ar[ix].search(/<\//) === -1 && ar[ix].search(/\/>/) === -1) {
+        str += !inComment ? shift[deep++] + ar[ix] : ar[ix];
       }
       // <elm>...</elm> //
       else if (ar[ix].search(/<\w/) > -1 && ar[ix].search(/<\//) > -1) {
-        str = !inComment ? (str += shift[deep] + ar[ix]) : (str += ar[ix]);
+        str += !inComment ? shift[deep] + ar[ix] : ar[ix];
       }
       // </elm> //
       else if (ar[ix].search(/<\//) > -1) {
-        str = !inComment ? (str += shift[--deep] + ar[ix]) : (str += ar[ix]);
+        str += !inComment ? shift[--deep] + ar[ix] : ar[ix];
       }
       // <elm/> //
       else if (ar[ix].search(/\/>/) > -1) {
-        str = !inComment ? (str += shift[deep] + ar[ix]) : (str += ar[ix]);
+        str += !inComment ? shift[deep] + ar[ix] : ar[ix];
       }
       // <? xml ... ?> //
       else if (ar[ix].search(/<\?/) > -1) {
@@ -140,6 +140,6 @@ export default class XmlBeautify {
       }
     }
 
-    return str[0] == "\n" ? str.slice(1) : str;
+    return str[0] === "\n" ? str.slice(1) : str;
   }
 }

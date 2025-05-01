@@ -1,10 +1,10 @@
 import { CommandExecutorEvents, TCommandExecutor, TSystemInfo } from "@/types";
-import { spawn, StdioOptions } from "child_process";
 import { ipcMain } from "electron";
 import log from "electron-log";
-import fs from "fs";
-import os from "os";
-import path from "path";
+import { spawn, StdioOptions } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
 import { ARGUMENTS, getArgument } from "../CommandLineInterface";
 import { SystemInfo } from "./SystemInfo";
@@ -50,25 +50,25 @@ export default class CommandExecutor implements TCommandExecutor {
         const configLines = data.split("\n");
         let currentHost: string | null = null;
 
-        configLines.forEach((line) => {
-          line = line.trim();
-          if (line.startsWith("Host ")) {
-            currentHost = line.split(" ")[1];
-          } else if (line.startsWith("User ") && currentHost) {
-            const username = line.split(" ")[1];
+        for (const line of configLines) {
+          const nLine = line.trim();
+          if (nLine.startsWith("Host ")) {
+            currentHost = nLine.split(" ")[1];
+          } else if (nLine.startsWith("User ") && currentHost) {
+            const username = nLine.split(" ")[1];
             this.sshUsers[currentHost] = username;
-          } else if (line.startsWith("Port ") && currentHost) {
-            const port = line.split(" ")[1];
-            this.sshPorts[currentHost] = parseInt(port);
-          } else if (line.startsWith("IdentityFile ") && currentHost) {
-            const identPath: string = line.split(" ")[1].replace("~", os.homedir());
+          } else if (nLine.startsWith("Port ") && currentHost) {
+            const port = nLine.split(" ")[1];
+            this.sshPorts[currentHost] = Number.parseInt(port);
+          } else if (nLine.startsWith("IdentityFile ") && currentHost) {
+            const identPath: string = nLine.split(" ")[1].replace("~", os.homedir());
             try {
               this.sshKeys[currentHost] = fs.readFileSync(identPath);
             } catch (error) {
               console.error(`error while read specified IdentityFile "${identPath}": ${error}`);
             }
           }
-        });
+        }
         // log.info("SSH-configuration (host and username):", this.sshUsers);
       });
     } catch (error) {
@@ -149,9 +149,9 @@ export default class CommandExecutor implements TCommandExecutor {
     const localIps = ["localhost", "127.0.0.1", os.hostname()];
 
     if (this.systemInfo) {
-      this.systemInfo.networkInterfaces?.forEach((ni) => {
+      for (const ni of this.systemInfo.networkInterfaces || []) {
         localIps.push(ni.ip4);
-      });
+      }
     }
 
     if (c.host === undefined || localIps.includes(c.host)) {
@@ -184,11 +184,11 @@ export default class CommandExecutor implements TCommandExecutor {
               // resolve(`Closed with code: ${code}`);
             }
           });
-          child.stdout?.on("data", function (data) {
+          child.stdout?.on("data", (data) => {
             if (parentOut) {
               console.log(`${data}`);
               resultString += `${data}`;
-              `${data}`.split("\n").forEach((item) => {
+              for (const item of `${data}`.split("\n")) {
                 if (
                   item.includes("[rosrun] Couldn't find executable") ||
                   item.includes("[ERROR]") ||
@@ -196,10 +196,10 @@ export default class CommandExecutor implements TCommandExecutor {
                 ) {
                   errorString += item;
                 }
-              });
+              }
             }
           });
-          child.stderr?.on("data", function (data) {
+          child.stderr?.on("data", (data) => {
             if (parentOut) {
               console.error(`${data}`);
             }
@@ -471,10 +471,10 @@ export async function updateDebianPackages(prerelease: boolean = false): Promise
       child.on("close", (code) => {
         resolve(code === 0);
       });
-      child.stdout?.on("data", function (data) {
+      child.stdout?.on("data", (data) => {
         log.info(`${data}`.trim());
       });
-      child.stderr?.on("data", function (data) {
+      child.stderr?.on("data", (data) => {
         log.info(`${data}`.trim());
       });
 

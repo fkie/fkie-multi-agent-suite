@@ -90,36 +90,36 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   async function updateTopicList(): Promise<void> {
     if (!rosCtx.initialized) return;
 
-    const newTopicsMap = new Map();
+    function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
+      const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
+      if (topicInfo) {
+        topicInfo.add(rosTopic, rosNode);
+      } else {
+        newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
+      }
+    }
 
+    const newTopicsMap = new Map();
     // Get topics from the ros node list of each provider.
-    rosCtx.providers.forEach((provider) => {
-      provider.rosTopics.forEach((topic: RosTopic) => {
-        function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
-          const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
-          if (topicInfo) {
-            topicInfo.add(rosTopic, rosNode);
-          } else {
-            newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
-          }
-        }
-        topic.publisher?.forEach((pub) => {
+    for (const provider of rosCtx.providers) {
+      for (const topic of provider.rosTopics) {
+        for (const pub of topic.publisher || []) {
           const rosNode = provider.rosNodes.find((node: RosNode) => node.id === pub.node_id);
           if (rosNode) {
             addTopic(topic, rosNode);
           }
-        });
-        topic.subscriber?.forEach((sub) => {
+        }
+        for (const sub of topic.subscriber || []) {
           const rosNode = provider.rosNodes.find((node: RosNode) => node.id === sub.node_id);
           if (rosNode) {
             addTopic(topic, rosNode);
           }
-        });
-      });
-    });
+        }
+      }
+    }
     // sort topics by name
     const newTopics = Array.from(newTopicsMap.values());
-    newTopics.sort(function (a, b) {
+    newTopics.sort((a, b) => {
       // sort groups first
       const aCountSep = (a.name.match(/\//g) || []).length;
       const bCountSep = (b.name.match(/\//g) || []).length;
@@ -132,9 +132,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   }
 
   function getTopicList(): void {
-    rosCtx.providers.forEach((provider) => {
+    for (const provider of rosCtx.providers) {
       provider.updateRosTopics();
-    });
+    }
   }
 
   useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
@@ -183,7 +183,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   function fillTree(fullPrefix: string, topicsGroup: TopicExtendedInfo[], itemId: string): TTreeItem {
     const byPrefixP1 = new Map<string, { restNameSuffix: string; topicInfo: TopicExtendedInfo; isGroup: boolean }[]>();
     // create a map with simulated tree for the namespaces of the topic list
-    topicsGroup.forEach((topicInfo) => {
+    for (const topicInfo of topicsGroup) {
       const nameSuffix = topicInfo.name.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
       if (restName.length > 0) {
@@ -196,7 +196,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
       } else {
         byPrefixP1.set(`${groupName}#${topicInfo.msgType}`, [{ restNameSuffix: "", topicInfo, isGroup: false }]);
       }
-    });
+    }
 
     // create result
     let count = 0;
@@ -250,7 +250,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           hasIncompatibleQos: hasIncompatibleQos,
         } as TTreeItem);
       }
-      topicValues.forEach((item) => {
+      for (const item of topicValues) {
         newFilteredTopics.push({
           groupKey: "",
           groupName: "",
@@ -268,7 +268,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         //   // we count only topics
         //   count += 1;
         // }
-      });
+      }
     });
     return { topics: newFilteredTopics, count, groupKeys } as TTreeItem;
   }
@@ -336,31 +336,29 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           selectedItem={selectedItem}
         />
       );
-    } else {
-      if (avoidGroupWithOneItem && treeItem.topics.length === 1) {
-        // avoid groups with one item
-        return topicTreeToStyledItems(
-          rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
-          treeItem.topics[0],
-          selectedItem
-        );
-      } else {
-        return (
-          <TopicGroupTreeItem
-            key={treeItem.groupKey}
-            itemId={treeItem.groupKey}
-            rootPath={rootPath}
-            groupName={treeItem.groupName}
-            countChildren={treeItem.count}
-            hasIncompatibleQos={treeItem.hasIncompatibleQos}
-          >
-            {treeItem.topics.map((subItem) => {
-              return topicTreeToStyledItems("", subItem, selectedItem);
-            })}
-          </TopicGroupTreeItem>
-        );
-      }
     }
+    if (avoidGroupWithOneItem && treeItem.topics.length === 1) {
+      // avoid groups with one item
+      return topicTreeToStyledItems(
+        rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
+        treeItem.topics[0],
+        selectedItem
+      );
+    }
+    return (
+      <TopicGroupTreeItem
+        key={treeItem.groupKey}
+        itemId={treeItem.groupKey}
+        rootPath={rootPath}
+        groupName={treeItem.groupName}
+        countChildren={treeItem.count}
+        hasIncompatibleQos={treeItem.hasIncompatibleQos}
+      >
+        {treeItem.topics.map((subItem) => {
+          return topicTreeToStyledItems("", subItem, selectedItem);
+        })}
+      </TopicGroupTreeItem>
+    );
   }
 
   useEffect(() => {
@@ -425,7 +423,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             return {
               name: item.providerName,
               key: item.providerId,
-              onClick: async function (event?: React.MouseEvent): Promise<void> {
+              onClick: async (event?: React.MouseEvent): Promise<void> => {
                 onEchoClick(
                   topicForSelected,
                   event?.nativeEvent.shiftKey || false,

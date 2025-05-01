@@ -13,8 +13,7 @@ import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/Ser
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { RosService, ServiceExtendedInfo } from "@/renderer/models";
-import { Provider } from "@/renderer/providers";
+import { ServiceExtendedInfo } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
@@ -69,8 +68,8 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   async function updateServiceList(): Promise<void> {
     // Get services from the ros node list of each provider.
     const newServicesMap = new Map();
-    rosCtx.providers.forEach((provider: Provider) => {
-      provider.rosServices.forEach((service: RosService) => {
+    for (const provider of rosCtx.providers) {
+      for (const service of provider.rosServices) {
         const key = genKey([provider.id, service.name, service.srv_type]);
         const serviceInfo = newServicesMap.get(key);
         if (serviceInfo) {
@@ -90,11 +89,11 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
           });
           newServicesMap.set(key, serviceInfo);
         }
-      });
-    });
+      }
+    }
 
     const newServices: ServiceExtendedInfo[] = Array.from(newServicesMap.values());
-    newServices.sort(function (a, b) {
+    newServices.sort((a, b) => {
       // sort groups first
       const aCountSep = (a.name.match(/\//g) || []).length;
       const bCountSep = (b.name.match(/\//g) || []).length;
@@ -107,9 +106,9 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   }
 
   function getServiceList(): void {
-    rosCtx.providers.forEach((provider) => {
+    for (const provider of rosCtx.providers) {
       provider.updateRosServices();
-    });
+    }
   }
 
   useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
@@ -182,7 +181,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
       { restNameSuffix: string; serviceInfo: ServiceExtendedInfo; isGroup: boolean }[]
     >();
     // create a map with simulated tree for the namespaces of the service list
-    serviceGroup.forEach((serviceInfo) => {
+    for (const serviceInfo of serviceGroup) {
       const nameSuffix = serviceInfo.id.slice(fullPrefix.length + 1);
       const [groupName, ...restName] = nameSuffix.split("/");
       if (restName.length > 1) {
@@ -195,7 +194,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
       } else {
         byPrefixP1.set(`${groupName}#${serviceInfo.srvType}`, [{ restNameSuffix: "", serviceInfo, isGroup: false }]);
       }
-    });
+    }
 
     let count = 0;
     // create result
@@ -245,7 +244,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
           serviceInfo: null,
         } as TTreeItem);
       }
-      serviceValues.forEach((item) => {
+      for (const item of serviceValues) {
         newFilteredServices.push({
           groupKey: "",
           groupName: "",
@@ -257,7 +256,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
           serviceInfo: item.serviceInfo,
         } as TTreeItem);
         count += 1;
-      });
+      }
       // if (value[0].serviceInfo.providerName !== groupName) {
       //   // since the same service can be on multiple provider
       //   // we count only services
@@ -288,30 +287,28 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
             selectedItem={selectedItem}
           />
         );
-      } else {
-        if (avoidGroupWithOneItem && treeItem.services.length === 1) {
-          // avoid groups with one item
-          return serviceTreeToStyledItems(
-            rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
-            treeItem.services[0],
-            selectedItem
-          );
-        } else {
-          return (
-            <ServiceGroupTreeItem
-              key={treeItem.groupKey}
-              itemId={treeItem.groupKey}
-              rootPath={rootPath}
-              groupName={treeItem.groupName}
-              countChildren={treeItem.count}
-            >
-              {treeItem.services.map((subItem) => {
-                return serviceTreeToStyledItems("", subItem, selectedItem);
-              })}
-            </ServiceGroupTreeItem>
-          );
-        }
       }
+      if (avoidGroupWithOneItem && treeItem.services.length === 1) {
+        // avoid groups with one item
+        return serviceTreeToStyledItems(
+          rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
+          treeItem.services[0],
+          selectedItem
+        );
+      }
+      return (
+        <ServiceGroupTreeItem
+          key={treeItem.groupKey}
+          itemId={treeItem.groupKey}
+          rootPath={rootPath}
+          groupName={treeItem.groupName}
+          countChildren={treeItem.count}
+        >
+          {treeItem.services.map((subItem) => {
+            return serviceTreeToStyledItems("", subItem, selectedItem);
+          })}
+        </ServiceGroupTreeItem>
+      );
     },
     [avoidGroupWithOneItem]
   );

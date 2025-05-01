@@ -128,7 +128,7 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
 
         <Typography variant="body1">Arguments {`[${(launchContent.args || []).length}]`}</Typography>
 
-        {launchContent && launchContent.args && launchContent.args.length > 0 && (
+        {launchContent?.args && launchContent.args.length > 0 && (
           <SimpleTreeView
             aria-label="file system navigator"
             slots={{ collapseIcon: ExpandMoreIcon, expandIcon: ChevronRightIcon }}

@@ -50,7 +50,7 @@ interface TopicPublishPanelProps {
 const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(function TopicPublishPanel(props, ref) {
   const { topicName = undefined, topicType = undefined, providerId = undefined } = props;
 
-  const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>(`MessageStruct:history`, {});
+  const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
   const [historyLength, setHistoryLength] = useState(0);
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
@@ -76,21 +76,18 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   const publishRateSelections = ["1", "once", "latched"];
 
   // Make a request to provider and get known message types
-  const getAvailableMessageTypes = useCallback(
-    async function (): Promise<void> {
-      setMessageTypeOptions([]);
-      if (!currentProviderId) {
-        return;
-      }
-      const provider = rosCtx.getProviderById(currentProviderId, true);
-      if (!provider || !provider.isAvailable()) return;
+  const getAvailableMessageTypes = useCallback(async (): Promise<void> => {
+    setMessageTypeOptions([]);
+    if (!currentProviderId) {
+      return;
+    }
+    const provider = rosCtx.getProviderById(currentProviderId, true);
+    if (!provider || !provider.isAvailable()) return;
 
-      const result: string[] = await provider.getRosMessageMessageTypes();
-      if (result.length === 0) return;
-      setMessageTypeOptions(result);
-    },
-    [currentProviderId, rosCtx.providers]
-  );
+    const result: string[] = await provider.getRosMessageMessageTypes();
+    if (result.length === 0) return;
+    setMessageTypeOptions(result);
+  }, [currentProviderId, rosCtx.providers]);
 
   const updateTopicNameOptions = useCallback((): void => {
     setMessageTypeOptions([]);
@@ -165,7 +162,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     navigator.clipboard.writeText(
       `${currentTopicName} ${qos ? qosFromJson(qos).toString() : ""} ${currentMessageType} '${json}'`
     );
-    logCtx.success(`message publish object copied!`);
+    logCtx.success("message publish object copied!");
   }, [messageStruct, currentTopicName, currentMessageType]);
 
   const updateMessageTypeFromTopic = useCallback(async () => {
@@ -176,22 +173,22 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
       if (currentTopicName) {
         if (msgType.length === 0 || msgType === "unknown") {
           // Get messageType from node list of the provider
-          newProvider.rosNodes.forEach((node) => {
+          for (const node of newProvider.rosNodes) {
             if (node.providerId === currentProviderId) {
-              node.subscribers?.forEach((topic) => {
+              for (const topic of node.subscribers || []) {
                 if (msgType === "" && currentTopicName === topic.name) {
                   msgType = topic.msg_type;
                 }
-              });
+              }
               if (msgType === "") {
-                node.publishers?.forEach((topic) => {
+                for (const topic of node.publishers || []) {
                   if (msgType === "" && currentTopicName === topic.name) {
                     msgType = topic.msg_type;
                   }
-                });
+                }
               }
             }
-          });
+          }
         }
       }
       if (msgType && msgType !== "unknown") {
@@ -253,6 +250,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   function stopPublisher(): void {
     if (provider && topicName) {
       const publisherName = `/_mas_publisher${topicName.replaceAll("/", "_")}`;
+      // biome-ignore lint/complexity/noForEach: <explanation>
       provider.rosNodes.forEach(async (node) => {
         if (node.name === publisherName) {
           await provider.stopNode(node.id);
@@ -366,7 +364,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
     const latched = publishRate === "latched";
     let rate = 0.0;
     if (!once && !latched) {
-      rate = parseFloat(publishRate);
+      rate = Number.parseFloat(publishRate);
     }
     // find first available subscriber with QoS
     const qos: RosQos | undefined = findQoSFromSub();
@@ -451,7 +449,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
         <Stack direction="row" alignItems="center" spacing={1}>
           {editTopicName ? (
             <Autocomplete
-              key={`autocomplete-topic-name`}
+              key={"autocomplete-topic-name"}
               size="small"
               fullWidth
               autoHighlight
@@ -640,7 +638,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
         <Stack direction="row" alignItems="center" spacing={1}>
           {editMessageType ? (
             <Autocomplete
-              key={`autocomplete-publisher-type`}
+              key={"autocomplete-publisher-type"}
               size="small"
               fullWidth
               autoHighlight

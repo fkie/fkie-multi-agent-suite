@@ -52,12 +52,12 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
       }
 
       const nodesParameter = {};
-      selectedParameter.params.forEach((p) => {
+      for (const p of selectedParameter.params) {
         if (!nodesParameter[p.node]) {
           nodesParameter[p.node] = [];
         }
         nodesParameter[p.node].push(p.name);
-      });
+      }
       await Promise.all(
         Object.keys(nodesParameter).map(async (node) => {
           const result = await selectedParameter.provider.deleteParameters(nodesParameter[node], node);
@@ -81,16 +81,16 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
     if (!rosCtx.initialized) return;
     if (nodes?.length > 0) {
       const newRootData: TRootData[] = [];
-      nodes.forEach((node) => {
+      for (const node of nodes) {
         const provider: Provider | undefined = rosCtx.getProviderById(node.providerId);
         if (provider) {
           newRootData.push({ provider: provider, rosNode: node, updateOnCreate: true } as TRootData);
         }
-      });
+      }
       setRootData(newRootData);
     } else if (providers?.length > 0) {
       const newRootData: TRootData[] = [];
-      providers.forEach((providerId) => {
+      for (const providerId of providers) {
         const provider: Provider | undefined = rosCtx.getProviderById(providerId);
         if (provider) {
           if (provider.rosVersion === "1") {
@@ -103,11 +103,11 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
             });
           }
         }
-      });
+      }
       setRootData(newRootData);
     } else {
       const newRootData: TRootData[] = [];
-      rosCtx.providers.forEach((provider) => {
+      for (const provider of rosCtx.providers) {
         if (provider.rosVersion === "1") {
           newRootData.push({ provider: provider, rosNode: undefined, updateOnCreate: true } as TRootData);
         } else {
@@ -117,7 +117,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
             }
           });
         }
-      });
+      }
       setShowWarning(newRootData.length > 5);
       setRootData(newRootData);
     }

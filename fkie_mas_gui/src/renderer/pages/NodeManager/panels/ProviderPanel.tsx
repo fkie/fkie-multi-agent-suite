@@ -44,7 +44,7 @@ export default function ProviderPanel(): JSX.Element {
           );
           return;
         }
-        const domainId = parseInt(import.meta.env.VITE_JOIN_ID);
+        const domainId = Number.parseInt(import.meta.env.VITE_JOIN_ID);
         if (domainId >= 0) {
           const newProvider = new Provider(
             settingsCtx,
@@ -69,16 +69,16 @@ export default function ProviderPanel(): JSX.Element {
           if (result?.result) {
             const lines = result.message.split("\n");
             let domainId = -1;
-            lines.forEach((line) => {
+            for (const line of lines) {
               if (!line.includes("grep") && line.includes("ros.fkie/screens/") && line.includes("mas-daemon")) {
                 const match = line.match(/screen_(\d+)\.cfg/);
-                if (match && match[1]) {
-                  domainId = parseInt(match[1], 10);
+                if (match?.[1]) {
+                  domainId = Number.parseInt(match[1], 10);
                 } else {
                   domainId = 0;
                 }
               }
-            });
+            }
             if (domainId >= 0) {
               const newProvider = new Provider(
                 settingsCtx,

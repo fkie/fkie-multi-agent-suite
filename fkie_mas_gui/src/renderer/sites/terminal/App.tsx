@@ -43,7 +43,7 @@ export default function TerminalApp(): JSX.Element {
     }
     const nodeName = node ? node : "bash";
     document.title = `${info} - ${nodeName}`;
-    const prov = new TerminalProvider(settingsCtx, host, "", parseInt(port), false, logCtx);
+    const prov = new TerminalProvider(settingsCtx, host, "", Number.parseInt(port), false, logCtx);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
       setParamInfo({

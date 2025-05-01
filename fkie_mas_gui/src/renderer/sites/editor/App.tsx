@@ -67,7 +67,7 @@ export default function EditorApp(): JSX.Element {
       return;
     }
     document.title = `Editor - ${getFileName(rootLaunch)}`;
-    const prov = new EditorProvider(settingsCtx, host, "", parseInt(port), false, logCtx);
+    const prov = new EditorProvider(settingsCtx, host, "", Number.parseInt(port), false, logCtx);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
       setLaunchInfo({
@@ -193,13 +193,13 @@ export default function EditorApp(): JSX.Element {
                   );
                   // TODO inform about error on failed save
                   let failed = false;
-                  result.forEach((item) => {
+                  for (const item of result) {
                     if (item[0].result) {
                       // OK
                     } else {
                       failed = true;
                     }
-                  });
+                  }
                   if (!failed) {
                     window.editorManager?.close(launchInfo.id);
                   }

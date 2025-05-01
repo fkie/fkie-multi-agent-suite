@@ -13,9 +13,11 @@ export function getMaxDiagnosticLevel(
 ): DiagnosticLevel | undefined {
   if (lvl1 === undefined && lvl2 === undefined) {
     return DiagnosticLevel.OK;
-  } else if (lvl1 === undefined) {
+  }
+  if (lvl1 === undefined) {
     return lvl2;
-  } else if (lvl2 === undefined) {
+  }
+  if (lvl2 === undefined) {
     return lvl1;
   }
   const maxLvl = Math.max(lvl1, lvl2);

@@ -143,7 +143,7 @@ export default function LoggingPanel(): JSX.Element {
       newWidth = minWidth;
     }
     if (headers[index].ref?.current?.parentElement) {
-      headers[index].ref.current.parentElement!.style.width = `${newWidth}px`;
+      headers[index].ref.current.parentElement.style.width = `${newWidth}px`;
     }
     headers[index].width = newWidth;
   }
@@ -176,7 +176,7 @@ export default function LoggingPanel(): JSX.Element {
     if (typeof headers[index].width === "number") {
       resizingStart.current = headers[index].width - event.clientX;
     } else {
-      resizingStart.current = parseInt(headers[index].width.replace("px", "")) - event.clientX;
+      resizingStart.current = Number.parseInt(headers[index].width.replace("px", "")) - event.clientX;
     }
     setCursorDocument(true);
   }
@@ -275,17 +275,17 @@ export default function LoggingPanel(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    loggerColumnWidths.forEach((item) => {
+    for (const item of loggerColumnWidths) {
       headers[item.index].width = item.width;
       if (headers[item.index] && headers[item.index].ref?.current) {
         if (headers[item.index].ref) {
           const obj = headers[item.index].ref?.current;
-          if (obj) {
-            obj.parentElement!.style.width = `${item.width}`;
+          if (obj?.parentElement) {
+            obj.parentElement.style.width = `${item.width}`;
           }
         }
       }
-    });
+    }
   }, [headers, loggerColumnWidths]);
 
   return (
