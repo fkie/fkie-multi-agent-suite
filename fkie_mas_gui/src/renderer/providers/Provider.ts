@@ -189,7 +189,7 @@ export default class Provider implements IProvider {
 
   systemInfo: TSystemInfo = {};
 
-  systemEnv: object = {};
+  systemEnv: JSONObject = {};
 
   /** All known hostnames for this provides, e.g. IPv4 IPv6 or names */
   hostnames: string[] = [];
@@ -668,7 +668,7 @@ export default class Provider implements IProvider {
   public getProviderSystemEnv: () => Promise<object> = async () => {
     const systemEnv = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_ENV, [], true).then((value: TResultData) => {
       if (value.result) {
-        this.systemEnv = (value.data as { environment: object }).environment;
+        this.systemEnv = (value.data as { environment: JSONObject }).environment;
         return this.systemEnv;
       }
       this.logger?.error(`Provider [${this.name()}]: Error at getProviderSystemEnv()`, `${value.message}`);

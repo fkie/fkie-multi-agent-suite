@@ -198,6 +198,83 @@ export default function NodesDetailsPanel(): JSX.Element {
     [settingsCtx.changed]
   );
 
+  const createProviderDetailsView = useMemo(() => {
+    const providerId = navCtx.selectedProviders?.[0];
+    const provider = rosCtx.getProviderById(providerId);
+    if (!provider) return;
+    console.log(`provider.systemEnv: ${provider.systemEnv}: ${JSON.stringify(provider.systemEnv)}`);
+    const rmwImplementation = provider.systemEnv.RMW_IMPLEMENTATION as string;
+    return (
+      <Stack
+        key={providerId}
+        // spacing={1}
+        alignItems="left"
+        marginBottom={1.5}
+      >
+        <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(provider.name())}>
+          <Typography
+            variant="subtitle1"
+            style={{
+              // cursor: "pointer",
+              color: "#fff",
+              backgroundColor: "#16a085",
+            }}
+            align="center"
+          >
+            <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
+              <Typography variant="subtitle2" align="center">
+                {provider.connection.uri}
+              </Typography>
+              <Box>{provider.name()}</Box>
+            </Stack>
+          </Typography>
+        </Stack>
+        <Stack spacing={0.5}>
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={provider.daemon ? "default" : "error"}
+              title="daemon:"
+              // title={`${RosNodeStatusInfo[node.status]}`}
+              text={provider.daemon ? "running" : "not running"}
+              wrap
+            />
+          </Stack>
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={provider.discovery ? "default" : "error"}
+              title="discovery:"
+              // title={`${RosNodeStatusInfo[node.status]}`}
+              text={provider.discovery ? "running" : "not running"}
+              wrap
+            />
+          </Stack>
+          {rmwImplementation && (
+            <Stack direction="row" spacing={0.5}>
+              <Tag
+                color={"default"}
+                title="RMW_IMPLEMENTATION:"
+                // title={`${RosNodeStatusInfo[node.status]}`}
+                text={rmwImplementation}
+                wrap
+              />
+            </Stack>
+          )}
+          {provider.hostnames && (
+            <Stack direction="row" spacing={0.5}>
+              <Tag
+                color={"default"}
+                title="host:"
+                // title={`${RosNodeStatusInfo[node.status]}`}
+                text={JSON.stringify(provider.hostnames)}
+                wrap
+              />
+            </Stack>
+          )}
+        </Stack>
+      </Stack>
+    );
+  }, [navCtx.selectedProviders]);
+
   const createNodeDetailsView = useMemo(() => {
     const result = nodesShow.map((node: RosNode) => {
       const provider = rosCtx.getProviderById(node.providerId);
@@ -725,6 +802,7 @@ export default function NodesDetailsPanel(): JSX.Element {
 
   return (
     <Box width="100%" height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+      {navCtx.selectedProviders.length === 1 && createProviderDetailsView}
       {navCtx.selectedNodes.length > 1 && (
         <Stack direction="row" justifyContent="center">
           <Typography color="grey" variant="body2">
