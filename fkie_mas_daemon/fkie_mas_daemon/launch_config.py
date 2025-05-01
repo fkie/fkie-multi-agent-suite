@@ -858,10 +858,11 @@ class LaunchConfig(object):
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
             elif isinstance(entity, launch.actions.timer_action.TimerAction):
                 print(f"  ***debug launch loading: {indent} timer period: {entity.period}")
-                self.context.extend_locals({'timer_period': entity.period})
+                period = float(perform_substitutions(self.context, entity.period))
+                print(f"  ***debug launch loading: {indent} timer period (resolved): {period}")
                 print(f"  ***debug launch loading: {indent} actions count: {len(entity.actions)}")
                 self._load(entity.actions, launch_description=current_launch_description, current_file=current_file,
-                           indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=entity.period)
+                           indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=period)
                 # period: Union[float, SomeSubstitutionsType],
                 # actions: Iterable[LaunchDescriptionEntity],
                 # cancel_on_shutdown: Union[bool, SomeSubstitutionsType] = True,
