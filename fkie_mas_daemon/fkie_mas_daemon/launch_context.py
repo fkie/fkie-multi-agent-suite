@@ -48,7 +48,6 @@ class LaunchContext:
         :param: noninteractive if True (not default), this service will assume it has
             no terminal associated e.g. it is being executed from a non interactive script
         """
-        print(f"********************************** NEW CONTEXT")
         self.__argv = argv if argv is not None else []
         self.__noninteractive = noninteractive
 

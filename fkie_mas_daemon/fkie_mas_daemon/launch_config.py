@@ -60,6 +60,8 @@ from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
 
 import fkie_mas_daemon as nmd
 
+PRINT_DEBUG_LOAD = False
+
 
 class LaunchConfigException(Exception):
     pass
@@ -160,7 +162,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         node_name, unique_name, name_configured = self._get_name()
         LaunchNodeInfo.__init__(
             self, unique_name=unique_name, node_name=node_name, name_configured=name_configured)
-        print("  ***debug LaunchNodeWrapper: name_configured", name_configured)
+        if PRINT_DEBUG_LOAD:
+            print("  ***debug LaunchNodeWrapper: name_configured", name_configured)
         self.node_namespace = self._get_namespace()
         self.package_name = self._get_node_package()
         self.executable = self._get_node_executable()
@@ -186,7 +189,6 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         for p in self._parameters_tmp:
             if isinstance(p, tuple) and p[0].startswith("/"):
                 if os.path.exists(p[0]):
-                    print(f"open: {p[0]}")
                     with open(p[0]) as tmp_param_file:
                         try:
                             yaml = ruamel.yaml.YAML(typ='rt')
@@ -410,7 +412,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         #     name_set.add(unique_name)
         # else:
         #     LaunchNodeWrapper._unique_names.add(result)
-        Log.info(f"create node wrapper with name '{result}'")
+        Log.debug(f"create node wrapper with name '{result}'")
         return (result, unique_name, name_configured)
 
     def _get_name_from_cmd(self):
@@ -638,7 +640,8 @@ class LaunchConfig(object):
         os.environ.update(environment)
 
     def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0, timer_period=0) -> None:
-        print(f"  ***debug launch loading: {indent}perform file {current_file}")
+        if PRINT_DEBUG_LOAD:
+            print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
         file_content = ""
         launch_prefix = ""
@@ -670,9 +673,11 @@ class LaunchConfig(object):
             entities = sub_obj
         if entities is None:
             return
-        print(f"  ***debug launch loading: {indent}entities: {entities}")
+        if PRINT_DEBUG_LOAD:
+            print(f"  ***debug launch loading: {indent}entities: {entities}")
         for entity in entities:
-            print(f"  ***debug launch loading: {indent}perform entity: {entity}")
+            if PRINT_DEBUG_LOAD:
+                print(f"  ***debug launch loading: {indent}perform entity: {entity}")
             if hasattr(entity, "condition") and entity.condition:
                 # check for available condition
                 # if condition does not evaluate to True we have to parse for
@@ -709,27 +714,12 @@ class LaunchConfig(object):
                             file_content, 'group', position_in_file)
                     continue
             if isinstance(entity, launch_ros.actions.node.Node):
-                # for cmds in entity.cmd:
-                #     for cmd in cmds:
-                #         if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
-                #             print('  - CMD InExc:', cmd.describe(), dir(cmd.describe))
-                #             print('      + CMD exe:', cmd.executable[0].text)
-                #             print('      + CMD package:', cmd.package[0].text)
-                #             print('      + perform:', cmd.perform(self.context))
-                #         elif isinstance(cmd, launch.substitutions.text_substitution.TextSubstitution):
-                #             print('      + CMD:', cmd.text, dir(cmd))
-                #             print('      + perform:', cmd.perform(self.context))
-                #         elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
-                #             print('      + CMD:', cmd.describe(), dir(cmd))
-                #         elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
-                #             print('      + CMD Subst:', cmd.expression, dir(cmd.expression))
-                #             # print('      + perform:', cmd.perform(self.context))
-                #         else:
-                #             print('      + CMD OTHER:', cmd, dir(cmd))
                 try:
-                    print(f"  ***debug launch loading: {indent}  parse node: {entity._Node__node_executable}")
+                    if PRINT_DEBUG_LOAD:
+                        print(f"  ***debug launch loading: {indent}  parse node: {entity._Node__node_executable}")
                     entity._perform_substitutions(self.context)
-                    print(f"  ***debug launch loading: {indent}  node after subst: {entity._Node__node_executable}")
+                    if PRINT_DEBUG_LOAD:
+                        print(f"  ***debug launch loading: {indent}  node after subst: {entity._Node__node_executable}")
                     # actions = entity.execute(self.context)
                     node = LaunchNodeWrapper(
                         entity, current_launch_description, self.context, environment=environment, position_in_file=position_in_file)
@@ -752,8 +742,9 @@ class LaunchConfig(object):
                     import traceback
                     print(traceback.format_exc())
             elif isinstance(entity, launch_ros.actions.load_composable_nodes.LoadComposableNodes):
-                print(
-                    f"  ***debug launch loading: {indent}  load composable nodes: {len(entity._LoadComposableNodes__composable_node_descriptions)}")
+                if PRINT_DEBUG_LOAD:
+                    print(
+                        f"  ***debug launch loading: {indent}  load composable nodes: {len(entity._LoadComposableNodes__composable_node_descriptions)}")
                 for cn in entity._LoadComposableNodes__composable_node_descriptions:
                     container_name = ""
                     if isinstance(entity._LoadComposableNodes__target_container, launch_ros.actions.ComposableNodeContainer):
@@ -770,7 +761,8 @@ class LaunchConfig(object):
                     node.timer_period = timer_period
                     self._nodes.append(node)
             elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
-                print(f"  ***debug launch loading: {indent}  add execute process")
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent}  add execute process")
                 node = LaunchNodeWrapper(entity, current_launch_description,
                                          self.context, environment=environment, position_in_file=position_in_file)
                 node.timer_period = timer_period
@@ -784,7 +776,8 @@ class LaunchConfig(object):
                 #     for cac in cfg_actions:
                 #         print("  ***debug launch loading action: ", indent, '->', type(cac), cac)
                 if launch_file_obj:
-                    print(f"  ***debug launch loading: {indent} add declared argument: {entity.name}")
+                    if PRINT_DEBUG_LOAD:
+                        print(f"  ***debug launch loading: {indent} add declared argument: {entity.name}")
                     la = LaunchArgument(name=perform_to_string(self.context, entity.name),
                                         value="",
                                         default_value=perform_to_string(self.context, entity.default_value),
@@ -795,8 +788,9 @@ class LaunchConfig(object):
                 # launch.actions.declare_launch_argument.DeclareLaunchArgument
                 try:
                     cfg_actions = entity.execute(self.context)
-                    print(
-                        f"  ***debug launch loading: {indent} include file: {entity.launch_description_source.location}")
+                    if PRINT_DEBUG_LOAD:
+                        print(
+                            f"  ***debug launch loading: {indent} include file: {entity.launch_description_source.location}")
                     inc_file_exists = False
                     file_size = -1
                     used_path = entity.launch_description_source.location
@@ -817,21 +811,11 @@ class LaunchConfig(object):
                                 arg_value = cac.value
                                 if isinstance(cac.value, List):
                                     arg_value = cac.value[0].perform(self.context)
-                                print(
-                                    f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
+                                if PRINT_DEBUG_LOAD:
+                                    print(
+                                        f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
                                 inc_launch_arguments.append(LaunchArgument(name=arg_name, value=arg_value))
                     inc_launch_arguments_def = []
-                    # for name, value in entity.launch_arguments:
-                    #     arg_name = name
-                    #     if isinstance(name, List):
-                    #         arg_name = name[0].perform(self.context)
-                    #     arg_value = value
-                    #     if isinstance(value, List):
-                    #         arg_value = value[0].perform(self.context)
-                    #     if isinstance(value, (launch.substitutions.launch_configuration.LaunchConfiguration, launch.actions.set_launch_configuration.SetLaunchConfiguration)):
-                    #         arg_value = value.perform(self.context)
-                    #     print(f"ARG DEF: {arg_name}: {arg_value}")
-                    #     inc_launch_arguments_def.append(LaunchArgument(name=arg_name, value=arg_value))
                     launch_inc_file = LaunchIncludedFile(path=current_file,
                                                          line_number=include_line_number,
                                                          inc_path=used_path,
@@ -858,10 +842,13 @@ class LaunchConfig(object):
                 self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
             elif isinstance(entity, launch.actions.timer_action.TimerAction):
-                print(f"  ***debug launch loading: {indent} timer period: {entity.period}")
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} timer period: {entity.period}")
                 period = float(perform_substitutions(self.context, entity.period))
-                print(f"  ***debug launch loading: {indent} timer period (resolved): {period}")
-                print(f"  ***debug launch loading: {indent} actions count: {len(entity.actions)}")
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} timer period (resolved): {period}")
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} actions count: {len(entity.actions)}")
                 self._load(entity.actions, launch_description=current_launch_description, current_file=current_file,
                            indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=period)
                 # period: Union[float, SomeSubstitutionsType],
@@ -880,7 +867,8 @@ class LaunchConfig(object):
                 if name in environment:
                     del environment[name]
             elif hasattr(entity, 'execute'):
-                print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
                 try:
 
                     # entity._perform_substitutions(self.context)
@@ -890,7 +878,8 @@ class LaunchConfig(object):
                         if name == "launch-prefix":
                             launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
                     else:
-                        print(f"  ***debug execute result: {exec_result}; {dir(exec_result)}")
+                        if PRINT_DEBUG_LOAD:
+                            print(f"  ***debug execute result: {exec_result}; {dir(exec_result)}")
                         if not isinstance(exec_result, List):
                             exec_result = [exec_result]
                         self._load(exec_result, launch_description=current_launch_description,
@@ -900,7 +889,8 @@ class LaunchConfig(object):
                     import traceback
                     print(traceback.format_exc())
             else:
-                print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
                 if current_file:
