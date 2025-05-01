@@ -97,12 +97,13 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
     elif value is not None:
         try:
             item = perform_substitutions(context, [value])
+            result = perform_substitutions(context, [value])
         except (SubstitutionFailure, LookupError) as err:
             # if executable is not found we replace it by "ros2 run" command to visualize the error in the MAS gui
             if isinstance(value, ExecutableInPackage):
                 executable = perform_substitutions(context, value.executable)
                 package = perform_substitutions(context, value.package)
-                item = f"ros2 run {package} {executable}"
+                result = f"ros2 run {package} {executable}"
             else:
                 raise err
         except Exception as err:

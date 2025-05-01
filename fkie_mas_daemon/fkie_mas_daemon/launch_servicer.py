@@ -664,10 +664,12 @@ class LaunchServicer(LoggingEventHandler):
         Log.info(
             f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{path}]")
         result = []
+        cfg_included_files = []
         try:
             cfg = self._loaded_files[CfgId(request.path, '')]
             if cfg.launch_type == 'python':
                 return cfg._included_files
+            cfg_included_files.extend(cfg._included_files)
         except:
             pass
         # This part is executed if the launch file is not loaded or is of type XML
@@ -688,16 +690,24 @@ class LaunchServicer(LoggingEventHandler):
                 file_size = 0
                 if inc_file.exists:
                     file_size = os.path.getsize(inc_file.inc_path)
+                args = [LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
+                default_inc_args = [LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
+                if cfg_included_files:
+                    # use resolved launch arguments from loaded configuration
+                    # remove if used: case if the same launch files was loaded multiple times with different arguments
+                    if cfg_included_files[0].inc_path == os.path.realpath(inc_file.inc_path) and cfg_included_files[0].path == os.path.realpath(inc_file.path_or_str):
+                        args = cfg_included_files[0].args
+                        default_inc_args = cfg_included_files[0].args
+                        del cfg_included_files[0]
+
                 lincf = LaunchIncludedFile(path=inc_file.path_or_str,
                                            line_number=inc_file.line_number,
                                            inc_path=os.path.realpath(inc_file.inc_path),
                                            exists=inc_file.exists,
                                            raw_inc_path=inc_file.raw_inc_path,
                                            rec_depth=inc_file.rec_depth,
-                                           args=[LaunchArgument(
-                                               name=name, value=value) for name, value in inc_file.args.items()],
-                                           default_inc_args=[LaunchArgument(
-                                               name=name, value=value) for name, value in inc_file.args.items()],
+                                           args=args,
+                                           default_inc_args=default_inc_args,
                                            size=file_size
                                            )
                 result.append(lincf)
