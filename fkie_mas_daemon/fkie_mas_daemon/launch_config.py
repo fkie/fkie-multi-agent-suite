@@ -889,8 +889,7 @@ class LaunchConfig(object):
                     import traceback
                     print(traceback.format_exc())
             else:
-                if PRINT_DEBUG_LOAD:
-                    print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
+                print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
                 if current_file:
