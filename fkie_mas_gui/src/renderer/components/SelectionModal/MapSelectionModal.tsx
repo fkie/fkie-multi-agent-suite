@@ -200,7 +200,7 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
           Cancel
         </Button>
 
-        <Button autoFocus color="success" variant="contained" onClick={() => onConfirm()}>
+        <Button autoFocus color="success" onClick={() => onConfirm()}>
           Confirm
         </Button>
       </DialogActions>

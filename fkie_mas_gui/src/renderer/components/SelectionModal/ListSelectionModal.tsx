@@ -20,6 +20,7 @@ import DraggablePaper from "../UI/DraggablePaper";
 interface ListSelectionModalProps {
   title: string;
   list: string[];
+  selectOnOpen?: number;
   onConfirmCallback: (items: string[]) => void;
   onCancelCallback?: () => void;
 }
@@ -28,12 +29,13 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
   const {
     title = "Confirm Selection",
     list,
+    selectOnOpen = 5,
     onConfirmCallback = (): void => {},
     onCancelCallback = (): void => {},
   } = props;
 
   const [open, setOpen] = useState<boolean>(true);
-  const [selectedItems, setSelectedItems] = useState<string[]>(list.length < 5 ? list : []);
+  const [selectedItems, setSelectedItems] = useState<string[]>(list.length < selectOnOpen ? list : []);
 
   function handleToggle(value: string): void {
     const currentIndex = selectedItems.indexOf(value);
@@ -98,7 +100,7 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
 
                 return (
                   <ListItem key={node} disablePadding>
-                    <ListItemButton onClick={() => handleToggle(node)} dense>
+                    <ListItemButton onClick={() => handleToggle(node)} dense sx={{ userSelect: "unset" }}>
                       <ListItemIcon>
                         <Checkbox
                           edge="start"
@@ -141,7 +143,7 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
           Cancel
         </Button>
 
-        <Button autoFocus color="success" variant="contained" onClick={() => onConfirm()}>
+        <Button autoFocus color="success" onClick={() => onConfirm()}>
           Confirm
         </Button>
       </DialogActions>

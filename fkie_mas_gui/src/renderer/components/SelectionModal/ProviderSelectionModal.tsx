@@ -153,7 +153,7 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
               Cancel
             </Button>
 
-            <Button autoFocus color="success" variant="contained" onClick={() => onConfirm()}>
+            <Button autoFocus color="success" onClick={() => onConfirm()}>
               Confirm
             </Button>
           </DialogActions>
@@ -163,7 +163,7 @@ const ProviderSelectionModal = forwardRef<HTMLDivElement, ProviderSelectionModal
             <Typography>Shutting down</Typography>
             <CircularProgress size="1em" />
 
-            <Button autoFocus color="warning" variant="contained" onClick={onForceCloseCallback}>
+            <Button autoFocus color="warning" onClick={onForceCloseCallback}>
               close app
             </Button>
           </DialogActions>

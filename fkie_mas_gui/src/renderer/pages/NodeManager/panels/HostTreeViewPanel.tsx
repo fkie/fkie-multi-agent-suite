@@ -132,6 +132,9 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState<RosNode[]>([]);
   const [nodesAwaitModal, setNodesAwaitModal] = useState<RosNode[]>([]);
   const [editNodeWithMultipleLaunchInfos, setEditNodeWithMultipleLaunchInfos] = useState<TMenuOptionsEditor>();
+  const [killProcessQuestion, setKillProcessQuestion] = useState<
+    { node: string; pid: number; cmdLine: string; callback?: () => void }[]
+  >([]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
@@ -539,6 +542,23 @@ export default function HostTreeViewPanel(): JSX.Element {
           // stop node and store result for message
           const resultStopNode = await provider.stopNode(node.id);
           if (!resultStopNode.result) {
+            if (queueItemsQueueMain.length <= 1) {
+              const getProcessResult = await provider.findNodeProcess(node.name);
+              if (getProcessResult.processes.length > 0) {
+                setKillProcessQuestion(
+                  getProcessResult.processes.map((p) => {
+                    return {
+                      node: node.name,
+                      pid: p.pid,
+                      cmdLine: p.cmdLine,
+                      callback: async (): Promise<void> => {
+                        await provider.killProcess(p.pid);
+                      },
+                    };
+                  })
+                );
+              }
+            }
             addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
           } else {
             addStatusQueueMain("STOP", node.name, true, "stopped");
@@ -1652,6 +1672,30 @@ export default function HostTreeViewPanel(): JSX.Element {
           }}
           onCancelCallback={() => {
             setDynamicReconfigureItems([]);
+          }}
+        />
+      )}
+      {killProcessQuestion.length > 0 && (
+        <ListSelectionModal
+          title={`Kill selected processes for node ${killProcessQuestion[0].node}`}
+          selectOnOpen={0}
+          list={killProcessQuestion.reduce((prev: string[], item) => {
+            prev.push(`${item.pid}: ${item.cmdLine}`);
+            return prev;
+          }, [])}
+          onConfirmCallback={(items) => {
+            for (const item of items) {
+              const listWithOpt = killProcessQuestion.find(
+                (listItem) => `${listItem.pid}: ${listItem.cmdLine}` === item
+              );
+              if (listWithOpt?.callback) {
+                listWithOpt.callback();
+              }
+            }
+            setKillProcessQuestion([]);
+          }}
+          onCancelCallback={() => {
+            setKillProcessQuestion([]);
           }}
         />
       )}

@@ -18,6 +18,7 @@ import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } 
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "./TerminalManager";
 import { TResult } from "./TResult";
 import { TResultData } from "./TResultData";
+import { TResultProcess } from "./TResultProcess";
 import { TRosInfo } from "./TRosInfo";
 import { TSystemInfo } from "./TSystemInfo";
 import { TTag } from "./TTag";
@@ -29,7 +30,7 @@ export {
   EditorManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
-  TerminalManagerEvents,
+  TerminalManagerEvents
 };
 export type {
   AuCheckingForUpdateCallback,
@@ -52,10 +53,12 @@ export type {
   TLaunchArg,
   TResult,
   TResultData,
+  TResultProcess,
   TRosInfo,
   TShutdownManager,
   TSubscriberManager,
   TSystemInfo,
   TTag,
-  TTerminalManager,
+  TTerminalManager
 };
+

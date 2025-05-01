@@ -526,7 +526,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
         >
           Cancel
         </Button>
-        <Button autoFocus color="success" variant="contained" onClick={launchSelectedFile}>
+        <Button autoFocus color="success" onClick={launchSelectedFile}>
           Load
         </Button>
       </DialogActions>

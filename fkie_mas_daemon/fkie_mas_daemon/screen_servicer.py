@@ -100,7 +100,7 @@ class ScreenServicer:
     def system_change(self) -> None:
         self._screen_do_check = True
 
-    def kill_node(self, name: str, sig: signal = signal.SIGKILL) -> bool:
+    def kill_node(self, name: str, sig: signal = signal.SIGKILL) -> str:
         sig_obj = sig
         if sig_obj is None:
             sig_obj = signal.SIGKILL

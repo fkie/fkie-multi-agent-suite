@@ -144,6 +144,8 @@ Then open in browser <http://localhost:6274>
 | ros.parameters.get_node_parameters | RPC  | `(nodes: str[]) => {params: RosParameter[], errors: str[]}`                                                                       | Return a parameter list for a given Node                                                     |
 | ros.parameters.set_parameter       | RPC  | `(paramName: str, paramType: str, paramValue: str, nodeName: str) => {result: bool, message: str, value?: str, value_type?: str}` | Set the value of a parameter                                                                 |
 | ros.parameters.delete_parameters   | RPC  | `(paramNames: str[], nodeName: str) => {result: bool, message: str}`                                                              | Delete a list of parameters                                                                  |
+| ros.process.find_node              | RPC  | `(node: str) => {result: bool, message: str, "processes": {"pid": number, "cmdLine": str}[] }`                                    | Searches for a process which belongs to the ros 2 node                                       |
+| ros.process.kill                   | RPC  | `(pid: number) => {result: bool, message: str }`                                                                                  | Kills the process                                                                            |
 
 ## Additional Tools
 

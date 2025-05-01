@@ -21,6 +21,7 @@ from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.defines import SETTINGS_PATH
+from fkie_mas_pylib import names
 from fkie_mas_pylib.websocket.server import WebSocketServer
 
 
@@ -37,6 +38,8 @@ class MonitorServicer:
         websocket.register("ros.provider.get_diagnostics", self.getDiagnostics)
         websocket.register("ros.provider.ros_clean_purge", self.rosCleanPurge)
         websocket.register("ros.provider.shutdown", self.rosShutdown)
+        websocket.register("ros.process.find_node", self.findNode)
+        websocket.register("ros.process.kill", self.killProcess)
 
     def stop(self):
         self._monitor.stop()
@@ -121,3 +124,30 @@ class MonitorServicer:
         for pid in pidList:
             os.kill(pid, sig)
         os.kill(os.getpid(), signal.SIGINT)
+
+    def findNode(self, name: str) -> str:
+        Log.info(f"{self.__class__.__name__}: find node '{name}'")
+        success = False
+        ns = names.namespace(name).rstrip('/')
+        basename = names.basename(name)
+        count = 0
+        processes = []
+        for process in psutil.process_iter():
+            count += 1
+            cmd_line = ' '.join(process.cmdline())
+            if cmd_line.find(f"__node:={basename}") > -1 and (not ns or cmd_line.find(f"__ns:={ns}") > -1):
+                ps = {"pid": process.pid, "cmdLine": cmd_line}
+                return json.dumps({"result": True, "message": "", "processes": [ps]}, cls=SelfEncoder)
+            elif cmd_line.find("/ros2 ") > -1:
+                processes.append({"pid": process.pid, "cmdLine": cmd_line})
+        if len(processes) > 0:
+            return json.dumps({"result": True, "message": "", "processes": processes}, cls=SelfEncoder)
+        return json.dumps({"result": False, "message": f"node {name} not found"})
+
+    def killProcess(self, pid: int, sig=signal.SIGTERM):
+        Log.info(f"{self.__class__.__name__}: kill process '{pid}' with sig: {sig}")
+        if psutil.pid_exists(pid):
+            os.kill(pid, sig)
+        if sig != signal.SIGKILL:
+            killTimer = threading.Timer(1.0, self.killProcess, args=(pid, signal.SIGKILL))
+            killTimer.start()

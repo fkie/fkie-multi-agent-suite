@@ -1,4 +1,4 @@
-import { JSONObject, TResult, TResultData, TSystemInfo, TTag } from "@/types";
+import { JSONObject, TResult, TResultData, TResultProcess, TSystemInfo, TTag } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
@@ -2201,6 +2201,31 @@ export default class Provider implements IProvider {
     this.rosServices = await this.getServiceList([]);
     emitCustomEvent(EVENT_PROVIDER_ROS_SERVICES, new EventProviderRosServices(this));
     this.unlockRequest("updateRosServices");
+  };
+
+  /**
+   * Try to search for a process which can be the node. If not found, possible process will be returned.
+   */
+  public findNodeProcess: (node: string) => Promise<TResultProcess> = async (node) => {
+    const result = await this.makeCall(URI.ROS_PROCESS_FIND_NODE, [node], false, 60000).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as TResultProcess;
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at findNodeProcess()`, `${value.message}`);
+      return { result: result.result, message: result.message };
+    });
+    return Promise.resolve(result);
+  };
+
+  public killProcess: (pid: number) => Promise<TResult> = async (pid) => {
+    const result = await this.makeCall(URI.ROS_PROCESS_KILL, [pid], false, 60000).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as TResult;
+      }
+      this.logger?.debug(`Provider [${this.name()}]: Error at killProcess()`, `${value.message}`);
+      return { result: result.result, message: result.message };
+    });
+    return Promise.resolve(result);
   };
 
   public updateRosTopics: () => void = async () => {
