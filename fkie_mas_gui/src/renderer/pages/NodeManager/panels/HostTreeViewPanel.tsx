@@ -1163,6 +1163,9 @@ export default function HostTreeViewPanel(): JSX.Element {
                       }
                     }
                     setNodeScreens(screens);
+                    if (screens.length === 0) {
+                      logCtx.info("no screens found", "", true);
+                    }
                   }
                 } else {
                   const screens: TMenuOptionsScreen[] = []; // {node : string, screen: string, callback: () => void, external: boolean}

@@ -202,7 +202,6 @@ export default function NodesDetailsPanel(): JSX.Element {
     const providerId = navCtx.selectedProviders?.[0];
     const provider = rosCtx.getProviderById(providerId);
     if (!provider) return;
-    console.log(`provider.systemEnv: ${provider.systemEnv}: ${JSON.stringify(provider.systemEnv)}`);
     const rmwImplementation = provider.systemEnv.RMW_IMPLEMENTATION as string;
     return (
       <Stack
