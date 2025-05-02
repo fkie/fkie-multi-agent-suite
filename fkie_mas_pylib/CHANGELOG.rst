@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.3.0 (02.05.2025)
+------------------
+* Added timer_period to launch interface of the node
+
 4.2.2 (23.04.2025)
 ------------------
 * Updated interface of LaunchPublishMessage to use QoS on start a new publisher

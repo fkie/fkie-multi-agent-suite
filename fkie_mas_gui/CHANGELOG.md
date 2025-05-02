@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.3.0 - 02.05.2025
+
+Fixed stop system nodes on forced restart
+Added parameter to prepend RMW_IMPLEMENTATION while start mas discovery
+Use local addresses if no discovery node available, but a screen for a node was found
+Remove outdated discoverd daemons
+Added icon as indicator for delayed start
+Added the possibility to search for a process of a node to stop
+On click to show screens for a host inform user if no screens available
+Added host details to panel if one is selected
+Fixed save configuration
+Fixed resolve launch arguments
+
+
 ## 4.2.20 - 30.04.2025
 
 Added MAS_KILL_ON_STOP environment variable

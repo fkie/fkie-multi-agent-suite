@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.0 (02.05.2025)
+------------------
+* Use local addresses if no discovery node available, but a screen for a node was found
+* Remove outdated discoverd daemons
+* Added the possibility to search for a process of a node to stop
+
 4.3.10 (30.04.2025)
 ------------------
 * Fixed read capability group parameter of composable nodes
