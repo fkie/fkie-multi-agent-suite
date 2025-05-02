@@ -143,6 +143,8 @@ class RosStateJsonify:
     def is_location_local(self, location: str):
         if 'SHM' in location:
             return True
+        if '127.0.' in location:
+            return True
         for loc_addr in self._local_addresses:
             if loc_addr in location:
                 return True
