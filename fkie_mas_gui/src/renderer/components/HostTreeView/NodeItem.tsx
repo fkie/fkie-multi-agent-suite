@@ -4,6 +4,7 @@ import DvrIcon from "@mui/icons-material/Dvr";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import NewReleasesTwoToneIcon from "@mui/icons-material/NewReleasesTwoTone";
 import ReportIcon from "@mui/icons-material/Report";
+import ScheduleSendIcon from "@mui/icons-material/ScheduleSend";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import WarningIcon from "@mui/icons-material/Warning";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
@@ -277,6 +278,16 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               </IconButton>
             </Tooltip>
           )}
+          {node.status !== RosNodeStatus.RUNNING &&
+            [
+              ...(node.launchInfo?.values().filter((li) => {
+                return li.timer_period && li.timer_period > 0;
+              }) || []),
+            ].length > 0 && (
+              <Tooltip title="Delayed start due to configuration" placement="left">
+                <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
+              </Tooltip>
+            )}
           {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
             <Tooltip title="Multiple Screens" placement="left">
               <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
