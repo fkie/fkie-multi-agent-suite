@@ -634,10 +634,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           syncNode = systemNodes.find((n) => n.id.includes("mas_sync") || n.id.includes("master_sync"));
         }
         if (config.daemon.enable) {
-          daemonNode = systemNodes.find((n) => n.id.includes("mas_daemon") || n.id.includes("node_manager_daemon"));
+          daemonNode = systemNodes.find((n) => n.id.includes("mas/_daemon") || n.id.includes("node_manager_daemon"));
         }
         if (config.discovery.enable) {
-          discoveryNode = systemNodes.find((n) => n.id.includes("mas_discovery") || n.id.includes("master_discovery"));
+          discoveryNode = systemNodes.find((n) => n.id.includes("mas/_discovery") || n.id.includes("master_discovery"));
         }
         // we have to stop in right order to be able to use stop_node() method of the provider
         if (config.rosVersion === "1") {
@@ -651,7 +651,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         await Promise.all(
           nodesToStop.map(async (node) => {
             if (node) {
-              logCtx.debug(`Stopping running ${node.name} on host '${config.host}'`, "");
+              logCtx.info(`Stopping running ${node.name} on host '${config.host}'`, "");
               await provider.stopNode(node.id);
             }
           })
