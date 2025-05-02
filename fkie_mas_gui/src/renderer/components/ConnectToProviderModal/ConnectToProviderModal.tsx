@@ -891,8 +891,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   <Checkbox
                                     checked={startParameter.discovery.useRmwPrefix}
                                     onChange={(event) => {
-                                      startParameter.discovery.useRmwPrefix = event.target.checked;
-                                      updateStartParameter();
+                                      setUseRmwPrefix(event.target.checked);
                                     }}
                                   />
                                 }
