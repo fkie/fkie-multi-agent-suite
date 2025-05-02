@@ -58,12 +58,14 @@ try:
 except:
     print("Can't include rcl_interfaces.srv.GetLoggerLevels: logger interface disabled!")
 
+ENDPOINT_TIMEOUT_SEC = 120.0
 
 class RosStateServicer:
 
     def __init__(self, websocket: WebSocketServer, test_env=False):
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
+        self._endpoints_ts: Dict[str, float] = {}  # uri : timestamp
         self._ros_node_list: List[RosNode] = None
         self._ros_service_dict: Dict[str, RosService] = {}
         self._ros_topic_dict: Dict[str, RosTopic] = {}
@@ -199,6 +201,20 @@ class RosStateServicer:
                     self._ts_state_notified = ts_start_update
                     self.websocket.publish('ros.nodes.changed', {"timestamp": ts_start_update})
 
+            # check for timeouted provider
+            now = time.time()
+            with self._lock_check:
+                removed_uris = []
+                for uri, ts in self._endpoints_ts.items():
+                    if now - ts > ENDPOINT_TIMEOUT_SEC:
+                        Log.info(f"{self.__class__.__name__}: remove outdated daemon {uri}")
+                        if uri in self._endpoints:
+                            del self._endpoints[uri]
+                        removed_uris.append(uri)
+                for uri in removed_uris:
+                    del self._endpoints_ts[uri]
+                if len(removed_uris) > 0:
+                    self._publish_masters()
             time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
@@ -256,25 +272,29 @@ class RosStateServicer:
         Log.info(
             f"{self.__class__.__name__}: new message on {self.topic_name_endpoint}")
         is_new = False
-        if msg.on_shutdown:
-            if msg.uri in self._endpoints:
+        with self._lock_check:
+            if msg.on_shutdown:
+                if msg.uri in self._endpoints:
+                    is_new = True
+                    Log.info(f"{self.__class__.__name__}: remove outdated daemon {msg.uri}")
+                    del self._endpoints[msg.uri]
+            elif msg.uri in self._endpoints:
+                other = self._endpoints[msg.uri]
+                is_new = msg.name != other.name
+                is_new |= msg.ros_name != other.ros_name
+                is_new |= msg.ros_domain_id != other.ros_domain_id
+                is_new |= msg.pid != other.pid
+            else:
                 is_new = True
-                del self._endpoints[msg.uri]
-        elif msg.uri in self._endpoints:
-            other = self._endpoints[msg.uri]
-            is_new = msg.name != other.name
-            is_new |= msg.ros_name != other.ros_name
-            is_new |= msg.ros_domain_id != other.ros_domain_id
-            is_new |= msg.pid != other.pid
-        else:
-            is_new = True
-        if is_new:
-            self._endpoints[msg.uri] = msg
-            self._publish_masters()
+            if is_new:
+                self._endpoints[msg.uri] = msg
+                self._endpoints_ts[msg.uri] = time.time()
+                self._publish_masters()
 
     def get_provider_list(self) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
-        return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
+        with self._lock_check:
+            return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")

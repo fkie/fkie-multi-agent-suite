@@ -9,6 +9,7 @@
 
 from typing import Text
 import os
+import threading
 import time
 from rclpy.qos import (
     QoSProfile,
@@ -100,6 +101,8 @@ class Server:
             pid=os.getpid(),
         )
         self._ws_thread = None
+        self._endpoint_timer = threading.Timer(60.0, self.publish_daemon_state)
+        self._endpoint_timer.start()
 
     def __del__(self):
         self.version_servicer = None
@@ -151,6 +154,7 @@ class Server:
             # print(traceback.format_exc())
 
     def shutdown(self):
+        self._endpoint_timer.cancel()
         self.publish_daemon_state(False)
         self._ws_send_status(False)
         self.version_servicer.stop()
