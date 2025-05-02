@@ -354,12 +354,16 @@ class RosStateJsonify:
             # Add active screens for a given node
             starts = time.time()
             for session_name, screen_node_name in data.screens.items():
-                if screen_node_name == node_name:
+                if screen_node_name == ros_node.name:
                     Log.debug(f"{self.__class__.__name__}:     append screen: {session_name}")
                     ros_node.screens.append(session_name)
             ros_node.system_node = os.path.basename(
                 full_name).startswith('_') or full_name in ['/rosout']
             ros_node.system_node |= node_ns == '/mas' or node_ns.startswith('/mas/')
+            # if a screen is available, we assume it is a local node
+            if ros_node.screens and ros_node.location == "unknown":
+                ros_node.location = self._local_addresses
+                ros_node.is_local = True
 
             data.node_dict[key] = ros_node
             return data.node_dict[key], True
