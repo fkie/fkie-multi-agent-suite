@@ -13,7 +13,7 @@ Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this 
 
 The communication between the GUI and the Daemon (on each host) is based on WebSockets on port **35430+(ROS_DOMAIN_ID)**, 35430+255+(ROS_DOMAIN_ID)+101*(ROS_MASTER_URI_PORT-11311) with ROS1. These ports should be open in the firewall.
 
-> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. When starting the discovery node **RMW_IMPLEMENTATION=rmw_fastrtps_cpp** should be prefixed with. If the MAS nodes are started via the graphical user interface, this is the case by default.
+> In ROS2 we use a discovery node to get host information for each ROS node. Currently the discovery node depends on the **rmw_fastrtps_cpp** ROS library. When starting the discovery node **RMW_IMPLEMENTATION=rmw_fastrtps_cpp** it can be prefixed with if needed (depending on ROS2 version). If the MAS nodes are started via the graphical user interface, this can be configured if needed.
 
 ### Install debian packages from github
 

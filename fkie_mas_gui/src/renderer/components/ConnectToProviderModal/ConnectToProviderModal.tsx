@@ -339,6 +339,11 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       updateStartParameter();
     }
 
+    function setUseRmwPrefix(state: boolean): void {
+      startParameter.discovery.useRmwPrefix = state;
+      updateStartParameter();
+    }
+
     function setRobotHostValues(robotHosts: string[]): void {
       startParameter.discovery.robotHosts = robotHosts;
       updateStartParameter();
@@ -390,6 +395,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       launchCfg.discovery.enable = startParameter.discovery.enable;
       if (startParameter.networkId) launchCfg.networkId = startParameter.networkId;
       launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
+      launchCfg.discovery.useRmwPrefix = startParameter.discovery.useRmwPrefix;
       if (startParameter.discovery.robotHosts && startParameter.discovery.robotHosts.length > 0)
         launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
       launchCfg.sync.enable = startParameter.sync.enable;
@@ -826,21 +832,77 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                       />
                     </FormGroup>
                     {startParameter.rosVersion === "2" && (
-                      <FormGroup aria-label="position" row>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={startParameter.discovery.enable}
-                              onChange={(event) => {
-                                startParameter.discovery.enable = event.target.checked;
-                                updateStartParameter();
-                              }}
-                            />
-                          }
-                          label="Discovery Node"
-                          labelPlacement="end"
-                        />
-                      </FormGroup>
+                      <Accordion
+                        disableGutters
+                        elevation={0}
+                        sx={{
+                          "&:before": {
+                            display: "none",
+                          },
+                        }}
+                      >
+                        <AccordionSummary
+                          expandIcon={<ExpandMoreIcon />}
+                          aria-controls="discovery_panel-content"
+                          id="discovery_panel-header"
+                          sx={{ pl: 0 }}
+                        >
+                          <Grid container>
+                            <Grid item xs={4}>
+                              <FormGroup aria-label="position" row>
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox
+                                      checked={startParameter.discovery.enable}
+                                      onChange={(event) => {
+                                        startParameter.discovery.enable = event.target.checked;
+                                        updateStartParameter();
+                                      }}
+                                    />
+                                  }
+                                  label="Discovery Node"
+                                  labelPlacement="end"
+                                />
+                              </FormGroup>
+                            </Grid>
+                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                              <Stack direction="column" sx={{ display: "grid" }}>
+                                <Typography
+                                  noWrap
+                                  variant="body2"
+                                  sx={{
+                                    color: grey[700],
+                                    fontWeight: "inherit",
+                                    flexGrow: 1,
+                                    ml: 0.5,
+                                  }}
+                                >
+                                  {`set RMW_IMPLEMENTATION prefix: ${startParameter.discovery.useRmwPrefix ? "true" : "false"}`}
+                                </Typography>
+                              </Stack>
+                            </Grid>
+                          </Grid>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Stack direction="column" divider={<Divider orientation="vertical" />}>
+                            <FormGroup aria-label="position" row>
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={startParameter.discovery.useRmwPrefix}
+                                    onChange={(event) => {
+                                      startParameter.discovery.useRmwPrefix = event.target.checked;
+                                      updateStartParameter();
+                                    }}
+                                  />
+                                }
+                                label="set RMW_IMPLEMENTATION prefix"
+                                labelPlacement="end"
+                              />
+                            </FormGroup>
+                          </Stack>
+                        </AccordionDetails>
+                      </Accordion>
                     )}
 
                     {startParameter.rosVersion === "1" && (
