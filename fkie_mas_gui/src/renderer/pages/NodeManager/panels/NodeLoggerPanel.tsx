@@ -110,7 +110,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
 
   useEffect(() => {
     getLoggers(currentNode);
-  }, [currentNode, getLoggers]);
+  }, [currentNode]);
 
   const debouncedCallbackFilterText = useDebounceCallback((searchTerm: string) => {
     if (searchTerm.length > 0) {
@@ -129,7 +129,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
 
   useEffect(() => {
     debouncedCallbackFilterText(filterText);
-  }, [filterText, debouncedCallbackFilterText]);
+  }, [loggers, filterText]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
