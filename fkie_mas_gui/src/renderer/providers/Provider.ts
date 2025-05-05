@@ -1268,6 +1268,10 @@ export default class Provider implements IProvider {
                   }
                 }
               } else {
+                const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
+                if (env_capability_group) {
+                  nodeGroup = { namespace: "", name: `{${env_capability_group}}` };
+                }
                 const parameters: RosParameter[] = launchNode.parameters || [];
                 for (const p of parameters) {
                   if (p.type.indexOf("yaml") >= 0) {
@@ -1292,10 +1296,6 @@ export default class Provider implements IProvider {
                     nodeGroup = { namespace: "", name: `{${p.value}}` };
                   }
                   nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
-                }
-                const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
-                if (env_capability_group) {
-                  nodeGroup = { namespace: "", name: `{${env_capability_group}}` };
                 }
               }
               if (launchNode.node_name && nodeGroup.name) {
