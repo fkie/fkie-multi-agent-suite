@@ -21,6 +21,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualifiedGroupAttrs: /if|unless|scoped/,
   qualifiedUnsetEnvAttrs: /if|unless|name/,
   qualifiedPushRosNamespaceAttrs: /if|unless|namespace/,
+  qualifiedTimerAttrs: /period/,
   qualifiedXmlAttrs: /version/,
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
@@ -121,6 +122,13 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
+        /(<)(timer)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@timertags" },
+        ],
+      ],
+      [
         /(<)(\?xml)/,
         [
           { token: "delimiter.start", bracket: "@open" },
@@ -199,6 +207,23 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/(@qualifiedGroupAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
       [
         /(@qualifiedGroupAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    timertags: [
+      [/\s+/, ""],
+      [/(@qualifiedTimerAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
+      [
+        /(@qualifiedTimerAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
