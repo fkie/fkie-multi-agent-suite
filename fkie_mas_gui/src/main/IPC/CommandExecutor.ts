@@ -54,10 +54,10 @@ export default class CommandExecutor implements TCommandExecutor {
           const nLine = line.trim();
           if (nLine.startsWith("Host ")) {
             currentHost = nLine.split(" ")[1];
-          } else if (nLine.startsWith("User ") && currentHost) {
+          } else if ((nLine.startsWith("User ") || nLine.startsWith("user ")) && currentHost) {
             const username = nLine.split(" ")[1];
             this.sshUsers[currentHost] = username;
-          } else if (nLine.startsWith("Port ") && currentHost) {
+          } else if ((nLine.startsWith("Port ") || nLine.startsWith("port ")) && currentHost) {
             const port = nLine.split(" ")[1];
             this.sshPorts[currentHost] = Number.parseInt(port);
           } else if (nLine.startsWith("IdentityFile ") && currentHost) {

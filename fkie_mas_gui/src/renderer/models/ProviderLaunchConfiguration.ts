@@ -35,7 +35,8 @@ export default class ProviderLaunchConfiguration {
     heartbeatHz?: number;
     robotHosts?: string[];
     useRmwPrefix?: boolean;
-  } = { enable: true, robotHosts: [], heartbeatHz: 0.5 };
+    respawn: boolean;
+  } = { enable: true, robotHosts: [], heartbeatHz: 0.5, useRmwPrefix: true, respawn: true };
 
   sync: {
     enable: boolean;
@@ -138,7 +139,7 @@ export default class ProviderLaunchConfiguration {
     } else if (this.rosVersion === "2") {
       const rmwPrefix = this.discovery.useRmwPrefix ? "RMW_IMPLEMENTATION=rmw_fastrtps_cpp " : "";
       cmdMasterDiscovery = `${rmwPrefix}${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
-        this.respawn ? "--respawn" : ""
+        this.respawn || this.discovery.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
       return {
