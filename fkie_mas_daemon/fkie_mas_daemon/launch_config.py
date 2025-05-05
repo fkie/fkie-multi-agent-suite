@@ -844,7 +844,9 @@ class LaunchConfig(object):
             elif isinstance(entity, launch.actions.timer_action.TimerAction):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} timer period: {entity.period}")
-                period = float(perform_substitutions(self.context, entity.period))
+                period = entity.period
+                if not isinstance(period, (float, int)):
+                    period = float(perform_substitutions(self.context, entity.period))
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} timer period (resolved): {period}")
                 if PRINT_DEBUG_LOAD:
