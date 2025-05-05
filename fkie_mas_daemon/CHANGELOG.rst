@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.2 (05.05.2025)
+------------------
+* Fixed load parameter of composable nodes
+
 4.4.1 (05.05.2025)
 ------------------
 * Fixed remove outdated daemons

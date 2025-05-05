@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3.2 - 05.05.2025
+
+Dirty fix to start mas discovery with different RMW implementation
+Fixed load parameter of composable nodes
+
 ## 4.3.1 - 05.05.2025
 
 Prefer capability group parameter opposite of environment parameter
