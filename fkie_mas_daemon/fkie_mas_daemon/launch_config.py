@@ -98,8 +98,12 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
                 result += perform_to_string(context, val)
     elif value is not None:
         try:
-            item = perform_substitutions(context, [value])
-            result = perform_substitutions(context, [value])
+            if isinstance(value, tuple):
+                for tuple_item in value:
+                    result += perform_substitutions(context, [tuple_item])
+            else:
+                item = perform_substitutions(context, [value])
+                result = perform_substitutions(context, [value])
         except (SubstitutionFailure, LookupError) as err:
             # if executable is not found we replace it by "ros2 run" command to visualize the error in the MAS gui
             if isinstance(value, ExecutableInPackage):
@@ -200,10 +204,15 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                 continue
             elif isinstance(p, dict):
                 for key, val in p.items():
-                    if isinstance(key, tuple) and isinstance(key[0], launch.substitutions.text_substitution.TextSubstitution) and not isinstance(val.value, list):
-                        # TODO: add parameter of the type launch.substitutions.launch_configuration.LaunchConfiguration
-                        p_name = key[0].text
+                    p_name = None
+                    p_val = None
+                    if isinstance(key, tuple):
+                        p_name = perform_to_string(self._launch_context, key)
+                    if isinstance(val, tuple):
+                        p_val = perform_to_string(self._launch_context, val)
+                    elif hasattr(val, "value"):
                         p_val = val.value
+                    if p_name is not None and p_val is not None:
                         self.parameters.append(RosParameter(node_name, p_name, p_val))
                 continue
             print(f"ignored new parameter type: {type(p)}: {p}")

@@ -124,6 +124,7 @@ def generate_launch_description():
                         plugin='composition::Listener',
                         name='listener',
                         remappings=remappings + [('topic', 'topic_test_composed')],
+                        parameters=[{"test": "was"}],
                     ),
                 ],
             ),
