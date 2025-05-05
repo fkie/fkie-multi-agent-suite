@@ -47,6 +47,7 @@ class Server:
     def __init__(self, ros_node, *, default_domain_id=-1):
         self.ros_node = ros_node
         self.ws_port = ws_port()
+        self._on_shutdown = False
         self._version, self._date = detect_version(
             nmd.ros_node, "fkie_mas_daemon"
         )
@@ -101,8 +102,7 @@ class Server:
             pid=os.getpid(),
         )
         self._ws_thread = None
-        self._endpoint_timer = threading.Timer(60.0, self.publish_daemon_state)
-        self._endpoint_timer.start()
+        self._endpoint_timer = None
 
     def __del__(self):
         self.version_servicer = None
@@ -147,14 +147,19 @@ class Server:
     def publish_daemon_state(self, is_running: bool = True):
         self._endpoint_msg.on_shutdown = not is_running
         try:
-            self.pub_endpoint.publish(self._endpoint_msg)
+            if not self._on_shutdown:
+                self.pub_endpoint.publish(self._endpoint_msg)
+                self._endpoint_timer = threading.Timer(60.0, self.publish_daemon_state)
+                self._endpoint_timer.start()
         except Exception as a:
             pass
             # import traceback
             # print(traceback.format_exc())
 
     def shutdown(self):
-        self._endpoint_timer.cancel()
+        self._on_shutdown = True
+        if self._endpoint_timer:
+            self._endpoint_timer.cancel()
         self.publish_daemon_state(False)
         self._ws_send_status(False)
         self.version_servicer.stop()

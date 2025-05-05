@@ -276,7 +276,7 @@ class RosStateServicer:
             if msg.on_shutdown:
                 if msg.uri in self._endpoints:
                     is_new = True
-                    Log.info(f"{self.__class__.__name__}: remove outdated daemon {msg.uri}")
+                    Log.info(f"{self.__class__.__name__}: remove daemon {msg.uri}")
                     del self._endpoints[msg.uri]
             elif msg.uri in self._endpoints:
                 other = self._endpoints[msg.uri]
