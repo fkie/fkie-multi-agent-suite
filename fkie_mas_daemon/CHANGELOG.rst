@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.1 (05.05.2025)
+------------------
+* Fixed remove outdated daemons
+
 4.4.0 (02.05.2025)
 ------------------
 * Use local addresses if no discovery node available, but a screen for a node was found

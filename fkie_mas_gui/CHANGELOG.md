@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3.1 - 05.05.2025
+
+Prefer capability group parameter opposite of environment parameter
+Fixed remove outdated provider
+
 ## 4.3.0 - 02.05.2025
 
 Fixed stop system nodes on forced restart
@@ -12,7 +17,6 @@ On click to show screens for a host inform user if no screens available
 Added host details to panel if one is selected
 Fixed save configuration
 Fixed resolve launch arguments
-
 
 ## 4.2.20 - 30.04.2025
 
