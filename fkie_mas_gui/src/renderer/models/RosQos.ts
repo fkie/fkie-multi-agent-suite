@@ -114,16 +114,16 @@ export default class RosQos {
     if (this.depth !== 10) {
       result += `--qos-depth ${this.depth} `;
     }
-    if (this.durability < DURABILITY.UNKNOWN) {
+    if (this.durability != 0 && this.durability < DURABILITY.UNKNOWN) {
       result += `--qos-durability ${durabilityToString(this.durability)} `;
     }
-    if (this.reliability < RELIABILITY.UNKNOWN) {
+    if (this.reliability != 0 && this.reliability < RELIABILITY.UNKNOWN) {
       result += `--qos-reliability ${reliabilityToString(this.reliability)} `;
     }
-    if (this.liveliness < LIVELINESS.UNKNOWN) {
+    if (this.liveliness != 0 && this.liveliness < LIVELINESS.UNKNOWN) {
       result += `--qos-liveliness ${livelinessToString(this.liveliness)} `;
     }
-    if (this.history < HISTORY.UNKNOWN) {
+    if (this.history != 0 && this.history < HISTORY.UNKNOWN) {
       result += `--qos-history ${historyToString(this.history)} `;
     }
     return result;
