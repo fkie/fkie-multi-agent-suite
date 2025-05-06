@@ -299,6 +299,10 @@ int main(int argc, char *argv[])
 {
     // do not change environment in code!
     // setenv("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp", true);
+    char *rwm_implementation = getenv("RMW_IMPLEMENTATION");
+    if (rwm_implementation != NULL) {
+        setenv("RCL_ASSERT_RMW_ID_MATCHES", rwm_implementation, true);
+    }
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
     rclcpp::init(argc, argv);
