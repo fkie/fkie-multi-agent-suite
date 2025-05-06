@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.3 (06.05.2025)
+------------------
+* Show launch arguments only of the top launch file while load
+
 4.4.2 (05.05.2025)
 ------------------
 * Fixed load parameter of composable nodes

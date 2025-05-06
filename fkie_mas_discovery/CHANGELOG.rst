@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.2 (06.05.2025)
+------------------
+* Try to fix run discovery with different DDS
+
 4.1.1 (02.05.2025)
 ------------------
 * Removed RMW_IMPLEMENTATION=rmw_fastrtps_cpp from code

@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.3 - 06.05.2025
+
+Try to fix run discovery with different DDS
+Fixed install script for humble
+Show launch arguments only of the top launch file while load
+
 ## 4.3.2 - 05.05.2025
 
 Dirty fix to start mas discovery with different RMW implementation
