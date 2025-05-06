@@ -19,32 +19,120 @@
 #include <limits.h>
 #include <csignal>
 
-#include "rmw_fastrtps_shared_cpp/guid_utils.hpp"
-#include "rmw_fastrtps_shared_cpp/qos.hpp"
-
-#include "fastrtps/Domain.h"
-#include "fastrtps/participant/ParticipantListener.h"
-#include "fastrtps/subscriber/SubscriberListener.h"
-
-#include "rclcpp/qos.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "rcpputils/thread_safety_annotations.hpp"
-#include "rmw/impl/cpp/key_value.hpp"
-
 #include "builtin_interfaces/msg/duration.hpp"
 #include "fkie_mas_msgs/msg/changed_state.hpp"
 #include "fkie_mas_msgs/msg/gid.hpp"
 #include "fkie_mas_msgs/msg/participant_entities_info.hpp"
 #include "fkie_mas_msgs/msg/participants.hpp"
 
+#include "rclcpp/qos.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "rclcpp/node.hpp"
 #include "rclcpp/publisher.hpp"
 #include "rclcpp/subscription.hpp"
+
+#include "fastrtps/Domain.h"
+#include "fastrtps/participant/ParticipantListener.h"
+#include "fastrtps/subscriber/SubscriberListener.h"
 
 using namespace std::chrono_literals;
 using namespace fkie_mas_msgs::msg;
 
 using participant_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, ParticipantEntitiesInfo>;
+
+template <typename ByteT>
+void copy_from_byte_array_to_fastrtps_guid(
+    const ByteT *guid_byte_array,
+    eprosima::fastrtps::rtps::GUID_t *guid)
+{
+    static_assert(
+        std::is_same<uint8_t, ByteT>::value || std::is_same<int8_t, ByteT>::value,
+        "ByteT should be either int8_t or uint8_t");
+    assert(guid_byte_array);
+    assert(guid);
+    constexpr auto prefix_size = sizeof(guid->guidPrefix.value);
+    memcpy(guid->guidPrefix.value, guid_byte_array, prefix_size);
+    memcpy(guid->entityId.value, &guid_byte_array[prefix_size], guid->entityId.size);
+}
+
+template <typename ByteT>
+void copy_from_fastrtps_guid_to_byte_array(
+    const eprosima::fastrtps::rtps::GUID_t &guid,
+    ByteT *guid_byte_array)
+{
+    static_assert(
+        std::is_same<uint8_t, ByteT>::value || std::is_same<int8_t, ByteT>::value,
+        "ByteT should be either int8_t or uint8_t");
+    assert(guid_byte_array);
+    constexpr auto prefix_size = sizeof(guid.guidPrefix.value);
+    memcpy(guid_byte_array, &guid.guidPrefix, prefix_size);
+    memcpy(&guid_byte_array[prefix_size], &guid.entityId, guid.entityId.size);
+}
+
+std::map<std::string, std::vector<uint8_t>>
+parse_key_value(const std::vector<uint8_t> & kv)
+{
+  std::map<std::string, std::vector<uint8_t>> m;
+
+  bool keyfound = false;
+
+  std::string key;
+  std::vector<uint8_t> value;
+  uint8_t prev = '\0';
+
+  if (kv.size() == 0) {
+    goto not_valid;
+  }
+
+  for (uint8_t u8 : kv) {
+    if (keyfound) {
+      if ((u8 == ';') && (prev != ';')) {
+        prev = u8;
+        continue;
+      } else if ((u8 != ';') && (prev == ';')) {
+        if (value.size() == 0) {
+          goto not_valid;
+        }
+        m[key] = value;
+
+        key.clear();
+        value.clear();
+        keyfound = false;
+      } else {
+        value.push_back(u8);
+      }
+    }
+    if (!keyfound) {
+      if (u8 == '=') {
+        if (key.size() == 0) {
+          goto not_valid;
+        }
+        keyfound = true;
+      } else if (isalnum(u8)) {
+        key.push_back(u8);
+      } else if ((u8 == '\0') && (key.size() == 0) && (m.size() > 0)) {
+        break;  // accept trailing '\0' characters
+      } else if ((prev != ';') || (key.size() > 0)) {
+        goto not_valid;
+      }
+    }
+    prev = u8;
+  }
+  if (keyfound) {
+    if (value.size() == 0) {
+      goto not_valid;
+    }
+    m[key] = value;
+  } else if (key.size() > 0) {
+    goto not_valid;
+  }
+  return m;
+not_valid:
+  // This is not a failure this is something that can happen because the participant_qos userData
+  // is used. Other participants in the system not created by rmw could use userData for something
+  // else.
+  return std::map<std::string, std::vector<uint8_t>>();
+}
 
 /**
  * Get a value from a environment variable
@@ -57,12 +145,12 @@ std::string getEnvironmentVariable(std::string const &key)
 
 void convert_gid_to_msg(const eprosima::fastrtps::rtps::GUID_t &gid, fkie_mas_msgs::msg::Gid &msg_gid)
 {
-    rmw_fastrtps_shared_cpp::copy_from_fastrtps_guid_to_byte_array(gid, const_cast<uint8_t *>(msg_gid.data.begin()));
+    copy_from_fastrtps_guid_to_byte_array(gid, const_cast<uint8_t *>(msg_gid.data.begin()));
 }
 
 void convert_msg_to_gid(const fkie_mas_msgs::msg::Gid &msg_gid, eprosima::fastrtps::rtps::GUID_t &gid)
 {
-    rmw_fastrtps_shared_cpp::copy_from_byte_array_to_fastrtps_guid(const_cast<uint8_t *>(msg_gid.data.begin()), &gid);
+    copy_from_byte_array_to_fastrtps_guid(const_cast<uint8_t *>(msg_gid.data.begin()), &gid);
 }
 
 class CustomParticipantListener : public rclcpp::Node,
@@ -225,7 +313,7 @@ public:
                 discoveredParticipants_[info.info.m_guid] = pei;
             }
             auto pi = discoveredParticipants_[info.info.m_guid];
-            auto map = rmw::impl::cpp::parse_key_value(info.info.m_userData);
+            auto map = parse_key_value(info.info.m_userData);
             // get as defined since foxy
             auto name_found = map.find("name");
             if (name_found != map.end())
@@ -297,12 +385,6 @@ void signalHandler(int signum)
 
 int main(int argc, char *argv[])
 {
-    // do not change environment in code!
-    // setenv("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp", true);
-    char *rwm_implementation = getenv("RMW_IMPLEMENTATION");
-    if (rwm_implementation != NULL) {
-        setenv("RCL_ASSERT_RMW_ID_MATCHES", rwm_implementation, true);
-    }
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
     rclcpp::init(argc, argv);
@@ -329,7 +411,6 @@ int main(int argc, char *argv[])
     // replace dots and - characters in the node name
     hostname = std::regex_replace(hostname, std::regex("\\."), "_");
     hostname = std::regex_replace(hostname, std::regex("-"), "_");
-    // std::string ros_distro = getEnvironmentVariable("ROS_DISTRO");
 
     std::string node_name = "_discovery_" + hostname;
     auto listener = std::make_shared<CustomParticipantListener>(node_name, "/mas");

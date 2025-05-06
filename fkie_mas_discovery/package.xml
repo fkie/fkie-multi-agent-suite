@@ -29,11 +29,8 @@
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-avahi</depend>
   <depend condition="$ROS_VERSION == 1">avahi-daemon</depend>
 
-  <depend condition="$ROS_VERSION == 2">lifecycle_msgs</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
-  <depend condition="$ROS_VERSION == 2">rclcpp_lifecycle</depend>
-  <depend condition="$ROS_VERSION == 2">rmw_fastrtps_cpp</depend>
-  <depend condition="$ROS_VERSION == 2">rmw_fastrtps_shared_cpp</depend>
+  <depend condition="$ROS_VERSION == 2">fastrtps</depend>
 
   <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
