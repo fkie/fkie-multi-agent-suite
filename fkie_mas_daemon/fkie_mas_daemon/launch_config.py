@@ -942,9 +942,43 @@ class LaunchConfig(object):
         '''
         :return: a list with args being used in the roslaunch file.
         '''
+        declared_launch_arguments: List[
+            Tuple[launch.actions.DeclareLaunchArgument, List[launch.actions.IncludeLaunchDescription]]] = []
+        # based on LaunchDescription.get_launch_arguments()
+
+        def process_entities(entities, *, _conditional_inclusion=False, nested_ild_actions=None):
+            next_nested_ild_actions = nested_ild_actions
+            for entity in entities:
+                if isinstance(entity, launch.actions.DeclareLaunchArgument):
+                    # Avoid duplicate entries with the same name.
+                    if entity.name in (e.name for e, _ in declared_launch_arguments):
+                        continue
+                    # Stuff this contextual information into the class for
+                    # potential use in command-line descriptions or errors.
+                    entity._conditionally_included = _conditional_inclusion
+                    entity._conditionally_included |= entity.condition is not None
+                    declared_launch_arguments.append((entity, nested_ild_actions))
+                if isinstance(entity, launch.actions.ResetLaunchConfigurations):
+                    # Launch arguments after this cannot be set directly by top level arguments
+                    return declared_launch_arguments
+                elif next_nested_ild_actions is not None:
+                    next_nested_ild_actions = nested_ild_actions
+                    if isinstance(entity, launch.actions.IncludeLaunchDescription):
+                        next_nested_ild_actions.append(entity)
+                    process_entities(
+                        entity.describe_sub_entities(),
+                        _conditional_inclusion=False,
+                        nested_ild_actions=next_nested_ild_actions)
+                    for conditional_sub_entity in entity.describe_conditional_sub_entities():
+                        process_entities(
+                            conditional_sub_entity[1],
+                            _conditional_inclusion=True,
+                            nested_ild_actions=next_nested_ild_actions)
+            return declared_launch_arguments
 
         launch_description = get_launch_description_from_any_launch_file(filename)
-        launch_arguments: List[launch.actions.declare_launch_argument.DeclareLaunchArgument] = launch_description.get_launch_arguments()
+        launch_arguments: List[launch.actions.DeclareLaunchArgument] = [item[0]
+                                                                        for item in process_entities(launch_description.entities)]
         result = []
         for argument_action in launch_arguments:
             value = ''
@@ -956,12 +990,12 @@ class LaunchConfig(object):
             default_value = None
             if argument_action.default_value is not None:
                 default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
-                arg = LaunchArgument(name=argument_action.name,
-                                     value=value,
-                                     default_value=default_value,
-                                     description=argument_action.description,
-                                     choices=argument_action.choices)
-                result.append(arg)
+            arg = LaunchArgument(name=argument_action.name,
+                                    value=value,
+                                    default_value=default_value,
+                                    description=argument_action.description,
+                                    choices=argument_action.choices)
+            result.append(arg)
         return result
 
     def get_node(self, name: str) -> Union[LaunchNodeWrapper, None]:
