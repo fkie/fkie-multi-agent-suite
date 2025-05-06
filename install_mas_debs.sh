@@ -42,7 +42,7 @@ if [[ -z $NO_ROS ]]; then
         exit 1
     fi
 
-    if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "jazzy" ]]; then
+    if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "humble" || "$ROS_DISTRO" == "jazzy" ]]; then
         echo -e "detected ROS_DISTRO=\e[36m$ROS_DISTRO\e[0m"
     else
         if [ -z "$ROS_DISTRO" ]; then
