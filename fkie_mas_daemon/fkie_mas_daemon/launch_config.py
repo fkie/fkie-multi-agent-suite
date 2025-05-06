@@ -536,21 +536,7 @@ class LaunchConfig(object):
                                                     launch.utilities.normalize_to_list_of_substitutions(name))
             self.__launch_context.launch_configurations[name_normalized] = value
             self.launch_arguments.append(LaunchArgument(name_normalized, value))
-        self.__launch_description = get_launch_description_from_any_launch_file(
-            self.filename)
-        # check for valid arguments
-        declared_launch_arguments = self.__launch_description.get_launch_arguments()
-        for argument in declared_launch_arguments:
-            if argument._conditionally_included or argument.default_value is not None:
-                continue
-            if argument.name not in self.__launch_context.launch_configurations:
-                raise RuntimeError(
-                    f"Included launch description missing required argument '{argument.name}' (description: '{argument.description}'), given: {[name for name, value in launch_arguments]}"
-                )
-            elif not self.__launch_context.launch_configurations[argument.name]:
-                raise RuntimeError(
-                    f"Included launch description missing required value for argument '{argument.name}' (description: '{argument.description}'), given: '{self.__launch_context.launch_configurations[argument.name]}'")
-
+        self.__launch_description = get_launch_description_from_any_launch_file(self.filename)
         self._included_files: List[LaunchIncludedFile] = []
         self.__launch_description.launch_name = self.filename
         self.load()
@@ -938,7 +924,7 @@ class LaunchConfig(object):
         return self.__package
 
     @classmethod
-    def get_launch_arguments(cls, context: LaunchContext, filename: str, provided_args: list) -> List[LaunchArgument]:
+    def get_launch_arguments(cls, context: LaunchContext, filename: str, *, provided_args: Union[List, None]) -> List[LaunchArgument]:
         '''
         :return: a list with args being used in the roslaunch file.
         '''
@@ -977,21 +963,27 @@ class LaunchConfig(object):
             return declared_launch_arguments
 
         launch_description = get_launch_description_from_any_launch_file(filename)
-        launch_arguments: List[launch.actions.DeclareLaunchArgument] = [item[0]
-                                                                        for item in process_entities(launch_description.entities)]
+
+        launch_arguments: List[launch.actions.DeclareLaunchArgument] = []
+        if provided_args is None:
+            launch_arguments = [item[0] for item in process_entities(launch_description.entities)]
+        else:
+            # use recursive method of ROS to get all default values
+            launch_arguments = launch_description.get_launch_arguments()
         result = []
         for argument_action in launch_arguments:
-            value = ''
-            for provided_arg in provided_args:
-                if argument_action.name == provided_arg.name and hasattr(provided_arg, "value"):
-                    value = provided_arg.value
-                    break
+            value = None
+            if provided_args is not None:
+                for provided_arg in provided_args:
+                    if argument_action.name == provided_arg.name and hasattr(provided_arg, "value"):
+                        value = provided_arg.value
+                        break
 
             default_value = None
             if argument_action.default_value is not None:
                 default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
             arg = LaunchArgument(name=argument_action.name,
-                                    value=value,
+                                    value=value if value is not None else default_value,
                                     default_value=default_value,
                                     description=argument_action.description,
                                     choices=argument_action.choices)

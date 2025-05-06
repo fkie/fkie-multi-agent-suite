@@ -377,28 +377,24 @@ class LaunchServicer(LoggingEventHandler):
             # validate xml
             self.xml_validator.validate(launchfile)
             # test for required args
-            provided_args = [arg.name for arg in request.args]
+            provided_arg_names = [arg.name for arg in request.args]
             # get the list with needed launch args
             launch_context = LaunchContext(argv=sys.argv[1:])
-            req_args = LaunchConfig.get_launch_arguments(launch_context, launchfile, request.args)
+            provided_args = [] if request.args is None else request.args
+            req_args = LaunchConfig.get_launch_arguments(launch_context, launchfile,  provided_args = None if request.request_args else provided_args)
             # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
-                    if arg.name not in provided_args:
+                    if arg.name not in provided_arg_names:
                         result.args.extend(req_args)
                         result.status.code = 'PARAMS_REQUIRED'
                         Log.debug(
-                            f"{self.__class__.__name__}: ..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; provided args {provided_args}")
+                            f"{self.__class__.__name__}: ..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; provided args {provided_arg_names}")
                         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
-            # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
-            launch_arguments = [(arg.name, arg.value) for arg in request.args if hasattr(arg, "value")]
-            # context=self.__launch_context
+            launch_arguments = [(arg.name, arg.value) if hasattr(arg, "value") else (arg.name, arg.default_value)  for arg in req_args ]
             launch_config = LaunchConfig(
                 launchfile, context=launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
             Log.debug(f"{self.__class__.__name__}: daemonuri: {daemonuri}")
-            # _loaded, _res_argv = launch_config.load(argv)
-            # parse result args for reply
-            # result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
             # notify GUI about changes
             self.websocket.publish('ros.launch.changed', {
