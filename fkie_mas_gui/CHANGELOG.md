@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3.5 - 06.05.2025
+
+Fixed load with default parameters
+Fixed remove timeouted daemons
+
 ## 4.3.4 - 06.05.2025
 
 Fixed exception on unknown hostname

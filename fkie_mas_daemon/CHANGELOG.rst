@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.5 (06.05.2025)
+------------------
+* Fixed load with default parameters
+* Fixed remove timeouted daemons
+
 4.4.4 (06.05.2025)
 ------------------
 * Fixed exception on unknown hostname
