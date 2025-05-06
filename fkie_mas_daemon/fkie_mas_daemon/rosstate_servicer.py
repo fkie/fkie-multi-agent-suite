@@ -132,7 +132,11 @@ class RosStateServicer:
             if hostname == local_hostname:
                 hostnames.extend(get_local_addresses())
             else:
-                hostnames.append(socket.gethostbyname(hostname))
+                try:
+                    hostnames.append(socket.gethostbyname(hostname))
+                except Exception as err:
+                    Log.warn(f"{self.__class__.__name__}: socket.gethostbyname({hostname}): {err}")
+                    hostnames.append(hostname)
             provider = RosProvider(
                 name=endpoint.name,
                 host=hostname,
