@@ -23,6 +23,11 @@ For Ubuntu 20.04, 22.04 and 24.04 there are Debian packages on Github that can b
 wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
 ```
 
+#### Install on robot without GUI
+```bash
+wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash -s -- -r
+```
+
 ### Run
 
 ```bash

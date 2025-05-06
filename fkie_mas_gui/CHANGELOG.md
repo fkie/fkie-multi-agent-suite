@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.3.4 - 06.05.2025
+
+Fixed exception on unknown hostname
+Removed set RMW_IMPLEMENTATION from gui
+Do not use rmw_fastrtps_cpp to avoid ROS check for RMW implementation
+Fixed start publisher from gui with ros humble
+
 ## 4.3.3 - 06.05.2025
 
 Try to fix run discovery with different DDS

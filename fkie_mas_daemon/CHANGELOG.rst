@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.4 (06.05.2025)
+------------------
+* Fixed exception on unknown hostname
+
 4.4.3 (06.05.2025)
 ------------------
 * Show launch arguments only of the top launch file while load
