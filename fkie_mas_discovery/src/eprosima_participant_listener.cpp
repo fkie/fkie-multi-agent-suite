@@ -40,6 +40,8 @@ using namespace fkie_mas_msgs::msg;
 
 using participant_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, ParticipantEntitiesInfo>;
 
+
+// from rmw_fastrtps_shared_cpp
 template <typename ByteT>
 void copy_from_byte_array_to_fastrtps_guid(
     const ByteT *guid_byte_array,
@@ -55,6 +57,7 @@ void copy_from_byte_array_to_fastrtps_guid(
     memcpy(guid->entityId.value, &guid_byte_array[prefix_size], guid->entityId.size);
 }
 
+// from rmw_fastrtps_shared_cpp
 template <typename ByteT>
 void copy_from_fastrtps_guid_to_byte_array(
     const eprosima::fastrtps::rtps::GUID_t &guid,
@@ -69,6 +72,7 @@ void copy_from_fastrtps_guid_to_byte_array(
     memcpy(&guid_byte_array[prefix_size], &guid.entityId, guid.entityId.size);
 }
 
+// FROM rmw::impl::cpp
 std::map<std::string, std::vector<uint8_t>>
 parse_key_value(const std::vector<uint8_t> & kv)
 {
