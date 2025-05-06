@@ -292,8 +292,8 @@ class RosStateServicer:
                 is_new = True
             if is_new:
                 self._endpoints[msg.uri] = msg
-                self._endpoints_ts[msg.uri] = time.time()
                 self._publish_masters()
+            self._endpoints_ts[msg.uri] = time.time()
 
     def get_provider_list(self) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
