@@ -2,6 +2,8 @@
  * RosParameter models parameters in a ROS system
  */
 
+import { JSONObject } from "@/types";
+
 export class RosParameterRange {
   from_value: number | undefined;
   to_value: number | undefined;
@@ -21,7 +23,7 @@ export default class RosParameter {
 
   name: string;
 
-  value: string | number | boolean | string[];
+  value: string | number | boolean | string[] | JSONObject;
 
   type: string;
 
@@ -37,7 +39,7 @@ export default class RosParameter {
   constructor(
     node: string,
     name: string,
-    value: string | number | boolean | string[],
+    value: string | number | boolean | string[] | JSONObject,
     type: string,
     providerId: string
   ) {

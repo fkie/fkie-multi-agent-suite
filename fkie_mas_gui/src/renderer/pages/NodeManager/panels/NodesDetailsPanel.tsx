@@ -26,7 +26,15 @@ import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
-import { RosNode, RosNodeStatus, RosTopic, RosTopicId, getDiagnosticLevelName, getFileName } from "@/renderer/models";
+import {
+  RosNode,
+  RosNodeStatus,
+  RosParameter,
+  RosTopic,
+  RosTopicId,
+  getDiagnosticLevelName,
+  getFileName,
+} from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { generateUniqueId } from "@/renderer/utils";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
@@ -717,6 +725,14 @@ export default function NodesDetailsPanel(): JSX.Element {
                                   </Stack>
                                 </Typography>
                               )}
+                              {launchInfo.sigkill_timeout && launchInfo.sigkill_timeout > 0 && (
+                                <Typography variant="caption">
+                                  <Stack direction="row" spacing={0.5}>
+                                    <Box sx={{ fontWeight: "bold", color: "orange" }}>Kill an stop:</Box>
+                                    <Box sx={{ fontWeight: "normal" }}>{launchInfo.sigkill_timeout} sec</Box>
+                                  </Stack>
+                                </Typography>
+                              )}
                               <Tag
                                 color="default"
                                 title="CMD:"
@@ -727,48 +743,34 @@ export default function NodesDetailsPanel(): JSX.Element {
                             </Stack>
                           )}
                           {launchInfo.parameters && launchInfo.parameters.length > 0 && (
-                            <TableContainer component={Paper}>
-                              <Table size="small" aria-label="a dense table">
-                                <TableBody>
-                                  {launchInfo.parameters.map((parameter) => (
-                                    <TableRow key={parameter.name}>
-                                      <TableCell style={{ padding: 0 }}>
-                                        {parameter.name.startsWith(node.name)
-                                          ? parameter.name.slice(node.name.length + 1)
-                                          : parameter.name}
-                                        {typeof parameter.value === "object" && (
-                                          <JsonView
-                                            src={parameter.value}
-                                            dark={settingsCtx.get("useDarkMode") as boolean}
-                                            theme="a11y"
-                                            enableClipboard={false}
-                                            ignoreLargeArray={false}
-                                            collapseObjectsAfterLength={3}
-                                            displaySize={"collapsed"}
-                                            collapsed={(params: {
-                                              node: Record<string, unknown> | Array<unknown>; // Object or array
-                                              indexOrName: number | string | undefined;
-                                              depth: number;
-                                              size: number; // Object's size or array's length
-                                            }) => {
-                                              if (params.indexOrName === undefined) return true;
-                                              if (Array.isArray(params.node) && params.node.length === 0) return true;
-                                              if (params.depth > 3) return true;
-                                              return false;
-                                            }}
-                                          />
-                                        )}
-                                      </TableCell>
-                                      {typeof parameter.value !== "object" ? (
-                                        <TableCell style={{ padding: 0 }}>{JSON.stringify(parameter.value)}</TableCell>
-                                      ) : (
-                                        <TableCell style={{ padding: 0 }} />
-                                      )}
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
+                            <JsonView
+                              src={launchInfo.parameters?.reduce((dictionary, param: RosParameter) => {
+                                dictionary[param.name] = param.value;
+                                return dictionary;
+                              }, {})}
+                              dark={settingsCtx.get("useDarkMode") as boolean}
+                              theme="a11y"
+                              enableClipboard={false}
+                              ignoreLargeArray={false}
+                              collapseObjectsAfterLength={3}
+                              displaySize={"collapsed"}
+                              collapsed={(params: {
+                                node: Record<string, unknown> | Array<unknown>; // Object or array
+                                indexOrName: number | string | undefined;
+                                depth: number;
+                                size: number; // Object's size or array's length
+                              }) => {
+                                if (params.indexOrName === undefined) {
+                                  // do not collapse root element
+                                  return false;
+                                }
+                                if (Array.isArray(params.node) && params.node.length === 0) {
+                                  return true;
+                                }
+                                if (params.depth > 3) return true;
+                                return false;
+                              }}
+                            />
                           )}
                         </Stack>
                       );

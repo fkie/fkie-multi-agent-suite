@@ -40,7 +40,7 @@ import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useQueue from "@/renderer/hooks/useQueue";
-import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
+import { LaunchNodeInfo, Result, RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
 import {
   EVENT_FILTER_NODES,
@@ -53,7 +53,7 @@ import { EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/pro
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
-import { TFileRange, TLaunchArg } from "@/types";
+import { JSONObject, JSONValue, TFileRange, TLaunchArg } from "@/types";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
@@ -618,27 +618,26 @@ export default function HostTreeViewPanel(): JSX.Element {
     // add kill on stop commands
     for (const node of nodes2stop) {
       if (node.pid) {
-        let killTime: number = -1;
+        let killTime: string | number | boolean | string[] | JSONObject | JSONValue | undefined = undefined;
         for (const launchInfo of node.launchInfo.values()) {
-          if (launchInfo.env?.MAS_KILL_ON_STOP) {
-            killTime = Number.parseInt(launchInfo.env.MAS_KILL_ON_STOP as string);
-            console.log(`SET KILL TIME TO: ${killTime}`);
-          } else {
-            for (const param of launchInfo.parameters || []) {
-              if (param.name.endsWith("/nm/kill_on_stop") || param.name.endsWith("/mas/kill_on_stop")) {
-                if (killTime === -1)
-                  killTime = typeof param.value === "string" ? Number.parseInt(param.value) : (param.value as number);
-              }
+          killTime = LaunchNodeInfo.getParam(launchInfo.parameters || [], node.name, "mas/kill_on_stop");
+          if (killTime === undefined) {
+            killTime = LaunchNodeInfo.getParam(launchInfo.parameters || [], node.name, "nm/kill_on_stop");
+          }
+          if (killTime === undefined) {
+            killTime = LaunchNodeInfo.getEnvParam(launchInfo.env, "MAS_KILL_ON_STOP");
+          }
+          if (killTime !== undefined) {
+            const killTimeNumber = Number.parseInt(killTime as string);
+            if (maxKillTime < killTimeNumber) {
+              maxKillTime = killTimeNumber;
             }
           }
         }
-        if (killTime > -1) {
-          if (maxKillTime < killTime) {
-            maxKillTime = killTime;
-          }
+        if (maxKillTime > -1) {
           setTimeout(() => {
             updateQueueMain([{ node, action: "KILL" }]);
-          }, killTime);
+          }, maxKillTime);
         }
       }
     }

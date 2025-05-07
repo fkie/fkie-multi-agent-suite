@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 
-import { JSONObject, TFileRange, TLaunchArg } from "@/types";
+import { JSONObject, JSONValue, TFileRange, TLaunchArg } from "@/types";
 import RosParameter from "./RosParameter";
 
 /**
@@ -123,5 +123,38 @@ export default class LaunchNodeInfo {
     this.launch_context_arg = launch_context_arg;
     this.launch_name = launch_name;
     this.composable_container = composable_container;
+  }
+
+  public static getParam(
+    params: RosParameter[],
+    nodeName: string,
+    name: string,
+    defaultValue: string | number | boolean | string[] | JSONObject | undefined = undefined
+  ): string | number | boolean | string[] | JSONObject | undefined {
+    let result = undefined;
+    for (const param of params || []) {
+      if (param.name === "/tmp/launch_params_*/**/ros__parameters") {
+        result = param.value?.[name];
+        if (result === undefined) {
+          result = param.value?.[nodeName]?.[name];
+        }
+      }
+      if (result !== undefined) {
+        return result;
+      }
+      if (param.name === name) {
+        return param.value;
+      }
+    }
+    return defaultValue;
+  }
+
+  public static getEnvParam(
+    env: JSONObject | null,
+    name: string,
+    defaultValue: string | number | boolean | string[] | JSONObject | JSONValue | undefined = undefined
+  ): string | number | boolean | string[] | JSONObject | JSONValue | undefined {
+    const result = env?.[name];
+    return result !== undefined ? result : defaultValue;
   }
 }

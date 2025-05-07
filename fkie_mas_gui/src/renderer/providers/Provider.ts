@@ -1273,7 +1273,11 @@ export default class Provider implements IProvider {
                   nodeGroup = { namespace: "", name: `{${env_capability_group}}` };
                 }
                 const parameters: RosParameter[] = launchNode.parameters || [];
+                // in ros2 we have a lot of temporary files with one parameter.
+                // We join the content of these files to one dictionary
+                let allJoinedParams = {};
                 for (const p of parameters) {
+                  let joinedParam = false;
                   if (p.type.indexOf("yaml") >= 0) {
                     let allNodes = p.value["/**"];
                     if (!allNodes && launchNode.node_name) {
@@ -1290,12 +1294,27 @@ export default class Provider implements IProvider {
                           const ns = "";
                           nodeGroup = { namespace: ns, name: `{${capabilityGroup}}` };
                         }
+                        allJoinedParams = { ...allJoinedParams, ...rosParameters };
+                        joinedParam = true;
                       }
                     }
                   } else if (p.name === "capability_group") {
                     nodeGroup = { namespace: "", name: `{${p.value}}` };
                   }
-                  nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
+                  if (!joinedParam) {
+                    nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
+                  }
+                }
+                if (Object.keys(allJoinedParams).length > 0) {
+                  nodeParameters.push(
+                    new RosParameter(
+                      launchNode.node_name || "",
+                      "/tmp/launch_params_*/**/ros__parameters",
+                      allJoinedParams,
+                      "yaml",
+                      this.id
+                    )
+                  );
                 }
               }
               if (launchNode.node_name && nodeGroup.name) {
