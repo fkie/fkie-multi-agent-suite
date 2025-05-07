@@ -944,7 +944,7 @@ class LaunchConfig(object):
                     entity._conditionally_included = _conditional_inclusion
                     entity._conditionally_included |= entity.condition is not None
                     declared_launch_arguments.append((entity, nested_ild_actions))
-                if isinstance(entity, launch.actions.ResetLaunchConfigurations):
+                if hasattr(launch.actions, "ResetLaunchConfigurations") and isinstance(entity, launch.actions.ResetLaunchConfigurations):
                     # Launch arguments after this cannot be set directly by top level arguments
                     return declared_launch_arguments
                 elif next_nested_ild_actions is not None:
