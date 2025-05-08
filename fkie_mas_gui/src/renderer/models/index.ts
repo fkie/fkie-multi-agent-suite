@@ -13,7 +13,7 @@ import PathItem from "./PathItem";
 import RosDuration from "./RosDuration";
 import RosNode, { RosNodeStatus, RosNodeStatusInfo } from "./RosNode";
 import RosPackage from "./RosPackage";
-import RosParameter from "./RosParameter";
+import RosParameter, { RosParameterRange, RosParameterValue } from "./RosParameter";
 import RosQos from "./RosQos";
 import RosService from "./RosService";
 import RosTopic, { EndpointInfo, IncompatibleQos } from "./RosTopic";
@@ -114,7 +114,15 @@ export {
   getFileExtension,
   getFileName,
   getMaxDiagnosticLevel,
-  rosMessageStructToString,
+  rosMessageStructToString
 };
 
-export type { EndpointInfo, IncompatibleQos, TRosMessageStruct, TServiceNodeInfo };
+  export type {
+    EndpointInfo,
+    IncompatibleQos,
+    RosParameterRange,
+    RosParameterValue,
+    TRosMessageStruct,
+    TServiceNodeInfo
+  };
+

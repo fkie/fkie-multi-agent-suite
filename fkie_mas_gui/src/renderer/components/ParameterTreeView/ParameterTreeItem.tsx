@@ -16,8 +16,7 @@ import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState 
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import RosContext from "@/renderer/context/RosContext";
-import { RosParameter } from "@/renderer/models";
-import { RosParameterRange } from "@/renderer/models/RosParameter";
+import { RosParameter, RosParameterRange, RosParameterValue } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
@@ -32,7 +31,7 @@ interface ParameterTreeItemProps {
 const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(function ParameterTreeItem(props, ref) {
   const { itemId, namespacePart, paramInfo, provider } = props;
 
-  function fixStringArray(val: string | number | boolean | string[]): string | number | boolean | string[] {
+  function fixStringArray(val: RosParameterValue): RosParameterValue {
     if (Array.isArray(val)) {
       return val.map((v) => {
         if (typeof v === "string") {
@@ -55,7 +54,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   const [showDescription, setShowDescription] = useState<boolean>(false);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
-  function updateValue(val: string | number | boolean | string[]): void {
+  function updateValue(val: RosParameterValue): void {
     setValue(fixStringArray(val));
   }
 
@@ -85,7 +84,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   // callback when updating a parameter
   async function updateParameter(
     parameter: RosParameter,
-    newValue: string | boolean | number | string[],
+    newValue: RosParameterValue,
     newType?: string
   ): Promise<void> {
     if (!provider.isAvailable()) return;

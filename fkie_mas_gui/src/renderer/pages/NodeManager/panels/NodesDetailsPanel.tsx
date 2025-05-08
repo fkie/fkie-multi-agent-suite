@@ -729,7 +729,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                                 <Typography variant="caption">
                                   <Stack direction="row" spacing={0.5}>
                                     <Box sx={{ fontWeight: "bold", color: "orange" }}>Kill an stop:</Box>
-                                    <Box sx={{ fontWeight: "normal" }}>{launchInfo.sigkill_timeout} sec</Box>
+                                    <Box sx={{ fontWeight: "normal" }}>{launchInfo.sigkill_timeout} ms</Box>
                                   </Stack>
                                 </Typography>
                               )}

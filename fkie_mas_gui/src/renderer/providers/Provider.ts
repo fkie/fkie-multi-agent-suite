@@ -31,6 +31,7 @@ import {
   RosNodeStatus,
   RosPackage,
   RosParameter,
+  RosParameterValue,
   RosService,
   RosTopic,
   RosTopicId,
@@ -1329,6 +1330,29 @@ export default class Provider implements IProvider {
               }
               nodes[idxLn].associations = associations;
               nodes[idxLn].parameters = nodeParameters;
+
+              // determine sigkill_timeout
+              if (!launchNode.sigkill_timeout || launchNode.sigkill_timeout <= 0) {
+                let killTime: RosParameterValue | undefined = undefined;
+                killTime = LaunchNodeInfo.getParam(
+                  nodeParameters || [],
+                  launchNode.node_name || "",
+                  "mas/kill_on_stop"
+                );
+                if (killTime === undefined) {
+                  killTime = LaunchNodeInfo.getParam(
+                    nodeParameters || [],
+                    launchNode.node_name || "",
+                    "nm/kill_on_stop"
+                  );
+                }
+                if (killTime === undefined) {
+                  killTime = LaunchNodeInfo.getEnvParam(launchNode.env, "MAS_KILL_ON_STOP");
+                }
+                if (killTime !== undefined) {
+                  nodes[idxLn].sigkill_timeout = Number.parseInt(killTime as string);
+                }
+              }
 
               //launchPaths
               //parameters

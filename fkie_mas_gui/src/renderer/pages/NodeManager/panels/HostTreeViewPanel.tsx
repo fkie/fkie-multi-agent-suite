@@ -40,7 +40,7 @@ import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useQueue from "@/renderer/hooks/useQueue";
-import { LaunchNodeInfo, Result, RosNode, RosNodeStatus } from "@/renderer/models";
+import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
 import {
   EVENT_FILTER_NODES,
@@ -53,7 +53,7 @@ import { EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/pro
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
-import { JSONObject, JSONValue, TFileRange, TLaunchArg } from "@/types";
+import { TFileRange, TLaunchArg } from "@/types";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
@@ -618,19 +618,10 @@ export default function HostTreeViewPanel(): JSX.Element {
     // add kill on stop commands
     for (const node of nodes2stop) {
       if (node.pid) {
-        let killTime: string | number | boolean | string[] | JSONObject | JSONValue | undefined = undefined;
         for (const launchInfo of node.launchInfo.values()) {
-          killTime = LaunchNodeInfo.getParam(launchInfo.parameters || [], node.name, "mas/kill_on_stop");
-          if (killTime === undefined) {
-            killTime = LaunchNodeInfo.getParam(launchInfo.parameters || [], node.name, "nm/kill_on_stop");
-          }
-          if (killTime === undefined) {
-            killTime = LaunchNodeInfo.getEnvParam(launchInfo.env, "MAS_KILL_ON_STOP");
-          }
-          if (killTime !== undefined) {
-            const killTimeNumber = Number.parseInt(killTime as string);
-            if (maxKillTime < killTimeNumber) {
-              maxKillTime = killTimeNumber;
+          if (launchInfo.sigkill_timeout) {
+            if (maxKillTime < launchInfo.sigkill_timeout) {
+              maxKillTime = launchInfo.sigkill_timeout;
             }
           }
         }

@@ -1,3 +1,4 @@
+import AutoDeleteIcon from "@mui/icons-material/AutoDelete";
 import CircleIcon from "@mui/icons-material/Circle";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
@@ -13,7 +14,7 @@ import { forwardRef, useContext, useEffect, useState } from "react";
 
 import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { DiagnosticLevel, LaunchCallService, RosNode, RosNodeStatus } from "@/renderer/models";
+import { DiagnosticLevel, LaunchCallService, LaunchNodeInfo, RosNode, RosNodeStatus } from "@/renderer/models";
 import { TRosMessageStruct } from "@/renderer/models/TRosMessageStruct";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
@@ -44,6 +45,10 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
+  const [timerPeriod, setTimerPeriod] = useState<number[]>([]);
+  const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
 
   function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel | undefined, isDarkMode = false): string {
     switch (diagnosticLevel) {
@@ -193,9 +198,6 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
     }
   }
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
-  const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
@@ -205,6 +207,22 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   useEffect(() => {
     setNodeIcon(getNodeIcon(node, isDarkMode));
     setLabelText(nodeNameWithoutNamespace(node));
+    setTimerPeriod(
+      node.launchInfo?.values().reduce((list: number[], li: LaunchNodeInfo) => {
+        if (li.timer_period && li.timer_period > 0) {
+          list.push(li.timer_period);
+        }
+        return list;
+      }, [])
+    );
+    setSigKillTimeout(
+      node.launchInfo?.values().reduce((list: number[], li: LaunchNodeInfo) => {
+        if (li.sigkill_timeout && li.sigkill_timeout > 0) {
+          list.push(li.sigkill_timeout);
+        }
+        return list;
+      }, [])
+    );
   }, [node, isDarkMode]);
 
   return (
@@ -214,7 +232,6 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       label={
         <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
           {nodeIcon}
-
           <Stack
             direction="row"
             // onClick={onClick}
@@ -278,16 +295,19 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               </IconButton>
             </Tooltip>
           )}
-          {node.status !== RosNodeStatus.RUNNING &&
-            [
-              ...(node.launchInfo?.values().filter((li) => {
-                return li.timer_period && li.timer_period > 0;
-              }) || []),
-            ].length > 0 && (
-              <Tooltip title="Delayed start due to configuration" placement="left">
-                <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
-              </Tooltip>
-            )}
+          {node.status !== RosNodeStatus.RUNNING && timerPeriod.length > 0 && (
+            <Tooltip title={`Delayed start due to configuration ${JSON.stringify(timerPeriod)} sec`} placement="left">
+              <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
+            </Tooltip>
+          )}
+          {node.status === RosNodeStatus.RUNNING && sigKillTimeout.length > 0 && (
+            <Tooltip
+              title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} sec`}
+              placement="left"
+            >
+              <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
+            </Tooltip>
+          )}{" "}
           {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
             <Tooltip title="Multiple Screens" placement="left">
               <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />

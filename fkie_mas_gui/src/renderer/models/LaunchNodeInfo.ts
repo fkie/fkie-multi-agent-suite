@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 
-import { JSONObject, JSONValue, TFileRange, TLaunchArg } from "@/types";
-import RosParameter from "./RosParameter";
+import { JSONObject, TFileRange, TLaunchArg } from "@/types";
+import RosParameter, { RosParameterValue } from "./RosParameter";
 
 /**
  * LaunchNodeInfo models info for ROS nodes that comes from launch file.
@@ -129,8 +129,8 @@ export default class LaunchNodeInfo {
     params: RosParameter[],
     nodeName: string,
     name: string,
-    defaultValue: string | number | boolean | string[] | JSONObject | undefined = undefined
-  ): string | number | boolean | string[] | JSONObject | undefined {
+    defaultValue: RosParameterValue | undefined = undefined
+  ): RosParameterValue | undefined {
     let result = undefined;
     for (const param of params || []) {
       if (param.name === "/tmp/launch_params_*/**/ros__parameters") {
@@ -152,8 +152,8 @@ export default class LaunchNodeInfo {
   public static getEnvParam(
     env: JSONObject | null,
     name: string,
-    defaultValue: string | number | boolean | string[] | JSONObject | JSONValue | undefined = undefined
-  ): string | number | boolean | string[] | JSONObject | JSONValue | undefined {
+    defaultValue: RosParameterValue | undefined = undefined
+  ): RosParameterValue | undefined {
     const result = env?.[name];
     return result !== undefined ? result : defaultValue;
   }
