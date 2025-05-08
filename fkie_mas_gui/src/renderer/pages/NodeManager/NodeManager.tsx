@@ -837,7 +837,7 @@ export default function NodeManager(): JSX.Element {
       settingsCtx.set("fontSize", currFontSize - 1);
     }
     if (event.ctrlKey && event.key === "0") {
-      settingsCtx.set("fontSize", currFontSize);
+      settingsCtx.set("fontSize", 14);
     }
   }
 
@@ -846,6 +846,7 @@ export default function NodeManager(): JSX.Element {
   return (
     <Stack
       onKeyDown={(event) => onKeyDown(event)}
+      tabIndex={0} // needed for onKeyDown
       style={{
         position: "absolute",
         left: 2,
