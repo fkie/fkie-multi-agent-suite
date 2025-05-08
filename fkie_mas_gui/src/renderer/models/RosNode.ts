@@ -165,6 +165,8 @@ export default class RosNode {
   lifecycle_state?: string | undefined;
   lifecycle_available_transitions: { label: string; id: number }[] | undefined;
 
+  ignore_timer: boolean | undefined;
+
   constructor(
     id = "",
     name = "",

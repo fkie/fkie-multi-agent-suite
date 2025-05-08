@@ -1721,7 +1721,8 @@ export default class Provider implements IProvider {
       "", // log format
       node.masteruri?.length > 0 ? node.masteruri : `${this.rosState.masteruri}`, // masteruri
       true, // reload global parameters
-      "" // cmd
+      "", // cmd
+      node.ignore_timer || false
     );
 
     const result = await this.makeCall(URI.ROS_LAUNCH_START_NODE, [request], true).then((value: TResultData) => {

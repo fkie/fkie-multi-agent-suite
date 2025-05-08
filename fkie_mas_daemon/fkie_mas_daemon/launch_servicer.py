@@ -381,7 +381,8 @@ class LaunchServicer(LoggingEventHandler):
             # get the list with needed launch args
             launch_context = LaunchContext(argv=sys.argv[1:])
             provided_args = [] if request.args is None else request.args
-            req_args = LaunchConfig.get_launch_arguments(launch_context, launchfile,  provided_args = None if request.request_args else provided_args)
+            req_args = LaunchConfig.get_launch_arguments(
+                launch_context, launchfile,  provided_args=None if request.request_args else provided_args)
             # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
@@ -391,7 +392,8 @@ class LaunchServicer(LoggingEventHandler):
                         Log.debug(
                             f"{self.__class__.__name__}: ..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; provided args {provided_arg_names}")
                         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
-            launch_arguments = [(arg.name, arg.value) if hasattr(arg, "value") else (arg.name, arg.default_value)  for arg in req_args ]
+            launch_arguments = [(arg.name, arg.value) if hasattr(arg, "value")
+                                else (arg.name, arg.default_value) for arg in req_args]
             launch_config = LaunchConfig(
                 launchfile, context=launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
             Log.debug(f"{self.__class__.__name__}: daemonuri: {daemonuri}")
@@ -605,7 +607,8 @@ class LaunchServicer(LoggingEventHandler):
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             try:
                 result.launch_files.append(launch_configs[0].filename)
-                executable_path = launch_configs[0].run_node(request.name)
+                executable_path = launch_configs[0].run_node(
+                    request.name, request.ignore_timer if hasattr(request, "ignore_timer") else False)
                 if executable_path:
                     if os.path.exists(executable_path):
                         if request.name not in self._node_exec:

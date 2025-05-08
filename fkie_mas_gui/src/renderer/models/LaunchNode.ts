@@ -43,6 +43,8 @@ export default class LaunchNode {
    */
   cmd_prefix: string | undefined;
 
+  ignore_timer: boolean = false;
+
   constructor(
     name: string,
     opt_binary: string,
@@ -51,7 +53,8 @@ export default class LaunchNode {
     logformat: string,
     masteruri: string,
     reload_global_param: boolean,
-    cmd_prefix: string
+    cmd_prefix: string,
+    ignore_timer: boolean
   ) {
     this.name = name;
     this.opt_binary = opt_binary;
@@ -61,5 +64,6 @@ export default class LaunchNode {
     this.masteruri = masteruri;
     this.reload_global_param = reload_global_param;
     this.cmd_prefix = cmd_prefix;
+    this.ignore_timer = ignore_timer;
   }
 }

@@ -25,6 +25,7 @@ import {
   Paper,
   Stack,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -450,7 +451,8 @@ export default function HostTreeViewPanel(): JSX.Element {
   function startNodesWithLaunchCheck(
     nodes: RosNode[],
     ignoreRunState: boolean = false,
-    useLaunchFiles: { [key: string]: string } = {}
+    useLaunchFiles: { [key: string]: string } = {},
+    ignoreTimer: boolean = false
   ): void {
     const withMultiLaunch: RosNode[] = [];
     const node2Start: RosNode[] = [];
@@ -466,6 +468,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     const add2start: (node: RosNode | null) => void = (node) => {
       // add only valid node and if it is not already added
       if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
+        node.ignore_timer = ignoreTimer;
         node2Start.push(node);
       }
     };
@@ -518,8 +521,8 @@ export default function HostTreeViewPanel(): JSX.Element {
   /**
    * Start nodes in the selected list
    */
-  function startSelectedNodes(): void {
-    startNodesWithLaunchCheck(getSelectedNodes());
+  function startSelectedNodes(ignoreTimer: boolean = false): void {
+    startNodesWithLaunchCheck(getSelectedNodes(), false, {}, ignoreTimer);
   }
 
   /**
@@ -580,7 +583,12 @@ export default function HostTreeViewPanel(): JSX.Element {
   /**
    * Stop nodes given in the arguments
    */
-  function stopNodes(nodes: RosNode[], onlyWithLaunch?: boolean, restart?: boolean): void {
+  function stopNodes(
+    nodes: RosNode[],
+    onlyWithLaunch?: boolean,
+    restart?: boolean,
+    ignoreTimer: boolean = false
+  ): void {
     const nodes2stop: RosNode[] = [];
     const skippedNodes: Map<string, string> = new Map();
     const nodeList = updateWithAssociations(nodes);
@@ -636,10 +644,10 @@ export default function HostTreeViewPanel(): JSX.Element {
       if (maxKillTime > -1) {
         // wait until all timers are expired before start nodes if kill timer was used while stop nodes
         setTimeout(() => {
-          startNodesWithLaunchCheck(nodeList, true);
+          startNodesWithLaunchCheck(nodeList, true, {}, ignoreTimer);
         }, maxKillTime + 500);
       } else {
-        startNodesWithLaunchCheck(nodeList, true);
+        startNodesWithLaunchCheck(nodeList, true, {}, ignoreTimer);
       }
     }
   }
@@ -662,15 +670,15 @@ export default function HostTreeViewPanel(): JSX.Element {
   /**
    * Restart nodes given in the arguments
    */
-  function restartNodes(nodeList: RosNode[], onlyWithLaunch: boolean): void {
-    stopNodes(nodeList, onlyWithLaunch, true); // => true, for restart
+  function restartNodes(nodeList: RosNode[], onlyWithLaunch: boolean, ignoreTimer: boolean = false): void {
+    stopNodes(nodeList, onlyWithLaunch, true, ignoreTimer); // => true, for restart
   }
 
   /**
    * Restart nodes in the selected list
    */
-  function restartSelectedNodes(): void {
-    restartNodes(getSelectedNodes(), true);
+  function restartSelectedNodes(ignoreTimer: boolean = false): void {
+    restartNodes(getSelectedNodes(), true, ignoreTimer);
   }
 
   /**
@@ -969,7 +977,19 @@ export default function HostTreeViewPanel(): JSX.Element {
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
         <Tooltip
-          title="Start"
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Start selected nodes
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Shift:
+                </Typography>
+                <Typography fontSize={"inherit"}>ignore start timer</Typography>
+              </Stack>
+            </div>
+          }
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -979,8 +999,8 @@ export default function HostTreeViewPanel(): JSX.Element {
             <IconButton
               size="medium"
               aria-label="Start"
-              onClick={() => {
-                startSelectedNodes();
+              onClick={(event) => {
+                startSelectedNodes(event.nativeEvent.shiftKey);
               }}
               disabled={selectedNodes.length === 0}
             >
@@ -989,7 +1009,25 @@ export default function HostTreeViewPanel(): JSX.Element {
           </span>
         </Tooltip>
         <Tooltip
-          title="Stop; Shift: kill; Ctrl+Shift: Unregister ROS1 nodes"
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Stop selected nodes
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Shift:
+                </Typography>
+                <Typography fontSize={"inherit"}>kill</Typography>
+              </Stack>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Ctrl+Shift:
+                </Typography>
+                <Typography fontSize={"inherit"}>Unregister ROS1 nodes</Typography>
+              </Stack>
+            </div>
+          }
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1017,7 +1055,19 @@ export default function HostTreeViewPanel(): JSX.Element {
           </span>
         </Tooltip>
         <Tooltip
-          title="Restart"
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Restart selected nodes
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Shift:
+                </Typography>
+                <Typography fontSize={"inherit"}>ignore start timer</Typography>
+              </Stack>
+            </div>
+          }
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1027,8 +1077,8 @@ export default function HostTreeViewPanel(): JSX.Element {
             <IconButton
               size="medium"
               aria-label="Restart"
-              onClick={() => {
-                restartSelectedNodes();
+              onClick={(event) => {
+                restartSelectedNodes(event.nativeEvent.shiftKey);
               }}
               disabled={selectedNodes.length === 0}
             >
@@ -1071,7 +1121,19 @@ export default function HostTreeViewPanel(): JSX.Element {
           </Stack>
         )}
         <Tooltip
-          title="Edit (shift+click for alternative open location)"
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Edit
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Shift+click:
+                </Typography>
+                <Typography fontSize={"inherit"}>alternative open location</Typography>
+              </Stack>
+            </div>
+          }
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
@@ -1151,7 +1213,23 @@ export default function HostTreeViewPanel(): JSX.Element {
           </Tooltip>
         )}
         <Divider />
-        <Tooltip title="Screen (shift+click for alternative open location)" placement="left" disableInteractive>
+        <Tooltip
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Open screen of the node
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Shift+click:
+                </Typography>
+                <Typography fontSize={"inherit"}>alternative open location</Typography>
+              </Stack>
+            </div>
+          }
+          placement="left"
+          disableInteractive
+        >
           <span>
             <IconButton
               size="medium"
@@ -1265,7 +1343,23 @@ export default function HostTreeViewPanel(): JSX.Element {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title="Log (shift+click for alternative open location)" placement="left" disableInteractive>
+        <Tooltip
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Open log of the node
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                  Shift+click:
+                </Typography>
+                <Typography fontSize={"inherit"}>alternative open location</Typography>
+              </Stack>
+            </div>
+          }
+          placement="left"
+          disableInteractive
+        >
           <span>
             <IconButton
               size="medium"

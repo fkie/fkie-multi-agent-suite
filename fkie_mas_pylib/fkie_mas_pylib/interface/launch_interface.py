@@ -298,7 +298,9 @@ class LaunchNode:
                  logformat: str = '',
                  masteruri: str = '',
                  reload_global_param: bool = False,
-                 cmd_prefix: str = '') -> None:
+                 cmd_prefix: str = '',
+                 ignore_timer: bool = False
+                 ) -> None:
         self.name = name
         self.opt_binary = opt_binary
         self.opt_launch = opt_launch
@@ -307,6 +309,7 @@ class LaunchNode:
         self.masteruri = masteruri
         self.reload_global_param = reload_global_param
         self.cmd_prefix = cmd_prefix
+        self.ignore_timer = ignore_timer
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
