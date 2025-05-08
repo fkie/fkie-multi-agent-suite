@@ -89,6 +89,7 @@ const darkThemeDef: ThemeOptionsExt = {
             display: "block",
             color: "#d1d1d1",
             textAlign: "left",
+            fontSize: "0.8em",
           },
           ".json-view .json-view--property": {
             color: jsonProperty,

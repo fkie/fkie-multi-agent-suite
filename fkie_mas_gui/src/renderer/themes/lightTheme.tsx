@@ -81,6 +81,7 @@ const lightThemeDef: ThemeOptionsExt = {
             display: "block",
             color: "#4d4d4d",
             textAlign: "left",
+            fontSize: "0.8em",
           },
           ".json-view .json-view--property": {
             color: jsonProperty,
