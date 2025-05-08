@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.6 (08.05.2025)
+------------------
+* Skip timer on start nodes if shift was pressed
+* Fixed load launch files in ros galactic
+
 4.4.5 (06.05.2025)
 ------------------
 * Fixed load with default parameters

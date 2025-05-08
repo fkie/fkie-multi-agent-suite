@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.3.6 - 08.05.2025
+
+Skip timer on start nodes if shift was pressed
+Fixed change font size with Ctrl+{+,-,0}
+Added an indicator if sigkill timeout is defined
+Show parameter of different files in one dictionary
+Fixed load launch files in ros galactic
+
 ## 4.3.5 - 06.05.2025
 
 Fixed load with default parameters
