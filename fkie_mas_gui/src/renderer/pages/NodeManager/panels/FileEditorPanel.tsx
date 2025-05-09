@@ -1,4 +1,6 @@
 import * as Monaco from "@monaco-editor/react";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import CloudSyncOutlinedIcon from "@mui/icons-material/CloudSyncOutlined";
 import FolderCopyOutlinedIcon from "@mui/icons-material/FolderCopyOutlined";
 import SaveAltOutlinedIcon from "@mui/icons-material/SaveAltOutlined";
@@ -72,6 +74,11 @@ type TFileItem = {
   file: FileItem;
 };
 
+type THistoryModel = {
+  uriPath: string;
+  range: TFileRange | null;
+  launchArgs: TLaunchArg[];
+};
 interface FileEditorPanelProps {
   tabId: string;
   providerId: string;
@@ -157,6 +164,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [selectParentFiles, setSelectParentFiles] = useState<LaunchIncludedFile[]>([]);
+  const [historyModels, setHistoryModels] = useState<THistoryModel[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   // const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
 
@@ -320,7 +329,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       uriPath: string,
       range: TFileRange | null = null,
       launchArgs: TLaunchArg[] = [],
-      forceReload: boolean = false
+      forceReload: boolean = false,
+      appendToHistory: boolean = true
     ): Promise<boolean> => {
       if (!uriPath) return false;
       setCurrentFile({ name: getFileName(uriPath), requesting: true });
@@ -372,6 +382,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         setSelectionRange(range);
       }
       setCurrentLaunchArgs(launchArgs);
+      if (appendToHistory) {
+        const curMod = { uriPath: result.model.uri.path, range: range, launchArgs: launchArgs };
+        setHistoryModels((prev) => [...prev, curMod]);
+      }
+
       return true;
     },
     [
@@ -383,8 +398,33 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       monacoCtx.getModel,
       setActiveModel,
       updateModifiedFiles,
+      setHistoryModels,
     ]
   );
+
+  useEffect(() => {
+    // open one from history
+    const historyModel = historyModels.at(historyIndex);
+    if (historyModel) setEditorModel(historyModel.uriPath, historyModel.range, historyModel.launchArgs, false, false);
+  }, [historyIndex]);
+
+  const openPrevModel = useCallback(() => {
+    setHistoryIndex((prev) => {
+      if (prev === -1 && historyModels.length > 1) {
+        return historyModels.length - 2;
+      }
+      if (prev > 0) {
+        return prev - 1;
+      }
+      return prev;
+    });
+  }, [historyIndex, historyModels]);
+
+  const openNextModel = useCallback(() => {
+    setHistoryIndex((prev) => {
+      return prev < historyModels.length - 1 ? prev + 1 : prev;
+    });
+  }, [historyIndex, historyModels]);
 
   /** select node definition on event. */
   useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data: TEventEditorSelectRange) => {
@@ -1027,6 +1067,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       height="100%"
       width="100%"
       onKeyDown={(event) => onKeyDown(event)}
+      onMouseDown={(event) => {
+        if (event.button === 3) {
+          openPrevModel();
+        } else if (event.button === 4) {
+          openNextModel();
+        }
+      }}
       ref={panelRef as ForwardedRef<HTMLDivElement>}
       overflow="auto"
     >
@@ -1195,6 +1242,35 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               })}
               id="path-options"
             />
+
+            <Tooltip title="go back" disableInteractive>
+              <span>
+                <IconButton
+                  edge="end"
+                  aria-label="preview"
+                  disabled={historyModels.length <= 1}
+                  onClick={() => {
+                    openPrevModel();
+                  }}
+                >
+                  <ArrowBackIosNewIcon style={{ fontSize: "0.8em" }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="go forward" disableInteractive>
+              <span>
+                <IconButton
+                  edge="end"
+                  aria-label="preview"
+                  disabled={historyIndex === -1 || historyModels.length - historyIndex <= 1}
+                  onClick={() => {
+                    openNextModel();
+                  }}
+                >
+                  <ArrowForwardIosIcon style={{ fontSize: "0.8em" }} />
+                </IconButton>
+              </span>
+            </Tooltip>
 
             <Tooltip title="Drop unsaved changes and reload current file from host" disableInteractive>
               <IconButton
