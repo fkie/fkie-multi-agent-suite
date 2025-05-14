@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.3.7 - 14.05.2025
+
+Fixed load composable nodes
+Added functionality to go back or forward between seen files
+
 ## 4.3.6 - 08.05.2025
 
 Skip timer on start nodes if shift was pressed

@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.7 (14.05.2025)
+------------------
+* Fixed load composable nodes
+
 4.4.6 (08.05.2025)
 ------------------
 * Skip timer on start nodes if shift was pressed
