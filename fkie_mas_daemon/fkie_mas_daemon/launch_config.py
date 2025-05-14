@@ -727,10 +727,10 @@ class LaunchConfig(object):
 
                     if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
                         for cn in entity._ComposableNodeContainer__composable_node_descriptions:
-                            node = LaunchNodeWrapper(cn, current_launch_description, self.context,
+                            c_node = LaunchNodeWrapper(cn, current_launch_description, self.context,
                                                      composable_container=node.unique_name, environment=environment, position_in_file=position_in_file)
-                            node.timer_period = timer_period
-                            self._nodes.append(node)
+                            c_node.timer_period = timer_period
+                            self._nodes.append(c_node)
                 except (SubstitutionFailure, PackageNotFoundError) as err:
                     raise err
                 except:
