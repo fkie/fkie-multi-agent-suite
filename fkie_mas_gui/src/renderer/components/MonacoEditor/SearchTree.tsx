@@ -150,7 +150,7 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
         expandedItems={expandedSearchResults}
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
-        onExpandedItemsChange={(_event: React.SyntheticEvent, itemIds: string[]) => setExpandedSearchResults(itemIds)}
+        onExpandedItemsChange={(_event: React.SyntheticEvent | null, itemIds: string[]) => setExpandedSearchResults(itemIds)}
         onSelectedItemsChange={(_event, itemId) => {
           if (itemId) {
             const index = expandedSearchResults.indexOf(itemId);

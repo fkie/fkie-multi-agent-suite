@@ -2,9 +2,9 @@ import CircleIcon from "@mui/icons-material/Circle";
 import { default as ContrastIcon } from "@mui/icons-material/Contrast";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
-import { TreeItem2SlotProps } from "@mui/x-tree-view/TreeItem2";
-import { UseTreeItem2ContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem2";
-import { UseTreeItem2IconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem2/useTreeItem2.types";
+import { TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
+import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
+import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
 import { forwardRef, LegacyRef } from "react";
 
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
@@ -269,14 +269,14 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
 
   // avoid selection if collapse icon was clicked
   let toggled = false;
-  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
     event.defaultMuiPrevented = toggled;
     toggled = false;
   };
 
-  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
     toggled = true;
   };
 
@@ -289,7 +289,7 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
           label: { onClick: handleLabelClick },
           content: { onClick: handleContentClick },
           iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItem2SlotProps
+        } as TreeItemSlotProps
       }
       onDoubleClick={(event) => onDoubleClick(event, itemId)}
       label={

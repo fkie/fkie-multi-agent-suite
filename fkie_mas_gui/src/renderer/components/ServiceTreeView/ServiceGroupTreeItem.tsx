@@ -1,8 +1,8 @@
 import { Box, Stack, Typography } from "@mui/material";
 import {
-  TreeItem2SlotProps,
-  UseTreeItem2ContentSlotOwnProps,
-  UseTreeItem2IconContainerSlotOwnProps,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useContext } from "react";
 
@@ -25,14 +25,14 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
 
     // avoid selection if collapse icon was clicked
     let toggled = false;
-    const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+    const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
       event.defaultMuiPrevented = toggled;
       toggled = false;
     };
 
-    const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+    const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-    const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+    const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
       toggled = true;
     };
 
@@ -45,7 +45,7 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
             label: { onClick: handleLabelClick },
             content: { onClick: handleContentClick },
             iconContainer: { onClick: handleIconContainerClick },
-          } as TreeItem2SlotProps
+          } as TreeItemSlotProps
         }
         label={
           <Stack direction="column">

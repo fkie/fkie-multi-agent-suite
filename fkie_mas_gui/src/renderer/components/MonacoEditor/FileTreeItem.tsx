@@ -3,11 +3,11 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
 import {
-  TreeItem2,
-  TreeItem2SlotProps,
-  treeItemClasses,
-  UseTreeItem2ContentSlotOwnProps,
-  UseTreeItem2IconContainerSlotOwnProps,
+    TreeItem,
+    treeItemClasses,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useContext } from "react";
 import { emitCustomEvent } from "react-custom-events";
@@ -20,7 +20,7 @@ import { TLaunchArg } from "@/types";
 import fileIconStyles from "./FileIconStyles";
 import { TLaunchIncludeItem } from "./types";
 
-const FileTreeItemRoot = styled(TreeItem2)(({ theme }) => ({
+const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
   [`& .${treeItemClasses.content}`]: {
     color: theme.palette.text.secondary,
@@ -97,14 +97,14 @@ const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function File
 
   // avoid selection if collapse icon was clicked
   let toggled = false;
-  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
     event.defaultMuiPrevented = toggled;
     toggled = false;
   };
 
-  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
     toggled = true;
   };
 
@@ -117,7 +117,7 @@ const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function File
           label: { onClick: handleLabelClick },
           content: { onClick: handleContentClick },
           iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItem2SlotProps
+        } as TreeItemSlotProps
       }
       label={
         <Stack direction="column">

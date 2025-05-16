@@ -198,7 +198,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   /**
    * Callback when items on the tree are expanded/retracted
    */
-  function handleToggle(_event: React.SyntheticEvent, nodeIds: string[]): void {
+  function handleToggle(_event: React.SyntheticEvent | null, nodeIds: string[]): void {
     setExpanded(nodeIds);
   }
 
@@ -383,7 +383,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    * Callback when items on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (_event: React.SyntheticEvent, itemIds: string[]): void => {
+    (_event: React.SyntheticEvent | null, itemIds: string[]): void => {
       // update selected state
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
@@ -649,9 +649,10 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         expandedItems={expanded}
         // sx={{ height: '100%' }}
         selectedItems={selectedItems}
-        onExpandedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleToggle(event, itemIds)}
-        onSelectedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleSelect(event, itemIds)}
+        onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleToggle(event, itemIds)}
+        onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleSelect(event, itemIds)}
         expansionTrigger={"iconContainer"}
+        // selectionPropagation={{ parents: true, descendants: true }}
       >
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           let providerIsAvailable = false;

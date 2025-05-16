@@ -50,7 +50,7 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
    * Callback when items on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (_event: React.SyntheticEvent, itemId: string | null) => {
+    (_event: React.SyntheticEvent | null, itemId: string | null) => {
       setSelectedItems(itemId);
       onNodeSelect(itemId ? itemId : "");
     },
@@ -170,8 +170,10 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
         // use either the expanded state or the key of the file directory (expand the first layer)
         expandedItems={expanded.length > 0 ? expanded : Object.keys(packageItemsTree)}
         selectedItems={selectedItems}
-        onExpandedItemsChange={(event: React.SyntheticEvent, itemIds: string[]) => handleToggle(event, itemIds)}
-        onSelectedItemsChange={(event: React.SyntheticEvent, itemIds: string | null) => handleSelect(event, itemIds)}
+        onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleToggle(event, itemIds)}
+        onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string | null) =>
+          handleSelect(event, itemIds)
+        }
         multiSelect={false}
       >
         {Object.entries(packageItemsTree).map(([packageName, packageTree]) => {

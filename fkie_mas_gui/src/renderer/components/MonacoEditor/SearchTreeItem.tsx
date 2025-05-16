@@ -1,15 +1,15 @@
 import { Stack, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
-  TreeItem2,
-  TreeItem2SlotProps,
-  treeItemClasses,
-  UseTreeItem2ContentSlotOwnProps,
-  UseTreeItem2IconContainerSlotOwnProps,
+    TreeItem,
+    treeItemClasses,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef } from "react";
 
-const SearchTreeItemRoot = styled(TreeItem2)(({ theme }) => ({
+const SearchTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
   [`& .${treeItemClasses.content}`]: {
     color: theme.palette.text.secondary,
@@ -53,14 +53,14 @@ const SearchFileTreeItem = forwardRef<HTMLDivElement, SearchFileTreeItemProps>(f
 
   // avoid selection if collapse icon was clicked
   let toggled = false;
-  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
     event.defaultMuiPrevented = toggled;
     toggled = false;
   };
 
-  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
     toggled = true;
   };
 
@@ -73,7 +73,7 @@ const SearchFileTreeItem = forwardRef<HTMLDivElement, SearchFileTreeItemProps>(f
           label: { onClick: handleLabelClick },
           content: { onClick: handleContentClick },
           iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItem2SlotProps
+        } as TreeItemSlotProps
       }
       label={
         <Stack direction="column">
@@ -108,14 +108,14 @@ const SearchResultTreeItem = forwardRef<HTMLDivElement, SearchResultTreeItemProp
 
     // avoid selection if collapse icon was clicked
     let toggled = false;
-    const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+    const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
       event.defaultMuiPrevented = toggled;
       toggled = false;
     };
 
-    const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+    const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-    const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+    const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
       toggled = true;
     };
 
@@ -128,7 +128,7 @@ const SearchResultTreeItem = forwardRef<HTMLDivElement, SearchResultTreeItemProp
             label: { onClick: handleLabelClick },
             content: { onClick: handleContentClick },
             iconContainer: { onClick: handleIconContainerClick },
-          } as TreeItem2SlotProps
+          } as TreeItemSlotProps
         }
         label={
           <Stack direction="column">

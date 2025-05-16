@@ -1,9 +1,9 @@
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import {
-  TreeItem2SlotProps,
-  UseTreeItem2ContentSlotOwnProps,
-  UseTreeItem2IconContainerSlotOwnProps,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useContext } from "react";
 
@@ -26,14 +26,14 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
 
   // avoid selection if collapse icon was clicked
   let toggled = false;
-  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
     event.defaultMuiPrevented = toggled;
     toggled = false;
   };
 
-  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
     toggled = true;
   };
 
@@ -46,7 +46,7 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
           label: { onClick: handleLabelClick },
           content: { onClick: handleContentClick },
           iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItem2SlotProps
+        } as TreeItemSlotProps
       }
       label={
         <Stack direction="column">

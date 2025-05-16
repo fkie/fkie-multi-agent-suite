@@ -2,9 +2,9 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Box, CircularProgress, Stack, SvgIconTypeMap, Tooltip, Typography } from "@mui/material";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
-  TreeItem2SlotProps,
-  UseTreeItem2ContentSlotOwnProps,
-  UseTreeItem2IconContainerSlotOwnProps,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useCallback, useContext } from "react";
 
@@ -56,14 +56,14 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
 
     // avoid selection if collapse icon was clicked
     let toggled = false;
-    const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+    const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
       event.defaultMuiPrevented = toggled;
       toggled = false;
     };
 
-    const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+    const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-    const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+    const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
       toggled = true;
     };
     return (
@@ -75,7 +75,7 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
             label: { onClick: handleLabelClick },
             content: { onClick: handleContentClick },
             iconContainer: { onClick: handleIconContainerClick },
-          } as TreeItem2SlotProps
+          } as TreeItemSlotProps
         }
         sx={getHostStyle()}
         label={

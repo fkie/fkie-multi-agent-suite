@@ -1,8 +1,8 @@
 import { grey } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
-import { TreeItem2, treeItemClasses } from "@mui/x-tree-view";
+import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 
-const StyledTreeItem = styled(TreeItem2)(({ theme }) => ({
+const StyledTreeItem = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
   [`& .${treeItemClasses.content}`]: {
     color: theme.palette.text.secondary,

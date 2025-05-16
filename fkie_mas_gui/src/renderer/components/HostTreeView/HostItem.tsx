@@ -3,22 +3,22 @@ import ComputerIcon from "@mui/icons-material/Computer";
 import HideSourceIcon from "@mui/icons-material/HideSource";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
-  Box,
-  ClickAwayListener,
-  Grow,
-  IconButton,
-  MenuItem,
-  MenuList,
-  Paper,
-  Popper,
-  Stack,
-  Tooltip,
+    Box,
+    ClickAwayListener,
+    Grow,
+    IconButton,
+    MenuItem,
+    MenuList,
+    Paper,
+    Popper,
+    Stack,
+    Tooltip,
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
-  TreeItem2SlotProps,
-  UseTreeItem2ContentSlotOwnProps,
-  UseTreeItem2IconContainerSlotOwnProps,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
@@ -186,14 +186,14 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
 
   // avoid selection if collapse icon was clicked
   let toggled = false;
-  const handleContentClick: UseTreeItem2ContentSlotOwnProps["onClick"] = (event) => {
+  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
     event.defaultMuiPrevented = toggled;
     toggled = false;
   };
 
-  const handleLabelClick: UseTreeItem2ContentSlotOwnProps["onClick"] = () => {};
+  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-  const handleIconContainerClick: UseTreeItem2IconContainerSlotOwnProps["onClick"] = () => {
+  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
     toggled = true;
   };
 
@@ -205,7 +205,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
           label: { onClick: handleLabelClick },
           content: { onClick: handleContentClick },
           iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItem2SlotProps
+        } as TreeItemSlotProps
       }
       sx={getHostStyle(provider)}
       onDoubleClick={(event) => onDoubleClick(event, provider.id)}

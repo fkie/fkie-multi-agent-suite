@@ -133,7 +133,7 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
       expansionTrigger={"iconContainer"}
       expandedItems={expandedExplorerResults}
       slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-      onExpandedItemsChange={(_event: React.SyntheticEvent, itemIds: string[]) => setExpandedExplorerResults(itemIds)}
+      onExpandedItemsChange={(_event: React.SyntheticEvent | null, itemIds: string[]) => setExpandedExplorerResults(itemIds)}
       onSelectedItemsChange={(_event, itemId) => {
         if (itemId) {
           const index = expandedExplorerResults.indexOf(itemId);
