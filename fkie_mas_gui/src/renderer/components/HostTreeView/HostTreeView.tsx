@@ -151,7 +151,9 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const treePath = `${a.slice(0, -1).join("/")}#${nodeNameWithoutNamespace(node)}-${node.guid}`;
+              const guidStr = node.guid ? `-${node.guid}` : "";
+              const groupName = a.slice(0, -1).join("/");
+              const treePath = `${groupName}#${nodeNameWithoutNamespace(node)}${guidStr}`;
               r.nodeTree.push({
                 treePath,
                 children: r[name].nodeTree,
@@ -343,12 +345,21 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     [rosCtx.nodeMap]
   );
 
+  function allChildrenSelected(groupName: string, children: string[]): boolean {
+    // get all nodes of the group and check if they are all in children
+    const childrenIds = keyNodeList.filter((node) => node.key.startsWith(`${groupName}`)).map((node) => node.key);
+    const notInAllIds = childrenIds.filter((childId) => children.indexOf(childId) === -1);
+    return notInAllIds.length === 1;
+  }
+
   /**
    * Function to get all the IDs belonging to a list of parent IDs
    */
   const getParentAndChildrenIds = useCallback(
     (parentIds: string[]): string[] => {
       let allIds = parentIds;
+      let updatedGroup = false;
+      // get all children IDs
       for (const id of parentIds) {
         const parsedId = id.split("#");
         // a group (with children) must have 1 substring
@@ -359,6 +370,34 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             allIds = [...allIds, ...childrenIds];
           }
         }
+      }
+      // get all parent IDs with all children selected
+      for (const id of allIds) {
+        const parsedId = id.split("#");
+        // a group (with children) must have 1 substring
+        if (parsedId.length === 1) {
+          const parentGroup = parsedId[0].slice(0, parsedId[0].lastIndexOf("/"));
+          // add parent group to the list of IDs if it is not already there and has all its children selected
+          if (allChildrenSelected(parentGroup, allIds)) {
+            allIds.push(parentGroup);
+            updatedGroup = true;
+          }
+        } else {
+          // we have a node, get the group name and check if it is in allIds
+          // or if all nodes of the group are in the allIds, select it too.
+          const groupName = parsedId[0];
+          if (allIds.indexOf(groupName) === -1) {
+            // add if all children are in allIds
+            if (allChildrenSelected(groupName, allIds)) {
+              allIds.push(groupName);
+              updatedGroup = true;
+            }
+          }
+        }
+      }
+      if (updatedGroup) {
+        // if a new group was added we have to check if parent group has all children selected.
+        allIds = getParentAndChildrenIds(allIds);
       }
       // remove multiple copies of a selected item
       return [...new Set(allIds)];
@@ -394,7 +433,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           // if a group was previously selected but not anymore, deselect all its children
           for (const prevId of prevSelected) {
             const prevParsedId = prevId.split("#");
-            if (prevParsedId.length === 2 && !selectedIds.includes(prevId)) {
+            if (prevParsedId.length === 1 && !selectedIds.includes(prevId)) {
               selectedIds = selectedIds.filter((e) => !e.startsWith(prevId));
             }
           }
@@ -561,7 +600,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           return kNode.idGlobal && treeNodes.includes(kNode.idGlobal);
         })
         .map((kNode) => kNode.key);
-      setSelectedItems(newSelItems);
+      setSelectedItems(getParentAndChildrenIds(newSelItems));
     },
     [keyNodeList, rosCtx.mapProviderRosNodes]
   );
