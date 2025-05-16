@@ -24,7 +24,7 @@ import {
   Divider,
   FormControlLabel,
   FormGroup,
-  Grid,
+  GridLegacy,
   IconButton,
   Link,
   Paper,
@@ -859,8 +859,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                           id="discovery_panel-header"
                           sx={{ pl: 0 }}
                         >
-                          <Grid container>
-                            <Grid item xs={4}>
+                          <GridLegacy container>
+                            <GridLegacy item xs={4}>
                               <FormGroup
                                 aria-label="position"
                                 row
@@ -882,8 +882,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   labelPlacement="end"
                                 />
                               </FormGroup>
-                            </Grid>
-                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                            </GridLegacy>
+                            <GridLegacy item xs={6} sx={{ alignSelf: "center" }}>
                               <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
@@ -910,8 +910,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   {`Robot Hosts: [${getRobotHosts().join(",")}]`}
                                 </Typography>
                               </Stack>
-                            </Grid>
-                          </Grid>
+                            </GridLegacy>
+                          </GridLegacy>
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>
@@ -990,8 +990,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                           id="sync_panel-header"
                           sx={{ pl: 0 }}
                         >
-                          <Grid container>
-                            <Grid item xs={4}>
+                          <GridLegacy container>
+                            <GridLegacy item xs={4}>
                               <FormGroup
                                 aria-label="position"
                                 row
@@ -1014,8 +1014,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   labelPlacement="end"
                                 />
                               </FormGroup>
-                            </Grid>
-                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                            </GridLegacy>
+                            <GridLegacy item xs={6} sx={{ alignSelf: "center" }}>
                               <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
@@ -1042,8 +1042,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   {`SyncTopics: [${startParameter.sync.syncTopics.join()}]`}
                                 </Typography>
                               </Stack>
-                            </Grid>
-                          </Grid>
+                            </GridLegacy>
+                          </GridLegacy>
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>
@@ -1099,8 +1099,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                         sx={{ pl: 0, margin: 0 }}
                         style={{ margin: 0 }}
                       >
-                        <Grid container>
-                          <Grid item xs={4}>
+                        <GridLegacy container>
+                          <GridLegacy item xs={4}>
                             <Stack
                               direction="row"
                               style={{ marginLeft: 0, paddingLeft: 0 }}
@@ -1160,8 +1160,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                 </Stack>
                               </Tooltip>
                             </Stack>
-                          </Grid>
-                          <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                          </GridLegacy>
+                          <GridLegacy item xs={6} sx={{ alignSelf: "center" }}>
                             <Stack direction="column" sx={{ display: "grid" }}>
                               <Typography
                                 variant="body2"
@@ -1186,8 +1186,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                 {`Port: ${startParameter.terminal.port}`}
                               </Typography>
                             </Stack>
-                          </Grid>
-                        </Grid>
+                          </GridLegacy>
+                        </GridLegacy>
                       </AccordionSummary>
                       <AccordionDetails>
                         <TextField
@@ -1222,8 +1222,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                           id="master-uri-header"
                           sx={{ pl: 0 }}
                         >
-                          <Grid container>
-                            <Grid item xs={4}>
+                          <GridLegacy container>
+                            <GridLegacy item xs={4}>
                               <FormGroup
                                 aria-label="position"
                                 row
@@ -1254,8 +1254,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   labelPlacement="end"
                                 />
                               </FormGroup>
-                            </Grid>
-                            <Grid item xs={6} sx={{ alignSelf: "center" }}>
+                            </GridLegacy>
+                            <GridLegacy item xs={6} sx={{ alignSelf: "center" }}>
                               <Stack direction="column" sx={{ display: "grid" }}>
                                 <Typography
                                   noWrap
@@ -1270,8 +1270,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                                   {`${startParameter.ros1MasterUri.uri}`}
                                 </Typography>
                               </Stack>
-                            </Grid>
-                          </Grid>
+                            </GridLegacy>
+                          </GridLegacy>
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack direction="column" divider={<Divider orientation="vertical" />}>

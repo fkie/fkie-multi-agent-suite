@@ -1,7 +1,7 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
   Box,
-  Grid2,
+  Grid,
   IconButton,
   Input,
   Menu,
@@ -367,8 +367,8 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             );
           }}
         >
-          <Grid2 container spacing={2} sx={{ flexGrow: 1 }}>
-            <Grid2 sx={{ flexGrow: 1 }} size={4}>
+          <Grid container spacing={2} sx={{ flexGrow: 1 }}>
+            <Grid sx={{ flexGrow: 1 }} size={4}>
               <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
                 <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
                   {namespace}
@@ -432,8 +432,8 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                   </Stack>
                 )}
               </Stack>
-            </Grid2>
-            <Grid2 size={6}>
+            </Grid>
+            <Grid size={6}>
               <Stack direction="row" sx={{ alignItems: "center" }}>
                 {provider.rosVersion === "1" && parameterType ? (
                   <OverflowMenu
@@ -452,8 +452,8 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
                 )}
                 {paramInfo && renderInput}
               </Stack>
-            </Grid2>
-          </Grid2>
+            </Grid>
+          </Grid>
           <Menu
             open={contextMenu != null}
             onClose={() => setContextMenu(null)}
