@@ -139,8 +139,8 @@ export default function NodeManager(): JSX.Element {
     // biome-ignore lint/complexity/noForEach: <explanation>
     layout.children.forEach((item) => {
       if (item.type === "tab") {
-        if (item.enableFloat !== !window.commandExecutor) {
-          item.enableFloat = !window.commandExecutor;
+        if (item.enablePopout !== !window.commandExecutor) {
+          item.enablePopout = !window.commandExecutor;
           result = true;
         }
       }
@@ -265,7 +265,7 @@ export default function NodeManager(): JSX.Element {
           component: data.id,
           panelGroup: data.panelGroup,
           enableClose: data.closable,
-          enableFloat: !window.commandExecutor,
+          enablePopout: !window.commandExecutor,
           config: data.config,
         };
         layoutComponents[data.id] = data.component;
@@ -369,7 +369,7 @@ export default function NodeManager(): JSX.Element {
             .getBorders()
             .find((b) => b.getLocation() === panelId.location)
             ?.getChildren()
-            .map((c) => c.isVisible())
+            .map((c) => (c as TabNode).isVisible())
             .includes(true);
 
           if (shouldSelectNewTab) {

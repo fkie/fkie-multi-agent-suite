@@ -226,7 +226,7 @@ function ExternalAppsModal(ref): JSX.Element {
       >
         <IconButton
           sx={{
-            padding: "0.8em",
+            padding: "0em",
             color: settingsCtx.get("useDarkMode") ? "#fff" : "rgba(0, 0, 0, 0.54)",
           }}
           onClick={handleOpen}
