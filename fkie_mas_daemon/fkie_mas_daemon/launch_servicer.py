@@ -231,9 +231,14 @@ class LaunchServicer(LoggingEventHandler):
         try:
             self._add_file_to_observe(launch_config.filename)
             added.append(launch_config.filename)
-            for inc_discription in launch_config._included_files:
-                self._add_file_to_observe(inc_discription.inc_path)
-                added.append(inc_discription.inc_path)
+            request = LaunchIncludedFilesRequest(launch_config.filename)
+            for inc_description in self.get_included_files(request, result_as_json=False):
+                try:
+                    self._add_file_to_observe(inc_description.inc_path)
+                    added.append(inc_description.inc_path)
+                except Exception as e:
+                    Log.error(
+                        f"{self.__class__.__name__}: _add_launch_to_observer {inc_description.inc_path}: \n {e}")
         except Exception as e:
             Log.error(
                 f"{self.__class__.__name__}: _add_launch_to_observer {launch_config.filename}: \n {e}")
@@ -660,7 +665,7 @@ class LaunchServicer(LoggingEventHandler):
 
         return json.dumps(result, cls=SelfEncoder)
 
-    def get_included_files(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:
+    def get_included_files(self, request_json: LaunchIncludedFilesRequest, *, result_as_json=True) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
         request = request_json
         path = request.path
@@ -717,7 +722,7 @@ class LaunchServicer(LoggingEventHandler):
         except Exception:
             Log.warn(
                 f"{self.__class__.__name__}: Can't get include files for {request.path}: {traceback.format_exc()}")
-        return json.dumps(result, cls=SelfEncoder)
+        return json.dumps(result, cls=SelfEncoder) if result_as_json else result
 
     def interpret_path(self, request_json: LaunchInterpretPathRequest) -> List[LaunchInterpretPathReply]:
         # Covert input dictionary into a proper python object
@@ -854,8 +859,7 @@ class LaunchServicer(LoggingEventHandler):
 
     def _str_from_dict(self, param_dict):
         result = dict()
-        fields = param_dict if isinstance(
-            param_dict, list) else param_dict['def']
+        fields = param_dict if isinstance(param_dict, list) else param_dict['def']
         for field in fields:
             if not field['def']:
                 # simple types
