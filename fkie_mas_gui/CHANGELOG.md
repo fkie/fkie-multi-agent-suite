@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.3.8 - 19.05.2025
+
+Added autostart option to daemon
+Fixed adding included configuration files for observe
+Show warning if an warning occurs when loading the launch file
+Updated mui to v7 and mui-x to v8
+Fixed selection of groups and nodes in the node list
+
 ## 4.3.7 - 14.05.2025
 
 Fixed load composable nodes

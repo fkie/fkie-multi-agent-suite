@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.8 (19.05.2025)
+------------------
+* Added autostart option to daemon
+* Fixed adding included configuration files for observe
+
 4.4.7 (14.05.2025)
 ------------------
 * Fixed load composable nodes
