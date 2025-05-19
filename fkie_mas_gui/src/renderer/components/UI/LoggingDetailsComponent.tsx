@@ -31,7 +31,7 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
         setDetailsObject(obj);
       }
     } catch {
-      //
+      // ignore
     }
   }, [details]);
 
@@ -98,13 +98,7 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
           backgroundColor: levelColorsWbg[variant].backgroundColor,
         }}
       >
-        <CardActions
-          sx={{
-            justifyContent: "right",
-          }}
-        >
-          {generateInfo}
-        </CardActions>
+        <CardActions sx={{ justifyContent: "right" }}>{generateInfo}</CardActions>
         {details && (
           <Collapse in={expanded} timeout={expanded ? undefined : "auto"} unmountOnExit>
             <Paper sx={{ padding: 2 }}>
@@ -131,8 +125,8 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
                 />
               )}
               {(typeof detailsObject === "string" || detailsObject instanceof String) && (
-                <Typography overflow="auto" noWrap={false} maxHeight="10em" fontSize="0.9em">
-                  {JSON.stringify(details)}
+                <Typography overflow="auto" maxHeight="10em" fontSize="0.9em" style={{ whiteSpace: "pre-line" }}>
+                  {detailsObject}
                 </Typography>
               )}
             </Paper>

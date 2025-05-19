@@ -258,7 +258,9 @@ export default function LoggingPanel(): JSX.Element {
         </TableCell>
         <TableCell className="tableCell" key={`description-${row.id}`} sx={{ color }}>
           <div>{row.description}</div>
-          {showDetails && row.details && <div>{JSON.stringify(row.details)}</div>}
+          {showDetails && row.details && (
+            <div style={{ whiteSpace: "pre-line" }}>{JSON.stringify(row.details).replaceAll("\\n", "\n")}</div>
+          )}
         </TableCell>
         <TableCell className="tableCell" key="empty" sx={{ color }} />
       </>

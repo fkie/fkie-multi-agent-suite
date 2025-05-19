@@ -395,7 +395,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // trigger node's update (will force a reload using useEffect hook)
         updateNodeList(provider.id);
         // updateLaunchList(provider.name());
-        return { success: true, error: "", reply: resultLaunchLoadFile };
+        return { success: true, error: resultLaunchLoadFile.status.msg || "", reply: resultLaunchLoadFile };
       }
 
       if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {

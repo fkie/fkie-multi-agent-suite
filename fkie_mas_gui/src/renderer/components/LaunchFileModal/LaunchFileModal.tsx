@@ -134,7 +134,11 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
           // update node and launch list
           // rosCtx.updateNodeList(provider(.name()));
           // rosCtx.updateLaunchList(provider.name());
-          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+          if (result.status.msg) {
+            logCtx.warn(`Launch file [${getFileName(path)}] loaded with warnings`, `File: ${path}\n${result.status.msg}`);
+          } else {
+            logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+          }
 
           // nothing else to do return
           onLaunchCallback();
@@ -227,7 +231,11 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
         );
       } else if (resultLaunchLoadFile.status.code === "OK") {
         setOpen(false);
-        logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+        if (resultLaunchLoadFile.status.msg) {
+          logCtx.warn(`Launch file [${getFileName(path)}] loaded with warnings`, `File: ${path}\n${resultLaunchLoadFile.status.msg}`);
+        } else {
+          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+        }
       } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
         setMessageLaunchLoaded("Please fill all arguments");
       } else {

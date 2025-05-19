@@ -519,6 +519,7 @@ class LaunchConfig(object):
         self.__package = ros_pkg.get_name(os.path.dirname(self.__launch_file))[
             0] if package is None else package
         self.launch_type = 'python'
+        self.load_exceptions = []
         if self.__launch_file.endswith('.xml') or self.__launch_file.endswith('.launch'):
             self.launch_type = 'xml'
         self._nodes: List[LaunchNodeWrapper] = []
@@ -881,10 +882,11 @@ class LaunchConfig(object):
                             exec_result = [exec_result]
                         self._load(exec_result, launch_description=current_launch_description,
                                    current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
-
                 except:
                     import traceback
-                    print(traceback.format_exc())
+                    err_msg = traceback.format_exc()
+                    self.load_exceptions.append(err_msg)
+                    print(err_msg)
             else:
                 print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,

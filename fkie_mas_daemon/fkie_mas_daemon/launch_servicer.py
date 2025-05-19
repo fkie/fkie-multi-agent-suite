@@ -402,6 +402,8 @@ class LaunchServicer(LoggingEventHandler):
             self.websocket.publish('ros.launch.changed', {
                                    'path': launchfile, 'action': 'loaded'})
             self._add_launch_to_observer(launch_config)
+            if len(launch_config.load_exceptions) > 0:
+                result.status.msg = launch_config.load_exceptions[0]
             Log.debug(f"{self.__class__.__name__}: ..load complete!")
         except Exception as e:
             import traceback
@@ -502,6 +504,8 @@ class LaunchServicer(LoggingEventHandler):
                 self.websocket.publish('ros.launch.changed', {
                                        'path': request.path, 'action': 'reloaded'})
                 self._add_launch_to_observer(launch_config)
+                if len(launch_config.load_exceptions) > 0:
+                    result.status.msg = launch_config.load_exceptions[0]
             except Exception as e:
                 old_launch.load()
                 self._add_launch_to_observer(old_launch)
