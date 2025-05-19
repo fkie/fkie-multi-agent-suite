@@ -182,9 +182,12 @@ class RosStateServicer:
             if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
                 send_notification = True
             else:
-                participant_count = len(nmd.ros_node.get_node_names())
-                if self._last_seen_participant_count != participant_count:
-                    send_notification = True
+                try:
+                    participant_count = len(nmd.ros_node.get_node_names())
+                    if self._last_seen_participant_count != participant_count:
+                        send_notification = True
+                except Exception:
+                    pass
             if send_notification:
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count

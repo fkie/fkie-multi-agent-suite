@@ -45,6 +45,7 @@ class RosNodeLauncher(object):
         self._port = parsed_args.port
         self._load = parsed_args.load
         self._autostart = parsed_args.autostart
+        self._stop_on_shutdown = parsed_args.stop_on_shutdown
         if 'ROS_DOMAIN_ID' in os.environ:
             self.ros_domain_id = int(os.environ['ROS_DOMAIN_ID'])
             # TODO: switch domain id
@@ -76,6 +77,8 @@ class RosNodeLauncher(object):
 
     def exit_gracefully(self, signum, frame):
         print('shutdown own server')
+        if self._autostart and self._stop_on_shutdown:
+            self.server.stop_all_nodes()
         self.server.shutdown()
         if rclpy.ok():
             rclpy.shutdown()
@@ -131,6 +134,8 @@ class RosNodeLauncher(object):
                             help='changes the displayed name of the daemon. Default: hostname')
         parser.add_argument('--port', nargs='?', type=int,
                             default=ws_port(),  help='change port for WebSocket server')
+        parser.add_argument('-s', '--stop_on_shutdown', default=False, action='store_true',
+                            help='stops all loaded nodes on exit if started with "-a" argument')
         return parser
 
     def _load_launches(self):

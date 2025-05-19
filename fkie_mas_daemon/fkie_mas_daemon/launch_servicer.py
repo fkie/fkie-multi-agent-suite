@@ -320,7 +320,7 @@ class LaunchServicer(LoggingEventHandler):
     #         else:
     #             launcher.run_node(startcfg)
 
-    def load_launch(self, request_json: LaunchLoadRequest, return_as_json: bool = True) -> LaunchLoadReply:
+    def load_launch(self, request_json: LaunchLoadRequest, *, return_as_json: bool = True) -> LaunchLoadReply:
         '''
         Loads launch file by interface request
         '''
@@ -1115,7 +1115,6 @@ class LaunchServicer(LoggingEventHandler):
         result = []
         for cfgid in list(self._loaded_files.keys()):
             lc = self._loaded_files[cfgid]
-            for item in lc.roscfg.nodes:
-                node_fullname = ns_join(item.namespace, item.name)
-                result.append(node_fullname)
+            for item in lc.nodes():
+                result.append(item.node_name)
         return result

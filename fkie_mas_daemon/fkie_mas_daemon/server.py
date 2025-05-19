@@ -173,8 +173,16 @@ class Server:
         self.ros_node.destroy_publisher(self.pub_endpoint)
 
     def load_launch_file(self, path, autostart=False):
-        pass
-        # self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
+        self.launch_servicer.load_launch(LaunchLoadRequest(path=xml.interpret_path(path)))
+        if autostart:
+            nodes = self.launch_servicer.list_nodes()
+            launch_nodes = [LaunchNode(n) for n in nodes]
+            self.launch_servicer.start_nodes(launch_nodes)
+
+    def stop_all_nodes(self):
+        nodes = self.launch_servicer.list_nodes()
+        for n in nodes:
+            self.rosstate_servicer.stop_node(n)
 
     async def _rosservice_start_launch(self, request, response):
         Log.info(f"call service to load and start {request.path}")
