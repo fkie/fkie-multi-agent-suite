@@ -28,6 +28,7 @@ import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 import { v4 as uuid } from "uuid";
 
+import { CopyButton } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -35,6 +36,7 @@ import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { RosNode, RosQos, SubscriberEvent, SubscriberFilter } from "@/renderer/models";
+import { qosFromJson } from "@/renderer/models/RosQos";
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "@/renderer/providers/eventTypes";
@@ -64,6 +66,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   const [currentProvider, setCurrentProvider] = useState<Provider>();
   const [subscribed, setSubscribed] = useState(false);
   const [topicName, setTopic] = useState(defaultTopic);
+  const [topicType, setTopicType] = useState<string>("");
   const [content, setContent] = useState<TSubscriberEventExt>();
   const [collapsedKeys, setCollapsedKeys] = useState<(string | number)[]>(["stamp", "covariance"]);
   const [history, setHistory] = useState<TSubscriberEventExt[]>([]);
@@ -81,6 +84,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   const [pause, setPause] = useState<boolean>(false);
   // const [receivedIndex, setReceivedIndex] = useState(0);
   const [qosAnchorEl, setQosAnchorEl] = useState(null);
+  const [currentQos, setCurrentQos] = useState<RosQos | undefined>(undefined);
   const openQos = Boolean(qosAnchorEl);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
@@ -180,6 +184,8 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
         }
       }
     }
+    setTopicType(msgType);
+    setCurrentQos(qos);
     if (msgType) {
       logCtx.debug(`register subscriber to topic ${topicName}`);
       const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount);
@@ -282,8 +288,8 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
               size: number; // Object's size or array's length
             }) => {
               if (params.indexOrName === undefined) return false;
-              // if (Array.isArray(params.node) && params.node.length === 0) return true;
-              return collapsedKeys.includes(params.indexOrName);
+              const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
+              return collapsedKeys.includes(idx);
             }}
             onCollapse={(params: {
               isCollapsing: boolean;
@@ -292,13 +298,14 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
               depth: number;
             }) => {
               if (params.indexOrName !== undefined) {
+                const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
                 if (!params.isCollapsing) {
-                  if (!collapsedKeys.includes(params.indexOrName)) {
-                    setCollapsedKeys((prev) => [...prev, params.indexOrName as string | number]);
+                  if (!collapsedKeys.includes(idx)) {
+                    setCollapsedKeys((prev) => [...prev, idx as string | number]);
                   }
                 } else {
-                  if (collapsedKeys.includes(params.indexOrName)) {
-                    setCollapsedKeys((prev) => prev.filter((item) => item !== params.indexOrName));
+                  if (collapsedKeys.includes(idx)) {
+                    setCollapsedKeys((prev) => prev.filter((item) => item !== idx));
                   }
                 }
               }
@@ -528,6 +535,22 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
             })}
           </Select>
         </Tooltip>
+        {history.length > 0 && (
+          <Tooltip
+            title="Copy last message with 'ros2 topic pub' command"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <pre>
+              <CopyButton
+                value={`ROS_DOMAIN_ID=${currentProvider?.rosState.ros_domain_id || 0} ros2 topic pub -1 --keep-alive 3 ${currentQos ? qosFromJson(currentQos).toString() : ""} ${topicName} ${topicType} '${JSON.stringify(history[0])}'`}
+                logText="ros2 pub string copied"
+              />
+            </pre>
+          </Tooltip>
+        )}
         {/* <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
         <ProviderSelector
           defaultProvider={selectedProvider}
@@ -550,6 +573,9 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     openQos,
     showStatistics,
     showSearchBar,
+    history,
+    topicType,
+    currentQos,
   ]);
 
   const getHostStyle = useCallback(

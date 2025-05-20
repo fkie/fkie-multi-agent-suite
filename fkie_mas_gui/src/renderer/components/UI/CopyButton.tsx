@@ -6,11 +6,12 @@ import { LoggingContext } from "@/renderer/context/LoggingContext";
 
 interface CopyButtonProps {
   value: string;
+  logText?: string;
   fontSize?: string;
 }
 
 const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>(function CopyButton(props, ref) {
-  const { value, fontSize = "inherit" } = props;
+  const { value, fontSize = "inherit", logText = value } = props;
   const logCtx = useContext(LoggingContext);
 
   return (
@@ -21,7 +22,9 @@ const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>(function CopyButt
       component="span"
       onClick={() => {
         navigator.clipboard.writeText(value);
-        logCtx.success(`${value} copied!`);
+        if (logText) {
+          logCtx.success(`${logText} copied!`);
+        }
       }}
     >
       <ContentCopyIcon sx={{ fontSize: { fontSize } }} />
