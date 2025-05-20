@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.3.9 - 20.05.2025
+
+Added history for all new releases if an update was found
+Added copy button to topic echo panel
+Fixed array collapsing in echo panel
+
 ## 4.3.8 - 19.05.2025
 
 Added autostart option to daemon
