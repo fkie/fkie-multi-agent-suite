@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import semver from "semver";
 
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
-import { TAutoUpdateManager } from "@/types";
+import { JSONObject, TAutoUpdateManager } from "@/types";
 import packageJson from "../../../package.json";
 import { CmdType } from "../providers";
 import { LoggingContext } from "./LoggingContext";
@@ -15,7 +15,7 @@ export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
   checkForUpdate: () => void;
   updateChannel: string;
-  setUpdateChannel: (channelType: "prerelease" | "release") => void;
+  setUpdateChannel: (channelType: "prerelease" | "release" | string) => void;
   checkingForUpdate: boolean;
   updateAvailable: UpdateInfo | null;
   downloadProgress: ProgressInfo | null;
@@ -69,25 +69,33 @@ export function AutoUpdateProvider({
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
   const [localProviderId, setLocalProviderId] = useState<string>("");
   const [isAppImage, setIsAppImage] = useState<boolean>(true);
-  const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release">("AutoUpdate:updateChannel", "release");
+  const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release" | string>(
+    "AutoUpdate:updateChannel",
+    "release"
+  );
 
   function getUpdateCli(gui: boolean, ros: boolean): string {
-    const prereleaseOpt = updateChannel === "prerelease" ? " -p" : "";
+    const prereleaseOpt =
+      updateChannel === "prerelease"
+        ? " -p" // prerelease channel
+        : updateChannel !== "release" && updateChannel.length > 0
+          ? ` -s ${updateChannel}` // specific release
+          : ""; // latest release
     const noGuiOpt = !gui ? " -r" : "";
     const noRosOpt = !ros ? " -g" : "";
     const args = prereleaseOpt || noGuiOpt || noRosOpt ? ` -s -- ${prereleaseOpt}${noGuiOpt}${noRosOpt}` : "";
     return `wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prereleaseOpt ? "devel" : "master"}/install_mas_debs.sh | bash${args}`;
   }
 
-  function checkForUpdate(channel?: "prerelease" | "release"): void {
+  function checkForUpdate(channel?: "prerelease" | "release" | string): void {
     logCtx.info(`Check for new ${updateChannel} on https://github.com/fkie/fkie-multi-agent-suite`, "", false);
     setUpdateAvailable(null);
     setUpdateError("");
     setCheckingForUpdate(false);
     setDownloadProgress(null);
     if (isAppImage) {
-      if (channel) {
-        autoUpdateManager?.setChannel(channel);
+      if (channel && ["prerelease", "release"].includes(channel)) {
+        autoUpdateManager?.setChannel(channel as "prerelease" | "release");
       }
       autoUpdateManager?.checkForUpdate();
     } else {
@@ -110,42 +118,88 @@ export function AutoUpdateProvider({
     }
   }
 
-  const fetchRelease = async (channel: "prerelease" | "release"): Promise<void> => {
+  function getTitle(release: JSONObject): string {
+    const date = (release.published_at as string).split("T")[0];
+    return `Changes in version ${release.name} (${date})${release.prerelease ? " prerelease" : ""}:`;
+  }
+
+  const fetchRelease = async (channel: "prerelease" | "release" | string): Promise<void> => {
     try {
       setUpdateError("");
       setCheckingForUpdate(true);
-      if (channel === "release") {
-        const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases/latest");
-        if (!response.ok) {
-          setUpdateError("Network error");
-        }
-        const data = await response.json();
-        if (data.name !== packageJson.version) {
-          setUpdateAvailable({
-            version: data.name,
-            releaseDate: data.published_at,
-            releaseNotes: data.body,
-          } as UpdateInfo);
-        }
-      } else {
-        const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases");
-        if (!response.ok) {
-          setUpdateError("Network error");
-        }
-        const data = await response.json();
-        // take the first version, regardless of whether it is labeled as a pre-release version
-        if (data.length > 0) {
+      const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases");
+      if (!response.ok) {
+        setUpdateError("Network error");
+      }
+      const data = await response.json();
+      let release: JSONObject | undefined = undefined;
+      if (data.length > 0) {
+        if (channel === "prerelease") {
+          // take the first version, regardless of whether it is labeled as a pre-release version
+          release = data[0];
           if (semver.gt(data[0].name, packageJson.version)) {
-            console.log(`${data[0].body}`);
             setUpdateAvailable({
               version: data[0].name,
               releaseDate: data[0].published_at,
               releaseNotes: data[0].body,
             } as UpdateInfo);
           }
+        } else if (channel === "release") {
+          // take first not prerelease version
+          for (const r of data) {
+            if (!r.prerelease) {
+              release = r;
+              break;
+            }
+          }
         } else {
-          setUpdateError("No prereleases found");
+          // try to find specified release
+          for (const r of data) {
+            if (r.name === channel) {
+              release = r;
+              break;
+            }
+          }
         }
+      } else {
+        setUpdateError("No releases found on github.com");
+      }
+      if (release) {
+        if (channel === release.name && packageJson.version !== release.name) {
+          // specified release
+          setUpdateAvailable({
+            version: release.name,
+            releaseDate: release.published_at,
+            releaseNotes: (release.body as string)
+              ?.replace("Changes", getTitle(release))
+              .replace("\r\n\r\n", "<br/>")
+              .replaceAll("\r\n", "<br/>"),
+          } as UpdateInfo);
+        } else if (["prerelease", "release"].includes(channel) && semver.gt(release.name, packageJson.version)) {
+          // new release
+          // create history
+          let changes: string = "";
+          for (const r of data) {
+            if (semver.gt(r.name, packageJson.version)) {
+              if (changes.length > 0) {
+                changes += "<br/><br/>";
+              }
+              changes += r.body
+                ?.replace("Changes", getTitle(r))
+                .replace("\r\n\r\n", "<br/>")
+                .replaceAll("\r\n", "<br/>");
+            } else {
+              break;
+            }
+          }
+          setUpdateAvailable({
+            version: release.name,
+            releaseDate: release.published_at,
+            releaseNotes: changes,
+          } as UpdateInfo);
+        }
+      } else {
+        setUpdateError(`No ${channel} found`);
       }
       setCheckedChannel(channel);
     } catch (error) {
@@ -165,10 +219,11 @@ export function AutoUpdateProvider({
     autoUpdateManager?.quitAndInstall();
   }
 
-  function setUpdateChannel(channelType: "prerelease" | "release"): void {
+  function setUpdateChannel(channelType: "prerelease" | "release" | string): void {
     if (updateChannel !== channelType) {
       setChannel(channelType);
-      autoUpdateManager?.setChannel(channelType);
+      if (["prerelease", "release"].includes(channelType))
+        autoUpdateManager?.setChannel(channelType as "prerelease" | "release");
       // checkForUpdate(channelType);
     }
   }

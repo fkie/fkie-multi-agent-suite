@@ -29,12 +29,13 @@ LinearProgressWithLabel.propTypes = {
 
 export default function About(): JSX.Element {
   const auCtx = useContext(AutoUpdateContext);
-  const [openErrorTooltip, setOpenErrorTooltip] = useState(auCtx.updateError ? true : false);
+  const [openErrorTooltip, setOpenErrorTooltip] = useState(!!auCtx.updateError);
 
   const updateCli = auCtx.getUpdateCli(true, true);
+  const updateCliRobot = auCtx.getUpdateCli(false, true);
 
   return (
-    <Stack height="100%" padding="0.3em">
+    <Stack height="100%" padding="0.3em" overflow="auto" >
       {/** Version */}
       <Stack direction="column" justifyItems="center">
         <Stack spacing={1} direction="row" justifyItems="center" alignItems="center">
@@ -79,6 +80,7 @@ export default function About(): JSX.Element {
               handleHomeEndKeys={false}
               disablePortal
               disableClearable
+              freeSolo
               // disableCloseOnSelect
               // multiple
               id="auto-complete-au-channel"
@@ -88,10 +90,8 @@ export default function About(): JSX.Element {
               renderInput={(params) => <TextField {...params} label="Update channel" />}
               value={auCtx.updateChannel}
               onChange={(_event: unknown, newValue: string | null) => {
-                if (newValue === "prerelease") {
+                if (newValue && (["prerelease", "release"].includes(newValue) || newValue.split(".").length === 3)) {
                   auCtx.setUpdateChannel(newValue);
-                } else {
-                  auCtx.setUpdateChannel("release");
                 }
               }}
             />
@@ -164,16 +164,18 @@ export default function About(): JSX.Element {
                 {updateCli}
               </Typography>
             </Stack>
+            <Typography ml="0.5em" variant="body2">without mas gui:</Typography>
+            <Stack ml="1em" direction="row" alignItems="center">
+              <CopyButton value={updateCli} />
+              <Typography variant="body1" color="grey">
+                {updateCliRobot}
+              </Typography>
+            </Stack>
           </Stack>
         )}
         {auCtx?.updateAvailable?.releaseNotes && (
           <Stack ml="1em" mt="0.6em" spacing={0.2} color="grey" direction="column">
-            <MuiMarkdown>
-              {(auCtx?.updateAvailable?.releaseNotes as string)
-                .replace("Changes", `Changes in version ${auCtx?.updateAvailable?.version}:`)
-                .replace("\r\n\r\n", "<br/>")
-                .replaceAll("\r\n", "<br/>")}
-            </MuiMarkdown>
+            <MuiMarkdown>{auCtx?.updateAvailable?.releaseNotes as string}</MuiMarkdown>
           </Stack>
         )}
       </Stack>
@@ -215,7 +217,7 @@ export default function About(): JSX.Element {
       <Typography variant="body1" mt="0.6em" sx={{ fontWeight: "bold" }}>
         List of {Object.entries(licenses).length} dependencies:
       </Typography>
-      <Stack overflow="auto">
+      <Stack>
         {licenses && (
           <ul>
             {licenses.map((item) => (
