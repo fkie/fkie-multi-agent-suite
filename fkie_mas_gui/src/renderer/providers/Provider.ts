@@ -735,6 +735,7 @@ export default class Provider implements IProvider {
       namespace: string;
       node_API_URI: string;
       pid: number;
+      process_ids: number[];
       masteruri: string;
       location: string;
       is_local: boolean;
@@ -783,6 +784,9 @@ export default class Provider implements IProvider {
             n.location,
             n.system_node
           );
+          if (n.process_ids) {
+            rn.processIds = n.process_ids;
+          }
 
           // determine GUID of ROS2 nodes. It is the UUID after last '-' in id
           const idSplitted = n.id.split("-");
@@ -1101,6 +1105,7 @@ export default class Provider implements IProvider {
         }
         n.screens = screen.screens;
         n.isLocal = true;
+        n.processIds.push(Number.parseInt(screen.name.split(".")[0]))
         this.rosNodes.push(n);
       }
     });

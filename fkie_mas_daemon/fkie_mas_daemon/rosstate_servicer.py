@@ -191,7 +191,6 @@ class RosStateServicer:
             if send_notification:
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count
-                self._force_refresh = False
                 # trigger screen servicer to update
                 nmd.launcher.server.screen_servicer.system_change()
                 # participants should only be retrieved from discovery if they have also changed
@@ -202,12 +201,12 @@ class RosStateServicer:
                 state = self._state_jsonify.get_nodes_as_json(update_participants)
                 with self._ros_node_list_mutex:
                     # set status only with lock, as this method runs in a thread
+                    self._force_refresh = False
                     self._ros_node_list = state
                     self._ros_service_dict = self._state_jsonify.get_services()
                     self._ros_topic_dict = self._state_jsonify.get_topics()
                     self._ts_state_notified = ts_start_update
                     self.websocket.publish('ros.nodes.changed', {"timestamp": ts_start_update})
-
             # check for timeouted provider
             now = time.time()
             with self._lock_check:
@@ -304,7 +303,7 @@ class RosStateServicer:
             return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]; forceRefresh: {forceRefresh}")
         with self._ros_node_list_mutex:
             node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
             return json.dumps(node_list, cls=SelfEncoder)

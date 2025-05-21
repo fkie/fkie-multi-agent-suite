@@ -1,4 +1,4 @@
-import { Chip, ChipPropsColorOverrides } from "@mui/material";
+import { Chip, ChipPropsColorOverrides, Tooltip } from "@mui/material";
 import { OverridableStringUnion } from "@mui/types";
 import { forwardRef } from "react";
 
@@ -20,12 +20,13 @@ interface TagProps {
   color?: string;
   copyButton?: string;
   wrap?: boolean;
+  tooltip?: string | JSX.Element;
   onClick?: (event: React.MouseEvent) => void;
   onDoubleClick?: (event: React.MouseEvent) => void;
 }
 
 const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
-  const { className, title = "", text = "", color = "info", copyButton = "", wrap = true } = props;
+  const { className, title = "", text = "", color = "info", copyButton = "", wrap = true, tooltip = "" } = props;
   const isDefaultColor = chipDefaultColors.includes(color);
 
   const chipSX = {
@@ -47,21 +48,22 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
   }
 
   return (
-    <Chip
-      className={className}
-      ref={ref}
-      size="small"
-      color={isDefaultColor ? (color as TagColor) : "default"}
-      style={isDefaultColor ? {} : { backgroundColor: color }}
-      label={
-        <>
-          <strong>{title}</strong>
-          {newText}
-          {copyButton && <CopyButton value={copyButton} fontSize="0.6em" />}
-        </>
-      }
-      sx={chipSX}
-    />
+    <Tooltip ref={ref} title={tooltip} disableInteractive>
+      <Chip
+        className={className}
+        size="small"
+        color={isDefaultColor ? (color as TagColor) : "default"}
+        style={isDefaultColor ? {} : { backgroundColor: color }}
+        label={
+          <>
+            <strong>{title}</strong>
+            {newText}
+            {copyButton && <CopyButton value={copyButton} fontSize="0.6em" />}
+          </>
+        }
+        sx={chipSX}
+      />
+    </Tooltip>
   );
 });
 

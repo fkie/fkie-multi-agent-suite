@@ -292,10 +292,11 @@ class RosNode:
         self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = "running"
         self.pid = -1
+        self.process_ids = []  # process ids of the screen('s) or processes found by __node:={basename} and __ns:={namespace}
         self.node_API_URI = None
         self.masteruri = None
         self.location = "unknown"
-        self.is_local = True
+        self.is_local = False
         self.publishers: List[RosTopicId] = []
         self.subscribers: List[RosTopicId] = []
         self.services: List[RosTopicId] = []

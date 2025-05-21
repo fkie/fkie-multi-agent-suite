@@ -84,7 +84,30 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       case RosNodeStatus.RUNNING: {
         const color = getColorFromDiagnostic(node.diagnosticLevel, isDarkMode);
         if (!node.lifecycle_state) {
-          return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+          return !node.isLocal ? (
+            <Tooltip
+              key={`tooltip-icon-${node.id}`}
+              title={
+                <div>
+                  <Typography fontWeight="bold" fontSize="inherit">
+                    The process of the node was not found on the local host.
+                  </Typography>
+                  <Typography fontSize={"inherit"}>
+                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:= parameter.
+                  </Typography>
+                  <Typography fontSize={"inherit"}>
+                    Note: no checks for life cycle, composable node or other service calls are performed!
+                  </Typography>
+                </div>
+              }
+              placement="left"
+              disableInteractive
+            >
+              <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+            </Tooltip>
+          ) : (
+            <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+          );
         }
         const colorBorder = getColorFromLifecycle(node.lifecycle_state, isDarkMode);
         const iconState = (

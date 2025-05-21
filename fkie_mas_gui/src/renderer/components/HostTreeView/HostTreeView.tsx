@@ -102,6 +102,9 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       if (!node.isLocal) {
         // adds a new provider, which has no mas daemon and discovery
         remoteLocationId = idFromDDSLocations(Array.isArray(node.location) ? node.location : [node.location]);
+        if (!remoteLocationId) {
+          remoteLocationId = node.providerId;
+        }
       }
       let nodePath = node.isLocal && node.providerId ? node.providerId : remoteLocationId;
       if (node.system_node && namespaceSystemNodes && !(cliInSpam && node.name.startsWith("/_ros2cli"))) {

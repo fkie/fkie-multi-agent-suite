@@ -15,6 +15,7 @@ from typing import Tuple
 from typing import Union
 
 import os
+import psutil
 
 from rclpy.qos import QoSCompatibility, qos_check_compatible
 from rclpy.topic_endpoint_info import TopicEndpointInfo
@@ -30,6 +31,7 @@ from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.interface.runtime_interface import RosQos
 from fkie_mas_pylib.interface.runtime_interface import RosService
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib import names
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.system.host import get_local_addresses
 from fkie_mas_pylib.service.future import WaitFuture
@@ -138,6 +140,16 @@ class RosStateJsonify:
             if result[-len(suffix):] == suffix:
                 result = result[:-len(suffix)]
                 break
+        return result
+
+    def findNode(self, name: str) -> List[int]:
+        ns = names.namespace(name).rstrip('/')
+        basename = names.basename(name)
+        result: List[int] = []
+        for process in psutil.process_iter():
+            cmd_line = ' '.join(process.cmdline())
+            if cmd_line.find(f"__node:={basename}") > -1 and (not ns or cmd_line.find(f"__ns:={ns}") > -1):
+                result.append(process.pid)
         return result
 
     def is_location_local(self, location: str):
@@ -334,11 +346,11 @@ class RosStateJsonify:
                 participant = self._participant_infos[node.gid]
                 Log.debug(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
                 node.location = participant.unicast_locators
-                node.is_local = False
                 # check if one of locations has a local IP address
                 for loc in node.location:
-                    node.is_local = self.is_location_local(loc)
-                    if node.is_local:
+                    is_local = self.is_location_local(loc)
+                    if is_local:
+                        node.is_local = is_local
                         break
                 Log.debug(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
                 node.enclave = participant.enclave
@@ -354,16 +366,21 @@ class RosStateJsonify:
             ros_node.namespace = node_ns
             ros_node.gid = gid
             # Add active screens for a given node
-            starts = time.time()
             for session_name, screen_node_name in data.screens.items():
                 if screen_node_name == ros_node.name:
                     Log.debug(f"{self.__class__.__name__}:     append screen: {session_name}")
                     ros_node.screens.append(session_name)
-            ros_node.system_node = os.path.basename(
-                full_name).startswith('_') or full_name in ['/rosout']
+                    try:
+                        ros_node.process_ids.append(int(session_name.split('.')[0]))
+                    except Exception:
+                        pass
+            # try to find process of the node
+            ros_node.process_ids.extend(self.findNode(full_name))
+            ros_node.process_ids = list(set(ros_node.process_ids))
+            ros_node.system_node = os.path.basename(full_name).startswith('_') or full_name in ['/rosout']
             ros_node.system_node |= node_ns == '/mas' or node_ns.startswith('/mas/')
             # if a screen is available, we assume it is a local node
-            if ros_node.screens and ros_node.location == "unknown":
+            if len(ros_node.process_ids) > 0:
                 ros_node.location = self._local_addresses
                 ros_node.is_local = True
 

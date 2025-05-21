@@ -69,6 +69,11 @@ export default class RosNode {
   pid: number;
 
   /**
+   * process ids of the screen('s) or processes found by __node:={basename} and __ns:={namespace}
+   */
+  processIds: number[] = [];
+
+  /**
    * The ROS_MASTER_URI the node was originally registered
    */
   masteruri: string;

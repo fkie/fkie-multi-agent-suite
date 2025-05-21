@@ -339,6 +339,19 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <Tag color="default" title="PID:" text={`${node.pid}`} wrap />
                 </Stack>
               )}
+              {node.processIds.length > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag
+                    color="default"
+                    title={`PID${node.processIds.length > 1 ? "s" : ""}:`}
+                    text={`${node.processIds}`}
+                    tooltip={
+                      "Process IDs of all processes found for this node, including the screens in which the nodes were started."
+                    }
+                    wrap
+                  />
+                </Stack>
+              )}
               {node.lifecycle_state && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="Lifecycle:" text={`${node.lifecycle_state}`} wrap />
