@@ -93,7 +93,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                     The process of the node was not found on the local host.
                   </Typography>
                   <Typography fontSize={"inherit"}>
-                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:= parameter.
+                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:= parameter, nor is the GID of the node detected by mas-discovery.
                   </Typography>
                   <Typography fontSize={"inherit"}>
                     Note: no checks for life cycle, composable node or other service calls are performed!
