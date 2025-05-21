@@ -10,6 +10,8 @@
 from io import FileIO
 import os
 import re
+import shlex
+import subprocess
 
 import json
 from typing import List
@@ -51,8 +53,30 @@ class FileServicer:
             f"{self.__class__.__name__}: Request to [ros.packages.get_list], force: {clear_cache}")
         if clear_cache:
             try:
-                import rospkg
-                _rospack = rospkg.RosPack()
+                # try to find the setup.bash and update the environment
+                # vars_to_save = ["ROS_DOMAIN_ID", "RMW_IMPLEMENTATION"]
+                # saved_environ = {}
+                # for save_var in vars_to_save:
+                #     if save_var in os.environ:
+                #         saved_environ[save_var] = os.environ[save_var]
+                setup_bash = ""
+                if "AMENT_PREFIX_PATH" in os.environ:
+                    first_ws_path = os.environ["AMENT_PREFIX_PATH"].split(":")[0]
+                    setup_bash = os.path.join(os.path.dirname(first_ws_path), "setup.bash")
+                    Log.info(f"{self.__class__.__name__}:   source {setup_bash}")
+                if setup_bash and os.path.exists(setup_bash):
+                    result = subprocess.run(["/bin/bash", "-c", f"source {shlex.quote(setup_bash)}; env"], capture_output=True, stdin=subprocess.DEVNULL, text=True)
+                    if result.returncode == 0:
+                        lines = result.stdout.split("\n")
+                        env = {}
+                        for line in lines:
+                            line = line.strip()
+                            if "=" in line:
+                                key, value = line.split("=", 1)
+                                #if value.find("/opt/ros") >= 0:
+                                env[key] = value
+                        os.environ.update(env)
+                        #os.environ.update(saved_environ)
             except Exception as err:
                 Log.warn(
                     f"{self.__class__.__name__}: Cannot reset package cache: {err}"

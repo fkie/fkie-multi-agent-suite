@@ -895,7 +895,7 @@ export default class Provider implements IProvider {
       return 0;
     };
     this.packages = [];
-    const result = await this.makeCall("ros.packages.get_list", [force], true).then((value: TResultData) => {
+    const result = await this.makeCall(URI.ROS_PACKAGES_GET_LIST, [force], true).then((value: TResultData) => {
       if (value.result) {
         const rosPackageList: RosPackage[] = (value.data as RosPackage[]) || [];
         return rosPackageList.sort(comparePackages);

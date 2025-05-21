@@ -100,8 +100,10 @@ class RosNodeLauncher(object):
         except KeyboardInterrupt:
             self.exit_gracefully(-1, None)
         except rclpy.executors.ExternalShutdownException as error:
-            sys.stdout.write(f"ExternalShutdownException: {error}")
-            sys.stdout.flush()
+            err = str(error)
+            if err:
+                sys.stdout.write(f"ExternalShutdownException: {str(error)}")
+                sys.stdout.flush()
         except Exception:
             import traceback
             # on load error the process will be killed to notify user
