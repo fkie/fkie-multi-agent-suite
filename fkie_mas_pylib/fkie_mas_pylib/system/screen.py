@@ -165,13 +165,15 @@ def create_screen_cfg(clear_previous: bool = False) -> None:
     dir_path = os.path.dirname(filename)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+    # we use now "shell -$SHELL" in screenrc file; Fix for LD_LIBRARY_PATH should not be needed
     # try to fix empty LD_LIBRARY_PATH path issues in screen
-    if os.environ['LD_LIBRARY_PATH']:
-        os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
+    # if os.environ['LD_LIBRARY_PATH']:
+    #     os.environ['LD_LIBRARY_PATH_SCREEN'] = os.environ['LD_LIBRARY_PATH']
     if not os.path.exists(filename):
         with open(filename, 'w') as sf:
+            sf.write('shell -$SHELL\n')
             sf.write('logfile flush 0\n')
-            sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
+            # sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCREEN\n')
             # if os.environ['LD_LIBRARY_PATH']:
             #     sf.write(f"setenv LD_LIBRARY_PATH {os.environ['LD_LIBRARY_PATH']}\n")
             if ('ROS_DOMAIN_ID' in os.environ):
