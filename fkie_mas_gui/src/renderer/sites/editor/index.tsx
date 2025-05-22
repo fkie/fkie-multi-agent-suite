@@ -3,6 +3,7 @@ import "react-app-polyfill/ie11";
 import "react-app-polyfill/stable";
 // imports
 import ProviderStack from "@/renderer/ProviderStack";
+import { MonacoProvider } from "@/renderer/context/MonacoContext";
 import { SettingsProvider } from "@/renderer/context/SettingsContext";
 import { createRoot } from "react-dom/client";
 import EditorApp from "./App";
@@ -13,7 +14,9 @@ if (container) {
   root.render(
     <SettingsProvider>
       <ProviderStack>
-        <EditorApp />
+        <MonacoProvider>
+          <EditorApp />
+        </MonacoProvider>
       </ProviderStack>
     </SettingsProvider>
   );

@@ -166,6 +166,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [selectParentFiles, setSelectParentFiles] = useState<LaunchIncludedFile[]>([]);
   const [historyModels, setHistoryModels] = useState<THistoryModel[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const [escapePressCount, setEscapePressCount] = useState<number>(0);
 
   // const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
 
@@ -175,8 +176,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }, [settingsCtx.changed]);
 
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
-
-  let escapePressCount = 0;
 
   useEffect(() => {
     if (selectionRange) {
@@ -1039,10 +1038,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     loadFiles();
   }, [editorRef.current]);
 
-  document.addEventListener("keydown", (event) => {
+  const escFunction = useCallback((event) => {
     if (event.key === "Escape") {
-      escapePressCount++;
-      if (escapePressCount === 2) {
+      setEscapePressCount((prev) => prev+1);
+      if (escapePressCount === 1) {
         const provider = rosCtx.getProviderById(providerId);
         if (provider) {
           const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
@@ -1051,10 +1050,18 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
       // Reset after 500 ms
       setTimeout(() => {
-        escapePressCount = 0;
+        setEscapePressCount(0)
       }, 500);
     }
-  });
+  }, [escapePressCount, setEscapePressCount]);
+
+  useEffect(() => {
+    document.addEventListener("keydown", escFunction, false);
+
+    return () => {
+      document.removeEventListener("keydown", escFunction, false);
+    };
+  }, [escFunction]);
 
   function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
