@@ -19,18 +19,10 @@
     "lineWidth": 120,
     "attributePosition": "auto",
     "bracketSpacing": true,
-    "ignore": [
-      ".vscode",
-      "out",
-      "dist",
-      "pnpm-lock.yaml",
-      "LICENSE.md",
-      "tsconfig.json",
-      "tsconfig.*.json"
-    ]
+    "ignore": [".vscode", "out", "dist", "pnpm-lock.yaml", "LICENSE.md", "tsconfig.json", "tsconfig.*.json"]
   },
   "organizeImports": {
-    "enabled": true
+    "enabled": false
   },
   "linter": {
     "enabled": true,
