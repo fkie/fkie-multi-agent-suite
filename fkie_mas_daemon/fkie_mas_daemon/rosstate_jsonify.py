@@ -147,9 +147,12 @@ class RosStateJsonify:
         basename = names.basename(name)
         result: List[int] = []
         for process in psutil.process_iter():
-            cmd_line = ' '.join(process.cmdline())
-            if cmd_line.find(f"__node:={basename}") > -1 and (not ns or cmd_line.find(f"__ns:={ns}") > -1):
-                result.append(process.pid)
+            try:
+                cmd_line = ' '.join(process.cmdline())
+                if cmd_line.find(f"__node:={basename}") > -1 and (not ns or cmd_line.find(f"__ns:={ns}") > -1):
+                    result.append(process.pid)
+            except Exception:
+                pass
         return result
 
     def is_location_local(self, location: str):
