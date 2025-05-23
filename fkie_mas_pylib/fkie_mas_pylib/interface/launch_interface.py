@@ -69,6 +69,7 @@ class LaunchLoadReply:
         self.paths = paths
         self.args = args
         self.changed_nodes = changed_nodes
+        self.warnings = []
 
     def __str__(self):
         return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
@@ -276,6 +277,7 @@ class LaunchContent:
         self.nodes = nodes
         self.parameters = parameters
         self.associations = associations
+        self.warnings: List[str] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
