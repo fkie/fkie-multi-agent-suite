@@ -23,7 +23,7 @@ const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>(function CopyButt
       onClick={() => {
         navigator.clipboard.writeText(value);
         if (logText) {
-          logCtx.success(`${logText} copied!`);
+          logCtx.info(`${logText} copied!`);
         }
       }}
     >

@@ -1,7 +1,8 @@
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { Box } from "@mui/material";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { Box, ListItemAvatar, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
@@ -12,9 +13,12 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import { forwardRef, useCallback, useContext } from "react";
 
+import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
+import MuiMarkdown from "mui-markdown";
+import { CopyButton } from "../UI";
 
 function compareLaunchFiles(a: LaunchContent, b: LaunchContent): number {
   if (getFileName(a.path) < getFileName(b.path)) {
@@ -47,6 +51,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
 
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useContext(SettingsContext);
+  const logCtx = useContext(LoggingContext);
 
   /**
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host
@@ -108,7 +113,6 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
                       <InfoOutlinedIcon style={{ fontSize: 'inherit' }} />
                     </IconButton>
                   </Tooltip> */}
-
                     <Tooltip title="Reload launch">
                       <IconButton
                         edge="end"
@@ -151,6 +155,36 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
                 }
               >
                 <ListItemButton dense>
+                  {lc.warnings.length > 0 && (
+                    <ListItemAvatar sx={{ minWidth: 24 }}>
+                      <Tooltip
+                        title={
+                          <div>
+                            <Typography fontWeight="bold" fontSize="inherit">
+                              [{lc.warnings.length}] warnings while load launch file:
+                            </Typography>
+                            <MuiMarkdown>
+                              {lc.warnings.join("<br/><br/>").replaceAll("\n", "<br/>").replaceAll("_", "\\_")}
+                            </MuiMarkdown>
+                          </div>
+                        }
+                        placement="bottom"
+                        disableInteractive
+                      >
+                        <IconButton
+                          edge="end"
+                          aria-label="load launch warnings"
+                          onClick={(event) => {
+                            navigator.clipboard.writeText(lc.warnings.join("\n"));
+                            logCtx.info("Warnings copied to clipboard");
+                            event.stopPropagation();
+                          }}
+                        >
+                          <WarningAmberIcon color="warning" fontSize="inherit" />
+                        </IconButton>
+                      </Tooltip>
+                    </ListItemAvatar>
+                  )}
                   <ListItemText
                     primary={`${launchName} [${lc.nodes ? lc.nodes.length : 0}]`}
                     sx={{

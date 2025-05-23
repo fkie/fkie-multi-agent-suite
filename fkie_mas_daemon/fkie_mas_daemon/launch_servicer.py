@@ -226,7 +226,8 @@ class LaunchServicer(LoggingEventHandler):
         except ValueError:
             pass
 
-    def _add_launch_to_observer(self, launch_config: LaunchConfig):
+    def _add_launch_to_observer(self, launch_config: LaunchConfig) -> List[str]:
+        errors = []
         added = []
         try:
             self._add_file_to_observe(launch_config.filename)
@@ -237,12 +238,15 @@ class LaunchServicer(LoggingEventHandler):
                     self._add_file_to_observe(inc_description.inc_path)
                     added.append(inc_description.inc_path)
                 except Exception as e:
+                    errors.append(f"{inc_description.inc_path}: {e}")
                     Log.error(
                         f"{self.__class__.__name__}: _add_launch_to_observer {inc_description.inc_path}: \n {e}")
         except Exception as e:
+            errors.append(f"{launch_config.filename}: {e}")
             Log.error(
                 f"{self.__class__.__name__}: _add_launch_to_observer {launch_config.filename}: \n {e}")
         self._observed_launch_files[launch_config.filename] = added
+        return errors
 
     def _remove_launch_from_observer(self, launch_config: LaunchConfig):
         try:
@@ -404,11 +408,14 @@ class LaunchServicer(LoggingEventHandler):
             Log.debug(f"{self.__class__.__name__}: daemonuri: {daemonuri}")
             self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
             # notify GUI about changes
-            self.websocket.publish('ros.launch.changed', {
-                                   'path': launchfile, 'action': 'loaded'})
-            self._add_launch_to_observer(launch_config)
+            self.websocket.publish('ros.launch.changed', {'path': launchfile, 'action': 'loaded'})
+            observer_warnings = list(set(self._add_launch_to_observer(launch_config)))
+            result.status.msg = '\n'.join(observer_warnings)
             if len(launch_config.load_exceptions) > 0:
-                result.status.msg = launch_config.load_exceptions[0]
+                if result.status.msg:
+                    result.status.msg += "\n"
+                result.status.msg += launch_config.load_exceptions[0]
+            launch_config.load_exceptions.extend(observer_warnings)
             Log.debug(f"{self.__class__.__name__}: ..load complete!")
         except Exception as e:
             import traceback
@@ -580,6 +587,7 @@ class LaunchServicer(LoggingEventHandler):
             nodes = lc.nodes()
             for item in nodes:
                 reply_lc.nodes.append(item)
+            reply_lc.warnings = lc.load_exceptions
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
 

@@ -43,6 +43,8 @@ export default class LaunchContent {
    */
   associations: LaunchAssociations[] | undefined;
 
+  warnings: string[];
+
   constructor(
     path: string,
     args: LaunchArgument[],
@@ -50,7 +52,8 @@ export default class LaunchContent {
     host: string,
     nodes: LaunchNodeInfo[],
     parameters: RosParameter[],
-    associations: LaunchAssociations[]
+    associations: LaunchAssociations[],
+    warnings: string[]
   ) {
     this.path = path;
     this.args = args;
@@ -59,5 +62,6 @@ export default class LaunchContent {
     this.nodes = nodes;
     this.parameters = parameters;
     this.associations = associations;
+    this.warnings = warnings;
   }
 }

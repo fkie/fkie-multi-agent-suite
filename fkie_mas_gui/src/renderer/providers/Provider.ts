@@ -1221,7 +1221,8 @@ export default class Provider implements IProvider {
                   }
                   return new RosParameter("", p[0], p[1], "", this.id);
                 }) || [],
-                parsed.associations || []
+                parsed.associations || [],
+                parsed.warnings || []
               )
             );
           }
