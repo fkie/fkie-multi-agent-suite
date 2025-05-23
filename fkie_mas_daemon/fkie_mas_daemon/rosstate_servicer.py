@@ -196,7 +196,7 @@ class RosStateServicer:
                         send_notification = True
                 except Exception:
                     pass
-            if send_notification and not self._state_jsonify.is_updating():
+            if self._state_jsonify.updated_since_request() or (send_notification and not self._state_jsonify.is_updating()):
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count
                 # trigger screen servicer to update
