@@ -69,7 +69,6 @@ class LaunchLoadReply:
         self.paths = paths
         self.args = args
         self.changed_nodes = changed_nodes
-        self.warnings = []
 
     def __str__(self):
         return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
