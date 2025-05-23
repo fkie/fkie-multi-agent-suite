@@ -7,6 +7,9 @@
 # ****************************************************************************
 
 
+from typing import Dict
+from typing import List
+
 import json
 import os
 import psutil
@@ -17,6 +20,7 @@ from fkie_mas_pylib.interface.runtime_interface import DiagnosticArray
 from fkie_mas_pylib.interface.runtime_interface import DiagnosticStatus
 from fkie_mas_pylib.interface.runtime_interface import SystemEnvironment
 from fkie_mas_pylib.interface.runtime_interface import SystemInformation
+from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
@@ -31,10 +35,10 @@ class MonitorServicer:
         self._killTimer = None
         self._monitor = Service(settings, self.diagnosticsCbPublisher)
         self.websocket = websocket
+        self._warning_groups: Dict[str, SystemWarningGroup] = {}
         websocket.register("ros.provider.get_system_info", self.getSystemInfo)
         websocket.register("ros.provider.get_system_env", self.getSystemEnv)
-        websocket.register("ros.provider.get_warnings",
-                           self.getProviderWarnings)
+        websocket.register("ros.provider.get_warnings", self.getProviderWarnings)
         websocket.register("ros.provider.get_diagnostics", self.getDiagnostics)
         websocket.register("ros.provider.ros_clean_purge", self.rosCleanPurge)
         websocket.register("ros.provider.shutdown", self.rosShutdown)
@@ -44,18 +48,33 @@ class MonitorServicer:
     def stop(self):
         self._monitor.stop()
 
+    def update_warning_groups(self, warnings: List[SystemWarningGroup]):
+        updated = False
+        for group in warnings:
+            if group.id not in self._warning_groups:
+                updated = True
+                self._warning_groups[group.id] = group
+            elif not self._warning_groups[group.id] == group:
+                updated = True
+                self._warning_groups[group.id] = group
+        if updated:
+            count_warnings = 0
+            for wg in self._warning_groups.values():
+                count_warnings += len(wg.warnings)
+            Log.info(f"{self.__class__.__name__}: ros.provider.warnings with {count_warnings} warnings in {len(self._warning_groups)} groups")
+            self.websocket.publish('ros.provider.warnings', list(self._warning_groups.values()))
+
     def getSystemInfo(self) -> SystemInformation:
-        Log.info("request: get system info")
+        Log.info(f"{self.__class__.__name__}: request: get system info")
         return json.dumps(SystemInformation(), cls=SelfEncoder)
 
     def getSystemEnv(self) -> SystemEnvironment:
-        Log.info("request: get system env")
+        Log.info(f"{self.__class__.__name__}: request: get system env")
         return json.dumps(SystemEnvironment(), cls=SelfEncoder)
 
     def getProviderWarnings(self) -> str:
-        Log.info('Request to [ros.provider.get_warnings]')
-        # TODO collect warnings
-        return json.dumps([], cls=SelfEncoder)
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_warnings]")
+        return json.dumps([self._warning_groups.values()], cls=SelfEncoder)
 
     def _toJsonDiagnostics(self, rosmsg):
         cbMsg = DiagnosticArray(
@@ -78,20 +97,20 @@ class MonitorServicer:
                                json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),)
 
     def getDiagnostics(self) -> DiagnosticArray:
-        Log.info("request: get diagnostics")
+        Log.info(f"{self.__class__.__name__}: request: get diagnostics")
         rosmsg = self._monitor.get_diagnostics(0, 0)
         # copy message to the JSON structure
         return json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder)
 
     def rosCleanPurge(self) -> {bool, str}:
-        Log.info("request: ros_clean_purge")
+        Log.info(f"{self.__class__.__name__}: request: ros_clean_purge")
         result = False
         message = 'Not implemented'
         Log.warn("Not implemented: ros.provider.ros_clean_purge")
         return json.dumps({result: result, message: message}, cls=SelfEncoder)
 
     def rosShutdown(self) -> {bool, str}:
-        Log.info("ros.provider.shutdown")
+        Log.info(f"{self.__class__.__name__}: ros.provider.shutdown")
         result = False
         message = ''
         procs = []

@@ -1105,7 +1105,7 @@ export default class Provider implements IProvider {
         }
         n.screens = screen.screens;
         n.isLocal = true;
-        n.processIds.push(Number.parseInt(screen.name.split(".")[0]))
+        n.processIds.push(Number.parseInt(screen.name.split(".")[0]));
         this.rosNodes.push(n);
       }
     });
@@ -1897,12 +1897,22 @@ export default class Provider implements IProvider {
     const result = await this.makeCall(URI.ROS_PROVIDER_GET_WARNINGS, [], true).then((value: TResultData) => {
       if (value.result) {
         const warnings = value.data as SystemWarningGroup[];
-        this.warnings = warnings ? warnings : [];
-        return warnings;
+        if (Array.isArray(warnings)) {
+          this.warnings = warnings;
+          return warnings;
+        }
+        this.logger?.error(
+          `Provider [${this.name()}]: Error at updateSystemWarnings()`,
+          `reported message is not an array ${JSON.stringify(warnings)}`
+        );
+      } else {
+        this.logger?.error(`Provider [${this.name()}]: Error at updateSystemWarnings()`, `${value.message}`);
       }
-      this.logger?.error(`Provider [${this.name()}]: Error at updateSystemWarnings()`, `${value.message}`);
       return null;
     });
+    if (this.warnings.length > 0) {
+      emitCustomEvent(EVENT_PROVIDER_WARNINGS, new EventProviderWarnings(this, this.warnings));
+    }
     return Promise.resolve(result);
   };
 

@@ -8,6 +8,7 @@
 # ****************************************************************************
 
 
+from fkie_mas_daemon.monitor_servicer import MonitorServicer
 from fkie_mas_daemon.rosstate_jsonify import RosStateJsonify
 from fkie_mas_daemon.rosstate_jsonify import ParticipantGid
 import fkie_mas_daemon as nmd
@@ -32,6 +33,8 @@ from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosProvider
+from fkie_mas_pylib.interface.runtime_interface import SystemWarning
+from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.interface import SelfEncoder
 from typing import Dict
 from typing import List
@@ -60,9 +63,10 @@ except:
 
 ENDPOINT_TIMEOUT_SEC = 120.0
 
+
 class RosStateServicer:
 
-    def __init__(self, websocket: WebSocketServer, test_env=False):
+    def __init__(self, websocket: WebSocketServer, monitor_servicer: MonitorServicer = None, test_env=False):
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._endpoints_ts: Dict[str, float] = {}  # uri : timestamp
@@ -85,6 +89,8 @@ class RosStateServicer:
         self._on_shutdown = False
         self._state_jsonify = RosStateJsonify(self.service_name_get_p)
         self.websocket = websocket
+        self.monitor_servicer = monitor_servicer
+        self._timestamp = 0
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
         websocket.register("ros.nodes.get_services", self.get_service_list)
@@ -93,8 +99,7 @@ class RosStateServicer:
         websocket.register("ros.nodes.set_logger_level", self.set_logger_level)
         websocket.register("ros.nodes.stop_node", self.stop_node)
         websocket.register("ros.subscriber.stop", self.stop_subscriber)
-        websocket.register("ros.provider.get_timestamp",
-                           self.get_provider_timestamp)
+        websocket.register("ros.provider.get_timestamp", self.get_provider_timestamp)
 
     def start(self):
         qos_state_profile = QoSProfile(depth=10,
@@ -125,6 +130,7 @@ class RosStateServicer:
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
         local_hostname = get_host_name()
+        w_resolve_failed = SystemWarningGroup(SystemWarningGroup.ID_RESOLVE_FAILED)
         for uri, endpoint in endpoints.items():
             origin = uri == nmd.launcher.server.uri
             hostname = get_hostname(endpoint.uri)
@@ -135,7 +141,9 @@ class RosStateServicer:
                 try:
                     hostnames.append(socket.gethostbyname(hostname))
                 except Exception as err:
-                    Log.warn(f"{self.__class__.__name__}: socket.gethostbyname({hostname}): {err}")
+                    details = f"{self.__class__.__name__}: socket.gethostbyname({hostname}): {err}"
+                    Log.warn(details)
+                    w_resolve_failed.append(SystemWarning(msg=f"unknown host: {hostname}", details=details))
                     hostnames.append(hostname)
             provider = RosProvider(
                 name=endpoint.name,
@@ -145,6 +153,7 @@ class RosStateServicer:
                 hostnames=list(set(hostnames))
             )
             result.append(provider)
+        self.monitor_servicer.update_warning_groups([w_resolve_failed])
         return result
 
     def _publish_masters(self):
@@ -200,6 +209,8 @@ class RosStateServicer:
                 # create state
                 state = self._state_jsonify.get_nodes_as_json(update_participants)
                 with self._ros_node_list_mutex:
+                    if self.monitor_servicer:
+                        self.monitor_servicer.update_warning_groups(self._state_jsonify.warning_groups())
                     # set status only with lock, as this method runs in a thread
                     self._force_refresh = False
                     self._ros_node_list = state
@@ -209,6 +220,15 @@ class RosStateServicer:
                     self.websocket.publish('ros.nodes.changed', {"timestamp": ts_start_update})
             # check for timeouted provider
             now = time.time()
+            if now < self._timestamp:
+                time_jump_msg = "Time jump into past detected! Restart all ROS nodes, includes MAS nodes, please!"
+                Log.warn(time_jump_msg)
+                w_time_jump = SystemWarningGroup(SystemWarningGroup.ID_TIME_JUMP)
+                w_time_jump.append(SystemWarning(msg='Timejump into past detected!',
+                                   hint='Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!'))
+                self.monitor_servicer.update_warning_groups([w_time_jump])
+            else:
+                self._timestamp = now
             with self._lock_check:
                 removed_uris = []
                 for uri, ts in self._endpoints_ts.items():

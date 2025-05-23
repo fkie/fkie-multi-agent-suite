@@ -79,11 +79,10 @@ class Server:
         self.name = get_host_name()
         self.uri = f"ws://{self.name}:{self.ws_port}"
         self._timer_ws_ready = None
-        self.monitor_servicer = MonitorServicer(
-            self._settings, self.ws_server)
+        self.monitor_servicer = MonitorServicer(self._settings, self.ws_server)
         self.file_servicer = FileServicer(self.ws_server)
         self.screen_servicer = ScreenServicer(self.ws_server)
-        self.rosstate_servicer = RosStateServicer(self.ws_server)
+        self.rosstate_servicer = RosStateServicer(self.ws_server, self.monitor_servicer)
         self.parameter_servicer = ParameterServicer(self.ws_server)
         self.launch_servicer = LaunchServicer(
             self.ws_server,

@@ -30,6 +30,8 @@ from fkie_mas_pylib.interface.runtime_interface import RosTopic
 from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.interface.runtime_interface import RosQos
 from fkie_mas_pylib.interface.runtime_interface import RosService
+from fkie_mas_pylib.interface.runtime_interface import SystemWarning
+from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib import names
 from fkie_mas_pylib.system import screen
@@ -109,6 +111,10 @@ class RosStateJsonify:
         self._participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
         self._ros_service_dict: Dict[str, RosService] = {}
         self._ros_topic_dict: Dict[str, RosTopic] = {}
+        self._ros_state_warnings: SystemWarningGroup = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
+
+    def warning_groups(self,):
+        return [self._ros_state_warnings]
 
     @classmethod
     def get_message_type(cls, dds_type: Text) -> Text:
@@ -181,6 +187,7 @@ class RosStateJsonify:
 
     def get_nodes_as_json(self, update_participants: bool) -> List[RosNode]:
         Log.debug(f"{self.__class__.__name__}: create graph for websocket")
+        self._warnings = []
         starts = time.time()
         cached_data: CachedData = CachedData()
         node_ids: List[NodeId] = []
@@ -325,7 +332,9 @@ class RosStateJsonify:
         # wait until all service are finished of timeouted
         wait_until_futures_done(wait_futures, 3.0)
         if time.time() - starts > 1.0:
-            Log.warn(f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec")
+            msg = f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec"
+            self._ros_state_warnings.append(SystemWarning(msg=msg))
+            Log.warn(msg)
         # handle response
         for wait_future in wait_futures:
             if wait_future.type == "composable":
@@ -462,10 +471,13 @@ class RosStateJsonify:
                     for cn_name in response.full_node_names:
                         composable_nodes[cn_name] = container_name
             except Exception as exception:
-                Log.warn(
-                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{container_name}': '{exception}'")
+                msg = f"{self.__class__.__name__}:-> failed to update composable nodes of '{container_name}': '{exception}'"
+                self._ros_state_warnings.append(SystemWarning(msg=msg))
+                Log.warn(msg)
         else:
-            Log.warn(f"{self.__class__.__name__}:-> Timeout while update composable nodes of '{container_name}'")
+            msg = f"{self.__class__.__name__}:-> Timeout while update composable nodes of '{container_name}'"
+            self._ros_state_warnings.append(SystemWarning(msg=msg))
+            Log.warn(msg)
         future.client.destroy()
 
     def _update_lifecycle_state(self, nodes: List[RosNode], future: WaitFuture) -> None:
@@ -478,10 +490,13 @@ class RosStateJsonify:
                         if nodes[idx].name == node_name:
                             nodes[idx].lifecycle_state = response.current_state.label
             except Exception as exception:
-                Log.warn(
-                    f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{exception}'")
+                msg = f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{exception}'"
+                self._ros_state_warnings.append(SystemWarning(msg=msg))
+                Log.warn(msg)
         else:
-            Log.warn(f"{self.__class__.__name__}:-> Timeout while update lifecycle state of '{node_name}'")
+            msg = f"{self.__class__.__name__}:-> Timeout while update lifecycle state of '{node_name}'"
+            self._ros_state_warnings.append(SystemWarning(msg=msg))
+            Log.warn(msg)
         future.client.destroy()
 
     def _update_lifecycle_transition(self, nodes: List[RosNode], future: WaitFuture) -> None:
@@ -497,10 +512,13 @@ class RosStateJsonify:
                                 nodes[idx].lifecycle_available_transitions.append(
                                     (transition.transition.label, transition.transition.id))
             except Exception as exception:
-                Log.warn(
-                    f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{exception}'")
+                msg = f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{exception}'"
+                self._ros_state_warnings.append(SystemWarning(msg=msg))
+                Log.warn(msg)
         else:
-            Log.warn(f"{self.__class__.__name__}:-> Timeout while update lifecycle transitions of '{node_name}'")
+            msg = f"{self.__class__.__name__}:-> Timeout while update lifecycle transitions of '{node_name}'"
+            self._ros_state_warnings.append(SystemWarning(msg=msg))
+            Log.warn(msg)
         future.client.destroy()
 
     def _get_qos(self, tp: TopicEndpointInfo) -> RosQos:
