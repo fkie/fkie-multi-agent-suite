@@ -155,6 +155,7 @@ class RosQos:
             return "unknown"
         return "unknown"
 
+
 class IncompatibleQos:
     def __init__(self, node_id: str, compatibility: str, reason: str) -> None:
         self.node_id = node_id
@@ -292,7 +293,8 @@ class RosNode:
         self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = "running"
         self.pid = -1
-        self.process_ids = []  # process ids of the screen('s) or processes found by __node:={basename} and __ns:={namespace}
+        # process ids of the screen('s) or processes found by __node:={basename} and __ns:={namespace}
+        self.process_ids = []
         self.node_API_URI = None
         self.masteruri = None
         self.location = "unknown"
@@ -496,6 +498,11 @@ class SystemWarningGroup:
 
     def append(self, warning: SystemWarning):
         self.warnings.append(warning)
+
+    def copy(self):
+        result = SystemWarningGroup(self.id)
+        result.warnings = [SystemWarning(w.msg, w.details, w.hint) for w in self.warnings]
+        return result
 
     def __eq__(self, other) -> bool:
         if self.id != other.id:

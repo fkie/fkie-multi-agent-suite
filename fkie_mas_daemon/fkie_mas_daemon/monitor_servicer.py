@@ -53,10 +53,10 @@ class MonitorServicer:
         for group in warnings:
             if group.id not in self._warning_groups:
                 updated = True
-                self._warning_groups[group.id] = group
+                self._warning_groups[group.id] = group.copy()
             elif not self._warning_groups[group.id] == group:
                 updated = True
-                self._warning_groups[group.id] = group
+                self._warning_groups[group.id] = group.copy()
         if updated:
             count_warnings = 0
             for wg in self._warning_groups.values():
@@ -74,7 +74,7 @@ class MonitorServicer:
 
     def getProviderWarnings(self) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_warnings]")
-        return json.dumps([self._warning_groups.values()], cls=SelfEncoder)
+        return json.dumps(list(self._warning_groups.values()), cls=SelfEncoder)
 
     def _toJsonDiagnostics(self, rosmsg):
         cbMsg = DiagnosticArray(
