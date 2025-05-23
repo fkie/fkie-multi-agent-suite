@@ -1072,7 +1072,7 @@ class LaunchConfig(object):
             executable_path = node.cmd.split()[0]
         Log.info(f"{screen_prefix} {respawn_prefix} {launch_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
         Log.debug(f"environment while run node '{node.unique_name}': '{new_env}'")
-        SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, launch_prefix, node.cmd])), cwd=node.cwd, shell=False, env=new_env,
+        SupervisedPopen(' '.join([screen_prefix, respawn_prefix, launch_prefix, node.cmd]), cwd=node.cwd, shell=True, env=new_env,
                         object_id=f"run_node_{node.unique_name}", description=f"Run [{node.package_name}]{node.executable}")
         return executable_path
 
