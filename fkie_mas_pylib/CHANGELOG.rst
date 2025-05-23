@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.0 (23.05.2025)
+------------------
+* Added new warning group id
+* Added warnings attribute to LaunchContent
+
 4.3.0 (02.05.2025)
 ------------------
 * Added timer_period to launch interface of the node

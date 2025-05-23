@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.0 (23.05.2025)
+------------------
+* Added source setup.bash on force refresh package list
+* Changed screen configuration, added "shell -$SHEL" to source ros setup.bash defined in .bashrc
+* Report warnings from ros2 daemon
+
 4.4.8 (19.05.2025)
 ------------------
 * Added autostart option to daemon

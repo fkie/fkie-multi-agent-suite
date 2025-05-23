@@ -98,6 +98,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     const spamNodesParam = settingsCtx.get("spamNodes") as string;
     const cliInSpam = spamNodesParam.indexOf("_ros2cli") > -1;
     for (const node of nodes) {
+      console.log(`nodes 1`);
       let remoteLocationId = "";
       if (!node.isLocal) {
         // adds a new provider, which has no mas daemon and discovery
@@ -242,6 +243,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     (itemIds: string[]): string[] => {
       let nodeList: string[] = [];
       for (const item of itemIds) {
+        console.log(`imteids 1`);
         nodeList = [
           ...nodeList,
           ...keyNodeList
@@ -279,6 +281,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
               stopNodes([node.idGlobal]);
             } else if (node.screens) {
               for (const screen of node.screens) {
+                console.log(`screens 1`);
                 navCtx.openTerminal(
                   CmdType.SCREEN,
                   node.providerId as string,
@@ -364,6 +367,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       let updatedGroup = false;
       // get all children IDs
       for (const id of parentIds) {
+        console.log(`parents 1`);
         const parsedId = id.split("#");
         // a group (with children) must have 1 substring
         if (parsedId.length === 1) {
@@ -391,9 +395,11 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           // we have a node, get the group name and check if it is in allIds
           // or if all nodes of the group are in the allIds, select it too.
           const groupName = parsedId[0];
+          console.log(` groupName: ${groupName}`);
           if (allIds.indexOf(groupName) === -1) {
             // add if all children are in allIds
             if (allChildrenSelected(groupName, allIds)) {
+              console.log(` add groupName: ${groupName}`);
               allIds.push(groupName);
               updatedGroup = true;
             }
@@ -416,6 +422,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   function getProvidersFromIds(itemIds: string[]): string[] {
     const provList: string[] = [];
     for (const item of itemIds) {
+      console.log(`getProvidersFromIds 1`);
       if (!item.includes("#") && !item.includes("/")) {
         provList.push(item);
       }
@@ -437,6 +444,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         if (selectedIds.length > 1) {
           // if a group was previously selected but not anymore, deselect all its children
           for (const prevId of prevSelected) {
+            console.log(`handleSelect 1`);
             const prevParsedId = prevId.split("#");
             if (prevParsedId.length === 1 && !selectedIds.includes(prevId)) {
               selectedIds = selectedIds.filter((e) => !e.startsWith(prevId));
@@ -444,8 +452,10 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           }
           // remove group selection if a node in it was deselected
           for (const prevId of prevSelected) {
+            console.log(`handleSelect 2`);
             if (!selectedIds.some((id) => id === prevId)) {
               for (const id of selectedIds) {
+                console.log(`handleSelect 3`);
                 if (prevId.startsWith(id)) {
                   selectedIds = selectedIds.filter((e) => e !== id);
                 }
@@ -591,6 +601,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       const providerNodes = rosCtx.mapProviderRosNodes.get(providerId);
       if (providerNodes) {
         for (const treeNode of providerNodes.values()) {
+          console.log(`selectNodesFromLaunch 1`);
           const nodes = launch.nodes?.filter((lNode) => {
             return lNode.node_name === treeNode.name;
           });
@@ -683,6 +694,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    */
   const generateTree = useMemo(() => {
     const newKeyNodeList: { key: string; idGlobal: string }[] = [];
+    console.log(`generate trre`);
     const tree = (
       <SimpleTreeView
         // apiRef={apiRef}

@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.4.0 - 23.05.2025
+
+Added an indicator of warnings when load launch file
+Added source setup.bash on force refresh package list
+Extended description of not local nodes
+Added detection of local processes based on the node parameter for the node name
+Changed screen configuration, added "shell -$SHEL" to source ros setup.bash defined in .bashrc
+Report warnings from ros2 daemon
+Fixed close on double Escape in external editor
+Fixed the flickering of the terminal when no screen is available
+
 ## 4.3.9 - 20.05.2025
 
 Added history for all new releases if an update was found
