@@ -85,7 +85,7 @@ const SingleTerminalPanel = forwardRef<HTMLDivElement, SingleTerminalPanelProps>
             setInitialCommands(() => []);
             initializeTerminal(screens[0]);
             setErrorHighlighting(false);
-          } else {
+          } else if (lastScreenUsed) {
             // Open Log if no screen is available
             setInitialCommands(() => []);
             initializeTerminal("");
