@@ -18,7 +18,6 @@ import NavigationContext from "@/renderer/context/NavigationContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
 import MuiMarkdown from "mui-markdown";
-import { CopyButton } from "../UI";
 
 function compareLaunchFiles(a: LaunchContent, b: LaunchContent): number {
   if (getFileName(a.path) < getFileName(b.path)) {
