@@ -483,6 +483,7 @@ class SystemWarningGroup:
     ID_UDP_SEND = "UDP_SEND"
     ID_EXCEPTION = "EXCEPTION"
     ID_TIME_JUMP = "TIME_JUMP"
+    ID_ROS_STATE = "ROS_STATE_CHECK"
 
     """
     :param str id: id of the warning group, on of ID_*.
