@@ -285,7 +285,7 @@ class RosStateJsonify:
                 if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
                     continue
                 gid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
-                t_gid = self._guid_arr_to_str(pub_info.endpoint_gid)
+                t_gid = self._guid_arr_to_str(sub_info.endpoint_gid)
                 ros_node, is_new = self._get_node_from(sub_info.node_namespace, sub_info.node_name, gid, cached_data)
                 try:
                     tp, is_topic, is_request = self._get_topic_from(topic_name, sub_info.topic_type, t_gid, cached_data)
@@ -325,8 +325,9 @@ class RosStateJsonify:
                                 f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
                             tp.requester.append(ros_node.id)
                         if is_request:
+                            if ros_topic_id_str not in self._ros_service_dict:
+                                ros_node.services.append(ros_topic_id)
                             self._ros_service_dict[ros_topic_id_str] = tp
-                            ros_node.services.append(ros_topic_id)
                 except Exception:
                     import traceback
                     print(traceback.format_exc())
