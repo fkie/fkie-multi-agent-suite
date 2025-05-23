@@ -352,7 +352,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     // get all nodes of the group and check if they are all in children
     const childrenIds = keyNodeList.filter((node) => node.key.startsWith(`${groupName}`)).map((node) => node.key);
     const notInAllIds = childrenIds.filter((childId) => children.indexOf(childId) === -1);
-    return notInAllIds.length === 1;
+    return notInAllIds.length === 1 && notInAllIds[0] === groupName;
   }
 
   /**
@@ -379,11 +379,13 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         const parsedId = id.split("#");
         // a group (with children) must have 1 substring
         if (parsedId.length === 1) {
-          const parentGroup = parsedId[0].slice(0, parsedId[0].lastIndexOf("/"));
-          // add parent group to the list of IDs if it is not already there and has all its children selected
-          if (allChildrenSelected(parentGroup, allIds)) {
-            allIds.push(parentGroup);
-            updatedGroup = true;
+          if (parsedId[0].indexOf("/") > -1) {
+            const parentGroup = parsedId[0].slice(0, parsedId[0].lastIndexOf("/"));
+            // add parent group to the list of IDs if it is not already there and has all its children selected
+            if (allChildrenSelected(parentGroup, allIds)) {
+              allIds.push(parentGroup);
+              updatedGroup = true;
+            }
           }
         } else {
           // we have a node, get the group name and check if it is in allIds
