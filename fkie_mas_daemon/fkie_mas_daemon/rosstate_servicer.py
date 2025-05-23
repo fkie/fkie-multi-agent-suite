@@ -74,7 +74,6 @@ class RosStateServicer:
         self._ros_service_dict: Dict[str, RosService] = {}
         self._ros_topic_dict: Dict[str, RosTopic] = {}
         self._ros_node_list_mutex = threading.RLock()
-        self.service_name_get_p = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/get_participants"
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
         self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
@@ -87,7 +86,7 @@ class RosStateServicer:
         self._rate_check_discovery_node = 2  # Hz
         self._thread_check_discovery_node = None
         self._on_shutdown = False
-        self._state_jsonify = RosStateJsonify(self.service_name_get_p)
+        self._state_jsonify = RosStateJsonify(monitor_servicer)
         self.websocket = websocket
         self.monitor_servicer = monitor_servicer
         self._timestamp = 0
@@ -197,7 +196,7 @@ class RosStateServicer:
                         send_notification = True
                 except Exception:
                     pass
-            if send_notification:
+            if send_notification and not self._state_jsonify.is_updating():
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count
                 # trigger screen servicer to update
@@ -205,19 +204,17 @@ class RosStateServicer:
                 # participants should only be retrieved from discovery if they have also changed
                 update_participants = self._update_participants
                 self._update_participants = False
-                ts_start_update = time.time()
                 # create state
-                state = self._state_jsonify.get_nodes_as_json(update_participants)
+                state = self._state_jsonify.get_nodes_as_json(self._ts_state_updated, update_participants)
                 with self._ros_node_list_mutex:
-                    if self.monitor_servicer:
-                        self.monitor_servicer.update_warning_groups(self._state_jsonify.warning_groups())
                     # set status only with lock, as this method runs in a thread
                     self._force_refresh = False
                     self._ros_node_list = state
                     self._ros_service_dict = self._state_jsonify.get_services()
                     self._ros_topic_dict = self._state_jsonify.get_topics()
-                    self._ts_state_notified = ts_start_update
-                    self.websocket.publish('ros.nodes.changed', {"timestamp": ts_start_update})
+                    self._ts_state_notified = self._state_jsonify.timestamp_state()
+                    self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+
             # check for timeouted provider
             now = time.time()
             if now < self._timestamp:
@@ -474,7 +471,7 @@ class RosStateServicer:
         # the status is updated in _check_discovery_node() in a thread
         # in the meantime, the cached list is returned
         # after the state is ready, a 'ros.nodes.changed' notification will be send
-        if self._ros_node_list is None or forceRefresh:
+        if (self._ros_node_list is None or forceRefresh) and not self._state_jsonify.is_updating():
             self._force_refresh = True
             self._ros_node_list = []
             self._ros_service_dict = {}

@@ -16,12 +16,14 @@ from typing import Union
 
 import os
 import psutil
+import threading
 
 from rclpy.qos import QoSCompatibility, qos_check_compatible
 from rclpy.topic_endpoint_info import TopicEndpointInfo
 from composition_interfaces.srv import ListNodes
 from lifecycle_msgs.srv import GetState
 from lifecycle_msgs.srv import GetAvailableTransitions
+from fkie_mas_daemon.monitor_servicer import MonitorServicer
 
 from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
 from fkie_mas_pylib.interface.runtime_interface import IncompatibleQos
@@ -102,9 +104,10 @@ class CachedData:
 
 class RosStateJsonify:
 
-    def __init__(self, get_participants_service_name: Text):
+    def __init__(self, monitor_servicer: MonitorServicer = None):
         Log.debug("Create RosStateJsonify")
-        self._get_participants_service_name = get_participants_service_name
+        self.monitor_servicer = monitor_servicer
+        self._current_nodes: List[RosNode] = []
         self._last_known_nodes: List[NodeId] = []
         self._composable_nodes: Dict[NodeFullName, NodeFullName] = {}
         self._local_addresses = get_local_addresses()
@@ -112,9 +115,10 @@ class RosStateJsonify:
         self._ros_service_dict: Dict[str, RosService] = {}
         self._ros_topic_dict: Dict[str, RosTopic] = {}
         self._ros_state_warnings: SystemWarningGroup = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
-
-    def warning_groups(self,):
-        return [self._ros_state_warnings]
+        self._updated_since_request = False
+        self._timestamp_state = 0
+        self._lock_update_services = threading.RLock()
+        self._thread_update_services = None
 
     @classmethod
     def get_message_type(cls, dds_type: Text) -> Text:
@@ -147,6 +151,15 @@ class RosStateJsonify:
                 result = result[:-len(suffix)]
                 break
         return result
+
+    def timestamp_state(self):
+        return self._timestamp_state
+
+    def is_updating(self):
+        return self._thread_update_services != None
+
+    def updated_since_request(self):
+        return self._updated_since_request
 
     def findNode(self, name: str) -> List[int]:
         ns = names.namespace(name).rstrip('/')
@@ -185,10 +198,21 @@ class RosStateJsonify:
             new_ros_state[guid] = participant
         self._participant_infos = new_ros_state
 
-    def get_nodes_as_json(self, update_participants: bool) -> List[RosNode]:
+    # Creates a list of RosNode's from discovered ROS2 list
+    # The status of composable or lifecycle nodes is determined by calling services. This is done in a separate thread.
+    # This is done in such a way that no changes are missed. With a newer 'ts_state_updated' the parameters are cached and the thread is started again if necessary when it is finished.
+    def get_nodes_as_json(self, ts_state_updated, update_participants: bool) -> List[RosNode]:
+        if self._updated_since_request and ts_state_updated < self._timestamp_state:
+            self._updated_since_request = False
+            Log.info(f"{self.__class__.__name__}: thread call was finished since last request, report current state")
+            with self._lock_update_services:
+                return self._current_nodes
         Log.debug(f"{self.__class__.__name__}: create graph for websocket")
-        self._warnings = []
-        starts = time.time()
+        # clear the warnings
+        self._ros_state_warnings = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
+        if self.monitor_servicer:
+            self.monitor_servicer.update_warning_groups([self._ros_state_warnings])
+        self._timestamp_state = time.time()
         cached_data: CachedData = CachedData()
         node_ids: List[NodeId] = []
         new_nodes_detected: bool = False
@@ -196,7 +220,6 @@ class RosStateJsonify:
         lifecycle_state_services: List[str] = []
         lifecycle_transition_services: List[str] = []
         result: List[RosNode] = []
-        wait_futures: List[WaitFuture] = []
         cached_data.screens = screen.get_active_screens()
 
         if update_participants:
@@ -315,41 +338,7 @@ class RosStateJsonify:
         # update composable nodes
         if new_nodes_detected:
             self._composable_nodes = {}
-            for service_name in composable_services:
-                Log.debug(f"{self.__class__.__name__}:  update composable nodes '{service_name}'")
-                create_service_future(nmd.ros_node, wait_futures, "composable", "", service_name,
-                                      ListNodes, ListNodes.Request())
-        # update lifecycle nodes
-        for service_name in lifecycle_state_services:
-            Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{service_name}'")
-            create_service_future(nmd.ros_node, wait_futures, "lc_state", "", service_name,
-                                  GetState, GetState.Request())
-        for service_name in lifecycle_transition_services:
-            Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{service_name}'")
-            create_service_future(nmd.ros_node, wait_futures, "lc_transition", "", service_name,
-                                  GetAvailableTransitions, GetAvailableTransitions.Request())
 
-        # wait until all service are finished of timeouted
-        wait_until_futures_done(wait_futures, 3.0)
-        if time.time() - starts > 1.0:
-            msg = f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec"
-            self._ros_state_warnings.append(SystemWarning(msg=msg))
-            Log.warn(msg)
-        # handle response
-        for wait_future in wait_futures:
-            if wait_future.type == "composable":
-                self._update_composable_node(self._composable_nodes, wait_future)
-            elif wait_future.type == "lc_state":
-                self._update_lifecycle_state(result, wait_future)
-            elif wait_future.type == "lc_transition":
-                self._update_lifecycle_transition(result, wait_future)
-
-        # apply composable nodes to the result
-        for composable_name, container_name in self._composable_nodes.items():
-            for idx in range(len(result)):
-                if result[idx].name == composable_name:
-                    Log.debug(f"{self.__class__.__name__}:    found composable node {result[idx].name}")
-                    result[idx].container_name = container_name
         self._last_known_nodes = node_ids
 
         # update nodes with participant infos
@@ -367,6 +356,19 @@ class RosStateJsonify:
                 Log.debug(f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators} for {node.name}")
                 node.enclave = participant.enclave
             node.gid = None
+        if self.monitor_servicer:
+            self.monitor_servicer.update_warning_groups([self._ros_state_warnings])
+        self._current_nodes = result
+
+        # store arguments for next thread run to get services of the updated node list
+        self._thread_update_service_args = (
+            composable_services, lifecycle_state_services, lifecycle_transition_services)
+        if self._thread_update_services is None:
+            self._thread_update_services = threading.Thread(
+                target=self._thread_update_services_call, args=self._thread_update_service_args, daemon=True)
+            self._thread_update_service_args = None
+            self._thread_update_services.start()
+
         return result
 
     def _get_node_from(self, node_ns: str, node_name: str, gid: ParticipantGid, data: CachedData) -> Tuple[RosNode, IsNew]:
@@ -461,6 +463,60 @@ class RosStateJsonify:
             ros_node.lifecycle_available_transitions = []
             return True
         return False
+
+    def _thread_update_services_call(self, composable_services: List[str] = [], lifecycle_state_services: List[str] = [], lifecycle_transition_services: List[str] = []):
+        starts = time.time()
+        wait_futures: List[WaitFuture] = []
+        for service_name in composable_services:
+            Log.debug(f"{self.__class__.__name__}:  update composable nodes '{service_name}'")
+            create_service_future(nmd.ros_node, wait_futures, "composable", "", service_name,
+                                  ListNodes, ListNodes.Request())
+        # update lifecycle nodes
+        for service_name in lifecycle_state_services:
+            Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{service_name}'")
+            create_service_future(nmd.ros_node, wait_futures, "lc_state", "", service_name,
+                                  GetState, GetState.Request())
+        for service_name in lifecycle_transition_services:
+            Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{service_name}'")
+            create_service_future(nmd.ros_node, wait_futures, "lc_transition", "", service_name,
+                                  GetAvailableTransitions, GetAvailableTransitions.Request())
+
+        # wait until all service are finished of timeouted
+        wait_until_futures_done(wait_futures, 3.0)
+        if time.time() - starts > 1.0:
+            msg = f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec"
+            self._ros_state_warnings.append(SystemWarning(msg=msg))
+            Log.warn(msg)
+        # handle response
+        for wait_future in wait_futures:
+            if wait_future.type == "composable":
+                with self._lock_update_services:
+                    self._update_composable_node(self._composable_nodes, wait_future)
+            elif wait_future.type == "lc_state":
+                with self._lock_update_services:
+                    self._update_lifecycle_state(self._current_nodes, wait_future)
+            elif wait_future.type == "lc_transition":
+                with self._lock_update_services:
+                    self._update_lifecycle_transition(self._current_nodes, wait_future)
+
+        # apply composable nodes to the result
+        with self._lock_update_services:
+            for composable_name, container_name in self._composable_nodes.items():
+                for idx in range(len(self._current_nodes)):
+                    if self._current_nodes[idx].name == composable_name:
+                        Log.debug(
+                            f"{self.__class__.__name__}:    found composable node {self._current_nodes[idx].name}")
+                        self._current_nodes[idx].container_name = container_name
+            self._updated_since_request = True
+            if self.monitor_servicer:
+                self.monitor_servicer.update_warning_groups([self._ros_state_warnings])
+            self._thread_update_services = None
+            # it we have stored arguments restart the thread
+            if self._thread_update_service_args is not None:
+                self._thread_update_services = threading.Thread(
+                    target=self._thread_update_services_call, args=self._thread_update_service_args, daemon=True)
+                self._thread_update_service_args = None
+                self._thread_update_services.start()
 
     def _update_composable_node(self, composable_nodes: Dict[NodeFullName, NodeFullName], future: WaitFuture) -> None:
         container_name = future.service_name.replace('/_container/list_nodes', '')
