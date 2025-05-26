@@ -397,6 +397,7 @@ def main(argv=sys.argv) -> int:
     try:
         print_help = True
         if args.command:
+            screen.test_screen()
             run_command(args.name, args.command,
                         additional_args, args.respawn, args.pre_check_binary)
             return 0
