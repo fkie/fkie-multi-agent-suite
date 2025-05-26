@@ -7,6 +7,7 @@
 # ****************************************************************************
 
 
+import gc
 import os
 import argparse
 import json
@@ -17,6 +18,7 @@ import traceback
 from typing import Optional
 import rclpy
 from rclpy.duration import Duration
+from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_pylib.interface import SelfEncoder
@@ -25,6 +27,7 @@ from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
 from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.client import WebSocketClient
+from fkie_mas_pylib import formats
 import fkie_mas_daemon as nmd
 from fkie_mas_pylib.logging.logging import Log
 from .msg_encoder import MsgEncoder
@@ -99,8 +102,10 @@ class RosSubscriberLauncher:
         Log.info(f"start ROS subscriber for {self._topic}[{self._message_type}]")
         self.__msg_class = get_message(self._message_type)
         qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
-        self.sub = nmd.ros_node.create_subscription(
-            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        # self.sub = nmd.ros_node.create_subscription(
+        #     self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        self.sub_raw = nmd.ros_node.create_subscription(
+            self.__msg_class, self._topic, self._msg_handle_raw, qos_profile=qos_state_profile, raw=True)
         self.wsClient = WebSocketClient(self._port)
         # qos_state_profile = QoSProfile(depth=100,
         #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -122,7 +127,7 @@ class RosSubscriberLauncher:
 
     def exit_gracefully(self, signum, frame):
         print('shutdown rclpy')
-        self.sub.destroy()
+        self.sub_raw.destroy()
         self.stop()
         if rclpy.ok():
             rclpy.shutdown()
@@ -239,6 +244,8 @@ class RosSubscriberLauncher:
             rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             self.exit_gracefully(-1, None)
+        except rclpy.executors.ExternalShutdownException:
+            pass
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
@@ -331,21 +338,52 @@ class RosSubscriberLauncher:
         parser.set_defaults(help=False)
         return parser
 
-    async def _msg_handle(self, data):
+    def get_obj_size(self, obj):
+        marked = {id(obj)}
+        obj_q = [obj]
+        sz = 0
+
+        while obj_q:
+            sz += sum(map(sys.getsizeof, obj_q))
+
+            # Lookup all the object referred to by the object in obj_q.
+            # See: https://docs.python.org/3.7/library/gc.html#gc.get_referents
+            all_refr = ((id(o), o) for o in gc.get_referents(*obj_q))
+
+            # Filter object that are already marked.
+            # Using dict notation will prevent repeated objects.
+            new_refr = {o_id: o for o_id, o in all_refr if o_id not in marked and not isinstance(o, type)}
+
+            # The new obj_q will be the ones that were not marked,
+            # and we will update marked with their ids so we will
+            # not traverse them again.
+            obj_q = new_refr.values()
+            marked.update(new_refr.keys())
+
+        return sz
+
+    async def _msg_handle_raw(self, data):
+        msg_size = len(data)
+        msg = deserialize_message(data, self.__msg_class)
         self._count_received += 1
         self._latched = False
-        # self._latched = data._connection_header['latching'] != '0'
-        # print(data._connection_header)
-        # print(dir(data))
-        # print("SIZE", data.__sizeof__())
-        # print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
         if not self._no_data:
             event.data = json.loads(json.dumps(
-                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count}))
+                msg, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count}))
+        json_msg_size = self.get_obj_size(event.data)
+        if json_msg_size > 1048576:
+            hints = ""
+            if not self._no_arr:
+                hints += " Try to disable lists."
+            if self._array_items_count == 0 or self._array_items_count > 1:
+                hints += " Try to decrease count of displayed array values, current count: {self._array_items_count}."
+            if not self._no_str:
+                hints += " Try to disable string."
+            event.data = {"error": f"json message is to big > 1 MByte ({formats.sizeof_fmt(json_msg_size)}).{hints}"}
         event.count = self._count_received
-        self._calc_stats(data, event)
+        self._calc_stats(msg_size, event)
         timeouted = self._hz == 0
         if self._hz != 0:
             now = time.time()
@@ -356,27 +394,14 @@ class RosSubscriberLauncher:
             self.wsClient.publish(
                 f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
 
-    def _get_message_size(self, msg):
-        # print("size:", msg.__sizeof__())
-        # print("dir:", dir(msg))
-        return msg.__sizeof__()
-        buff = None
-        from io import BytesIO  # Python 3.x
-        buff = BytesIO()
-        print(dir(msg))
-        # msg.serialize(buff)
-        # return buff.getbuffer().nbytes
-        return 0
-
-    def _calc_stats(self, msg, event):
+    def _calc_stats(self, msg_size, event):
         current_time = time.time()
         if current_time - self._last_received_ts > 1:
             pass
-        msg_len = self._get_message_size(msg)
-        if msg_len > -1:
-            event.size = msg_len
-            event.size_min = msg_len
-            event.size_max = msg_len
+        if msg_size > -1:
+            event.size = msg_size
+            event.size_min = msg_size
+            event.size_max = msg_size
         if self._msg_t0 < 0 or self._msg_t0 > current_time:
             self._msg_t0 = current_time
             self._msg_tn = current_time
@@ -386,8 +411,8 @@ class RosSubscriberLauncher:
             self._times.append(current_time - self._msg_tn)
             self._msg_tn = current_time
 
-            if msg_len > -1:
-                self._bytes.append(msg_len)
+            if msg_size > -1:
+                self._bytes.append(msg_size)
             if len(self._bytes) > self._window:
                 self._bytes.pop(0)
             if len(self._times) > self._window:
