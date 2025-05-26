@@ -456,6 +456,7 @@ def main(argv=sys.argv) -> int:
             print_help = False
 
         elif args.node_type and args.package:
+            screen.test_screen()
             if os.environ['ROS_VERSION'] == "1":
                 run_ROS1_node(args.package, args.node_type, args.name,
                               additional_args, args.prefix, args.respawn, args.masteruri, set_name=args.set_name)
