@@ -46,15 +46,33 @@ class MsgEncoder(json.JSONEncoder):
                             break
                         obj_bytes.append(str(byte))
                     result[key] = obj_bytes
+                else:
+                    result[key] = "filtered by no_array"
             elif isinstance(item, numpy.ndarray):
                 if (not self.no_arr):
-                    result[key] = item.tolist()
-            elif isinstance(item, (list, dict, )):
+                    if self.array_items_count > 0 and len(item) > self.array_items_count:
+                        arr = item[0:self.array_items_count]
+                        result[key] = arr + numpy.ndarray([f'another {len(item) - self.array_items_count} discarded by MAS'])
+                    else:
+                        result[key] = item.tolist()
+                else:
+                    result[key] = "filtered by no_array"
+            elif isinstance(item, (list, )):
                 if (not self.no_arr):
-                    result[key] = item
+                    if self.array_items_count > 0 and len(item) > self.array_items_count:
+                        arr = item[0:self.array_items_count]
+                        result[key] = arr + [f'another {len(item) - self.array_items_count} discarded by MAS']
+                    else:
+                        result[key] = item
+                else:
+                    result[key] = "filtered by no_array"
+            elif isinstance(item, (dict, )):
+                result[key] = item
             elif isinstance(item, str):
                 if (not self.no_str):
                     result[key] = item
+                else:
+                    result[key] = "filtered by no_str"
             else:
                 result[key] = item
         return result
