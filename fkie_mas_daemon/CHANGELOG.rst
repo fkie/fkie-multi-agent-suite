@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.1 (26.05.2025)
+------------------
+* Fixed start mas nodes in a screen
+
 4.5.0 (23.05.2025)
 ------------------
 * Added source setup.bash on force refresh package list

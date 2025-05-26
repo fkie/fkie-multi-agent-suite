@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.4.1 - 26.05.2025
+
+Fixed start mas nodes in a screen
+
 ## 4.4.0 - 23.05.2025
 
 Added an indicator of warnings when load launch file
