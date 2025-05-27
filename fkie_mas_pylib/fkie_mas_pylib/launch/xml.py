@@ -165,7 +165,7 @@ def get_internal_args(content: str, path: str = '', only_default: bool = False) 
             new_content).getElementsByTagName('launch')
         for node in xml_nodes:
             for child in node.childNodes:
-                if child.localName == 'arg' and child.hasAttributes():
+                if child.localName == 'arg' or child.localName == 'let' and child.hasAttributes():
                     aname = ''
                     aval = ''
                     add_arg = True
@@ -203,15 +203,20 @@ def _replace_internal_args(content: str, resolve_args: Dict[str, str] = {}, path
         for arg_key, args_val in resolve_args.items():
             replaced = True
             new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+            new_content = new_content.replace('$(var %s)' % arg_key, args_val)
         resolve_args_intern = get_internal_args(content)
         for arg_key, args_val in resolve_args_intern.items():
             new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
+            new_content = new_content.replace('$(var %s)' % arg_key, args_val)
             replaced = True
     except Exception as err:
         print(f"error in _replace_internal_args for {path}: {err}")
         import traceback
         Log.debug(
             f"error in _replace_internal_args for {path}: {traceback.format_exc()}")
+    if new_content != content:
+        replaced, new_content, resolve_args_intern_n = _replace_internal_args(new_content, resolve_args, path)
+        resolve_args_intern.update(resolve_args_intern_n)
     return replaced, new_content, resolve_args_intern
 
 
@@ -389,6 +394,7 @@ def find_included_files(string: str,
                     if os.path.isdir(fname):
                         fname = ''
                     exists = os.path.isfile(fname)
+                    fname = os.path.realpath(fname)
                     if fname:
                         publish = not unique or (
                             unique and fname not in my_unique_files)
