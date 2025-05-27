@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.4.2 - 27.05.2025
+
+Improved statistics visualization in topic echo panel
+Fixed reducing the size of the arrays for displaying the message in the echo tab
+Fixed calculation of the ros message size
+Fixed start mas commands in a screen
+
 ## 4.4.1 - 26.05.2025
 
 Fixed start mas nodes in a screen

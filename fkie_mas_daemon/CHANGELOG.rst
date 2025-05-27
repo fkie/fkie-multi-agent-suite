@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.2 (27.05.2025)
+------------------
+* Fixed reducing the size of the arrays for displaying the message in the echo tab
+* Fixed calculation of the ros message size
+* Fixed start mas commands in a screen
+
 4.5.1 (26.05.2025)
 ------------------
 * Fixed start mas nodes in a screen
