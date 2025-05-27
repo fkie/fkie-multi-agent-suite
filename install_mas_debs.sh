@@ -14,11 +14,12 @@ usage() {
     echo "  -w      wait for key press to quit"
     echo "  -f      force the installation of debian packages, even if the packages have been cloned into the workspace."
     echo "  -e      removes fkie mas packages. ttyd and python3-websockets are not uninstalled."
-    echo "  -s      install selected release."
+    echo "  -s  <version> install selected release, e.g.: 3.8.0"
+    echo "  -u  <user[:password]> user and password useful if API rate limit is exceeded"
     exit 1
 }
 
-while getopts grphwfes:  flag; do
+while getopts grphwfes:u:  flag; do
     case "${flag}" in
         g) NO_ROS=true;;
         r) NO_GUI=true;;
@@ -27,6 +28,7 @@ while getopts grphwfes:  flag; do
         f) FORCE_INSTALL=true;;
         e) UNINSTALL=true;;
         s) FORCE_VERSION=$OPTARG;;
+        u) FORCE_USER=$OPTARG;;
         h) usage ;;
         *) usage ;;
     esac
@@ -79,11 +81,21 @@ fi
 TMP_DIR=/tmp/mas-debs
 
 RELEASES_URL="https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases"
-RELEASES=$(curl -s "$RELEASES_URL")
+if [ -z $FORCE_USER ]; then
+    RELEASES=$(curl -s "$RELEASES_URL")
+else
+    RELEASES=$(curl -u $FORCE_USER -s "$RELEASES_URL")
+fi
 
 # Check whether the releases have been successfully retrieved
 if [ $? -ne 0 ]; then
     echo -e "\e[31mError when retrieving the releases from github.com\e[0m"
+    exit 1
+fi
+
+MESSAGE=$(echo "$RELEASES" | jq -r 'if type=="array" then false else has("message") end')
+if [ "$MESSAGE" = true ] ; then
+    echo -e "$RELEASES"
     exit 1
 fi
 
