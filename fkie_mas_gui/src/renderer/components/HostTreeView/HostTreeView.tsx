@@ -242,7 +242,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     (itemIds: string[]): string[] => {
       let nodeList: string[] = [];
       for (const item of itemIds) {
-        console.log(`imteids 1`);
         nodeList = [
           ...nodeList,
           ...keyNodeList
@@ -280,7 +279,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
               stopNodes([node.idGlobal]);
             } else if (node.screens) {
               for (const screen of node.screens) {
-                console.log(`screens 1`);
                 navCtx.openTerminal(
                   CmdType.SCREEN,
                   node.providerId as string,
@@ -366,7 +364,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       let updatedGroup = false;
       // get all children IDs
       for (const id of parentIds) {
-        console.log(`parents 1`);
         const parsedId = id.split("#");
         // a group (with children) must have 1 substring
         if (parsedId.length === 1) {
@@ -394,11 +391,9 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           // we have a node, get the group name and check if it is in allIds
           // or if all nodes of the group are in the allIds, select it too.
           const groupName = parsedId[0];
-          console.log(` groupName: ${groupName}`);
           if (allIds.indexOf(groupName) === -1) {
             // add if all children are in allIds
             if (allChildrenSelected(groupName, allIds)) {
-              console.log(` add groupName: ${groupName}`);
               allIds.push(groupName);
               updatedGroup = true;
             }
@@ -596,7 +591,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       const providerNodes = rosCtx.mapProviderRosNodes.get(providerId);
       if (providerNodes) {
         for (const treeNode of providerNodes.values()) {
-          console.log(`selectNodesFromLaunch 1`);
           const nodes = launch.nodes?.filter((lNode) => {
             return lNode.node_name === treeNode.name;
           });
