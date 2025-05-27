@@ -313,8 +313,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       const path = pathSplits[1];
       const parentPaths = includedFiles.filter((item) => {
         if (path === item.inc_path) {
+          return true;
           // check args to select the correct file, if the same file included twice
-          return equalLaunchArgs(currentLaunchArgs, item.args || []);
+          // skipped: args are not always fully resolved, especially if they contain find-pkg-share
+          // return equalLaunchArgs(currentLaunchArgs, item.args || []);
         }
         return false;
       });
@@ -1234,9 +1236,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               autoClick={true}
               options={selectParentFiles.map((item) => {
                 return {
-                  name: getFileName(item.path),
+                  name: `${getFileName(item.path)} (${getFileName(item.inc_path)}:${item.line_number})`,
                   tooltip: item.path,
-                  key: item.path,
+                  key: `${item.path}-${item.line_number}`,
                   onClick: (): void => {
                     setEditorModel(item.path, {
                       startLineNumber: item.line_number,
