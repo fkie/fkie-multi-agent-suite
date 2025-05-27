@@ -7,7 +7,6 @@
 # ****************************************************************************
 
 
-import gc
 import os
 import argparse
 import json
@@ -338,30 +337,6 @@ class RosSubscriberLauncher:
         parser.set_defaults(help=False)
         return parser
 
-    def get_obj_size(self, obj):
-        marked = {id(obj)}
-        obj_q = [obj]
-        sz = 0
-
-        while obj_q:
-            sz += sum(map(sys.getsizeof, obj_q))
-
-            # Lookup all the object referred to by the object in obj_q.
-            # See: https://docs.python.org/3.7/library/gc.html#gc.get_referents
-            all_refr = ((id(o), o) for o in gc.get_referents(*obj_q))
-
-            # Filter object that are already marked.
-            # Using dict notation will prevent repeated objects.
-            new_refr = {o_id: o for o_id, o in all_refr if o_id not in marked and not isinstance(o, type)}
-
-            # The new obj_q will be the ones that were not marked,
-            # and we will update marked with their ids so we will
-            # not traverse them again.
-            obj_q = new_refr.values()
-            marked.update(new_refr.keys())
-
-        return sz
-
     async def _msg_handle_raw(self, data):
         msg_size = len(data)
         msg = deserialize_message(data, self.__msg_class)
@@ -369,10 +344,11 @@ class RosSubscriberLauncher:
         self._latched = False
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
+        json_msg_size = -1
         if not self._no_data:
-            event.data = json.loads(json.dumps(
-                msg, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count}))
-        json_msg_size = self.get_obj_size(event.data)
+            data_str = json.dumps(msg, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count})
+            json_msg_size = len(data_str)
+            event.data = json.loads(data_str)
         if json_msg_size > 1048576:
             hints = ""
             if not self._no_arr:
@@ -396,8 +372,6 @@ class RosSubscriberLauncher:
 
     def _calc_stats(self, msg_size, event):
         current_time = time.time()
-        if current_time - self._last_received_ts > 1:
-            pass
         if msg_size > -1:
             event.size = msg_size
             event.size_min = msg_size
