@@ -98,7 +98,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     const spamNodesParam = settingsCtx.get("spamNodes") as string;
     const cliInSpam = spamNodesParam.indexOf("_ros2cli") > -1;
     for (const node of nodes) {
-      console.log(`nodes 1`);
       let remoteLocationId = "";
       if (!node.isLocal) {
         // adds a new provider, which has no mas daemon and discovery
@@ -422,7 +421,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   function getProvidersFromIds(itemIds: string[]): string[] {
     const provList: string[] = [];
     for (const item of itemIds) {
-      console.log(`getProvidersFromIds 1`);
       if (!item.includes("#") && !item.includes("/")) {
         provList.push(item);
       }
@@ -444,7 +442,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         if (selectedIds.length > 1) {
           // if a group was previously selected but not anymore, deselect all its children
           for (const prevId of prevSelected) {
-            console.log(`handleSelect 1`);
             const prevParsedId = prevId.split("#");
             if (prevParsedId.length === 1 && !selectedIds.includes(prevId)) {
               selectedIds = selectedIds.filter((e) => !e.startsWith(prevId));
@@ -452,10 +449,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           }
           // remove group selection if a node in it was deselected
           for (const prevId of prevSelected) {
-            console.log(`handleSelect 2`);
             if (!selectedIds.some((id) => id === prevId)) {
               for (const id of selectedIds) {
-                console.log(`handleSelect 3`);
                 if (prevId.startsWith(id)) {
                   selectedIds = selectedIds.filter((e) => e !== id);
                 }
@@ -694,7 +689,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
    */
   const generateTree = useMemo(() => {
     const newKeyNodeList: { key: string; idGlobal: string }[] = [];
-    console.log(`generate trre`);
     const tree = (
       <SimpleTreeView
         // apiRef={apiRef}
