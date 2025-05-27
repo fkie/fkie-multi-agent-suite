@@ -28,7 +28,7 @@ import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 import { v4 as uuid } from "uuid";
 
-import { CopyButton } from "@/renderer/components/UI";
+import { CopyButton, Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -621,29 +621,37 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
           </Stack>
           <Stack>{showOptions && generateOptions}</Stack>
           {content && showStatistics && (
-            <Stack margin={0.5} spacing={1}>
+            <Stack margin={0.5} spacing={0}>
               <Stack spacing={1} direction="row" fontSize="0.8em">
+                <Tag text={`${content.count}`} color="info" tooltip="count of received message" />
                 {content.latched && (
-                  <Box
-                    style={{
-                      fontWeight: "bold",
-                    }}
-                  >
+                  <Typography variant="body2" style={{ fontWeight: "bold" }}>
                     latched
-                  </Box>
+                  </Typography>
                 )}
-                <Box>{content.count} messages</Box>
-                <Box>average rate: {content.rate.toFixed(2)} Hz</Box>
+                <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                  rate:
+                </Typography>
+                <Typography variant="body2">{content.rate > -1 ? `${content.rate.toFixed(2)} Hz` : "n/a"}</Typography>
               </Stack>
-              <Stack spacing={1} direction="row" fontSize="0.8em">
-                <Box>
-                  bw: {normalizePrint(content.bw, 2, "/s")} [min: {normalizePrint(content.bw_min, 0, "/s")}, max:{" "}
-                  {normalizePrint(content.bw_max, 0, "/s")}]
-                </Box>
-                <Box>
-                  size: {normalizePrint(content.size, 2)} [min: {normalizePrint(content.size_min, 0)}, max:{" "}
-                  {normalizePrint(content.size_max, 0)}]
-                </Box>
+              <Stack spacing={0} direction="column">
+                <Stack spacing={1} direction="row">
+                  <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                    size:
+                  </Typography>
+                  <Typography variant="body2">
+                    {normalizePrint(content.size, 2)} [min: {normalizePrint(content.size_min, 0)}, max:{" "}
+                    {normalizePrint(content.size_max, 0)}]
+                  </Typography>
+                </Stack>
+                <Stack spacing={1} direction="row">
+                  <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                    bw:
+                  </Typography>
+                  <Typography variant="body2">
+                    {content.bw > -1 ? `${normalizePrint(content.bw, 2, "/s")} [min: ${normalizePrint(content.bw_min, 0, "/s")}, max: ${normalizePrint(content.bw_max, 0, "/s")}]` : "n/a"}
+                  </Typography>
+                </Stack>
               </Stack>
             </Stack>
           )}
