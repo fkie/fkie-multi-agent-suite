@@ -127,11 +127,17 @@ export function AutoUpdateProvider({
     try {
       setUpdateError("");
       setCheckingForUpdate(true);
+      setCheckedChannel(channel);
       const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases");
       if (!response.ok) {
-        setUpdateError("Network error");
+        setUpdateError(`HTTP Response Status Code: ${response.status}`);
+        return;
       }
       const data = await response.json();
+      if (data.message) {
+        setUpdateError(`${JSON.stringify(data)}`);
+        return;
+      }
       let release: JSONObject | undefined = undefined;
       if (data.length > 0) {
         if (channel === "prerelease") {
@@ -163,6 +169,7 @@ export function AutoUpdateProvider({
         }
       } else {
         setUpdateError("No releases found on github.com");
+        return;
       }
       if (release) {
         if (channel === release.name && packageJson.version !== release.name) {
@@ -201,7 +208,6 @@ export function AutoUpdateProvider({
       } else {
         setUpdateError(`No ${channel} found`);
       }
-      setCheckedChannel(channel);
     } catch (error) {
       let errorMessage = "Failed to fetch release";
       if (error instanceof Error) {
