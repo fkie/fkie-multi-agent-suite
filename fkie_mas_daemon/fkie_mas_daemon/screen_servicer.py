@@ -31,7 +31,7 @@ class ScreenServicer:
         self._screen_check_force_after_default = 10
         self._screen_check_force_after = self._screen_check_force_after_default
         self._screen_do_check = True
-        self._screen_thread = None
+        self._screen_thread: threading.Thread = None
         self._screen_thread_lock = threading.RLock()
         self._screens_set = set()
         self._screen_nodes_set = set()
@@ -39,6 +39,7 @@ class ScreenServicer:
         self.websocket = websocket
         websocket.register("ros.screen.kill_node", self.kill_node)
         websocket.register("ros.screen.get_list", self.get_screen_list)
+        self._thread_notify: threading.Timer = None
 
     def start(self):
         self._screen_thread = threading.Thread(
@@ -47,6 +48,12 @@ class ScreenServicer:
 
     def stop(self):
         self._is_running = False
+        if self._thread_notify is not None:
+            self._thread_notify.cancel()
+    
+    def _send_update_notification(self):
+        self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+        self._thread_notify = None
 
     def _check_screens(self):
         last_check = 0
@@ -179,6 +186,11 @@ class ScreenServicer:
                 successCur = True
             if successCur:
                 success = True
+        if success and self._thread_notify is None:
+            self._thread_notify = threading.Timer(3.0, self._send_update_notification)
+            self._thread_notify.setDaemon(True)
+            self._thread_notify.start()
+
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
     def get_screen_list(self) -> str:
