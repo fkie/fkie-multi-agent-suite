@@ -323,7 +323,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
-          {node.status === RosNodeStatus.RUNNING && sigKillTimeout.length > 0 && (
+          {(node.status === RosNodeStatus.RUNNING || node.status === RosNodeStatus.ONLY_SCREEN) && sigKillTimeout.length > 0 && (
             <Tooltip
               title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} sec`}
               placement="left"
