@@ -146,6 +146,8 @@ def replace_paths(text: str, pwd: str = '.') -> str:
             path = groups.groups()[index]
             if path:
                 new_path = interpret_path(path, pwd)
+                if os.path.exists(new_path):
+                    new_path = os.path.realpath(new_path)
                 result = result.replace(path.rstrip(os.path.sep), new_path)
     return result
 
@@ -292,6 +294,7 @@ def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
                                 val = replace_arg(arg_attr.value, resolve_args)
                                 skip = val in ['true', '1']
                         if aname and not skip:
+                            aval = replace_paths(aval)
                             resolved_inc_args[aname] = aval
                 if filename:
                     included_files.append((filename, resolved_inc_args))
