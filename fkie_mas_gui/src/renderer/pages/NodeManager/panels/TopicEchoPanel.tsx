@@ -10,7 +10,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import StopIcon from "@mui/icons-material/Stop";
 import {
   Alert,
-  Box,
   Button,
   Divider,
   IconButton,
