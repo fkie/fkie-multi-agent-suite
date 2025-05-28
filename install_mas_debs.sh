@@ -209,12 +209,16 @@ if [ -d "$TMP_DIR" ]; then
             echo -e "\e[32mInstallation completed.\e[0m"
             echo -e "\e[32mRestarting mas daemon nodes...\e[0m"
             ros2 run fkie_mas_daemon mas-restart.py
-            echo -e "\e[32mRestart mas gui\e[0m"
-            killall mas-gui
-            status=$?
-            if [ $status -eq 0 ]; then
-                screen -dmS .mas-gui mas-gui
-            fi
+            # echo -e "\e[32mRestart mas gui? (Y/n)\e[0m"
+            echo -e "\e[32mRestart mas gui? (Y/n)\e[0m"
+            read yn
+            case $yn in
+                [yY] ) break;;
+                [nN] ) echo exiting...;
+                    exit;;
+            esac
+            echo -e "\e[32mRestarting mas gui...\e[0m"
+            screen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'
         else
             echo -e "\e[31mInstallation failed\e[0m"
         fi
@@ -224,12 +228,15 @@ if [ -d "$TMP_DIR" ]; then
             echo -e "\e[32mInstallation completed.\e[0m"
             echo -e "\e[32mRestarting mas daemon nodes...\e[0m"
             ros2 run fkie_mas_daemon mas-restart.py
-            echo -e "\e[32mRestart mas gui\e[0m"
-            killall mas-gui
-            status=$?
-            if [ $status -eq 0 ]; then
-                screen -dmS .mas-gui mas-gui
-            fi
+            echo -e "\e[32mRestart mas gui? (Y/n)\e[0m"
+            read yn
+            case $yn in
+                [yY] ) break;;
+                [nN] ) echo exiting...;
+                    exit;;
+            esac
+            echo -e "\e[32mRestarting mas gui...\e[0m"
+            screen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'
         else
             echo -e "\e[31mInstallation failed\e[0m"
         fi
