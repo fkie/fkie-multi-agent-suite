@@ -14,7 +14,7 @@ import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 
-import ExplorerTree, { equalLaunchArgs } from "@/renderer/components/MonacoEditor/ExplorerTree";
+import ExplorerTree from "@/renderer/components/MonacoEditor/ExplorerTree";
 import { PythonLanguage } from "@/renderer/components/MonacoEditor/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "@/renderer/components/MonacoEditor/PythonLaunchProposals";
 import SearchTree from "@/renderer/components/MonacoEditor/SearchTree";
