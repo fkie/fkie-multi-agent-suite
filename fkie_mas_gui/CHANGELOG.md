@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.4.4 - 28.05.2025
+
+Ask for restart gui after running install script
+Fixed double terminal on update
+
 ## 4.4.3 - 28.05.2025
 
 Added script to restart running mas nodes and reload launch files
