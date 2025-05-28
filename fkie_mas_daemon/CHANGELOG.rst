@@ -2,6 +2,13 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.3 (28.05.2025)
+------------------
+* Added script to restart running mas nodes and reload launch files
+* Terminate all child processes when shutting down the screens started by mas
+* Force update state after kill_screens
+* Fixed set args for included launch files
+
 4.5.2 (27.05.2025)
 ------------------
 * Fixed reducing the size of the arrays for displaying the message in the echo tab

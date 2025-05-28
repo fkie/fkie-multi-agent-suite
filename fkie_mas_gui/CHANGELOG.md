@@ -1,5 +1,16 @@
 # Changelog
 
+## 4.4.3 - 28.05.2025
+
+Added script to restart running mas nodes and reload launch files
+Terminate all child processes when shutting down the screens started by mas
+Reduced update requests from github
+Show more info if check for updates failed
+Force update state after kill_screens
+Improved resolve arguments in xml launch files
+Added user parameter to install_mas_debs script
+Show kill on stop icon for running executables
+
 ## 4.4.2 - 27.05.2025
 
 Improved statistics visualization in topic echo panel

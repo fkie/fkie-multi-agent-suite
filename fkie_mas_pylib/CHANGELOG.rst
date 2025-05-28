@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.1 (28.05.2025)
+------------------
+* Added method for determining the child process of a given pid
+* Replace paths in arguments when searching for included files
+* Improved resolve arguments in xml launch files
+
 4.4.0 (23.05.2025)
 ------------------
 * Added new warning group id
