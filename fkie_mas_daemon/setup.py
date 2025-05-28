@@ -55,7 +55,7 @@ else:
              'tests/launch/included.launch.xml']),
             # (f'share/{package_name}/tests/resources', resource_files),
             (f'lib/{package_name}',
-             ['scripts/mas-remote-node.py', 'scripts/mas-respawn'])
+             ['scripts/mas-remote-node.py', 'scripts/mas-respawn', 'scripts/mas-restart.py'])
         ],
         install_requires=['setuptools', 'ruamel.yaml', 'launch-xml'],
         zip_safe=True,

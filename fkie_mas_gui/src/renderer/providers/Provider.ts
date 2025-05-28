@@ -1109,6 +1109,9 @@ export default class Provider implements IProvider {
         n.screens = screen.screens;
         n.isLocal = true;
         n.processIds.push(Number.parseInt(screen.name.split(".")[0]));
+        if (screen.name === "/mas-gui") {
+          n.system_node = true;
+        }
         this.rosNodes.push(n);
       }
     });

@@ -207,7 +207,14 @@ if [ -d "$TMP_DIR" ]; then
             echo -e "\e[33mno ttyd packages available for focal, installing using snap:\e[0m"
             sudo snap install ttyd --classic
             echo -e "\e[32mInstallation completed.\e[0m"
-            echo -e "\e[32mRestart mas nodes, please!\e[0m"
+            echo -e "\e[32mRestarting mas daemon nodes...\e[0m"
+            ros2 run fkie_mas_daemon mas-restart.py
+            echo -e "\e[32mRestart mas gui\e[0m"
+            killall mas-gui
+            status=$?
+            if [ $status -eq 0 ]; then
+                screen -dmS .mas-gui mas-gui
+            fi
         else
             echo -e "\e[31mInstallation failed\e[0m"
         fi
@@ -215,7 +222,14 @@ if [ -d "$TMP_DIR" ]; then
         # install all packages using apt
         if sudo apt install ttyd $TMP_DIR/*; then
             echo -e "\e[32mInstallation completed.\e[0m"
-            echo -e "\e[32mRestart mas nodes, please!\e[0m"
+            echo -e "\e[32mRestarting mas daemon nodes...\e[0m"
+            ros2 run fkie_mas_daemon mas-restart.py
+            echo -e "\e[32mRestart mas gui\e[0m"
+            killall mas-gui
+            status=$?
+            if [ $status -eq 0 ]; then
+                screen -dmS .mas-gui mas-gui
+            fi
         else
             echo -e "\e[31mInstallation failed\e[0m"
         fi
