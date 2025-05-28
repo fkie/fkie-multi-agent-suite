@@ -35,7 +35,7 @@ export default function About(): JSX.Element {
   const updateCliRobot = auCtx.getUpdateCli(false, true);
 
   return (
-    <Stack height="100%" padding="0.3em" overflow="auto" >
+    <Stack height="100%" padding="0.3em" overflow="auto">
       {/** Version */}
       <Stack direction="column" justifyItems="center">
         <Stack spacing={1} direction="row" justifyItems="center" alignItems="center">
@@ -63,6 +63,11 @@ export default function About(): JSX.Element {
                 }}
               />
             </IconButton>
+          )}
+          {auCtx.checkTimestamp > 0 && (
+            <Typography variant="body1" color="grey" sx={{ fontSize: "0.8em" }}>
+              last check: {new Date(auCtx.checkTimestamp * 1000).toLocaleString()}
+            </Typography>
           )}
         </Stack>
         {auCtx.autoUpdateManager && (
@@ -164,7 +169,9 @@ export default function About(): JSX.Element {
                 {updateCli}
               </Typography>
             </Stack>
-            <Typography ml="0.5em" variant="body2">without mas gui:</Typography>
+            <Typography ml="0.5em" variant="body2">
+              without mas gui:
+            </Typography>
             <Stack ml="1em" direction="row" alignItems="center">
               <CopyButton value={updateCli} />
               <Typography variant="body1" color="grey">

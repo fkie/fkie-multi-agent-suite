@@ -38,6 +38,10 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
     autoUpdater.allowPrerelease = channelType === "prerelease";
   };
 
+  isAppImage: () => Promise<boolean> = () => {
+    return Promise.resolve(process.env.APPIMAGE !== undefined);
+  }
+
   onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) => void = () => {
     // implemented in preload script
   };
@@ -85,6 +89,12 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
       AutoUpdateManagerEvents.setChannel,
       (_event: Electron.IpcMainInvokeEvent, channel: "prerelease" | "release") => {
         this.setChannel(channel);
+      }
+    );
+    ipcMain.handle(
+      AutoUpdateManagerEvents.isAppImage,
+      (_event: Electron.IpcMainInvokeEvent) => {
+        return this.isAppImage();
       }
     );
     autoUpdater.on("checking-for-update", () => {

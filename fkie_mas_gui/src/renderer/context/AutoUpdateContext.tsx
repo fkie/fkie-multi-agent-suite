@@ -1,5 +1,5 @@
 import { ProgressInfo, UpdateInfo } from "electron-updater";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import semver from "semver";
 
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
@@ -15,6 +15,7 @@ export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
   checkForUpdate: () => void;
   updateChannel: string;
+  checkTimestamp: number;
   setUpdateChannel: (channelType: "prerelease" | "release" | string) => void;
   checkingForUpdate: boolean;
   updateAvailable: UpdateInfo | null;
@@ -31,6 +32,7 @@ export interface IAutoUpdateContext {
 export const DEFAULT = {
   autoUpdateManager: null,
   updateChannel: "release",
+  checkTimestamp: 0,
   checkForUpdate: (): void => {},
   setUpdateChannel: (): void => {},
   checkingForUpdate: false,
@@ -60,10 +62,10 @@ export function AutoUpdateProvider({
   const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [checkedChannel, setCheckedChannel] = useState<string>("");
+  const minDelayBetweenAutoChecks = 86400; // one day in seconds
   const [autoUpdateManager, setAutoUpdateManager] = useState<TAutoUpdateManager | null>(null);
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useLocalStorage<UpdateInfo | null>("AutoUpdate:updateAvailable", null);
   const [downloadProgress, setDownloadProgress] = useState<ProgressInfo | null>(null);
   const [updateError, setUpdateError] = useState<string>("");
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
@@ -73,6 +75,7 @@ export function AutoUpdateProvider({
     "AutoUpdate:updateChannel",
     "release"
   );
+  const [checkTimestamp, setCheckTimestamp] = useLocalStorage<number>("AutoUpdate:checkTimestamp", 0);
 
   function getUpdateCli(gui: boolean, ros: boolean): string {
     const prereleaseOpt =
@@ -88,16 +91,21 @@ export function AutoUpdateProvider({
   }
 
   function checkForUpdate(channel?: "prerelease" | "release" | string): void {
-    logCtx.info(`Check for new ${updateChannel} on https://github.com/fkie/fkie-multi-agent-suite`, "", false);
+    logCtx.info(
+      `Check for new ${updateChannel}${isAppImage ? " for AppImage" : " for debian"} on https://github.com/fkie/fkie-multi-agent-suite`,
+      "",
+      false
+    );
     setUpdateAvailable(null);
     setUpdateError("");
     setCheckingForUpdate(false);
     setDownloadProgress(null);
-    if (isAppImage) {
+    setCheckTimestamp(Math.floor(Date.now() / 1000));
+    if (isAppImage && autoUpdateManager) {
       if (channel && ["prerelease", "release"].includes(channel)) {
-        autoUpdateManager?.setChannel(channel as "prerelease" | "release");
+        autoUpdateManager.setChannel(channel as "prerelease" | "release");
       }
-      autoUpdateManager?.checkForUpdate();
+      autoUpdateManager.checkForUpdate();
     } else {
       fetchRelease(channel ? channel : updateChannel);
     }
@@ -127,7 +135,6 @@ export function AutoUpdateProvider({
     try {
       setUpdateError("");
       setCheckingForUpdate(true);
-      setCheckedChannel(channel);
       const response = await fetch("https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases");
       if (!response.ok) {
         setUpdateError(`HTTP Response Status Code: ${response.status}`);
@@ -242,6 +249,23 @@ export function AutoUpdateProvider({
     return "";
   }
 
+  function autoCheckAllowed(timestamp: number): boolean {
+    return Math.floor(Date.now() / 1000) - timestamp > minDelayBetweenAutoChecks;
+  }
+
+  const updateIsAppImage = useCallback(
+    async (autoUpdateManager: TAutoUpdateManager): Promise<void> => {
+      const isAppImageLocal = await autoUpdateManager.isAppImage();
+      setIsAppImage(isAppImageLocal);
+      if (settingsCtx.get("checkForUpdates") && isAppImageLocal) {
+        if (autoCheckAllowed(checkTimestamp)) {
+          checkForUpdate(updateChannel);
+        }
+      }
+    },
+    [checkTimestamp, updateChannel]
+  );
+
   useEffect(() => {
     if (window.autoUpdate) {
       setAutoUpdateManager(window.autoUpdate);
@@ -256,12 +280,10 @@ export function AutoUpdateProvider({
     });
     autoUpdateManager?.onUpdateAvailable((info) => {
       setUpdateAvailable(info);
-      setCheckedChannel(updateChannel);
-      logCtx.info(`New version ${info.version} available!`, "");
+      logCtx.info(`New version ${info.version} of AppImage is available!`, "");
     });
     autoUpdateManager?.onUpdateNotAvailable(() => {
       setUpdateAvailable(null);
-      setCheckedChannel(updateChannel);
     });
     autoUpdateManager?.onDownloadProgress((info) => {
       setDownloadProgress(info);
@@ -278,10 +300,7 @@ export function AutoUpdateProvider({
         setIsAppImage(false);
       }
     });
-
-    if (settingsCtx.get("checkForUpdates") && !checkedChannel) {
-      checkForUpdate(updateChannel);
-    }
+    updateIsAppImage(autoUpdateManager);
   }, [autoUpdateManager]);
 
   useEffect(() => {
@@ -294,16 +313,26 @@ export function AutoUpdateProvider({
   }, [rosCtx.providersConnected]);
 
   useEffect(() => {
-    if (localProviderId && updateChannel !== checkedChannel) {
-      checkForUpdate(updateChannel);
+    if (localProviderId) {
+      if (autoCheckAllowed(checkTimestamp)) {
+        checkForUpdate(updateChannel);
+      }
     }
-  }, [localProviderId, updateChannel, checkedChannel]);
+  }, [localProviderId, updateChannel, checkTimestamp]);
+
+  useEffect(() => {
+    // on start after update, we have to check if current version is the last available update
+    if (updateAvailable?.version === packageJson.version) {
+      setUpdateAvailable(null);
+    }
+  }, [updateAvailable])
 
   const attributesMemo = useMemo(
     () => ({
       autoUpdateManager,
       checkForUpdate,
       updateChannel,
+      checkTimestamp,
       setUpdateChannel,
       checkingForUpdate,
       updateAvailable,
@@ -316,7 +345,17 @@ export function AutoUpdateProvider({
       installDebian,
       setLocalProviderId,
     }),
-    [autoUpdateManager, checkingForUpdate, updateAvailable, downloadProgress, updateError, requestedInstallUpdate]
+    [
+      autoUpdateManager,
+      updateChannel,
+      checkTimestamp,
+      checkingForUpdate,
+      updateAvailable,
+      downloadProgress,
+      updateError,
+      requestedInstallUpdate,
+      isAppImage,
+    ]
   );
 
   return <AutoUpdateContext.Provider value={attributesMemo}>{children}</AutoUpdateContext.Provider>;

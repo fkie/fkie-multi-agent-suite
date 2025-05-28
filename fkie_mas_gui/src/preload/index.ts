@@ -56,6 +56,10 @@ if (process.contextIsolated) {
         return ipcRenderer.invoke(AutoUpdateManagerEvents.setChannel, channelType);
       },
 
+      isAppImage: () => {
+        return ipcRenderer.invoke(AutoUpdateManagerEvents.isAppImage);
+      },
+
       onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) =>
         ipcRenderer.on(AutoUpdateManagerEvents.onCheckingForUpdate, (_event, state) => {
           callback(state);
