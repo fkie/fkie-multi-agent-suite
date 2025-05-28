@@ -9,7 +9,6 @@
 
 import json
 import os
-import psutil
 import signal
 import threading
 import time
@@ -17,6 +16,7 @@ from typing import Dict, List
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.system import process
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.websocket.server import WebSocketServer
 import fkie_mas_daemon as nmd
@@ -128,43 +128,7 @@ class ScreenServicer:
         for session_name, node_name in screens.items():
             successCur = False
             pid_screen, session_name = screen.split_session_name(session_name)
-            # try to determine the process id of the node inside the screen
-            found_deep = -1
-            found_pid = -1
-            found_name = ""
-            parents2kill = []
-            try:
-                for process in psutil.process_iter():
-                    deep = -1
-                    found = False
-                    parents = process.parents()
-                    # search for parents with screen process id
-                    for p in parents:
-                        deep += 1
-                        if p.pid == pid_screen:
-                            found = True
-                            break
-                    # use the process with most parents
-                    if found and deep > found_deep:
-                        found_deep = deep
-                        found_pid = process.pid
-                        found_name = process.name()
-                        parents2kill = parents
-            except Exception as error:
-                # fallback for psutil versions (<5.6.0) without Process.parents()
-                current_pid = pid_screen
-                new_pid = current_pid
-                while new_pid == current_pid:
-                    new_pid = -1
-                    # search for process which has screen id as parent
-                    for process in psutil.process_iter():
-                        parent = process.parent()
-                        if parent and parent.pid == current_pid:
-                            new_pid = process.pid
-                            parents2kill.append(current_pid)
-                            current_pid = process.pid
-                if current_pid != pid_screen:
-                    found_pid = current_pid
+            found_pid, found_name, parents2kill = process.get_child_pid(pid_screen)
             if found_pid > -1:
                 Log.info(
                     f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig_obj.name}")

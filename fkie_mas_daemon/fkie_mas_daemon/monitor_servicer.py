@@ -23,6 +23,7 @@ from fkie_mas_pylib.interface.runtime_interface import SystemInformation
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.system import process
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.defines import SETTINGS_PATH
 from fkie_mas_pylib import names
@@ -114,15 +115,33 @@ class MonitorServicer:
         result = False
         message = ''
         procs = []
+        screen_child_ids = []
         try:
-            for process in psutil.process_iter():
+            for ps_it in psutil.process_iter():
                 try:
-                    cmdStr = ' '.join(process.cmdline())
+                    cmdStr = ' '.join(ps_it.cmdline())
                     if cmdStr.find(SETTINGS_PATH) > -1:
+                        # ignore mas daemon pid to kill it last
                         if (cmdStr.find('mas-daemon') == -1):
-                            # ignore mas daemon pid to kill it last
-                            procs.append(process)
-                            process.terminate()
+                            found_pid, _found_name, _parents2kill = process.get_child_pid(ps_it.pid)
+                            procs.append(ps_it)
+                            ps_it.terminate()
+                            if found_pid > -1:
+                                # store child process of the screen we found using SETTINGS_PATH for later kill
+                                screen_child_ids.append(found_pid)
+                except (psutil.ZombieProcess, psutil.NoSuchProcess):
+                    # ignore errors because of zombie processes or non-existent (terminated child?) processes
+                    pass
+                except Exception as error:
+                    import traceback
+                    print(traceback.format_exc())
+            # kill child process of the screen we found using SETTINGS_PATH
+            for pid in screen_child_ids:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    # ignore errors for non-existent processes, they were already terminated when the parent screen process was stopped
+                    pass
                 except Exception as error:
                     import traceback
                     print(traceback.format_exc())
