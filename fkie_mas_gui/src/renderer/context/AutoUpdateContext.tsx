@@ -120,7 +120,7 @@ export function AutoUpdateProvider({
     setUpdateError("");
     const providerId = getLocalProviderId();
     if (providerId) {
-      navCtx.openTerminal(CmdType.TERMINAL, providerId, "", "", getUpdateCli(gui, ros), false, false);
+      navCtx.openTerminal(CmdType.CMD, providerId, "", "", getUpdateCli(gui, ros), false, false);
     } else {
       setUpdateError("Could not connect to the local TTYD. Please start the local TTYD.");
     }
