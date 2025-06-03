@@ -325,7 +325,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
           )}
           {(node.status === RosNodeStatus.RUNNING || node.status === RosNodeStatus.ONLY_SCREEN) && sigKillTimeout.length > 0 && (
             <Tooltip
-              title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} sec`}
+              title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} ms`}
               placement="left"
             >
               <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
