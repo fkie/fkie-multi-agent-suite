@@ -119,6 +119,16 @@ class RosStateJsonify:
         self._timestamp_state = 0
         self._lock_update_services = threading.RLock()
         self._thread_update_services = None
+        self._use_name_as_node_id = self.get_rwm_implementation() in ["rmw_zenoh_cpp"]
+
+    def get_rwm_implementation(self) -> Text:
+        result = "rmw_fastrtps_cpp"
+        if "RMW_IMPLEMENTATION" in os.environ:
+            result = os.environ["RMW_IMPLEMENTATION"]
+        if not result:
+            if os.environ["ROS_DISTRO"] == "jazzy":
+                result = "rmw_fastrtps_cpp"
+        return result
 
     @classmethod
     def get_message_type(cls, dds_type: Text) -> Text:
@@ -198,6 +208,15 @@ class RosStateJsonify:
             new_ros_state[guid] = participant
         self._participant_infos = new_ros_state
 
+    def parse_node_name(self, node_name):
+        full_node_name = node_name
+        if not full_node_name.startswith('/'):
+            full_node_name = '/' + full_node_name
+        namespace, node_basename = full_node_name.rsplit('/', 1)
+        if namespace == '':
+            namespace = '/'
+        return node_basename, namespace
+
     # Creates a list of RosNode's from discovered ROS2 list
     # The status of composable or lifecycle nodes is determined by calling services. This is done in a separate thread.
     # This is done in such a way that no changes are missed. With a newer 'ts_state_updated' the parameters are cached and the thread is started again if necessary when it is finished.
@@ -226,14 +245,15 @@ class RosStateJsonify:
             self._ros_service_dict: Dict[str, RosService] = {}
             self._ros_topic_dict: Dict[str, RosTopic] = {}
 
-        topic_list = nmd.ros_node.get_topic_names_and_types(True)
+        topic_list = nmd.ros_node.get_topic_names_and_types(no_demangle=True)
         for topic_name, topic_types in topic_list:
             pub_qos: List[QosPub] = []
             pub_infos = nmd.ros_node.get_publishers_info_by_topic(topic_name, True)
             for pub_info in pub_infos:
                 if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
                     continue
-                gid = self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
+                node_full_name = os.path.join(pub_info.node_namespace, pub_info.node_name)
+                gid = node_full_name if self._use_name_as_node_id else self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
                 t_gid = self._guid_arr_to_str(pub_info.endpoint_gid)
                 ros_node, is_new = self._get_node_from(
                     pub_info.node_namespace, pub_info.node_name, gid, cached_data)
@@ -284,7 +304,8 @@ class RosStateJsonify:
             for sub_info in sub_infos:
                 if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
                     continue
-                gid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
+                node_full_name = os.path.join(sub_info.node_namespace, sub_info.node_name)
+                gid = node_full_name if self._use_name_as_node_id else self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
                 t_gid = self._guid_arr_to_str(sub_info.endpoint_gid)
                 ros_node, is_new = self._get_node_from(sub_info.node_namespace, sub_info.node_name, gid, cached_data)
                 try:
@@ -336,6 +357,31 @@ class RosStateJsonify:
                     node_ids.append(ros_node.id)
                     if ros_node.id not in self._last_known_nodes:
                         new_nodes_detected = True
+        # get services
+        if self._use_name_as_node_id and hasattr(nmd.ros_node, "get_service_names_and_types"):
+            service_names_and_types = nmd.ros_node.get_service_names_and_types()
+            for node in result:
+                node_base_name, node_ns = self.parse_node_name(node.name)
+                service_names_and_types = nmd.ros_node.get_service_names_and_types_by_node(node_base_name, node_ns)
+                for service_name, service_types in service_names_and_types:
+                    for service_type in service_types:
+                        if (service_name, service_type) not in cached_data.service_objs:
+                            srv = RosService(service_name, service_type)
+                            cached_data.service_objs[(service_name, service_type)] = srv
+                            cached_data.service_by_id[service_name] = srv
+                            srv.provider.append(node.id)
+                            if self._is_local_composable_service(service_name, node):
+                                composable_services.append(service_name)
+                            if self._is_local_lifecycle_state_service(service_name, service_type, node):
+                                lifecycle_state_services.append(service_name)
+                            if self._is_local_lifecycle_transitions_service(service_name, service_type, node):
+                                lifecycle_transition_services.append(service_name)
+                            ros_topic_id = RosTopicId(service_name, service_type)
+                            ros_topic_id_str = str(ros_topic_id)
+                            if ros_topic_id_str not in self._ros_service_dict:
+                                node.services.append(ros_topic_id)
+                            self._ros_service_dict[ros_topic_id_str] = srv
+
         # update composable nodes
         if new_nodes_detected:
             self._composable_nodes = {}
@@ -431,6 +477,18 @@ class RosStateJsonify:
             else:
                 data.service_by_id[gid] = data.service_objs[(srv_name, srv_type)]
             return data.service_by_id[gid], False, topic_name[:2] == 'rq'
+        # fallback if we have not DDS prefix. e.g. while using zenoh
+        if (topic_name, topic_type) not in data.topic_objs:
+            topic_type_res = self.get_message_type(topic_type)
+            Log.debug(f"{self.__class__.__name__}:   create topic {topic_name} ({topic_type_res})")
+            tp = RosTopic(topic_name, topic_type_res)
+            tp.id = gid
+            data.topic_objs[(topic_name, topic_type)] = tp
+            data.topic_by_id[gid] = tp
+        else:
+            data.topic_by_id[gid] = data.topic_objs[(topic_name, topic_type)]
+        return data.topic_by_id[gid], True, False
+
 
     def _has_topic_id(self, id: RosTopicId, list: List[RosTopicId]):
         for item in list:
