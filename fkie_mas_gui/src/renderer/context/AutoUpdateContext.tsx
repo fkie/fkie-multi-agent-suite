@@ -87,7 +87,7 @@ export function AutoUpdateProvider({
     const noGuiOpt = !gui ? " -r" : "";
     const noRosOpt = !ros ? " -g" : "";
     const args = prereleaseOpt || noGuiOpt || noRosOpt ? ` -s -- ${prereleaseOpt}${noGuiOpt}${noRosOpt}` : "";
-    return `wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prereleaseOpt ? "devel" : "master"}/install_mas_debs.sh | bash${args}`;
+    return `wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prereleaseOpt ? "devel" : "master"}/install_mas_debs.sh && bash /tmp/install_mas_debs.sh${args}`;
   }
 
   function checkForUpdate(channel?: "prerelease" | "release" | string): void {

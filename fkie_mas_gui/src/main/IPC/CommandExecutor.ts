@@ -455,11 +455,12 @@ export async function updateDebianPackages(prerelease: boolean = false): Promise
       const child = spawn(
         "/usr/bin/wget",
         [
-          "-qO",
-          "-",
           `https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prerelease ? "devel" : "master"}/install_mas_debs.sh`,
-          "|",
+          "-O",
+          "/tmp/install_mas_debs.sh",
+          "&&",
           "bash",
+          "/tmp/install_mas_debs.sh"
         ],
         {
           shell: true,

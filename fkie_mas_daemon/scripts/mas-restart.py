@@ -25,7 +25,7 @@ if __name__ == '__main__':
     if "ROS_DOMAIN_ID" in os.environ:
         ros_domain_id = os.environ["ROS_DOMAIN_ID"]
     print(f"connect to daemon on ROS_DOMAIN_ID: {ros_domain_id}")
-    print(f"connect to: ws://localhost:{ws_port()}")
+    print(f"connect to: _ws://localhost:{ws_port()}_")
     with websockets.sync.client.connect(f"ws://localhost:{ws_port()}", max_size=2**22) as connection:
         print("request launch files using uri 'ros.launch.get_list'")
         connection.send('{"uri": "ros.launch.get_list", "id": -1}')
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     # load launch files
     def load_launch_files(launch_files):
         # load stored launch files
-        print(f"connect to: ws://localhost:{ws_port()}")
+        print(f"connect to: _ws://localhost:{ws_port()}_")
         with websockets.sync.client.connect(f"ws://localhost:{ws_port()}", max_size=2**22) as connection:
             for launch in launch_files:
                 message = {

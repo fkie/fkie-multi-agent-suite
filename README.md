@@ -20,12 +20,12 @@ The communication between the GUI and the Daemon (on each host) is based on WebS
 For Ubuntu 20.04, 22.04 and 24.04 there are Debian packages on Github that can be installed with the following command:
 
 ```bash
-wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash
+wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh && bash /tmp/install_mas_debs.sh
 ```
 
 #### Install on robot without GUI
 ```bash
-wget -qO - https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/master/install_mas_debs.sh | bash -s -- -r
+wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh && bash /tmp/install_mas_debs.sh -s -- -r
 ```
 
 ### Run
