@@ -99,7 +99,7 @@ if [ "$MESSAGE" = true ] ; then
     exit 1
 fi
 
-if [ -z $FORCE_VERSION]; then
+if [ -z $FORCE_VERSION ]; then
     if [ -z "$PRERELEASE" ]; then
         # remove prereleases
         RELEASES=$(echo "$RELEASES" | jq -r '[.[] | select(.prerelease==false)'])
@@ -109,7 +109,6 @@ if [ -z $FORCE_VERSION]; then
 else
     echo -e "\e[36mSelect release for installation: $FORCE_VERSION\e[0m"
     RELEASES=$(echo "$RELEASES" | jq -r --arg FORCE_VERSION "$FORCE_VERSION" '[.[] | select(.name==$FORCE_VERSION)'])
-    echo -e "$RELEASES"
 fi
 
 
