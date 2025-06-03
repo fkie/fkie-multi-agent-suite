@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.4.5 - 03.06.2025
+
+Added support for ros state used with zenoh
+Changed install url using wget
+Fixed warnings in install script
+Fixed tooltip description for kill timeout
+
 ## 4.4.4 - 28.05.2025
 
 Ask for restart gui after running install script

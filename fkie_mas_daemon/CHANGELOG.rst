@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.4 (03.06.2025)
+------------------
+* Added support for ros state used with zenoh
+
 4.5.3 (28.05.2025)
 ------------------
 * Added script to restart running mas nodes and reload launch files
