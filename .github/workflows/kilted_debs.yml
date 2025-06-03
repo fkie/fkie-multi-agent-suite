@@ -1,4 +1,4 @@
-name: Galactic Create Debs
+name: Kilted Create Debs
 
 on:
   push:
@@ -6,34 +6,34 @@ on:
       - v*
 
 jobs:
-  galactic:
+  kilted:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     container:
-      image: ubuntu:focal
+      image: ubuntu:noble
     steps:
-      - uses: ros-tooling/setup-ros@v0.5
+      - uses: ros-tooling/setup-ros@v0.7
         with:
-          required-ros-distributions: galactic
-      - run: sudo pip install "websockets>=13.0"
+          required-ros-distributions: kilted
+      - run: sudo pip install "websockets>=13.0" --break-system-packages
       - uses: ros-tooling/action-ros-ci@v0.4
         with:
-          target-ros2-distro: galactic
+          target-ros2-distro: kilted
           skip-tests: true
       - uses: actions/checkout@v4
         with:
           path: fkie-multi-agent-suite
       - name: Create debian packages
         run: |
-          source /opt/ros/galactic/setup.bash
+          source /opt/ros/kilted/setup.bash
           bash create_debs.sh
         shell: bash
         working-directory: fkie-multi-agent-suite
       - name: Upload debs to release ${{ github.ref }}
         uses: svenstaro/upload-release-action@v2
         with:
-          file: fkie-multi-agent-suite/ros-galactic-fkie-mas-*
+          file: fkie-multi-agent-suite/ros-kilted-fkie-mas-*
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true

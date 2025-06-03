@@ -1,0 +1,23 @@
+name: Kilted Build
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on: [push, pull_request]
+
+jobs:
+  kilted:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:noble
+    steps:
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: kilted
+      - run: sudo pip install "websockets>=13.0" --break-system-packages
+      - uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros2-distro: kilted
+          skip-tests: true
+

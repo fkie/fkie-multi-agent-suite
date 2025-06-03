@@ -1,6 +1,6 @@
 # Multi Agent Suite for ROS
 [![Jazzy](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/jazzy_build.yml/badge.svg)](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/jazzy_build.yml)
-[![Humble](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/humble_build.yml/badge.svg)](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/humble_build.yml)
+[![Humble](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/kilted_build.yml/badge.svg)](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/kilted_build.yml)
 [![Noetic](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/noetic_build.yml/badge.svg)](https://github.com/fkie/fkie-multi-agent-suite/actions/workflows/noetic_build.yml)
 
 Based on the [FKIE Multimaster](https://github.com/fkie/multimaster_fkie), this suite provides a collection of packages for ROS 1 and 2 for discovering, synchronizing (ROS 1), monitoring, and managing nodes on different hosts using a graphical user interface.
