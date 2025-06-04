@@ -488,10 +488,15 @@ class LaunchServicer(LoggingEventHandler):
                                     # we need to compare the content of the parameter files
                                     for a, b in zip(new_matches, old_matches):
                                         content1 = ""
-                                        content2 = ""
-                                        with open(a, 'r') as f1, open(b, 'r') as f2:
-                                            content1 = f1.read()
-                                            content2 = f2.read()
+                                        try:
+                                            content1 = new_node.param_file_content[a]
+                                        except Exception:
+                                            pass
+                                        content2 = old_node.param_file_content[b]
+                                        try:
+                                            content2 = old_node.param_file_content[b]
+                                        except Exception:
+                                            pass
                                         if content1 != content2:
                                             nodes2start.append(new_node.node_name)
                                             added = True

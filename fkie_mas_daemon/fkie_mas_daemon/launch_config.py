@@ -189,6 +189,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self.file_name = self.launch_name
         self.composable_container: str = composable_container
         self._parameters_tmp = self._get_parameter_arguments()
+        self.param_file_content = {} # used to detect changes in referenced yaml files
         self.parameters = []
         for p in self._parameters_tmp:
             if isinstance(p, tuple) and p[0].startswith("/"):
@@ -197,6 +198,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                         try:
                             yaml = ruamel.yaml.YAML(typ='rt')
                             self.parameters.append(RosParameter(node_name, p[0], yaml.load(tmp_param_file)))
+                            tmp_param_file.seek(0)
+                            self.param_file_content[p[0]] = tmp_param_file.read()
                             continue
                         except ruamel.yaml.YAMLError as exc:
                             pass
