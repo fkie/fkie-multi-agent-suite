@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.5 (04.06.2025)
+------------------
+* Fixed change detection of node configuration in referenced yaml files
+
 4.5.4 (03.06.2025)
 ------------------
 * Added support for ros state used with zenoh
