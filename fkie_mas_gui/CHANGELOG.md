@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.4.7 - 05.06.2025
+
+Added option to force the use of the rmw implementation set for mas gui
+Do not cancel the start process if something has been printed on the error terminal
+Fixed build discovery with ros kilted, switched from fastrtps to fastdds
+Added name attribute to executable tag
+Added option to select a directory in launch options dialog
+Fixed show history in load dialog if only one option is available
+
 ## 4.4.6 - 04.06.2025
 
 Fixed change detection of node configuration in referenced yaml files

@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.4 (05.06.2025)
+------------------
+* Fixed build discovery with ros kilted, switched from fastrtps to fastdds
+
 4.1.3 (06.05.2025)
 ------------------
 * Do not use rmw_fastrtps_cpp to avoid ROS check for RMW implementation
