@@ -192,15 +192,15 @@ export function getTagProposals(
       `${open}node name="\${1:NODE_NAME}" pkg="\${2:PACKAGE}" exec="\${3:NODE_EXECUTABLE_NAME}">\n  \n</node${close}`,
       "Add a new ROS node"
     ),
-    createProposal("executable", `${open}executable cmd="\${1:COMMAND}" /${close}`, "Add a new executable"),
+    createProposal("executable", `${open}executable name="\${1:NAME}" cmd="\${2:COMMAND}" /${close}`, "Add a new executable"),
     createProposal(
       "executable cwd",
-      `${open}executable cmd="\${1:COMMAND}" cwd="\${2:WORKING_DIRECTORY}" /${close}`,
+      `${open}executable name="\${1:NAME}" cmd="\${2:COMMAND}" cwd="\${3:WORKING_DIRECTORY}" /${close}`,
       "Add a new executable with working directory"
     ),
     createProposal(
       "executable args",
-      `${open}executable cmd="\${1:COMMAND}" args="\${2:ARGUMENTS}" /${close}`,
+      `${open}executable name="\${1:NAME}" cmd="\${2:COMMAND}" args="\${3:ARGUMENTS}" /${close}`,
       "Add a new executable with arguments"
     ),
     createProposal(
