@@ -11,9 +11,11 @@ find_package(ament_cmake QUIET)
 
 if ( ament_cmake_FOUND )
 
-    #---- Enable C++14 ----
-    set(CMAKE_CXX_STANDARD 14)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    # Default to C++14
+    if(NOT CMAKE_CXX_STANDARD)
+        set(CMAKE_CXX_STANDARD 14)
+        set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    endif()
 
     if(MSVC)
         add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -23,30 +25,37 @@ if ( ament_cmake_FOUND )
 
     add_definitions( -DUSING_ROS2 )
     message(STATUS "-------------------------------------------------\nFKIE MAS Discovery is being built using AMENT.\n-------------------------------------------------")
-
     # find dependencies
     find_package(fastrtps QUIET)
+    find_package(fastdds QUIET)
     find_package(fkie_mas_msgs REQUIRED)
     find_package(rclcpp REQUIRED)
-    add_executable(mas-discovery
-        src/eprosima_participant_listener.cpp
-    )
     if (fastrtps_FOUND)
         # before ros kilted
+        add_executable(mas-discovery
+            src/fastrtps_participant_listener.cpp
+        )
         target_link_libraries(mas-discovery PUBLIC
             rclcpp::rclcpp
             fastrtps
             ${fkie_mas_msgs_TARGETS}
         )
     else()
-        # since ros kilted
-        find_package(fastdds REQUIRED)
-        target_link_libraries(mas-discovery PUBLIC
-            rclcpp::rclcpp
-            fastdds
-            ${fkie_mas_msgs_TARGETS}
-        )
+        if (fastdds_FOUND)
+            add_executable(mas-discovery
+                src/fastdds_participant_listener.cpp
+            )
+            # since ros kilted
+            target_link_libraries(mas-discovery PUBLIC
+                rclcpp::rclcpp
+                fastdds
+                ${fkie_mas_msgs_TARGETS}
+            )
+        else()
+            find_package(fastdds REQUIRED)
+        endif()
     endif()
+
     if(MSVC)
     else()
         target_compile_options(mas-discovery PRIVATE -Wall -Wextra -Werror=return-type)
