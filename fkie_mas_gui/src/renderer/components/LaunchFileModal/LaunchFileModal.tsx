@@ -135,7 +135,10 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
           // rosCtx.updateNodeList(provider(.name()));
           // rosCtx.updateLaunchList(provider.name());
           if (result.status.msg) {
-            logCtx.warn(`Launch file [${getFileName(path)}] loaded with warnings`, `File: ${path}\n${result.status.msg}`);
+            logCtx.warn(
+              `Launch file [${getFileName(path)}] loaded with warnings`,
+              `File: ${path}\n${result.status.msg}`
+            );
           } else {
             logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
           }
@@ -232,7 +235,10 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       } else if (resultLaunchLoadFile.status.code === "OK") {
         setOpen(false);
         if (resultLaunchLoadFile.status.msg) {
-          logCtx.warn(`Launch file [${getFileName(path)}] loaded with warnings`, `File: ${path}\n${resultLaunchLoadFile.status.msg}`);
+          logCtx.warn(
+            `Launch file [${getFileName(path)}] loaded with warnings`,
+            `File: ${path}\n${resultLaunchLoadFile.status.msg}`
+          );
         } else {
           logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
         }
@@ -337,7 +343,6 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   }
 
   const dialogRef = useRef(ref);
-
   return (
     <Dialog
       open={open}
@@ -366,7 +371,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
                 const options = optionsTmp.filter((value) => value);
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
-                    {options.length > 1 && (
+                    {options.length > 1 || (options.length === 1 && options[0] !== arg.value) ? (
                       // show autocomplete only if we have multiple option
                       <Autocomplete
                         key={`autocomplete-launch-load-${arg.name}`}
@@ -475,8 +480,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
                           setScrollBar("auto");
                         }}
                       />
-                    )}
-                    {options.length <= 1 && (
+                    ) : (
                       // we have no history, show only the text field
                       <TextField
                         id={`textfield-launch-load-${arg.name}`}
