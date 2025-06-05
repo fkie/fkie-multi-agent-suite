@@ -677,10 +677,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Failed to start daemon on host '${config.host}'`, resultStartDaemon.message);
+              logCtx.error(`Error while start daemon on host '${config.host}'`, resultStartDaemon.message);
               provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDaemon.message);
               allStarted = false;
-              return false;
             }
             logCtx.success(`daemon on host '${config.host}' started successfully`, "");
           }
@@ -705,10 +704,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Failed to start discovery on host '${config.host}'`, resultStartDiscovery.message);
+              logCtx.error(`Error while start discovery on host '${config.host}'`, resultStartDiscovery.message);
               provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDiscovery.message);
               allStarted = false;
-              return false;
             }
             logCtx.success(`discovery on host '${config.host}' started successfully`, "");
           }
@@ -734,7 +732,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Failed to start sync on host '${config.host}'`, resultStartSync.message);
+              logCtx.error(`Error while start sync on host '${config.host}'`, resultStartSync.message);
               allStarted = false;
             } else {
               logCtx.success(`Sync on host '${config.host}' started successfully`, "");
@@ -763,7 +761,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Failed to start terminal on host '${config.host}'`, resultStartTerminal.message);
+              logCtx.error(`Error while start terminal on host '${config.host}'`, resultStartTerminal.message);
               allStarted = false;
             } else {
               logCtx.success(`ttyd on host '${config.host}' started successfully`, "");
