@@ -208,9 +208,9 @@ export default class CommandExecutor implements TCommandExecutor {
 
           child.on("error", (error) => {
             if (parentOut) {
-              console.error(`${data}`);
+              console.error(`${error}`);
             }
-            errorString += data;
+            errorString += error;
           });
         } catch (error) {
           resolve({
