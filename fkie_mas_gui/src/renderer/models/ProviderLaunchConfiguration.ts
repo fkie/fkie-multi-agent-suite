@@ -25,6 +25,8 @@ export default class ProviderLaunchConfiguration {
 
   networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : 0;
 
+  rmwImplementation: string | undefined = import.meta.env.VITE_RMW_IMPLEMENTATION;
+
   daemon: {
     enable: boolean;
   } = { enable: true };
@@ -124,6 +126,10 @@ export default class ProviderLaunchConfiguration {
     if (this.networkId !== undefined && this.networkId !== 0) {
       domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
     }
+    let rmwPrefix = "";
+    if (this.rmwImplementation) {
+      rmwPrefix = ` RMW_IMPLEMENTATION=${this.rmwImplementation} `
+    }
     const forceArg = this.force.start ? "--force " : "";
     if (this.rosVersion === "1") {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
@@ -136,7 +142,7 @@ export default class ProviderLaunchConfiguration {
         this.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat}`;
     } else if (this.rosVersion === "2") {
-      cmdMasterDiscovery = `${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
+      cmdMasterDiscovery = `${domainPrefix}${rmwPrefix}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.respawn || this.discovery.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
@@ -215,11 +221,15 @@ export default class ProviderLaunchConfiguration {
     if (this.networkId !== undefined && this.networkId !== 0) {
       domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
     }
+    let rmwPrefix = "";
+    if (this.rmwImplementation) {
+      rmwPrefix = ` RMW_IMPLEMENTATION=${this.rmwImplementation} `
+    }
     if (this.rosVersion === "1") {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
       cmdDaemon = `${ros1MasterUriPrefix}${domainPrefix}rosrun ${cmdDaemon}`;
     } else if (this.rosVersion === "2") {
-      cmdDaemon = `${domainPrefix}ros2 run ${cmdDaemon}; `;
+      cmdDaemon = `${domainPrefix}${rmwPrefix}ros2 run ${cmdDaemon}; `;
     } else {
       return {
         result: false,

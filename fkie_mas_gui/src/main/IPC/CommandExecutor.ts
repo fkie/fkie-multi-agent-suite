@@ -236,6 +236,7 @@ export default class CommandExecutor implements TCommandExecutor {
     command,
     keyIndex = 0
   ) => {
+    console.log(`exec an ${credential.host}: ${command}`);
     const parentOut = getArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES) === "true";
     const connectionConfig = this.generateConfig(credential, keyIndex);
     return new Promise((resolve) => {

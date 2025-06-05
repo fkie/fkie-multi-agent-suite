@@ -24,6 +24,8 @@ export class ROSInfo {
   // ROS2 specific
   domainId: string | undefined; // ROS_DOMAIN_ID
 
+  rmwImplementation: string | undefined;
+
   localhostOnly: string | undefined; // ROS_LOCALHOST_ONLY
 
   constructor() {
@@ -40,6 +42,7 @@ export class ROSInfo {
     this.distro = process.env.ROS_DISTRO;
     this.lispPackageDirectories = process.env.ROSLISP_PACKAGE_DIRECTORIES;
     this.domainId = process.env.ROS_DOMAIN_ID;
+    this.rmwImplementation = process.env.RMW_IMPLEMENTATION;
     this.localhostOnly = process.env.ROS_LOCALHOST_ONLY;
   }
 
@@ -52,6 +55,7 @@ export class ROSInfo {
       root: this.root,
       distro: this.distro,
       domainId: this.domainId,
+      rmwImplementation: this.rmwImplementation,
       localhostOnly: this.localhostOnly,
     } as TRosInfo);
   }

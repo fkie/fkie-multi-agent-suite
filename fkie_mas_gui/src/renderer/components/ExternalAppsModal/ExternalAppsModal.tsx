@@ -109,11 +109,16 @@ function ExternalAppsModal(ref): JSX.Element {
         ),
       ] as string[];
 
+      let rmwImplementation = "";
+      if (rosCtx.rosInfo?.rmwImplementation) {
+        // set RMW_IMPLEMENTATION only if the variable is valid for the gui
+        rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`
+      }
       if (domainIds?.length === 0) {
         window.commandExecutor?.exec(null, command);
         handleClose("confirmed");
       } else if (domainIds?.length === 1) {
-        window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domainIds[0]} ${command}`);
+        window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domainIds[0]}${rmwImplementation} ${command}`);
         handleClose("confirmed");
       } else if (domainIds) {
         setShowSelectDialog({ command: command, domainIds: domainIds });
@@ -123,7 +128,12 @@ function ExternalAppsModal(ref): JSX.Element {
   );
 
   const runAppWid = useCallback(async (command: string, domain_id: string) => {
-    window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id} ${command}`);
+    let rmwImplementation = "";
+    if (rosCtx.rosInfo?.rmwImplementation) {
+      // set RMW_IMPLEMENTATION only if the variable is valid for the gui
+      rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`
+    }
+    window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
     setShowSelectDialog(undefined);
   }, []);
 

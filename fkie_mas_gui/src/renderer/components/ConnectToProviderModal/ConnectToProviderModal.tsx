@@ -170,6 +170,9 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     DEFAULT_PARAMETER.networkId = import.meta.env.VITE_ROS_DOMAIN_ID
       ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID)
       : optionNetworkId;
+    DEFAULT_PARAMETER.rmwImplementation = import.meta.env.VITE_RMW_IMPLEMENTATION
+      ? import.meta.env.VITE_RMW_IMPLEMENTATION
+      : undefined;
     DEFAULT_PARAMETER.rosVersion = import.meta.env.VITE_ROS_VERSION
       ? import.meta.env.VITE_ROS_VERSION
       : (settingsCtx.get("rosVersion") as string);
@@ -185,7 +188,9 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       []
     );
     const [selectedHistory, setSelectedHistory] = useState("");
+    const [forceRmwImplementation, setForceRmwImplementation] = useState<string>("");
     const [forceRestart, setForceRestart] = useState(false);
+
     const [inputMasterUri, setInputMasterUri] = useState(
       startParameter?.ros1MasterUri.uri ? startParameter?.ros1MasterUri.uri : "default"
     );
@@ -389,6 +394,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       launchCfg.daemon.enable = startParameter.daemon.enable;
       launchCfg.discovery.enable = startParameter.discovery.enable;
       if (startParameter.networkId) launchCfg.networkId = startParameter.networkId;
+      launchCfg.rmwImplementation = startParameter.rmwImplementation;
       launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
       if (startParameter.discovery.robotHosts && startParameter.discovery.robotHosts.length > 0)
         launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
@@ -842,7 +848,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                         />
                       </FormGroup>
                     )}
-
                     {startParameter.rosVersion === "1" && (
                       <Accordion
                         disableGutters
@@ -1337,6 +1342,31 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                         </AccordionDetails>
                       </Accordion>
                     )}
+                    <FormGroup
+                      aria-label="position"
+                      row
+                      sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+                    >
+                      <FormControlLabel
+                        disabled={!rosCtx.rosInfo?.rmwImplementation}
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={!!forceRmwImplementation}
+                            onChange={(event) => {
+                              startParameter.rmwImplementation = event.target.checked
+                                ? rosCtx.rosInfo?.rmwImplementation
+                                : undefined;
+                              setForceRmwImplementation(startParameter.rmwImplementation || "");
+                              updateStartParameter();
+                            }}
+                          />
+                        }
+                        label={`force use ${rosCtx.rosInfo?.rmwImplementation || " RMW_IMPLEMENTATION (environment variable not set)"}`}
+                        labelPlacement="end"
+                      />
+                    </FormGroup>
+
                     <FormGroup
                       aria-label="position"
                       row

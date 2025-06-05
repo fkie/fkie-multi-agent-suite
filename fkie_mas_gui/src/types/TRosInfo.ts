@@ -6,6 +6,7 @@ export type TRosInfo = {
   root: string | undefined;
   distro: string | undefined;
   domainId: string | undefined;
+  rmwImplementation: string | undefined;
   localhostOnly: string | undefined;
 
   getInfo?: () => Promise<TRosInfo>;

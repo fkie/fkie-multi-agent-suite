@@ -94,7 +94,8 @@ const SystemInformationPanel = forwardRef<HTMLDivElement, SystemInformationPanel
           infoContent.ROS_MASTER_URI = provider.rosState.masteruri ? provider.rosState.masteruri : "unknown";
         }
         if (provider.rosState.ros_version === "2") {
-          infoContent.ROS_DOMAIN_ID = provider.rosState.ros_domain_id ? provider.rosState.ros_domain_id : "unknown";
+          infoContent.ROS_DOMAIN_ID = provider.rosState.ros_domain_id ? provider.rosState.ros_domain_id : "default";
+          infoContent.RMW_IMPLEMENTATION = provider.systemEnv.RMW_IMPLEMENTATION ? provider.systemEnv.RMW_IMPLEMENTATION : "default";
         } else {
           infoContent.NETWORK_ID = provider.rosState.ros_domain_id ? provider.rosState.ros_domain_id : "unknown";
         }

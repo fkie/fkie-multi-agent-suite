@@ -4,6 +4,7 @@ export default class RosProviderState {
   ros_version: string | undefined = undefined;
   ros_distro: string | undefined = undefined;
   ros_domain_id: string | undefined = undefined;
+  rmw_implementation: string | undefined = undefined;
   origin: boolean | undefined = undefined;
   name: string | undefined = undefined;
   port: number = 0;
