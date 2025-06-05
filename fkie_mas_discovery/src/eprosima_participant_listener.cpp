@@ -31,9 +31,8 @@
 #include "rclcpp/publisher.hpp"
 #include "rclcpp/subscription.hpp"
 
-#include "fastrtps/Domain.h"
-#include "fastrtps/participant/ParticipantListener.h"
-#include "fastrtps/subscriber/SubscriberListener.h"
+#include <fastdds/rtps/RTPSDomain.h>
+#include <fastdds/rtps/participant/RTPSParticipantListener.h>
 
 using namespace std::chrono_literals;
 using namespace fkie_mas_msgs::msg;
@@ -158,13 +157,11 @@ void convert_msg_to_gid(const fkie_mas_msgs::msg::Gid &msg_gid, eprosima::fastrt
 }
 
 class CustomParticipantListener : public rclcpp::Node,
-                                  public eprosima::fastrtps::ParticipantListener,
-                                  public eprosima::fastrtps::SubscriberListener
+                                  public eprosima::fastrtps::rtps::RTPSParticipantListener
 {
 public:
     CustomParticipantListener(const std::string &node_name, const std::string &namespace_) : Node(node_name, namespace_),
-                                                                                             eprosima::fastrtps::ParticipantListener(),
-                                                                                             eprosima::fastrtps::SubscriberListener()
+                                                                                             eprosima::fastrtps::rtps::RTPSParticipantListener()
     {
         on_shutdown = false;
         RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
@@ -174,46 +171,29 @@ public:
         RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/Participants]", this->publisher_participants_->get_topic_name());
         daemon_topic_ = std::string("rt") + this->publisher_->get_topic_name();
         participant_ = nullptr;
-        eprosima::fastrtps::ParticipantAttributes participant_attr;
+        eprosima::fastrtps::rtps::RTPSParticipantAttributes participant_attr;
         std::string full_name = this->get_node_base_interface()->get_fully_qualified_name();
         RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
-        participant_attr.rtps.setName(full_name.erase(0, 1).c_str());
+        participant_attr.setName(full_name.erase(0, 1).c_str());
         char *ros_domain_id = getenv("ROS_DOMAIN_ID");
+        uint32_t domain_id = 0;
         if (ros_domain_id != NULL)
         {
             RCLCPP_INFO(get_logger(), "listen to domain id: %s", ros_domain_id);
-            participant_attr.domainId = atoi(ros_domain_id);
+            domain_id = atoi(ros_domain_id);
         }
-        participant_ = eprosima::fastrtps::Domain::createParticipant(participant_attr, this);
+        participant_ = eprosima::fastrtps::rtps::RTPSDomain::createParticipant(domain_id, participant_attr, this);
     }
 
     void shutdown()
     {
         this->on_shutdown = true;
-        eprosima::fastrtps::Domain::stopAll();
-    }
-
-    // SubscriberListener implementation
-    void onSubscriptionMatched(
-        eprosima::fastrtps::Subscriber * /*sub*/,
-        eprosima::fastrtps::rtps::MatchingInfo &info) final
-    {
-        // std::lock_guard<std::mutex> lock(internalMutex_);
-        if (eprosima::fastrtps::rtps::MATCHED_MATCHING == info.status)
-        {
-            // std::cout << "matched subscription " << info.remoteEndpointGuid << std::endl;
-            // publishers_.insert(info.remoteEndpointGuid);
-        }
-        else if (eprosima::fastrtps::rtps::REMOVED_MATCHING == info.status)
-        {
-            // publishers_.erase(info.remoteEndpointGuid);
-            // std::cout << "removed subscription " << info.remoteEndpointGuid << std::endl;
-        }
+        eprosima::fastrtps::rtps::RTPSDomain::stopAll();
     }
 
     void onSubscriberDiscovery(
-        eprosima::fastrtps::Participant *participant,
-        eprosima::fastrtps::rtps::ReaderDiscoveryInfo &&info) override
+        eprosima::fastrtps::rtps::RTPSParticipant *participant,
+        eprosima::fastrtps::rtps::ReaderDiscoveryInfo &&info)
     {
         (void)participant;
 
@@ -237,8 +217,8 @@ public:
     }
 
     void onPublisherDiscovery(
-        eprosima::fastrtps::Participant *participant,
-        eprosima::fastrtps::rtps::WriterDiscoveryInfo &&info) override
+        eprosima::fastrtps::rtps::RTPSParticipant *participant,
+        eprosima::fastrtps::rtps::WriterDiscoveryInfo &&info)
     {
         (void)participant;
 
@@ -295,7 +275,7 @@ public:
     }
 
     void onParticipantDiscovery(
-        eprosima::fastrtps::Participant * /*participant*/,
+        eprosima::fastrtps::rtps::RTPSParticipant * /*participant*/,
         eprosima::fastrtps::rtps::ParticipantDiscoveryInfo &&info)
     {
         RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery: participant info %s", info.info.m_participantName.c_str());
@@ -371,7 +351,7 @@ public:
 private:
     mutable std::mutex mutex_;
     bool on_shutdown;
-    eprosima::fastrtps::Participant *participant_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
+    eprosima::fastrtps::rtps::RTPSParticipant *participant_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
     rclcpp::Publisher<fkie_mas_msgs::msg::ChangedState>::SharedPtr publisher_;
     rclcpp::Publisher<fkie_mas_msgs::msg::Participants>::SharedPtr publisher_participants_;
     std::string daemon_topic_;

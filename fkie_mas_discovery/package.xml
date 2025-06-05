@@ -30,7 +30,11 @@
   <depend condition="$ROS_VERSION == 1">avahi-daemon</depend>
 
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
-  <depend condition="$ROS_VERSION == 2">fastrtps</depend>
+  <depend condition="$ROS_DISTRO == galactic">fastrtps</depend>
+  <depend condition="$ROS_DISTRO == humble">fastrtps</depend>
+  <depend condition="$ROS_DISTRO == jazzy">fastrtps</depend>
+  <depend condition="$ROS_DISTRO == kilted">fastdds</depend>
+  <depend condition="$ROS_DISTRO == rolling">fastdds</depend>
 
   <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
