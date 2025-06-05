@@ -12,6 +12,7 @@ import {
   IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { ForwardedRef, forwardRef, HTMLAttributes, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -302,12 +303,14 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   );
 
   const openFileDialog = useCallback(
-    async (argName: string, argValue: string): Promise<void> => {
+    async (argName: string, argValue: string, openDirectory: boolean): Promise<void> => {
       let defaultPath = lastOpenPath;
       if (!defaultPath && argValue.startsWith("/")) {
         defaultPath = argValue;
       }
-      const filePath = await window.dialogManager?.openFile(defaultPath);
+      const filePath = openDirectory
+        ? await window.dialogManager?.openDirectory(defaultPath)
+        : await window.dialogManager?.openFile(defaultPath);
       if (filePath) {
         setLastOpenPath(filePath);
         setCurrentArgs(
@@ -502,19 +505,37 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
                       />
                     )}
                     {isPathParam(arg.name, arg.value) && (
-                      <IconButton
-                        component="label"
-                        // sx={{
-                        //   visibility: isPathParam(arg.name)
-                        //     ? 'visible'
-                        //     : 'hidden',
-                        // }}
-                        onClick={() => {
-                          openFileDialog(arg.name, arg.value);
-                        }}
+                      <Tooltip
+                        title={
+                          <div>
+                            <Typography fontWeight="bold" fontSize="inherit">
+                              Select a file
+                            </Typography>
+                            <Stack direction="row" spacing={"0.2em"}>
+                              <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                                Shift:
+                              </Typography>
+                              <Typography fontSize={"inherit"}>select a directory</Typography>
+                            </Stack>
+                          </div>
+                        }
+                        // placement="right"
+                        disableInteractive
                       >
-                        <MoreHorizIcon />
-                      </IconButton>
+                        <IconButton
+                          component="label"
+                          // sx={{
+                          //   visibility: isPathParam(arg.name)
+                          //     ? 'visible'
+                          //     : 'hidden',
+                          // }}
+                          onClick={(event: React.MouseEvent) => {
+                            openFileDialog(arg.name, arg.value, event.nativeEvent.shiftKey);
+                          }}
+                        >
+                          <MoreHorizIcon />
+                        </IconButton>
+                      </Tooltip>
                     )}
                   </Stack>
                 );

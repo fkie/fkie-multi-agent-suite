@@ -18,11 +18,26 @@ export default class DialogManager implements TDialogManager {
     ipcMain.handle(DialogManagerEvents.openFile, (_event: Electron.IpcMainInvokeEvent, path: string) => {
       return this.openFile(path);
     });
+    ipcMain.handle(DialogManagerEvents.openDirectory, (_event: Electron.IpcMainInvokeEvent, path: string) => {
+      return this.openDirectory(path);
+    });
   }
 
   public openFile: (path: string) => Promise<string | null> = async (path) => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       defaultPath: path,
+      properties: ["openFile"],
+    });
+    if (!canceled) {
+      return filePaths[0];
+    }
+    return null;
+  };
+
+  public openDirectory: (path: string) => Promise<string | null> = async (path) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      defaultPath: path,
+      properties: ["openDirectory"],
     });
     if (!canceled) {
       return filePaths[0];

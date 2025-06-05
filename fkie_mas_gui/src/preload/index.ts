@@ -187,6 +187,9 @@ if (process.contextIsolated) {
       openFile: (path: string) => {
         return ipcRenderer.invoke(DialogManagerEvents.openFile, path);
       },
+      openDirectory: (path: string) => {
+        return ipcRenderer.invoke(DialogManagerEvents.openDirectory, path);
+      },
     });
   } catch (error) {
     console.error(error);
