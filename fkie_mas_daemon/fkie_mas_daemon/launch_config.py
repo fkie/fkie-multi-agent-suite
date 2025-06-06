@@ -38,6 +38,7 @@ from launch.utilities import perform_substitutions
 import launch_ros
 import composition_interfaces.srv
 from launch_ros.parameter_descriptions import ParameterFile
+from launch_ros.parameter_descriptions import ParameterFile
 
 from launch_ros.substitutions.find_package import FindPackage
 from launch_ros.utilities import make_namespace_absolute
@@ -67,7 +68,7 @@ class LaunchConfigException(Exception):
     pass
 
 
-def perform_to_string(context: launch.LaunchContext, value: Union[List[List], List[launch.Substitution], str, None]) -> Union[str, None]:
+def perform_to_string(context: launch.LaunchContext, value: Union[List[List], List[launch.Substitution], str, None], *, verbose: bool = True) -> Union[str, None]:
     result = ''
     if isinstance(value, str):
         result = value
@@ -87,8 +88,9 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
                     else:
                         raise err
                 except Exception as err:
-                    import traceback
-                    print(traceback.format_exc())
+                    if verbose:
+                        import traceback
+                        print(traceback.format_exc())
                     raise LaunchConfigException(err)
                 # we fix command lines with {data: xyz}
                 if ' ' in item and '{' in item:
@@ -105,9 +107,11 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
                     else:
                         result += perform_substitutions(context, [tuple_item])
             else:
-                item = perform_substitutions(context, [value])
                 result = perform_substitutions(context, [value])
         except (SubstitutionFailure, LookupError) as err:
+            if verbose:
+                import traceback
+                print(traceback.format_exc())
             # if executable is not found we replace it by "ros2 run" command to visualize the error in the MAS gui
             if isinstance(value, ExecutableInPackage):
                 executable = perform_substitutions(context, value.executable)
@@ -116,8 +120,9 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
             else:
                 raise err
         except Exception as err:
-            import traceback
-            print(traceback.format_exc())
+            if verbose:
+                import traceback
+                print(traceback.format_exc())
             raise LaunchConfigException(err)
     else:
         result = None
@@ -217,9 +222,34 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                     if isinstance(val, tuple):
                         p_val = perform_to_string(self._launch_context, val)
                     elif hasattr(val, "value"):
-                        p_val = val.value
+                        try:
+                            p_val = perform_to_string(self._launch_context, val.value, verbose=False)
+                        except:
+                            p_val = val.value
                     if p_name is not None and p_val is not None:
                         self.parameters.append(RosParameter(node_name, p_name, p_val))
+                continue
+            elif isinstance(p, ParameterFile):
+                try:
+                    p_file = perform_to_string(self._launch_context, p.param_file)
+                    content = ""
+                    try:
+                        with open(p_file) as tmp_param_file:
+                            try:
+                                yaml = ruamel.yaml.YAML(typ='rt')
+                                self.parameters.append(RosParameter(node_name, p_file, yaml.load(tmp_param_file)))
+                                tmp_param_file.seek(0)
+                                self.param_file_content[p_file] = tmp_param_file.read()
+                                continue
+                            except ruamel.yaml.YAMLError as exc:
+                                tmp_param_file.seek(0)
+                                content = tmp_param_file.read()
+                                pass
+                    except Exception as err:
+                        content = f"{err}"
+                    self.parameters.append(RosParameter(node_name, p_file, content))
+                except:
+                    pass
                 continue
             print(f"ignored new parameter type: {type(p)}: {p}")
             # self.parameters.append(p)
@@ -362,7 +392,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
     def _get_namespace(self) -> str:
         result = getattr(self._entity, 'expanded_node_namespace', None)
         if result is None:
-            result = perform_to_string(self._launch_context, getattr(self._entity, 'node_namespace', None))
+            result = perform_to_string(self._launch_context, getattr(self._entity, 'node_namespace'))
         if result is None or result == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
             result = ''
         base_ns = self._launch_context.launch_configurations.get('ros_namespace', None)
