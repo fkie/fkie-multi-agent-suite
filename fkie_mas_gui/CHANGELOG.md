@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.4.8 - 06.06.2025
+
+Added drop down box for files in config editor
+Fixed loading parameters of composed nodes in xml launch files
+Fixed load python launch files with composable node list
+Fixed call commands with '{data: xyz}'
+
 ## 4.4.7 - 05.06.2025
 
 Added option to force the use of the rmw implementation set for mas gui

@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.6 (06.06.2025)
+------------------
+* Fixed loading parameters of composed nodes in xml launch files
+* Fixed load python launch files with composable node list
+* Fixed call commands with '{data: xyz}'
+
 4.5.5 (04.06.2025)
 ------------------
 * Fixed change detection of node configuration in referenced yaml files
