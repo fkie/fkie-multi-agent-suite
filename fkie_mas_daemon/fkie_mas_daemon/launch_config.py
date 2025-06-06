@@ -100,7 +100,10 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         try:
             if isinstance(value, tuple):
                 for tuple_item in value:
-                    result += perform_substitutions(context, [tuple_item])
+                    if isinstance(tuple_item, List):
+                        result += perform_substitutions(context, tuple_item)
+                    else:
+                        result += perform_substitutions(context, [tuple_item])
             else:
                 item = perform_substitutions(context, [value])
                 result = perform_substitutions(context, [value])
