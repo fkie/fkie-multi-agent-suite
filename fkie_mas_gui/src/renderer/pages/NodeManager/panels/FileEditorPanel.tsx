@@ -6,7 +6,17 @@ import FolderCopyOutlinedIcon from "@mui/icons-material/FolderCopyOutlined";
 import SaveAltOutlinedIcon from "@mui/icons-material/SaveAltOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
-import { Alert, CircularProgress, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
+import {
+  Alert,
+  CircularProgress,
+  IconButton,
+  Link,
+  NativeSelect,
+  Stack,
+  ToggleButton,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { CancellationToken, IDisposable, Uri, editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 import { ForwardedRef, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -142,7 +152,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [providerHost, setProviderHost] = useState<string>("");
   const [packageName, setPackageName] = useState<string>("");
   const [activeModel, setActiveModel] = useState<TActiveModel>();
-  const [currentFile, setCurrentFile] = useState({ name: "", requesting: false });
+  const [currentFile, setCurrentFile] = useState({ name: "", requesting: false, path: "" });
   const [openFiles, setOpenFiles] = useState<TFileItem[]>([]);
   const [ownUriPaths, setOwnUriPaths] = useState<string[]>([]);
   const [ownUriToPackageDict] = useState({});
@@ -282,7 +292,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     const newLinks: languages.ILink[] = [];
     if (includedFilesList) {
       for (const f of includedFilesList) {
-        const path = model.uri.path.split(":")[1];
+        const path = pathFromUri(model.uri.path);
         if (path === f.path && path !== f.inc_path) {
           const matches = model.findMatches(f.raw_inc_path, false, false, false, null, true);
           if (matches.length > 0) {
@@ -305,6 +315,14 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       setOpenFiles((prev) => [...prev.filter((item) => item.path !== result.model?.uri.path), newFileItem]);
     }
   }
+
+  const pathFromUri = (uriPath: string): string => {
+    const pathSplits = uriPath.split(":");
+    if (pathSplits && pathSplits.length > 1) {
+      return pathSplits[1];
+    }
+    return uriPath;
+  };
 
   useEffect(() => {
     // update parent files
@@ -334,11 +352,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       appendToHistory: boolean = true
     ): Promise<boolean> => {
       if (!uriPath) return false;
-      setCurrentFile({ name: getFileName(uriPath), requesting: true });
+      setCurrentFile({ name: getFileName(uriPath), requesting: true, path: uriPath });
       setNotificationDescription("Getting file from provider...");
       // If model does not exist, try to fetch it
       const result: TModelResult = await monacoCtx.getModel(tabId, providerId, uriPath, forceReload);
-      setCurrentFile({ name: getFileName(uriPath), requesting: false });
+      setCurrentFile({ name: getFileName(uriPath), requesting: false, path: uriPath });
       setNotificationDescription("");
 
       // get model from path if exists
@@ -495,7 +513,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   const saveCurrentFile = useCallback(
     async (editorModel: editor.ITextModel): Promise<void> => {
-      const path = editorModel.uri.path.split(":")[1];
+      const path = pathFromUri(editorModel.uri.path);
       // TODO change encoding if the file is encoded as HEX
       const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
       const providerObj = rosCtx.getProviderById(providerId, true);
@@ -570,10 +588,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
         if (!activeModel.modified) {
-          setCurrentFile({ name: getFileName(activeModel.path), requesting: true });
+          setCurrentFile({ name: getFileName(activeModel.path), requesting: true, path: activeModel.path });
           setNotificationDescription("Getting file from provider...");
           const result: TModelResult = await monacoCtx.getModel(tabId, providerId, activeModel.path, false);
-          setCurrentFile({ name: getFileName(activeModel.path), requesting: false });
+          setCurrentFile({ name: getFileName(activeModel.path), requesting: false, path: activeModel.path });
           setNotificationDescription("");
           if (result.model) {
             setActiveModel({ path: result.model.uri.path, modified: true, model: result.model });
@@ -752,9 +770,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     setNotificationDescription("Getting file from provider...");
     // get file content from provider and create monaco model
     async function getFileAndIncludesAsync(provider: Provider): Promise<void> {
-      setCurrentFile({ name: getFileName(currentFilePath), requesting: true });
+      setCurrentFile({ name: getFileName(currentFilePath), requesting: true, path: currentFilePath });
       const result: TModelResult = await monacoCtx.getModel(tabId, providerId, currentFilePath, false);
-      setCurrentFile({ name: getFileName(currentFilePath), requesting: false });
+      setCurrentFile({ name: getFileName(currentFilePath), requesting: false, path: currentFilePath });
       if (!result.model && result.file) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
         setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
@@ -866,7 +884,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     addMonacoDisposable(
       monaco.editor.registerLinkOpener({
         open(resource: Uri): boolean | Promise<boolean> {
-          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, resource.path.split(":")[1], null));
+          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, pathFromUri(resource.path), null));
           return true;
         },
       })
@@ -1040,22 +1058,25 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     loadFiles();
   }, [editorRef.current]);
 
-  const escFunction = useCallback((event) => {
-    if (event.key === "Escape") {
-      setEscapePressCount((prev) => prev+1);
-      if (escapePressCount === 1) {
-        const provider = rosCtx.getProviderById(providerId);
-        if (provider) {
-          const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
-          emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+  const escFunction = useCallback(
+    (event) => {
+      if (event.key === "Escape") {
+        setEscapePressCount((prev) => prev + 1);
+        if (escapePressCount === 1) {
+          const provider = rosCtx.getProviderById(providerId);
+          if (provider) {
+            const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
+            emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
+          }
         }
+        // Reset after 500 ms
+        setTimeout(() => {
+          setEscapePressCount(0);
+        }, 500);
       }
-      // Reset after 500 ms
-      setTimeout(() => {
-        setEscapePressCount(0)
-      }, 500);
-    }
-  }, [escapePressCount, setEscapePressCount]);
+    },
+    [escapePressCount, setEscapePressCount]
+  );
 
   useEffect(() => {
     document.addEventListener("keydown", escFunction, false);
@@ -1301,18 +1322,32 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             <Stack direction="row" width="100%" spacing={0.4} alignItems="center">
               {currentFile.requesting && <CircularProgress size="0.8em" />}
               <Tooltip title={activeModel?.path?.split(":")[1]} disableInteractive>
-                <Typography
-                  noWrap
-                  style={{
-                    padding: "0.1em",
-                    fontWeight: "normal",
-                    fontSize: "0.8em",
-                  }}
-                >
-                  {activeModel?.modified ? "*" : ""}
-                  {currentFile.name}
-                </Typography>
+                <div>
+                  <NativeSelect
+                    value={pathFromUri(currentFile.path)}
+                    inputProps={{
+                      name: "current file",
+                      id: "uncontrolled-native",
+                    }}
+                    sx={{ fontWeight: "normal", fontSize: "0.8em", padding: "0.1em" }}
+                    onChange={(event: React.ChangeEvent) => {
+                      setEditorModel((event.target as HTMLInputElement).value);
+                    }}
+                  >
+                    {Array.from(new Set([rootFilePath, ...includedFiles.map((incFile) => incFile.inc_path)])).map(
+                      (fileName) => {
+                        return (
+                          <option key={fileName} value={fileName}>
+                            {modifiedFiles.map((uriPath) => pathFromUri(uriPath)).includes(fileName) ? "*" : ""}
+                            {getFileName(fileName)}
+                          </option>
+                        );
+                      }
+                    )}
+                  </NativeSelect>
+                </div>
               </Tooltip>
+
               <Stack direction="row" spacing={0.2}>
                 {modifiedFiles
                   .filter((path) => path !== activeModel?.path)
@@ -1369,13 +1404,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           )}
           {activeModel && isReadOnly(activeModel.path) ? (
             <Alert ref={alertRef as ForwardedRef<HTMLDivElement>} severity="info" style={{ minWidth: 0 }}>
-              {`no write permissions for ${activeModel.path.split(":")[1]}`}
+              {`no write permissions for ${pathFromUri(activeModel.path)}`}
             </Alert>
           ) : (
             activeModel?.path &&
             installPathsWarn.includes(activeModel?.path) && (
               <Alert ref={alertRef as ForwardedRef<HTMLDivElement>} severity="warning" style={{ minWidth: 0 }}>
-                {`${activeModel?.path.split(":")[1]} is located in 'install' path. The changes could be lost after rebuilding packages. You can build your packages with '--symlink-install' to edit your launch files in your sources.`}
+                {`${pathFromUri(activeModel?.path)} is located in 'install' path. The changes could be lost after rebuilding packages. You can build your packages with '--symlink-install' to edit your launch files in your sources.`}
               </Alert>
             )
           )}
