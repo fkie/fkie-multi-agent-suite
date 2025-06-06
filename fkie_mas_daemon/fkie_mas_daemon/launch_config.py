@@ -90,9 +90,9 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
                     import traceback
                     print(traceback.format_exc())
                     raise LaunchConfigException(err)
-                # TODO: should we fix command lines with {data: xyz}
-                # if ' ' in item and '{' in item:
-                #     item = f"'{item}'"
+                # we fix command lines with {data: xyz}
+                if ' ' in item and '{' in item:
+                    item = f"'{item}'"
                 result += item + sep
             else:
                 result += perform_to_string(context, val)
