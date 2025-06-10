@@ -205,15 +205,19 @@ class RosStateServicer:
                 update_participants = self._update_participants
                 self._update_participants = False
                 # create state
-                state = self._state_jsonify.get_nodes_as_json(self._ts_state_updated, update_participants)
-                with self._ros_node_list_mutex:
-                    # set status only with lock, as this method runs in a thread
-                    self._force_refresh = False
-                    self._ros_node_list = state
-                    self._ros_service_dict = self._state_jsonify.get_services()
-                    self._ros_topic_dict = self._state_jsonify.get_topics()
-                    self._ts_state_notified = self._state_jsonify.timestamp_state()
-                    self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+                try:
+                    state = self._state_jsonify.get_nodes_as_json(self._ts_state_updated, update_participants)
+                    with self._ros_node_list_mutex:
+                        # set status only with lock, as this method runs in a thread
+                        self._force_refresh = False
+                        self._ros_node_list = state
+                        self._ros_service_dict = self._state_jsonify.get_services()
+                        self._ros_topic_dict = self._state_jsonify.get_topics()
+                        self._ts_state_notified = self._state_jsonify.timestamp_state()
+                        self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+                except Exception:
+                    import traceback
+                    print(traceback.format_exc())
 
             # check for timeouted provider
             now = time.time()

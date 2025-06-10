@@ -524,58 +524,63 @@ class RosStateJsonify:
         return False
 
     def _thread_update_services_call(self, composable_services: List[str] = [], lifecycle_state_services: List[str] = [], lifecycle_transition_services: List[str] = []):
-        starts = time.time()
-        wait_futures: List[WaitFuture] = []
-        for service_name in composable_services:
-            Log.debug(f"{self.__class__.__name__}:  update composable nodes '{service_name}'")
-            create_service_future(nmd.ros_node, wait_futures, "composable", "", service_name,
-                                  ListNodes, ListNodes.Request())
-        # update lifecycle nodes
-        for service_name in lifecycle_state_services:
-            Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{service_name}'")
-            create_service_future(nmd.ros_node, wait_futures, "lc_state", "", service_name,
-                                  GetState, GetState.Request())
-        for service_name in lifecycle_transition_services:
-            Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{service_name}'")
-            create_service_future(nmd.ros_node, wait_futures, "lc_transition", "", service_name,
-                                  GetAvailableTransitions, GetAvailableTransitions.Request())
+        try:
+            starts = time.time()
+            wait_futures: List[WaitFuture] = []
+            for service_name in composable_services:
+                Log.debug(f"{self.__class__.__name__}:  update composable nodes '{service_name}'")
+                create_service_future(nmd.ros_node, wait_futures, "composable", "", service_name,
+                                    ListNodes, ListNodes.Request())
+            # update lifecycle nodes
+            for service_name in lifecycle_state_services:
+                Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{service_name}'")
+                create_service_future(nmd.ros_node, wait_futures, "lc_state", "", service_name,
+                                    GetState, GetState.Request())
+            for service_name in lifecycle_transition_services:
+                Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{service_name}'")
+                create_service_future(nmd.ros_node, wait_futures, "lc_transition", "", service_name,
+                                    GetAvailableTransitions, GetAvailableTransitions.Request())
 
-        # wait until all service are finished of timeouted
-        wait_until_futures_done(wait_futures, 3.0)
-        if time.time() - starts > 1.0:
-            msg = f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec"
-            self._ros_state_warnings.append(SystemWarning(msg=msg))
-            Log.warn(msg)
-        # handle response
-        for wait_future in wait_futures:
-            if wait_future.type == "composable":
-                with self._lock_update_services:
-                    self._update_composable_node(self._composable_nodes, wait_future)
-            elif wait_future.type == "lc_state":
-                with self._lock_update_services:
-                    self._update_lifecycle_state(self._current_nodes, wait_future)
-            elif wait_future.type == "lc_transition":
-                with self._lock_update_services:
-                    self._update_lifecycle_transition(self._current_nodes, wait_future)
+            # wait until all service are finished of timeouted
+            wait_until_futures_done(wait_futures, 3.0)
+            if time.time() - starts > 1.0:
+                msg = f"{self.__class__.__name__}: ros state update took {time.time() - starts} sec"
+                self._ros_state_warnings.append(SystemWarning(msg=msg))
+                Log.warn(msg)
+            # handle response
+            for wait_future in wait_futures:
+                if wait_future.type == "composable":
+                    with self._lock_update_services:
+                        self._update_composable_node(self._composable_nodes, wait_future)
+                elif wait_future.type == "lc_state":
+                    with self._lock_update_services:
+                        self._update_lifecycle_state(self._current_nodes, wait_future)
+                elif wait_future.type == "lc_transition":
+                    with self._lock_update_services:
+                        self._update_lifecycle_transition(self._current_nodes, wait_future)
 
-        # apply composable nodes to the result
-        with self._lock_update_services:
-            for composable_name, container_name in self._composable_nodes.items():
-                for idx in range(len(self._current_nodes)):
-                    if self._current_nodes[idx].name == composable_name:
-                        Log.debug(
-                            f"{self.__class__.__name__}:    found composable node {self._current_nodes[idx].name}")
-                        self._current_nodes[idx].container_name = container_name
-            self._updated_since_request = True
-            if self.monitor_servicer:
-                self.monitor_servicer.update_warning_groups([self._ros_state_warnings])
+            # apply composable nodes to the result
+            with self._lock_update_services:
+                for composable_name, container_name in self._composable_nodes.items():
+                    for idx in range(len(self._current_nodes)):
+                        if self._current_nodes[idx].name == composable_name:
+                            Log.debug(
+                                f"{self.__class__.__name__}:    found composable node {self._current_nodes[idx].name}")
+                            self._current_nodes[idx].container_name = container_name
+                self._updated_since_request = True
+                if self.monitor_servicer:
+                    self.monitor_servicer.update_warning_groups([self._ros_state_warnings])
+                self._thread_update_services = None
+                # it we have stored arguments restart the thread
+                if self._thread_update_service_args is not None:
+                    self._thread_update_services = threading.Thread(
+                        target=self._thread_update_services_call, args=self._thread_update_service_args, daemon=True)
+                    self._thread_update_service_args = None
+                    self._thread_update_services.start()
+        except:
+            import traceback
+            print(traceback.format_exc())
             self._thread_update_services = None
-            # it we have stored arguments restart the thread
-            if self._thread_update_service_args is not None:
-                self._thread_update_services = threading.Thread(
-                    target=self._thread_update_services_call, args=self._thread_update_service_args, daemon=True)
-                self._thread_update_service_args = None
-                self._thread_update_services.start()
 
     def _update_composable_node(self, composable_nodes: Dict[NodeFullName, NodeFullName], future: WaitFuture) -> None:
         container_name = future.service_name.replace('/_container/list_nodes', '')
