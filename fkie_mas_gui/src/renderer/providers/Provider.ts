@@ -1291,7 +1291,7 @@ export default class Provider implements IProvider {
                 let allJoinedParams = {};
                 for (const p of parameters) {
                   let joinedParam = false;
-                  if (p.type.indexOf("yaml") >= 0) {
+                  if (p.type.indexOf("yaml") >= 0 || p.type  === 'dict') {
                     let allNodes = p.value["/**"];
                     if (!allNodes && launchNode.node_name) {
                       allNodes = p.value[launchNode.node_name];
