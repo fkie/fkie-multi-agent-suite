@@ -391,7 +391,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
 
     def _get_namespace(self) -> str:
         result = getattr(self._entity, 'expanded_node_namespace', None)
-        if result is None:
+        if result is None and hasattr(self._entity, 'node_namespace'):
             result = perform_to_string(self._launch_context, getattr(self._entity, 'node_namespace'))
         if result is None or result == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
             result = ''
