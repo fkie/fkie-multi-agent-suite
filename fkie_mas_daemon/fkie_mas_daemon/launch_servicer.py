@@ -492,7 +492,6 @@ class LaunchServicer(LoggingEventHandler):
                                             content1 = new_node.param_file_content[a]
                                         except Exception:
                                             pass
-                                        content2 = old_node.param_file_content[b]
                                         try:
                                             content2 = old_node.param_file_content[b]
                                         except Exception:
