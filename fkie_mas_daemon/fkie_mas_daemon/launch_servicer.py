@@ -590,6 +590,11 @@ class LaunchServicer(LoggingEventHandler):
 
             nodes = lc.nodes()
             for item in nodes:
+                try:
+                    json.dumps(item, cls=SelfEncoder)
+                except:
+                    import traceback
+                    print(traceback.format_exc())
                 reply_lc.nodes.append(item)
             reply_lc.warnings = lc.load_exceptions
             reply.append(reply_lc)

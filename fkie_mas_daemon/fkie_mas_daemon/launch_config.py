@@ -106,8 +106,10 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
                         result += perform_substitutions(context, tuple_item)
                     else:
                         result += perform_substitutions(context, [tuple_item])
-            else:
+            elif hasattr(value, "perform"):
                 result = perform_substitutions(context, [value])
+            else:
+                result = value
         except (SubstitutionFailure, LookupError) as err:
             if verbose:
                 import traceback
@@ -204,7 +206,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                 if os.path.exists(p[0]):
                     with open(p[0]) as tmp_param_file:
                         try:
-                            yaml = ruamel.yaml.YAML(typ='rt')
+                            yaml = ruamel.yaml.YAML(typ='base')
                             self.parameters.append(RosParameter(node_name, p[0], yaml.load(tmp_param_file)))
                             tmp_param_file.seek(0)
                             self.param_file_content[p[0]] = tmp_param_file.read()
@@ -236,26 +238,43 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                     try:
                         with open(p_file) as tmp_param_file:
                             try:
-                                yaml = ruamel.yaml.YAML(typ='rt')
-                                self.parameters.append(RosParameter(node_name, p_file, yaml.load(tmp_param_file)))
+                                yaml = ruamel.yaml.YAML(typ='base')
+                                self.parameters.append(RosParameter(node_name, f"{p_file}", yaml.load(tmp_param_file)))
                                 tmp_param_file.seek(0)
-                                self.param_file_content[p_file] = tmp_param_file.read()
+                                self.param_file_content[f"{p_file}"] = tmp_param_file.read()
                                 continue
                             except ruamel.yaml.YAMLError as exc:
-                                tmp_param_file.seek(0)
-                                content = tmp_param_file.read()
+                                content = f"{exc}"
                                 pass
                     except Exception as err:
                         content = f"{err}"
-                    self.parameters.append(RosParameter(node_name, p_file, content))
+                    self.parameters.append(RosParameter(node_name, f"{p_file}", content))
                 except:
                     pass
                 continue
             print(f"ignored new parameter type: {type(p)}: {p}")
             # self.parameters.append(p)
 
-        self.args = self._get_arguments()
+        self.args = [perform_to_string(self._launch_context, arg) for arg in self._get_arguments() or []]
         self.cmd = perform_to_string(self._launch_context, getattr(self._entity, 'cmd', None))
+        if self.cmd:
+            # store the content of file to detect changes on reload
+            for param_file in re.findall(r'--params-file\s+([^\s]+)', self.cmd):
+                if os.path.exists(param_file) and param_file not in self.param_file_content:
+                    try:
+                        with open(param_file) as tmp_param_file:
+                            try:
+                                yaml = ruamel.yaml.YAML(typ='base')
+                                self.parameters.append(RosParameter(node_name, param_file, yaml.load(tmp_param_file)))
+                                tmp_param_file.seek(0)
+                                self.param_file_content[param_file] = tmp_param_file.read()
+                                continue
+                            except ruamel.yaml.YAMLError as exc:
+                                content = f"{exc}"
+                                pass
+                    except Exception as err:
+                        content = f"{err}"
+                    self.parameters.append(RosParameter(node_name, param_file, content))
         self.cwd = perform_to_string(self._launch_context, getattr(self._entity, 'cwd', None))
         self.env = dict(environment)
         env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'env', None))
