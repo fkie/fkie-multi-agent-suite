@@ -52,7 +52,7 @@ class MsgEncoder(json.JSONEncoder):
                 if (not self.no_arr):
                     if self.array_items_count > 0 and len(item) > self.array_items_count:
                         arr = item[0:self.array_items_count]
-                        result[key] = arr + numpy.ndarray([f'another {len(item) - self.array_items_count} discarded by MAS'])
+                        result[key] = arr.tolist() + [f'another {len(item) - self.array_items_count} discarded by MAS']
                     else:
                         result[key] = item.tolist()
                 else:
