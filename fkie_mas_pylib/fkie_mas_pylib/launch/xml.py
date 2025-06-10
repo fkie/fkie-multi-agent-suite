@@ -62,6 +62,27 @@ class IncludedFile():
         return result
 
 
+def _replace_opt_env(content: str) -> Dict[str, str]:
+    '''
+    Searches in the content string for package include patterns.
+    Returns a dictionary with package name and path suffix.
+    '''
+    result = content
+    pattern = [r"\$\(optenv (.*?)\)",
+               r"\$\(env (.*?)\)/([^ \"']*)"]
+    env_pattern = re.compile('|'.join(pattern))
+    groups = env_pattern.findall(content)
+    for group in groups:
+        for index in range(0, len(group)):
+            env_name = group[index]
+            if env_name:
+                env_value = ""
+                if env_name in os.environ:
+                    env_value = os.environ[env_name]
+                result = result.replace(f"$(optenv {env_name})", env_value)
+                result = result.replace(f"$(env {env_name})", env_value)
+    return result
+
 def _find_include_tuple(content: str) -> Dict[str, str]:
     '''
     Searches in the content string for package include patterns.
@@ -73,7 +94,7 @@ def _find_include_tuple(content: str) -> Dict[str, str]:
                r"pkg:\/\/(.*?)/([^ \"']*)",
                r"package:\/\/(.*?)/([^ \"']*)"]
     pkg_pattern = re.compile('|'.join(pattern))
-    groups = pkg_pattern.findall(content)
+    groups = pkg_pattern.findall(_replace_opt_env(content))
     for group in groups:
         for index in range(0, len(group), 2):
             pkg_name = group[index]
@@ -101,16 +122,15 @@ def interpret_path(path: str, pwd: str = '.') -> str:
     for pkg_name, path_suffix in groups.items():
         path_suffix_stripped = path_suffix.strip(os.path.sep)
         # try to find the specific path in share
-        if (str(path).find('$(find-pkg-share') != -1):
-            try:
-                paths = ros_pkg.get_share_files_path_from_package(
-                    pkg_name, path_suffix_stripped)
-                if paths and os.path.exists(paths[0]):
-                    return paths[0]
-            except Exception:
-                import traceback
-                Log.warn(
-                    f"search in install/devel space failed: {traceback.format_exc()}")
+        try:
+            paths = ros_pkg.get_share_files_path_from_package(
+                pkg_name, path_suffix_stripped)
+            if paths and os.path.exists(paths[0]):
+                return paths[0]
+        except Exception:
+            import traceback
+            Log.warn(
+                f"search in install/devel space failed: {traceback.format_exc()}")
 
         pkg_path = ros_pkg.get_path(pkg_name)
         Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
