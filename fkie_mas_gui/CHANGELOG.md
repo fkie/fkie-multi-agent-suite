@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.4.9 - 10.06.2025
+
+Fixed reload launch files with included yaml files
+Fixed load xml launch file with execute process without namespace
+
 ## 4.4.8 - 06.06.2025
 
 Added drop down box for files in config editor

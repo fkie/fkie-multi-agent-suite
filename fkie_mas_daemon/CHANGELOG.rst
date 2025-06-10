@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.7 (10.06.2025)
+------------------
+* Fixed reload launch files with included yaml files
+* Fixed load xml launch file with execute process without namespace
+
 4.5.6 (06.06.2025)
 ------------------
 * Fixed loading parameters of composed nodes in xml launch files
