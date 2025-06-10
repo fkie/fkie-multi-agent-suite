@@ -45,6 +45,11 @@ import { TResult, TRosInfo, TSystemInfo } from "@/types";
 import { LoggingContext } from "./LoggingContext";
 import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
 
+export type TLocalNode = {
+  providerId: string;
+  node: string;
+};
+
 export interface IRosProviderContext {
   initialized: boolean;
   rosInfo: TRosInfo | null;
@@ -53,6 +58,7 @@ export interface IRosProviderContext {
   providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
+  localNodes: TLocalNode[];  // track local nodes of each provider
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
@@ -79,6 +85,7 @@ export interface IRosProviderContext {
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
   isLocalHost: (host: string) => boolean;
   addProvider: (provider: Provider) => void;
+  updateLocalNodes: (providerId: string, nodes: string[]) => void;
 }
 
 export const DEFAULT = {
@@ -89,6 +96,7 @@ export const DEFAULT = {
   providersConnected: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
   nodeMap: new Map(),
+  localNodes: [],
   connectToProvider: (): Promise<boolean> => new Promise<boolean>(() => {}),
   startProvider: (): Promise<boolean> => new Promise<boolean>(() => {}),
   startConfig: (): Promise<boolean> => new Promise<boolean>(() => {}),
@@ -109,6 +117,7 @@ export const DEFAULT = {
   updateFilterRosTopic: (): void => {},
   isLocalHost: (): boolean => false,
   addProvider: (): void => {},
+  updateLocalNodes: (): void => {},
 };
 
 type TLoadLaunchResult = {
@@ -139,6 +148,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
+  const [localNodes, setLocalNodes] = useState<TLocalNode[]>([]);
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(DEFAULT.mapProviderRosNodes);
   // nodeMap: Map<string, RosNode>
@@ -216,6 +226,20 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setProviders((prev) => [...prev, provider]);
     }
   }
+
+  const updateLocalNodes = useCallback(
+    (providerId: string, nodes: string[]): void => {
+      setLocalNodes((prev) => [
+        ...prev.filter((localNode) => {
+          return localNode.providerId !== providerId;
+        }),
+        ...nodes.map((node) => {
+          return { providerId, node };
+        }),
+      ]);
+    },
+    [setLocalNodes]
+  );
 
   /** Search and return a provider using its id */
   const getProviderById = useCallback(
@@ -1242,6 +1266,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       providersConnected,
       mapProviderRosNodes,
       nodeMap,
+      localNodes,
       connectToProvider,
       startProvider,
       startConfig,
@@ -1262,6 +1287,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       updateFilterRosTopic,
       isLocalHost,
       addProvider,
+      updateLocalNodes,
     }),
 
     [initialized, rosInfo, systemInfo, providers, providersConnected, mapProviderRosNodes, setMapProviderRosNodes]

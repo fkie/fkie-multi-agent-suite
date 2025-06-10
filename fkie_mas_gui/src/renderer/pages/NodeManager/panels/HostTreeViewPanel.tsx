@@ -180,7 +180,15 @@ export default function HostTreeViewPanel(): JSX.Element {
         return true;
       });
 
-      newVisibleNodes.push(...filteredNodes);
+      // remove nodes which are local in remote hosts
+      newVisibleNodes.push(
+        ...filteredNodes.filter(
+          (node) =>
+            node.isLocal ||
+            rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
+              .length === 0
+        )
+      );
     }
     setVisibleNodes(newVisibleNodes);
   }, 300);
@@ -191,6 +199,11 @@ export default function HostTreeViewPanel(): JSX.Element {
       // put in our providerNodes list
       const { provider, nodes } = data;
       // TODO: should we remove closed/lost provider infos
+      // Update local nodes in RosContext
+      rosCtx.updateLocalNodes(
+        data.provider.id,
+        data.nodes.filter((node) => node.isLocal).map((node) => node.name)
+      );
       setProviderNodes((oldValues) => [
         ...oldValues.filter((item) => {
           return item.providerId !== provider.id;
