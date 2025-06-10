@@ -534,14 +534,14 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         if parameters:
             request.parameters = [
                 param.to_parameter_msg() for param in to_parameters_list(
-                    context, request.node_name, expanded_ns,
+                    context, request.node_name, request.node_namespace,
                     evaluate_parameters(context, parameters)
                 )
             ]
         if composable_node_description.extra_arguments is not None:
             request.extra_arguments = [
                 param.to_parameter_msg() for param in to_parameters_list(
-                    context, request.node_name, expanded_ns,
+                    context, request.node_name, request.node_namespace,
                     evaluate_parameters(
                         context, composable_node_description.extra_arguments
                     )
