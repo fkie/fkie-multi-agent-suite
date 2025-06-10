@@ -2,6 +2,15 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.8 (10.06.2025)
+------------------
+* Fixed load parameter of composable nodes
+* Added support of YAML(base) structures in the MAS gui
+* Added try catch around the get state blocks to avoid an invalid state of the daemon
+* Fixed echo of odometry topics
+* Fixed detect changes in included yaml files
+* Replace environment variables in xacro files
+
 4.5.7 (10.06.2025)
 ------------------
 * Fixed reload launch files with included yaml files
