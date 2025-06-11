@@ -148,7 +148,7 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
       ],
     },
     {
-      tag: "push_ros_namespace",
+      tag: "push-ros-namespace",
       proposals: [...all, createProposal("namespace", 'namespace="${1:NAMESPACE}"', "Assigned namespace")],
     },
   ];
@@ -230,8 +230,8 @@ export function getTagProposals(
     ),
     createProposal("group", `${open}group>\n  \n</group${close}`, "Add a new group statement"),
     createProposal(
-      "group ns",
-      `${open}group>\n  <push_ros_namespace namespace="\${1:NAMESPACE}"/>\n</group${close}`,
+      "push-ros-namespace",
+      `${open}group>\n  <push-ros-namespace namespace="\${1:NAMESPACE}"/>\n</group${close}`,
       "Add a new group statement with namespace"
     ),
     createProposal(

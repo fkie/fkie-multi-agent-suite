@@ -108,7 +108,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
-        /(<)(push_ros_namespace)/,
+        /(<)(push-ros-namespace)/,
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@namespacetags" },
