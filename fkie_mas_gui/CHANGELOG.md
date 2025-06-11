@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.4.11 - 11.06.2025
+
+Show indicator if all nodes in the group are not local
+Increased timeout for load composed nodes to 5 sec
+Added composable nodes to XML highlighter
+Fixed highlighting and proposals for push_ros_namespace
+Changed 'no discovery' error to warning
+Fixed uri for update remote mas packages
+Do not show nodes which are detected as local on remote host
+
 ## 4.4.10 - 10.06.2025
 
 Fixed load parameter of composable nodes

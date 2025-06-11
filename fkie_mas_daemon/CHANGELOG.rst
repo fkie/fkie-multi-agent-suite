@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.9 (11.06.2025)
+------------------
+* Increased timeout for load composed nodes to 5 sec
+
 4.5.8 (10.06.2025)
 ------------------
 * Fixed load parameter of composable nodes
