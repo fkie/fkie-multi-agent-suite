@@ -26,7 +26,7 @@ wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-mul
 
 #### Install on robot without GUI
 ```bash
-wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh && bash /tmp/install_mas_debs.sh -s -- -r
+wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/devel/install_mas_debs.sh && bash /tmp/install_mas_debs.sh -r
 ```
 
 ### Run
