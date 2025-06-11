@@ -109,7 +109,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
             elif hasattr(value, "perform"):
                 result = perform_substitutions(context, [value])
             else:
-                result = value
+                result = f"{value}"
         except (SubstitutionFailure, LookupError) as err:
             if verbose:
                 import traceback
@@ -239,16 +239,16 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                         with open(p_file) as tmp_param_file:
                             try:
                                 yaml = ruamel.yaml.YAML(typ='base')
-                                self.parameters.append(RosParameter(node_name, f"{p_file}", yaml.load(tmp_param_file)))
+                                self.parameters.append(RosParameter(node_name, p_file, yaml.load(tmp_param_file)))
                                 tmp_param_file.seek(0)
-                                self.param_file_content[f"{p_file}"] = tmp_param_file.read()
+                                self.param_file_content[p_file] = tmp_param_file.read()
                                 continue
                             except ruamel.yaml.YAMLError as exc:
                                 content = f"{exc}"
                                 pass
                     except Exception as err:
                         content = f"{err}"
-                    self.parameters.append(RosParameter(node_name, f"{p_file}", content))
+                    self.parameters.append(RosParameter(node_name, p_file, content))
                 except:
                     pass
                 continue
@@ -942,6 +942,11 @@ class LaunchConfig(object):
                     err_msg = traceback.format_exc()
                     self.load_exceptions.append(err_msg)
                     print(err_msg)
+            elif isinstance(entity, launch.launch_description.LaunchDescription):
+                self._load(entity, launch_description=current_launch_description,
+                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
+                if current_file:
+                    self.context.extend_locals({'current_launch_file_path': current_file})
             else:
                 print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,
