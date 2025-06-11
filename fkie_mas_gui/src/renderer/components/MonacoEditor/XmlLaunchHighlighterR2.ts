@@ -5,7 +5,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   ignoreCase: true,
 
   qualifiedTags:
-    /launch|include|group|let|arg|executable|param|remap|env|sev_env|unset_env|push-ros-namespace|timer|node_container|node|composable_node|extra_arg|\?xml/,
+    /launch|include|group|let|arg|executable|param|remap|env|sev_env|unset_env|push_ros_namespace|timer|node_container|node|load_composable_node|composable_node|extra_arg|\?xml/,
 
   qualifiedLaunchAttrs: /if|unless/,
   qualifiedIncludeAttrs: /if|unless|file/,
@@ -14,7 +14,8 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualifiedExecutableAttrs: /if|unless|cmd|cwd|name|ros_args|args|namespace|launch-prefix|output|shell/,
   qualifiedNodeAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
   qualifiedNodeContainerAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
-  qualifiedParamAttrs: /if|unless|name|value|sep|from/,
+  qualifiedParamAttrs: /if|unless|name|value|type|sep|from/,
+  qualifiedExtraArgAttrs: /if|unless|name|value/,
   qualifiedRemapAttrs: /if|unless|from|to/,
   qualifiedEnvAttrs: /if|unless|name|value/,
   qualifiedSetEnvAttrs: /if|unless|name|value/,
@@ -23,6 +24,8 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualifiedPushRosNamespaceAttrs: /if|unless|namespace/,
   qualifiedTimerAttrs: /period/,
   qualifiedXmlAttrs: /version/,
+  qualifiedLoadComposableNodeAttrs: /if|unless|target/,
+  qualifiedComposableNodeAttrs: /if|unless|name|pkg|plugin/,
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
 
@@ -80,6 +83,13 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
+        /(<)(extra_arg)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@extraargtags" },
+        ],
+      ],
+      [
         /(<)(remap)/,
         [
           { token: "delimiter.start", bracket: "@open" },
@@ -108,7 +118,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
-        /(<)(push-ros-namespace)/,
+        /(<)(push_ros_namespace)/,
         [
           { token: "delimiter.start", bracket: "@open" },
           { token: "tag", bracket: "@open", next: "@namespacetags" },
@@ -129,6 +139,19 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
         ],
       ],
       [
+        /(<)(load_composable_node)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@load_composable_node_tags" },
+        ],
+      ],
+      [
+        /(<)(composable_node)/,
+        [
+          { token: "delimiter.start", bracket: "@open" },
+          { token: "tag", bracket: "@open", next: "@composable_node_tags" },
+        ],
+      ],      [
         /(<)(\?xml)/,
         [
           { token: "delimiter.start", bracket: "@open" },
@@ -341,6 +364,23 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
+    extraargtags: [
+      [/\s+/, ""],
+      [/(@qualifiedExtraArgAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
+      [
+        /(@qualifiedExtraArgAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
     remaptags: [
       [/\s+/, ""],
       [/(@qualifiedRemapAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
@@ -420,6 +460,40 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       ],
       [
         /(@qualifiedPushRosNamespaceAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    load_composable_node_tags: [
+      [/\s+/, ""],
+      [/(@qualifiedLoadComposableNodeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
+      [
+        /(@qualifiedLoadComposableNodeAttrs)(\s*=\s*)(')/,
+        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+      ],
+      [
+        /(\/)(>)/,
+        [
+          { token: "tag", bracket: "@close" },
+          { token: "delimiter.end", bracket: "@close", next: "@pop" },
+        ],
+      ],
+      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+    ],
+    composable_node_tags: [
+      [/\s+/, ""],
+      [/(@qualifiedComposableNodeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
+      [
+        /(@qualifiedComposableNodeAttrs)(\s*=\s*)(')/,
         ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
       ],
       [
