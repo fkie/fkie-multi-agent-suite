@@ -3,22 +3,22 @@ import ComputerIcon from "@mui/icons-material/Computer";
 import HideSourceIcon from "@mui/icons-material/HideSource";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
-    Box,
-    ClickAwayListener,
-    Grow,
-    IconButton,
-    MenuItem,
-    MenuList,
-    Paper,
-    Popper,
-    Stack,
-    Tooltip,
+  Box,
+  ClickAwayListener,
+  Grow,
+  IconButton,
+  MenuItem,
+  MenuList,
+  Paper,
+  Popper,
+  Stack,
+  Tooltip,
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
@@ -158,7 +158,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       tags.push({ id: "no-daemon", data: "No Daemon", tooltip: "", color: "red" });
     }
     if (!provider.discovery) {
-      tags.push({ id: "no-discovery", data: "No Discovery", tooltip: "", color: "red" });
+      tags.push({ id: "no-discovery", data: "No Discovery", tooltip: "", color: "orange" });
     }
     return tags;
   }

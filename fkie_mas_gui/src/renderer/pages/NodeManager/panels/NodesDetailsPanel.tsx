@@ -248,7 +248,7 @@ export default function NodesDetailsPanel(): JSX.Element {
           </Stack>
           <Stack direction="row" spacing={0.5}>
             <Tag
-              color={provider.discovery ? "default" : "error"}
+              color={provider.discovery ? "default" : "warning"}
               title="discovery:"
               // title={`${RosNodeStatusInfo[node.status]}`}
               text={provider.discovery ? "running" : "not running"}
