@@ -1,5 +1,6 @@
 import CircleIcon from "@mui/icons-material/Circle";
 import { default as ContrastIcon } from "@mui/icons-material/Contrast";
+import ReportIcon from "@mui/icons-material/Report";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
@@ -15,6 +16,12 @@ const GroupStatus = {
   ALL_INACTIVE: 0,
   SOME_RUNNING: 1,
   ALL_RUNNING: 2,
+};
+
+const GroupStatusLocal = {
+  ALL: 1,
+  SOME: 2,
+  NONE: 3,
 };
 
 const GroupLifecycleStatus = {
@@ -87,6 +94,25 @@ const getGroupStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
     groupStatus = GroupStatus.ALL_RUNNING;
   }
   return groupStatus;
+};
+
+const getGroupStatusLocal: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
+  let allLocal = true;
+  let hasLocal = false;
+  for (const treeItem of treeItems) {
+    if (treeItem.node?.isLocal) {
+      hasLocal = true;
+    } else {
+      allLocal = false;
+    }
+  }
+  if (allLocal) {
+    return GroupStatusLocal.ALL;
+  }
+  if (!hasLocal) {
+    return GroupStatusLocal.NONE;
+  }
+  return GroupStatusLocal.SOME;
 };
 
 const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = (treeItems) => {
@@ -175,8 +201,34 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
 
   if (groupLifecycleStatus === GroupLifecycleStatus.NO_ONE) {
     switch (groupStatus) {
-      case GroupStatus.ALL_RUNNING:
+      case GroupStatus.ALL_RUNNING: {
+        const groupStatusLocal = getGroupStatusLocal(treeItems);
+        if (groupStatusLocal === GroupStatusLocal.NONE) {
+          return (
+            <Tooltip
+              title={
+                <div>
+                  <Typography fontWeight="bold" fontSize="inherit">
+                    The processes of all nodes are not found on the local host.
+                  </Typography>
+                  <Typography fontSize={"inherit"}>
+                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:=
+                    parameter, nor is the GID of the node detected by mas-discovery.
+                  </Typography>
+                  <Typography fontSize={"inherit"}>
+                    Note: no checks for life cycle, composable node or other service calls are performed!
+                  </Typography>
+                </div>
+              }
+              placement="left"
+              disableInteractive
+            >
+              <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+            </Tooltip>
+          );
+        }
         return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+      }
 
       case GroupStatus.SOME_RUNNING:
         return (
