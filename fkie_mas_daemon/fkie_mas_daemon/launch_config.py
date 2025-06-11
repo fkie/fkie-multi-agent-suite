@@ -1139,7 +1139,7 @@ class LaunchConfig(object):
         service_load_node_name = f'{node.composable_container}/_container/load_node'
         Log.debug(f" -> load composed node to '{service_load_node_name}'")
         response = nmd.launcher.call_service(
-            service_load_node_name, composition_interfaces.srv.LoadNode, request)
+            service_load_node_name, composition_interfaces.srv.LoadNode, request, timeout_sec=5.0)
         if response is None:
             error_msg = f"Failed to load service '{request.node_name}' of type '{request.plugin_name}' in container '{node.composable_container}': None as service response"
             Log.error(error_msg)
