@@ -1,31 +1,52 @@
 import { languages } from "monaco-editor/esm/vs/editor/editor.api";
 
+const tagsArray = [
+  "launch",
+  "include",
+  "group",
+  "let",
+  "arg",
+  "executable",
+  "param",
+  "remap",
+  "env",
+  "set_env",
+  "unset_env",
+  "push_ros_namespace",
+  "timer",
+  "node_container",
+  "node",
+  "load_composable_node",
+  "composable_node",
+  "extra_arg",
+  "\\?xml",
+];
+
 export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
   ignoreCase: true,
 
-  qualifiedTags:
-    /launch|include|group|let|arg|executable|param|remap|env|sev_env|unset_env|push_ros_namespace|timer|node_container|node|load_composable_node|composable_node|extra_arg|\?xml/,
+  qualifiedTags: new RegExp(`${tagsArray.join("|")}`),
 
-  qualifiedLaunchAttrs: /if|unless/,
-  qualifiedIncludeAttrs: /if|unless|file/,
-  qualifiedArgAttrs: /if|unless|name|value|default|description/,
-  qualifiedLetAttrs: /if|unless|name|value/,
-  qualifiedExecutableAttrs: /if|unless|cmd|cwd|name|ros_args|args|namespace|launch-prefix|output|shell/,
-  qualifiedNodeAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
-  qualifiedNodeContainerAttrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
-  qualifiedParamAttrs: /if|unless|name|value|type|sep|from/,
-  qualifiedExtraArgAttrs: /if|unless|name|value/,
-  qualifiedRemapAttrs: /if|unless|from|to/,
-  qualifiedEnvAttrs: /if|unless|name|value/,
-  qualifiedSetEnvAttrs: /if|unless|name|value/,
-  qualifiedGroupAttrs: /if|unless|scoped/,
-  qualifiedUnsetEnvAttrs: /if|unless|name/,
-  qualifiedPushRosNamespaceAttrs: /if|unless|namespace/,
-  qualifiedTimerAttrs: /period/,
-  qualifiedXmlAttrs: /version/,
-  qualifiedLoadComposableNodeAttrs: /if|unless|target/,
-  qualifiedComposableNodeAttrs: /if|unless|name|pkg|plugin/,
+  qualified_launch_attrs: /if|unless/,
+  qualified_include_attrs: /if|unless|file/,
+  qualified_arg_attrs: /if|unless|name|value|default|description/,
+  qualified_let_attrs: /if|unless|name|value/,
+  qualified_executable_attrs: /if|unless|cmd|cwd|name|ros_args|args|namespace|launch-prefix|output|shell/,
+  qualified_node_attrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
+  qualified_node_container_attrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
+  qualified_param_attrs: /if|unless|name|value|type|sep|from/,
+  qualified_extra_arg_attrs: /if|unless|name|value/,
+  qualified_remap_attrs: /if|unless|from|to/,
+  qualified_env_attrs: /if|unless|name|value/,
+  qualified_set_env_attrs: /if|unless|name|value/,
+  qualified_group_attrs: /if|unless|scoped/,
+  qualified_unset_env_attrs: /if|unless|name/,
+  qualified_push_ros_namespace_attrs: /if|unless|namespace/,
+  qualified_timer_attrs: /period/,
+  qualified_load_composable_node_attrs: /if|unless|target/,
+  qualified_composable_node_attrs: /if|unless|name|pkg|plugin/,
+  qualified_xml_attrs: /version/,
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
 
@@ -33,131 +54,17 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   tokenizer: {
     root: [
       // Opening tags with their corresponding attribute options
-      [
-        /(<)(launch)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@launchtags" },
-        ],
-      ],
-      [
-        /(<)(include)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@includetags" },
-        ],
-      ],
-      [
-        /(<)(arg)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@argtags" },
-        ],
-      ],
-      [
-        /(<)(let)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@lettags" },
-        ],
-      ],
-      [
-        /(<)(executable)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@executabletags" },
-        ],
-      ],
-      [
-        /(<)(node )/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@nodetags" },
-        ],
-      ],
-      [
-        /(<)(param)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@paramtags" },
-        ],
-      ],
-      [
-        /(<)(extra_arg)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@extraargtags" },
-        ],
-      ],
-      [
-        /(<)(remap)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@remaptags" },
-        ],
-      ],
-      [
-        /(<)(env)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@envtags" },
-        ],
-      ],
-      [
-        /(<)(set_env)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@setenvtags" },
-        ],
-      ],
-      [
-        /(<)(unset_env)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@unsetenvtags" },
-        ],
-      ],
-      [
-        /(<)(push_ros_namespace)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@namespacetags" },
-        ],
-      ],
-      [
-        /(<)(group)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@grouptags" },
-        ],
-      ],
-      [
-        /(<)(timer)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@timertags" },
-        ],
-      ],
-      [
-        /(<)(load_composable_node)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@load_composable_node_tags" },
-        ],
-      ],
-      [
-        /(<)(composable_node)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@composable_node_tags" },
-        ],
-      ],      [
-        /(<)(\?xml)/,
-        [
-          { token: "delimiter.start", bracket: "@open" },
-          { token: "tag", bracket: "@open", next: "@xmltags" },
-        ],
-      ],
+      // for each attribute in 'tagsArray' you have to define a 'qualified_{attribute}_attrs'
+      ...tagsArray.map((attr) => {
+        const attr_normalized = attr.replace("\\?", "");
+        return [
+          new RegExp(`(<)(${attr})`),
+          [
+            { token: "delimiter.start", bracket: "@open" },
+            { token: "tag", bracket: "@open", next: `@${attr_normalized}` },
+          ],
+        ] as languages.IMonarchLanguageRule;
+      }),
 
       // Standard opening tag
       // For tags without any attributes: (none)
@@ -207,323 +114,37 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
       [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
     ],
 
-    // Per tag attributes
-    launchtags: [
-      [/\s+/, ""],
-      [/(@qualifiedLaunchAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedLaunchAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    grouptags: [
-      [/\s+/, ""],
-      [/(@qualifiedGroupAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedGroupAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    timertags: [
-      [/\s+/, ""],
-      [/(@qualifiedTimerAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedTimerAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    includetags: [
-      [/\s+/, ""],
-      [/(@qualifiedIncludeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedIncludeAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    argtags: [
-      [/\s+/, ""],
-      [/(@qualifiedArgAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedArgAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    lettags: [
-      [/\s+/, ""],
-      [/(@qualifiedLetAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedLetAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    executabletags: [
-      [/\s+/, ""],
-      [
-        /(@qualifiedExecutableAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
-      [
-        /(@qualifiedExecutableAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    nodetags: [
-      [/\s+/, ""],
-      [/(@qualifiedNodeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedNodeAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    paramtags: [
-      [/\s+/, ""],
-      [/(@qualifiedParamAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedParamAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    extraargtags: [
-      [/\s+/, ""],
-      [/(@qualifiedExtraArgAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedExtraArgAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    remaptags: [
-      [/\s+/, ""],
-      [/(@qualifiedRemapAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedRemapAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    envtags: [
-      [/\s+/, ""],
-      [/(@qualifiedEnvAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedEnvAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    setenvtags: [
-      [/\s+/, ""],
-      [/(@qualifiedSetEnvAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedSetEnvAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    unsetenvtags: [
-      [/\s+/, ""],
-      [
-        /(@qualifiedUnsetEnvAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
-      [
-        /(@qualifiedUnsetEnvAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    namespacetags: [
-      [/\s+/, ""],
-      [
-        /(@qualifiedPushRosNamespaceAttrs)(\s*=\s*)(")/,
-        ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
-      ],
-      [
-        /(@qualifiedPushRosNamespaceAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    load_composable_node_tags: [
-      [/\s+/, ""],
-      [/(@qualifiedLoadComposableNodeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedLoadComposableNodeAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    composable_node_tags: [
-      [/\s+/, ""],
-      [/(@qualifiedComposableNodeAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedComposableNodeAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
-    xmltags: [
-      [/\s+/, ""],
-      [/(@qualifiedXmlAttrs)(\s*=\s*)(")/, ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }]],
-      [
-        /(@qualifiedXmlAttrs)(\s*=\s*)(')/,
-        ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
-      ],
-      [
-        /(\/)(>)/,
-        [
-          { token: "tag", bracket: "@close" },
-          { token: "delimiter.end", bracket: "@close", next: "@pop" },
-        ],
-      ],
-      [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-      [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
-    ],
+    // Qualified_{attribute}_attr
+    ...Object.assign(
+      {},
+      ...tagsArray.map((attr) => {
+        const attr_normalized = attr.replace("\\?", "");
+        return {
+          [attr_normalized]: [
+            [/\s+/, ""],
+            [
+              new RegExp(`(@qualified_${attr_normalized}_attrs)(\\s*=\\s*)(")`),
+              ["attribute.name", "", { token: "", bracket: "@open", next: "@value" }],
+            ],
+            [
+              new RegExp(`(@qualified_${attr_normalized}_attrs)(\\s*=\\s*)(')`),
+              ["attribute.name", "attribute.name", { token: "attribute.value", bracket: "@open", next: "@value_sq" }],
+            ],
+            [
+              /(\/)(>)/,
+              [
+                { token: "tag", bracket: "@close" },
+                { token: "delimiter.end", bracket: "@close", next: "@pop" },
+              ],
+            ],
+            [/>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+            [/\?>/, { token: "delimiter.end", bracket: "@close", next: "@pop" }],
+          ],
+        } as languages.IMonarchLanguageRule;
+      })
+    ),
 
+    // special attributes
     value: [
       [/([^"^$]*)(\$\()/, ["attribute.value", { token: "delimiter.start", bracket: "@open", next: "@subst" }]],
       [/([^"]*)(")/, ["attribute.value", { token: "", bracket: "@close", next: "@pop" }]],

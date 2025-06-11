@@ -148,7 +148,7 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
       ],
     },
     {
-      tag: "push-ros-namespace",
+      tag: "push_ros_namespace",
       proposals: [...all, createProposal("namespace", 'namespace="${1:NAMESPACE}"', "Assigned namespace")],
     },
   ];
@@ -230,8 +230,8 @@ export function getTagProposals(
     ),
     createProposal("group", `${open}group>\n  \n</group${close}`, "Add a new group statement"),
     createProposal(
-      "push-ros-namespace",
-      `${open}group>\n  <push-ros-namespace namespace="\${1:NAMESPACE}"/>\n</group${close}`,
+      "push_ros_namespace",
+      `${open}group>\n  <push_ros_namespace namespace="\${1:NAMESPACE}"/>\n</group${close}`,
       "Add a new group statement with namespace"
     ),
     createProposal(
@@ -306,6 +306,21 @@ export function getTagProposals(
       "MAS_KILL_ON_STOP",
       `<set_env name="MAS_KILL_ON_STOP" value="\${1:300}" />`,
       "Kills all nodes after X[ms] which are affected by this environment variable."
+    ),
+    createProposal(
+      "load_composable_node",
+      `${open}load_composable_node target="\${1:CONTAINER_NAME}">\n  \n</load_composable_node${close}`,
+      "Add a new action to load composable nodes"
+    ),
+    createProposal(
+      "composable_node",
+      `${open}composable_node name="\${1:NODE_NAME}" pkg="\${2:PACKAGE}" plugin="\${3:PLUGIN}">\n  \n</composable_node${close}`,
+      "Add a new composable node"
+    ),
+    createProposal(
+      "extra_arg",
+      `${open}extra_arg name="\${1:NAME}" value="\${2:VALUE}" /${close}`,
+      "Add a new extra argument"
     ),
   ];
 }

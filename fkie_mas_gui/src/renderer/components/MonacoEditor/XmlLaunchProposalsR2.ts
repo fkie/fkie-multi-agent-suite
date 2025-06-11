@@ -53,9 +53,10 @@ function createAttributeSuggestionsFromTag(
     "env",
     "set_env",
     "unset_env",
-    "push-ros-namespace",
+    "push_ros_namespace",
     "timer",
     "node_container",
+    "load_composable_node",
     "composable_node",
   ];
 
