@@ -110,6 +110,14 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
               }
               // complement history with initial values in case they have never been used
               historyList = [...new Set([...historyList, argValue])];
+              // special: add true/false if value is true or false and no history available
+              if (historyList.length === 1) {
+                if (`${argValue}`.toLocaleLowerCase().localeCompare("true") === 0) {
+                  historyList.push("false")
+                } else if (`${argValue}`.toLocaleLowerCase().localeCompare("false") === 0) {
+                  historyList.push("true")
+                }
+              }
               argList.push({
                 name: arg.name,
                 value: argValue || "",
