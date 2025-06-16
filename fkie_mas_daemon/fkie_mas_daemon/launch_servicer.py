@@ -455,8 +455,14 @@ class LaunchServicer(LoggingEventHandler):
                 self._remove_launch_from_observer(old_launch)
                 # use argv from already open file
                 launch_context = LaunchContext(argv=sys.argv[1:])
+                # get current arguments in case new are defined in changed file
+                pla: List[LaunchArgument] = []
+                for (a_name, a_value) in old_launch.provided_launch_arguments:
+                    pla.append(LaunchArgument(a_name, a_value))
+                req_args = LaunchConfig.get_launch_arguments(
+                    launch_context, old_launch.filename,  provided_args=pla)
                 launch_config = LaunchConfig(
-                    old_launch.filename, context=launch_context, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
+                    old_launch.filename, context=launch_context, daemonuri=daemonuri, launch_arguments=[(arg.name, arg.value) for arg in req_args])
                 self._loaded_files[cfgid] = launch_config
                 result.status.code = 'OK'
                 # change detection for nodes parameters
