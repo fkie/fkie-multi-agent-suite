@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.4.12 - 17.06.2025
+
+Improved launch dialog: add true/false to history if value is true or false and no history available
+Fixed proposals for if and unless for ros2
+Fixed reload files with new added launch arguments
+Fixed install script uri in readme
+
 ## 4.4.11 - 11.06.2025
 
 Show indicator if all nodes in the group are not local

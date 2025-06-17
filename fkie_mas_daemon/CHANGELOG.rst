@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.10 (17.06.2025)
+------------------
+* Fixed reload files with new added launch arguments
+
 4.5.9 (11.06.2025)
 ------------------
 * Increased timeout for load composed nodes to 5 sec
