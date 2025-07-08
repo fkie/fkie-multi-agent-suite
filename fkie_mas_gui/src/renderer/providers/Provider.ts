@@ -2278,7 +2278,7 @@ export default class Provider implements IProvider {
         return value.data as TResultProcess;
       }
       this.logger?.debug(`Provider [${this.name()}]: Error at findNodeProcess()`, `${value.message}`);
-      return { result: result.result, message: result.message };
+      return { result: value.result, message: value.message, processes: [] };
     });
     return Promise.resolve(result);
   };
