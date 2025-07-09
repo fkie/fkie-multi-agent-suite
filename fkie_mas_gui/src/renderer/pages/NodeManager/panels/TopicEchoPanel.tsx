@@ -591,7 +591,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
       }
       return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [currentProvider, settingsCtx.changed]
+    [currentProvider, backgroundColor, settingsCtx.changed]
   );
 
   function onKeyDown(event: React.KeyboardEvent): void {

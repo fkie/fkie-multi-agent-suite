@@ -27,7 +27,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
@@ -167,7 +166,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   // debounced search callback
   // search in the origin node list and create a new tree
-  const onSearch = useDebounceCallback((searchTerm: string) => {
+  const onSearch = useCallback((searchTerm: string) => {
     const newVisibleNodes: RosNode[] = [];
     for (const item of providerNodes) {
       const { nodes } = item;
@@ -191,7 +190,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       );
     }
     setVisibleNodes(newVisibleNodes);
-  }, 300);
+  }, [providerNodes]);
 
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,

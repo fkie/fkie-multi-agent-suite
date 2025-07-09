@@ -230,6 +230,8 @@ export default class Provider implements IProvider {
    */
   private currentRequestList = new Set();
 
+  private currentDelayTimer: NodeJS.Timeout | null = null;
+
   /**
    * constructor that initializes a new instance of a provider object.
    *
@@ -2101,11 +2103,23 @@ export default class Provider implements IProvider {
 
   /* Publisher handler */
 
+  private updateTimeoutTimer: () => void = () => {
+    this.currentDelayTimer = setTimeout(() => {
+      this.currentDelay += 3;
+      emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
+      this.updateTimeoutTimer();
+    }, 3000);
+  }
+
   /**
    * Callback of master daemon ready status (true/false)
    */
   private callbackDaemonReady: (msg: JSONObject) => void = (msg) => {
     // this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
+    if (this.currentDelayTimer) {
+      clearTimeout(this.currentDelayTimer);
+      this.currentDelayTimer = null;
+    }
     const msgObj = msg as unknown as TProviderDaemonReady;
     if (msgObj.status && !this.daemon) {
       this.updateDaemonInit();
@@ -2114,6 +2128,7 @@ export default class Provider implements IProvider {
       this.currentDelay = (Date.now() - msgObj.timestamp + this.timeDiff) / 1000.0;
       emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
     }
+    this.updateTimeoutTimer();
     this.daemon = msgObj.status;
   };
 
