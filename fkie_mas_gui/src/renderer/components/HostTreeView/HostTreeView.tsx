@@ -700,7 +700,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       >
         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
           let providerIsAvailable = false;
-          let p = rosCtx.getProviderById(item.providerId as string, false);
+          let p = rosCtx.getProviderById(item.providerId as string, true);
           if (p?.isAvailable()) {
             providerIsAvailable = true;
           }
