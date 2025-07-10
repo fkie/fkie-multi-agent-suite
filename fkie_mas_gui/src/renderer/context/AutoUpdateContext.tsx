@@ -310,7 +310,7 @@ export function AutoUpdateProvider({
         setLocalProviderId(localProvider[0].id);
       }
     }
-  }, [rosCtx.providersConnected]);
+  }, [rosCtx.providers]);
 
   useEffect(() => {
     if (localProviderId) {

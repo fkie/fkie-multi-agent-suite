@@ -20,9 +20,9 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
     const provNames: { name: string; id: string }[] = [];
     let hasLocal = false;
     let newSelectedProvider = "";
-    if (rosCtx.providersConnected.length === 1) {
+    if (rosCtx.providers.length === 1) {
       // select the first host if only one is available
-      const currProv = rosCtx.providersConnected[0];
+      const currProv = rosCtx.providers[0];
       provNames.push({
         name: currProv.name(),
         id: currProv.id,
@@ -30,7 +30,7 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
       newSelectedProvider = currProv.id;
     } else {
       // get all connected hosts and select the first local host
-      for (const prov of rosCtx.providersConnected) {
+      for (const prov of rosCtx.providers) {
         if (currentProvider === "") {
           if (prov?.isLocalHost && !hasLocal) {
             hasLocal = true;
@@ -49,7 +49,7 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
     }
     setProviderNames(provNames);
     setCurrentProvider(newSelectedProvider);
-  }, [currentProvider, rosCtx.providersConnected]);
+  }, [currentProvider, rosCtx.providers]);
 
   // inform about new provider
   useEffect(() => {

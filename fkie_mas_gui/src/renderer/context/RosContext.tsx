@@ -1,4 +1,3 @@
-import { useDebounceCallback } from "@react-hook/debounce";
 import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
@@ -55,7 +54,6 @@ export interface IRosProviderContext {
   rosInfo: TRosInfo | null;
   systemInfo: TSystemInfo | null;
   providers: Provider[];
-  providersConnected: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
   localNodes: TLocalNode[];  // track local nodes of each provider
@@ -72,6 +70,7 @@ export interface IRosProviderContext {
   updateLaunchList: (providerId: string) => void;
   reloadLaunchFile: (providerId: string, modifiedFile: string) => Promise<void>;
   getProviderById: (providerId: string, includeNotAvailable?: boolean) => Provider | undefined;
+  getProviderByName: (providerName: string, includeNotAvailable?: boolean) => Provider | undefined;
   getProviderByHost: (hostName: string) => Provider | null;
   getLocalProvider: () => Provider[];
   registerSubscriber: (
@@ -93,7 +92,6 @@ export const DEFAULT = {
   rosInfo: null,
   systemInfo: null,
   providers: [],
-  providersConnected: [],
   mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
   nodeMap: new Map(),
   localNodes: [],
@@ -110,6 +108,7 @@ export const DEFAULT = {
   reloadLaunchFile: (): Promise<void> => new Promise<void>(() => {}),
   updateLaunchList: (): void => {},
   getProviderById: (): Provider | undefined => undefined,
+  getProviderByName: (): Provider | undefined => undefined,
   getProviderByHost: (): Provider | null => null,
   getLocalProvider: (): Provider[] => [],
   registerSubscriber: (): void => {},
@@ -130,10 +129,6 @@ interface IRosProviderComponent {
   children: React.ReactNode;
 }
 
-// (ms) time to debounce callbacks
-// useful to prevent unnecessary updates
-const debounceTimeout = 100;
-
 export const RosContext = createContext<IRosProviderContext>(DEFAULT);
 
 export function RosProviderReact(props: IRosProviderComponent): ReturnType<React.FC<IRosProviderComponent>> {
@@ -147,7 +142,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [providersConnected, setProvidersConnected] = useState<Provider[]>([]);
   const [localNodes, setLocalNodes] = useState<TLocalNode[]>([]);
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(DEFAULT.mapProviderRosNodes);
@@ -183,26 +177,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     });
     // remove all discovered provider with no parent provider
     // and not stored
-    setProviders(
-      providers.filter((prov) => {
+    setProviders((oldProviders) =>
+      oldProviders.filter((prov) => {
         // remove provider deleted by user
         return (
           prov.discovered === undefined ||
           prov.discovered?.length ||
           prov.connectionState === ConnectionState.STATES.CONNECTED
         );
-      })
-    );
-    setProvidersConnected(
-      providers.filter((prov) => {
-        if (prov.connectionState === ConnectionState.STATES.CONNECTED) {
-          // provider is connected
-          if (prov.discovered === undefined || prov.discovered?.length) {
-            // and it is configured by user or discoverer is still connected
-            return true;
-          }
-        }
-        return false;
       })
     );
   }
@@ -315,7 +297,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Trigger updateLaunchContent() of the provider.
    */
   async function removeProvider(providerId: string): Promise<void> {
-    logCtx.debug(`Triggering update of ROS launch files from ${providerId}`, "");
+    logCtx.debug(`Remove provider ${providerId}`, "");
     setProviders((prev) =>
       prev.filter((prov) => {
         if (prov.id === providerId) {
@@ -583,7 +565,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   /**
    * Forces an update on the provider list for all connected provider.
    */
-  const refreshProviderList = useDebounceCallback((): void => {
+  const refreshProviderList = useCallback((): void => {
     // remove discoverd provider
     const newProviders = providers.filter((prov) => {
       return prov.discovered === undefined;
@@ -601,7 +583,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         logCtx.debug("refreshProviderList failed", JSON.stringify(error), false);
       }
     }
-  }, debounceTimeout);
+  }, [providers]);
 
   async function startConfig(
     config: ProviderLaunchConfiguration,
@@ -1054,15 +1036,18 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
       setProviders((prev) =>
         prev.filter((prov) => {
-          return (
+          const result = (
             prov.discovered === undefined || // by user connected provider cannot be removed by event
             (data.provider.connection.port !== prov.connection.port &&
               data.provider.connection.host !== prov.connection.host)
           );
+          if (!result) {
+            prov.close();
+          }
+          return result;
         })
       );
-    },
-    [setProviders]
+    }
   );
 
   /** Handle events caused by changed files. */
@@ -1263,7 +1248,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       rosInfo,
       systemInfo,
       providers,
-      providersConnected,
       mapProviderRosNodes,
       nodeMap,
       localNodes,
@@ -1290,7 +1274,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       updateLocalNodes,
     }),
 
-    [initialized, rosInfo, systemInfo, providers, providersConnected, mapProviderRosNodes, setMapProviderRosNodes]
+    [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes, setMapProviderRosNodes]
   );
 
   return <RosContext.Provider value={attributesMemo}>{children}</RosContext.Provider>;

@@ -212,8 +212,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           nodes: nodes,
         },
       ]);
-    },
-    [setProviderNodes, settingsCtx]
+    }
   );
 
   useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, (data: EventProviderRestartNodes) => {
@@ -886,9 +885,11 @@ export default function HostTreeViewPanel(): JSX.Element {
   }
 
   function refreshAllProvider(forceRefresh: boolean): void {
-    for (const p of rosCtx.providersConnected) {
-      p.updateRosNodes({}, forceRefresh);
-      p.updateTimeDiff();
+    for (const p of rosCtx.providers) {
+      if (p.connectionState === ConnectionState.STATES.CONNECTED) {
+        p.updateRosNodes({}, forceRefresh);
+        p.updateTimeDiff();
+      }
     }
   }
 
@@ -896,7 +897,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   useEffect(() => {
     refreshAllProvider(false);
-  }, [rosCtx.providersConnected]);
+  }, [rosCtx.providers]);
 
   useEffect(() => {
     // apply filter to nodes if search text was changed by user or nodes are updated by provider
@@ -1558,7 +1559,7 @@ export default function HostTreeViewPanel(): JSX.Element {
             {/* </Paper> */}
           </Box>
           <Box width="100%" height="100%" overflow="auto">
-            {(!rosCtx.providersConnected || rosCtx.providersConnected.length === 0) && (
+            {(!rosCtx.providers || rosCtx.providers.length === 0) && (
               <Alert severity="info">
                 <AlertTitle>No providers available</AlertTitle>
                 Please connect to a ROS provider

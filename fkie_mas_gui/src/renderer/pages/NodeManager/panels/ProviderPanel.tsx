@@ -124,7 +124,7 @@ export default function ProviderPanel(): JSX.Element {
 
   useEffect(() => {
     debouncedCallbackFilterText(rosCtx.providers, filterText);
-  }, [rosCtx.providers, filterText, debouncedCallbackFilterText]);
+  }, [rosCtx.providers, filterText]);
 
   useEffect(() => {
     if (window.commandExecutor && !rosCtx.rosInfo) return;

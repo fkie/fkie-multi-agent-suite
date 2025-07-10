@@ -241,7 +241,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       // trigger add new provider
       const newAcTsSet = new Set<string>();
       const newAcTopicSet = new Set<string>();
-      for (const prov of rosCtx.providersConnected) {
+      for (const prov of rosCtx.providers) {
         for (const node of prov.rosNodes) {
           newAcTsSet.add(`${node.name}/*`);
           newAcTopicSet.add(`${node.name}/*`);
