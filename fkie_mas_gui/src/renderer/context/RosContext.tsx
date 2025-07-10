@@ -56,7 +56,7 @@ export interface IRosProviderContext {
   providers: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
-  localNodes: TLocalNode[];  // track local nodes of each provider
+  localNodes: TLocalNode[]; // track local nodes of each provider
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
@@ -70,7 +70,6 @@ export interface IRosProviderContext {
   updateLaunchList: (providerId: string) => void;
   reloadLaunchFile: (providerId: string, modifiedFile: string) => Promise<void>;
   getProviderById: (providerId: string, includeNotAvailable?: boolean) => Provider | undefined;
-  getProviderByName: (providerName: string, includeNotAvailable?: boolean) => Provider | undefined;
   getProviderByHost: (hostName: string) => Provider | null;
   getLocalProvider: () => Provider[];
   registerSubscriber: (
@@ -108,7 +107,6 @@ export const DEFAULT = {
   reloadLaunchFile: (): Promise<void> => new Promise<void>(() => {}),
   updateLaunchList: (): void => {},
   getProviderById: (): Provider | undefined => undefined,
-  getProviderByName: (): Provider | undefined => undefined,
   getProviderByHost: (): Provider | null => null,
   getLocalProvider: (): Provider[] => [],
   registerSubscriber: (): void => {},
@@ -165,26 +163,25 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     const idsSavedProviders: string[] = [];
     // get ids of providers which are stored local and are connected
     for (const prov of providers) {
-      if (prov.discovered === undefined && prov.connectionState === ConnectionState.STATES.CONNECTED) {
+      if (prov.isCreatedByUser() && prov.connectionState === ConnectionState.STATES.CONNECTED) {
         idsSavedProviders.push(prov.id);
       }
     }
-    // update discovered lists by removing not connected provider ids
-    providers.forEach((prov) => {
-      if (prov.discovered !== undefined) {
-        prov.discovered = prov.discovered.filter((pid) => idsSavedProviders.indexOf(pid) !== -1);
-      }
-    });
+
     // remove all discovered provider with no parent provider
     // and not stored
     setProviders((oldProviders) =>
       oldProviders.filter((prov) => {
-        // remove provider deleted by user
-        return (
-          prov.discovered === undefined ||
-          prov.discovered?.length ||
+        if (
+          prov.isCreatedByUser() ||
+          prov.cleanDiscoverer(idsSavedProviders).length > 0 ||
           prov.connectionState === ConnectionState.STATES.CONNECTED
-        );
+        ) {
+          return true;
+        }
+        // close the connection and remove provider
+        prov.close();
+        return false;
       })
     );
   }
@@ -307,8 +304,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return true;
       })
     );
-    // const provider = getProviderById(providerId);
-    // await provider?.updateLaunchContent();
   }
 
   /**
@@ -565,25 +560,28 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   /**
    * Forces an update on the provider list for all connected provider.
    */
-  const refreshProviderList = useCallback((): void => {
+  const refreshProviderList = (): void => {
     // remove discoverd provider
-    const newProviders = providers.filter((prov) => {
-      return prov.discovered === undefined;
-    });
-    setProviders(newProviders);
-    for (const provider of newProviders) {
-      try {
-        provider.updateProviderList();
-        provider.getDaemonVersion().catch((err) => {
-          logCtx.debug(`refreshProvider ${provider.name()} failed`, JSON.stringify(err), false);
-          connectToProvider(provider);
-        });
-      } catch (error: unknown) {
-        // ignore errors while refresh
-        logCtx.debug("refreshProviderList failed", JSON.stringify(error), false);
-      }
-    }
-  }, [providers]);
+    setProviders((prev) =>
+      prev.filter((prov) => {
+        if (prov.isCreatedByUser()) {
+          try {
+            prov.updateProviderList();
+            prov.getDaemonVersion().catch((err) => {
+              logCtx.debug(`refreshProvider ${prov.name()} failed`, JSON.stringify(err), false);
+              connectToProvider(prov);
+            });
+          } catch (error: unknown) {
+            // ignore errors while refresh
+            logCtx.debug("refreshProviderList failed", JSON.stringify(error), false);
+          }
+          return true;
+        }
+        prov.close();
+        return false;
+      })
+    );
+  };
 
   async function startConfig(
     config: ProviderLaunchConfiguration,
@@ -1025,30 +1023,28 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     [setProvidersAddQueue]
   );
 
-  useCustomEventListener(
-    EVENT_PROVIDER_REMOVED,
-    (data: EventProviderRemoved) => {
-      // trigger remove provider
-      logCtx.debug(
-        `trigger provider removed: ${data.provider.rosState.name}`,
-        `RosState details: ${JSON.stringify(data.provider.rosState)}`
-      );
+  useCustomEventListener(EVENT_PROVIDER_REMOVED, (data: EventProviderRemoved) => {
+    // trigger remove provider
+    logCtx.debug(
+      `trigger provider removed: ${data.provider.rosState.name}`,
+      `RosState details: ${JSON.stringify(data.provider.rosState)}`
+    );
 
-      setProviders((prev) =>
-        prev.filter((prov) => {
-          const result = (
-            prov.discovered === undefined || // by user connected provider cannot be removed by event
-            (data.provider.connection.port !== prov.connection.port &&
-              data.provider.connection.host !== prov.connection.host)
-          );
-          if (!result) {
-            prov.close();
-          }
-          return result;
-        })
-      );
-    }
-  );
+    setProviders((prev) =>
+      prev.filter((prov) => {
+        if (
+          prov.isCreatedByUser() || // by user connected provider cannot be removed by event
+          (data.provider.connection.port !== prov.connection.port &&
+            data.provider.connection.host !== prov.connection.host)
+        ) {
+          return true;
+        }
+        // close connection and remove provider from list
+        prov.close();
+        return false;
+      })
+    );
+  });
 
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, (data: EventProviderPathEvent) => {
@@ -1208,30 +1204,29 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   useEffect(() => {
     if (providersAddQueue.length > 0) {
       const prov = providersAddQueue.pop();
-      let hostnames = prov?.hostnames;
-      if (!hostnames) {
-        hostnames = prov?.host() ? [prov?.host()] : [];
-      }
-      const provider = getProviderByHosts(hostnames, prov?.connection.port, null);
-      if (provider === null) {
-        if (prov) {
-          setProviders((oldValue) => {
-            // create new sorted list
-            const newProviders = [...oldValue, prov];
-            newProviders.sort((a, b) => -b.name().localeCompare(a.name()));
-            return newProviders;
-          });
+      if (prov) {
+        let hostnames = prov.hostnames;
+        if (!hostnames) {
+          hostnames = prov?.host() ? [prov?.host()] : [];
         }
-      } else {
-        // provider already registered, try to connect
-        if (provider.discovered !== undefined && prov?.discovered !== undefined) {
-          // update discovered list
-          const discoverer = prov?.discovered?.at(0);
-          if (discoverer && provider.discovered.indexOf(discoverer) === -1) {
-            provider.discovered.push(discoverer);
+        const provider = getProviderByHosts(hostnames, prov.connection.port, null);
+        if (provider === null) {
+          if (prov) {
+            setProviders((oldValue) => {
+              // create new sorted list
+              const newProviders = [...oldValue, prov];
+              newProviders.sort((a, b) => -b.name().localeCompare(a.name()));
+              return newProviders;
+            });
           }
+        } else {
+          // provider already registered, try to connect
+          if (provider.isDiscovered() && prov.isDiscovered()) {
+            // update discovered list
+            provider.addDiscoverer(prov.discoveredBy?.at(0));
+          }
+          connectToProvider(provider);
         }
-        connectToProvider(provider);
       }
       setProvidersAddQueue([...providersAddQueue]);
     }

@@ -144,7 +144,7 @@ export default class Provider implements IProvider {
    * string[]: list of providers which discovered this provider
    * empty list: This provider was discovered, but should be removed as the parent provider is disconnected.
    */
-  discovered: string[] | undefined = undefined;
+  discoveredBy: string[] | undefined = undefined;
 
   /** State of the connection to remote provider. */
   connectionState: ConnectionState = ConnectionState.STATES.UNKNOWN;
@@ -483,6 +483,33 @@ export default class Provider implements IProvider {
     return this.daemon && this.discovery;
   };
 
+  public isCreatedByUser: () => boolean = () => {
+    return this.discoveredBy === undefined;
+  };
+
+  public isDiscovered: () => boolean = () => {
+    return this.discoveredBy !== undefined;
+  };
+
+  public hasParentProvider: () => boolean = () => {
+    return this.discoveredBy?.length !== undefined && this.discoveredBy?.length > 0;
+  };
+
+  public addDiscoverer: (discoverer: string | undefined) => void = (discoverer) => {
+    if (discoverer && this.discoveredBy?.indexOf(discoverer) === -1) {
+      this.discoveredBy.push(discoverer);
+    }
+  };
+
+  // update discovered lists by removing not connected provider ids
+  // returns the cleaned list
+  public cleanDiscoverer: (availableDiscovererIds: string[]) => string[] = (availableDiscovererIds) => {
+    if (this.discoveredBy) {
+      this.discoveredBy = this.discoveredBy.filter((pid) => availableDiscovererIds.indexOf(pid) !== -1);
+    }
+    return this.discoveredBy || [];
+  };
+
   public hasActiveRequests: () => boolean = () => {
     return this.currentRequestList.size > 0;
   };
@@ -558,7 +585,7 @@ export default class Provider implements IProvider {
           );
           oldRemoteProviders = oldRemoteProviders.filter((orp) => orp.url() !== np.url());
           np.rosState = p;
-          np.discovered = [this.id];
+          np.discoveredBy = [this.id];
           np.hostnames = p.hostnames;
           this.remoteProviders.push(np);
         }
@@ -2109,7 +2136,7 @@ export default class Provider implements IProvider {
       emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
       this.updateTimeoutTimer(1);
     }, timeout * 1000);
-  }
+  };
 
   /**
    * Callback of master daemon ready status (true/false)
