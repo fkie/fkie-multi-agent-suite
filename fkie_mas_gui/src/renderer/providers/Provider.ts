@@ -2103,12 +2103,12 @@ export default class Provider implements IProvider {
 
   /* Publisher handler */
 
-  private updateTimeoutTimer: () => void = () => {
+  private updateTimeoutTimer: (timeout: number) => void = (timeout) => {
     this.currentDelayTimer = setTimeout(() => {
-      this.currentDelay += 3;
+      this.currentDelay += timeout;
       emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
-      this.updateTimeoutTimer();
-    }, 3000);
+      this.updateTimeoutTimer(1);
+    }, timeout * 1000);
   }
 
   /**
@@ -2128,7 +2128,7 @@ export default class Provider implements IProvider {
       this.currentDelay = (Date.now() - msgObj.timestamp + this.timeDiff) / 1000.0;
       emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
     }
-    this.updateTimeoutTimer();
+    this.updateTimeoutTimer(3);
     this.daemon = msgObj.status;
   };
 
