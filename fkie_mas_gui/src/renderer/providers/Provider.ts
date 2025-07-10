@@ -961,7 +961,10 @@ export default class Provider implements IProvider {
         const pathItems = (value.data as PathItem[]) || [];
         for (const p of pathItems) {
           if (!uniquePaths.includes(p.path)) {
-            fileList.push(new PathItem(p.path, p.mtime, p.size, p.type, this.connection.host));
+            const pathItem = new PathItem(p.path, p.mtime, p.size, p.type, this.connection.host);
+            pathItem.providerId = this.id;
+            pathItem.providerName = this.name();
+            fileList.push(pathItem);
             uniquePaths.push(p.path);
           }
         }

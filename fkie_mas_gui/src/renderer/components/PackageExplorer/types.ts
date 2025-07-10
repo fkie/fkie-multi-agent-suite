@@ -12,4 +12,5 @@ export type TPackageTreeItem = {
   file: PathItem | undefined;
   name: string;
   isDirectory: boolean;
+  appendPackageName: boolean;
 };

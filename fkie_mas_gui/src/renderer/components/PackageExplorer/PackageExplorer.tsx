@@ -117,6 +117,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
           children: [],
           file: curr,
           isDirectory: false,
+          appendPackageName: false,
         } as TPackageTreeItem,
       ];
       return prev;
@@ -133,7 +134,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
   useEffect(() => {
     updateStates();
     setSelectedFile(undefined);
-  }, [packageList, selectedPackage, launchFileHistory, updateStates]);
+  }, [packageList, selectedPackage, launchFileHistory]);
 
   /**
    * Callback function when a package is selected.
@@ -212,6 +213,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
               children: [],
               file: pathItemMap.get(name),
               isDirectory: false,
+              appendPackageName: false,
             });
           } else {
             // directory
@@ -220,6 +222,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
               children: prev[name].packageTree,
               file: undefined,
               isDirectory: true,
+              appendPackageName: false,
             });
           }
         } else if (i === a.length - 1) {
@@ -473,7 +476,8 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
         >
           {Object.keys(packageItemsTree).length > 0 && (
             <TreeDirectory
-              selectedPackage={selectedPackage}
+              selectedPackage={selectedPackage || undefined}
+              providerName={selectedProvider}
               packageItemsTree={packageItemsTree}
               onNodeSelect={(itemId: string) => handleSelect(itemId)}
               onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>

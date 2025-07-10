@@ -7,12 +7,14 @@ import { RosPackage } from "@/renderer/models";
 import { generateUniqueId } from "@/renderer/utils";
 import FileTreeItem from "./FileTreeItem";
 import FolderTreeItem from "./FolderTreeItem";
+import HistoryGroupItem from "./HistoryGroupItem";
 import PackageTreeItem from "./PackageTreeItem";
 import { TPackageItemsTree, TPackageTreeItem } from "./types";
 
 interface TreeDirectoryProps {
   packageItemsTree: TPackageItemsTree;
-  selectedPackage: RosPackage | null;
+  selectedPackage: RosPackage | undefined;
+  providerName: string | undefined;
   onNodeSelect: (itemId: string) => void;
   onFileDoubleClick: (label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
@@ -20,7 +22,8 @@ interface TreeDirectoryProps {
 const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function TreeDirectory(props, ref) {
   const {
     packageItemsTree,
-    selectedPackage = null,
+    selectedPackage = undefined,
+    providerName = undefined,
     onNodeSelect = (): void => {},
     onFileDoubleClick = (): void => {},
   } = props;
@@ -145,6 +148,7 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
             key={`${pathId}#${item.file.id}`}
             itemId={`${item.file.id}`}
             file={item.file}
+            showPackage={item.appendPackageName}
             onDoubleClick={(labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) =>
               handleFileDoubleClick(labelText, itemId, ctrlKey, shiftKey, altKey)
             }
@@ -178,7 +182,7 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
       >
         {Object.entries(packageItemsTree).map(([packageName, packageTree]) => {
           return packageTree.map((itemTree) => {
-            const { children, file } = itemTree;
+            const { name, children, file, appendPackageName } = itemTree;
             if (file && children && children.length === 0) {
               // The root item is a launch file from the saved history.
 
@@ -198,13 +202,25 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
                 />
               );
             }
+            if (appendPackageName && name) {
+              return (
+                <HistoryGroupItem
+                  key={name}
+                  itemId={name}
+                  providerName={name}
+                >
+                  {itemTree?.children && buildPackageTree(itemTree.children, packageName)}
+                </HistoryGroupItem>
+              );
+            }
             return (
               <PackageTreeItem
                 key={packageName}
                 itemId={packageName}
                 packageName={packageName}
+                providerName={providerName}
                 path={selectedPackage?.path as string}
-                exists={itemTree ? true : false}
+                exists={!!itemTree}
               >
                 {itemTree?.children && buildPackageTree(itemTree.children, packageName)}
               </PackageTreeItem>
@@ -218,6 +234,7 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
     packageItemsTree,
     selectedItems,
     selectedPackage,
+    providerName,
     // handleToggle,
     // handleSelect,
     // handleFileDoubleClick,

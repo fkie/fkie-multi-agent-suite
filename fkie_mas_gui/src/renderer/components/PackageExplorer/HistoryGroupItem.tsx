@@ -1,38 +1,21 @@
-import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import HistoryIcon from "@mui/icons-material/History";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { blue, red } from "@mui/material/colors";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
 
 import SettingsContext from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "../UI";
-import CopyButton from "../UI/CopyButton";
 import StyledRootTreeItem from "./StyledRootTreeItem";
 
-interface PackageTreeItemProps {
+interface HistoryGroupItemProps {
   itemId: string;
-  packageName: string;
-  providerName: string | undefined;
-  path: string;
-  exists: boolean;
+  providerName: string;
   children: React.ReactNode;
   onClick?: (labelText: string, itemId: string) => void;
   onDoubleClick?: (labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
 
-const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(function PackageTreeItem(props, ref) {
-  const {
-    itemId,
-    packageName,
-    providerName = undefined,
-    path,
-    exists = true,
-    onClick = (): void => {},
-    onDoubleClick = (): void => {},
-    ...children
-  } = props;
-
-  const iconColor: string = exists ? blue[700] : red[700];
-  const enableCopy: boolean = false;
+const HistoryGroupItem = forwardRef<HTMLDivElement, HistoryGroupItemProps>(function HistoryGroupItem(props, ref) {
+  const { itemId, providerName, onClick = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
 
   const settingsCtx = useContext(SettingsContext);
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
@@ -72,45 +55,32 @@ const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(functio
             paddingLeft: 0.5,
           }}
           onClick={() => {
-            onClick(packageName, itemId);
+            onClick(providerName, itemId);
           }}
           onDoubleClick={(event) => {
-            onDoubleClick(packageName, itemId, event.ctrlKey, event.shiftKey, event.altKey);
+            onDoubleClick(providerName, itemId, event.ctrlKey, event.shiftKey, event.altKey);
           }}
           style={getHostStyle(providerName)}
         >
-          <Inventory2OutlinedIcon
+          <HistoryIcon
             sx={{
               mr: 0.2,
               width: 20,
-              color: iconColor,
             }}
             style={{ fontSize: "inherit" }}
           />
 
-          <Tooltip title={path} enterDelay={1000} enterNextDelay={1000}>
+          <Tooltip title={providerName} enterDelay={1000} enterNextDelay={1000}>
             <Stack direction="row">
               <Typography
                 // noWrap
                 variant="body2"
                 sx={{ fontWeight: "bold", flexGrow: 1, ml: 0.5 }}
               >
-                {packageName}
+                {providerName}
               </Typography>
-              {providerName && (
-                <Typography
-                  // noWrap
-                  variant="body2"
-                  sx={{ fontWeight: "normal", flexGrow: 1, ml: 0.5 }}
-                  color="grey"
-                  noWrap
-                >
-                  | {providerName}
-                </Typography>
-              )}
             </Stack>
           </Tooltip>
-          {path && enableCopy && <CopyButton value={path} />}
         </Box>
       }
       {...children}
@@ -118,4 +88,4 @@ const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(functio
   );
 });
 
-export default PackageTreeItem;
+export default HistoryGroupItem;

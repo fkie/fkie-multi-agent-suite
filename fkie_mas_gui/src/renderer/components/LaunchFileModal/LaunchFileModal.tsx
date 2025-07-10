@@ -29,14 +29,14 @@ interface LaunchArgumentWithHistory extends LaunchArgument {
 }
 
 interface LaunchFileModalProps {
-  selectedProvider: string;
+  selectedProvider: string | undefined;
   selectedLaunchFile: PathItem;
   setSelectedLaunchFile: (path: PathItem | undefined) => void;
   onLaunchCallback: () => void;
 }
 
 const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(function LaunchFileModal(props, ref) {
-  const { selectedProvider, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = (): void => {} } = props;
+  const { selectedProvider = undefined, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = (): void => {} } = props;
 
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -52,7 +52,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const getLaunchFile = useCallback(
     async (file: string): Promise<void> => {
-      const provider = rosCtx.getProviderById(selectedProvider, true);
+      const provider = rosCtx.getProviderById(selectedProvider || selectedLaunchFile.providerId || "", true);
       if (!provider || !provider.isAvailable()) return;
 
       if (provider.launchLoadFile) {
@@ -176,6 +176,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       rosCtx.initialized,
       rosCtx.providers,
       selectedProvider,
+      selectedLaunchFile,
       // rosCtx.updateLaunchList,
     ]
   );
@@ -185,7 +186,7 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
   const launchSelectedFile = useCallback(async (): Promise<void> => {
     if (!selectedLaunch) return;
 
-    const provider = rosCtx.getProviderById(selectedProvider, true);
+    const provider = rosCtx.getProviderById(selectedProvider || selectedLaunchFile.providerId || "", true);
     if (!provider || !provider.isAvailable()) return;
 
     if (provider.launchLoadFile) {

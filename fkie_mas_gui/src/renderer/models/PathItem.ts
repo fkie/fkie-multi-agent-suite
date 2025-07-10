@@ -19,6 +19,8 @@ export default class PathItem {
   name: string | undefined;
   package: string | undefined;
   relativePath: string | undefined;
+  providerId: string | undefined;
+  providerName: string | undefined;
 
   constructor(path: string, mtime: number, size: number, type: string, host: string) {
     this.id = generateUniqueId();
