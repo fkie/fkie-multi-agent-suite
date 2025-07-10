@@ -49,7 +49,7 @@ import {
   TEventId,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType } from "@/renderer/providers";
-import { EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
+import { ConnectionState, EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
