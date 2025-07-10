@@ -1,6 +1,7 @@
 import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
 import ComputerIcon from "@mui/icons-material/Computer";
-import HideSourceIcon from "@mui/icons-material/HideSource";
+import LinkIcon from "@mui/icons-material/Link";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
   Box,
@@ -181,7 +182,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       }
       return {};
     },
-    [settingsCtx.changed, settingsCtx.get]
+    [settingsCtx.changed]
   );
 
   // avoid selection if collapse icon was clicked
@@ -313,10 +314,12 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
               </Box>
             </Tooltip>
           )}
-          {provider.isAvailable() ? (
+          {provider.currentDelay > 3 ? (
+            <LinkIcon sx={{ mr: 0.5, width: 20, color: red[700] }} />
+          ) : provider.isAvailable() ? (
             <ComputerIcon sx={{ mr: 0.5, width: 20, color: grey[700] }} />
           ) : (
-            <HideSourceIcon sx={{ mr: 0.5, width: 20, color: red[700] }} />
+            <LinkOffIcon sx={{ mr: 0.5, width: 20, color: red[700] }} />
           )}
 
           <Stack
