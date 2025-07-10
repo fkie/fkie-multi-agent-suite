@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.4.13 - 10.07.2025
+
+Improved packages tab
+Show connection state in nodes tab
+Fixed show ghosts of timeouted providers
+Improved providers timeout visualization
+Fixed restart of nodes that have crashed and have an unknown status
+
 ## 4.4.12 - 17.06.2025
 
 Improved launch dialog: add true/false to history if value is true or false and no history available
