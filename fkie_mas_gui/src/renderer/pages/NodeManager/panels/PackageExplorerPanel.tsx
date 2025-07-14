@@ -474,16 +474,17 @@ export default function PackageExplorerPanel(): JSX.Element {
               direction="row"
               style={getHostStyle(option.providerName)}
             >
-              <Typography
-                sx={{ ml: 0, fontWeight: "bold" }}
-                noWrap
-                style={{ overflowWrap: "anywhere" }}
-                width="stretch"
-              >
-                {option.rosPackage.name}
-              </Typography>
+              <Tooltip title={`${option.rosPackage.name}`} placement="top" disableInteractive>
+                <Typography
+                  sx={{ ml: 0, fontWeight: "bold" }}
+                  noWrap
+                  // width="stretch"
+                >
+                  {option.rosPackage.name}
+                </Typography>
+              </Tooltip>
               <Typography color="grey" sx={{ ml: 1 }} noWrap>
-                {option.providerName}
+                | {option.providerName}
               </Typography>
             </Stack>
           );
