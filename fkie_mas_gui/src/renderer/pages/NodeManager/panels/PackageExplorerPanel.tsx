@@ -532,6 +532,7 @@ export default function PackageExplorerPanel(): JSX.Element {
       <Stack>
         <Stack direction="column" height="100%" width="100% ">
           <Stack direction="row" justifyItems="expand" alignItems="center">
+            {createPackageSelector}
             {showReloadButton && (
               <Tooltip
                 title="Reload package list"
@@ -549,7 +550,6 @@ export default function PackageExplorerPanel(): JSX.Element {
                 </IconButton>
               </Tooltip>
             )}
-            {createPackageSelector}
             <ButtonGroup orientation="horizontal" aria-label="launch file control group">
               <Tooltip
                 title="Edit File"

@@ -213,7 +213,7 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
         <Typography sx={getHostStyle(currentNode?.providerName)}>{currentNode?.name}</Typography>
         {isRequesting && <CircularProgress size="1em" />}
       </Stack>
-      <Stack direction="row" spacing={0.5} justifyItems="center">
+      <Stack direction="row" spacing={0.1} justifyItems="center">
         {addable && !addable && (
           <Tooltip title={"Add a new logger name"} placement="bottom" enterDelay={tooltipDelay} disableInteractive>
             <IconButton
@@ -250,14 +250,6 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
             </IconButton>
           </span>
         </Tooltip>
-        <SearchBar
-          onSearch={(value) => {
-            setFilterText(value);
-          }}
-          placeholder="Filter loggers (OR: <space>, AND: +, NOT: !)"
-          defaultValue={filterText}
-          // fullWidth={true}
-        />
         <Tooltip
           title="Refresh logger list"
           placement="bottom"
@@ -274,6 +266,14 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
             <RefreshIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
+        <SearchBar
+          onSearch={(value) => {
+            setFilterText(value);
+          }}
+          placeholder="Filter loggers (OR: <space>, AND: +, NOT: !)"
+          defaultValue={filterText}
+          // fullWidth={true}
+        />
       </Stack>
       <TableContainer>
         <Table aria-label="logger table">
