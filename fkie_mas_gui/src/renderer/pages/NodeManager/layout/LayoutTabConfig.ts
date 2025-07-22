@@ -52,13 +52,16 @@ export default class LayoutTabConfig {
 
   terminalConfig: ITerminalConfig | null;
 
+  filterText: string;
+
   constructor(
     openExternal: boolean = false,
     tabType: CmdType = "",
     extTerminalConfig: IExtTerminalConfig | null = null,
     editorConfig: IEditorConfig | null = null,
     subscriberConfig: ISubscriberConfig | null = null,
-    terminalConfig: ITerminalConfig | null = null
+    terminalConfig: ITerminalConfig | null = null,
+    filterText: string = ""
   ) {
     this.openExternal = openExternal;
     this.tabType = tabType;
@@ -66,5 +69,6 @@ export default class LayoutTabConfig {
     this.editorConfig = editorConfig;
     this.subscriberConfig = subscriberConfig;
     this.terminalConfig = terminalConfig;
+    this.filterText = filterText;
   }
 }

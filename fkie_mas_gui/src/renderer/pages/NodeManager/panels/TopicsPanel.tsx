@@ -26,7 +26,7 @@ import { Provider } from "@/renderer/providers";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
+import { EVENT_FILTER_TOPICS, EVENT_OPEN_COMPONENT, eventOpenComponent, TFilterText } from "../layout/events";
 import TopicPublishPanel from "./TopicPublishPanel";
 
 type TTreeItem = {
@@ -139,6 +139,10 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
   useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
     updateTopicList();
+  });
+
+  useCustomEventListener(EVENT_FILTER_TOPICS, (filter: TFilterText) => {
+    setSearchTerm(filter.data);
   });
 
   // debounced search callback
@@ -545,7 +549,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
             <SearchBar
               onSearch={(term) => onSearch(term)}
               placeholder="Filter Topics (OR: <space>, AND: +, NOT: !)"
-              defaultValue={initialSearchTerm}
+              defaultValue={searchTerm}
               fullWidth
             />
           </Stack>

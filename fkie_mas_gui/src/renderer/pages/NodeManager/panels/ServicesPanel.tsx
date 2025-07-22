@@ -17,7 +17,7 @@ import { ServiceExtendedInfo } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
+import { EVENT_FILTER_SERVICES, EVENT_OPEN_COMPONENT, eventOpenComponent, TFilterText } from "../layout/events";
 import ServiceCallerPanel from "./ServiceCallerPanel";
 
 type TTreeItem = {
@@ -113,6 +113,10 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
 
   useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
     updateServiceList();
+  });
+
+  useCustomEventListener(EVENT_FILTER_SERVICES, (filter: TFilterText) => {
+    setSearchTerm(filter.data);
   });
 
   // debounced search callback
@@ -448,7 +452,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
             <SearchBar
               onSearch={onSearch}
               placeholder="Filter Services (OR: <space>, AND: +, NOT: !)"
-              defaultValue={initialSearchTerm}
+              defaultValue={searchTerm}
               fullWidth
             />
           </Stack>

@@ -392,6 +392,9 @@ export default function NodeManager(): JSX.Element {
 
   function factory(node: TabNode): JSX.Element {
     const component = node.getComponent();
+    if (component && layoutComponents[component]) {
+      return layoutComponents[component];
+    }
     switch (component) {
       case LAYOUT_TABS.NODES:
         return <HostTreeViewPanel key="nodes-panel" />;
@@ -413,10 +416,6 @@ export default function NodeManager(): JSX.Element {
         return <AboutPanel key="about-panel" />;
       case LAYOUT_TABS.PARAMETER:
         return <ParameterPanel key="parameter-panel" nodes={[]} providers={[]} />;
-      default:
-        if (component) {
-          return layoutComponents[component];
-        }
     }
     return <></>;
   }
@@ -774,19 +773,16 @@ export default function NodeManager(): JSX.Element {
   }
 
   /** removes all tab from layout not listed in LAYOUT_TAB_LIST */
-  const cleanAndSaveLayout = useDebounceCallback(
-    (/* model */) => {
-      const modelJson = model.toJson();
-      // biome-ignore lint/complexity/noForEach: <explanation>
-      modelJson.borders?.forEach((item) => {
-        item.selected = -1;
-        removeGenericTabs(item);
-      });
-      modelJson.layout = removeGenericTabs(modelJson.layout);
-      setLayoutJson(modelJson);
-    },
-    500
-  );
+  const cleanAndSaveLayout = useDebounceCallback((/* model */) => {
+    const modelJson = model.toJson();
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    modelJson.borders?.forEach((item) => {
+      item.selected = -1;
+      removeGenericTabs(item);
+    });
+    modelJson.layout = removeGenericTabs(modelJson.layout);
+    setLayoutJson(modelJson);
+  }, 500);
 
   const isInstallUpdateRequested = useCallback(() => {
     return auCtx.requestedInstallUpdate;

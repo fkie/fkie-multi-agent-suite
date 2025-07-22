@@ -38,7 +38,7 @@ import {
 import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { generateUniqueId } from "@/renderer/utils";
 import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
+import { EVENT_FILTER_SERVICES, EVENT_FILTER_TOPICS, EVENT_OPEN_COMPONENT, eventFilterServices, eventFilterTopics, eventOpenComponent } from "../layout/events";
 import OverflowMenuService, { EMenuService } from "./OverflowMenuService";
 import OverflowMenuTopic, { EMenuTopic } from "./OverflowMenuTopic";
 import ServiceCallerPanel from "./ServiceCallerPanel";
@@ -119,17 +119,19 @@ export default function NodesDetailsPanel(): JSX.Element {
       return;
     }
     if (rosTopicType === EMenuTopic.INFO) {
+      // (re-)open the topics tab
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          `topics-${generateUniqueId()}`,
-          `${topic}`,
-          <TopicsPanel initialSearchTerm={topic} />,
+          LAYOUT_TABS.TOPICS,
+          "Topics",
+          <TopicsPanel initialSearchTerm={topic} key="topics-panel" />,
           true,
-          LAYOUT_TABS.NODES,
-          new LayoutTabConfig(false, "info")
+          LAYOUT_TABS.NODES
         )
       );
+      // set search string for topic
+      emitCustomEvent(EVENT_FILTER_TOPICS, eventFilterTopics(topic));
       return;
     }
 
@@ -181,14 +183,15 @@ export default function NodesDetailsPanel(): JSX.Element {
       emitCustomEvent(
         EVENT_OPEN_COMPONENT,
         eventOpenComponent(
-          `service-${generateUniqueId()}`,
-          `${service}`,
-          <ServicesPanel initialSearchTerm={service} />,
+          LAYOUT_TABS.SERVICES,
+          "Services",
+          <ServicesPanel initialSearchTerm={service} key="services-panel"/>,
           true,
-          LAYOUT_TABS.NODES,
-          new LayoutTabConfig(false, "info")
+          LAYOUT_TABS.NODES
         )
       );
+      // set search string for topic
+      emitCustomEvent(EVENT_FILTER_SERVICES, eventFilterServices(service));
     }
   }
 

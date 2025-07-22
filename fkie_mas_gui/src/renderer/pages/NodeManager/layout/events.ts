@@ -7,10 +7,17 @@ export const EVENT_OPEN_SETTINGS = "EVENT_OPEN_SETTINGS" as const;
 export const EVENT_OPEN_CONNECT = "EVENT_OPEN_CONNECT" as const;
 export const EVENT_EDITOR_SELECT_RANGE = "EVENT_EDITOR_SELECT_RANGE" as const;
 export const EVENT_FILTER_NODES = "EVENT_FILTER_NODES" as const;
+export const EVENT_FILTER_TOPICS = "EVENT_FILTER_TOPICS" as const;
+export const EVENT_FILTER_SERVICES = "EVENT_FILTER_SERVICES" as const;
 
 export type TEventId = {
   id: string;
 };
+
+export type TFilterText = {
+  data: string;
+};
+
 
 export type TEventOpenComponent = {
   id: string;
@@ -72,4 +79,12 @@ export function eventEditorSelectRange(
 
 export function eventFilterNodes(id: string): TEventId {
   return { id };
+}
+
+export function eventFilterTopics(data: string): TFilterText {
+  return { data };
+}
+
+export function eventFilterServices(data: string): TFilterText {
+  return { data };
 }
