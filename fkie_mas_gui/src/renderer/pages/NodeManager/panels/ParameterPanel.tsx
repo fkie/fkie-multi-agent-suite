@@ -10,6 +10,9 @@ import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
+import { EventProviderRosNodes } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
+import { useCustomEventListener } from "react-custom-events";
 
 type TRootData = {
   provider: Provider;
@@ -122,6 +125,18 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
       setRootData(newRootData);
     }
   }, [rosCtx.initialized, rosCtx.providers]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data: EventProviderRosNodes) => {
+    if (nodes.length === 1 && nodes[0].providerId === data.provider.id) {
+      for (const rosNode of data.nodes) {
+        if (rosNode.name === nodes[0].name) {
+          setRootData([{ provider: data.provider, rosNode: rosNode, updateOnCreate: true } as TRootData]);
+          break;
+        }
+      }
+    }
+  });
 
   const createParameterItems = useMemo(() => {
     return (

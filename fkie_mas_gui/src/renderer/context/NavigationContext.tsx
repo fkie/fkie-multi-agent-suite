@@ -107,10 +107,6 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
     return result || [];
   };
 
-  useEffect(() => {
-    console.log(`nodesHistory: ${JSON.stringify(nodesHistory)}`);
-  }, [nodesHistory]);
-
   async function openEditor(
     providerId: string,
     rootLaunch: string,
