@@ -908,8 +908,6 @@ class LaunchConfig(object):
                 # actions: Iterable[LaunchDescriptionEntity],
                 # cancel_on_shutdown: Union[bool, SomeSubstitutionsType] = True,
             elif isinstance(entity, launch.actions.set_environment_variable.SetEnvironmentVariable):
-                if hasattr(entity, 'execute'):
-                    entity.execute(self.context)
                 name = perform_substitutions(self.context, getattr(entity, 'name', ''))
                 value = perform_substitutions(self.context, getattr(entity, 'value', ''))
                 environment[name] = value
