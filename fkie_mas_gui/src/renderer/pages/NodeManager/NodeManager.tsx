@@ -77,7 +77,7 @@ import AboutPanel from "./panels/AboutPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
 import NodesDetailsPanel from "./panels/NodesDetailsPanel";
-import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
+// import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
 import PackageExplorerPanel from "./panels/PackageExplorerPanel";
 import ParameterPanel from "./panels/ParameterPanel";
 import ProviderPanel from "./panels/ProviderPanel";
@@ -491,9 +491,9 @@ export default function NodeManager(): JSX.Element {
         );
         renderValues.name = "Option";
         break;
-      case LAYOUT_TABS.NODE_DETAILS:
-        renderValues.buttons.push(<OverflowMenuNodeDetails key="overflow-node-details" />);
-        break;
+      // case LAYOUT_TABS.NODE_DETAILS:
+      //   renderValues.buttons.push(<OverflowMenuNodeDetails key="overflow-node-details" />);
+      //   break;
       default:
         // add leading icons to the tabs
         switch (node.getConfig()?.tabType) {

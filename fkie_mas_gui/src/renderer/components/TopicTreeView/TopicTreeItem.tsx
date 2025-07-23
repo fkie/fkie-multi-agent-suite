@@ -343,7 +343,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                       fontSize="small"
                       onClick={() => {
                         const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                        navCtx.setSelectedNodes([id]);
+                        navCtx.setSelectedNodes([id], false);
                         // inform details panel tab about selected nodes by user
                         emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                       }}
@@ -373,7 +373,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                       fontSize="small"
                       onClick={() => {
                         const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                        navCtx.setSelectedNodes([id]);
+                        navCtx.setSelectedNodes([id], false);
                         // inform details panel tab about selected nodes by user
                         emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                       }}

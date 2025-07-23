@@ -237,7 +237,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           selectedNoes.push(id);
         }
       }
-      navCtx.setSelectedNodes(selectedNoes);
+      navCtx.setSelectedNodes(selectedNoes, false);
     },
     [navCtx, rosCtx.nodeMap]
   );

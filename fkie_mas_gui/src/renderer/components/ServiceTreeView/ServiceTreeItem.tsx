@@ -190,7 +190,7 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`]);
+                        navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
                       }}
                     >
                       {item.nodeName}
@@ -210,7 +210,7 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                         <Typography
                           fontSize="small"
                           onClick={() => {
-                            navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`]);
+                            navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
                           }}
                         >
                           {item.nodeName}

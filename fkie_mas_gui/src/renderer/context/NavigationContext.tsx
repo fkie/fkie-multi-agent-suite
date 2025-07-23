@@ -1,5 +1,5 @@
 import { Model } from "flexlayout-react";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { getBaseName } from "@/renderer/models";
 import {
@@ -22,7 +22,9 @@ import { SettingsContext } from "./SettingsContext";
 
 export interface INavigationContext {
   selectedNodes: string[];
-  setSelectedNodes: (nodes: string[]) => void;
+  setSelectedNodes: (nodes: string[], addToHistory: boolean) => void;
+  nodesHistory: string[][];
+  setSelectedFromHistory: () => string[];
   selectedProviders: string[];
   setSelectedProviders: (providers: string[]) => void;
   layoutModel: Model | null;
@@ -56,11 +58,15 @@ export interface INavigationContext {
 
 export const DEFAULT = {
   selectedNodes: [],
+  nodesHistory: [],
   selectedProviders: [],
   modifiedFiles: [],
   layoutModel: null,
   setLayoutModel: (): void => {},
   setSelectedNodes: (): void => {},
+  setSelectedFromHistory: (): string[] => {
+    return [];
+  },
   setSelectedProviders: (): void => {},
   openEditor: (): void => {},
   openSubscriber: (): void => {},
@@ -78,9 +84,32 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
-  const [selectedNodes, setSelectedNodes] = useState<string[]>(DEFAULT.selectedNodes);
+  const [selectedNodes, _setSelectedNodes] = useState<string[]>(DEFAULT.selectedNodes);
+  const [nodesHistory, setNodesHistory] = useState<string[][]>([]);
   const [selectedProviders, setSelectedProviders] = useState<string[]>(DEFAULT.selectedProviders);
   const [layoutModel, setLayoutModel] = useState<Model | null>(null);
+
+  const setSelectedNodes: (nodes: string[], addToHistory: boolean) => void = (nodes, addToHistory = true) => {
+    if (addToHistory) {
+      if (JSON.stringify(selectedNodes) !== JSON.stringify(nodes)) {
+        setNodesHistory((prev) => [...prev, selectedNodes])
+      }
+    } else {
+      setNodesHistory([]);
+    }
+    _setSelectedNodes(nodes);
+  };
+
+  const setSelectedFromHistory: () => string[] = () => {
+    const result = nodesHistory.pop();
+    setNodesHistory([...nodesHistory]);
+    _setSelectedNodes(result || []);
+    return result || [];
+  };
+
+  useEffect(() => {
+    console.log(`nodesHistory: ${JSON.stringify(nodesHistory)}`);
+  }, [nodesHistory]);
 
   async function openEditor(
     providerId: string,
@@ -309,6 +338,8 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
     () => ({
       selectedNodes,
       setSelectedNodes,
+      nodesHistory,
+      setSelectedFromHistory,
       selectedProviders,
       setSelectedProviders,
       layoutModel,
@@ -317,7 +348,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
       openSubscriber,
       openTerminal,
     }),
-    [selectedNodes, selectedProviders]
+    [nodesHistory, selectedNodes, selectedProviders, setSelectedFromHistory]
   );
 
   return <NavigationContext.Provider value={attributesMemo}>{children}</NavigationContext.Provider>;

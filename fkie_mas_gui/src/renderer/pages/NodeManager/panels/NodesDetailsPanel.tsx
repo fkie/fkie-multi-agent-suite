@@ -1,27 +1,15 @@
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Button,
-  Chip,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Alert, AlertTitle, Box, Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 
+import ServiceDetailsItem from "@/renderer/components/NodeDetails/ServiceDetailsItem";
+import { default as TopicDetailsItem } from "@/renderer/components/NodeDetails/TopicDetailsItem";
 import { colorFromHostname, getDiagnosticStyle } from "@/renderer/components/UI/Colors";
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import Tag from "@/renderer/components/UI/Tag";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
@@ -36,15 +24,6 @@ import {
   getFileName,
 } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
-import { generateUniqueId } from "@/renderer/utils";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import { EVENT_FILTER_SERVICES, EVENT_FILTER_TOPICS, EVENT_OPEN_COMPONENT, eventFilterServices, eventFilterTopics, eventOpenComponent } from "../layout/events";
-import OverflowMenuService, { EMenuService } from "./OverflowMenuService";
-import OverflowMenuTopic, { EMenuTopic } from "./OverflowMenuTopic";
-import ServiceCallerPanel from "./ServiceCallerPanel";
-import ServicesPanel from "./ServicesPanel";
-import TopicPublishPanel from "./TopicPublishPanel";
-import TopicsPanel from "./TopicsPanel";
 
 function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): number {
   if (a.name < b.name) {
@@ -57,7 +36,6 @@ function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): numb
 }
 
 export default function NodesDetailsPanel(): JSX.Element {
-  const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const navCtx = useContext(NavigationContext);
@@ -65,13 +43,12 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [nodesShow, setNodesShow] = useState<RosNode[]>([]);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
 
-  const [showNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", true);
-  const [showPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
-  const [showSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
-  const [showServices] = useLocalStorage("NodesDetailsPanel:showServices", true);
+  const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", true);
+  const [showPublishers, setShowPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
+  const [showSubscribers, setShowSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
+  const [showServices, setShowServices] = useLocalStorage("NodesDetailsPanel:showServices", true);
   const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
-  const [showPaths] = useLocalStorage("NodesDetailsPanel:showPaths", true);
-  const [showLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
+  const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
 
   useEffect(() => {
@@ -102,98 +79,6 @@ export default function NodesDetailsPanel(): JSX.Element {
   useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
     setNodesShow((prev) => [...prev]);
   });
-
-  async function onTopicClick(
-    rosTopicType: EMenuTopic,
-    topic: string,
-    messageType: string,
-    providerId: string,
-    external: boolean = false,
-    openInTerminal: boolean = false
-  ): Promise<void> {
-    if (rosTopicType === EMenuTopic.clipboard) {
-      if (navigator?.clipboard) {
-        navigator.clipboard.writeText(topic);
-        logCtx.success(`${topic} copied!`);
-      }
-      return;
-    }
-    if (rosTopicType === EMenuTopic.INFO) {
-      // (re-)open the topics tab
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          LAYOUT_TABS.TOPICS,
-          "Topics",
-          <TopicsPanel initialSearchTerm={topic} key="topics-panel" />,
-          true,
-          LAYOUT_TABS.NODES
-        )
-      );
-      // set search string for topic
-      emitCustomEvent(EVENT_FILTER_TOPICS, eventFilterTopics(topic));
-      return;
-    }
-
-    if (rosTopicType === EMenuTopic.PUBLISH) {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `publish-${topic}-${providerId}`,
-          topic,
-          <TopicPublishPanel topicName={topic} topicType={messageType} providerId={providerId} />,
-          true,
-          LAYOUT_TAB_SETS[settingsCtx.get("publisherOpenLocation") as string],
-          new LayoutTabConfig(false, "publish")
-        )
-      );
-      return;
-    }
-
-    let defaultNoData = true;
-    if (rosTopicType === EMenuTopic.ECHO) {
-      defaultNoData = false;
-    }
-    navCtx.openSubscriber(providerId, topic, true, defaultNoData, external, openInTerminal);
-  }
-
-  function onServiceClick(rosServiceType: EMenuService, service: string, msgType: string, providerId: string): void {
-    if (rosServiceType === EMenuService.clipboard) {
-      if (navigator?.clipboard) {
-        navigator.clipboard.writeText(service);
-        logCtx.success(`${service} copied!`);
-      }
-      return;
-    }
-    if (rosServiceType === EMenuService.SERVICE_CALL) {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `call-service-${generateUniqueId()}`,
-          service,
-          <ServiceCallerPanel serviceName={service} serviceType={msgType} providerId={providerId} />,
-          true,
-          LAYOUT_TAB_SETS.BORDER_RIGHT,
-          new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
-        )
-      );
-      return;
-    }
-    if (rosServiceType === EMenuService.INFO) {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          LAYOUT_TABS.SERVICES,
-          "Services",
-          <ServicesPanel initialSearchTerm={service} key="services-panel"/>,
-          true,
-          LAYOUT_TABS.NODES
-        )
-      );
-      // set search string for topic
-      emitCustomEvent(EVENT_FILTER_SERVICES, eventFilterServices(service));
-    }
-  }
 
   const getHostStyle = useCallback(
     (providerName: string | undefined) => {
@@ -294,13 +179,34 @@ export default function NodesDetailsPanel(): JSX.Element {
           // spacing={1}
           alignItems="left"
         >
-          <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(node.providerName)}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            paddingTop={0}
+            marginBottom={0.5}
+            sx={getHostStyle(node.providerName)}
+          >
+            {navCtx.nodesHistory.length > 0 && (
+              <Tooltip title={"Go back to last node"} placement="bottom">
+                <IconButton
+                  color="error"
+                  onClick={(event) => {
+                    navCtx.setSelectedFromHistory();
+                    event?.stopPropagation();
+                  }}
+                  size="small"
+                >
+                  <ArrowBackIosIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            )}
             <Typography
               variant="subtitle1"
               style={{
                 // cursor: "pointer",
                 color: "#fff",
                 backgroundColor: "#2196f3",
+                flexGrow: 1,
               }}
               align="center"
             >
@@ -326,17 +232,37 @@ export default function NodesDetailsPanel(): JSX.Element {
             </Typography>
           )}
 
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={node.status === RosNodeStatus.RUNNING ? "success" : "default"}
+              title=""
+              // title={`${RosNodeStatusInfo[node.status]}`}
+              text={node.status}
+              wrap
+            />
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            onClick={() => {
+              setShowNodeInfo((prev) => !prev);
+            }}
+          >
+            <ExpandMoreIcon style={{ transform: `${showNodeInfo ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+            <Button
+              size="small"
+              style={{
+                textTransform: "none",
+                color: "inherit",
+              }}
+            >
+              <Typography variant="caption" fontWeight="bold">
+                Node Details:
+              </Typography>
+            </Button>
+          </Stack>
           {showNodeInfo && (
-            <Stack spacing={0.5}>
-              <Stack direction="row" spacing={0.5}>
-                <Tag
-                  color={node.status === RosNodeStatus.RUNNING ? "success" : "default"}
-                  title=""
-                  // title={`${RosNodeStatusInfo[node.status]}`}
-                  text={node.status}
-                  wrap
-                />
-              </Stack>
+            <Stack spacing="0.5em">
               {node.pid && Math.round(node.pid) > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag color="default" title="PID:" text={`${node.pid}`} wrap />
@@ -439,289 +365,211 @@ export default function NodesDetailsPanel(): JSX.Element {
                   ))}
                 </Stack>
               )}
+              <Stack direction="column" spacing={0.5}>
+                {Array.from(node.launchInfo.keys()).map((launchPath) => (
+                  <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
+                    <Tag
+                      key={launchPath}
+                      color="default"
+                      title="Launch path:"
+                      text={launchPath}
+                      wrap
+                      copyButton={launchPath}
+                    />
+                  </Stack>
+                ))}
+                {logPaths[node.idGlobal]?.map((logItem) => {
+                  return (
+                    <Stack key={`log-${logItem.id}`}>
+                      <Stack direction="row" spacing={0.5}>
+                        <Tag
+                          key={logItem.screen_log}
+                          color="default"
+                          title="Screen log:"
+                          text={logItem.screen_log}
+                          wrap
+                          copyButton={logItem.screen_log}
+                        />
+                      </Stack>
+                      <Stack direction="row" spacing={0.5}>
+                        <Tag
+                          key={logItem.ros_log}
+                          color="default"
+                          title="Ros log:"
+                          text={logItem.ros_log}
+                          wrap
+                          copyButton={logItem.ros_log}
+                        />
+                      </Stack>
+                    </Stack>
+                  );
+                })}
+                {!logPaths[node.idGlobal] && (
+                  <Stack direction="row" padding={0} spacing={0.5}>
+                    <Button
+                      type="submit"
+                      // variant="contained"
+                      size="small"
+                      color="warning"
+                      onClick={async () => {
+                        const logs = await rosCtx.getProviderById(node.providerId)?.getLogPaths([node.name]);
+                        logPaths[node.idGlobal] = logs;
+                        setLogPaths({ ...logPaths });
+                      }}
+                    >
+                      get log paths
+                    </Button>
+                  </Stack>
+                )}
+              </Stack>
             </Stack>
           )}
 
           {node && (
-            <Stack spacing={1}>
-              {showSubscribers && node.subscribers && (
-                <>
-                  <Typography variant="caption">
-                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
-                      Subscribed Topics:
-                      {` [${node.subscribers.length}]`}
-                    </Box>
-                  </Typography>
-                  {node.subscribers.length > 0 && (
-                    <TableContainer component={Paper}>
-                      <Table size="small" aria-label="a dense table">
-                        <TableBody>
-                          {Array.from(node.subscribers.values())
-                            .sort(compareTopics)
-                            .map((topic) => (
-                              <TableRow key={topic.name}>
-                                <TableCell style={{ padding: 0 }}>
-                                  <Stack direction="row" alignItems="center" spacing={0}>
-                                    <OverflowMenuTopic
-                                      onClick={onTopicClick}
-                                      topicName={topic.name}
-                                      messageType={topic.msg_type}
-                                      providerId={node.providerId}
-                                    />
-                                    {showConnections &&
-                                      provider?.rosTopics
-                                        .filter((item) => item.name === topic.name && item.msg_type === topic.msg_type)
-                                        .map((rt: RosTopic) => {
-                                          return (
-                                            <Stack key={`pub-sub-${rt.name}`} direction="row">
-                                              <Chip
-                                                size="small"
-                                                title="publishers"
-                                                // showZero={true}
-                                                color={(rt.publisher || []).length === 0 ? "warning" : "default"}
-                                                label={rt.publisher ? rt.publisher.length : 0}
-                                              />
-                                              <Chip
-                                                size="small"
-                                                title="subscribers"
-                                                // showZero={true}
-                                                color={(rt.subscriber || []).length > 0 ? "default" : "warning"}
-                                                label={rt.subscriber ? rt.subscriber.length : 0}
-                                              />
-                                            </Stack>
-                                          );
-                                        })}
-                                    <Button
-                                      size="small"
-                                      style={{
-                                        marginLeft: 1,
-                                        textTransform: "none",
-                                        justifyContent: "left",
-                                      }}
-                                      onClick={(event) =>
-                                        onTopicClick(
-                                          event.nativeEvent.ctrlKey && !event.nativeEvent.shiftKey
-                                            ? EMenuTopic.PUBLISH
-                                            : EMenuTopic.ECHO,
-                                          topic.name,
-                                          topic.msg_type,
-                                          node.providerId,
-                                          event.nativeEvent.shiftKey,
-                                          event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
-                                        )
-                                      }
-                                    >
-                                      {`${topic.name}`}
-                                    </Button>
-                                  </Stack>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </>
-              )}
-
-              {showPublishers && node.publishers && (
-                <>
-                  <Typography variant="caption">
-                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
-                      Published topics:
-                      {` [${node.publishers.length}]`}
-                    </Box>
-                  </Typography>
-                  {node.publishers.length > 0 && (
-                    // useZebraStyles={false}>
-                    <TableContainer component={Paper}>
-                      <Table size="small" aria-label="a dense table">
-                        <TableBody>
-                          {node.publishers.sort(compareTopics).map((topic) => (
-                            <TableRow key={topic.name}>
-                              <TableCell style={{ padding: 0 }}>
-                                <Stack direction="row" alignItems="center" spacing={0}>
-                                  <OverflowMenuTopic
-                                    onClick={onTopicClick}
-                                    topicName={topic.name}
-                                    messageType={topic.msg_type}
-                                    providerId={node.providerId}
-                                  />
-                                  {showConnections &&
-                                    provider?.rosTopics
-                                      .filter((item) => item.name === topic.name && item.msg_type === topic.msg_type)
-                                      .map((rt: RosTopic) => {
-                                        return (
-                                          <Stack key={`pub-sub-${rt.name}`} direction="row">
-                                            <Chip
-                                              size="small"
-                                              title="publishers"
-                                              // showZero={true}
-                                              color="default"
-                                              label={rt.publisher ? rt.publisher.length : 0}
-                                            />
-                                            <Chip
-                                              size="small"
-                                              title="subscribers"
-                                              // showZero={true}
-                                              color={(rt.subscriber || []).length > 0 ? "default" : "warning"}
-                                              label={rt.subscriber ? rt.subscriber.length : 0}
-                                            />
-                                          </Stack>
-                                        );
-                                      })}
-                                  <Button
-                                    size="small"
-                                    style={{
-                                      marginLeft: 1,
-                                      textTransform: "none",
-                                      justifyContent: "left",
-                                    }}
-                                    onClick={(event) => {
-                                      onTopicClick(
-                                        event.nativeEvent.ctrlKey && !event.nativeEvent.shiftKey
-                                          ? EMenuTopic.PUBLISH
-                                          : EMenuTopic.ECHO,
-                                        topic.name,
-                                        topic.msg_type,
-                                        node.providerId,
-                                        event.nativeEvent.shiftKey,
-                                        event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
-                                      );
-                                    }}
-                                  >
-                                    {`${topic.name}`}
-                                  </Button>
-                                </Stack>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </>
-              )}
-
-              {showServices && node.services && (
-                <>
-                  <Typography variant="caption">
-                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>
-                      Available Services:
-                      {` [${node.services.length}]`}
-                    </Box>
-                  </Typography>
-
-                  {node.services.length > 0 && (
-                    <TableContainer component={Paper}>
-                      <Table size="small" aria-label="a dense table">
-                        <TableBody>
-                          {node.services.map((service) => (
-                            <TableRow key={`${service.name}#${service.msg_type}`}>
-                              <TableCell style={{ padding: 0 }}>
-                                <Stack direction="row" spacing={1}>
-                                  <OverflowMenuService
-                                    onClick={onServiceClick}
-                                    serviceName={service.name}
-                                    serviceType={service.msg_type}
-                                    providerId={node.providerId}
-                                  />
-
-                                  <Button
-                                    size="small"
-                                    style={{
-                                      padding: 0,
-                                      textTransform: "none",
-                                      justifyContent: "left",
-                                    }}
-                                    onClick={() =>
-                                      onServiceClick(
-                                        EMenuService.SERVICE_CALL,
-                                        service.name,
-                                        service.msg_type,
-                                        node.providerId
-                                      )
-                                    }
-                                  >
-                                    {`${service.name}`}
-                                  </Button>
-                                </Stack>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </>
-              )}
-
-              {showPaths && (
-                <Stack direction="column" spacing={0.5}>
-                  {Array.from(node.launchInfo.keys()).map((launchPath) => (
-                    <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
-                      <Tag
-                        key={launchPath}
-                        color="default"
-                        title="Launch path:"
-                        text={launchPath}
-                        wrap
-                        copyButton={launchPath}
-                      />
-                    </Stack>
-                  ))}
-                  {logPaths[node.idGlobal]?.map((logItem) => {
-                    return (
-                      <Stack key={`log-${logItem.id}`}>
-                        <Stack direction="row" spacing={0.5}>
-                          <Tag
-                            key={logItem.screen_log}
-                            color="default"
-                            title="Screen log:"
-                            text={logItem.screen_log}
-                            wrap
-                            copyButton={logItem.screen_log}
-                          />
-                        </Stack>
-                        <Stack direction="row" spacing={0.5}>
-                          <Tag
-                            key={logItem.ros_log}
-                            color="default"
-                            title="Ros log:"
-                            text={logItem.ros_log}
-                            wrap
-                            copyButton={logItem.ros_log}
-                          />
-                        </Stack>
-                      </Stack>
-                    );
-                  })}
-                  {!logPaths[node.idGlobal] && (
-                    <Stack direction="row" spacing={0.5}>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        size="small"
-                        color="warning"
-                        onClick={async () => {
-                          const logs = await rosCtx.getProviderById(node.providerId)?.getLogPaths([node.name]);
-                          logPaths[node.idGlobal] = logs;
-                          setLogPaths({ ...logPaths });
-                        }}
-                        style={{ textAlign: "center" }}
-                      >
-                        get log paths
-                      </Button>
-                    </Stack>
-                  )}
+            <Stack spacing="0">
+              {node.subscribers && (
+                <Stack paddingTop="0.5em" spacing={0}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    onClick={() => {
+                      setShowSubscribers((prev) => !prev);
+                    }}
+                  >
+                    <ExpandMoreIcon
+                      style={{ transform: `${showSubscribers ? "" : "rotate(-90deg)"}` }}
+                      fontSize="small"
+                    />
+                    <Button
+                      size="small"
+                      style={{
+                        textTransform: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight="bold">
+                        Subscribed topics:
+                        {` [${node.subscribers.length}]`}
+                      </Typography>
+                    </Button>
+                  </Stack>
+                  {showSubscribers &&
+                    Array.from(node.subscribers.values())
+                      .sort(compareTopics)
+                      .map((topic: RosTopicId) => (
+                        <TopicDetailsItem
+                          key={`${topic.name}-${topic.msg_type}`}
+                          providerId={provider?.id}
+                          topicId={topic}
+                          showConnections={showConnections}
+                        />
+                      ))}
                 </Stack>
               )}
-              {showLaunchParameter && (
-                <>
-                  <Typography variant="caption">
-                    <Box sx={{ fontWeight: "bold", marginTop: 1 }}>Launch Parameter:</Box>
-                  </Typography>
-                  {Array.from(node.launchInfo.keys()).map((launchPath: string) => {
+
+              {node.publishers && (
+                <Stack paddingTop="0.5em" spacing={0}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    onClick={() => {
+                      setShowPublishers((prev) => !prev);
+                    }}
+                  >
+                    <ExpandMoreIcon
+                      style={{ transform: `${showPublishers ? "" : "rotate(-90deg)"}` }}
+                      fontSize="small"
+                    />
+                    <Button
+                      size="small"
+                      style={{
+                        textTransform: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight="bold">
+                        Published topics:
+                        {` [${node.publishers.length}]`}
+                      </Typography>
+                    </Button>
+                  </Stack>
+                  {showPublishers &&
+                    node.publishers
+                      .sort(compareTopics)
+                      .map((topic) => (
+                        <TopicDetailsItem
+                          key={`${topic.name}-${topic.msg_type}`}
+                          providerId={provider?.id}
+                          topicId={topic}
+                          showConnections={showConnections}
+                        />
+                      ))}
+                </Stack>
+              )}
+
+              {node.services && (
+                <Stack paddingTop="0.5em" spacing={0}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    onClick={() => {
+                      setShowServices((prev) => !prev);
+                    }}
+                  >
+                    <ExpandMoreIcon style={{ transform: `${showServices ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+                    <Button
+                      size="small"
+                      style={{
+                        textTransform: "none",
+                        color: "inherit",
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight="bold">
+                        Services:
+                        {` [${node.services.length}]`}
+                      </Typography>
+                    </Button>
+                  </Stack>
+
+                  {showServices &&
+                    node.services.sort(compareTopics).map((service) => {
+                      return (
+                        <ServiceDetailsItem
+                          key={`${service.name}-${service.msg_type}`}
+                          providerId={provider?.id}
+                          serviceId={service}
+                        />
+                      );
+                    })}
+                </Stack>
+              )}
+
+              <Stack paddingTop="0.5em" spacing={0}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  onClick={() => {
+                    setShowLaunchParameter((prev) => !prev);
+                  }}
+                >
+                  <ExpandMoreIcon
+                    style={{ transform: `${showLaunchParameter ? "" : "rotate(-90deg)"}` }}
+                    fontSize="small"
+                  />
+                  <Button
+                    size="small"
+                    style={{
+                      textTransform: "none",
+                      color: "inherit",
+                    }}
+                  >
+                    <Typography variant="caption" fontWeight="bold">
+                      Launch Parameter:
+                    </Typography>
+                  </Button>
+                </Stack>
+                {showLaunchParameter &&
+                  Array.from(node.launchInfo.keys()).map((launchPath: string) => {
                     const launchInfo = node.launchInfo.get(launchPath);
                     if (launchInfo) {
                       return (
@@ -794,8 +642,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                     // biome-ignore lint/correctness/useJsxKeyInIterable: <explanation>
                     return <></>;
                   })}
-                </>
-              )}
+              </Stack>
             </Stack>
           )}
         </Stack>
@@ -809,12 +656,13 @@ export default function NodesDetailsPanel(): JSX.Element {
     showConnections,
     showSubscribers,
     showServices,
-    showPaths,
     showLaunchParameter,
     // onTopicClick,    <= causes unnecessary rebuilds
     // onServiceClick,  <= causes unnecessary rebuilds
     rosCtx,
     logPaths,
+    navCtx.nodesHistory,
+    navCtx.selectedNodes,
   ]);
 
   return (
