@@ -125,7 +125,7 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                 <ExpandMoreIcon fontSize="inherit" />
               </IconButton>
 
-              <Typography variant="subtitle1">{`${message} Do you want to restart ${currentNodeList.length} nodes on: `}</Typography>
+              <Typography variant="subtitle1">{`${message} Do you want to restart ${currentNodeList.length === 1 ? currentNodeList[0] : `${currentNodeList.length} nodes`} on: `}</Typography>
               <Typography variant="subtitle1" fontWeight="bold">
                 {provider.name()}
               </Typography>
