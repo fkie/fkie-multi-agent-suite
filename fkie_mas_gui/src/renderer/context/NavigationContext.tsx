@@ -90,14 +90,14 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
   const [layoutModel, setLayoutModel] = useState<Model | null>(null);
 
   const setSelectedNodes: (nodes: string[], addToHistory: boolean) => void = (nodes, addToHistory = true) => {
-    if (addToHistory) {
-      if (JSON.stringify(selectedNodes) !== JSON.stringify(nodes)) {
-        setNodesHistory((prev) => [...prev, selectedNodes])
+    if (JSON.stringify(selectedNodes) !== JSON.stringify(nodes)) {
+      if (addToHistory) {
+        setNodesHistory((prev) => [...prev, selectedNodes]);
+      } else {
+        setNodesHistory([]);
       }
-    } else {
-      setNodesHistory([]);
+      _setSelectedNodes(nodes);
     }
-    _setSelectedNodes(nodes);
   };
 
   const setSelectedFromHistory: () => string[] = () => {

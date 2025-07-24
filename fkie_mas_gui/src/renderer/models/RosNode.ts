@@ -121,11 +121,13 @@ export default class RosNode {
   screens: string[] | undefined;
 
   /** List of diagnostic messages associated with this node. */
-  diagnosticStatus: DiagnosticStatus[] | undefined = [];
+  diagnosticStatus: DiagnosticStatus[] = [];
 
   diagnosticLevel: DiagnosticLevel | undefined = DiagnosticLevel.OK;
 
   diagnosticMessage: string = "";
+
+  diagnosticColor: string = "";
 
   /**
    * Flag to signal system node

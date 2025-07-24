@@ -227,3 +227,14 @@ export class EventProviderAuthRequest {
     this.connectConfig = connectConfig;
   }
 }
+
+export class EventNodeDiagnostic {
+  provider: Provider;
+
+  node: RosNode;
+
+  constructor(provider: Provider, node: RosNode) {
+    this.provider = provider;
+    this.node = node;
+  }
+}

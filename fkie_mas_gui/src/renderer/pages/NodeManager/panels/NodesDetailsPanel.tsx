@@ -1,7 +1,8 @@
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Alert, AlertTitle, Box, Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 
@@ -23,7 +24,12 @@ import {
   getDiagnosticLevelName,
   getFileName,
 } from "@/renderer/models";
-import { EVENT_PROVIDER_ROS_SERVICES, EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
+import {
+  EVENT_NODE_DIAGNOSTIC,
+  EVENT_PROVIDER_ROS_SERVICES,
+  EVENT_PROVIDER_ROS_TOPICS,
+} from "@/renderer/providers/eventTypes";
+import { EventNodeDiagnostic } from "@/renderer/providers/events";
 
 function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): number {
   if (a.name < b.name) {
@@ -40,8 +46,13 @@ export default function NodesDetailsPanel(): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const navCtx = useContext(NavigationContext);
 
-  const [nodesShow, setNodesShow] = useState<RosNode[]>([]);
+  const [indexOfSelected, setIndexOfSelected] = useState<number>(0);
+  const [nodeShow, setNodeShow] = useState<RosNode | undefined>(undefined);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
+  const [updateDetails, forceUpdateDetails] = useReducer((x) => x + 1, 0);
+  const [updateDiagnostics, forceUpdateDiagnostics] = useReducer((x) => x + 1, 0);
+  const [updateServices, forceUpdateServices] = useReducer((x) => x + 1, 0);
+  const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
 
   const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", true);
   const [showPublishers, setShowPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
@@ -56,28 +67,26 @@ export default function NodesDetailsPanel(): JSX.Element {
   }, [settingsCtx, settingsCtx.changed]);
 
   useEffect(() => {
-    // TODO: Make a parameter or config for [maxNodes]
-    const maxNodes = 1;
-    const idsToShow = navCtx.selectedNodes.slice(
-      0,
-      navCtx.selectedNodes.length > maxNodes ? maxNodes : navCtx.selectedNodes.length
-    );
-    const nodes: RosNode[] = [];
-    for (const id of idsToShow) {
-      const n = rosCtx.nodeMap.get(id);
-      if (n) {
-        nodes.push(n);
-      }
-    }
-    setNodesShow(nodes);
-  }, [navCtx.selectedNodes, rosCtx.nodeMap]);
+    const idToShow = navCtx.selectedNodes[indexOfSelected];
+    setNodeShow(rosCtx.nodeMap.get(idToShow));
+  }, [navCtx.selectedNodes, rosCtx.nodeMap, indexOfSelected]);
+
+  useEffect(() => {
+    setIndexOfSelected(0);
+  }, [navCtx.selectedNodes]);
 
   useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
-    setNodesShow((prev) => [...prev]);
+    forceUpdateServices();
   });
 
   useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
-    setNodesShow((prev) => [...prev]);
+    forceUpdateTopics();
+  });
+
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+    if (data.node.name === nodeShow?.name) {
+      forceUpdateDiagnostics();
+    }
   });
 
   const getHostStyle = useCallback(
@@ -170,28 +179,483 @@ export default function NodesDetailsPanel(): JSX.Element {
     );
   }, [navCtx.selectedProviders]);
 
-  const createNodeDetailsView = useMemo(() => {
-    const result = nodesShow.map((node: RosNode) => {
-      const provider = rosCtx.getProviderById(node.providerId);
+  const createDiagnostics = useMemo(() => {
+    if (!nodeShow) return <></>;
+    if ((nodeShow.diagnosticLevel || 0) > 0 || nodeShow.diagnosticColor) {
       return (
-        <Stack
-          key={node.idGlobal}
-          // spacing={1}
-          alignItems="left"
-        >
-          <Stack
-            direction="row"
-            alignItems="center"
-            paddingTop={0}
-            marginBottom={0.5}
-            sx={getHostStyle(node.providerName)}
+        <Stack paddingTop="0.5em">
+          <Typography
+            variant="body1"
+            style={
+              nodeShow.diagnosticColor
+                ? { color: nodeShow.diagnosticColor }
+                : getDiagnosticStyle(nodeShow.diagnosticLevel || 0)
+            }
+            marginBottom={1}
           >
-            {navCtx.nodesHistory.length > 0 && (
-              <Tooltip title={"Go back to last node"} placement="bottom">
+            {getDiagnosticLevelName(nodeShow.diagnosticLevel || 0)}: {nodeShow.diagnosticMessage}
+          </Typography>
+        </Stack>
+      );
+    }
+    return <></>;
+  }, [nodeShow, updateDiagnostics]);
+
+  const createNodeDetailsInfo = useMemo(() => {
+    if (!nodeShow) return <></>;
+    return (
+      <Stack
+        key={nodeShow.idGlobal}
+        // spacing={1}
+        alignItems="left"
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          onClick={() => {
+            setShowNodeInfo((prev) => !prev);
+          }}
+        >
+          <ExpandMoreIcon style={{ transform: `${showNodeInfo ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+          <Button
+            size="small"
+            style={{
+              textTransform: "none",
+              color: "inherit",
+            }}
+          >
+            <Typography variant="caption" fontWeight="bold">
+              Node Details:
+            </Typography>
+          </Button>
+        </Stack>
+        {showNodeInfo && (
+          <Stack spacing="0.5em">
+            {nodeShow.pid && Math.round(nodeShow.pid) > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="PID:" text={`${nodeShow.pid}`} wrap />
+              </Stack>
+            )}
+            {nodeShow.processIds.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag
+                  color="default"
+                  title={`PID${nodeShow.processIds.length > 1 ? "s" : ""}:`}
+                  text={`${nodeShow.processIds}`}
+                  tooltip={
+                    "Process IDs of all processes found for this node, including the screens in which the nodes were started."
+                  }
+                  wrap
+                />
+              </Stack>
+            )}
+            {nodeShow.lifecycle_state && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="Lifecycle:" text={`${nodeShow.lifecycle_state}`} wrap />
+              </Stack>
+            )}
+            {(nodeShow.lifecycle_available_transitions || []).length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag
+                  color="default"
+                  title="Lifecycle transitions:"
+                  text={`${JSON.stringify(nodeShow.lifecycle_available_transitions)}`}
+                  wrap
+                />
+              </Stack>
+            )}
+            {nodeShow.id && nodeShow.id !== nodeShow.name && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="ID:" text={`${nodeShow.id}`} wrap />
+              </Stack>
+            )}
+            {nodeShow.node_API_URI && nodeShow.node_API_URI.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="URI:" text={nodeShow.node_API_URI} wrap />
+              </Stack>
+            )}
+            {nodeShow.masteruri && nodeShow.masteruri.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="MASTERURI:" text={nodeShow.masteruri} wrap />
+              </Stack>
+            )}
+            {nodeShow.location && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="Location:" text={`${nodeShow.location} - ${nodeShow.providerName}`} wrap />
+              </Stack>
+            )}
+            {nodeShow.container_name ? (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="Composable Container:" text={`${nodeShow.container_name}`} wrap />
+              </Stack>
+            ) : (
+              nodeShow.getAllContainers().length > 0 && (
+                <Stack direction="row" spacing={0.5}>
+                  <Tag
+                    color="default"
+                    title="Composable Container:"
+                    text={`${JSON.stringify(nodeShow.getAllContainers())}`}
+                    wrap
+                  />
+                </Stack>
+              )
+            )}
+            {nodeShow.guid && (
+              <Stack direction="row" spacing={0.5}>
+                <Tag color="default" title="GID:" text={`${nodeShow.guid}`} wrap />
+              </Stack>
+            )}
+            {nodeShow.screens && nodeShow.screens.length > 0 && (
+              <Stack direction="row" spacing={0.5}>
+                {nodeShow.screens.map((screen) => (
+                  <Tag
+                    key={`screen-${screen}-`}
+                    color="default"
+                    title="Screen:"
+                    text={screen}
+                    wrap
+                    copyButton={screen}
+                  />
+                ))}
+              </Stack>
+            )}
+            {nodeShow.launchInfo.size > 0 && (
+              <Stack direction="column" spacing={0.5}>
+                {Array.from(nodeShow.launchInfo.keys()).map((launchPath) => (
+                  <Tag
+                    key={launchPath}
+                    color="info"
+                    title={`${launchPath === nodeShow.launchPath ? "*" : ""}Launch:`}
+                    text={getFileName(launchPath)}
+                    wrap
+                    copyButton={launchPath}
+                  />
+                ))}
+              </Stack>
+            )}
+            <Stack direction="column" spacing={0.5}>
+              {Array.from(nodeShow.launchInfo.keys()).map((launchPath) => (
+                <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
+                  <Tag
+                    key={launchPath}
+                    color="default"
+                    title="Launch path:"
+                    text={launchPath}
+                    wrap
+                    copyButton={launchPath}
+                  />
+                </Stack>
+              ))}
+              {logPaths[nodeShow.idGlobal]?.map((logItem) => {
+                return (
+                  <Stack key={`log-${logItem.id}`}>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tag
+                        key={logItem.screen_log}
+                        color="default"
+                        title="Screen log:"
+                        text={logItem.screen_log}
+                        wrap
+                        copyButton={logItem.screen_log}
+                      />
+                    </Stack>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tag
+                        key={logItem.ros_log}
+                        color="default"
+                        title="Ros log:"
+                        text={logItem.ros_log}
+                        wrap
+                        copyButton={logItem.ros_log}
+                      />
+                    </Stack>
+                  </Stack>
+                );
+              })}
+              {!logPaths[nodeShow.idGlobal] && (
+                <Stack direction="row" padding={0} spacing={0.5}>
+                  <Button
+                    type="submit"
+                    // variant="contained"
+                    size="small"
+                    color="warning"
+                    onClick={async () => {
+                      const logs = await rosCtx.getProviderById(nodeShow.providerId)?.getLogPaths([nodeShow.name]);
+                      logPaths[nodeShow.idGlobal] = logs;
+                      setLogPaths({ ...logPaths });
+                    }}
+                  >
+                    get log paths
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          </Stack>
+        )}
+      </Stack>
+    );
+  }, [nodeShow, updateDetails, showNodeInfo]);
+
+  const createTopicsView = useMemo(() => {
+    if (!nodeShow) return <></>;
+    const provider = rosCtx.getProviderById(nodeShow.providerId);
+    return (
+      <Stack spacing="0">
+        {nodeShow.subscribers && (
+          <Stack paddingTop="0.5em" spacing={0}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              onClick={() => {
+                setShowSubscribers((prev) => !prev);
+              }}
+            >
+              <ExpandMoreIcon style={{ transform: `${showSubscribers ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+              <Button
+                size="small"
+                style={{
+                  textTransform: "none",
+                  color: "inherit",
+                }}
+              >
+                <Typography variant="caption" fontWeight="bold">
+                  Subscribed topics:
+                  {` [${nodeShow.subscribers.length}]`}
+                </Typography>
+              </Button>
+            </Stack>
+            {showSubscribers &&
+              Array.from(nodeShow.subscribers.values())
+                .sort(compareTopics)
+                .map((topic: RosTopicId) => (
+                  <TopicDetailsItem
+                    key={`${topic.name}-${topic.msg_type}`}
+                    providerId={provider?.id}
+                    topicId={topic}
+                    showConnections={showConnections}
+                  />
+                ))}
+          </Stack>
+        )}
+
+        {nodeShow.publishers && (
+          <Stack paddingTop="0.5em" spacing={0}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              onClick={() => {
+                setShowPublishers((prev) => !prev);
+              }}
+            >
+              <ExpandMoreIcon style={{ transform: `${showPublishers ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+              <Button
+                size="small"
+                style={{
+                  textTransform: "none",
+                  color: "inherit",
+                }}
+              >
+                <Typography variant="caption" fontWeight="bold">
+                  Published topics:
+                  {` [${nodeShow.publishers.length}]`}
+                </Typography>
+              </Button>
+            </Stack>
+            {showPublishers &&
+              nodeShow.publishers
+                .sort(compareTopics)
+                .map((topic) => (
+                  <TopicDetailsItem
+                    key={`${topic.name}-${topic.msg_type}`}
+                    providerId={provider?.id}
+                    topicId={topic}
+                    showConnections={showConnections}
+                  />
+                ))}
+          </Stack>
+        )}
+      </Stack>
+    );
+  }, [nodeShow, updateTopics, showPublishers, showSubscribers, showConnections]);
+
+  const createServicesView = useMemo(() => {
+    if (!nodeShow || !nodeShow.services) return <></>;
+    const provider = rosCtx.getProviderById(nodeShow.providerId);
+    return (
+      <Stack paddingTop="0.5em" spacing={0}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          onClick={() => {
+            setShowServices((prev) => !prev);
+          }}
+        >
+          <ExpandMoreIcon style={{ transform: `${showServices ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+          <Button
+            size="small"
+            style={{
+              textTransform: "none",
+              color: "inherit",
+            }}
+          >
+            <Typography variant="caption" fontWeight="bold">
+              Services:
+              {` [${nodeShow.services.length}]`}
+            </Typography>
+          </Button>
+        </Stack>
+
+        {showServices &&
+          nodeShow.services.sort(compareTopics).map((service) => {
+            return (
+              <ServiceDetailsItem
+                key={`${service.name}-${service.msg_type}`}
+                providerId={provider?.id}
+                serviceId={service}
+              />
+            );
+          })}
+      </Stack>
+    );
+  }, [nodeShow, updateServices, showServices]);
+
+  const createLaunchView = useMemo(() => {
+    if (!nodeShow || !nodeShow.services) return <></>;
+    return (
+      <Stack paddingTop="0.5em" spacing={0}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          onClick={() => {
+            setShowLaunchParameter((prev) => !prev);
+          }}
+        >
+          <ExpandMoreIcon style={{ transform: `${showLaunchParameter ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+          <Button
+            size="small"
+            style={{
+              textTransform: "none",
+              color: "inherit",
+            }}
+          >
+            <Typography variant="caption" fontWeight="bold">
+              Launch Parameter:
+            </Typography>
+          </Button>
+        </Stack>
+        {showLaunchParameter &&
+          Array.from(nodeShow.launchInfo.keys()).map((launchPath: string) => {
+            const launchInfo = nodeShow.launchInfo.get(launchPath);
+            if (launchInfo) {
+              return (
+                <Stack key={launchPath} marginTop={"0.5em"}>
+                  <Typography variant="caption">
+                    <Box sx={{ fontWeight: "bold" }}>
+                      {`${launchPath.split("/").slice(-1)} [${launchInfo.parameters?.length}]`}
+                    </Box>
+                  </Typography>
+                  {launchInfo.cmd && (
+                    <Stack direction="column" paddingBottom={0.5}>
+                      {launchInfo.timer_period && launchInfo.timer_period > 0 && (
+                        <Typography variant="caption">
+                          <Stack direction="row" spacing={0.5}>
+                            <Box sx={{ fontWeight: "bold", color: "orange" }}>Delayed start:</Box>
+                            <Box sx={{ fontWeight: "normal" }}>{launchInfo.timer_period} sec</Box>
+                          </Stack>
+                        </Typography>
+                      )}
+                      {launchInfo.sigkill_timeout && launchInfo.sigkill_timeout > 0 && (
+                        <Typography variant="caption">
+                          <Stack direction="row" spacing={0.5}>
+                            <Box sx={{ fontWeight: "bold", color: "orange" }}>Kill on stop:</Box>
+                            <Box sx={{ fontWeight: "normal" }}>{launchInfo.sigkill_timeout} ms</Box>
+                          </Stack>
+                        </Typography>
+                      )}
+                      <Tag
+                        color="default"
+                        title="CMD:"
+                        text={`${launchInfo.cmd}`}
+                        wrap
+                        copyButton={`${launchInfo.cmd}`}
+                      />
+                    </Stack>
+                  )}
+                  {launchInfo.parameters && launchInfo.parameters.length > 0 && (
+                    <JsonView
+                      src={launchInfo.parameters?.reduce((dictionary, param: RosParameter) => {
+                        dictionary[param.name] = param.value;
+                        return dictionary;
+                      }, {})}
+                      dark={settingsCtx.get("useDarkMode") as boolean}
+                      theme="a11y"
+                      enableClipboard={false}
+                      ignoreLargeArray={false}
+                      collapseObjectsAfterLength={3}
+                      displaySize={"collapsed"}
+                      collapsed={(params: {
+                        node: Record<string, unknown> | Array<unknown>; // Object or array
+                        indexOrName: number | string | undefined;
+                        depth: number;
+                        size: number; // Object's size or array's length
+                      }) => {
+                        if (params.indexOrName === undefined) {
+                          // do not collapse root element
+                          return false;
+                        }
+                        if (Array.isArray(params.node) && params.node.length === 0) {
+                          return true;
+                        }
+                        if (params.depth > 3) return true;
+                        return false;
+                      }}
+                    />
+                  )}
+                </Stack>
+              );
+            }
+            // biome-ignore lint/correctness/useJsxKeyInIterable: <explanation>
+            return <></>;
+          })}
+      </Stack>
+    );
+  }, [nodeShow, showServices]);
+
+  const createDetailsView = useMemo(() => {
+    if (!nodeShow) return <></>;
+    return (
+      <Stack
+        key={nodeShow.idGlobal}
+        // spacing={1}
+        alignItems="left"
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          paddingTop={0}
+          marginBottom={0.5}
+          sx={getHostStyle(nodeShow.providerName)}
+        >
+          {navCtx.nodesHistory.length > 0 ? (
+            <Tooltip title={"Go back to last node"} placement="bottom">
+              <IconButton
+                color="error"
+                onClick={(event) => {
+                  navCtx.setSelectedFromHistory();
+                  event?.stopPropagation();
+                }}
+                size="small"
+              >
+                <ArrowBackIosIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          ) : (
+            indexOfSelected > 0 && (
+              <Tooltip title={"Go to previous selected node"} placement="bottom">
                 <IconButton
                   color="error"
                   onClick={(event) => {
-                    navCtx.setSelectedFromHistory();
+                    setIndexOfSelected((prev) => prev - 1);
                     event?.stopPropagation();
                   }}
                   size="small"
@@ -199,458 +663,71 @@ export default function NodesDetailsPanel(): JSX.Element {
                   <ArrowBackIosIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
-            )}
-            <Typography
-              variant="subtitle1"
-              style={{
-                // cursor: "pointer",
-                color: "#fff",
-                backgroundColor: "#2196f3",
-                flexGrow: 1,
-              }}
-              align="center"
-            >
-              <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
-                {node.namespace !== "/" && (
-                  <Tooltip title="namespace" placement="bottom" disableInteractive>
-                    <Typography variant="subtitle2" align="center">
-                      {node?.namespace}
-                    </Typography>
-                  </Tooltip>
-                )}
-                <Box>
-                  {node.namespace !== "/" ? node.name.replace(node.namespace, "").replace("/", "") : node.name}
-                  <CopyButton value={node.name} fontSize={"inherit"} />
-                </Box>
-              </Stack>
-            </Typography>
-          </Stack>
-
-          {(node.diagnosticLevel || 0) > 0 && (
-            <Typography variant="body1" style={getDiagnosticStyle(node.diagnosticLevel || 0)} marginBottom={1}>
-              {getDiagnosticLevelName(node.diagnosticLevel || 0)}: {node.diagnosticMessage}
-            </Typography>
+            )
           )}
-
-          <Stack direction="row" spacing={0.5}>
-            <Tag
-              color={node.status === RosNodeStatus.RUNNING ? "success" : "default"}
-              title=""
-              // title={`${RosNodeStatusInfo[node.status]}`}
-              text={node.status}
-              wrap
-            />
-          </Stack>
-          <Stack
-            direction="row"
-            alignItems="center"
-            onClick={() => {
-              setShowNodeInfo((prev) => !prev);
+          <Typography
+            variant="subtitle1"
+            style={{
+              // cursor: "pointer",
+              color: "#fff",
+              backgroundColor: "#2196f3",
+              flexGrow: 1,
             }}
+            align="center"
           >
-            <ExpandMoreIcon style={{ transform: `${showNodeInfo ? "" : "rotate(-90deg)"}` }} fontSize="small" />
-            <Button
-              size="small"
-              style={{
-                textTransform: "none",
-                color: "inherit",
-              }}
-            >
-              <Typography variant="caption" fontWeight="bold">
-                Node Details:
-              </Typography>
-            </Button>
-          </Stack>
-          {showNodeInfo && (
-            <Stack spacing="0.5em">
-              {node.pid && Math.round(node.pid) > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="PID:" text={`${node.pid}`} wrap />
-                </Stack>
+            <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
+              {nodeShow.namespace !== "/" && (
+                <Tooltip title="namespace" placement="bottom" disableInteractive>
+                  <Typography variant="subtitle2" align="center">
+                    {nodeShow?.namespace}
+                  </Typography>
+                </Tooltip>
               )}
-              {node.processIds.length > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag
-                    color="default"
-                    title={`PID${node.processIds.length > 1 ? "s" : ""}:`}
-                    text={`${node.processIds}`}
-                    tooltip={
-                      "Process IDs of all processes found for this node, including the screens in which the nodes were started."
-                    }
-                    wrap
-                  />
-                </Stack>
-              )}
-              {node.lifecycle_state && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="Lifecycle:" text={`${node.lifecycle_state}`} wrap />
-                </Stack>
-              )}
-              {(node.lifecycle_available_transitions || []).length > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag
-                    color="default"
-                    title="Lifecycle transitions:"
-                    text={`${JSON.stringify(node.lifecycle_available_transitions)}`}
-                    wrap
-                  />
-                </Stack>
-              )}
-              {node.id && node.id !== node.name && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="ID:" text={`${node.id}`} wrap />
-                </Stack>
-              )}
-              {node.node_API_URI && node.node_API_URI.length > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="URI:" text={node.node_API_URI} wrap />
-                </Stack>
-              )}
-              {node.masteruri && node.masteruri.length > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="MASTERURI:" text={node.masteruri} wrap />
-                </Stack>
-              )}
-              {node.location && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="Location:" text={`${node.location} - ${node.providerName}`} wrap />
-                </Stack>
-              )}
-              {node.container_name ? (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="Composable Container:" text={`${node.container_name}`} wrap />
-                </Stack>
-              ) : (
-                node.getAllContainers().length > 0 && (
-                  <Stack direction="row" spacing={0.5}>
-                    <Tag
-                      color="default"
-                      title="Composable Container:"
-                      text={`${JSON.stringify(node.getAllContainers())}`}
-                      wrap
-                    />
-                  </Stack>
-                )
-              )}
-              {node.guid && (
-                <Stack direction="row" spacing={0.5}>
-                  <Tag color="default" title="GID:" text={`${node.guid}`} wrap />
-                </Stack>
-              )}
-              {node.screens && node.screens.length > 0 && (
-                <Stack direction="row" spacing={0.5}>
-                  {node.screens.map((screen) => (
-                    <Tag
-                      key={`screen-${screen}-`}
-                      color="default"
-                      title="Screen:"
-                      text={screen}
-                      wrap
-                      copyButton={screen}
-                    />
-                  ))}
-                </Stack>
-              )}
-              {node.launchInfo.size > 0 && (
-                <Stack direction="column" spacing={0.5}>
-                  {Array.from(node.launchInfo.keys()).map((launchPath) => (
-                    <Tag
-                      key={launchPath}
-                      color="info"
-                      title={`${launchPath === node.launchPath ? "*" : ""}Launch:`}
-                      text={getFileName(launchPath)}
-                      wrap
-                      copyButton={launchPath}
-                    />
-                  ))}
-                </Stack>
-              )}
-              <Stack direction="column" spacing={0.5}>
-                {Array.from(node.launchInfo.keys()).map((launchPath) => (
-                  <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
-                    <Tag
-                      key={launchPath}
-                      color="default"
-                      title="Launch path:"
-                      text={launchPath}
-                      wrap
-                      copyButton={launchPath}
-                    />
-                  </Stack>
-                ))}
-                {logPaths[node.idGlobal]?.map((logItem) => {
-                  return (
-                    <Stack key={`log-${logItem.id}`}>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tag
-                          key={logItem.screen_log}
-                          color="default"
-                          title="Screen log:"
-                          text={logItem.screen_log}
-                          wrap
-                          copyButton={logItem.screen_log}
-                        />
-                      </Stack>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tag
-                          key={logItem.ros_log}
-                          color="default"
-                          title="Ros log:"
-                          text={logItem.ros_log}
-                          wrap
-                          copyButton={logItem.ros_log}
-                        />
-                      </Stack>
-                    </Stack>
-                  );
-                })}
-                {!logPaths[node.idGlobal] && (
-                  <Stack direction="row" padding={0} spacing={0.5}>
-                    <Button
-                      type="submit"
-                      // variant="contained"
-                      size="small"
-                      color="warning"
-                      onClick={async () => {
-                        const logs = await rosCtx.getProviderById(node.providerId)?.getLogPaths([node.name]);
-                        logPaths[node.idGlobal] = logs;
-                        setLogPaths({ ...logPaths });
-                      }}
-                    >
-                      get log paths
-                    </Button>
-                  </Stack>
-                )}
-              </Stack>
+              <Box>
+                {nodeShow.namespace !== "/"
+                  ? nodeShow.name.replace(nodeShow.namespace, "").replace("/", "")
+                  : nodeShow.name}
+                <CopyButton value={nodeShow.name} fontSize={"inherit"} />
+              </Box>
             </Stack>
-          )}
-
-          {node && (
-            <Stack spacing="0">
-              {node.subscribers && (
-                <Stack paddingTop="0.5em" spacing={0}>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    onClick={() => {
-                      setShowSubscribers((prev) => !prev);
-                    }}
-                  >
-                    <ExpandMoreIcon
-                      style={{ transform: `${showSubscribers ? "" : "rotate(-90deg)"}` }}
-                      fontSize="small"
-                    />
-                    <Button
-                      size="small"
-                      style={{
-                        textTransform: "none",
-                        color: "inherit",
-                      }}
-                    >
-                      <Typography variant="caption" fontWeight="bold">
-                        Subscribed topics:
-                        {` [${node.subscribers.length}]`}
-                      </Typography>
-                    </Button>
-                  </Stack>
-                  {showSubscribers &&
-                    Array.from(node.subscribers.values())
-                      .sort(compareTopics)
-                      .map((topic: RosTopicId) => (
-                        <TopicDetailsItem
-                          key={`${topic.name}-${topic.msg_type}`}
-                          providerId={provider?.id}
-                          topicId={topic}
-                          showConnections={showConnections}
-                        />
-                      ))}
-                </Stack>
-              )}
-
-              {node.publishers && (
-                <Stack paddingTop="0.5em" spacing={0}>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    onClick={() => {
-                      setShowPublishers((prev) => !prev);
-                    }}
-                  >
-                    <ExpandMoreIcon
-                      style={{ transform: `${showPublishers ? "" : "rotate(-90deg)"}` }}
-                      fontSize="small"
-                    />
-                    <Button
-                      size="small"
-                      style={{
-                        textTransform: "none",
-                        color: "inherit",
-                      }}
-                    >
-                      <Typography variant="caption" fontWeight="bold">
-                        Published topics:
-                        {` [${node.publishers.length}]`}
-                      </Typography>
-                    </Button>
-                  </Stack>
-                  {showPublishers &&
-                    node.publishers
-                      .sort(compareTopics)
-                      .map((topic) => (
-                        <TopicDetailsItem
-                          key={`${topic.name}-${topic.msg_type}`}
-                          providerId={provider?.id}
-                          topicId={topic}
-                          showConnections={showConnections}
-                        />
-                      ))}
-                </Stack>
-              )}
-
-              {node.services && (
-                <Stack paddingTop="0.5em" spacing={0}>
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    onClick={() => {
-                      setShowServices((prev) => !prev);
-                    }}
-                  >
-                    <ExpandMoreIcon style={{ transform: `${showServices ? "" : "rotate(-90deg)"}` }} fontSize="small" />
-                    <Button
-                      size="small"
-                      style={{
-                        textTransform: "none",
-                        color: "inherit",
-                      }}
-                    >
-                      <Typography variant="caption" fontWeight="bold">
-                        Services:
-                        {` [${node.services.length}]`}
-                      </Typography>
-                    </Button>
-                  </Stack>
-
-                  {showServices &&
-                    node.services.sort(compareTopics).map((service) => {
-                      return (
-                        <ServiceDetailsItem
-                          key={`${service.name}-${service.msg_type}`}
-                          providerId={provider?.id}
-                          serviceId={service}
-                        />
-                      );
-                    })}
-                </Stack>
-              )}
-
-              <Stack paddingTop="0.5em" spacing={0}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  onClick={() => {
-                    setShowLaunchParameter((prev) => !prev);
-                  }}
-                >
-                  <ExpandMoreIcon
-                    style={{ transform: `${showLaunchParameter ? "" : "rotate(-90deg)"}` }}
-                    fontSize="small"
-                  />
-                  <Button
-                    size="small"
-                    style={{
-                      textTransform: "none",
-                      color: "inherit",
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight="bold">
-                      Launch Parameter:
-                    </Typography>
-                  </Button>
-                </Stack>
-                {showLaunchParameter &&
-                  Array.from(node.launchInfo.keys()).map((launchPath: string) => {
-                    const launchInfo = node.launchInfo.get(launchPath);
-                    if (launchInfo) {
-                      return (
-                        <Stack key={launchPath} marginTop={"0.5em"}>
-                          <Typography variant="caption">
-                            <Box sx={{ fontWeight: "bold" }}>
-                              {`${launchPath.split("/").slice(-1)} [${launchInfo.parameters?.length}]`}
-                            </Box>
-                          </Typography>
-                          {launchInfo.cmd && (
-                            <Stack direction="column" paddingBottom={0.5}>
-                              {launchInfo.timer_period && launchInfo.timer_period > 0 && (
-                                <Typography variant="caption">
-                                  <Stack direction="row" spacing={0.5}>
-                                    <Box sx={{ fontWeight: "bold", color: "orange" }}>Delayed start:</Box>
-                                    <Box sx={{ fontWeight: "normal" }}>{launchInfo.timer_period} sec</Box>
-                                  </Stack>
-                                </Typography>
-                              )}
-                              {launchInfo.sigkill_timeout && launchInfo.sigkill_timeout > 0 && (
-                                <Typography variant="caption">
-                                  <Stack direction="row" spacing={0.5}>
-                                    <Box sx={{ fontWeight: "bold", color: "orange" }}>Kill on stop:</Box>
-                                    <Box sx={{ fontWeight: "normal" }}>{launchInfo.sigkill_timeout} ms</Box>
-                                  </Stack>
-                                </Typography>
-                              )}
-                              <Tag
-                                color="default"
-                                title="CMD:"
-                                text={`${launchInfo.cmd}`}
-                                wrap
-                                copyButton={`${launchInfo.cmd}`}
-                              />
-                            </Stack>
-                          )}
-                          {launchInfo.parameters && launchInfo.parameters.length > 0 && (
-                            <JsonView
-                              src={launchInfo.parameters?.reduce((dictionary, param: RosParameter) => {
-                                dictionary[param.name] = param.value;
-                                return dictionary;
-                              }, {})}
-                              dark={settingsCtx.get("useDarkMode") as boolean}
-                              theme="a11y"
-                              enableClipboard={false}
-                              ignoreLargeArray={false}
-                              collapseObjectsAfterLength={3}
-                              displaySize={"collapsed"}
-                              collapsed={(params: {
-                                node: Record<string, unknown> | Array<unknown>; // Object or array
-                                indexOrName: number | string | undefined;
-                                depth: number;
-                                size: number; // Object's size or array's length
-                              }) => {
-                                if (params.indexOrName === undefined) {
-                                  // do not collapse root element
-                                  return false;
-                                }
-                                if (Array.isArray(params.node) && params.node.length === 0) {
-                                  return true;
-                                }
-                                if (params.depth > 3) return true;
-                                return false;
-                              }}
-                            />
-                          )}
-                        </Stack>
-                      );
-                    }
-                    // biome-ignore lint/correctness/useJsxKeyInIterable: <explanation>
-                    return <></>;
-                  })}
-              </Stack>
-            </Stack>
+          </Typography>
+          {navCtx.selectedNodes.length - 1 > indexOfSelected && (
+            <Tooltip title={"Go to next selected node"} placement="bottom">
+              <IconButton
+                color="error"
+                onClick={(event) => {
+                  setIndexOfSelected((prev) => prev + 1);
+                  event?.stopPropagation();
+                }}
+                size="small"
+              >
+                <ArrowForwardIosIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
           )}
         </Stack>
-      );
-    });
-    return result;
+        <Stack direction="row" spacing={0.5}>
+          <Tag
+            color={nodeShow.status === RosNodeStatus.RUNNING ? "success" : "default"}
+            title=""
+            // title={`${RosNodeStatusInfo[nodeShow.status]}`}
+            text={nodeShow.status}
+            wrap
+          />
+        </Stack>
+        {createDiagnostics}
+        {createNodeDetailsInfo}
+        {createTopicsView}
+        {createServicesView}
+        {createLaunchView}
+      </Stack>
+    );
   }, [
-    nodesShow,
+    nodeShow,
+    updateDetails,
+    updateTopics,
+    updateServices,
+    updateDiagnostics,
     showNodeInfo,
     showPublishers,
     showConnections,
@@ -671,15 +748,15 @@ export default function NodesDetailsPanel(): JSX.Element {
       {navCtx.selectedNodes.length > 1 && (
         <Stack direction="row" justifyContent="center">
           <Typography color="grey" variant="body2">
-            selected: {navCtx.selectedNodes.length}, displayed: {nodesShow?.length}
+            selected: {navCtx.selectedNodes.length}, displayed: 1
           </Typography>
         </Stack>
       )}
-      {createNodeDetailsView}
+      {createDetailsView}
 
-      {nodesShow?.length === 0 && (
+      {!nodeShow && (
         <Alert severity="info" style={{ minWidth: 0 }}>
-          <AlertTitle>Please select a node</AlertTitle>
+          <AlertTitle>Please select a node or provider</AlertTitle>
         </Alert>
       )}
     </Box>
