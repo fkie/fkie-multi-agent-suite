@@ -6,7 +6,7 @@ import { blue, green, grey, red, yellow } from "@mui/material/colors";
 import { TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
 import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
 import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
-import { forwardRef, LegacyRef, useEffect, useState } from "react";
+import { forwardRef, LegacyRef, useEffect, useMemo, useState } from "react";
 
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
@@ -344,42 +344,46 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
     toggled = true;
   };
 
-  return (
-    <StyledTreeItem
-      itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
-      slotProps={
-        {
-          label: { onClick: handleLabelClick },
-          content: { onClick: handleContentClick },
-          iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItemSlotProps
-      }
-      onDoubleClick={(event) => onDoubleClick(event, itemId)}
-      label={
-        <Box display="flex" alignItems="center" paddingLeft={0.0}>
-          {icon}
-          <Stack
-            direction="row"
-            onDoubleClick={(event) => {
-              if (onDoubleClick) {
-                onDoubleClick(event, itemId);
-                event.stopPropagation();
-              }
-            }}
-            paddingLeft={0.5}
-            flexGrow={1}
-            sx={{ userSelect: "none" }}
-          >
-            {groupName}
-          </Stack>
+  const createGroupItem = useMemo(() => {
+    return (
+      <StyledTreeItem
+        itemId={itemId}
+        ref={ref as LegacyRef<HTMLLIElement>}
+        slotProps={
+          {
+            label: { onClick: handleLabelClick },
+            content: { onClick: handleContentClick },
+            iconContainer: { onClick: handleIconContainerClick },
+          } as TreeItemSlotProps
+        }
+        onDoubleClick={(event) => onDoubleClick(event, itemId)}
+        label={
+          <Box display="flex" alignItems="center" paddingLeft={0.0}>
+            {icon}
+            <Stack
+              direction="row"
+              onDoubleClick={(event) => {
+                if (onDoubleClick) {
+                  onDoubleClick(event, itemId);
+                  event.stopPropagation();
+                }
+              }}
+              paddingLeft={0.5}
+              flexGrow={1}
+              sx={{ userSelect: "none" }}
+            >
+              {groupName}
+            </Stack>
 
-          {countChildren > 0 && <Typography variant="body2">[{countChildren}]</Typography>}
-        </Box>
-      }
-      {...children}
-    />
-  );
+            {countChildren > 0 && <Typography variant="body2">[{countChildren}]</Typography>}
+          </Box>
+        }
+        {...children}
+      />
+    );
+  }, [itemId, countChildren, handleIconContainerClick]);
+
+  return createGroupItem;
 });
 
 export default GroupItem;
