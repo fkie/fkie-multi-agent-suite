@@ -80,10 +80,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
     settingsCtx.get("avoidGroupWithOneItem") as string
   );
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean)
   }, [settingsCtx.changed]);
 
   function createTreeFromNodes(nodes: RosNode[]): void {
@@ -656,7 +658,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           key={itemId}
           itemId={itemId}
           groupName={`${namespacePart}${name}`}
-          icon={<GroupIcon treeItems={children} isDarkMode={settingsCtx.get("useDarkMode") as boolean} />}
+          icon={<GroupIcon treeItems={children} isDarkMode={isDarkMode} groupName={name}/>}
           countChildren={NodesCount(children)}
           onDoubleClick={(event: React.MouseEvent, id: string) => {
             handleDoubleClick(event, id);

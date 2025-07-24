@@ -16,9 +16,13 @@ import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { DiagnosticLevel, LaunchCallService, LaunchNodeInfo, RosNode, RosNodeStatus } from "@/renderer/models";
 import { TRosMessageStruct } from "@/renderer/models/TRosMessageStruct";
+import { EventNodeDiagnostic } from "@/renderer/providers/events";
+import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
+import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
+import { getDiagnosticColor } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -50,21 +54,6 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const [timerPeriod, setTimerPeriod] = useState<number[]>([]);
   const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
 
-  function getColorFromDiagnostic(diagnosticLevel: DiagnosticLevel | undefined, isDarkMode = false): string {
-    switch (diagnosticLevel) {
-      case DiagnosticLevel.OK:
-        return isDarkMode ? green[600] : green[500];
-      case DiagnosticLevel.WARN:
-        return isDarkMode ? orange[600] : orange[400];
-      case DiagnosticLevel.ERROR:
-        return isDarkMode ? red[600] : red[500];
-      case DiagnosticLevel.STALE:
-        return isDarkMode ? yellow[700] : yellow[600];
-      default:
-        return isDarkMode ? blue[600] : blue[500];
-    }
-  }
-
   function getColorFromLifecycle(state: string, isDarkMode = false): string {
     switch (state) {
       case "unconfigured":
@@ -82,7 +71,9 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   function getNodeIcon(node: RosNode, isDarkMode = false): JSX.Element {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
-        const color = getColorFromDiagnostic(node.diagnosticLevel, isDarkMode);
+        const color = node.diagnosticColor
+          ? node.diagnosticColor
+          : getDiagnosticColor(node.diagnosticLevel || DiagnosticLevel.OK, isDarkMode);
         if (!node.lifecycle_state) {
           return !node.isLocal ? (
             <Tooltip
@@ -93,7 +84,8 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                     The process of the node was not found on the local host.
                   </Typography>
                   <Typography fontSize={"inherit"}>
-                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:= parameter, nor is the GID of the node detected by mas-discovery.
+                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:=
+                    parameter, nor is the GID of the node detected by mas-discovery.
                   </Typography>
                   <Typography fontSize={"inherit"}>
                     Note: no checks for life cycle, composable node or other service calls are performed!
@@ -221,6 +213,12 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
     }
   }
 
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+    if (data.node.name === node.name) {
+      setNodeIcon(getNodeIcon(data.node, isDarkMode));
+    }
+  });
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
@@ -323,14 +321,15 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
             </Tooltip>
           )}
-          {(node.status === RosNodeStatus.RUNNING || node.status === RosNodeStatus.ONLY_SCREEN) && sigKillTimeout.length > 0 && (
-            <Tooltip
-              title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} ms`}
-              placement="left"
-            >
-              <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
-            </Tooltip>
-          )}{" "}
+          {(node.status === RosNodeStatus.RUNNING || node.status === RosNodeStatus.ONLY_SCREEN) &&
+            sigKillTimeout.length > 0 && (
+              <Tooltip
+                title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} ms`}
+                placement="left"
+              >
+                <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
+              </Tooltip>
+            )}{" "}
           {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
             <Tooltip title="Multiple Screens" placement="left">
               <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />

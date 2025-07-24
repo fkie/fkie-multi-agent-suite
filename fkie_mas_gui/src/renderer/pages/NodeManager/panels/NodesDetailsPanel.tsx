@@ -60,8 +60,10 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
   const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
 
   useEffect(() => {
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean)
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
@@ -578,7 +580,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                         dictionary[param.name] = param.value;
                         return dictionary;
                       }, {})}
-                      dark={settingsCtx.get("useDarkMode") as boolean}
+                      dark={isDarkMode}
                       theme="a11y"
                       enableClipboard={false}
                       ignoreLargeArray={false}

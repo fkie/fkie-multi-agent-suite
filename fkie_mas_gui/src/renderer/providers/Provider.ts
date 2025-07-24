@@ -50,6 +50,7 @@ import ConnectionState from "./ConnectionState";
 import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
 import RosProviderState from "./RosProviderState";
 import {
+  EVENT_NODE_DIAGNOSTIC,
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_DISCOVERED,
@@ -68,6 +69,7 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "./eventTypes";
 import {
+  EventNodeDiagnostic,
   EventProviderActivity,
   EventProviderDelay,
   EventProviderDiscovered,
@@ -864,6 +866,10 @@ export default class Provider implements IProvider {
     return this.rosTopics.find((item) => item.name === id.name && item.msg_type === id.msg_type);
   }
 
+  public getService(id: RosTopicId): RosService | undefined {
+    return this.rosServices.find((item) => item.name === id.name && item.srv_type === id.msg_type);
+  }
+
   /**
    * Get list of available service using the uri URI.ROS_NODES_GET_SERVICES
    */
@@ -1200,10 +1206,15 @@ export default class Provider implements IProvider {
     // update the screens
     const diagStatus = diags.status || [];
     for (const status of diagStatus) {
-      const matchingNode = this.rosNodes.find((node) => node.id === status.name);
+      const matchingNode: RosNode | undefined = this.rosNodes.find((node) => node.name === status.name);
       if (matchingNode) {
         matchingNode.diagnosticLevel = status.level;
         matchingNode.diagnosticMessage = status.message;
+        for (const value of status.values || []) {
+          if (value.key === "color") {
+            matchingNode.diagnosticColor = value.value;
+          }
+        }
         if (matchingNode.diagnosticStatus && matchingNode.diagnosticStatus.length === 0) {
           matchingNode.diagnosticStatus.push(status);
         } else if (matchingNode.diagnosticStatus) {
@@ -1217,12 +1228,9 @@ export default class Provider implements IProvider {
             matchingNode.diagnosticStatus.push(status);
           }
         }
+        emitCustomEvent(EVENT_NODE_DIAGNOSTIC, new EventNodeDiagnostic(this, matchingNode));
       }
     }
-    // emitCustomEvent(
-    //   EVENT_PROVIDER_DIAGNOSTICS,
-    //   new EventProviderDiagnostics(this, diags),
-    // );
     return Promise.resolve(true);
   };
 
@@ -1923,7 +1931,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as DiagnosticArray;
       }
-      this.logger?.error(`Provider [${this.id}]: Error at getDiagnostics()`, `${value.message}`);
+      this.logger?.error(`Provider [${this.id}]: Error at getDiagnostics()`, `${value.message}`, false);
       return null;
     });
     return Promise.resolve(result);

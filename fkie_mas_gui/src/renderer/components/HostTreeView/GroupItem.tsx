@@ -2,13 +2,17 @@ import CircleIcon from "@mui/icons-material/Circle";
 import { default as ContrastIcon } from "@mui/icons-material/Contrast";
 import ReportIcon from "@mui/icons-material/Report";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
+import { blue, green, grey, red, yellow } from "@mui/material/colors";
 import { TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
 import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
 import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
-import { forwardRef, LegacyRef } from "react";
+import { forwardRef, LegacyRef, useEffect, useState } from "react";
 
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
+import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
+import { EventNodeDiagnostic } from "@/renderer/providers/events";
+import { useCustomEventListener } from "react-custom-events";
+import { getDiagnosticColor } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 import { NodeTreeItem } from "./types";
 
@@ -133,21 +137,9 @@ function getGroupIconColor(treeItems: NodeTreeItem[], isDarkMode: boolean = fals
   const groupStatus = getGroupStatus(treeItems);
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
-      switch (getGroupDiagnosticLevel(treeItems)) {
-        case DiagnosticLevel.OK:
-          return isDarkMode ? green[600] : green[500];
-        case DiagnosticLevel.WARN:
-          return isDarkMode ? orange[600] : orange[400];
-        case DiagnosticLevel.ERROR:
-          return isDarkMode ? red[600] : red[500];
-        case DiagnosticLevel.STALE:
-          return isDarkMode ? yellow[700] : yellow[500];
-        default:
-          return isDarkMode ? blue[600] : blue[500];
-      }
-
+      return getDiagnosticColor(getGroupDiagnosticLevel(treeItems), isDarkMode);
     case GroupStatus.SOME_RUNNING:
-      return isDarkMode ? green[700] : green[500];
+      return getDiagnosticColor(getGroupDiagnosticLevel(treeItems), isDarkMode);
 
     case GroupStatus.ALL_INACTIVE:
       return isDarkMode ? grey[600] : grey[500];
@@ -189,15 +181,35 @@ function getNameFromLifecycle(state: number): string {
 
 interface GroupIconProps {
   treeItems: NodeTreeItem[];
+  groupName: string;
   isDarkMode: boolean;
 }
 
 export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function GroupIcon(props, ref) {
-  const { treeItems, isDarkMode = false } = props;
-  const groupStatus = getGroupStatus(treeItems);
-  const groupLifecycleStatus = getGroupLifecycleStatus(treeItems);
+  const { treeItems, groupName, isDarkMode = false } = props;
+  const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems));
+  const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
+  const [color, setColor] = useState<string>(getGroupIconColor(treeItems, isDarkMode));
 
-  const color = getGroupIconColor(treeItems, isDarkMode);
+  useEffect(() => {
+    setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems));
+    setGroupStatus(getGroupStatus(treeItems));
+  }, [treeItems]);
+
+  useEffect(() => {
+    setColor(getGroupIconColor(treeItems, isDarkMode));
+  }, [groupStatus]);
+
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+    // update group icon if the name of the node contains the group name
+    if (
+      data.node.name.indexOf(`${groupName}/`) > -1 ||
+      data.node.capabilityGroup.name === groupName ||
+      (data.node.system_node && groupName.startsWith("{"))
+    ) {
+      setColor(getGroupIconColor(treeItems, isDarkMode));
+    }
+  });
 
   if (groupLifecycleStatus === GroupLifecycleStatus.NO_ONE) {
     switch (groupStatus) {
@@ -227,7 +239,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
             </Tooltip>
           );
         }
-        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
       }
 
       case GroupStatus.SOME_RUNNING:
@@ -239,16 +251,16 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
             style={{
               marginRight: 0.5,
               width: 20,
-              color: getGroupIconColor(treeItems, isDarkMode),
+              color: color,
             }}
           />
         );
 
       case GroupStatus.ALL_INACTIVE:
-        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
 
       default:
-        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: getGroupIconColor(treeItems, isDarkMode) }} />;
+        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
     }
   }
 

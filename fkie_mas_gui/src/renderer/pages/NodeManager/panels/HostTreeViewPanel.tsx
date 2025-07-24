@@ -889,6 +889,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       if (p.connectionState === ConnectionState.STATES.CONNECTED) {
         p.updateRosNodes({}, forceRefresh);
         p.updateTimeDiff();
+        p.updateDiagnostics(null);
       }
     }
   }

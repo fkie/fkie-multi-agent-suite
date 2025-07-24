@@ -67,14 +67,29 @@ export function getDiagnosticStyle(lvl: DiagnosticLevel): object {
       };
     case DiagnosticLevel.STALE:
       return {
-        backgroundColor: "#FFD700", // yellow
-        color: "#8B4513",
-      };
-    default:
-      return {
         backgroundColor: "#2196f3", // nice blue
         color: "#2b2b2c",
       };
+    default:
+      return {
+        backgroundColor: "#FFD700", // yellow
+        color: "#8B4513",
+      };
+  }
+}
+
+export function getDiagnosticColor(lvl: DiagnosticLevel, isDarkMode: boolean): string {
+  switch (lvl) {
+    case DiagnosticLevel.OK:
+      return isDarkMode ? "#43a047" : "#43a047"; // green
+    case DiagnosticLevel.WARN:
+      return isDarkMode ? "#fb8c00" : "#ff9800"; // amber
+    case DiagnosticLevel.ERROR:
+      return isDarkMode ? "#e53935" : "#d32f2f"; // dark red
+    case DiagnosticLevel.STALE:
+      return isDarkMode ? "#1e88e5" : "#2196f3"; // nice blue
+    default:
+      return isDarkMode ? "#fbc02d" : "#FFD700"; // yellow
   }
 }
 
