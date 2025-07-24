@@ -109,6 +109,7 @@ class RosStateJsonify:
         self.monitor_servicer = monitor_servicer
         self._current_nodes: List[RosNode] = []
         self._last_known_nodes: List[NodeId] = []
+        self._local_node_names: List[str] = []
         self._composable_nodes: Dict[NodeFullName, NodeFullName] = {}
         self._local_addresses = get_local_addresses()
         self._participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
@@ -200,6 +201,9 @@ class RosStateJsonify:
     def get_topics(self) -> Dict[str, RosTopic]:
         return self._ros_topic_dict
 
+    def get_local_node_names(self) -> List[str]:
+        return self._local_node_names
+
     def apply_participants(self, msg: Participants):
         # update the participant info (IP addresses)
         new_ros_state = {}
@@ -240,6 +244,7 @@ class RosStateJsonify:
         lifecycle_transition_services: List[str] = []
         result: List[RosNode] = []
         cached_data.screens = screen.get_active_screens()
+        self._local_node_names = []
 
         if update_participants:
             self._ros_service_dict: Dict[str, RosService] = {}
@@ -444,6 +449,7 @@ class RosStateJsonify:
             if len(ros_node.process_ids) > 0:
                 ros_node.location = self._local_addresses
                 ros_node.is_local = True
+                self._local_node_names.append(full_name)
 
             data.node_dict[key] = ros_node
             return data.node_dict[key], True

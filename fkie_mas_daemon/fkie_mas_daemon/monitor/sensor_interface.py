@@ -51,7 +51,7 @@ class SensorInterface(object):
         if self.is_active() and self._interval > 0:
             self.start_timer(self._interval, self._start_check_sensor)
 
-    def last_state(self, ts_now: float = 0, filter_level: list = [], filter_ts: float = 0):
+    def last_state(self, ts_now: float = 0, filter_level: int = 0, filter_ts: float = 0):
         '''
         :param float ts_now: current timestamp
         :param int filter_level: minimal level
@@ -61,7 +61,7 @@ class SensorInterface(object):
         '''
         with self.mutex:
             if self._ts_last > 0:
-                if self._ts_last > filter_ts and self._stat_msg.level in filter_level:
+                if self._ts_last > filter_ts and int.from_bytes(self._stat_msg.level, byteorder='big') >= filter_level:
                     self.update_value_last_ts(
                         self._stat_msg, ts_now, self._ts_last)
                     return self._stat_msg

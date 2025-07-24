@@ -214,6 +214,7 @@ class RosStateServicer:
                         self._ros_service_dict = self._state_jsonify.get_services()
                         self._ros_topic_dict = self._state_jsonify.get_topics()
                         self._ts_state_notified = self._state_jsonify.timestamp_state()
+                        self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
                         self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
                 except Exception:
                     import traceback

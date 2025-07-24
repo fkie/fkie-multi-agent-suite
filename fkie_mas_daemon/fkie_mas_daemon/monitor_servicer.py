@@ -65,6 +65,9 @@ class MonitorServicer:
             Log.info(f"{self.__class__.__name__}: ros.provider.warnings with {count_warnings} warnings in {len(self._warning_groups)} groups")
             self.websocket.publish('ros.provider.warnings', list(self._warning_groups.values()))
 
+    def update_local_node_names(self, local_nodes: List[str]):
+        self._monitor.update_local_node_names(local_nodes)
+
     def getSystemInfo(self) -> SystemInformation:
         Log.info(f"{self.__class__.__name__}: request: get system info")
         return json.dumps(SystemInformation(), cls=SelfEncoder)
@@ -77,31 +80,36 @@ class MonitorServicer:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_warnings]")
         return json.dumps(list(self._warning_groups.values()), cls=SelfEncoder)
 
-    def _toJsonDiagnostics(self, rosmsg):
+    def _toJsonDiagnostics(self, ros_msg):
         cbMsg = DiagnosticArray(
-            timestamp=float(rosmsg.header.stamp.sec)
-            + float(rosmsg.header.stamp.nanosec) / 1000000000.0, status=[]
+            timestamp=float(ros_msg.header.stamp.sec)
+            + float(ros_msg.header.stamp.nanosec) / 1000000000.0, status=[]
         )
-        for sensor in rosmsg.status:
+        for sensor in ros_msg.status:
             values = []
             for v in sensor.values:
                 values.append(DiagnosticStatus.KeyValue(v.key, v.value))
-            level = int.from_bytes(sensor.level, byteorder='big')
+            level = 0
+            try:
+                level = int.from_bytes(sensor.level, byteorder='big')
+            except:
+                pass
             status = DiagnosticStatus(
                 level, sensor.name, sensor.message, sensor.hardware_id, values
             )
             cbMsg.status.append(status)
         return cbMsg
 
-    def diagnosticsCbPublisher(self, rosmsg):
+    def diagnosticsCbPublisher(self, ros_msg):
         self.websocket.publish("ros.provider.diagnostics",
-                               json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),)
+                               json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder),)
 
     def getDiagnostics(self) -> DiagnosticArray:
         Log.info(f"{self.__class__.__name__}: request: get diagnostics")
-        rosmsg = self._monitor.get_diagnostics(0, 0)
+        ros_msg = self._monitor.get_diagnostics(0, 0)
+        ros_msg.status.extend(self._monitor.get_system_diagnostics(0, 0.0).status)
         # copy message to the JSON structure
-        return json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder)
+        return json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder)
 
     def rosCleanPurge(self) -> {bool, str}:
         Log.info(f"{self.__class__.__name__}: request: ros_clean_purge")

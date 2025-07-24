@@ -7,6 +7,7 @@
 # ****************************************************************************
 
 
+from typing import List
 import threading
 import time
 
@@ -48,7 +49,7 @@ class DiagnosticObj(DiagnosticStatus):
 
 class Service:
 
-    DEBOUNCE_DIAGNOSTICS = 1.0
+    DEBOUNCE_DIAGNOSTICS = 0.5
 
     def __init__(self, settings: Settings, callbackDiagnostics=None):
         self._clock = Clock()
@@ -58,15 +59,12 @@ class Service:
         self._update_last_ts = 0
         self._update_timer = None
         self._callbackDiagnostics = callbackDiagnostics
-        self.use_diagnostics_agg = settings.param(
-            'global/use_diagnostics_agg', True)
         self._sub_diag = None
-        if self.use_diagnostics_agg:
-            self._sub_diag = nmd.ros_node.create_subscription(
-                DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
-        else:
-            self._sub_diag = nmd.ros_node.create_subscription(
-                DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
+        self._local_nodes: List[str] = []
+        self._sub_diag_agg = nmd.ros_node.create_subscription(
+            DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics_agg, 10)
+        self._sub_diag = nmd.ros_node.create_subscription(
+            DiagnosticArray, 'diagnostics', self._callback_diagnostics, 10)
         hostname = get_host_name()
 
         self.sensors = []
@@ -80,24 +78,18 @@ class Service:
         self._settings.add_reload_listener(self.reload_parameter)
 
     def reload_parameter(self, settings: Settings):
-        value = settings.param('global/use_diagnostics_agg', False)
-        if value != self.use_diagnostics_agg:
-            if self._sub_diag is not None:
-                nmd.ros_node.destroy_subscription(self._sub_diag)
-                self._sub_diag = None
-            if value:
-                self._sub_diag = nmd.ros_node.create_subscription(
-                    DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
-            else:
-                self._sub_diag = nmd.ros_node.create_subscription(
-                    DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
-            self.use_diagnostics_agg = value
+        pass
 
-    def _callback_diagnostics(self, msg: DiagnosticArray):
-        # TODO: update diagnostics
+    def update_local_node_names(self, local_nodes: List[str]):
+        with self._mutex:
+            self._local_nodes = local_nodes
+
+    def _callback_diagnostics_agg(self, msg: DiagnosticArray):
+        # aggregated diagnostics are stored
         with self._mutex:
             stamp = float(msg.header.stamp.sec) + \
                 float(msg.header.stamp.nanosec) / 1000000000.0
+            stamp = time.time()
             for status in msg.status:
                 try:
                     idx = self._diagnostics.index(status)
@@ -109,14 +101,29 @@ class Service:
                     diag_obj.timestamp = stamp
                     self._diagnostics.append(diag_obj)
             if self._callbackDiagnostics:
-                if stamp - self._update_last_ts > self.DEBOUNCE_DIAGNOSTICS * 2.0:
+                now = time.time()
+                if now - self._update_last_ts > self.DEBOUNCE_DIAGNOSTICS:
                     # at the first message, send immediately
-                    self._update_last_ts = stamp
+                    self._update_last_ts = now
                     self._callbackDiagnostics(msg)
                 elif self._update_timer is None:
                     # start the timer
                     self._update_timer = threading.Timer(
                         self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
+                    self._update_timer.start()
+
+    def _callback_diagnostics(self, msg: DiagnosticArray):
+        # diagnostic messages are forwarded immediately and not stored
+        # forward only status message which has name of local nodes.
+        if self._callbackDiagnostics:
+            filteredMsg = DiagnosticArray()
+            filteredMsg.header = msg.header
+            with self._mutex:
+                for status in msg.status:
+                    if status.name in self._local_nodes:
+                        filteredMsg.status.append(status)
+            if len(filteredMsg.status) > 0:
+                self._callbackDiagnostics(filteredMsg)
 
     def _publish_diagnostics(self):
         diags = self.get_diagnostics(0, self._update_last_ts)
@@ -132,10 +139,14 @@ class Service:
             now = self._clock.now()
             result.header.stamp = self._clock.now().to_msg()
             for sensor in self.sensors:
-                diag_msg = sensor.last_state(
-                    rostime2float(now), filter_level, filter_ts)
-                if diag_msg is not None:
-                    result.status.append(diag_msg)
+                try:
+                    diag_msg = sensor.last_state(
+                        rostime2float(now), filter_level, filter_ts)
+                    if diag_msg is not None:
+                        result.status.append(diag_msg)
+                except:
+                    import traceback
+                    print(traceback.print_exc())
         return result
 
     def get_diagnostics(self, filter_level: int, filter_ts: float = 0):
