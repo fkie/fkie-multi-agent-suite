@@ -352,12 +352,13 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
               >
                 {`${topicId.name}`}
               </Button>
+              {showInfo && <CopyButton value={topicId.name} fontSize="0.7em" />}
             </Stack>
           );
         })}
       </Stack>
     );
-  }, [allTopics, showConnections]);
+  }, [allTopics, showConnections, showInfo]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createExtendedInfo = useMemo(() => {
