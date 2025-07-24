@@ -18,6 +18,7 @@ import { LoggingContext } from "@/renderer/context/LoggingContext";
 import RosContext from "@/renderer/context/RosContext";
 import { RosParameter, RosParameterRange, RosParameterValue } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
+import { treeItemClasses } from "@mui/x-tree-view";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -340,6 +341,11 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
     <StyledTreeItem
       itemId={itemId}
       ref={ref as LegacyRef<HTMLLIElement>}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: 0,
+        },
+      }}
       label={
         <Box
           sx={{

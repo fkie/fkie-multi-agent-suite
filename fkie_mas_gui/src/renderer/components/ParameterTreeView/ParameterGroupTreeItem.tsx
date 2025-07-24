@@ -2,9 +2,10 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Box, CircularProgress, Stack, SvgIconTypeMap, Tooltip, Typography } from "@mui/material";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useCallback, useContext } from "react";
 
@@ -47,9 +48,16 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
             borderLeftStyle: "solid",
             borderLeftColor: colorFromHostname(providerName),
             borderLeftWidth: "0.6em",
+            [`& .${treeItemClasses.content}`]: {
+              paddingLeft: 0,
+            },
           };
         }
-        return {};
+        return {
+          [`& .${treeItemClasses.content}`]: {
+            paddingLeft: 0,
+          },
+        };
       },
       [providerName, settingsCtx.changed]
     );

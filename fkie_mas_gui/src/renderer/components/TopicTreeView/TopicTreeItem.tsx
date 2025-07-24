@@ -1,5 +1,6 @@
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
+import { treeItemClasses } from "@mui/x-tree-view";
 import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
@@ -36,10 +37,16 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   const [incompatibleQos, setIncompatibleQos] = useState<IncompatibleQos[]>([]);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+  }, [settingsCtx, settingsCtx.changed]);
 
   const getHostStyle = useCallback(
     function getHostStyle(providerName: string): object {
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+      if (providerName && colorizeHosts) {
         return {
           flexGrow: 1,
           alignItems: "center",
@@ -48,7 +55,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
           borderLeftWidth: "0.6em",
         };
       }
-      return { flexGrow: 1, alignItems: "center" };
+      return { flexGrow: 1, alignItems: "center", paddingLeft: 0 };
     },
     [settingsCtx.changed]
   );
@@ -220,6 +227,11 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
     <StyledTreeItem
       itemId={itemId}
       ref={ref as LegacyRef<HTMLLIElement>}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: 0,
+        },
+      }}
       label={
         <Stack
           direction="column"
@@ -338,7 +350,12 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
               {topicInfo.publishers.map((item: EndpointExtendedInfo) => {
                 const pubNodeName = removeDDSuid(item.info.node_id);
                 return (
-                  <Stack key={item.info.node_id} paddingLeft={3} direction="row" sx={getHostStyle(item.providerName)}>
+                  <Stack
+                    key={`${item.providerId}-${item.info.node_id}`}
+                    paddingLeft={3}
+                    direction="row"
+                    sx={getHostStyle(item.providerName)}
+                  >
                     <Typography
                       fontSize="small"
                       onClick={() => {
@@ -361,7 +378,7 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
                 const subNodeName = removeDDSuid(item.info.node_id);
                 return (
                   <Stack
-                    key={item.info.node_id}
+                    key={`${item.providerId}-${item.info.node_id}`}
                     paddingLeft={3}
                     spacing={1}
                     direction="row"

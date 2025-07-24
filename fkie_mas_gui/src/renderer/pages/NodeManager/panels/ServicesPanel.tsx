@@ -70,37 +70,21 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     const newServicesMap = new Map();
     for (const provider of rosCtx.providers) {
       for (const service of provider.rosServices) {
-        const key = genKey([provider.id, service.name, service.srv_type]);
-        const serviceInfo = newServicesMap.get(key);
-        if (serviceInfo) {
-          service.provider?.map((item) => {
-            serviceInfo.addProvider(item.split("-")[0], item);
-          });
-          service.requester?.map((item) => {
-            serviceInfo.addRequester(item.split("-")[0], item);
-          });
-        } else {
-          const serviceInfo = new ServiceExtendedInfo(service, provider.id, provider.name());
-          service.provider?.map((item) => {
-            serviceInfo.addProvider(item.split("-")[0], item);
-          });
-          service.requester?.map((item) => {
-            serviceInfo.addRequester(item.split("-")[0], item);
-          });
+        const key = genKey([service.name, service.srv_type]);
+        let serviceInfo: ServiceExtendedInfo = newServicesMap.get(key);
+        if (!serviceInfo) {
+          serviceInfo = new ServiceExtendedInfo(service);
           newServicesMap.set(key, serviceInfo);
+        }
+        for (const rosNode of provider.rosNodes) {
+          serviceInfo.add(rosNode);
         }
       }
     }
 
     const newServices: ServiceExtendedInfo[] = Array.from(newServicesMap.values());
     newServices.sort((a, b) => {
-      // sort groups first
-      const aCountSep = (a.name.match(/\//g) || []).length;
-      const bCountSep = (b.name.match(/\//g) || []).length;
-      if (aCountSep === bCountSep) {
-        return a.name.localeCompare(b.name);
-      }
-      return aCountSep < bCountSep ? 1 : -1;
+      return a.name.localeCompare(b.name);
     });
     setServices(newServices);
   }
@@ -157,9 +141,9 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     emitCustomEvent(
       EVENT_OPEN_COMPONENT,
       eventOpenComponent(
-        `call-service-${service.name}-${service.providerId}}`,
+        `call-service-${service.id}}`,
         `Call Service - ${service.name}`,
-        <ServiceCallerPanel serviceName={service.name} serviceType={service.srvType} providerId={service.providerId} />,
+        <ServiceCallerPanel serviceName={service.name} serviceType={service.srvType} providerId={service.nodeProviders[0]?.providerId} />,
         true,
         LAYOUT_TAB_SETS.BORDER_RIGHT,
         new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
@@ -284,8 +268,8 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
       if (treeItem.serviceInfo) {
         return (
           <ServiceTreeItem
-            key={genKey([treeItem.serviceInfo.name, treeItem.srvType, treeItem.serviceInfo.providerId])}
-            itemId={genKey([treeItem.serviceInfo.name, treeItem.srvType, treeItem.serviceInfo.providerId])}
+            key={genKey([treeItem.serviceInfo.name, treeItem.srvType])}
+            itemId={genKey([treeItem.serviceInfo.name, treeItem.srvType])}
             rootPath={rootPath}
             serviceInfo={treeItem.serviceInfo}
             selectedItem={selectedItem}
@@ -319,7 +303,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
 
   useEffect(() => {
     const selectedServices = filteredServices.filter((item) => {
-      return genKey([item.name, item.srvType, item.providerId]) === selectedItem;
+      return genKey([item.name, item.srvType]) === selectedItem;
     });
     if (selectedServices?.length >= 0) {
       setServiceForSelected(selectedServices[0]);

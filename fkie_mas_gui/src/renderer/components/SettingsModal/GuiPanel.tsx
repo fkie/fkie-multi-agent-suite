@@ -92,16 +92,15 @@ export default function GuiPanel(): JSX.Element {
 
   function createGroups(): void {
     const groupedDict: { [group: string]: { name: string; param: ISettingsParam }[] } = {};
-    settingsCtx.getParamList().forEach(({ name, param }) => {
-      values[name] = settingsCtx.get(name);
-      if (filter.length <= 1 || name.toLocaleLowerCase().includes(filter)) {
-        const group = param.group ? param.group : "Application";
+    for (const item of settingsCtx.getParamList()) {
+      if (filter.length <= 1 || item.name.toLocaleLowerCase().includes(filter)) {
+        const group = item.param.group ? item.param.group : "Application";
         if (!groupedDict[group]) {
           groupedDict[group] = [];
         }
-        groupedDict[group].push({ name, param });
+        groupedDict[group].push(item);
       }
-    });
+    }
     const newGrouped: IGroupEntry[] = [];
     for (const key of Object.keys(groupedDict)) {
       newGrouped.push({ group: key, params: groupedDict[key], forceExpanded: filter.length > 1 });

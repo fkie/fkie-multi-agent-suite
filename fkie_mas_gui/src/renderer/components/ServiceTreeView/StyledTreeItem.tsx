@@ -31,6 +31,9 @@ const StyledTreeItem = styled(TreeItem)(({ theme }) => ({
       padding: theme.spacing(0),
       width: 15,
     },
+    [`& .${treeItemClasses.content}`]: {
+      paddingLeft: 0
+    },
   },
   [`& .${treeItemClasses.groupTransition}`]: {
     marginLeft: 15,

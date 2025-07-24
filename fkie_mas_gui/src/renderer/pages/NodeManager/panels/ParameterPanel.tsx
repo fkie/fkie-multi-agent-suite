@@ -222,7 +222,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
                 "Many ROS nodes must be queried. This can take some time and affect other functions of the GUI during this time."
               }
             </AlertTitle>
-            {"Use the filter and then click on refresh."}
+            {"Use the filter and then click on refresh. And then delete filter!"}
           </Alert>
         )}
         {createParameterItems}

@@ -91,9 +91,9 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (!rosCtx.initialized) return;
 
     function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
-      const topicInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
+      const topicInfo: TopicExtendedInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
       if (topicInfo) {
-        topicInfo.add(rosTopic, rosNode);
+        topicInfo.add(rosNode);
       } else {
         newTopicsMap.set(genKey([rosTopic.name, rosTopic.msg_type]), new TopicExtendedInfo(rosTopic, rosNode));
       }
@@ -103,17 +103,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     // Get topics from the ros node list of each provider.
     for (const provider of rosCtx.providers) {
       for (const topic of provider.rosTopics) {
-        for (const pub of topic.publisher || []) {
-          const rosNode = provider.rosNodes.find((node: RosNode) => node.id === pub.node_id);
-          if (rosNode) {
-            addTopic(topic, rosNode);
-          }
-        }
-        for (const sub of topic.subscriber || []) {
-          const rosNode = provider.rosNodes.find((node: RosNode) => node.id === sub.node_id);
-          if (rosNode) {
-            addTopic(topic, rosNode);
-          }
+        for (const rosNode of provider.rosNodes) {
+          addTopic(topic, rosNode);
         }
       }
     }

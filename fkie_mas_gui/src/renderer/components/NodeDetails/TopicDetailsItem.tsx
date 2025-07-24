@@ -16,9 +16,9 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Button, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
-import { forwardRef, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { forwardRef, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import { CopyButton } from "../UI";
+import { colorFromHostname, CopyButton } from "../UI";
 
 type TopicDetailsItemsProps = {
   providerId: string | undefined;
@@ -33,14 +33,16 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
   const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
-  const [allTopics, setAllTopics] = useState<TopicExtendedInfo[]>([]);
+  const [topicInfo, setTopicInfo] = useState<TopicExtendedInfo | undefined>(undefined);
   const [showInfo, setShowInfo] = useState<boolean>(false);
   const [hasIncompatibleQos, setHasIncompatibleQos] = useState<boolean>(false);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
   }, [settingsCtx, settingsCtx.changed]);
 
   function onEchoClick(topic: TopicExtendedInfo, external: boolean = false, openInTerminal: boolean = false): void {
@@ -65,62 +67,54 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
     if (providerId) {
       const provider = rosCtx.getProviderById(providerId);
       if (provider) {
-        const rosTopics: RosTopic[] = provider?.rosTopics.filter(
-          (item) => item.name === topicId.name && item.msg_type === topicId.msg_type
-        );
-        // setAllTopics(rosTopics);
-        setAllTopics(
-          rosTopics.map((rt: RosTopic) => {
-            let topicInfo: TopicExtendedInfo | undefined = undefined;
-            function addNode(rosTopic: RosTopic, rosNode: RosNode): void {
-              if (topicInfo) {
-                topicInfo.add(rosTopic, rosNode);
-              } else {
-                topicInfo = new TopicExtendedInfo(rt, rosNode);
-              }
-            }
-            // Get topics from the ros node list of each provider.
-            for (const provider of rosCtx.providers) {
-              for (const pub of rt.publisher || []) {
-                const rosNode = provider.rosNodes.find((node: RosNode) => node.id === pub.node_id);
-                if (rosNode) {
-                  addNode(rt, rosNode);
-                }
-              }
-              for (const sub of rt.subscriber || []) {
-                const rosNode = provider.rosNodes.find((node: RosNode) => node.id === sub.node_id);
-                if (rosNode) {
-                  addNode(rt, rosNode);
-                }
-              }
-            }
-            return (
-              topicInfo || new TopicExtendedInfo(rt, { providerId: providerId, providerName: providerId } as RosNode)
-            );
-          })
-        );
+        const rosTopic: RosTopic | undefined = provider?.getTopic(topicId);
+        if (!rosTopic) {
+          setTopicInfo(undefined);
+          return;
+        }
+        const newTopicInfo: TopicExtendedInfo = new TopicExtendedInfo(rosTopic);
+        // Get topics from the ros node list of each provider.
+        for (const provider of rosCtx.providers) {
+          for (const rosNode of provider.rosNodes) {
+            // add node to publisher and subscriber
+            newTopicInfo.add(rosNode);
+          }
+        }
+        setTopicInfo(newTopicInfo);
         // check for incompatible qos
         let foundIncompatibleQos = false;
-        for (const rt of rosTopics) {
-          if (foundIncompatibleQos) break;
-          for (const sub of rt.subscriber || []) {
-            if (sub.incompatible_qos) {
-              foundIncompatibleQos = true;
-              break;
-            }
+        for (const sub of rosTopic.subscriber || []) {
+          if (sub.incompatible_qos) {
+            foundIncompatibleQos = true;
+            break;
           }
-          for (const pub of rt.publisher || []) {
-            if (pub.incompatible_qos) {
-              foundIncompatibleQos = true;
-              break;
-            }
+        }
+        for (const pub of rosTopic.publisher || []) {
+          if (pub.incompatible_qos) {
+            foundIncompatibleQos = true;
+            break;
           }
-          if (foundIncompatibleQos) break;
         }
         setHasIncompatibleQos(foundIncompatibleQos);
       }
     }
   }
+
+  const getHostStyle = useCallback(
+    function getHostStyle(providerName: string): object {
+      if (providerName && colorizeHosts) {
+        return {
+          flexGrow: 1,
+          alignItems: "center",
+          borderLeftStyle: "solid",
+          borderLeftColor: colorFromHostname(providerName),
+          borderLeftWidth: "0.5em",
+        };
+      }
+      return { flexGrow: 1, alignItems: "center" };
+    },
+    [settingsCtx.changed]
+  );
 
   useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
     updateTopicList();
@@ -258,212 +252,215 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createInfo = useMemo(() => {
+    if (!topicInfo) return <></>;
     return (
       <Stack direction="row" alignItems="center" spacing={0}>
-        {allTopics.map((rt: TopicExtendedInfo, index: number) => {
+        <Stack
+          key={`pub-sub-${topicInfo.id}`}
+          alignItems="center"
+          direction="row"
+          margin={0}
+          spacing={"0.1em"}
+          style={{ display: "flex", flexGrow: 1, borderBottom: `1px solid ${alpha(grey[600], 0.4)}` }}
+        >
+          <Chip
+            size="small"
+            onClick={() => {
+              onPublishClick(topicInfo);
+            }}
+            avatar={
+              <Tooltip title="Create a publisher" placement="left" enterDelay={tooltipDelay} disableInteractive>
+                <PlayArrowRoundedIcon style={{ padding: 1, color: "#09770fff" }} fontSize="inherit" />
+              </Tooltip>
+            }
+            label={
+              showConnections && (
+                <Typography
+                  fontSize="inherit"
+                  color={(topicInfo.publishers || []).length === 0 ? "warning" : "default"}
+                >
+                  {topicInfo.publishers ? topicInfo.publishers.length : 0}
+                </Typography>
+              )
+            }
+          />
+          <Chip
+            size="small"
+            onClick={(event) => {
+              onEchoClick(
+                topicInfo,
+                event.nativeEvent.shiftKey,
+                event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
+              );
+            }}
+            avatar={
+              <Tooltip
+                title={
+                  <Stack padding={0} margin={0}>
+                    <Typography fontWeight="bold" fontSize="inherit">
+                      Create a subscriber
+                    </Typography>
+                    <Stack direction="row" spacing={"0.2em"}>
+                      <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                        Shift:
+                      </Typography>
+                      <Typography fontSize={"inherit"}>alternative open location</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={"0.2em"}>
+                      <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                        Ctrl+Shift:
+                      </Typography>
+                      <Typography fontSize={"inherit"}>open in a terminal</Typography>
+                    </Stack>
+                  </Stack>
+                }
+                placement="left"
+                enterDelay={tooltipDelay}
+                disableInteractive
+              >
+                <ChatBubbleOutlineIcon
+                  style={{ paddingLeft: 3, paddingRight: 0, color: "#6c50e9ff" }}
+                  fontSize="inherit"
+                />
+              </Tooltip>
+            }
+            label={
+              showConnections && (
+                <Typography fontSize="inherit" color={(topicInfo.subscribers || []).length > 0 ? "default" : "warning"}>
+                  {topicInfo.subscribers ? topicInfo.subscribers.length : 0}
+                </Typography>
+              )
+            }
+          />
+          {hasIncompatibleQos && (
+            <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
+              <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
+            </Tooltip>
+          )}
+          <Button
+            size="small"
+            style={{
+              marginLeft: "0.2em",
+              textTransform: "none",
+              justifyContent: "left",
+            }}
+            onClick={() => setShowInfo((prev) => !prev)}
+            onDoubleClick={() => {
+              navigator.clipboard.writeText(topicId.name);
+              logCtx.info(`${topicId.name} copied`);
+            }}
+          >
+            {`${topicId.name}`}
+          </Button>
+          {showInfo && <CopyButton value={topicId.name} fontSize="0.7em" />}
+        </Stack>
+      </Stack>
+    );
+  }, [topicInfo, showConnections, showInfo]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  const createExtendedInfo = useMemo(() => {
+    if (!topicInfo) return <></>;
+    return (
+      <Stack
+        key={`info-${topicInfo.id}`}
+        style={{ marginLeft: 15, paddingLeft: 5, borderLeft: `1px dashed ${alpha(grey[600], 0.4)}` }}
+      >
+        <Stack direction="row" alignItems="center" spacing="0.3em">
+          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+            Type:
+          </Typography>
+          <Typography fontSize="small">{topicInfo.msgType}</Typography>
+          <CopyButton value={topicInfo.msgType} fontSize="0.7em" />
+        </Stack>
+        <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+          Publisher [{topicInfo.publishers?.length || 0}]:
+        </Typography>
+        {topicInfo.publishers?.map((item: EndpointExtendedInfo) => {
+          const pubNodeName = removeDDSuid(item.info.node_id);
           return (
-            <Stack
-              key={`pub-sub-${rt.name}-${index}`}
-              alignItems="center"
-              direction="row"
-              margin={0}
-              spacing={"0.1em"}
-              style={{ display: "flex", flexGrow: 1, borderBottom: `1px solid ${alpha(grey[600], 0.4)}` }}
-            >
-              <Chip
-                size="small"
-                onClick={() => {
-                  onPublishClick(rt);
-                }}
-                avatar={
-                  <Tooltip title="Create a publisher" placement="left" enterDelay={tooltipDelay} disableInteractive>
-                    <PlayArrowRoundedIcon style={{ padding: 1, color: "#09770fff" }} fontSize="inherit" />
-                  </Tooltip>
-                }
-                label={
-                  showConnections && (
-                    <Typography fontSize="inherit" color={(rt.publishers || []).length === 0 ? "warning" : "default"}>
-                      {rt.publishers ? rt.publishers.length : 0}
-                    </Typography>
-                  )
-                }
-              />
-              <Chip
-                size="small"
-                onClick={(event) => {
-                  onEchoClick(rt, event.nativeEvent.shiftKey, event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey);
-                }}
-                avatar={
-                  <Tooltip
-                    title={
-                      <Stack padding={0} margin={0}>
-                        <Typography fontWeight="bold" fontSize="inherit">
-                          Create a subscriber
-                        </Typography>
-                        <Stack direction="row" spacing={"0.2em"}>
-                          <Typography fontWeight={"bold"} fontSize={"inherit"}>
-                            Shift:
-                          </Typography>
-                          <Typography fontSize={"inherit"}>alternative open location</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={"0.2em"}>
-                          <Typography fontWeight={"bold"} fontSize={"inherit"}>
-                            Ctrl+Shift:
-                          </Typography>
-                          <Typography fontSize={"inherit"}>open in a terminal</Typography>
-                        </Stack>
-                      </Stack>
-                    }
-                    placement="left"
-                    enterDelay={tooltipDelay}
-                    disableInteractive
-                  >
-                    <ChatBubbleOutlineIcon
-                      style={{ paddingLeft: 3, paddingRight: 0, color: "#6c50e9ff" }}
-                      fontSize="inherit"
-                    />
-                  </Tooltip>
-                }
-                label={
-                  showConnections && (
-                    <Typography fontSize="inherit" color={(rt.subscribers || []).length > 0 ? "default" : "warning"}>
-                      {rt.subscribers ? rt.subscribers.length : 0}
-                    </Typography>
-                  )
-                }
-              />
-              {hasIncompatibleQos && (
-                <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
-                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
+            <Stack key={item.info.node_id} paddingLeft={"0.5em"} alignItems="center" direction="row" spacing="0.5em" style={getHostStyle(item.providerName)}>
+              {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
+                <Tooltip
+                  title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
+                  placement="right"
+                  disableInteractive
+                >
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
                 </Tooltip>
               )}
               <Button
                 size="small"
                 style={{
-                  marginLeft: "0.2em",
+                  marginLeft: "0.3em",
                   textTransform: "none",
                   justifyContent: "left",
+                  padding: 0,
+                  color: "#09770fff",
                 }}
-                onClick={() => setShowInfo((prev) => !prev)}
-                onDoubleClick={() => {
-                  navigator.clipboard.writeText(topicId.name);
-                  logCtx.info(`${topicId.name} copied`);
+                onClick={() => {
+                  const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
+                  navCtx.setSelectedNodes([id], true);
+                  // inform details panel tab about selected nodes by user
+                  emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                 }}
               >
-                {`${topicId.name}`}
+                {pubNodeName}
               </Button>
-              {showInfo && <CopyButton value={topicId.name} fontSize="0.7em" />}
+              <CopyButton value={pubNodeName} fontSize="0.7em" />
             </Stack>
           );
         })}
+        <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+          Subscriber [{topicInfo.subscribers.length || 0}]:
+        </Typography>
+        {topicInfo.subscribers.map((item: EndpointExtendedInfo) => {
+          const subNodeName = removeDDSuid(item.info.node_id);
+          return (
+            <Stack key={item.info.node_id} paddingLeft={"0.5em"} alignItems="center" direction="row" spacing="0.5em" style={getHostStyle(item.providerName)}>
+              {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
+                <Tooltip
+                  title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
+                  placement="right"
+                  disableInteractive
+                >
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                </Tooltip>
+              )}
+              <Button
+                size="small"
+                style={{
+                  marginLeft: "0.3em",
+                  textTransform: "none",
+                  justifyContent: "left",
+                  padding: 0,
+                  color: "#6c50e9ff",
+                }}
+                onClick={() => {
+                  // ${item.providerId}
+                  const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
+                  navCtx.setSelectedNodes([id], true);
+                  // inform details panel tab about selected nodes by user
+                  emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
+                }}
+              >
+                {subNodeName}
+              </Button>
+              <CopyButton value={subNodeName} fontSize="0.7em" />
+            </Stack>
+          );
+        })}
+        {topicInfo?.hasQos && (
+          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+            Qos profiles:
+          </Typography>
+        )}
+        {topicInfo?.hasQos && createReliabilityItem(topicInfo)}
+        {topicInfo?.hasQos && createDurabilityItem(topicInfo)}
+        {topicInfo?.hasQos && createLivelinessItem(topicInfo)}
       </Stack>
     );
-  }, [allTopics, showConnections, showInfo]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  const createExtendedInfo = useMemo(() => {
-    return allTopics.map((rt: TopicExtendedInfo, index: number) => {
-      return (
-        <Stack
-          key={`info-${rt.name}-${index}`}
-          style={{ marginLeft: 15, paddingLeft: 5, borderLeft: `1px dashed ${alpha(grey[600], 0.4)}` }}
-        >
-          <Stack direction="row" alignItems="center" spacing="0.3em">
-            <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-              Type:
-            </Typography>
-            <Typography fontSize="small">{rt.msgType}</Typography>
-            <CopyButton value={rt.msgType} fontSize="0.7em" />
-          </Stack>
-          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-            Publisher [{rt.publishers?.length || 0}]:
-          </Typography>
-          {rt.publishers?.map((item: EndpointExtendedInfo) => {
-            const pubNodeName = removeDDSuid(item.info.node_id);
-            return (
-              <Stack key={item.info.node_id} paddingLeft={"1em"} alignItems="center" direction="row" spacing="0.5em">
-                {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
-                  <Tooltip
-                    title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
-                    placement="right"
-                    disableInteractive
-                  >
-                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
-                  </Tooltip>
-                )}
-                <Button
-                  size="small"
-                  style={{
-                    marginLeft: "0.3em",
-                    textTransform: "none",
-                    justifyContent: "left",
-                    padding: 0,
-                    color: "#09770fff",
-                  }}
-                  onClick={() => {
-                    const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                    navCtx.setSelectedNodes([id], true);
-                    // inform details panel tab about selected nodes by user
-                    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
-                  }}
-                >
-                  {pubNodeName}
-                </Button>
-                <CopyButton value={pubNodeName} fontSize="0.7em" />
-              </Stack>
-            );
-          })}
-          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-            Subscriber [{rt.subscribers.length || 0}]:
-          </Typography>
-          {rt.subscribers.map((item: EndpointExtendedInfo) => {
-            const subNodeName = removeDDSuid(item.info.node_id);
-            return (
-              <Stack key={item.info.node_id} paddingLeft={"1em"} alignItems="center" direction="row" spacing="0.5em">
-                {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
-                  <Tooltip
-                    title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
-                    placement="right"
-                    disableInteractive
-                  >
-                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
-                  </Tooltip>
-                )}
-                <Button
-                  size="small"
-                  style={{
-                    marginLeft: "0.3em",
-                    textTransform: "none",
-                    justifyContent: "left",
-                    padding: 0,
-                    color: "#6c50e9ff",
-                  }}
-                  onClick={() => {
-                    // ${item.providerId}
-                    const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                    navCtx.setSelectedNodes([id], true);
-                    // inform details panel tab about selected nodes by user
-                    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
-                  }}
-                >
-                  {subNodeName}
-                </Button>
-                <CopyButton value={subNodeName} fontSize="0.7em" />
-              </Stack>
-            );
-          })}
-          {rt?.hasQos && (
-            <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-              Qos profiles:
-            </Typography>
-          )}
-          {rt?.hasQos && createReliabilityItem(rt)}
-          {rt?.hasQos && createDurabilityItem(rt)}
-          {rt?.hasQos && createLivelinessItem(rt)}
-        </Stack>
-      );
-    });
-  }, [allTopics]);
+  }, [topicInfo]);
 
   return (
     <Stack direction="column" alignItems="left" spacing={0} ref={ref}>

@@ -1,8 +1,9 @@
 import { Box, Stack, Typography } from "@mui/material";
 import {
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useContext } from "react";
 
@@ -47,6 +48,11 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
             iconContainer: { onClick: handleIconContainerClick },
           } as TreeItemSlotProps
         }
+        sx={{
+          [`& .${treeItemClasses.content}`]: {
+            paddingLeft: "8px",
+          },
+        }}
         label={
           <Stack direction="column">
             <Box
@@ -67,7 +73,7 @@ const ServiceGroupTreeItem = forwardRef<HTMLDivElement, ServiceGroupTreeItemProp
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(`${rootPath}${groupName}`);
-                      logCtx.success(`${rootPath}${groupName} copied!`);
+                      logCtx.info(`${rootPath}${groupName} copied!`);
                       e.stopPropagation();
                     }
                   }}

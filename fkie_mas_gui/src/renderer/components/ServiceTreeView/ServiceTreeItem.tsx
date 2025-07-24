@@ -5,6 +5,7 @@ import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
+import { treeItemClasses } from "@mui/x-tree-view";
 import { colorFromHostname } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -40,21 +41,27 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
   const [selected, setSelected] = useState(false);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+  }, [settingsCtx, settingsCtx.changed]);
 
   const getHostStyle = useCallback(
-    function getHostStyle(): object {
-      if (serviceInfo.providerName && settingsCtx.get("colorizeHosts")) {
+    function getHostStyle(providerName: string): object {
+      if (providerName && colorizeHosts) {
         return {
           flexGrow: 1,
           alignItems: "center",
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(serviceInfo.providerName),
+          borderLeftColor: colorFromHostname(providerName),
           borderLeftWidth: "0.6em",
         };
       }
       return { flexGrow: 1, alignItems: "center" };
     },
-    [serviceInfo.providerName, settingsCtx.changed]
+    [settingsCtx.changed]
   );
 
   useEffect(() => {
@@ -83,6 +90,11 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
     <StyledTreeItem
       itemId={itemId}
       ref={ref as LegacyRef<HTMLLIElement>}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: 0,
+        },
+      }}
       label={
         <Stack
           direction="column"
@@ -113,7 +125,7 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
               }
             }}
           >
-            <Stack spacing={1} direction="row" sx={getHostStyle()}>
+            <Stack spacing={1} direction="row" sx={getHostStyle(serviceInfo.nodeProviders[0]?.providerName)}>
               <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
                 <Typography
                   variant="body2"
@@ -121,7 +133,7 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(serviceInfo.name);
-                      logCtx.success(`${serviceInfo.name} copied!`);
+                      logCtx.info(`${serviceInfo.name} copied!`);
                       e.stopPropagation();
                     }
                   }}
@@ -134,7 +146,7 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(serviceInfo.name);
-                      logCtx.success(`${serviceInfo.name} copied!`);
+                      logCtx.info(`${serviceInfo.name} copied!`);
                       e.stopPropagation();
                     }
                   }}
@@ -154,11 +166,11 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                 <Typography
                   variant="caption"
                   color="inherit"
-                  padding={0.2}
+                  padding="0.2em"
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(serviceInfo.srvType);
-                      logCtx.success(`${serviceInfo.srvType} copied!`);
+                      logCtx.info(`${serviceInfo.srvType} copied!`);
                       e.stopPropagation();
                     }
                   }}
@@ -180,17 +192,17 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
             </Stack>
           </Box>
           {showExtendedInfo && serviceInfo && (
-            <Stack paddingLeft={3}>
+            <Stack paddingLeft="1.5em">
               <Typography fontWeight="bold" fontSize="small">
                 Provider [{serviceInfo.nodeProviders.length}]:
               </Typography>
               {serviceInfo.nodeProviders.map((item: TServiceNodeInfo) => {
                 return (
-                  <Stack key={item.nodeId} paddingLeft={1} direction="row">
+                  <Stack key={item.nodeId} paddingLeft="0.5em" direction="row" sx={getHostStyle(item.providerName)}>
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
+                        navCtx.setSelectedNodes([`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
                       }}
                     >
                       {item.nodeName}
@@ -206,11 +218,11 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
                   </Typography>
                   {serviceInfo.nodeRequester.map((item) => {
                     return (
-                      <Stack key={item.nodeId} paddingLeft={1} direction="row">
+                      <Stack key={item.nodeId} paddingLeft="0.5em" direction="row" sx={getHostStyle(item.providerName)}>
                         <Typography
                           fontSize="small"
                           onClick={() => {
-                            navCtx.setSelectedNodes([`${serviceInfo.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
+                            navCtx.setSelectedNodes([`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
                           }}
                         >
                           {item.nodeName}

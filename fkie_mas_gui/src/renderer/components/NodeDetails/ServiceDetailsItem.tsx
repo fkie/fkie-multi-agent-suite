@@ -1,13 +1,8 @@
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import RosContext from "@/renderer/context/RosContext";
-import {
-  RosNode,
-  RosService,
-  RosTopicId,
-  ServiceExtendedInfo,
-  TServiceNodeInfo,
-} from "@/renderer/models";
+import SettingsContext from "@/renderer/context/SettingsContext";
+import { RosService, RosTopicId, ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import ServiceCallerPanel from "@/renderer/pages/NodeManager/panels/ServiceCallerPanel";
@@ -17,8 +12,9 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Button, IconButton, Stack, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
-import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { colorFromHostname, CopyButton } from "../UI";
 
 type ServiceDetailsItemsProps = {
   providerId: string | undefined;
@@ -32,8 +28,15 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
     const logCtx = useContext(LoggingContext);
     const navCtx = useContext(NavigationContext);
     const rosCtx = useContext(RosContext);
-    const [allServices, setAllServices] = useState<ServiceExtendedInfo[]>([]);
+    const settingsCtx = useContext(SettingsContext);
+    const [serviceInfo, setServiceInfo] = useState<ServiceExtendedInfo | undefined>();
     const [showInfo, setShowInfo] = useState<boolean>(false);
+    const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+    useEffect(() => {
+      setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+    }, [settingsCtx, settingsCtx.changed]);
 
     function onServiceCallClick(service: ServiceExtendedInfo): void {
       emitCustomEvent(
@@ -53,37 +56,19 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
       if (providerId) {
         const provider = rosCtx.getProviderById(providerId);
         if (provider) {
-          const rosServices: RosService[] = provider?.rosServices.filter(
-            (item) => item.name === serviceId.name && item.srv_type === serviceId.msg_type
-          );
-          // setAllTopics(rosTopics);
-          setAllServices(
-            rosServices.map((rs: RosService) => {
-              let serviceInfo: ServiceExtendedInfo | undefined = undefined;
-              // Get topics from the ros node list of each provider.
-              for (const provider of rosCtx.providers) {
-                for (const prv of rs.provider || []) {
-                  const rosNode = provider.rosNodes.find((node: RosNode) => node.id === prv);
-                  if (rosNode) {
-                    if (serviceInfo === undefined) {
-                      serviceInfo = new ServiceExtendedInfo(rs, provider.id || "", provider.name() || "");
-                    }
-                    serviceInfo?.addProvider(rosNode.id.split("-")[0], rosNode.id);
-                  }
-                }
-                for (const prv of rs.provider || []) {
-                  const rosNode = provider.rosNodes.find((node: RosNode) => node.id === prv);
-                  if (rosNode) {
-                    if (serviceInfo === undefined) {
-                      serviceInfo = new ServiceExtendedInfo(rs, provider.id || "", provider.name() || "");
-                    }
-                    serviceInfo?.addRequester(rosNode.id.split("-")[0], rosNode.id);
-                  }
-                }
-              }
-              return serviceInfo || new ServiceExtendedInfo(rs, provider.id || "", provider.name() || "");
-            })
-          );
+          const rosService: RosService | undefined = provider?.getService(serviceId);
+          if (!rosService) {
+            setServiceInfo(undefined);
+            return;
+          }
+          const newServiceInfo: ServiceExtendedInfo = new ServiceExtendedInfo(rosService);
+          // Get topics from the ros node list of each provider.
+          for (const provider of rosCtx.providers) {
+            for (const rosNode of provider.rosNodes) {
+              newServiceInfo.add(rosNode);
+            }
+          }
+          setServiceInfo(newServiceInfo);
         }
       }
     }
@@ -97,110 +82,111 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
       updateServiceList();
     }, [providerId, rosCtx.providers]);
 
+    const getHostStyle = useCallback(
+      function getHostStyle(providerName: string): object {
+        if (providerName && colorizeHosts) {
+          return {
+            flexGrow: 1,
+            alignItems: "center",
+            borderLeftStyle: "solid",
+            borderLeftColor: colorFromHostname(providerName),
+            borderLeftWidth: "0.5em",
+          };
+        }
+        return { flexGrow: 1, alignItems: "center" };
+      },
+      [settingsCtx.changed]
+    );
+
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     const createInfo = useMemo(() => {
+      if (!serviceInfo) return <></>;
       return (
         <Stack direction="row" alignItems="center" spacing={0}>
-          {allServices.map((rs: ServiceExtendedInfo, index: number) => {
+          <Stack
+            key={`service-${serviceInfo.id}`}
+            alignItems="center"
+            direction="row"
+            margin={0}
+            spacing={"0.1em"}
+            style={{ display: "flex", flexGrow: 1, borderBottom: `1px solid ${alpha(grey[600], 0.4)}` }}
+          >
+            <IconButton
+              style={{ color: "#09770fff" }}
+              onClick={(event) => {
+                onServiceCallClick(serviceInfo);
+                event?.stopPropagation();
+              }}
+              size="small"
+            >
+              <PlayArrowRoundedIcon fontSize="inherit" />
+            </IconButton>
+            <Button
+              size="small"
+              style={{
+                marginLeft: 1,
+                textTransform: "none",
+                justifyContent: "left",
+              }}
+              onClick={() => setShowInfo((prev) => !prev)}
+              onDoubleClick={() => {
+                navigator.clipboard.writeText(serviceId.name);
+                logCtx.info(`${serviceId.name} copied`);
+              }}
+            >
+              {`${serviceId.name}`}
+            </Button>
+            {showInfo && <CopyButton value={serviceId.name} fontSize="0.7em" />}
+          </Stack>
+        </Stack>
+      );
+    }, [serviceInfo, showInfo]);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+    const createExtendedInfo = useMemo(() => {
+      if (!serviceInfo) return <></>;
+      return (
+        <Stack
+          key={`info-${serviceInfo.id}`}
+          style={{ marginLeft: 15, paddingLeft: 5, borderLeft: `1px dashed ${alpha(grey[600], 0.4)}` }}
+        >
+          <Stack direction="row" alignItems="center" spacing="0.3em">
+            <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+              Type:
+            </Typography>
+            <Typography fontSize="small">{serviceInfo.srvType}</Typography>
+            <CopyButton value={serviceInfo.srvType} fontSize="0.7em" />
+          </Stack>
+          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+            Provider [{serviceInfo.nodeProviders?.length || 0}]:
+          </Typography>
+          {serviceInfo.nodeProviders?.map((item: TServiceNodeInfo) => {
+            const provNodeName = removeDDSuid(item.nodeId);
             return (
-              <Stack
-                key={`service-${rs.name}-${index}`}
-                alignItems="center"
-                direction="row"
-                margin={0}
-                spacing={"0.1em"}
-                style={{ display: "flex", flexGrow: 1, borderBottom: `1px solid ${alpha(grey[600], 0.4)}` }}
-              >
-                <IconButton
-                  style={{ color: "#09770fff" }}
-                  onClick={(event) => {
-                    onServiceCallClick(rs);
-                    event?.stopPropagation();
-                  }}
-                  size="small"
-                >
-                  <PlayArrowRoundedIcon fontSize="inherit" />
-                </IconButton>
+              <Stack key={item.nodeId} paddingLeft={"0.5em"} alignItems="center" direction="row" spacing="0.5em" style={getHostStyle(item.providerName)}>
                 <Button
                   size="small"
                   style={{
                     marginLeft: 1,
                     textTransform: "none",
                     justifyContent: "left",
+                    padding: 0,
+                    color: "#09770fff",
                   }}
-                  onClick={() => setShowInfo((prev) => !prev)}
-                  onDoubleClick={() => {
-                    navigator.clipboard.writeText(serviceId.name);
-                    logCtx.success(`${serviceId.name} copied`);
+                  onClick={() => {
+                    const id: string = `${item.providerId}${item.nodeId.replaceAll("/", "#")}`;
+                    navCtx.setSelectedNodes([id], true);
+                    // inform details panel tab about selected nodes by user
+                    emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                   }}
                 >
-                  {`${serviceId.name}`}
+                  {provNodeName}
                 </Button>
+                <CopyButton value={provNodeName} fontSize="0.7em" />
               </Stack>
             );
           })}
-        </Stack>
-      );
-    }, [allServices]);
-
-    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-    const createExtendedInfo = useMemo(() => {
-      return allServices.map((rs: ServiceExtendedInfo, index: number) => {
-        return (
-          <Stack
-            key={`info-${rs.name}-${index}`}
-            style={{ marginLeft: 15, paddingLeft: 5, borderLeft: `1px dashed ${alpha(grey[600], 0.4)}` }}
-          >
-            <Stack direction="row" alignItems="center" spacing="1em">
-              <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-                Type:
-              </Typography>
-              <Button
-                size="small"
-                style={{
-                  marginLeft: 1,
-                  textTransform: "none",
-                  justifyContent: "left",
-                  padding: 0,
-                  color: "inherit",
-                }}
-                onClick={() => {
-                  navigator.clipboard.writeText(rs.srvType);
-                  logCtx.success(`${rs.srvType} copied`);
-                }}
-              >
-                {rs.srvType}
-              </Button>
-            </Stack>
-            <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-              Provider [{rs.nodeProviders?.length || 0}]:
-            </Typography>
-            {rs.nodeProviders?.map((item: TServiceNodeInfo) => {
-              const pubNodeName = removeDDSuid(item.nodeId);
-              return (
-                <Stack key={item.nodeId} paddingLeft={"1em"} direction="row">
-                  <Button
-                    size="small"
-                    style={{
-                      marginLeft: 1,
-                      textTransform: "none",
-                      justifyContent: "left",
-                      padding: 0,
-                      color: "#09770fff",
-                    }}
-                    onClick={() => {
-                      const id: string = `${rs.providerId}${item.nodeId.replaceAll("/", "#")}`;
-                      navCtx.setSelectedNodes([id], true);
-                      // inform details panel tab about selected nodes by user
-                      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
-                    }}
-                  >
-                    {pubNodeName}
-                  </Button>
-                </Stack>
-              );
-            })}
-            {/* <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+          {/* <Typography fontWeight="500" fontStyle="italic" fontSize="small">
               Requester [{rs.nodeRequester.length || 0}]:
             </Typography>
             {rs.nodeRequester.map((item: TServiceNodeInfo) => {
@@ -229,10 +215,9 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
                 </Stack>
               );
             })} */}
-          </Stack>
-        );
-      });
-    }, [allServices]);
+        </Stack>
+      );
+    }, [serviceInfo]);
 
     return (
       <Stack direction="column" alignItems="left" spacing={0} ref={ref}>

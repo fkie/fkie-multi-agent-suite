@@ -1,9 +1,10 @@
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import {
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { forwardRef, LegacyRef, useContext } from "react";
 
@@ -48,6 +49,11 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
           iconContainer: { onClick: handleIconContainerClick },
         } as TreeItemSlotProps
       }
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: "8px",
+        },
+      }}
       label={
         <Stack direction="column">
           <Box

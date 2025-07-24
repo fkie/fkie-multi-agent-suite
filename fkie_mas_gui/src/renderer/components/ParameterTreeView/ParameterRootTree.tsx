@@ -321,7 +321,9 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
                     ? expanded.indexOf(itemId)
                     : expandedFiltered.indexOf(itemId);
                 if (index === -1) {
-                  copyExpanded.push(itemId);
+                  if (itemId) {
+                    copyExpanded.push(itemId);
+                  }
                 } else {
                   copyExpanded.splice(index, 1);
                 }
