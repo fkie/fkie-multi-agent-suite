@@ -2,7 +2,7 @@ import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { RosNode, RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
+import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
@@ -379,7 +379,14 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
         {topicInfo.publishers?.map((item: EndpointExtendedInfo) => {
           const pubNodeName = removeDDSuid(item.info.node_id);
           return (
-            <Stack key={item.info.node_id} paddingLeft={"0.5em"} alignItems="center" direction="row" spacing="0.5em" style={getHostStyle(item.providerName)}>
+            <Stack
+              key={item.info.node_id}
+              paddingLeft={"0.5em"}
+              alignItems="center"
+              direction="row"
+              spacing="0.5em"
+              style={getHostStyle(item.providerName)}
+            >
               {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
                 <Tooltip
                   title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
@@ -417,7 +424,14 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
         {topicInfo.subscribers.map((item: EndpointExtendedInfo) => {
           const subNodeName = removeDDSuid(item.info.node_id);
           return (
-            <Stack key={item.info.node_id} paddingLeft={"0.5em"} alignItems="center" direction="row" spacing="0.5em" style={getHostStyle(item.providerName)}>
+            <Stack
+              key={item.info.node_id}
+              paddingLeft={"0.5em"}
+              alignItems="center"
+              direction="row"
+              spacing="0.5em"
+              style={getHostStyle(item.providerName)}
+            >
               {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
                 <Tooltip
                   title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}

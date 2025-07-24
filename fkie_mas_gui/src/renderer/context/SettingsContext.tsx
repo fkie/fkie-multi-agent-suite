@@ -284,7 +284,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "Nodes to be placed in a {SPAM} group.",
     isValid: (value: JSONValue) => {
       let result = true;
-      const splits: string[] = (value as string).split(",");
+      const splits: string[] = (value as string || "").split(",");
       for (const item of splits) {
         try {
           new RegExp(`/(${item})/`);
@@ -297,7 +297,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
       return result;
     },
     validate: (value: JSONValue) => {
-      const splits: string[] = (value as string).split(",");
+      const splits: string[] = (value as string || "").split(",");
       const validEntries = splits.filter((item) => {
         try {
           new RegExp(`/(${item})/`);

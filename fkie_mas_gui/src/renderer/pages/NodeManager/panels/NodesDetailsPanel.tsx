@@ -49,7 +49,6 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [indexOfSelected, setIndexOfSelected] = useState<number>(0);
   const [nodeShow, setNodeShow] = useState<RosNode | undefined>(undefined);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
-  const [updateDetails, forceUpdateDetails] = useReducer((x) => x + 1, 0);
   const [updateDiagnostics, forceUpdateDiagnostics] = useReducer((x) => x + 1, 0);
   const [updateServices, forceUpdateServices] = useReducer((x) => x + 1, 0);
   const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
@@ -184,15 +183,7 @@ export default function NodesDetailsPanel(): JSX.Element {
     if ((nodeShow.diagnosticLevel || 0) > 0 || nodeShow.diagnosticColor) {
       return (
         <Stack paddingTop="0.5em">
-          <Typography
-            variant="body1"
-            style={
-              nodeShow.diagnosticColor
-                ? { color: nodeShow.diagnosticColor }
-                : getDiagnosticStyle(nodeShow.diagnosticLevel || 0)
-            }
-            marginBottom={1}
-          >
+          <Typography variant="body1" style={getDiagnosticStyle(nodeShow.diagnosticLevel || 0)} marginBottom={1}>
             {getDiagnosticLevelName(nodeShow.diagnosticLevel || 0)}: {nodeShow.diagnosticMessage}
           </Typography>
         </Stack>
@@ -394,7 +385,7 @@ export default function NodesDetailsPanel(): JSX.Element {
         )}
       </Stack>
     );
-  }, [nodeShow, updateDetails, showNodeInfo]);
+  }, [nodeShow, showNodeInfo]);
 
   const createTopicsView = useMemo(() => {
     if (!nodeShow) return <></>;
@@ -724,7 +715,6 @@ export default function NodesDetailsPanel(): JSX.Element {
     );
   }, [
     nodeShow,
-    updateDetails,
     updateTopics,
     updateServices,
     updateDiagnostics,
