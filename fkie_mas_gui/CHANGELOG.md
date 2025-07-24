@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.5.0 - 24.07.2025
+
+Show user defined color for node published as KeyValue {key: color, value: rgba(126, 64, 64, 0.8)} of DiagnosticStatus on /mas/diagnostic
+Improved style of node details, topics, service and parameter tabs
+Improved the performance of updating the Node Details tab
+Fixed show incompatible qos
+Update parameter panel for one node if node is updated
+Show the name of the node instead of 1 if restart of the node is requested
+Fixed load of set_env instructions
+Refactored NodeDetailsPanel
+Bump version of dependencies to fix vulnerabilities
+0f32e6f replace reload button
+Changed search package combobox visualization
+
 ## 4.4.13 - 10.07.2025
 
 Improved packages tab

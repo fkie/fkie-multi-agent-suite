@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.0 (24.07.2025)
+------------------
+* Added /mas/diagnostic subscription witch forward only state of local nodes
+
 4.5.10 (17.06.2025)
 ------------------
 * Fixed reload files with new added launch arguments
