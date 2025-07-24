@@ -18,6 +18,7 @@ import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
 import { forwardRef, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { CopyButton } from "../UI";
 
 type TopicDetailsItemsProps = {
   providerId: string | undefined;
@@ -101,13 +102,13 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
         // check for incompatible qos
         let foundIncompatibleQos = false;
         for (const rt of rosTopics) {
-          for (const pub of rt.publisher || []) {
-            if (pub.incompatible_qos) {
+          if (foundIncompatibleQos) break;
+          for (const sub of rt.subscriber || []) {
+            if (sub.incompatible_qos) {
               foundIncompatibleQos = true;
               break;
             }
           }
-          if (foundIncompatibleQos) break;
           for (const pub of rt.publisher || []) {
             if (pub.incompatible_qos) {
               foundIncompatibleQos = true;
@@ -331,26 +332,26 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
                   )
                 }
               />
+              {hasIncompatibleQos && (
+                <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
+                </Tooltip>
+              )}
               <Button
                 size="small"
                 style={{
-                  marginLeft: 1,
+                  marginLeft: "0.2em",
                   textTransform: "none",
                   justifyContent: "left",
                 }}
                 onClick={() => setShowInfo((prev) => !prev)}
                 onDoubleClick={() => {
                   navigator.clipboard.writeText(topicId.name);
-                  logCtx.success(`${topicId.name} copied`);
+                  logCtx.info(`${topicId.name} copied`);
                 }}
               >
                 {`${topicId.name}`}
               </Button>
-              {hasIncompatibleQos && (
-                <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
-                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
-                </Tooltip>
-              )}
             </Stack>
           );
         })}
@@ -366,26 +367,12 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
           key={`info-${rt.name}-${index}`}
           style={{ marginLeft: 15, paddingLeft: 5, borderLeft: `1px dashed ${alpha(grey[600], 0.4)}` }}
         >
-          <Stack direction="row" alignItems="center" spacing="1em">
+          <Stack direction="row" alignItems="center" spacing="0.3em">
             <Typography fontWeight="500" fontStyle="italic" fontSize="small">
               Type:
             </Typography>
-            <Button
-              size="small"
-              style={{
-                marginLeft: 1,
-                textTransform: "none",
-                justifyContent: "left",
-                padding: 0,
-                color: "inherit",
-              }}
-              onClick={() => {
-                navigator.clipboard.writeText(rt.msgType);
-                logCtx.success(`${rt.msgType} copied`);
-              }}
-            >
-              {rt.msgType}
-            </Button>
+            <Typography fontSize="small">{rt.msgType}</Typography>
+            <CopyButton value={rt.msgType} fontSize="0.7em" />
           </Stack>
           <Typography fontWeight="500" fontStyle="italic" fontSize="small">
             Publisher [{rt.publishers?.length || 0}]:
@@ -393,11 +380,20 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
           {rt.publishers?.map((item: EndpointExtendedInfo) => {
             const pubNodeName = removeDDSuid(item.info.node_id);
             return (
-              <Stack key={item.info.node_id} paddingLeft={"1em"} direction="row">
+              <Stack key={item.info.node_id} paddingLeft={"1em"} alignItems="center" direction="row" spacing="0.5em">
+                {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
+                  <Tooltip
+                    title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
+                    placement="right"
+                    disableInteractive
+                  >
+                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                  </Tooltip>
+                )}
                 <Button
                   size="small"
                   style={{
-                    marginLeft: 1,
+                    marginLeft: "0.3em",
                     textTransform: "none",
                     justifyContent: "left",
                     padding: 0,
@@ -412,6 +408,17 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
                 >
                   {pubNodeName}
                 </Button>
+                <CopyButton value={pubNodeName} fontSize="0.7em" />
+              </Stack>
+            );
+          })}
+          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
+            Subscriber [{rt.subscribers.length || 0}]:
+          </Typography>
+          {rt.subscribers.map((item: EndpointExtendedInfo) => {
+            const subNodeName = removeDDSuid(item.info.node_id);
+            return (
+              <Stack key={item.info.node_id} paddingLeft={"1em"} alignItems="center" direction="row" spacing="0.5em">
                 {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
                   <Tooltip
                     title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
@@ -421,20 +428,10 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
                     <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
                   </Tooltip>
                 )}
-              </Stack>
-            );
-          })}
-          <Typography fontWeight="500" fontStyle="italic" fontSize="small">
-            Subscriber [{rt.subscribers.length || 0}]:
-          </Typography>
-          {rt.subscribers.map((item: EndpointExtendedInfo) => {
-            const pubNodeName = removeDDSuid(item.info.node_id);
-            return (
-              <Stack key={item.info.node_id} paddingLeft={"1em"} direction="row">
                 <Button
                   size="small"
                   style={{
-                    marginLeft: 1,
+                    marginLeft: "0.3em",
                     textTransform: "none",
                     justifyContent: "left",
                     padding: 0,
@@ -448,18 +445,9 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
                     emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
                   }}
                 >
-                  {pubNodeName}
+                  {subNodeName}
                 </Button>
-                {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
-                  <Tooltip
-                    title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
-                    placement="right"
-                    disableInteractive
-                  >
-                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
-                  </Tooltip>
-                )}
-                {/* <CopyButton value={pubNodeName} fontSize="0.7em" /> */}
+                <CopyButton value={subNodeName} fontSize="0.7em" />
               </Stack>
             );
           })}
