@@ -81,12 +81,12 @@ export default class WebsocketConnection extends ProviderConnection {
       this.onOpen();
     });
     this.websocket.addEventListener("close", (event: CloseEvent) => {
-      this.logger?.info(`websocket disconnected from ${this.websocket?.url}`, "");
+      this.logger?.info(`websocket disconnected from ${this.uri}`, "");
       this.websocket = null;
       this.onClose(event.reason, `${event.code}`);
     });
     this.websocket.addEventListener("error", (event) => {
-      this.logger?.error(`error on connected to ${this.websocket?.url}`, `event.type: ${JSON.stringify(event.type)}`);
+      this.logger?.error(`error on connect to ${this.websocket?.url}`, `event.type: ${JSON.stringify(event.type)}\nIs the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.`);
       this.websocket = null;
       return Promise.resolve(false);
     });

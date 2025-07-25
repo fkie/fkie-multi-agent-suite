@@ -515,6 +515,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
       return true;
     }
+    const hintMsg = "Is the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12."
     try {
       if (provider.isAvailable()) {
         provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
@@ -528,7 +529,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         `Could not initialize provider [${provider.name()}] (${
           provider.type
         }) in [ws://${provider.connection.host}:${provider.connection.port}]`,
-        `Error: ${JSON.stringify(error)}`
+        `Error: ${JSON.stringify(error)}\n${hintMsg}`
       );
       provider.setConnectionState(ConnectionState.STATES.ERRORED, JSON.stringify(error));
       return false;
@@ -543,7 +544,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         provider.type
       }) in [ws://${provider.connection.host}:${provider.connection.port}]`;
       // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
-      logCtx.error(error, "");
+      logCtx.error(error, hintMsg);
       provider.errorDetails = `${error}`;
       provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
     } catch (error: unknown) {
@@ -551,7 +552,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         `Could not initialize provider [${provider.name()}] (${
           provider.type
         }) in [ws://${provider.connection.host}:${provider.connection.port}]`,
-        `Error: ${JSON.stringify(error)}`
+        `Error: ${JSON.stringify(error)}\n${hintMsg}`
       );
       provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
     }
