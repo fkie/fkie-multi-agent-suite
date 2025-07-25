@@ -35,6 +35,7 @@ import {
   RosService,
   RosTopic,
   RosTopicId,
+  RunNodeStandalone,
   ScreensMapping,
   SubscriberEvent,
   SubscriberFilter,
@@ -1861,6 +1862,95 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
+  /**
+   * Start a ROS node using a given provider and node object
+   */
+  public runNodeStandalone: (requestNode: RunNodeStandalone) => Promise<TResultStartNode> = async (requestNode) => {
+    console.log(`runNodeStandalone: ${JSON.stringify(requestNode)}`);
+    const result = await this.makeCall(URI.ROS_LAUNCH_RUN_NODE_STANDALONE, [requestNode], true).then((value: TResultData) => {
+      // emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, node));
+      if (value.result) {
+        const response = value.data as LaunchNodeReply;
+
+        if (!response) {
+          return {
+            success: false,
+            message: `Invalid return. Package: ${requestNode.package_name}; Executable: ${requestNode.executable}`,
+            details: DEFAULT_BUG_TEXT,
+            response: null,
+          };
+        }
+        const nodeName = requestNode.namespace !== "/" ? [requestNode.namespace, requestNode.name].join("/") : requestNode.name
+        const execPkg = requestNode.package_name ? `${requestNode.executable}[${requestNode.package_name}]` : requestNode.opt_binary
+        if (response.status.code === "OK") {
+          return {
+            success: true,
+            message: `Node started: [${nodeName}]`,
+            details: response.status.msg || "",
+            response,
+          };
+        }
+
+        if (response.status.code === "NODE_NOT_FOUND") {
+          return {
+            success: false,
+            message: `Could not start node [${nodeName}]: Resource not found: ${execPkg}`,
+            details: `Node: ${nodeName} Details: ${response.status.msg}`,
+            response,
+          };
+        }
+
+        if (response.status.code === "MULTIPLE_LAUNCHES") {
+          return {
+            success: false,
+            message: `Could not start node [${nodeName}]: Multiple launches found`,
+            details: `Node: ${nodeName} Details: ${response.status.msg}`,
+            response,
+          };
+        }
+
+        if (response.status.code === "MULTIPLE_BINARIES") {
+          return {
+            success: false,
+            message: `Could not start node [${nodeName}]: Multiple binaries found`,
+            details: `Node: ${nodeName} Details: ${response.status.msg}`,
+            response,
+          };
+        }
+
+        if (response.status.code === "CONNECTION_ERROR") {
+          return {
+            success: false,
+            message: `Could not start node [${nodeName}]: Connection error`,
+            details: `Node: ${nodeName} Details: ${response.status.msg}`,
+            response,
+          };
+        }
+
+        if (response.status.code === "ERROR") {
+          return {
+            success: false,
+            message: `Could not start node: ${nodeName}`,
+            details: `Node: ${nodeName} Details: ${response.status.msg}`,
+            response,
+          };
+        }
+        return {
+          success: false,
+          message: "Start Node: Invalid response",
+          details: `Node: ${nodeName} Details: ${response.status.msg}`,
+          response,
+        };
+      }
+      return {
+        success: false,
+        message: "Invalid message from [ros.launch.start_node]",
+        details: value.message as string,
+        response: null,
+      };
+    });
+    return Promise.resolve(result);
+  };
   /**
    * Stop a node given a name
    */

@@ -6,10 +6,14 @@
 #
 # ****************************************************************************
 
+
 import fkie_mas_daemon as nmd
 from .launch_validator import LaunchValidator
 from .launch_context import LaunchContext
 from .launch_config import LaunchConfig
+from .runner import MultipleExecutables
+from .runner import PackageNotFound
+from .runner import Runner
 from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
 from fkie_mas_pylib.system.url import equal_uri
@@ -37,6 +41,7 @@ from fkie_mas_pylib.interface.launch_interface import LaunchLoadRequest
 from fkie_mas_pylib.interface.launch_interface import LaunchFile
 from fkie_mas_pylib.interface.launch_interface import LaunchCallService
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
+from fkie_mas_pylib.interface.launch_interface import RunNode
 from fkie_mas_pylib.interface.runtime_interface import RosQos
 from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
 from fkie_mas_pylib.interface import SelfEncoder
@@ -150,6 +155,7 @@ class LaunchServicer(LoggingEventHandler):
         websocket.register("ros.launch.get_list", self.get_list)
         websocket.register("ros.launch.start_node", self.start_node)
         websocket.register("ros.launch.start_nodes", self.start_nodes)
+        websocket.register("ros.launch.run_node_standalone", self.run_node_standalone)
         websocket.register("ros.launch.get_included_files", self.get_included_files)
         websocket.register("ros.launch.interpret_path", self.interpret_path)
         websocket.register("ros.launch.get_msg_struct", self.get_msg_struct)
@@ -687,6 +693,40 @@ class LaunchServicer(LoggingEventHandler):
                     break
 
         return json.dumps(result, cls=SelfEncoder)
+
+    def run_node_standalone(self, request_json: RunNode, return_as_json: bool = True) -> LaunchNodeReply:
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.launch.run_node_standalone]")
+
+        # Covert input dictionary into a proper python object
+        request = request_json
+        result = LaunchNodeReply(name=getattr(request, "name", getattr(request, "opt_binary", "")), paths=[], launch_files=[])
+        try:
+            try:
+                runner = Runner()
+                executable_path = runner.run_node(request)
+                if executable_path:
+                    result.status.msg = executable_path
+                Log.debug(f'Node={request.name}; start finished')
+                result.status.code = 'OK'
+            except MultipleExecutables as bsr:
+                result.status.code = 'MULTIPLE_BINARIES'
+                result.status.msg = f"multiple binaries found for node '{request.name}': {bsr.choices}"
+                result.paths.extend(bsr.choices)
+                return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        except PackageNotFound as err_nf:
+            result.status.code = 'ERROR'
+            result.status.msg = f"Resource not found: {err_nf}"
+            Log.warn(f"{self.__class__.__name__}: {result.status.msg}")
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        except Exception as _errr:
+            result.status.code = 'ERROR'
+            result.status.msg = f"Error while start node '{request_json}': {traceback.format_exc()}"
+            Log.warn(f"{self.__class__.__name__}: {result.status.msg}")
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        finally:
+            nmd.launcher.server.screen_servicer.system_change()
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     def get_included_files(self, request_json: LaunchIncludedFilesRequest, *, result_as_json=True) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object

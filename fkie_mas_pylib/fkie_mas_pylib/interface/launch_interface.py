@@ -521,3 +521,41 @@ class LaunchCallService:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class RunNode:
+    '''
+    Starts a ROS node without launch configuration.
+    :param str package_name: the ROS package
+    :param str executable: the binary file to execute
+    :param str opt_binary: full path to a binary, if multiple executable available
+    :param str name: name of the node.
+    :param str namespace: namespace of the node, default: /
+    :param str loglevel: log level, default: info
+    :param str logformat: Default: ""
+    :param str prefix: custom command prefix. It will be prepended before launch prefix. Default: ""
+    :param str params: parameter as string. Default: ""
+    */
+    '''
+
+    def __init__(self, package_name: str, executable: str, *,
+                 opt_binary: str = '',
+                 name: str = '',
+                 namespace: str = '',
+                 loglevel: str = '',
+                 logformat: str = '',
+                 prefix: str = '',
+                 params: bool = False
+                 ) -> None:
+        self.package_name = package_name
+        self.executable = executable
+        self.opt_binary = opt_binary
+        self.name = name
+        self.namespace = namespace
+        self.loglevel = loglevel
+        self.logformat = logformat
+        self.prefix = prefix
+        self.params = params
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)

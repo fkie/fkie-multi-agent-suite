@@ -40,6 +40,7 @@ import LaunchNodeReply from "./LaunchNodeReply";
 import LaunchPublishMessage from "./LaunchPublishMessage";
 import LaunchReturnStatus from "./LaunchReturnStatus";
 import ProviderLaunchConfiguration from "./ProviderLaunchConfiguration";
+import RunNodeStandalone from "./RunNodeStandalone";
 // Screen related imports
 import ScreensMapping from "./ScreensMapping";
 // Other structs
@@ -99,6 +100,7 @@ export {
   RosService,
   RosTopic,
   RosTopicId,
+  RunNodeStandalone,
   ScreensMapping,
   ServiceExtendedInfo,
   SubscriberEvent,

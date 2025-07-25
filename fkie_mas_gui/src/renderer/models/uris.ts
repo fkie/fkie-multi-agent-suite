@@ -32,6 +32,7 @@ const URI = {
   ROS_LAUNCH_UNLOAD: "ros.launch.unload",
   ROS_LAUNCH_GET_LIST: "ros.launch.get_list",
   ROS_LAUNCH_START_NODE: "ros.launch.start_node",
+  ROS_LAUNCH_RUN_NODE_STANDALONE: "ros.launch.run_node_standalone",
   ROS_LAUNCH_CHANGED: "ros.launch.changed",
   ROS_LAUNCH_GET_INCLUDED_FILES: "ros.launch.get_included_files",
   // ROS_LAUNCH_INTERPRET_PATH: 'ros.launch.interpret_path',

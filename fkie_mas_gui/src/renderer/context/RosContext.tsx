@@ -543,7 +543,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       const error = `Could not initialize provider [${provider.name()}] (${
         provider.type
       }) in [ws://${provider.connection.host}:${provider.connection.port}]`;
-      // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
       logCtx.error(error, hintMsg);
       provider.errorDetails = `${error}`;
       provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
