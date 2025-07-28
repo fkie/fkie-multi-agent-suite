@@ -612,7 +612,7 @@ export default function NodesDetailsPanel(): JSX.Element {
           })}
       </Stack>
     );
-  }, [nodeShow, showServices]);
+  }, [nodeShow, showServices, showLaunchParameter]);
 
   const createDetailsView = useMemo(() => {
     if (!nodeShow) return <></>;
