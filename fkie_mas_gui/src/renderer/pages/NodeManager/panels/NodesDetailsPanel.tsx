@@ -313,11 +313,11 @@ export default function NodesDetailsPanel(): JSX.Element {
               </Stack>
             )}
             {nodeShow.launchInfo.size > 0 && (
-              <Stack direction="column" spacing={0.5}>
+              <Stack direction="row" spacing={0.5}>
                 {Array.from(nodeShow.launchInfo.keys()).map((launchPath) => (
                   <Tag
                     key={launchPath}
-                    color="info"
+                    color="default"
                     title={`${launchPath === nodeShow.launchPath ? "*" : ""}Launch:`}
                     text={getFileName(launchPath)}
                     wrap
@@ -327,18 +327,6 @@ export default function NodesDetailsPanel(): JSX.Element {
               </Stack>
             )}
             <Stack direction="column" spacing={0.5}>
-              {Array.from(nodeShow.launchInfo.keys()).map((launchPath) => (
-                <Stack key={`launch-${launchPath}`} direction="row" spacing={0.5}>
-                  <Tag
-                    key={launchPath}
-                    color="default"
-                    title="Launch path:"
-                    text={launchPath}
-                    wrap
-                    copyButton={launchPath}
-                  />
-                </Stack>
-              ))}
               {logPaths[nodeShow.idGlobal]?.map((logItem) => {
                 return (
                   <Stack key={`log-${logItem.id}`}>
