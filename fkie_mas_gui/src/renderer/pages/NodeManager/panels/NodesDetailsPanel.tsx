@@ -387,7 +387,7 @@ export default function NodesDetailsPanel(): JSX.Element {
         )}
       </Stack>
     );
-  }, [nodeShow, showNodeInfo]);
+  }, [nodeShow, showNodeInfo, logPaths]);
 
   const createTopicsView = useMemo(() => {
     if (!nodeShow) return <></>;
