@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.5.2 - 28.07.2025
+
+Changed view for launch file in "Node Details" tab
+Anchors title bar in the "Node Details" tab
+Fixed collapse launch parameter in node details tab
+
 ## 4.5.1 - 28.07.2025
 
 Fixed update after "get log paths" in node details panel
