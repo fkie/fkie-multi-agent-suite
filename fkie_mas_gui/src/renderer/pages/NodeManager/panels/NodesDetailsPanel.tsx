@@ -63,7 +63,7 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
 
   useEffect(() => {
-    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean)
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
@@ -621,7 +621,17 @@ export default function NodesDetailsPanel(): JSX.Element {
         key={nodeShow.idGlobal}
         // spacing={1}
         alignItems="left"
+        height="100%"
       >
+        {navCtx.selectedProviders.length === 1 && createProviderDetailsView}
+
+        {navCtx.selectedNodes.length > 1 && (
+          <Stack direction="row" justifyContent="center">
+            <Typography color="grey" variant="body2">
+              selected: {navCtx.selectedNodes.length}, displayed: 1
+            </Typography>
+          </Stack>
+        )}
         <Stack
           direction="row"
           alignItems="center"
@@ -699,20 +709,22 @@ export default function NodesDetailsPanel(): JSX.Element {
             </Tooltip>
           )}
         </Stack>
-        <Stack direction="row" spacing={0.5}>
-          <Tag
-            color={nodeShow.status === RosNodeStatus.RUNNING ? "success" : "default"}
-            title=""
-            // title={`${RosNodeStatusInfo[nodeShow.status]}`}
-            text={nodeShow.status}
-            wrap
-          />
-        </Stack>
-        {createDiagnostics}
-        {createNodeDetailsInfo}
-        {createTopicsView}
-        {createServicesView}
-        {createLaunchView}
+        <Box overflow="auto">
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={nodeShow.status === RosNodeStatus.RUNNING ? "success" : "default"}
+              title=""
+              // title={`${RosNodeStatusInfo[nodeShow.status]}`}
+              text={nodeShow.status}
+              wrap
+            />
+          </Stack>
+          {createDiagnostics}
+          {createNodeDetailsInfo}
+          {createTopicsView}
+          {createServicesView}
+          {createLaunchView}
+        </Box>
       </Stack>
     );
   }, [
@@ -735,15 +747,7 @@ export default function NodesDetailsPanel(): JSX.Element {
   ]);
 
   return (
-    <Box width="100%" height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
-      {navCtx.selectedProviders.length === 1 && createProviderDetailsView}
-      {navCtx.selectedNodes.length > 1 && (
-        <Stack direction="row" justifyContent="center">
-          <Typography color="grey" variant="body2">
-            selected: {navCtx.selectedNodes.length}, displayed: 1
-          </Typography>
-        </Stack>
-      )}
+    <Box width="100%" height="100%" sx={{ backgroundColor: backgroundColor }}>
       {createDetailsView}
 
       {!nodeShow && (
