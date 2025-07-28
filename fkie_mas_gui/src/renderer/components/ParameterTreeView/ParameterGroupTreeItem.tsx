@@ -49,13 +49,13 @@ const ParameterGroupTreeItem = forwardRef<HTMLDivElement, ParameterGroupTreeItem
             borderLeftColor: colorFromHostname(providerName),
             borderLeftWidth: "0.6em",
             [`& .${treeItemClasses.content}`]: {
-              paddingLeft: 0,
+              paddingLeft: "8px",
             },
           };
         }
         return {
           [`& .${treeItemClasses.content}`]: {
-            paddingLeft: 0,
+            paddingLeft: "8px",
           },
         };
       },

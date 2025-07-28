@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
+  treeItemClasses,
   TreeItemSlotProps,
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
@@ -178,9 +179,16 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
           borderLeftStyle: "solid",
           borderLeftColor: colorFromHostname(provider.name()),
           borderLeftWidth: "0.6em",
+          [`& .${treeItemClasses.content}`]: {
+            paddingLeft: "8px",
+          },
         };
       }
-      return {};
+      return {
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: "8px",
+        },
+      };
     },
     [settingsCtx.changed]
   );

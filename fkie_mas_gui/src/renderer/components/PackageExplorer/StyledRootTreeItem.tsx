@@ -31,14 +31,14 @@ const StyledRootTreeItem = styled(TreeItem)(({ theme }) => ({
       width: 15,
     },
   },
-  // [`& .${treeItemClasses.groupTransition}`]: {
-  //   marginLeft: 15,
-  //   paddingLeft: 5,
-  //   borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
-  // },
-  // ...theme.applyStyles("light", {
-  //   color: theme.palette.grey[800],
-  // }),
+  [`& .${treeItemClasses.groupTransition}`]: {
+    marginLeft: 15,
+    paddingLeft: 0,
+    // borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
+  },
+  ...theme.applyStyles("light", {
+    color: theme.palette.grey[800],
+  }),
 }));
 
 export default StyledRootTreeItem;

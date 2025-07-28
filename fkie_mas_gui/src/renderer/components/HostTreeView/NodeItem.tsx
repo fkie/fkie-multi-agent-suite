@@ -20,6 +20,7 @@ import { EventNodeDiagnostic } from "@/renderer/providers/events";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
+import { treeItemClasses } from "@mui/x-tree-view";
 import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
 import { getDiagnosticColor } from "../UI/Colors";
@@ -250,6 +251,11 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
     <StyledTreeItem
       itemId={itemId}
       // onDoubleClick={(event) => onDoubleClick(event, labelText, itemId)}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: "8px",
+        },
+      }}
       label={
         <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
           {nodeIcon}

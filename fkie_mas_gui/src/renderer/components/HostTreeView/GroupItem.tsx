@@ -3,7 +3,7 @@ import { default as ContrastIcon } from "@mui/icons-material/Contrast";
 import ReportIcon from "@mui/icons-material/Report";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, red, yellow } from "@mui/material/colors";
-import { TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
+import { treeItemClasses, TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
 import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
 import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
 import { forwardRef, LegacyRef, useEffect, useMemo, useState } from "react";
@@ -357,6 +357,11 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
           } as TreeItemSlotProps
         }
         onDoubleClick={(event) => onDoubleClick(event, itemId)}
+        sx={{
+          [`& .${treeItemClasses.content}`]: {
+            paddingLeft: "7px",
+          },
+        }}
         label={
           <Box display="flex" alignItems="center" paddingLeft={0.0}>
             {icon}

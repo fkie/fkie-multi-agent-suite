@@ -5,6 +5,7 @@ import { FileIcon } from "react-file-icon";
 
 import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import { getFileExtension, PathItem } from "@/renderer/models";
+import { treeItemClasses } from "@mui/x-tree-view";
 import CopyButton from "../UI/CopyButton";
 import defaultFileIconStyles from "./FileIconDefaultStyles";
 import StyledTreeItem from "./StyledTreeItem";
@@ -29,6 +30,11 @@ const FileTreeItem = forwardRef<HTMLDivElement, PackageItemTreeProps>(function F
     <StyledTreeItem
       ref={ref as LegacyRef<HTMLLIElement>}
       itemId={itemId}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: 0,
+        },
+      }}
       label={
         <Box
           sx={{

@@ -3,6 +3,7 @@ import { Box, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { forwardRef, LegacyRef } from "react";
 
+import { treeItemClasses } from "@mui/x-tree-view";
 import StyledTreeItem from "./StyledTreeItem";
 
 interface FolderTreeItemProps {
@@ -21,6 +22,11 @@ const FolderTreeItem = forwardRef<HTMLDivElement, FolderTreeItemProps>(function 
     <StyledTreeItem
       ref={ref as LegacyRef<HTMLLIElement>}
       itemId={itemId}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: "8px",
+        },
+      }}
       label={
         <Box
           sx={{
