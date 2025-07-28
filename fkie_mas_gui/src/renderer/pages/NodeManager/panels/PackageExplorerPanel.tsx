@@ -438,7 +438,7 @@ export default function PackageExplorerPanel(): JSX.Element {
         noOptionsText="Package not found"
         options={packageListFiltered}
         // loading={loading}
-        getOptionLabel={(option) => `${option.rosPackage.name} [${option.providerName}]`}
+        getOptionLabel={(option) => `${option.rosPackage.name}`}
         isOptionEqualToValue={(option, value) => option.rosPackage.name === value.rosPackage.name}
         // sx={{ flexGrow: 1 }}
         // This prevents warnings on invalid autocomplete values
@@ -474,7 +474,7 @@ export default function PackageExplorerPanel(): JSX.Element {
               direction="row"
               style={getHostStyle(option.providerName)}
             >
-              <Tooltip title={`${option.rosPackage.name}`} placement="top" disableInteractive>
+              <Tooltip title={`${option.rosPackage.name} | ${option.providerName}`} placement="top" disableInteractive>
                 <Typography
                   sx={{ ml: 0, fontWeight: "bold" }}
                   noWrap
@@ -483,9 +483,9 @@ export default function PackageExplorerPanel(): JSX.Element {
                   {option.rosPackage.name}
                 </Typography>
               </Tooltip>
-              <Typography color="grey" sx={{ ml: 1 }} noWrap>
-                | {option.providerName}
-              </Typography>
+              {/* <Typography color="grey" sx={{ ml: 1 }} noWrap>
+                | {option.providerName.slice(0, option.providerName.indexOf("["))}
+              </Typography> */}
             </Stack>
           );
         }}
@@ -511,169 +511,165 @@ export default function PackageExplorerPanel(): JSX.Element {
           borderLeftStyle: "solid",
           borderLeftColor: hColor,
           borderLeftWidth: "0.6em",
-          overflowWrap: "normal",
+          // overflowWrap: "normal",
           // borderBottomStyle: "solid",
           // borderBottomColor: hColor,
           // borderBottomWidth: "0.6em",
         };
       }
-      return { overflowWrap: "normal" };
+      return {}; // { overflowWrap: "normal" };
     },
     [colorizeHosts]
   );
 
   return (
-    <Box
+    <Stack
       width="100%"
       height="100%"
       sx={{ backgroundColor: backgroundColor }}
       // paddingLeft="10px"
     >
-      <Stack>
-        <Stack direction="column" height="100%" width="100% ">
-          <Stack direction="row" justifyItems="expand" alignItems="center">
-            {createPackageSelector}
-            {showReloadButton && (
-              <Tooltip
-                title="Reload package list"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
+      <Stack direction="column" width="100% ">
+        <Stack direction="row" alignItems="center">
+          {createPackageSelector}
+          {showReloadButton && (
+            <Tooltip
+              title="Reload package list"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+            >
+              <IconButton
+                size="small"
+                onClick={() => {
+                  updatePackageList(true);
+                }}
               >
+                <RefreshIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <ButtonGroup orientation="horizontal" aria-label="launch file control group">
+            <Tooltip
+              title="Edit File"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <span>
                 <IconButton
+                  disabled={!selectedFile}
                   size="small"
-                  onClick={() => {
-                    updatePackageList(true);
+                  aria-label="Edit File"
+                  onClick={(event) => {
+                    onEditFile(selectedFile, event.nativeEvent.shiftKey);
                   }}
                 >
-                  <RefreshIcon fontSize="inherit" />
+                  <BorderColorIcon fontSize="inherit" />
                 </IconButton>
-              </Tooltip>
-            )}
-            <ButtonGroup orientation="horizontal" aria-label="launch file control group">
-              <Tooltip
-                title="Edit File"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <span>
-                  <IconButton
-                    disabled={!selectedFile}
-                    size="small"
-                    aria-label="Edit File"
-                    onClick={(event) => {
-                      onEditFile(selectedFile, event.nativeEvent.shiftKey);
-                    }}
-                  >
-                    <BorderColorIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip
-                title="Load"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <span>
-                  <IconButton
-                    disabled={
-                      !(selectedFile && LAUNCH_FILE_EXTENSIONS.find((fe) => selectedFile.path.indexOf(fe) !== -1))
+              </span>
+            </Tooltip>
+            <Tooltip
+              title="Load"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <span>
+                <IconButton
+                  disabled={
+                    !(selectedFile && LAUNCH_FILE_EXTENSIONS.find((fe) => selectedFile.path.indexOf(fe) !== -1))
+                  }
+                  color="primary"
+                  size="small"
+                  aria-label="load"
+                  onClick={() => {
+                    setSelectedLaunchFile(selectedFile ? { ...selectedFile } : undefined);
+                  }}
+                >
+                  <InputIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip
+              title="Copy absolute path"
+              placement="bottom"
+              enterDelay={tooltipDelay}
+              enterNextDelay={tooltipDelay}
+              disableInteractive
+            >
+              <span>
+                <IconButton
+                  disabled={!selectedFile?.path}
+                  size="small"
+                  aria-label="copy"
+                  onClick={() => {
+                    if (selectedFile?.path) {
+                      navigator.clipboard.writeText(selectedFile.path);
+                      logCtx.success(`${selectedFile.path} copied!`);
                     }
-                    color="primary"
-                    size="small"
-                    aria-label="load"
-                    onClick={() => {
-                      setSelectedLaunchFile(selectedFile ? { ...selectedFile } : undefined);
-                    }}
-                  >
-                    <InputIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip
-                title="Copy absolute path"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <span>
-                  <IconButton
-                    disabled={!selectedFile?.path}
-                    size="small"
-                    aria-label="copy"
-                    onClick={() => {
-                      if (selectedFile?.path) {
-                        navigator.clipboard.writeText(selectedFile.path);
-                        logCtx.success(`${selectedFile.path} copied!`);
-                      }
-                    }}
-                  >
-                    <ContentCopyIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </ButtonGroup>
-          </Stack>
-          {ignoringNonRelevantPackageFiles && (
-            <Tag
-              key="ignore-non-relevant-packages"
-              color="warning"
-              title="Ignoring non-relevant package files"
-              text="The folder contains too many files"
-              wrap
+                  }}
+                >
+                  <ContentCopyIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </ButtonGroup>
+        </Stack>
+        {ignoringNonRelevantPackageFiles && (
+          <Tag
+            key="ignore-non-relevant-packages"
+            color="warning"
+            title="Ignoring non-relevant package files"
+            text="The folder contains too many files"
+            wrap
+          />
+        )}
+      </Stack>
+      <Box height="100%" overflow="auto" display="flex" flexDirection="row">
+        <Stack
+          direction="column"
+          onKeyUp={(e) => {
+            if (e.key === "Delete") {
+              // remove launch file from history
+              setLaunchFileHistory((prevHistory) => {
+                if (selectedFile) {
+                  return prevHistory.filter((file) => file.id !== selectedFile.id);
+                }
+                return prevHistory;
+              });
+            }
+          }}
+        >
+          {Object.keys(packageItemsTree).length > 0 && (
+            <TreeDirectory
+              selectedPackage={selectedPackage?.rosPackage}
+              providerName={selectedPackage?.providerName}
+              packageItemsTree={packageItemsTree}
+              onNodeSelect={(itemId: string) => handleSelect(itemId)}
+              onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
+                onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
+              }
             />
           )}
         </Stack>
-        <Stack direction="row" height="100%" overflow="auto">
-          <Box
-            width="100%"
-            // height="100%"
-            overflow="auto"
-            onKeyUp={(e) => {
-              if (e.key === "Delete") {
-                // remove launch file from history
-                setLaunchFileHistory((prevHistory) => {
-                  if (selectedFile) {
-                    return prevHistory.filter((file) => file.id !== selectedFile.id);
-                  }
-                  return prevHistory;
-                });
-              }
-            }}
-          >
-            {Object.keys(packageItemsTree).length > 0 && (
-              <TreeDirectory
-                selectedPackage={selectedPackage?.rosPackage}
-                providerName={selectedPackage?.providerName}
-                packageItemsTree={packageItemsTree}
-                onNodeSelect={(itemId: string) => handleSelect(itemId)}
-                onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
-                  onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
-                }
-              />
-            )}
-          </Box>
-        </Stack>
-        {selectedLaunchFile && (
-          <LaunchFileModal
-            selectedProvider={undefined}
-            selectedLaunchFile={selectedLaunchFile}
-            setSelectedLaunchFile={setSelectedLaunchFile}
-            onLaunchCallback={() => {}}
-          />
-        )}
-        {(!rosCtx.providers || rosCtx.providers.length === 0) && (
-          <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
-            <AlertTitle>No providers available</AlertTitle>
-            Please connect to a ROS provider
-          </Alert>
-        )}
-      </Stack>
-    </Box>
+      </Box>
+      {selectedLaunchFile && (
+        <LaunchFileModal
+          selectedProvider={undefined}
+          selectedLaunchFile={selectedLaunchFile}
+          setSelectedLaunchFile={setSelectedLaunchFile}
+          onLaunchCallback={() => {}}
+        />
+      )}
+      {(!rosCtx.providers || rosCtx.providers.length === 0) && (
+        <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
+          <AlertTitle>No providers available</AlertTitle>
+          Please connect to a ROS provider
+        </Alert>
+      )}
+    </Stack>
   );
 }

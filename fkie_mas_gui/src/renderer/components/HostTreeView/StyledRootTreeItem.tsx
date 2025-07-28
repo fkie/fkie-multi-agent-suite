@@ -1,4 +1,4 @@
-import { alpha, styled } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 
 const StyledRootTreeItem = styled(TreeItem)(({ theme }) => ({
