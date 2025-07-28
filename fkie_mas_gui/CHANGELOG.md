@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.5.1 - 28.07.2025
+
+Fixed update after "get log paths" in node details panel
+Improved error message on connection errors
+
 ## 4.5.0 - 24.07.2025
 
 Show user defined color for node published as KeyValue {key: color, value: rgba(126, 64, 64, 0.8)} of DiagnosticStatus on /mas/diagnostic
