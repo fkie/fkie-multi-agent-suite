@@ -81,11 +81,18 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     settingsCtx.get("avoidGroupWithOneItem") as string
   );
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(undefined);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
-    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean)
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
+    const spamNodes = (settingsCtx.get("spamNodes") as string)
+      .split(",")
+      .filter((item) => item.length > 0)
+      .map((item) => `(${item})`)
+      .join("|");
+    setSpamNodesRegExp(spamNodes ? new RegExp(String.raw`${spamNodes}`, "g") : undefined);
   }, [settingsCtx.changed]);
 
   function createTreeFromNodes(nodes: RosNode[]): void {
@@ -97,8 +104,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     // ...and keep a list of the tree nodes
     const nodeTree: NodeTreeItem[] = [];
     const level: NodeTree = { nodeTree };
-    const spamNodesParam = settingsCtx.get("spamNodes") as string;
-    const cliInSpam = spamNodesParam.indexOf("_ros2cli") > -1;
     for (const node of nodes) {
       let remoteLocationId = "";
       if (!node.isLocal) {
@@ -109,7 +114,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         }
       }
       let nodePath = node.isLocal && node.providerId ? node.providerId : remoteLocationId;
-      if (node.system_node && namespaceSystemNodes && !(cliInSpam && node.name.startsWith("/_ros2cli"))) {
+      const isSpamNode = spamNodesRegExp && node.name.match(spamNodesRegExp);
+      if (node.system_node && namespaceSystemNodes && !isSpamNode) {
         // for system nodes, e.g.: /{SYSTEM}/ns
         nodePath += namespaceSystemNodes;
         if (node.namespace !== "/") {
@@ -127,20 +133,8 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         if (node.capabilityGroup.name) {
           groupName = `/${node.capabilityGroup.name}`;
         }
-        if (groupName.length === 0) {
-          // check if this node should be placed in SPAM group
-          const nodeName = nodeNameWithoutNamespace(node);
-          const spamNodes = spamNodesParam
-            .split(",")
-            .filter((item) => item.length > 0)
-            .map((item) => `(${item})`)
-            .join("|");
-          if (spamNodes.length > 0) {
-            const re = new RegExp(String.raw`${spamNodes}`, "g");
-            if (nodeName.match(re)) {
-              groupName = "/{SPAM}";
-            }
-          }
+        if (isSpamNode) {
+          groupName = "/{SPAM}";
         }
         nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;
       }
@@ -200,7 +194,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
 
   useEffect(() => {
     createTreeFromNodes(visibleNodes);
-  }, [visibleNodes, avoidGroupWithOneItem]);
+  }, [visibleNodes, avoidGroupWithOneItem, spamNodesRegExp]);
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -658,7 +652,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           key={itemId}
           itemId={itemId}
           groupName={`${namespacePart}${name}`}
-          icon={<GroupIcon treeItems={children} isDarkMode={isDarkMode} groupName={name}/>}
+          icon={<GroupIcon treeItems={children} isDarkMode={isDarkMode} groupName={name} />}
           countChildren={NodesCount(children)}
           onDoubleClick={(event: React.MouseEvent, id: string) => {
             handleDoubleClick(event, id);
