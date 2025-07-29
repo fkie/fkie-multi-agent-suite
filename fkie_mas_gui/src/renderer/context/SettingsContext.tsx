@@ -177,7 +177,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   ntpServer: {
     label: "NTP Server",
-    placeholder: "@/renderer.",
     freeSolo: true,
     type: "string[]",
     default: ["ntp.ubuntu.com"],
@@ -186,9 +185,11 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   logCommand: {
     label: "Log command prefix",
-    description: "Terminal command to display the log file. The file name is appended.",
+    description: "Terminal command to display the log file. The file name is appended. (+F: waiting for more data)",
     type: "string",
+    freeSolo: true,
     default: "/usr/bin/less -fLQR +G",
+    options: ["/usr/bin/less -fLQR +G", "/usr/bin/less -fLQR +G +F"],
     group: "Parametrization",
   },
   color: {
@@ -281,6 +282,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     freeSolo: true,
     type: "string",
     default: ".*_impl_,/*_ros2cli",
+    options: [".*_impl_,/*_ros2cli", ".*_impl_,/*_ros2cli,/mas/*,/_mas_*,ttyd*"],
     description: "Nodes to be placed in a {SPAM} group.",
     isValid: (value: JSONValue) => {
       let result = true;

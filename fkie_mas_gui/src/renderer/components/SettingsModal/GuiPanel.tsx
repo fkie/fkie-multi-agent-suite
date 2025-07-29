@@ -158,11 +158,12 @@ export default function GuiPanel(): JSX.Element {
                                     disablePortal={false}
                                     handleHomeEndKeys={false}
                                     multiple
-                                    id="auto-complete-debug"
+                                    id={param.label}
                                     size="small"
                                     options={param.options}
                                     freeSolo={param.freeSolo}
                                     sx={{ margin: 0 }}
+                                    fullWidth={true}
                                     getOptionLabel={(option) => option as string}
                                     renderInput={(params) => (
                                       <TextField
@@ -206,8 +207,46 @@ export default function GuiPanel(): JSX.Element {
                                   )}
                                 </Stack>
                               </>
+                            ) : param.freeSolo ? (
+                              <>
+                                <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
+                                {param.description && (
+                                  <Typography sx={{ typography: "body2" }}>{param.description}</Typography>
+                                )}
+                                <Stack direction="row" alignItems="center">
+                                  <Autocomplete
+                                    id={param.label}
+                                    size="small"
+                                    options={param.options}
+                                    freeSolo={param.freeSolo}
+                                    fullWidth={true}
+                                    value={settingsCtx.get(name)}
+                                    renderInput={(params) => (
+                                      <TextField
+                                        {...params}
+                                        variant="outlined"
+                                        size="small"
+                                        placeholder={param.placeholder ? param.placeholder : param.label}
+                                      />
+                                    )}
+                                    onChange={(_event, newValue) => {
+                                      settingsCtx.set(name, newValue as string);
+                                    }}
+                                  />
+                                  {param.default && param.default !== settingsCtx.get(name) && (
+                                    <Tooltip title="Restore default value" placement="bottom" disableInteractive>
+                                      <IconButton
+                                        onClick={() => {
+                                          settingsCtx.set(name, param.default);
+                                        }}
+                                      >
+                                        <UndoIcon fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                </Stack>
+                              </>
                             ) : (
-                              // only one value
                               <>
                                 <Typography sx={{ fontWeight: "bold" }}>{param.label}</Typography>
                                 <FormControlLabel
