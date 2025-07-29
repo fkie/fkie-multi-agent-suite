@@ -62,7 +62,7 @@ const applicationRows = [
     id: generateUniqueId(),
     application: "TF Tree",
     commandROS1: "rosrun rqt_tf_tree rqt_tf_tree",
-    commandROS2: null,
+    commandROS2: "ros2 run rqt_tf_tree rqt_tf_tree --force-discover",
   },
   {
     id: generateUniqueId(),
