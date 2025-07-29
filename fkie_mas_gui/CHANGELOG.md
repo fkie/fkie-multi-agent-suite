@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.5.3 - 29.07.2025
+
+Added options for SPAM and log prefix parameter
+Any node can now be placed in SPAM group
+Added ros2 tf tree launcher
+Fixed scroll behavior in Package Explorer tab
+Fixed group intent in Nodes, Packages and Parameter tabs
+
 ## 4.5.2 - 28.07.2025
 
 Changed view for launch file in "Node Details" tab
