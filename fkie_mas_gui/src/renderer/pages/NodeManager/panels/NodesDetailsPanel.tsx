@@ -697,7 +697,7 @@ export default function NodesDetailsPanel(): JSX.Element {
             </Tooltip>
           )}
         </Stack>
-        <Box overflow="auto">
+        <Box height="100%" overflow="auto">
           <Stack direction="row" spacing={0.5}>
             <Tag
               color={nodeShow.status === RosNodeStatus.RUNNING ? "success" : "default"}
@@ -732,6 +732,7 @@ export default function NodesDetailsPanel(): JSX.Element {
     logPaths,
     navCtx.nodesHistory,
     navCtx.selectedNodes,
+    settingsCtx.changed,
   ]);
 
   return (
