@@ -227,6 +227,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     if (filter.length < 2) {
       return data;
     }
+    const wholeMessage = filter.indexOf("{}") >= 0;
     const result = {};
     if (isObject(data)) {
       for (const key in data) {
@@ -234,10 +235,12 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
           const res = filterJson(data[key], filter);
           if (res && Object.keys(res).length > 0) {
             result[key] = res;
+            if (wholeMessage) return data;
           }
         } else {
           if (findIn(filter, [key, JSON.stringify(data[key])])) {
             result[key] = data[key];
+            if (wholeMessage) return data;
           }
         }
       }
@@ -660,7 +663,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
                 onSearch={(value) => {
                   setFilterText(value);
                 }}
-                placeholder="grep for (OR: <space>, AND: +, NOT: !)"
+                placeholder="grep for (OR: <space>, AND: +, NOT: !, WHOLE MSG: {})"
                 defaultValue={filterText}
                 // fullWidth
               />
