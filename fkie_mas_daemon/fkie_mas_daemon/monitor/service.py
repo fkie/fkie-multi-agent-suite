@@ -120,8 +120,14 @@ class Service:
             filteredMsg.header = msg.header
             with self._mutex:
                 for status in msg.status:
-                    if status.name in self._local_nodes:
-                        filteredMsg.status.append(status)
+                    # match the name without leading slash
+                    # match the name with dots instead of slashes
+                    # match the name with trailing logger name
+                    statusName = f"/{status.name.lstrip('/').lstrip('.').replace('.', '/')}"
+                    for nodeName in self._local_nodes:
+                        if statusName.startswith(nodeName):
+                            filteredMsg.status.append(status)
+                            break
             if len(filteredMsg.status) > 0:
                 self._callbackDiagnostics(filteredMsg)
 

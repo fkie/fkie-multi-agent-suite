@@ -1206,7 +1206,11 @@ export default class Provider implements IProvider {
     // update the screens
     const diagStatus = diags.status || [];
     for (const status of diagStatus) {
-      const matchingNode: RosNode | undefined = this.rosNodes.find((node) => node.name === status.name);
+      // match the name without leading slash
+      // match the name with dots instead of slashes
+      // match the name with trailing logger name
+      const statusName = `/${status.name.replace(/^\/+/, '').replaceAll(".", '/')}`;
+      const matchingNode: RosNode | undefined = this.rosNodes.find((node) => statusName.startsWith(node.name));
       if (matchingNode) {
         matchingNode.diagnosticLevel = status.level;
         matchingNode.diagnosticMessage = status.message;
