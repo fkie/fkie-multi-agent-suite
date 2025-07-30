@@ -13,6 +13,7 @@ import { EditorCloseCallback, EditorManagerEvents, FileRangeCallback, TEditorMan
 import { TFileRange } from "./FileRange";
 import JSONObject, { JSONValue } from "./JsonObject";
 import { TLaunchArg } from "./LaunchArg";
+import { PublishCloseCallback, PublishManagerEvents, TPublishManager } from "./PublishManager";
 import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "./SubscriberManager";
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "./TerminalManager";
@@ -20,6 +21,7 @@ import { TResult } from "./TResult";
 import { TResultData } from "./TResultData";
 import { TResultProcess } from "./TResultProcess";
 import { TRosInfo } from "./TRosInfo";
+import { TRosMessageStruct } from "./TRosMessageStruct";
 import { TSystemInfo } from "./TSystemInfo";
 import { TTag } from "./TTag";
 
@@ -28,6 +30,7 @@ export {
   CommandExecutorEvents,
   DialogManagerEvents,
   EditorManagerEvents,
+  PublishManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
   TerminalManagerEvents
@@ -42,6 +45,7 @@ export type {
   FileRangeCallback,
   JSONObject,
   JSONValue,
+  PublishCloseCallback,
   SubscriberCloseCallback,
   TAutoUpdateManager,
   TCommandExecutor,
@@ -51,10 +55,12 @@ export type {
   TerminateCallback,
   TFileRange,
   TLaunchArg,
+  TPublishManager,
   TResult,
   TResultData,
   TResultProcess,
   TRosInfo,
+  TRosMessageStruct,
   TShutdownManager,
   TSubscriberManager,
   TSystemInfo,

@@ -5,9 +5,8 @@ import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
+import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
-import TopicPublishPanel from "@/renderer/pages/NodeManager/panels/TopicPublishPanel";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { removeDDSuid } from "@/renderer/utils";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
@@ -49,18 +48,8 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
     navCtx.openSubscriber(providerId || "", topic.name, true, false, external, openInTerminal);
   }
 
-  function onPublishClick(topic: TopicExtendedInfo): void {
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        `publish-${topic.name}-${providerId}`,
-        topic.name || "undefined",
-        <TopicPublishPanel topicName={topic.name} topicType={topic.msgType} providerId={providerId} />,
-        true,
-        LAYOUT_TAB_SETS.BORDER_RIGHT,
-        new LayoutTabConfig(true, "publish")
-      )
-    );
+  function onPublishClick(topic: TopicExtendedInfo, external: boolean = false, openInTerminal: boolean = false): void {
+    navCtx.startPublisher(providerId || "", topic.name, topic.msgType, external, openInTerminal);
   }
 
   function updateTopicList(): void {
@@ -265,11 +254,38 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
         >
           <Chip
             size="small"
-            onClick={() => {
-              onPublishClick(topicInfo);
+            onClick={(event) => {
+              onPublishClick(
+                topicInfo,
+                event.nativeEvent.shiftKey,
+                event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
+              );
             }}
             avatar={
-              <Tooltip title="Create a publisher" placement="left" enterDelay={tooltipDelay} disableInteractive>
+              <Tooltip
+                title={
+                  <Stack padding={0} margin={0}>
+                    <Typography fontWeight="bold" fontSize="inherit">
+                      Create a publisher
+                    </Typography>
+                    <Stack direction="row" spacing={"0.2em"}>
+                      <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                        Shift:
+                      </Typography>
+                      <Typography fontSize={"inherit"}>alternative open location</Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={"0.2em"}>
+                      <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                        Ctrl+Shift:
+                      </Typography>
+                      <Typography fontSize={"inherit"}>open in a terminal</Typography>
+                    </Stack>
+                  </Stack>
+                }
+                placement="left"
+                enterDelay={tooltipDelay}
+                disableInteractive
+              >
                 <PlayArrowRoundedIcon style={{ padding: 1, color: "#09770fff" }} fontSize="inherit" />
               </Tooltip>
             }

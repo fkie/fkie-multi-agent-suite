@@ -11,6 +11,8 @@ import {
   EditorCloseCallback,
   EditorManagerEvents,
   FileRangeCallback,
+  PublishCloseCallback,
+  PublishManagerEvents,
   ShutdownManagerEvents,
   SubscriberCloseCallback,
   SubscriberManagerEvents,
@@ -22,6 +24,7 @@ import {
   TerminateCallback,
   TFileRange,
   TLaunchArg,
+  TPublishManager,
   TRosInfo,
   TShutdownManager,
   TSubscriberManager,
@@ -148,6 +151,23 @@ if (process.contextIsolated) {
           return callback(id);
         }),
     } as TEditorManager);
+
+    contextBridge.exposeInMainWorld("publishManager", {
+      // publisher interface
+      start: (id: string, host: string, port: number, topicName: string, topicType: string) => {
+        return ipcRenderer.invoke(PublishManagerEvents.start, id, host, port, topicName, topicType);
+      },
+      close: (id: string) => {
+        return ipcRenderer.invoke(PublishManagerEvents.close, id);
+      },
+      has: (id: string) => {
+        return ipcRenderer.invoke(PublishManagerEvents.has, id);
+      },
+      onClose: (callback: PublishCloseCallback) =>
+        ipcRenderer.on(PublishManagerEvents.onClose, (_event, id) => {
+          return callback(id);
+        }),
+    } as TPublishManager);
 
     contextBridge.exposeInMainWorld("subscriberManager", {
       // subscriber interface

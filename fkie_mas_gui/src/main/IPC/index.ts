@@ -3,6 +3,7 @@ import AutoUpdateManager from "./AutoUpdateManager";
 import CommandExecutor from "./CommandExecutor";
 import DialogManager from "./DialogManager";
 import EditorManager from "./EditorManager";
+import PublishManager from "./PublishManager";
 import { ROSInfo } from "./ROSInfo";
 import ShutdownManager from "./ShutdownManager";
 import SubscriberManager from "./SubscriberManager";
@@ -11,12 +12,14 @@ import TerminalManager from "./TerminalManager";
 
 const commandExecutor = new CommandExecutor();
 const editorManager = new EditorManager();
+const publishManager = new PublishManager();
 const subscriberManager = new SubscriberManager();
 const terminalManager = new TerminalManager();
 
 export const registerHandlers = (): void => {
   commandExecutor.registerHandlers();
   editorManager.registerHandlers();
+  publishManager.registerHandlers();
   subscriberManager.registerHandlers();
   terminalManager.registerHandlers();
 
@@ -35,8 +38,10 @@ export {
   AutoUpdateManager,
   DialogManager,
   EditorManager,
+  PublishManager,
   ROSInfo,
   ShutdownManager,
   SubscriberManager,
-  TerminalManager,
+  TerminalManager
 };
+

@@ -22,10 +22,6 @@ type TEditor = {
 export default class EditorManager implements TEditorManager {
   editors: { [id: string]: TEditor } = {};
 
-  constructor() {
-    //
-  }
-
   public onFileRange: (callback: FileRangeCallback) => void = () => {
     // implemented in preload script
   };
@@ -146,7 +142,7 @@ export default class EditorManager implements TEditorManager {
       y: editorWindowStateKeeper.y,
       width: editorWindowStateKeeper.width,
       height: editorWindowStateKeeper.height,
-      icon: join(__dirname, "../../icon/crystal_clear_edit_launch.png"),
+      icon: "public/icons/crystal_clear_edit_launch.png",
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,

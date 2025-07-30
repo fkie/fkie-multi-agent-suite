@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, externalizeDepsPlugin } from "electron-vite";
-import { resolve } from "path";
+import { resolve } from "node:path";
 
 export default defineConfig({
   main: {
@@ -44,6 +44,7 @@ export default defineConfig({
           app: resolve("src/renderer/index.html"),
           editor: resolve("src/renderer/editor.html"),
           popout: resolve("src/renderer/popout.html"),
+          publisher: resolve("src/renderer/publisher.html"),
           subscriber: resolve("src/renderer/subscriber.html"),
           terminal: resolve("src/renderer/terminal.html"),
         },

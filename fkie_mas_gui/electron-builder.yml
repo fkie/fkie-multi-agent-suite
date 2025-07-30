@@ -9,14 +9,18 @@ files:
   - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
   - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+extraFiles:
+  - "public"
+
 asarUnpack:
   - out/renderer/editor.html
   - out/renderer/popout.html
+  - out/renderer/publisher.html
   - out/renderer/subscriber.html
   - out/renderer/terminal.html
 win:
   executableName: mas-gui
-  icon: "icon/"
+  icon: "public/icons/mas.png"
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -40,7 +44,7 @@ linux:
   maintainer: fkie.cms
   category: Development
   synopsis: Manage and control ROS nodes
-  icon: "icon/mas.png"
+  icon: "public/icons/mas.png"
 appImage:
   artifactName: mas-gui.${ext}
 npmRebuild: false

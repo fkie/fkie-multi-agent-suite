@@ -24,6 +24,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "server": "vite",
     "start": "electron-vite preview",
+    "start:ns": "electron-vite preview -- --no-sandbox",
     "dev": "electron-vite dev -- --trace-warnings",
     "dev:ns": "electron-vite dev -- --no-sandbox --trace-warnings",
     "build": "npm run typecheck && electron-vite build",

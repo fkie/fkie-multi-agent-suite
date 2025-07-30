@@ -15,6 +15,7 @@ import { emitCustomEvent } from "react-custom-events";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
+import TopicPublishPanel from "../pages/NodeManager/panels/TopicPublishPanel";
 import { CmdType } from "../providers";
 import LoggingContext from "./LoggingContext";
 import RosContext from "./RosContext";
@@ -36,6 +37,13 @@ export interface INavigationContext {
     fileRange: TFileRange | null,
     launchArgs: TLaunchArg[],
     externalKeyModifier: boolean
+  ) => void;
+  startPublisher: (
+    providerId: string,
+    topicName: string | undefined,
+    topicType: string | undefined,
+    externalKeyModifier: boolean,
+    forceOpenTerminal: boolean
   ) => void;
   openSubscriber: (
     providerId: string,
@@ -71,6 +79,7 @@ export const DEFAULT = {
   openEditor: (): void => {},
   openSubscriber: (): void => {},
   openTerminal: (): void => {},
+  startPublisher: (): void => {},
 };
 
 interface INavigationProvider {
@@ -163,6 +172,67 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
               path: path,
               fileRange: fileRange,
               launchArgs: launchArgs,
+            })
+          )
+        );
+      }
+    }
+  }
+
+  async function startPublisher(
+    providerId: string,
+    topicName: string | undefined,
+    topicType: string | undefined,
+    externalKeyModifier: boolean,
+    forceOpenTerminal: boolean
+  ): Promise<void> {
+    const provider = rosCtx.getProviderById(providerId);
+    if (provider) {
+      const id = `pub-${provider.connection.host}-${provider.connection.port}-${topicName}`;
+      // open in external window depending on setting and key modifier and if no tab already existing
+      const openExternal: boolean =
+        xor(settingsCtx.get("publisherOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
+      if (forceOpenTerminal) {
+        try {
+          const terminalCmd = await provider.cmdForType(CmdType.PUB, "", topicName || "", "", "");
+          const result = await window.commandExecutor?.execTerminal(
+            null, // we start the publisher always local
+            `"pub ${topicName}"`,
+            terminalCmd.cmd
+          );
+          if (!result?.result) {
+            logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${result?.message}`, true);
+          }
+        } catch (error) {
+          logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${error}`, true);
+        }
+        return;
+      }
+      if (provider && window.publishManager && (openExternal || (await window.publishManager?.has(id)))) {
+        // open in new window
+        // we do not check for existing publisher, it is done by IPC with given id
+        window.publishManager?.start(
+          id,
+          provider.connection.host,
+          provider.connection.port,
+          topicName || "",
+          topicType || "",
+        );
+      } else {
+        emitCustomEvent(
+          EVENT_OPEN_COMPONENT,
+          eventOpenComponent(
+            id,
+            topicName || "unknown",
+            <TopicPublishPanel topicName={topicName} topicType={topicType} providerId={providerId} />,
+            true,
+            LAYOUT_TAB_SETS[settingsCtx.get("publisherOpenLocation") as string],
+            new LayoutTabConfig(true, `${CmdType.PUB}`, null, null, null, null, {
+              id: id,
+              host: provider.connection.host,
+              port: provider.connection.port,
+              topicName: topicName || "",
+              topicType: topicType || "",
             })
           )
         );
@@ -343,6 +413,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
       openEditor,
       openSubscriber,
       openTerminal,
+      startPublisher,
     }),
     [nodesHistory, selectedNodes, selectedProviders, setSelectedFromHistory]
   );

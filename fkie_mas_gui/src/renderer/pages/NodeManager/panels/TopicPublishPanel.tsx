@@ -66,7 +66,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   const [searchTerm, setSearchTerm] = useState("");
   const [messageStruct, setMessageStruct] = useState<TRosMessageStruct>();
   const [messageStructOrg, setMessageStructOrg] = useState<TRosMessageStruct>();
-  const [publishRate, setPublishRate] = useState<string>("once");
+  const [publishRate, setPublishRate] = useState<string>("1");
   const [provider, setProvider] = useState<Provider | null>(null);
   const [inputElements, setInputElements] = useState<React.ReactNode | null>(null);
   const [hasPublisher, setHasPublisher] = useState<boolean>(false);
@@ -101,8 +101,11 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
 
   useEffect(() => {
     updateTopicNameOptions();
-    getAvailableMessageTypes();
   }, [rosCtx.mapProviderRosNodes, currentProviderId]);
+
+  useEffect(() => {
+    getAvailableMessageTypes();
+  }, [currentProviderId]);
 
   // get item history after the history was loaded
   const fromHistory = useCallback(

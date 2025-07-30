@@ -14,10 +14,6 @@ type TSubscriber = {
 export default class SubscriberManager implements TSubscriberManager {
   instances: { [id: string]: TSubscriber } = {};
 
-  constructor() {
-    //
-  }
-
   onClose: (callback: SubscriberCloseCallback) => void = () => {
     // implemented in preload script
   };
@@ -75,7 +71,7 @@ export default class SubscriberManager implements TSubscriberManager {
       return Promise.resolve(null);
     }
 
-    const editorWindowStateKeeper = await windowStateKeeper("editor");
+    const editorWindowStateKeeper = await windowStateKeeper("subscriber");
 
     const window = new BrowserWindow({
       autoHideMenuBar: true,
@@ -85,7 +81,7 @@ export default class SubscriberManager implements TSubscriberManager {
       y: editorWindowStateKeeper.y,
       width: editorWindowStateKeeper.width,
       height: editorWindowStateKeeper.height,
-      icon: join(__dirname, "../../icon/sekkyumu_topic_echo.png"),
+      icon: "public/icons/sekkyumu_topic_echo.png",
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,

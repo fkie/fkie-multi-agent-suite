@@ -564,6 +564,11 @@ export default function NodeManager(): JSX.Element {
                     );
                     deleteTab(node.getId());
                   }
+                  if (node.getConfig().publisherConfig) {
+                    const cfg = node.getConfig().publisherConfig;
+                    window.publishManager?.start(cfg.id, cfg.host, cfg.port, cfg.topicName, cfg.topicType);
+                    deleteTab(node.getId());
+                  }
                   if (node.getConfig().subscriberConfig) {
                     const cfg = node.getConfig().subscriberConfig;
                     window.subscriberManager?.open(cfg.id, cfg.host, cfg.port, cfg.topic, cfg.showOptions, cfg.noData);

@@ -7,6 +7,8 @@ export default class CmdType extends String {
 
   static TERMINAL = new CmdType("terminal");
 
+  static PUB = new CmdType("pub");
+
   static ECHO = new CmdType("echo");
 
   static SET_TIME = new CmdType("set_time");
@@ -20,6 +22,8 @@ export function cmdTypeFromString(type: string | undefined | null): CmdType {
       return CmdType.SCREEN;
     case "log":
       return CmdType.LOG;
+    case "pub":
+      return CmdType.PUB;
     case "echo":
       return CmdType.ECHO;
     case "terminal":

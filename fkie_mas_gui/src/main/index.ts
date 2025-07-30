@@ -77,7 +77,7 @@ const createWindow = async (): Promise<void> => {
     y: mainWindowStateKeeper.y,
     width: mainWindowStateKeeper.width,
     height: mainWindowStateKeeper.height,
-    icon: join(__dirname, "../../icon/mas.png"),
+    icon: "public/icons/mas.png",
     webPreferences: {
       sandbox: false,
       nodeIntegration: true,

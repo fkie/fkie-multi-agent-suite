@@ -1,4 +1,4 @@
-import JSONObject, { JSONValue } from "../../types/JsonObject";
+import JSONObject, { JSONValue } from "./JsonObject";
 
 export type TRosMessageStruct = {
   type: string;

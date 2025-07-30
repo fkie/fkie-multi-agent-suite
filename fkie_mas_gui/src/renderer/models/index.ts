@@ -1,4 +1,5 @@
 // ROS related imports
+import { TRosMessageStruct, rosMessageStructToString } from "../../types/TRosMessageStruct";
 import DaemonVersion from "./DaemonVersion";
 import DiagnosticArray, {
   DiagnosticKeyValue,
@@ -20,7 +21,6 @@ import RosTopic, { EndpointInfo, IncompatibleQos } from "./RosTopic";
 import RosTopicId from "./RosTopicId";
 import ServiceExtendedInfo, { TServiceNodeInfo } from "./ServiceExtendedInfo";
 import TopicExtendedInfo from "./TopicExtendedInfo";
-import { TRosMessageStruct, rosMessageStructToString } from "./TRosMessageStruct";
 // Launch related imports
 import LaunchArgument from "./LaunchArgument";
 import LaunchAssociations from "./LaunchAssociations";

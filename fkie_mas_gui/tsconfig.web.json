@@ -6,14 +6,15 @@
     "src/preload/**/*.ts",
     "src/renderer/**/*.ts",
     "src/renderer/**/*.tsx",
-    "src/types/**/*.ts"
+    "src/types/**/*.ts",
   ],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@icons": ["public/icons"]
     },
     "skipLibCheck": true,
     "types": ["vite/client"]

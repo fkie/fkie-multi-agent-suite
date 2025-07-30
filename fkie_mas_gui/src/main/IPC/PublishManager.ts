@@ -1,50 +1,41 @@
-import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
+import { PublishCloseCallback, PublishManagerEvents, TPublishManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
-import { ROSInfo } from "./ROSInfo";
 
-type TTerminal = {
+type TPublisher = {
   window: BrowserWindow;
 };
 
 /**
- * Class TerminalManager: Allows to create terminal objects to interact with console
+ * Class SubscriberManager: handle communication with external echo window
  */
-export default class TerminalManager implements TTerminalManager {
-  rosInfo: ROSInfo;
+export default class PublishManager implements TPublishManager {
+  instances: { [id: string]: TPublisher } = {};
 
-  instances: { [id: string]: TTerminal } = {};
-
-  constructor() {
-    this.rosInfo = new ROSInfo();
-  }
-
-  onClose: (callback: TerminalCloseCallback) => void = () => {
+  onClose: (callback: PublishCloseCallback) => void = () => {
     // implemented in preload script
   };
 
   public registerHandlers(): void {
-    ipcMain.handle(TerminalManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+    ipcMain.handle(PublishManagerEvents.has, (_event: Electron.IpcMainInvokeEvent, id: string) => {
       return this.has(id);
     });
-    ipcMain.handle(TerminalManagerEvents.close, (_event: Electron.IpcMainInvokeEvent, id: string) => {
+    ipcMain.handle(PublishManagerEvents.close, (_event: Electron.IpcMainInvokeEvent, id: string) => {
       return this.close(id);
     });
     ipcMain.handle(
-      TerminalManagerEvents.open,
+      PublishManagerEvents.start,
       (
         _event: Electron.IpcMainInvokeEvent,
         id: string,
         host: string,
         port: number,
-        info: string,
-        node: string,
-        screen: string,
-        cmd: string
+        topicName: string,
+        topicType: string
       ) => {
-        return this.open(id, host, port, info, node, screen, cmd);
+        return this.start(id, host, port, topicName, topicType);
       }
     );
   }
@@ -65,37 +56,30 @@ export default class TerminalManager implements TTerminalManager {
     return Promise.resolve(false);
   };
 
-  public open: (
+  public start: (
     id: string,
     host: string,
     port: number,
-    info: string,
-    node: string,
-    screen: string,
-    cmd: string
-  ) => Promise<string | null> = async (id, host, port, info, node, screen, cmd) => {
-    // if (isDebug) {
-    //   await installExtensions()
-    // }
+    topicName: string,
+    topicType: string
+  ) => Promise<string | null> = async (id, host, port, topicName, topicType) => {
     if (this.instances[id]) {
       this.instances[id].window.restore();
       this.instances[id].window.focus();
       return Promise.resolve(null);
     }
-    const editorWindowStateKeeper = await windowStateKeeper("editor");
+
+    const pubWindowStateKeeper = await windowStateKeeper("publisher");
 
     const window = new BrowserWindow({
       autoHideMenuBar: true,
       show: false,
       frame: true,
-      x: editorWindowStateKeeper.x,
-      y: editorWindowStateKeeper.y,
-      width: editorWindowStateKeeper.width,
-      height: editorWindowStateKeeper.height,
-      icon:
-        `${info}` === "log"
-          ? "public/icons/crystal_clear_show_log.png"
-          : "public/icons/crystal_clear_show_io.png",
+      x: pubWindowStateKeeper.x,
+      y: pubWindowStateKeeper.y,
+      width: pubWindowStateKeeper.width,
+      height: pubWindowStateKeeper.height,
+      icon: "public/icons/sekkyumu_topic_pub.png",
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,
@@ -104,7 +88,7 @@ export default class TerminalManager implements TTerminalManager {
     });
     this.instances[id] = { window: window };
     // Track window state
-    editorWindowStateKeeper.track(window);
+    pubWindowStateKeeper.track(window);
 
     window.on("ready-to-show", () => {
       if (!window) {
@@ -113,7 +97,7 @@ export default class TerminalManager implements TTerminalManager {
       if (process.env.START_MINIMIZED) {
         window.minimize();
       } else {
-        if (editorWindowStateKeeper.isMaximized) window.maximize();
+        if (pubWindowStateKeeper.isMaximized) window.maximize();
         window.show();
       }
     });
@@ -122,7 +106,7 @@ export default class TerminalManager implements TTerminalManager {
       // send close request to the renderer
       if (this.instances[id]) {
         e.preventDefault();
-        this.instances[id].window.webContents.send(TerminalManagerEvents.onClose, id);
+        this.instances[id].window.webContents.send(PublishManagerEvents.onClose, id);
       }
     });
 
@@ -133,22 +117,17 @@ export default class TerminalManager implements TTerminalManager {
     // HMR for renderer base on electron-vite cli.
     // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env.ELECTRON_RENDERER_URL) {
-      const nodeStr = node ? `&node=${node}` : "";
-      const screenStr = screen ? `&screen=${screen}` : "";
-      const cmdStr = cmd ? `&cmd=${cmd}` : "";
       window.loadURL(
-        `${process.env.ELECTRON_RENDERER_URL}/terminal.html?id=${id}&host=${host}&port=${port}&info=${info}${nodeStr}${screenStr}${cmdStr}`
+        `${process.env.ELECTRON_RENDERER_URL}/publisher.html?id=${id}&host=${host}&port=${port}&topicName=${topicName}&topicType=${topicType}`
       );
     } else {
-      window.loadFile(join(__dirname, "../renderer/terminal.html"), {
+      window.loadFile(join(__dirname, "../renderer/publisher.html"), {
         query: {
           id: id,
           host: host,
           port: `${port}`,
-          info: `${info}`,
-          node: node,
-          screen: screen,
-          cmd: cmd,
+          topicName: topicName,
+          topicType: `${topicType}`,
         },
       });
     }

@@ -10,7 +10,7 @@ import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { useCustomEventListener } from "react-custom-events";
 
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
 import TopicTreeItem from "@/renderer/components/TopicTreeView/TopicTreeItem";
@@ -25,9 +25,7 @@ import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { Provider } from "@/renderer/providers";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../layout";
-import { EVENT_FILTER_TOPICS, EVENT_OPEN_COMPONENT, eventOpenComponent, TFilterText } from "../layout/events";
-import TopicPublishPanel from "./TopicPublishPanel";
+import { EVENT_FILTER_TOPICS, TFilterText } from "../layout/events";
 
 type TTreeItem = {
   groupKey: string;
@@ -299,7 +297,12 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     }
   }
 
-  function onPublishClick(topic: TopicExtendedInfo | undefined, providerId: string = ""): void {
+  function onPublishClick(
+    topic: TopicExtendedInfo | undefined,
+    external: boolean,
+    openInTerminal: boolean = false,
+    providerId: string = ""
+  ): void {
     let provId = providerId ? providerId : undefined;
     if (!provId && topic) {
       provId = topic.subscribers.length > 0 ? topic.subscribers[0].providerId : undefined;
@@ -307,17 +310,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     if (!provId && topic) {
       provId = topic.publishers.length > 0 ? topic.publishers[0].providerId : undefined;
     }
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        `publish-${topic?.name}-${provId}`,
-        topic?.name || "undefined",
-        <TopicPublishPanel topicName={topic?.name} topicType={topic?.msgType} providerId={provId} />,
-        true,
-        LAYOUT_TAB_SETS.BORDER_RIGHT,
-        new LayoutTabConfig(true, "publish")
-      )
-    );
+    navCtx.startPublisher(provId || "", topic?.name, topic?.msgType, external, openInTerminal);
   }
 
   function topicTreeToStyledItems(rootPath: string, treeItem: TTreeItem, selectedItem: string | null): JSX.Element {
@@ -460,8 +453,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           <IconButton
             size="medium"
             aria-label="Create a publisher"
-            onClick={() => {
-              onPublishClick(topicForSelected);
+            onClick={(event) => {
+              onPublishClick(topicForSelected, event.nativeEvent.shiftKey, event.nativeEvent.ctrlKey);
             }}
           >
             <PlayCircleOutlineIcon fontSize="inherit" />
