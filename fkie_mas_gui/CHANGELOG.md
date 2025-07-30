@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.5.4 - 30.07.2025
+
+Added filter option to show whole message in echo tab
+Improved match of diagnostic messages to node names
+Added external panel for publish topics
+Fixed horizontal scroll bar in Node Details tab
+
 ## 4.5.3 - 29.07.2025
 
 Added options for SPAM and log prefix parameter

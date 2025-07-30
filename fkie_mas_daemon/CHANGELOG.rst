@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.1 (30.07.2025)
+------------------
+* Improved match of diagnostic messages to node names
+
 4.6.0 (24.07.2025)
 ------------------
 * Added /mas/diagnostic subscription witch forward only state of local nodes
