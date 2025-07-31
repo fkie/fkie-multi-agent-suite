@@ -166,54 +166,54 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   // debounced search callback
   // search in the origin node list and create a new tree
-  const onSearch = useCallback((searchTerm: string) => {
-    const newVisibleNodes: RosNode[] = [];
-    for (const item of providerNodes) {
-      const { nodes } = item;
-      const filteredNodes = nodes.filter((node) => {
-        // filter nodes by user text
-        if (searchTerm.length > 0) {
-          const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName, node.guid || ""]);
-          return isMatch;
-        }
-        return true;
-      });
+  const onSearch = useCallback(
+    (searchTerm: string) => {
+      const newVisibleNodes: RosNode[] = [];
+      for (const item of providerNodes) {
+        const { nodes } = item;
+        const filteredNodes = nodes.filter((node) => {
+          // filter nodes by user text
+          if (searchTerm.length > 0) {
+            const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName, node.guid || ""]);
+            return isMatch;
+          }
+          return true;
+        });
 
-      // remove nodes which are local in remote hosts
-      newVisibleNodes.push(
-        ...filteredNodes.filter(
-          (node) =>
-            node.isLocal ||
-            rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
-              .length === 0
-        )
-      );
-    }
-    setVisibleNodes(newVisibleNodes);
-  }, [providerNodes]);
-
-  useCustomEventListener(
-    EVENT_PROVIDER_ROS_NODES,
-    (data: EventProviderRosNodes) => {
-      // put in our providerNodes list
-      const { provider, nodes } = data;
-      // TODO: should we remove closed/lost provider infos
-      // Update local nodes in RosContext
-      rosCtx.updateLocalNodes(
-        data.provider.id,
-        data.nodes.filter((node) => node.isLocal).map((node) => node.name)
-      );
-      setProviderNodes((oldValues) => [
-        ...oldValues.filter((item) => {
-          return item.providerId !== provider.id;
-        }),
-        {
-          providerId: provider.id,
-          nodes: nodes,
-        },
-      ]);
-    }
+        // remove nodes which are local in remote hosts
+        newVisibleNodes.push(
+          ...filteredNodes.filter(
+            (node) =>
+              node.isLocal ||
+              rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
+                .length === 0
+          )
+        );
+      }
+      setVisibleNodes(newVisibleNodes);
+    },
+    [providerNodes]
   );
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data: EventProviderRosNodes) => {
+    // put in our providerNodes list
+    const { provider, nodes } = data;
+    // TODO: should we remove closed/lost provider infos
+    // Update local nodes in RosContext
+    rosCtx.updateLocalNodes(
+      data.provider.id,
+      data.nodes.filter((node) => node.isLocal).map((node) => node.name)
+    );
+    setProviderNodes((oldValues) => [
+      ...oldValues.filter((item) => {
+        return item.providerId !== provider.id;
+      }),
+      {
+        providerId: provider.id,
+        nodes: nodes,
+      },
+    ]);
+  });
 
   useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, (data: EventProviderRestartNodes) => {
     restartNodes(data.nodes, true);
@@ -824,11 +824,13 @@ export default function HostTreeViewPanel(): JSX.Element {
 
           const result: Result = await provider.rosCleanPurge();
 
-          if (result.result && result.message.indexOf("Purging ROS node logs.") === -1) {
+          if (result.result && result.message.indexOf("Purging ROS node logs") === -1) {
             // should not happen, probably error
             logCtx.error("Could not delete logs", result.message);
+          } else if (result.result) {
+            logCtx.success("Logs removed successfully", result.message);
           } else {
-            logCtx.success("Logs removed successfully", "");
+            logCtx.error("Could not delete logs", result.message);
           }
         })
       ).catch((error) => {

@@ -13,6 +13,7 @@ from typing import List
 import json
 import os
 import psutil
+import shutil
 import signal
 import threading
 from fkie_mas_daemon.monitor.service import Service
@@ -25,6 +26,7 @@ from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import process
 from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.defines import LOG_PATH
 from fkie_mas_pylib.defines import SETTINGS_PATH
 from fkie_mas_pylib import names
 from fkie_mas_pylib.websocket.server import WebSocketServer
@@ -114,9 +116,15 @@ class MonitorServicer:
     def rosCleanPurge(self) -> {bool, str}:
         Log.info(f"{self.__class__.__name__}: request: ros_clean_purge")
         result = False
-        message = 'Not implemented'
-        Log.warn("Not implemented: ros.provider.ros_clean_purge")
-        return json.dumps({result: result, message: message}, cls=SelfEncoder)
+        if os.path.exists(LOG_PATH):
+            try:
+                shutil.rmtree(LOG_PATH)
+                os.makedirs(LOG_PATH)
+                result = True
+                message = f"Purging ROS node logs from {LOG_PATH}"
+            except Exception as e:
+                message = f"{e}"
+        return json.dumps({"result": result, "message": message}, cls=SelfEncoder)
 
     def rosShutdown(self) -> {bool, str}:
         Log.info(f"{self.__class__.__name__}: ros.provider.shutdown")
