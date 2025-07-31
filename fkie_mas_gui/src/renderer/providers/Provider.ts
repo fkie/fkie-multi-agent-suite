@@ -780,6 +780,7 @@ export default class Provider implements IProvider {
       container_name: string | null;
       lifecycle_state: string | null;
       lifecycle_available_transitions: [string, number][] | null;
+      diagnosticColor: string;
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [forceRefresh], true).then((value: TResultData) => {
       if (value.result) {
@@ -845,6 +846,7 @@ export default class Provider implements IProvider {
           // TODO: Filter screens that belongs to the same master URI
           rn.screens = n.screens;
           rn.isLocal = n.is_local;
+          rn.diagnosticColor = n.diagnosticColor;
           nodeList.set(n.id, rn);
         }
 
