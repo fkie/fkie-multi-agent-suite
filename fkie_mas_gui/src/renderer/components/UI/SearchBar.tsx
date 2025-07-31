@@ -9,7 +9,7 @@ interface SearchBarProps {
   placeholder?: string;
   defaultValue?: string;
   fullWidth?: boolean;
-  searchIcon?: boolean;
+  searchIcon?: React.ReactNode;
   autoFocus?: boolean;
 }
 
@@ -20,7 +20,15 @@ const SearchBar = forwardRef<HTMLDivElement, SearchBarProps>(function SearchBar(
     placeholder = "Filter",
     defaultValue = "",
     fullWidth = true,
-    searchIcon = true,
+    searchIcon = (
+      <SearchIcon
+        sx={{
+          marginRight: 1,
+          color: "gray",
+          fontSize: "inherit",
+        }}
+      />
+    ),
     autoFocus = true,
   } = props;
   const [searched, setSearched] = useState(defaultValue);
@@ -70,17 +78,7 @@ const SearchBar = forwardRef<HTMLDivElement, SearchBarProps>(function SearchBar(
         fullWidth={fullWidth}
         slotProps={{
           input: {
-            startAdornment: searchIcon ? (
-              <SearchIcon
-                sx={{
-                  marginRight: 1,
-                  color: "gray",
-                  fontSize: "inherit",
-                }}
-              />
-            ) : (
-              <></>
-            ),
+            startAdornment: searchIcon ? searchIcon : <></>,
             endAdornment: (
               <IconButton
                 sx={{

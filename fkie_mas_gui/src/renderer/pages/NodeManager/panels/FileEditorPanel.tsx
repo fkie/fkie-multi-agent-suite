@@ -1198,7 +1198,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                     }}
                     placeholder="Search in all included files..."
                     defaultValue={globalSearchTerm}
-                    searchIcon={false}
+                    searchIcon={undefined}
                   />
                 )}
               </Stack>

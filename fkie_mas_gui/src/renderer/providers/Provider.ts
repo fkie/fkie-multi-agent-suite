@@ -2263,7 +2263,6 @@ export default class Provider implements IProvider {
         n.container_name = oldNode.container_name;
         n.screens = oldNode.screens;
         n.diagnosticColor = oldNode.diagnosticColor;
-        console.log(`COLOr: ${n.name}: ${n.diagnosticColor}`);
 
         if (oldNode.pid !== n.pid) {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));

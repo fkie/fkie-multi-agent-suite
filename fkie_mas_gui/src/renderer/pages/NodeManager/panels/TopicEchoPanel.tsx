@@ -1,12 +1,11 @@
 import AbcIcon from "@mui/icons-material/Abc";
 import DataArrayIcon from "@mui/icons-material/DataArray";
 import DataObjectIcon from "@mui/icons-material/DataObject";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Filter1Icon from "@mui/icons-material/Filter1";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import NotesIcon from "@mui/icons-material/Notes";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
-import SearchIcon from "@mui/icons-material/Search";
 import StopIcon from "@mui/icons-material/Stop";
 import {
   Alert,
@@ -44,6 +43,7 @@ import { findIn } from "@/renderer/utils";
 interface TSubscriberEventExt extends SubscriberEvent {
   key: string;
   seq?: number;
+  timestamp: number;
   receivedIndex: number;
 }
 
@@ -69,9 +69,10 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   const [content, setContent] = useState<TSubscriberEventExt>();
   const [collapsedKeys, setCollapsedKeys] = useState<(string | number)[]>(["stamp", "covariance"]);
   const [history, setHistory] = useState<TSubscriberEventExt[]>([]);
-  const [showStatistics, setShowStatistics] = useState(true);
-  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [showStatistics, setShowStatistics] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(true);
   const [filterText, setFilterText] = useState("");
+  const [showWholeFilteredMessage, setShowWholeFilteredMessage] = useState(false);
   const [noData, setNoData] = useState(defaultNoData);
   const [noStr, setNoStr] = useState(false);
   const [noArr, setNoArr] = useState(false);
@@ -81,12 +82,14 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   const [msgCount, setMsgCount] = useState<number>(10);
   const [arrayItemsCount, setArrayItemsCount] = useLocalStorage<number>(`TopicEcho:arrayLimit:${defaultTopic}`, 15);
   const [pause, setPause] = useState<boolean>(false);
-  // const [receivedIndex, setReceivedIndex] = useState(0);
+  const [event, setEvent] = useState<TSubscriberEventExt | undefined>();
+  const [receivedIndex, setReceivedIndex] = useState(0);
   const [qosAnchorEl, setQosAnchorEl] = useState(null);
   const [currentQos, setCurrentQos] = useState<RosQos | undefined>(undefined);
   const openQos = Boolean(qosAnchorEl);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  // let receivedIndex = 0;
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
@@ -99,7 +102,6 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   function handleQosClose(): void {
     setQosAnchorEl(null);
   }
-  let receivedIndex = 0;
 
   // set default topic if defined
   useEffect(() => {
@@ -109,23 +111,30 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   }, [defaultTopic]);
 
   useEffect(() => {
-    if (content) {
+    if (content && history[0]?.receivedIndex !== content.receivedIndex) {
       setHistory((prev) => [content, ...prev.slice(0, msgCount - 1)]);
     }
-  }, [content]);
+  }, [content, msgCount]);
+
+  useEffect(() => {
+    if (!event || event.receivedIndex !== -1) return;
+    event.key = uuid();
+    if ((event.data?.header as { seq: number })?.seq) {
+      event.seq = (event.data?.header as { seq: number }).seq;
+    }
+    event.receivedIndex = receivedIndex;
+    event.timestamp = Date.now();
+    setReceivedIndex((prev) => prev + 1);
+    setContent(event);
+  }, [event, receivedIndex]);
 
   useCustomEventListener(
     `${EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX}_${topicName}`,
     (data: EventProviderSubscriberEvent) => {
       const event: TSubscriberEventExt = data.event as TSubscriberEventExt;
       if (event === undefined) return;
-      event.key = uuid();
-      if ((event.data?.header as { seq: number })?.seq) {
-        event.seq = (event.data?.header as { seq: number }).seq;
-      }
-      event.receivedIndex = receivedIndex;
-      receivedIndex += 1;
-      setContent(event);
+      event.receivedIndex = -1;
+      setEvent(event);
     },
     [topicName]
   );
@@ -209,7 +218,8 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     // no dependencies: execute return statement on close this panel
   }, []);
 
-  function normalizePrint(size: number, fixed: number = 2, per: string = ""): string {
+  function normalizePrint(size: number | undefined, fixed: number = 2, per: string = ""): string {
+    if (size === undefined) return "n/a";
     if (size > 999999) {
       return `${(size / 1048576.0).toFixed(fixed)}MiB${per}`;
     }
@@ -227,7 +237,6 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     if (filter.length < 2) {
       return data;
     }
-    const wholeMessage = filter.indexOf("{}") >= 0;
     const result = {};
     if (isObject(data)) {
       for (const key in data) {
@@ -235,12 +244,12 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
           const res = filterJson(data[key], filter);
           if (res && Object.keys(res).length > 0) {
             result[key] = res;
-            if (wholeMessage) return data;
+            if (showWholeFilteredMessage) return data;
           }
         } else {
           if (findIn(filter, [key, JSON.stringify(data[key])])) {
             result[key] = data[key];
-            if (wholeMessage) return data;
+            if (showWholeFilteredMessage) return data;
           }
         }
       }
@@ -251,314 +260,363 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
   function topicsToJson(): JSX.Element[] {
     return history.map((event) => {
       return (
-        // <Box key={`box-${event.key}`}>
-        <Stack key={`box-${event.key}`} marginTop={1} spacing={1} direction="row">
-          {/* <Tag
-            key={event.receivedIndex}
-            color="info"
-            title={`${event.receivedIndex}`}
-          /> */}
-          {event.seq === undefined && (
-            <Typography fontStyle="italic" fontSize="0.8em" color="gray">
-              {event.receivedIndex}:
-            </Typography>
-          )}
-          {event.seq !== undefined && (
-            <Typography fontStyle="italic" fontSize="0.8em" color="gray">
-              {event.seq}
-            </Typography>
-            // <Tag
-            //   key={event.seq}
-            //   color="info"
-            //   title="seq: "
-            //   text={`${event.seq}`}
-            // />
-          )}
-          <JsonView
-            key={`${event.key}`}
-            src={filterJson(event?.data, filterText)}
-            dark={settingsCtx.get("useDarkMode") as boolean}
-            theme="a11y"
-            enableClipboard={false}
-            ignoreLargeArray={false}
-            collapseObjectsAfterLength={3}
-            displaySize={"collapsed"}
-            collapsed={(params: {
-              node: Record<string, unknown> | Array<unknown>; // Object or array
-              indexOrName: number | string | undefined;
-              depth: number;
-              size: number; // Object's size or array's length
-            }) => {
-              if (params.indexOrName === undefined) return false;
-              const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
-              return collapsedKeys.includes(idx);
-            }}
-            onCollapse={(params: {
-              isCollapsing: boolean;
-              node: Record<string, unknown> | Array<unknown>;
-              indexOrName: string | number | undefined;
-              depth: number;
-            }) => {
-              if (params.indexOrName !== undefined) {
+        <Stack key={`box-${event.key}`} direction="column">
+          <Divider sx={{ borderStyle: "dashed" }} textAlign="left" flexItem>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {event.seq === undefined && (
+                <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+                  {event.receivedIndex} --- {new Date(event.timestamp).toLocaleTimeString()}
+                </Typography>
+              )}
+              {event.seq !== undefined && (
+                <Typography fontStyle="italic" fontSize="0.8em" color="gray">
+                  {event.seq} --- {new Date(event.timestamp).toLocaleTimeString()}
+                </Typography>
+              )}
+              <Tooltip
+                title="Copy message with 'ros2 topic pub' command"
+                placement="bottom"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+                disableInteractive
+              >
+                <CopyButton
+                  value={`ROS_DOMAIN_ID=${currentProvider?.rosState.ros_domain_id || 0} ros2 topic pub -1 --keep-alive 3 ${currentQos ? qosFromJson(currentQos).toString() : ""} ${topicName} ${topicType} '${JSON.stringify(event)}'`}
+                  logText="ros2 pub string copied"
+                  fontSize="0.8em"
+                />
+              </Tooltip>
+            </Stack>
+          </Divider>
+          <Stack direction="row">
+            <JsonView
+              key={`${event.key}`}
+              src={filterJson(event?.data, filterText)}
+              dark={settingsCtx.get("useDarkMode") as boolean}
+              theme="a11y"
+              enableClipboard={false}
+              ignoreLargeArray={false}
+              collapseObjectsAfterLength={3}
+              displaySize={"collapsed"}
+              collapsed={(params: {
+                node: Record<string, unknown> | Array<unknown>; // Object or array
+                indexOrName: number | string | undefined;
+                depth: number;
+                size: number; // Object's size or array's length
+              }) => {
+                if (params.indexOrName === undefined) return false;
                 const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
-                if (!params.isCollapsing) {
-                  if (!collapsedKeys.includes(idx)) {
-                    setCollapsedKeys((prev) => [...prev, idx as string | number]);
-                  }
-                } else {
-                  if (collapsedKeys.includes(idx)) {
-                    setCollapsedKeys((prev) => prev.filter((item) => item !== idx));
+                return collapsedKeys.includes(idx);
+              }}
+              onCollapse={(params: {
+                isCollapsing: boolean;
+                node: Record<string, unknown> | Array<unknown>;
+                indexOrName: string | number | undefined;
+                depth: number;
+              }) => {
+                if (params.indexOrName !== undefined) {
+                  const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
+                  if (!params.isCollapsing) {
+                    if (!collapsedKeys.includes(idx)) {
+                      setCollapsedKeys((prev) => [...prev, idx as string | number]);
+                    }
+                  } else {
+                    if (collapsedKeys.includes(idx)) {
+                      setCollapsedKeys((prev) => prev.filter((item) => item !== idx));
+                    }
                   }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </Stack>
         </Stack>
-        // </Box>
       );
     });
   }
 
   const generateJsonTopics = useMemo(() => {
     return topicsToJson();
-  }, [history, settingsCtx.changed, collapsedKeys, filterText]);
+  }, [history, settingsCtx.changed, collapsedKeys, filterText, showWholeFilteredMessage]);
+
+  const createStatistics = useMemo(() => {
+    return (
+      <Stack margin={0} spacing={0}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          onClick={() => {
+            setShowStatistics((prev) => !prev);
+          }}
+        >
+          <ExpandMoreIcon style={{ transform: `${showStatistics ? "" : "rotate(-90deg)"}` }} fontSize="small" />
+          <Button
+            size="small"
+            style={{
+              textTransform: "none",
+              color: "inherit",
+            }}
+          >
+            <Stack spacing={1} direction="row" fontSize="0.8em">
+              <Tag text={`${content?.count || 0}`} color="info" tooltip="count of received message" />
+              {content?.latched && (
+                <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                  latched
+                </Typography>
+              )}
+              <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                rate:
+              </Typography>
+              <Typography variant="body2">
+                {content?.rate || -2 > -1 ? `${content?.rate.toFixed(2)} Hz` : "n/a"}
+              </Typography>
+            </Stack>
+          </Button>
+        </Stack>
+        {showStatistics && (
+          <Stack marginLeft="0.7em" spacing={0} direction="column">
+            <Stack spacing={1} direction="row">
+              <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                size:
+              </Typography>
+              <Typography variant="body2">
+                {normalizePrint(content?.size, 2)} [min: {normalizePrint(content?.size_min, 0)}, max:{" "}
+                {normalizePrint(content?.size_max, 0)}]
+              </Typography>
+            </Stack>
+            <Stack spacing={1} direction="row">
+              <Typography variant="body2" style={{ fontWeight: "bold" }}>
+                bw:
+              </Typography>
+              <Typography variant="body2">
+                {content?.bw || -2 > -1
+                  ? `${normalizePrint(content?.bw, 2, "/s")} [min: ${normalizePrint(content?.bw_min, 0, "/s")}, max: ${normalizePrint(content?.bw_max, 0, "/s")}]`
+                  : "n/a"}
+              </Typography>
+            </Stack>
+          </Stack>
+        )}
+      </Stack>
+    );
+  }, [content, showStatistics]);
 
   const generateOptions = useMemo(() => {
     return (
-      <Stack spacing={0.5} margin={0.5} direction="row">
-        <Tooltip
-          title="show message data"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
-            <DataObjectIcon sx={{ fontSize: "inherit" }} />
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip
-          title="show arrays"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
-            <DataArrayIcon sx={{ fontSize: "inherit" }} />
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip
-          title="show strings"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
-            <AbcIcon sx={{ fontSize: "inherit" }} />
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip
-          title="limit message forward to 1 Hz"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <ToggleButton size="small" value="noStr" selected={hz === 1.0} onChange={() => setHz(hz === 1.0 ? 0.0 : 1.0)}>
-            <Filter1Icon sx={{ fontSize: "inherit" }} />
-          </ToggleButton>
-        </Tooltip>
-        <Divider orientation="vertical" />
-        <Tooltip
-          title="show statistics"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <ToggleButton
-            size="small"
-            value="statistics"
-            selected={showStatistics}
-            onChange={() => setShowStatistics(!showStatistics)}
-          >
-            <NotesIcon sx={{ fontSize: "inherit" }} />
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip
-          title="show search bar"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <ToggleButton
-            size="small"
-            value="search bar"
-            selected={showSearchBar}
-            onChange={() => {
-              setShowSearchBar(!showSearchBar);
-              setFilterText("");
-            }}
-            autoFocus
-          >
-            <SearchIcon sx={{ fontSize: "inherit" }} />
-          </ToggleButton>
-        </Tooltip>
-        {currentProvider?.rosVersion === "X" && (
-          <>
-            <Button
-              id="qos-button"
-              aria-controls={openQos ? "qos-menu" : undefined}
-              aria-haspopup="true"
-              aria-expanded={openQos ? "true" : undefined}
-              variant="outlined"
-              disableElevation
-              onClick={handleQosClick}
-              endIcon={<KeyboardArrowDownIcon />}
-            >
-              QoS
-            </Button>
-            <Menu
-              id="qos-menu"
-              MenuListProps={{
-                "aria-labelledby": "qos-button",
-              }}
-              anchorEl={qosAnchorEl}
-              open={openQos}
-              onClose={handleQosClose}
-            >
-              <MenuItem onClick={handleQosClose} disableRipple>
-                System Default
-              </MenuItem>
-              <MenuItem onClick={handleQosClose} disableRipple>
-                Sensor Data
-              </MenuItem>
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem onClick={handleQosClose} disableRipple>
-                Services Default
-              </MenuItem>
-              <MenuItem onClick={handleQosClose} disableRipple>
-                Parameters
-              </MenuItem>
-              <MenuItem onClick={handleQosClose} disableRipple>
-                Parameter events
-              </MenuItem>
-              <MenuItem onClick={handleQosClose} disableRipple>
-                Action Status Default
-              </MenuItem>
-            </Menu>
-          </>
-        )}
-        <Tooltip
-          title={pause ? "start subscriber" : "stop subscriber"}
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <IconButton
-            size="small"
-            onClick={() => {
-              setPause(!pause);
-            }}
-          >
-            {pause ? <PlayArrowIcon sx={{ fontSize: "inherit" }} /> : <StopIcon sx={{ fontSize: "inherit" }} />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip
-          title="clear messages"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <IconButton
-            size="small"
-            onClick={() => {
-              setHistory([]);
-            }}
-          >
-            <PlaylistRemoveIcon sx={{ fontSize: "inherit" }} />
-          </IconButton>
-        </Tooltip>
-        <Divider orientation="vertical" />
-        <Tooltip
-          title="count of displayed messages"
-          placement="right"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <Select
-            id="select-msg-count"
-            autoWidth={false}
-            value={msgCount.toString()}
-            onChange={(event) => {
-              setMsgCount(Number.parseInt(event.target.value));
-            }}
-            size="small"
-            sx={{ fontSize: "0.5em" }}
-          >
-            {[1, 10, 20, 50, 100].map((value) => {
-              return (
-                <MenuItem key={`msg-count-${value}`} value={value} sx={{ fontSize: "0.5em" }}>
-                  {value.toString()}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </Tooltip>
-        <Tooltip
-          title="count of displayed array values"
-          placement="right"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <Select
-            id="select-array-count"
-            autoWidth={false}
-            value={arrayItemsCount.toString()}
-            onChange={(event) => {
-              setArrayItemsCount(Number.parseInt(event.target.value));
-            }}
-            size="small"
-            sx={{ fontSize: "0.5em" }}
-          >
-            {[0, 5, 15, 25, 55, 155].map((value) => {
-              return (
-                <MenuItem key={`array-count-${value}`} value={value} sx={{ fontSize: "0.5em" }}>
-                  {value.toString()}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </Tooltip>
-        {history.length > 0 && (
+      <Stack spacing={0.5} margin={0.5} direction="column">
+        <Stack spacing={0.5} direction="row">
           <Tooltip
-            title="Copy last message with 'ros2 topic pub' command"
+            title="show message data"
             placement="bottom"
             enterDelay={tooltipDelay}
             enterNextDelay={tooltipDelay}
             disableInteractive
           >
-            <pre>
-              <CopyButton
-                value={`ROS_DOMAIN_ID=${currentProvider?.rosState.ros_domain_id || 0} ros2 topic pub -1 --keep-alive 3 ${currentQos ? qosFromJson(currentQos).toString() : ""} ${topicName} ${topicType} '${JSON.stringify(history[0])}'`}
-                logText="ros2 pub string copied"
-              />
-            </pre>
+            <ToggleButton size="small" value="noData" selected={!noData} onChange={() => setNoData(!noData)}>
+              <DataObjectIcon sx={{ fontSize: "inherit" }} />
+            </ToggleButton>
           </Tooltip>
-        )}
-        {/* <FormControl disabled sx={{ m: 1, pt: 0.5 }} variant="standard">
-        <ProviderSelector
-          defaultProvider={selectedProvider}
-          setSelectedProvider={(provId) => setSelectedProvider(provId)}
-        />
-      </FormControl> */}
+          <Tooltip
+            title="show arrays"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <ToggleButton size="small" value="noArr" selected={!noArr} onChange={() => setNoArr(!noArr)}>
+              <DataArrayIcon sx={{ fontSize: "inherit" }} />
+            </ToggleButton>
+          </Tooltip>
+          <Tooltip
+            title="show strings"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <ToggleButton size="small" value="noStr" selected={!noStr} onChange={() => setNoStr(!noStr)}>
+              <AbcIcon sx={{ fontSize: "inherit" }} />
+            </ToggleButton>
+          </Tooltip>
+          <Tooltip
+            title="limit message forward to 1 Hz"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <ToggleButton
+              size="small"
+              value="noStr"
+              selected={hz === 1.0}
+              onChange={() => setHz(hz === 1.0 ? 0.0 : 1.0)}
+            >
+              <Filter1Icon sx={{ fontSize: "inherit" }} />
+            </ToggleButton>
+          </Tooltip>
+
+          <Tooltip
+            title="count of displayed array values"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <Select
+              id="select-array-count"
+              autoWidth={false}
+              value={arrayItemsCount.toString()}
+              onChange={(event) => {
+                setArrayItemsCount(Number.parseInt(event.target.value));
+              }}
+              size="small"
+              sx={{ fontSize: "0.5em" }}
+            >
+              {[0, 5, 15, 25, 55, 155].map((value) => {
+                return (
+                  <MenuItem key={`array-count-${value}`} value={value} sx={{ fontSize: "0.5em" }}>
+                    {value.toString()}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </Tooltip>
+          <Tooltip
+            title="count of displayed messages"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <Select
+              id="select-msg-count"
+              autoWidth={false}
+              value={msgCount.toString()}
+              onChange={(event) => {
+                setMsgCount(Number.parseInt(event.target.value));
+              }}
+              size="small"
+              sx={{ fontSize: "0.5em" }}
+            >
+              {[1, 10, 20, 50, 100].map((value) => {
+                return (
+                  <MenuItem key={`msg-count-${value}`} value={value} sx={{ fontSize: "0.5em" }}>
+                    {value.toString()}
+                  </MenuItem>
+                );
+              })}
+            </Select>
+          </Tooltip>
+        </Stack>
+        {createStatistics}
+        <Stack margin={0.5} direction="row">
+          {currentProvider?.rosVersion === "X" && (
+            <>
+              <Button
+                id="qos-button"
+                aria-controls={openQos ? "qos-menu" : undefined}
+                aria-haspopup="true"
+                aria-expanded={openQos ? "true" : undefined}
+                variant="outlined"
+                disableElevation
+                onClick={handleQosClick}
+                endIcon={<KeyboardArrowDownIcon />}
+              >
+                QoS
+              </Button>
+              <Menu
+                id="qos-menu"
+                MenuListProps={{
+                  "aria-labelledby": "qos-button",
+                }}
+                anchorEl={qosAnchorEl}
+                open={openQos}
+                onClose={handleQosClose}
+              >
+                <MenuItem onClick={handleQosClose} disableRipple>
+                  System Default
+                </MenuItem>
+                <MenuItem onClick={handleQosClose} disableRipple>
+                  Sensor Data
+                </MenuItem>
+                <Divider sx={{ my: 0.5 }} />
+                <MenuItem onClick={handleQosClose} disableRipple>
+                  Services Default
+                </MenuItem>
+                <MenuItem onClick={handleQosClose} disableRipple>
+                  Parameters
+                </MenuItem>
+                <MenuItem onClick={handleQosClose} disableRipple>
+                  Parameter events
+                </MenuItem>
+                <MenuItem onClick={handleQosClose} disableRipple>
+                  Action Status Default
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+          <Tooltip
+            title={pause ? "start subscriber" : "stop subscriber"}
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <IconButton
+              size="small"
+              onClick={() => {
+                setPause(!pause);
+              }}
+            >
+              {pause ? <PlayArrowIcon sx={{ fontSize: "inherit" }} /> : <StopIcon sx={{ fontSize: "inherit" }} />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip
+            title="clear messages"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
+          >
+            <IconButton
+              size="small"
+              onClick={() => {
+                setHistory([]);
+              }}
+            >
+              <PlaylistRemoveIcon sx={{ fontSize: "inherit" }} />
+            </IconButton>
+          </Tooltip>
+
+          {showSearchBar && (
+            <Stack spacing={1} direction="row" style={{ display: "flex", flexGrow: 1 }}>
+              <SearchBar
+                onSearch={(value) => {
+                  setFilterText(value);
+                }}
+                placeholder="grep for (OR: <space>, AND: +, NOT: !)"
+                defaultValue={filterText}
+                searchIcon={
+                  <Tooltip
+                    title="shows complete message if search result is valid"
+                    placement="bottom"
+                    enterDelay={tooltipDelay}
+                    enterNextDelay={tooltipDelay}
+                    disableInteractive
+                  >
+                    <ToggleButton
+                      size="small"
+                      value="noArr"
+                      selected={showWholeFilteredMessage}
+                      onChange={() => setShowWholeFilteredMessage((prev) => !prev)}
+                      style={{ padding: 2, marginRight: "0.5em" }}
+                    >
+                      <DataObjectIcon sx={{ fontSize: "inherit" }} />
+                    </ToggleButton>
+                  </Tooltip>
+                }
+              />
+            </Stack>
+          )}
+        </Stack>
       </Stack>
     );
   }, [
@@ -575,9 +633,12 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
     openQos,
     showStatistics,
     showSearchBar,
+    showWholeFilteredMessage,
     history,
     topicType,
     currentQos,
+    content,
+    showStatistics,
   ]);
 
   const getHostStyle = useCallback(
@@ -622,53 +683,6 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
             </Typography>
           </Stack>
           <Stack>{showOptions && generateOptions}</Stack>
-          {content && showStatistics && (
-            <Stack margin={0.5} spacing={0}>
-              <Stack spacing={1} direction="row" fontSize="0.8em">
-                <Tag text={`${content.count}`} color="info" tooltip="count of received message" />
-                {content.latched && (
-                  <Typography variant="body2" style={{ fontWeight: "bold" }}>
-                    latched
-                  </Typography>
-                )}
-                <Typography variant="body2" style={{ fontWeight: "bold" }}>
-                  rate:
-                </Typography>
-                <Typography variant="body2">{content.rate > -1 ? `${content.rate.toFixed(2)} Hz` : "n/a"}</Typography>
-              </Stack>
-              <Stack spacing={0} direction="column">
-                <Stack spacing={1} direction="row">
-                  <Typography variant="body2" style={{ fontWeight: "bold" }}>
-                    size:
-                  </Typography>
-                  <Typography variant="body2">
-                    {normalizePrint(content.size, 2)} [min: {normalizePrint(content.size_min, 0)}, max:{" "}
-                    {normalizePrint(content.size_max, 0)}]
-                  </Typography>
-                </Stack>
-                <Stack spacing={1} direction="row">
-                  <Typography variant="body2" style={{ fontWeight: "bold" }}>
-                    bw:
-                  </Typography>
-                  <Typography variant="body2">
-                    {content.bw > -1 ? `${normalizePrint(content.bw, 2, "/s")} [min: ${normalizePrint(content.bw_min, 0, "/s")}, max: ${normalizePrint(content.bw_max, 0, "/s")}]` : "n/a"}
-                  </Typography>
-                </Stack>
-              </Stack>
-            </Stack>
-          )}
-          {showSearchBar && (
-            <Stack spacing={1} direction="row">
-              <SearchBar
-                onSearch={(value) => {
-                  setFilterText(value);
-                }}
-                placeholder="grep for (OR: <space>, AND: +, NOT: !, WHOLE MSG: {})"
-                defaultValue={filterText}
-                // fullWidth
-              />
-            </Stack>
-          )}
         </Paper>
         <Stack width="100%" height="100%" overflow="auto">
           {history && !noData && generateJsonTopics}

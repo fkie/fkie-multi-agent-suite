@@ -48,7 +48,7 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
   }
 
   return (
-    <Tooltip ref={ref} title={tooltip} disableInteractive>
+    <Tooltip title={tooltip} disableInteractive>
       <Chip
         className={className}
         size="small"
@@ -62,6 +62,7 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
           </>
         }
         sx={chipSX}
+        ref={ref}
       />
     </Tooltip>
   );

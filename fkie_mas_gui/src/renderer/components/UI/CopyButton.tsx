@@ -10,13 +10,12 @@ interface CopyButtonProps {
   fontSize?: string;
 }
 
-const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>(function CopyButton(props, ref) {
+const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>((props, _ref) => {
   const { value, fontSize = "inherit", logText = value } = props;
   const logCtx = useContext(LoggingContext);
 
   return (
     <IconButton
-      ref={ref}
       sx={{ color: (theme) => theme.palette.text.disabled, paddingTop: 0, paddingBottom: 0 }}
       size="small"
       component="span"
