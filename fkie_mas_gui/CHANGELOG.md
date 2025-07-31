@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.5.5 - 31.07.2025
+
+Improved topic echo panel
+Fixed update color of the node
+
 ## 4.5.4 - 30.07.2025
 
 Added filter option to show whole message in echo tab
