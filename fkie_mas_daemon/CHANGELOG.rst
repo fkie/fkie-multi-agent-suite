@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.2 (31.07.2025)
+------------------
+* Implemented purge of all ros logs
+
 4.6.1 (30.07.2025)
 ------------------
 * Improved match of diagnostic messages to node names

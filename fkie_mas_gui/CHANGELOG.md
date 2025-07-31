@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.5.6 - 31.07.2025
+
+Implemented purge of all ros logs
+
 ## 4.5.5 - 31.07.2025
 
 Improved topic echo panel
