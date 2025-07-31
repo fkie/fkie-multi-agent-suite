@@ -780,7 +780,6 @@ export default class Provider implements IProvider {
       container_name: string | null;
       lifecycle_state: string | null;
       lifecycle_available_transitions: [string, number][] | null;
-      diagnosticColor: string;
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [forceRefresh], true).then((value: TResultData) => {
       if (value.result) {
@@ -846,7 +845,6 @@ export default class Provider implements IProvider {
           // TODO: Filter screens that belongs to the same master URI
           rn.screens = n.screens;
           rn.isLocal = n.is_local;
-          rn.diagnosticColor = n.diagnosticColor;
           nodeList.set(n.id, rn);
         }
 
@@ -1211,7 +1209,7 @@ export default class Provider implements IProvider {
       // match the name without leading slash
       // match the name with dots instead of slashes
       // match the name with trailing logger name
-      const statusName = `/${status.name.replace(/^\/+/, '').replaceAll(".", '/')}`;
+      const statusName = `/${status.name.replace(/^\/+/, "").replaceAll(".", "/")}`;
       const matchingNode: RosNode | undefined = this.rosNodes.find((node) => statusName.startsWith(node.name));
       if (matchingNode) {
         matchingNode.diagnosticLevel = status.level;
@@ -2264,6 +2262,9 @@ export default class Provider implements IProvider {
         n.is_container = oldNode.is_container;
         n.container_name = oldNode.container_name;
         n.screens = oldNode.screens;
+        n.diagnosticColor = oldNode.diagnosticColor;
+        console.log(`COLOr: ${n.name}: ${n.diagnosticColor}`);
+
         if (oldNode.pid !== n.pid) {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
         }
