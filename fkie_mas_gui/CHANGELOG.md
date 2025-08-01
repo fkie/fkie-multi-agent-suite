@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.5.7 - 01.08.2025
+
+Calculate the mean color for group with colorized nodes
+Fixed matching the diagnostic color to node witch is a part of another node
+Improved install script with hash check and more info
+
 ## 4.5.6 - 31.07.2025
 
 Implemented purge of all ros logs

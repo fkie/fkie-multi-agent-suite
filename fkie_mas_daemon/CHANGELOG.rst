@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.3 (01.08.2025)
+------------------
+* Fixed matching the diagnostic color to node witch is a part of another node
+
 4.6.2 (31.07.2025)
 ------------------
 * Implemented purge of all ros logs
