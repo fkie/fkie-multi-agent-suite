@@ -12,7 +12,7 @@ import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/rendere
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
 import { EventNodeDiagnostic } from "@/renderer/providers/events";
 import { useCustomEventListener } from "react-custom-events";
-import { getDiagnosticColor } from "../UI/Colors";
+import { averageColor, getDiagnosticColor } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 import { NodeTreeItem } from "./types";
 
@@ -135,11 +135,25 @@ const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = 
 
 function getGroupIconColor(treeItems: NodeTreeItem[], isDarkMode: boolean = false): string {
   const groupStatus = getGroupStatus(treeItems);
+  const groupDiagLevel = getGroupDiagnosticLevel(treeItems);
+  let groupColor = getDiagnosticColor(groupDiagLevel, isDarkMode);
+  if (groupDiagLevel === DiagnosticLevel.OK) {
+    // get color from diagnosticColor of the nodes
+    const nodeColors: string[] = [];
+    for (const nodeItem of treeItems) {
+      if (nodeItem.node?.diagnosticColor) {
+        nodeColors.push(nodeItem.node?.diagnosticColor);
+      }
+    }
+    if (nodeColors.length > 0) {
+      groupColor = averageColor(nodeColors, isDarkMode);
+    }
+  }
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
-      return getDiagnosticColor(getGroupDiagnosticLevel(treeItems), isDarkMode);
+      return groupColor;
     case GroupStatus.SOME_RUNNING:
-      return getDiagnosticColor(getGroupDiagnosticLevel(treeItems), isDarkMode);
+      return groupColor;
 
     case GroupStatus.ALL_INACTIVE:
       return isDarkMode ? grey[600] : grey[500];

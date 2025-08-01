@@ -167,3 +167,41 @@ export const TagColors = [
   "magenta",
   "purple",
 ];
+
+
+export function averageColor(colors: string[], isDarkMode: boolean): string {
+  let totalR = 0;
+  let totalG = 0;
+  let totalB = 0;
+  let totalA = 0;
+  let validCount = 0;
+  const count = colors.length;
+
+  for (const color of colors) {
+    const match = color.match(
+      /rgba?\s*\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)(?:[,\s/]+([0-9.]+))?\s*\)/
+    );
+
+    if (!match) {
+      console.warn(`⚠️ Invalid color skipped: ${color}`);
+      continue;
+    }
+
+    const [, r, g, b, a] = match;
+    totalR += Number.parseFloat(r);
+    totalG += Number.parseFloat(g);
+    totalB += Number.parseFloat(b);
+    totalA += a !== undefined ? Number.parseFloat(a) : 1;  // default alpha = 1 for rgb()
+    validCount++;
+  }
+  if (validCount === 0) {
+    return isDarkMode ? "#43a047" : "#43a047"; // green
+  }
+
+  const avgR = Math.round(totalR / count);
+  const avgG = Math.round(totalG / count);
+  const avgB = Math.round(totalB / count);
+  const avgA = Number.parseFloat((totalA / count).toFixed(3));
+
+  return `rgba(${avgR}, ${avgG}, ${avgB}, ${avgA})`;
+}
