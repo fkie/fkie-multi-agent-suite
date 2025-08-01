@@ -277,8 +277,8 @@ if [ -d "$TMP_DIR" ]; then
 
     if [[ "$OS_CODENAME" == "focal" ]]; then
         # install ttyd using snap and all other packages using apt
-        echo -e "\033[36m🔐 sudo apt install -y ${DEBS_TO_INSTALL[@]}\e[0m"
-        if sudo apt install -y ${DEBS_TO_INSTALL[@]}; then
+        echo -e "\033[36m🔐 sudo apt install -y --allow-downgrades ${DEBS_TO_INSTALL[@]}\e[0m"
+        if sudo apt install -y --allow-downgrades ${DEBS_TO_INSTALL[@]}; then
             echo -e "\e[33mno ttyd packages available for focal, installing using snap:\e[0m"
             sudo snap install ttyd --classic
             echo -e "\e[32m✅ Installation completed.\e[0m"
@@ -288,8 +288,8 @@ if [ -d "$TMP_DIR" ]; then
         fi
     else
         # install all packages using apt
-        echo -e "\033[36m🔐 sudo apt install -y ttyd ${DEBS_TO_INSTALL[@]}\e[0m"
-        if sudo apt install -y ttyd ${DEBS_TO_INSTALL[@]}; then
+        echo -e "\033[36m🔐 sudo apt install -y --allow-downgrades ttyd ${DEBS_TO_INSTALL[@]}\e[0m"
+        if sudo apt install -y --allow-downgrades ttyd ${DEBS_TO_INSTALL[@]}; then
             echo -e "\e[32m✅ Installation completed.\e[0m"
             restart_mas
         else
