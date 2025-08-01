@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.5.9 - 01.08.2025
+
+Fix for error: Minified React error #300
+Allow downgrades in install script
+
 ## 4.5.8 - 01.08.2025
 
 Added diagnostic history to node details tab
