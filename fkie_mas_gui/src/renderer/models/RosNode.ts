@@ -1,8 +1,11 @@
 /* eslint-disable camelcase */
 import { TTag } from "@/types";
-import { DiagnosticLevel, DiagnosticStatus } from "./Diagnostics";
+import { getDiagnosticColor } from "../components/UI/Colors";
+import DiagnosticArray, { DiagnosticLevel, DiagnosticStatus, getMaxDiagnosticLevel } from "./Diagnostics";
 import LaunchNodeInfo from "./LaunchNodeInfo";
 import RosTopicId from "./RosTopicId";
+
+const DIAGNOSTIC_HISTORY_LENGTH = 10;
 
 /**
  * RosNodeStatus Valid state of a ROS node:
@@ -120,13 +123,14 @@ export default class RosNode {
    */
   screens: string[] | undefined;
 
-  /** List of diagnostic messages associated with this node. */
-  diagnosticStatus: DiagnosticStatus[] = [];
+  /** List of diagnostic messages associated with this node.
+   * The list of DiagnosticArray messages represents the history.
+   */
+  diagnosticArray: DiagnosticArray[] = [];
 
+  /** Calculated values of the last diagnosticArray message. */
   diagnosticLevel: DiagnosticLevel | undefined = DiagnosticLevel.OK;
-
   diagnosticMessage: string = "";
-
   diagnosticColor: string = "";
 
   /**
@@ -238,5 +242,29 @@ export default class RosNode {
       }
     }
     return result;
+  }
+
+  public addDiagnosticStatus(ds: DiagnosticStatus, timestamp: number, isDarkMode: boolean): void {
+    if (this.diagnosticArray.length === 0 || this.diagnosticArray[0].timestamp !== timestamp) {
+      const da = new DiagnosticArray(Date.now(), [ds]);
+      this.diagnosticArray = [da, ...this.diagnosticArray.slice(0, DIAGNOSTIC_HISTORY_LENGTH - 1)];
+    } else {
+      this.diagnosticArray[0].status?.push(ds);
+    }
+
+    let diagnosticMessage = "";
+    let diagnosticColor = "";
+    this.diagnosticLevel = DiagnosticLevel.OK;
+    for (const status of this.diagnosticArray[0].status || []) {
+      for (const value of status.values || []) {
+        if (value.key === "color") {
+          diagnosticColor = value.value;
+        }
+      }
+      diagnosticMessage += status.message ? `${status.message} ` : "";
+      this.diagnosticLevel = getMaxDiagnosticLevel(this.diagnosticLevel, status.level) || this.diagnosticLevel;
+    }
+    this.diagnosticMessage = diagnosticMessage;
+    this.diagnosticColor = diagnosticColor ? diagnosticColor : getDiagnosticColor(this.diagnosticLevel, isDarkMode);
   }
 }

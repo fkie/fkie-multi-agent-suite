@@ -1204,34 +1204,24 @@ export default class Provider implements IProvider {
       }
     }
     // update the screens
+    const timestamp = Date.now();
+    const isDarkMode = this.settings.get("useDarkMode") as boolean;
     const diagStatus = diags.status || [];
+    const matchingNodes: RosNode[] = [];
     for (const status of diagStatus) {
       // match the name without leading slash
       // match the name with dots instead of slashes
       // match the name with trailing logger name
       const statusName = `/${status.name.replace(/^\/+/, "").replaceAll(".", "/")}`;
-      const matchingNode: RosNode | undefined = this.rosNodes.find((node) => node.name === statusName || statusName.startsWith(`${node.name}/`));
+      const matchingNode: RosNode | undefined = this.rosNodes.find(
+        (node) => node.name === statusName || statusName.startsWith(`${node.name}/`)
+      );
       if (matchingNode) {
-        matchingNode.diagnosticLevel = status.level;
-        matchingNode.diagnosticMessage = status.message;
-        for (const value of status.values || []) {
-          if (value.key === "color") {
-            matchingNode.diagnosticColor = value.value;
-          }
-        }
-        if (matchingNode.diagnosticStatus && matchingNode.diagnosticStatus.length === 0) {
-          matchingNode.diagnosticStatus.push(status);
-        } else if (matchingNode.diagnosticStatus) {
-          // do not add the same value
-          const lastStatus = matchingNode.diagnosticStatus[matchingNode.diagnosticStatus.length - 1];
-          if (
-            lastStatus.level !== status.level ||
-            lastStatus.message !== status.message ||
-            (lastStatus.values || []).length !== (status.values || []).length
-          ) {
-            matchingNode.diagnosticStatus.push(status);
-          }
-        }
+        // update nodes diagnostics
+        matchingNode.addDiagnosticStatus(status, timestamp, isDarkMode);
+        matchingNodes.push(matchingNode);
+      }
+      for (const matchingNode of matchingNodes) {
         emitCustomEvent(EVENT_NODE_DIAGNOSTIC, new EventNodeDiagnostic(this, matchingNode));
       }
     }
@@ -2252,9 +2242,10 @@ export default class Provider implements IProvider {
       // copy (selected) old state
       const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
       if (oldNode) {
-        n.diagnosticStatus = oldNode.diagnosticStatus;
+        n.diagnosticArray = oldNode.diagnosticArray;
         n.diagnosticLevel = oldNode.diagnosticLevel;
         n.diagnosticMessage = oldNode.diagnosticMessage;
+        n.diagnosticColor = oldNode.diagnosticColor;
         n.launchPath = oldNode.launchPath;
         n.group = oldNode.group;
         n.launchInfo = oldNode.launchInfo;
@@ -2262,8 +2253,6 @@ export default class Provider implements IProvider {
         n.is_container = oldNode.is_container;
         n.container_name = oldNode.container_name;
         n.screens = oldNode.screens;
-        n.diagnosticColor = oldNode.diagnosticColor;
-
         if (oldNode.pid !== n.pid) {
           emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
         }

@@ -137,17 +137,15 @@ function getGroupIconColor(treeItems: NodeTreeItem[], isDarkMode: boolean = fals
   const groupStatus = getGroupStatus(treeItems);
   const groupDiagLevel = getGroupDiagnosticLevel(treeItems);
   let groupColor = getDiagnosticColor(groupDiagLevel, isDarkMode);
-  if (groupDiagLevel === DiagnosticLevel.OK) {
-    // get color from diagnosticColor of the nodes
-    const nodeColors: string[] = [];
-    for (const nodeItem of treeItems) {
-      if (nodeItem.node?.diagnosticColor) {
-        nodeColors.push(nodeItem.node?.diagnosticColor);
-      }
+  // get color from diagnosticColor of the nodes
+  const nodeColors: string[] = [];
+  for (const nodeItem of treeItems) {
+    if (nodeItem.node?.diagnosticColor) {
+      nodeColors.push(nodeItem.node?.diagnosticColor);
     }
-    if (nodeColors.length > 0) {
-      groupColor = averageColor(nodeColors, isDarkMode);
-    }
+  }
+  if (nodeColors.length > 0) {
+    groupColor = averageColor(nodeColors, isDarkMode);
   }
   switch (groupStatus) {
     case GroupStatus.ALL_RUNNING:
@@ -208,11 +206,8 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
   useEffect(() => {
     setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems));
     setGroupStatus(getGroupStatus(treeItems));
-  }, [treeItems]);
-
-  useEffect(() => {
     setColor(getGroupIconColor(treeItems, isDarkMode));
-  }, [groupStatus]);
+  }, [treeItems, groupStatus]);
 
   useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
     // update group icon if the name of the node contains the group name
@@ -299,24 +294,29 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
       </Tooltip>
     );
   }
-  return (
-    <Tooltip
-      ref={ref}
-      key={`tooltip-icon-${groupLifecycleStatus}`}
-      title={`Lifecycle state: '${getNameFromLifecycle(groupLifecycleStatus)}'`}
-      placement="left"
-      disableInteractive
-    >
-      <CircleIcon
-        style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
-        sx={{
-          border: 3,
-          borderRadius: "100%",
-          borderColor: colorBorder,
-        }}
-      />
-    </Tooltip>
-  );
+
+  const createIcon = useMemo(() => {
+    return (
+      <Tooltip
+        ref={ref}
+        key={`tooltip-icon-${groupLifecycleStatus}`}
+        title={`Lifecycle state: '${getNameFromLifecycle(groupLifecycleStatus)}'`}
+        placement="left"
+        disableInteractive
+      >
+        <CircleIcon
+          style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
+          sx={{
+            border: 3,
+            borderRadius: "100%",
+            borderColor: colorBorder,
+          }}
+        />
+      </Tooltip>
+    );
+  }, [groupLifecycleStatus, colorBorder, color]);
+
+  return createIcon;
 });
 
 /** Returns count of nodes for given group */
@@ -400,7 +400,7 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
         {...children}
       />
     );
-  }, [itemId, countChildren, handleIconContainerClick]);
+  }, [itemId, countChildren, icon, handleIconContainerClick]);
 
   return createGroupItem;
 });

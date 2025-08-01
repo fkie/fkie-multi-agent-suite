@@ -175,33 +175,44 @@ export function averageColor(colors: string[], isDarkMode: boolean): string {
   let totalB = 0;
   let totalA = 0;
   let validCount = 0;
-  const count = colors.length;
 
   for (const color of colors) {
-    const match = color.match(
+    const rgbaMatch = color.match(
       /rgba?\s*\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)(?:[,\s/]+([0-9.]+))?\s*\)/
     );
 
-    if (!match) {
+    const hexMatch = color.match(/^#([0-9a-fA-F]{6})$/);
+
+    if (rgbaMatch) {
+      const [, r, g, b, a] = rgbaMatch;
+      totalR += Number.parseFloat(r);
+      totalG += Number.parseFloat(g);
+      totalB += Number.parseFloat(b);
+      totalA += a !== undefined ? Number.parseFloat(a) : 1;
+      validCount++;
+    } else if (hexMatch) {
+      const hex = hexMatch[1];
+      const r = Number.parseInt(hex.substring(0, 2), 16);
+      const g = Number.parseInt(hex.substring(2, 4), 16);
+      const b = Number.parseInt(hex.substring(4, 6), 16);
+      totalR += r;
+      totalG += g;
+      totalB += b;
+      totalA += 1; // default alpha for hex
+      validCount++;
+    } else {
       console.warn(`⚠️ Invalid color skipped: ${color}`);
-      continue;
     }
-
-    const [, r, g, b, a] = match;
-    totalR += Number.parseFloat(r);
-    totalG += Number.parseFloat(g);
-    totalB += Number.parseFloat(b);
-    totalA += a !== undefined ? Number.parseFloat(a) : 1;  // default alpha = 1 for rgb()
-    validCount++;
   }
+
   if (validCount === 0) {
-    return isDarkMode ? "#43a047" : "#43a047"; // green
+    return isDarkMode ? "#43a047" : "#43a047"; // fallback (green)
   }
 
-  const avgR = Math.round(totalR / count);
-  const avgG = Math.round(totalG / count);
-  const avgB = Math.round(totalB / count);
-  const avgA = Number.parseFloat((totalA / count).toFixed(3));
+  const avgR = Math.round(totalR / validCount);
+  const avgG = Math.round(totalG / validCount);
+  const avgB = Math.round(totalB / validCount);
+  const avgA = Number.parseFloat((totalA / validCount).toFixed(3));
 
   return `rgba(${avgR}, ${avgG}, ${avgB}, ${avgA})`;
 }
