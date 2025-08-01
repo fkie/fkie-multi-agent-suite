@@ -14,6 +14,7 @@ usage() {
     echo "  -w      wait for key press to quit"
     echo "  -f      force the installation of debian packages, even if the packages have been cloned into the workspace."
     echo "  -e      removes fkie mas packages. ttyd and python3-websockets are not uninstalled."
+    echo "  -d      delete downloaded files after installation"
     echo "  -s  <version> install selected release, e.g.: 3.8.0"
     echo "  -u  <user[:password]> user and password useful if API rate limit is exceeded"
     exit 1
@@ -27,6 +28,7 @@ while getopts grphwfes:u:  flag; do
         w) WAIT_FOR_KEY=true;;
         f) FORCE_INSTALL=true;;
         e) UNINSTALL=true;;
+        d) DELETE_DOWNLOADED=true;;
         s) FORCE_VERSION=$OPTARG;;
         u) FORCE_USER=$OPTARG;;
         h) usage ;;
@@ -60,6 +62,7 @@ fi
 if [[ ! -z $UNINSTALL ]]; then
     OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
     echo "Uninstall packages of the Multi-Agent-Suite"
+    echo -e "\033[36m🔐 sudo apt remove fkie-mas-gui *fkie-mas-*\e[0m"
     sudo apt remove fkie-mas-gui *fkie-mas-*
     echo -e "\e[32mfinished.\e[0m"
     exit 0
@@ -112,25 +115,82 @@ else
 fi
 
 
+function download_and_verify_deb() {
+  local deb_file="$1"
+  local deb_url="$2"
+  local expected_digest="$3"
+  local tmp_dir="$4"
+
+  if [ -z "$deb_file" ]; then
+    echo -e "❌ No .deb file name provided."
+    return 0
+  fi
+
+  mkdir -p "$tmp_dir"
+  local deb_path="$tmp_dir/$deb_file"
+
+  echo -e "Target path: $deb_path"
+
+  if [ -f "$deb_path" ]; then
+    echo -e "⬇️ File already exists at $deb_path - skipping download."
+  else
+    echo -e "⬇️ Downloading: $deb_url"
+    cd "$tmp_dir" || return 1
+    curl -L -O "$deb_url"
+    cd - >/dev/null || return 1
+  fi
+
+  echo -n "📦 File: $deb_path"
+
+  if [ -n "$expected_digest" ]; then
+    if ! command -v sha256sum >/dev/null 2>&1; then
+      echo -e "\n❌ 'sha256sum' is not installed."
+      return 1
+    fi
+
+    if ! command -v awk >/dev/null 2>&1; then
+      echo -e "\n❌ 'awk' is not installed."
+      return 1
+    fi
+
+    actual_hash=$(sha256sum "$deb_path" | awk '{print $1}')
+
+    if [ "$expected_digest" = "sha256:$actual_hash" ]; then
+      echo -e "\n✅ SHA256 hash for $deb_path is valid."
+    else
+      echo -e "\n❌ SHA256 hash mismatch for $deb_path!"
+      echo -e "Expected: $expected_digest"
+      echo -e "Found:    sha256:$actual_hash"
+      return 1
+    fi
+  fi
+
+  echo -e "✅ Download and verification complete."
+}
+
+
+DEBS_TO_INSTALL=()
+
 function get_package() {
     PACKAGE=$1
     OS_CODENAME=$2
     DEB_URL=""
+    EXPECTED_DIGEST=""
 
     # Search for the file in the releases
     LATEST_VERSION=""
-    while read -r ASSET_NAME FILE_URL; do
+    while read -r ASSET_NAME FILE_URL DIGEST; do
         if [[ "$ASSET_NAME" == $PACKAGE*$OS_CODENAME*.deb ]]; then
             VERSION=$(echo "$ASSET_NAME" | grep -oP '\d+\.\d+\.\d+')
-            FILE_FOUND=true
             if [[ -n "$VERSION" ]]; then
                 if [[ ! -n "$LATEST_VERSION" ]] || dpkg --compare-versions $LATEST_VERSION lt $VERSION; then
                     LATEST_VERSION="$VERSION"
                     DEB_URL="$FILE_URL"
+                    EXPECTED_DIGEST="$DIGEST"
                 fi
             fi
         fi
-    done < <(echo "$RELEASES" | jq -r '.[] | .assets[] | select(.name | endswith(".deb")) | "\(.name) \(.browser_download_url)"')
+    done < <(echo "$RELEASES" | jq -r '.[] | .assets[] | select((.name | endswith(".deb")) and (.digest)) | "\(.name) \(.browser_download_url) \(.digest)"')
 
     if [ ! -z "$DEB_URL" ]; then
         DEB_FILE=$(basename "$DEB_URL")
@@ -155,16 +215,13 @@ function get_package() {
         fi
 
         if [ ! -z "$DEB_FILE" ]; then
-            echo "Download: $DEB_URL"
-            mkdir -p $TMP_DIR
-            cd $TMP_DIR
-            curl -L -O "$DEB_URL"
-            echo -n " ./$DEB_FILE"
-            cd ..
-            echo -e "download finished"
+            if ! download_and_verify_deb "$DEB_FILE" "$DEB_URL" "$EXPECTED_DIGEST" "$TMP_DIR"; then
+                exit 1
+            fi
+            DEBS_TO_INSTALL+=("$TMP_DIR/$DEB_FILE")
         fi
     else
-        echo -e "\e[31mNo .deb-file for '$PACKAGE' found.\e[0m"
+        echo -e "⚠️ \e[38;5;208m No .deb-file for '$PACKAGE' found.\e[0m"
     fi
 }
 
@@ -197,51 +254,52 @@ if [[ -z $NO_ROS ]]; then
     fi
 fi
 
+
+function restart_mas() {
+    echo -e "\e[32m🔄 Restarting mas daemon nodes...\e[0m"
+    echo -e "\033[36mros2 run fkie_mas_daemon mas-restart.py\e[0m"
+    ros2 run fkie_mas_daemon mas-restart.py
+    echo -e "\e[32m🔄 Restart mas gui? (Y/n)\e[0m"
+    read yn
+    case "$yn" in
+        [yY]|"") 
+            echo -e "\e[32mRestarting mas gui...\e[0m"
+            echo -e "\033[36mscreen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'\e[0m"
+            screen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'
+            ;;
+        [nN])
+            ;;
+    esac
+}
+
 if [ -d "$TMP_DIR" ]; then
     echo "Install packages"
 
     if [[ "$OS_CODENAME" == "focal" ]]; then
         # install ttyd using snap and all other packages using apt
-        if sudo apt install $TMP_DIR/*; then
+        echo -e "\033[36m🔐 sudo apt install -y ${DEBS_TO_INSTALL[@]}\e[0m"
+        if sudo apt install -y ${DEBS_TO_INSTALL[@]}; then
             echo -e "\e[33mno ttyd packages available for focal, installing using snap:\e[0m"
             sudo snap install ttyd --classic
-            echo -e "\e[32mInstallation completed.\e[0m"
-            echo -e "\e[32mRestarting mas daemon nodes...\e[0m"
-            ros2 run fkie_mas_daemon mas-restart.py
-            # echo -e "\e[32mRestart mas gui? (Y/n)\e[0m"
-            echo -e "\e[32mRestart mas gui? (Y/n)\e[0m"
-            read yn
-            case $yn in
-                [yY] ) break;;
-                [nN] ) echo exiting...;
-                    exit;;
-            esac
-            echo -e "\e[32mRestarting mas gui...\e[0m"
-            screen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'
+            echo -e "\e[32m✅ Installation completed.\e[0m"
+            restart_mas
         else
-            echo -e "\e[31mInstallation failed\e[0m"
+            echo -e "❌ \e[31mInstallation failed\e[0m"
         fi
     else
         # install all packages using apt
-        if sudo apt install ttyd $TMP_DIR/*; then
-            echo -e "\e[32mInstallation completed.\e[0m"
-            echo -e "\e[32mRestarting mas daemon nodes...\e[0m"
-            ros2 run fkie_mas_daemon mas-restart.py
-            echo -e "\e[32mRestart mas gui? (Y/n)\e[0m"
-            read yn
-            case $yn in
-                [yY] ) break;;
-                [nN] ) echo exiting...;
-                    exit;;
-            esac
-            echo -e "\e[32mRestarting mas gui...\e[0m"
-            screen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'
+        echo -e "\033[36m🔐 sudo apt install -y ttyd ${DEBS_TO_INSTALL[@]}\e[0m"
+        if sudo apt install -y ttyd ${DEBS_TO_INSTALL[@]}; then
+            echo -e "\e[32m✅ Installation completed.\e[0m"
+            restart_mas
         else
-            echo -e "\e[31mInstallation failed\e[0m"
+            echo -e "❌ \e[31mInstallation failed\e[0m"
         fi
     fi
     # Cleanup
-    rm -fr "$TMP_DIR"
+    if [[ ! -z $DELETE_DOWNLOADED ]]; then
+        rm -fr "$TMP_DIR"
+    fi
 else
     echo -e "Nothing to install."
 fi
@@ -249,3 +307,4 @@ fi
 if [[ ! -z $WAIT_FOR_KEY ]]; then
     read  -n 1 -p "Press <any key> to quit"
 fi
+echo -e "\e[32mfinished.\e[0m"

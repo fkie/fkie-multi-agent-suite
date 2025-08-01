@@ -25,23 +25,27 @@ if __name__ == '__main__':
     if "ROS_DOMAIN_ID" in os.environ:
         ros_domain_id = os.environ["ROS_DOMAIN_ID"]
     print(f"connect to daemon on ROS_DOMAIN_ID: {ros_domain_id}")
-    print(f"connect to: _ws://localhost:{ws_port()}_")
-    with websockets.sync.client.connect(f"ws://localhost:{ws_port()}", max_size=2**22) as connection:
-        print("request launch files using uri 'ros.launch.get_list'")
-        connection.send('{"uri": "ros.launch.get_list", "id": -1}')
-        reply = connection.recv(3)
-        print("reply received")
-        msg = json.loads(reply, object_hook=lambda d: SimpleNamespace(**d))
-        has_id = hasattr(msg, 'id')
-        if has_id and msg.id == -1:
-            print("store loaded launch files")
-            launch_files = msg.result
-            for launch in launch_files:
-                print(f"path: {launch.path}")
-                print(f"  args: {launch.args}")
-        else:
-            print("  but the reply is not for me")
-
+    print(f"connect to: ws://localhost:{ws_port()}")
+    try:
+        with websockets.sync.client.connect(f"ws://localhost:{ws_port()}", max_size=2**22) as connection:
+            print("request launch files using uri 'ros.launch.get_list'")
+            connection.send('{"uri": "ros.launch.get_list", "id": -1}')
+            reply = connection.recv(3)
+            print("reply received")
+            msg = json.loads(reply, object_hook=lambda d: SimpleNamespace(**d))
+            has_id = hasattr(msg, 'id')
+            if has_id and msg.id == -1:
+                print("store loaded launch files")
+                launch_files = msg.result
+                for launch in launch_files:
+                    print(f"path: {launch.path}")
+                    print(f"  args: {launch.args}")
+            else:
+                print("  but the reply is not for me")
+    except Exception as error:
+        print(f"Daemon not reachable: {error}")
+        print(f"❌ Restart of the daemon is canceled!")
+        exit(1)
     # stop running mas nodes
     cmd_daemon_str = ""
     cmd_discovery_str = ""
