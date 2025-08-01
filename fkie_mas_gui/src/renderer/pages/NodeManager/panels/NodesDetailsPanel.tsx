@@ -53,6 +53,10 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [updateServices, forceUpdateServices] = useReducer((x) => x + 1, 0);
   const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
 
+  const [showDiagnosticHistory, setShowDiagnosticHistory] = useLocalStorage(
+    "NodesDetailsPanel:showDiagnosticHistory",
+    false
+  );
   const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", true);
   const [showPublishers, setShowPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
   const [showSubscribers, setShowSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
@@ -185,14 +189,78 @@ export default function NodesDetailsPanel(): JSX.Element {
     if ((nodeShow.diagnosticLevel || 0) > 0 || nodeShow.diagnosticColor) {
       return (
         <Stack paddingTop="0.5em">
-          <Typography variant="body1" style={getDiagnosticStyle(nodeShow.diagnosticLevel || 0)} marginBottom={1}>
-            {getDiagnosticLevelName(nodeShow.diagnosticLevel || 0)}: {nodeShow.diagnosticMessage}
-          </Typography>
+          <Stack
+            direction="row"
+            alignItems="center"
+            onClick={() => {
+              setShowDiagnosticHistory((prev) => !prev);
+            }}
+          >
+            <ExpandMoreIcon
+              style={{ transform: `${showDiagnosticHistory ? "" : "rotate(-90deg)"}` }}
+              fontSize="small"
+            />
+            <Button
+              size="small"
+              style={{
+                textTransform: "none",
+                color: "inherit",
+              }}
+            >
+              <Typography variant="body1" style={getDiagnosticStyle(nodeShow.diagnosticLevel || 0)} marginBottom={1}>
+                {getDiagnosticLevelName(nodeShow.diagnosticLevel || 0)}: {nodeShow.diagnosticMessage}
+              </Typography>
+            </Button>
+          </Stack>
+          {showDiagnosticHistory &&
+            nodeShow.diagnosticArray.map((da, daIndex) => {
+              return da.status?.map((ds, dsIndex) => {
+                return (
+                  <Stack
+                    // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+                    key={`${daIndex}-${dsIndex}-diagnostic-status`}
+                    direction="column"
+                  >
+                    <Stack direction="row" width="100%" display="flex" flexGrow={1} flexDirection="row">
+                      <Typography variant="body1" marginLeft="1.5em" marginRight="0.5em">
+                        {daIndex + 1}:
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        style={getDiagnosticStyle(ds.level || 0)}
+                        paddingLeft="0.5em"
+                      >
+                        {getDiagnosticLevelName(ds.level || 0)}: {ds.message}
+                      </Typography>
+                    </Stack>
+                    {ds.values?.map((dsItem) => {
+                      return (
+                        <Stack
+                          key={`${dsItem.key}-diagnostic-keyvalue`}
+                          direction="row"
+                          width="100%"
+                          display="flex"
+                          flexGrow={1}
+                          flexDirection="row"
+                        >
+                          <Typography variant="body1" marginLeft="3em" marginRight="0.5em" marginBottom={1}>
+                            {dsItem.key}:
+                          </Typography>
+                          <Typography variant="body1" paddingLeft="0.5em" marginBottom={1} color={dsItem.key === "color" ? dsItem.value : undefined}>
+                            {dsItem.value}
+                          </Typography>
+                        </Stack>
+                      );
+                    })}
+                  </Stack>
+                );
+              });
+            })}
         </Stack>
       );
     }
     return <></>;
-  }, [nodeShow, updateDiagnostics]);
+  }, [nodeShow, updateDiagnostics, showDiagnosticHistory]);
 
   const createNodeDetailsInfo = useMemo(() => {
     if (!nodeShow) return <></>;
@@ -726,6 +794,7 @@ export default function NodesDetailsPanel(): JSX.Element {
     showSubscribers,
     showServices,
     showLaunchParameter,
+    showDiagnosticHistory,
     // onTopicClick,    <= causes unnecessary rebuilds
     // onServiceClick,  <= causes unnecessary rebuilds
     rosCtx,
