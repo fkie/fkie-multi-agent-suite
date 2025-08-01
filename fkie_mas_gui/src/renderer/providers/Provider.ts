@@ -1210,7 +1210,7 @@ export default class Provider implements IProvider {
       // match the name with dots instead of slashes
       // match the name with trailing logger name
       const statusName = `/${status.name.replace(/^\/+/, "").replaceAll(".", "/")}`;
-      const matchingNode: RosNode | undefined = this.rosNodes.find((node) => statusName.startsWith(node.name));
+      const matchingNode: RosNode | undefined = this.rosNodes.find((node) => node.name === statusName || statusName.startsWith(`${node.name}/`));
       if (matchingNode) {
         matchingNode.diagnosticLevel = status.level;
         matchingNode.diagnosticMessage = status.message;

@@ -125,7 +125,7 @@ class Service:
                     # match the name with trailing logger name
                     statusName = f"/{status.name.lstrip('/').lstrip('.').replace('.', '/')}"
                     for nodeName in self._local_nodes:
-                        if statusName.startswith(nodeName):
+                        if nodeName == statusName or statusName.startswith(f"{nodeName}/"):
                             filteredMsg.status.append(status)
                             break
             if len(filteredMsg.status) > 0:
