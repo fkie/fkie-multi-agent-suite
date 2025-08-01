@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.5.8 - 01.08.2025
+
+Added diagnostic history to node details tab
+Balanced prioritization of diagnostic level and custom color
+
 ## 4.5.7 - 01.08.2025
 
 Calculate the mean color for group with colorized nodes
