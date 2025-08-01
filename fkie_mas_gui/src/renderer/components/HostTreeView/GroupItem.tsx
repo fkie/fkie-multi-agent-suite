@@ -202,12 +202,17 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
   const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems));
   const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
   const [color, setColor] = useState<string>(getGroupIconColor(treeItems, isDarkMode));
+  const [colorBorder, setColorBorder] = useState<string>(getColorFromLifecycle(groupLifecycleStatus, isDarkMode));
 
   useEffect(() => {
     setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems));
     setGroupStatus(getGroupStatus(treeItems));
     setColor(getGroupIconColor(treeItems, isDarkMode));
-  }, [treeItems, groupStatus]);
+  }, [treeItems, isDarkMode]);
+
+  useEffect(() => {
+    setColorBorder(getColorFromLifecycle(groupLifecycleStatus, isDarkMode));
+  }, [groupLifecycleStatus, isDarkMode]);
 
   useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
     // update group icon if the name of the node contains the group name
@@ -220,82 +225,79 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
     }
   });
 
-  if (groupLifecycleStatus === GroupLifecycleStatus.NO_ONE) {
-    switch (groupStatus) {
-      case GroupStatus.ALL_RUNNING: {
-        const groupStatusLocal = getGroupStatusLocal(treeItems);
-        if (groupStatusLocal === GroupStatusLocal.NONE) {
-          return (
-            <Tooltip
-              title={
-                <div>
-                  <Typography fontWeight="bold" fontSize="inherit">
-                    The processes of all nodes are not found on the local host.
-                  </Typography>
-                  <Typography fontSize={"inherit"}>
-                    There is no screen with the name of the node, nor was the ROS node started with the __node:=, __ns:=
-                    parameter, nor is the GID of the node detected by mas-discovery.
-                  </Typography>
-                  <Typography fontSize={"inherit"}>
-                    Note: no checks for life cycle, composable node or other service calls are performed!
-                  </Typography>
-                </div>
-              }
-              placement="left"
-              disableInteractive
-            >
-              <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />
-            </Tooltip>
-          );
+  const createIcon = useMemo(() => {
+    if (groupLifecycleStatus === GroupLifecycleStatus.NO_ONE) {
+      switch (groupStatus) {
+        case GroupStatus.ALL_RUNNING: {
+          const groupStatusLocal = getGroupStatusLocal(treeItems);
+          if (groupStatusLocal === GroupStatusLocal.NONE) {
+            return (
+              <Tooltip
+                title={
+                  <div>
+                    <Typography fontWeight="bold" fontSize="inherit">
+                      The processes of all nodes are not found on the local host.
+                    </Typography>
+                    <Typography fontSize={"inherit"}>
+                      There is no screen with the name of the node, nor was the ROS node started with the __node:=,
+                      __ns:= parameter, nor is the GID of the node detected by mas-discovery.
+                    </Typography>
+                    <Typography fontSize={"inherit"}>
+                      Note: no checks for life cycle, composable node or other service calls are performed!
+                    </Typography>
+                  </div>
+                }
+                placement="left"
+                disableInteractive
+              >
+                <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+              </Tooltip>
+            );
+          }
+          return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
         }
-        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
-      }
 
-      case GroupStatus.SOME_RUNNING:
-        return (
+        case GroupStatus.SOME_RUNNING:
+          return (
+            <ContrastIcon
+              sx={{
+                transform: "rotate(-90deg)",
+              }}
+              style={{
+                marginRight: 0.5,
+                width: 20,
+                color: color,
+              }}
+            />
+          );
+
+        case GroupStatus.ALL_INACTIVE:
+          return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+
+        default:
+          return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+      }
+    }
+    if (groupStatus === GroupStatus.SOME_RUNNING) {
+      return (
+        <Tooltip
+          key={`tooltip-icon-${groupLifecycleStatus}`}
+          title={`Lifecycle state: '${getNameFromLifecycle(groupLifecycleStatus)}'`}
+          placement="left"
+          disableInteractive
+        >
           <ContrastIcon
+            style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
             sx={{
               transform: "rotate(-90deg)",
-            }}
-            style={{
-              marginRight: 0.5,
-              width: 20,
-              color: color,
+              border: 3,
+              borderRadius: "100%",
+              borderColor: colorBorder,
             }}
           />
-        );
-
-      case GroupStatus.ALL_INACTIVE:
-        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
-
-      default:
-        return <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+        </Tooltip>
+      );
     }
-  }
-
-  const colorBorder = getColorFromLifecycle(groupLifecycleStatus, isDarkMode);
-  if (groupStatus === GroupStatus.SOME_RUNNING) {
-    return (
-      <Tooltip
-        key={`tooltip-icon-${groupLifecycleStatus}`}
-        title={`Lifecycle state: '${getNameFromLifecycle(groupLifecycleStatus)}'`}
-        placement="left"
-        disableInteractive
-      >
-        <ContrastIcon
-          style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
-          sx={{
-            transform: "rotate(-90deg)",
-            border: 3,
-            borderRadius: "100%",
-            borderColor: colorBorder,
-          }}
-        />
-      </Tooltip>
-    );
-  }
-
-  const createIcon = useMemo(() => {
     return (
       <Tooltip
         ref={ref}
@@ -314,7 +316,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
         />
       </Tooltip>
     );
-  }, [groupLifecycleStatus, colorBorder, color]);
+  }, [groupLifecycleStatus, colorBorder, color, groupStatus]);
 
   return createIcon;
 });
