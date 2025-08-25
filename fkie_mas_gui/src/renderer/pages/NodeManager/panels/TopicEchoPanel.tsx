@@ -367,7 +367,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
                 rate:
               </Typography>
               <Typography variant="body2">
-                {content?.rate || -2 > -1 ? `${content?.rate.toFixed(2)} Hz` : "n/a"}
+                {(content?.rate || -2) > -1 ? `${content?.rate.toFixed(2)} Hz` : "n/a"}
               </Typography>
             </Stack>
           </Button>
@@ -379,8 +379,9 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
                 size:
               </Typography>
               <Typography variant="body2">
-                {normalizePrint(content?.size, 2)} [min: {normalizePrint(content?.size_min, 0)}, max:{" "}
-                {normalizePrint(content?.size_max, 0)}]
+                {(content?.size || -2) > -1
+                  ? `${normalizePrint(content?.size, 2)} [min: ${normalizePrint(content?.size_min, 0)}, max: ${normalizePrint(content?.size_max, 0)}]`
+                  : "n/a"}
               </Typography>
             </Stack>
             <Stack spacing={1} direction="row">
@@ -388,7 +389,7 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
                 bw:
               </Typography>
               <Typography variant="body2">
-                {content?.bw || -2 > -1
+                {(content?.bw || -2) > -1
                   ? `${normalizePrint(content?.bw, 2, "/s")} [min: ${normalizePrint(content?.bw_min, 0, "/s")}, max: ${normalizePrint(content?.bw_max, 0, "/s")}]`
                   : "n/a"}
               </Typography>
