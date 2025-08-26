@@ -302,7 +302,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                 <Tag
                   color="default"
                   title={`PID${nodeShow.processIds.length > 1 ? "s" : ""}:`}
-                  text={`${nodeShow.processIds}`}
+                  text={`${nodeShow.processIds.join(", ")}`}
                   tooltip={
                     "Process IDs of all processes found for this node, including the screens in which the nodes were started."
                   }
