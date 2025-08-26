@@ -89,6 +89,9 @@ class RosStateServicer:
         self._state_jsonify = RosStateJsonify(monitor_servicer)
         self.websocket = websocket
         self.monitor_servicer = monitor_servicer
+        self._discovered_nodes_count = 0
+        self._topic_types = ""
+        self._is_zenoh = self._state_jsonify.get_rwm_implementation() in ["rmw_zenoh_cpp"]
         self._timestamp = 0
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
@@ -184,6 +187,17 @@ class RosStateServicer:
                 if self._ts_state_updated > self._ts_state_notified:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
                         update_ros_state = True
+                # check if zenoh is enabled
+                if not update_ros_state and self._is_zenoh:
+                    node_count = len(nmd.ros_node.get_fully_qualified_node_names())
+                    if node_count != self._discovered_nodes_count:
+                        self._discovered_nodes_count = node_count
+                        update_ros_state = True
+                    else:
+                        topic_types = f"{nmd.ros_node.get_topic_names_and_types()}"
+                        if self._topic_types != topic_types:
+                            self._topic_types = topic_types
+                            update_ros_state = True
             send_notification = False
             participant_count = None
             # as some services are called during the update, it may take some time
