@@ -276,7 +276,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             } else if (node.screens) {
               for (const screen of node.screens) {
                 navCtx.openTerminal(
-                  CmdType.SCREEN,
+                  CmdType.LOG,
                   node.providerId as string,
                   node.name,
                   screen,
@@ -292,7 +292,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
               startNodes([node.idGlobal]);
             } else {
               navCtx.openTerminal(
-                CmdType.LOG,
+                CmdType.SCREEN,
                 node.providerId as string,
                 node.name,
                 "",
