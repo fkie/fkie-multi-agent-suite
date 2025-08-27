@@ -193,11 +193,13 @@ class RosStateServicer:
                     if node_count != self._discovered_nodes_count:
                         self._discovered_nodes_count = node_count
                         update_ros_state = True
+                        self._ts_state_updated = time.time()
                     else:
                         topic_types = f"{nmd.ros_node.get_topic_names_and_types()}"
                         if self._topic_types != topic_types:
                             self._topic_types = topic_types
                             update_ros_state = True
+                            self._ts_state_updated = time.time()
             send_notification = False
             participant_count = None
             # as some services are called during the update, it may take some time

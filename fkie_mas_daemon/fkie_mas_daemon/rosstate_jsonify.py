@@ -246,6 +246,7 @@ class RosStateJsonify:
         cached_data.screens = screen.get_active_screens()
         self._local_node_names = []
 
+
         if update_participants:
             self._ros_service_dict: Dict[str, RosService] = {}
             self._ros_topic_dict: Dict[str, RosTopic] = {}
@@ -274,7 +275,7 @@ class RosStateJsonify:
                     if not self._has_endpoint_info(ros_node.id, tp.publisher):
                         endpoint_info = EndpointInfo(ros_node.id, self._get_qos(pub_info.qos_profile), [])
                         tp.publisher.append(endpoint_info)
-                    self._ros_topic_dict[ros_topic_id_str] = tp
+                    cached_data.topic_by_id[ros_topic_id_str] = tp
                     if not self._has_topic_id(ros_topic_id, ros_node.publishers):
                         ros_node.publishers.append(ros_topic_id)
                     discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in pub_info.topic_type
@@ -332,7 +333,7 @@ class RosStateJsonify:
                             endpoint_info = EndpointInfo(ros_node.id, self._get_qos(
                                 sub_info.qos_profile), incompatible_qos)
                             tp.subscriber.append(endpoint_info)
-                        self._ros_topic_dict[ros_topic_id_str] = tp
+                        cached_data.topic_by_id[ros_topic_id_str] = tp
                         if not self._has_topic_id(ros_topic_id, ros_node.subscribers):
                             ros_node.subscribers.append(ros_topic_id)
                     else:
@@ -351,9 +352,9 @@ class RosStateJsonify:
                                 f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
                             tp.requester.append(ros_node.id)
                         if is_request:
-                            if ros_topic_id_str not in self._ros_service_dict:
+                            if ros_topic_id_str not in cached_data.service_by_id:
                                 ros_node.services.append(ros_topic_id)
-                            self._ros_service_dict[ros_topic_id_str] = tp
+                            cached_data.service_by_id[ros_topic_id_str] = tp
                 except Exception:
                     import traceback
                     print(traceback.format_exc())
@@ -364,7 +365,6 @@ class RosStateJsonify:
                         new_nodes_detected = True
         # get services
         if self._use_name_as_node_id and hasattr(nmd.ros_node, "get_service_names_and_types"):
-            service_names_and_types = nmd.ros_node.get_service_names_and_types()
             for node in result:
                 node_base_name, node_ns = self.parse_node_name(node.name)
                 service_names_and_types = nmd.ros_node.get_service_names_and_types_by_node(node_base_name, node_ns)
@@ -383,9 +383,9 @@ class RosStateJsonify:
                                 lifecycle_transition_services.append(service_name)
                             ros_topic_id = RosTopicId(service_name, service_type)
                             ros_topic_id_str = str(ros_topic_id)
-                            if ros_topic_id_str not in self._ros_service_dict:
+                            if ros_topic_id_str not in cached_data.service_by_id:
                                 node.services.append(ros_topic_id)
-                            self._ros_service_dict[ros_topic_id_str] = srv
+                            cached_data.service_by_id[ros_topic_id_str] = srv
 
         # update composable nodes
         if new_nodes_detected:
@@ -411,6 +411,8 @@ class RosStateJsonify:
         if self.monitor_servicer:
             self.monitor_servicer.update_warning_groups([self._ros_state_warnings])
         self._current_nodes = result
+        self._ros_service_dict = cached_data.service_by_id
+        self._ros_topic_dict = cached_data.topic_by_id
 
         # store arguments for next thread run to get services of the updated node list
         self._thread_update_service_args = (
