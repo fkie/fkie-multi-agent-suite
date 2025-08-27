@@ -23,10 +23,11 @@ type TopicDetailsItemsProps = {
   providerId: string | undefined;
   topicId: RosTopicId;
   showConnections: boolean;
+  nodeName: string;
 };
 
 const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(function TopicDetailsItem(props, ref) {
-  const { providerId, topicId, showConnections = true } = props;
+  const { providerId, topicId, showConnections = true, nodeName = "" } = props;
 
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
@@ -242,6 +243,12 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createInfo = useMemo(() => {
     if (!topicInfo) return <></>;
+    let topicName = topicId.name;
+    const fullNodeName = nodeName ? `${nodeName}/` : "";
+    if (fullNodeName && topicName.startsWith(fullNodeName)) {
+      topicName = topicName.replace(fullNodeName, "");
+    }
+
     return (
       <Stack direction="row" alignItems="center" spacing={0}>
         <Stack
@@ -366,7 +373,7 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
               logCtx.info(`${topicId.name} copied`);
             }}
           >
-            {`${topicId.name}`}
+            {`${topicName}`}
           </Button>
           {showInfo && <CopyButton value={topicId.name} fontSize="0.7em" />}
         </Stack>

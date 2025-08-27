@@ -19,11 +19,12 @@ import { colorFromHostname, CopyButton } from "../UI";
 type ServiceDetailsItemsProps = {
   providerId: string | undefined;
   serviceId: RosTopicId;
+  nodeName: string;
 };
 
 const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
   function ServiceDetailsItem(props, ref) {
-    const { providerId, serviceId } = props;
+    const { providerId, serviceId, nodeName = "" } = props;
 
     const logCtx = useContext(LoggingContext);
     const navCtx = useContext(NavigationContext);
@@ -101,6 +102,12 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     const createInfo = useMemo(() => {
       if (!serviceInfo) return <></>;
+      let serviceName = serviceId.name;
+      const fullNodeName = nodeName ? `${nodeName}/` : "";
+      if (fullNodeName && serviceName.startsWith(fullNodeName)) {
+        serviceName = serviceName.replace(fullNodeName, "");
+      }
+
       return (
         <Stack direction="row" alignItems="center" spacing={0}>
           <Stack
@@ -134,7 +141,7 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
                 logCtx.info(`${serviceId.name} copied`);
               }}
             >
-              {`${serviceId.name}`}
+              {`${serviceName}`}
             </Button>
             {showInfo && <CopyButton value={serviceId.name} fontSize="0.7em" />}
           </Stack>
@@ -163,7 +170,14 @@ const ServiceDetailsItem = forwardRef<HTMLDivElement, ServiceDetailsItemsProps>(
           {serviceInfo.nodeProviders?.map((item: TServiceNodeInfo) => {
             const provNodeName = removeDDSuid(item.nodeId);
             return (
-              <Stack key={item.nodeId} paddingLeft={"0.5em"} alignItems="center" direction="row" spacing="0.5em" style={getHostStyle(item.providerName)}>
+              <Stack
+                key={item.nodeId}
+                paddingLeft={"0.5em"}
+                alignItems="center"
+                direction="row"
+                spacing="0.5em"
+                style={getHostStyle(item.providerName)}
+              >
                 <Button
                   size="small"
                   style={{

@@ -482,6 +482,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                     providerId={provider?.id}
                     topicId={topic}
                     showConnections={showConnections}
+                    nodeName={nodeShow.name}
                   />
                 ))}
           </Stack>
@@ -519,6 +520,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                     providerId={provider?.id}
                     topicId={topic}
                     showConnections={showConnections}
+                    nodeName={nodeShow.name}
                   />
                 ))}
           </Stack>
@@ -561,6 +563,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                 key={`${service.name}-${service.msg_type}`}
                 providerId={provider?.id}
                 serviceId={service}
+                nodeName={nodeShow.name}
               />
             );
           })}
