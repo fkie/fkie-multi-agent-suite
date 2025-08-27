@@ -160,7 +160,12 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       tags.push({ id: "no-daemon", data: "No Daemon", tooltip: "", color: "red" });
     }
     if (!provider.discovery) {
-      tags.push({ id: "no-discovery", data: "No Discovery", tooltip: "", color: "orange" });
+      const rmwImplementation = provider.systemEnv.RMW_IMPLEMENTATION as string;
+      if (rmwImplementation === "rmw_zenoh_cpp") {
+        tags.push({ id: "no-discovery-with-zenoh", data: "discovery issues", tooltip: "For zenoh, not all nodes can be assigned to hosts  and not all updates can be detected automatically.", color: "orange" });
+      } else {
+        tags.push({ id: "no-discovery", data: "No Discovery", tooltip: "", color: "orange" });
+      }
     }
     return tags;
   }
