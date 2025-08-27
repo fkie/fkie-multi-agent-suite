@@ -269,35 +269,40 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
         if (node) {
-          if (node.pid > 0 || (node.screens || []).length > 0) {
-            if (event.nativeEvent.ctrlKey && !node.system_node) {
+          let startStopAction = false;
+          if (event.nativeEvent.ctrlKey && !event.nativeEvent.shiftKey && !node.system_node) {
+            if (node.pid > 0 || (node.screens || []).length > 0) {
               // stop node
               stopNodes([node.idGlobal]);
-            } else if (node.screens) {
-              for (const screen of node.screens) {
+              startStopAction = true;
+            } else {
+              // stop node
+              startNodes([node.idGlobal]);
+              startStopAction = true;
+            }
+          }
+          // open screen or log
+          if (!startStopAction) {
+            if (event.nativeEvent.shiftKey && (node.screens || []).length > 0) {
+              for (const screen of node.screens || []) {
                 navCtx.openTerminal(
-                  CmdType.LOG,
+                  CmdType.SCREEN,
                   node.providerId as string,
                   node.name,
                   screen,
                   "",
-                  event.nativeEvent.shiftKey,
+                  false,
                   event.nativeEvent.ctrlKey
                 );
               }
-            }
-          } else {
-            if (event.nativeEvent.ctrlKey && !node.system_node) {
-              // stop node
-              startNodes([node.idGlobal]);
             } else {
               navCtx.openTerminal(
-                CmdType.SCREEN,
+                CmdType.LOG,
                 node.providerId as string,
                 node.name,
                 "",
                 "",
-                event.nativeEvent.shiftKey,
+                false,
                 event.nativeEvent.ctrlKey
               );
             }

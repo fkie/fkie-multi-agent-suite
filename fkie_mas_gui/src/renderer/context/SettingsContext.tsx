@@ -188,7 +188,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "Terminal command to display the log file. The file name is appended. (+F: waiting for more data)",
     type: "string",
     freeSolo: true,
-    default: "/usr/bin/less -fLQR +G",
+    default: "/usr/bin/less -fLQR +G +F",
     options: ["/usr/bin/less -fLQR +G", "/usr/bin/less -fLQR +G +F"],
     group: "Parametrization",
   },
