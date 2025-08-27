@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.4 (27.08.2025)
+------------------
+* Fixed update services
+* Added additional checks for status changes when Zenoh is enabled
+
 4.6.3 (01.08.2025)
 ------------------
 * Fixed matching the diagnostic color to node witch is a part of another node

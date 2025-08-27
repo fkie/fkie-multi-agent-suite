@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.5.10 - 27.08.2025
+
+Added a hit for discovery if zenoh is used
+Show service info also if no services available
+Fixed update services
+Added additional checks for status changes when Zenoh is enabled
+Open log instead of screen on double click
+Changed separator for PIDs in node details view
+Fixed statistics visualization in echo tab
+
 ## 4.5.9 - 01.08.2025
 
 Fix for error: Minified React error #300
