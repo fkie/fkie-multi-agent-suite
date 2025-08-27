@@ -528,7 +528,7 @@ export default function NodesDetailsPanel(): JSX.Element {
   }, [nodeShow, updateTopics, showPublishers, showSubscribers, showConnections]);
 
   const createServicesView = useMemo(() => {
-    if (!nodeShow || !nodeShow.services) return <></>;
+    if (!nodeShow) return <></>;
     const provider = rosCtx.getProviderById(nodeShow.providerId);
     return (
       <Stack paddingTop="0.5em" spacing={0}>
@@ -549,13 +549,13 @@ export default function NodesDetailsPanel(): JSX.Element {
           >
             <Typography variant="caption" fontWeight="bold">
               Services:
-              {` [${nodeShow.services.length}]`}
+              {` [${nodeShow.services?.length || 0}]`}
             </Typography>
           </Button>
         </Stack>
 
         {showServices &&
-          nodeShow.services.sort(compareTopics).map((service) => {
+          nodeShow.services?.sort(compareTopics).map((service) => {
             return (
               <ServiceDetailsItem
                 key={`${service.name}-${service.msg_type}`}
