@@ -9,7 +9,7 @@ import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_OPEN_CONNECT } from "../layout/events";
@@ -24,10 +24,12 @@ export default function ProviderPanel(): JSX.Element {
   const [filterText, setFilterText] = useState("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx.changed]);
 
   useCustomEventListener(EVENT_OPEN_CONNECT, () => {
@@ -131,6 +133,35 @@ export default function ProviderPanel(): JSX.Element {
     getDomainId();
   }, [rosCtx.rosInfo, rosCtx.providers, window.commandExecutor]);
 
+  const createReloadButton = useMemo(() => {
+    return (
+      <Stack direction="row">
+        <Tooltip
+          title="Refresh hosts list"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <IconButton edge="start" aria-label="refresh hosts list" onClick={() => rosCtx.refreshProviderList()}>
+            <RefreshIcon sx={{ fontSize: "inherit" }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Start system nodes" placement="bottom" disableInteractive>
+          <IconButton
+            color="primary"
+            onClick={() => {
+              setOpenConnect(true);
+            }}
+            size="small"
+          >
+            <RocketLaunchIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+    );
+  }, [tooltipDelay]);
+
   const createProviderTable = useMemo(() => {
     const result = (
       // <TableContainer  height="100%" style={{ overflowX: 'scroll', flexGrow: 1 }}>
@@ -155,7 +186,8 @@ export default function ProviderPanel(): JSX.Element {
       // overflow="auto"
       style={{ backgroundColor: backgroundColor }}
     >
-      <Stack direction="row" spacing={0.5}>
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        {buttonLocation === BUTTON_LOCATIONS.LEFT && createReloadButton}
         <SearchBar
           onSearch={(value) => {
             setFilterText(value);
@@ -164,6 +196,7 @@ export default function ProviderPanel(): JSX.Element {
           defaultValue={filterText}
           // fullWidth={true}
         />
+        {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
         {openConnect && (
           <ConnectToProviderModal
             onCloseDialog={() => {
@@ -171,28 +204,6 @@ export default function ProviderPanel(): JSX.Element {
             }}
           />
         )}
-        <Tooltip title="Start system nodes" placement="bottom" disableInteractive>
-          <IconButton
-            color="primary"
-            onClick={() => {
-              setOpenConnect(true);
-            }}
-            size="small"
-          >
-            <RocketLaunchIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip
-          title="Refresh hosts list"
-          placement="bottom"
-          enterDelay={tooltipDelay}
-          enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <IconButton edge="start" aria-label="refresh hosts list" onClick={() => rosCtx.refreshProviderList()}>
-            <RefreshIcon sx={{ fontSize: "inherit" }} />
-          </IconButton>
-        </Tooltip>
       </Stack>
       <Stack height="100%">{createProviderTable}</Stack>
     </Stack>

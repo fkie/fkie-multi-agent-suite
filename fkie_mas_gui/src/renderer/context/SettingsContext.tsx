@@ -32,6 +32,8 @@ export interface ISettingsContext {
 
 export const LOG_LEVEL_LIST = ["DEBUG", "INFO", "SUCCESS", "WARN", "ERROR"];
 
+export const BUTTON_LOCATIONS = { LEFT: "LEFT", RIGHT: "RIGHT" };
+
 export const LAUNCH_FILE_EXTENSIONS = [".launch", "launch.xml", "launch.py", "launch.yaml", "launch.yml"];
 
 export const DEFAULT_SETTINGS = {
@@ -271,11 +273,19 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",
   },
+  buttonLocation: {
+    label: "Location of the control buttons",
+    type: "string",
+    default: BUTTON_LOCATIONS.RIGHT,
+    options: [BUTTON_LOCATIONS.RIGHT, BUTTON_LOCATIONS.LEFT],
+    description: "",
+  },
   openScreenByDefault: {
     label: "Open screen by default",
     default: false,
     type: "boolean",
-    description: "If true, double-clicking on a running node opens a screen terminal. Otherwise, the log file is opened. You can reverse the behavior by pressing the Shift key.",
+    description:
+      "If true, double-clicking on a running node opens a screen terminal. Otherwise, the log file is opened. You can reverse the behavior by pressing the Shift key.",
   },
   tabFullName: {
     label: "Show tab names with namespace",

@@ -5,6 +5,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   Alert,
   AlertTitle,
+  alpha,
   Autocomplete,
   Box,
   ButtonGroup,
@@ -26,12 +27,13 @@ import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
-import { LAUNCH_FILE_EXTENSIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, LAUNCH_FILE_EXTENSIONS, SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { getFileExtension, getFileName, PathItem, RosPackage } from "@/renderer/models";
 import { ConnectionState } from "@/renderer/providers";
 import { EventProviderState } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
+import { grey } from "@mui/material/colors";
 import { LAYOUT_TABS } from "../layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 
@@ -83,13 +85,13 @@ export default function PackageExplorerPanel(): JSX.Element {
 
   const [packageList, setPackageList] = useState<ProviderPackage[]>([]);
   const [packageListFiltered, setPackageListFiltered] = useState<ProviderPackage[]>([]);
-  const [showReloadButton, setShowReloadButton] = useState(false);
   const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] = useState<boolean>(false);
   const [packageItemsTree, setPackageItemsTree] = useState<TPackageItemsTree>({});
   const [packageItemList, setPackageItemList] = useState<PathItem[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
   const [launchFileHistory, setLaunchFileHistory] = useLocalStorage<PathItem[]>(
     "PackageExplorer:launchFileHistory",
@@ -100,6 +102,7 @@ export default function PackageExplorerPanel(): JSX.Element {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+    setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx.changed]);
 
   async function updatePackageList(force: boolean = false): Promise<void> {
@@ -135,7 +138,6 @@ export default function PackageExplorerPanel(): JSX.Element {
   // Update files when selected provider changes
   useEffect(() => {
     updatePackageList();
-    setShowReloadButton(true);
   }, [rosCtx.initialized]);
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
@@ -521,6 +523,91 @@ export default function PackageExplorerPanel(): JSX.Element {
     },
     [colorizeHosts]
   );
+  const createReloadButton = useMemo(() => {
+    return (
+      <Tooltip title="Reload package list" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
+        <IconButton
+          size="small"
+          onClick={() => {
+            updatePackageList(true);
+          }}
+        >
+          <RefreshIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
+    );
+  }, []);
+
+  const createButtons = useMemo(() => {
+    return (
+      <ButtonGroup orientation="vertical" aria-label="launch file control group">
+        <Tooltip
+          title="Edit File"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              disabled={!selectedFile}
+              size="small"
+              aria-label="Edit File"
+              onClick={(event) => {
+                onEditFile(selectedFile, event.nativeEvent.shiftKey);
+              }}
+            >
+              <BorderColorIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title="Load"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              disabled={!(selectedFile && LAUNCH_FILE_EXTENSIONS.find((fe) => selectedFile.path.indexOf(fe) !== -1))}
+              color="primary"
+              size="small"
+              aria-label="load"
+              onClick={() => {
+                setSelectedLaunchFile(selectedFile ? { ...selectedFile } : undefined);
+              }}
+            >
+              <InputIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip
+          title="Copy absolute path"
+          placement="bottom"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <span>
+            <IconButton
+              disabled={!selectedFile?.path}
+              size="small"
+              aria-label="copy"
+              onClick={() => {
+                if (selectedFile?.path) {
+                  navigator.clipboard.writeText(selectedFile.path);
+                  logCtx.success(`${selectedFile.path} copied!`);
+                }
+              }}
+            >
+              <ContentCopyIcon fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </ButtonGroup>
+    );
+  }, [packageListFiltered, selectedPackage, loading, tooltipDelay, selectedFile]);
 
   return (
     <Stack
@@ -529,133 +616,66 @@ export default function PackageExplorerPanel(): JSX.Element {
       sx={{ backgroundColor: backgroundColor }}
       // paddingLeft="10px"
     >
-      <Stack direction="column" width="100% ">
-        <Stack direction="row" alignItems="center">
-          {createPackageSelector}
-          {showReloadButton && (
-            <Tooltip
-              title="Reload package list"
-              placement="bottom"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-            >
-              <IconButton
-                size="small"
-                onClick={() => {
-                  updatePackageList(true);
-                }}
-              >
-                <RefreshIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-          <ButtonGroup orientation="horizontal" aria-label="launch file control group">
-            <Tooltip
-              title="Edit File"
-              placement="bottom"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <span>
-                <IconButton
-                  disabled={!selectedFile}
-                  size="small"
-                  aria-label="Edit File"
-                  onClick={(event) => {
-                    onEditFile(selectedFile, event.nativeEvent.shiftKey);
-                  }}
-                >
-                  <BorderColorIcon fontSize="inherit" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip
-              title="Load"
-              placement="bottom"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <span>
-                <IconButton
-                  disabled={
-                    !(selectedFile && LAUNCH_FILE_EXTENSIONS.find((fe) => selectedFile.path.indexOf(fe) !== -1))
-                  }
-                  color="primary"
-                  size="small"
-                  aria-label="load"
-                  onClick={() => {
-                    setSelectedLaunchFile(selectedFile ? { ...selectedFile } : undefined);
-                  }}
-                >
-                  <InputIcon fontSize="inherit" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip
-              title="Copy absolute path"
-              placement="bottom"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <span>
-                <IconButton
-                  disabled={!selectedFile?.path}
-                  size="small"
-                  aria-label="copy"
-                  onClick={() => {
-                    if (selectedFile?.path) {
-                      navigator.clipboard.writeText(selectedFile.path);
-                      logCtx.success(`${selectedFile.path} copied!`);
+      <Stack direction="row" alignItems="center">
+        {buttonLocation === BUTTON_LOCATIONS.LEFT && createReloadButton}
+        {createPackageSelector}
+        {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
+      </Stack>
+
+      <Stack direction="row" height="100%" overflow="auto">
+        {buttonLocation === BUTTON_LOCATIONS.LEFT && (
+          <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+            {createButtons}
+          </Box>
+        )}
+        <Box width="100%" height="100%" overflow="auto">
+          <Stack direction="column" width="100% ">
+            {ignoringNonRelevantPackageFiles && (
+              <Tag
+                key="ignore-non-relevant-packages"
+                color="warning"
+                title="Ignoring non-relevant package files"
+                text="The folder contains too many files"
+                wrap
+              />
+            )}
+          </Stack>
+          <Box height="100%" overflow="auto" display="flex" flexDirection="row">
+            <Stack
+              direction="column"
+              onKeyUp={(e) => {
+                if (e.key === "Delete") {
+                  // remove launch file from history
+                  setLaunchFileHistory((prevHistory) => {
+                    if (selectedFile) {
+                      return prevHistory.filter((file) => file.id !== selectedFile.id);
                     }
-                  }}
-                >
-                  <ContentCopyIcon fontSize="inherit" />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </ButtonGroup>
-        </Stack>
-        {ignoringNonRelevantPackageFiles && (
-          <Tag
-            key="ignore-non-relevant-packages"
-            color="warning"
-            title="Ignoring non-relevant package files"
-            text="The folder contains too many files"
-            wrap
-          />
+                    return prevHistory;
+                  });
+                }
+              }}
+            >
+              {Object.keys(packageItemsTree).length > 0 && (
+                <TreeDirectory
+                  selectedPackage={selectedPackage?.rosPackage}
+                  providerName={selectedPackage?.providerName}
+                  packageItemsTree={packageItemsTree}
+                  onNodeSelect={(itemId: string) => handleSelect(itemId)}
+                  onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
+                    onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
+                  }
+                />
+              )}
+            </Stack>
+          </Box>
+        </Box>
+        {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
+          <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+            {createButtons}
+          </Box>
         )}
       </Stack>
-      <Box height="100%" overflow="auto" display="flex" flexDirection="row">
-        <Stack
-          direction="column"
-          onKeyUp={(e) => {
-            if (e.key === "Delete") {
-              // remove launch file from history
-              setLaunchFileHistory((prevHistory) => {
-                if (selectedFile) {
-                  return prevHistory.filter((file) => file.id !== selectedFile.id);
-                }
-                return prevHistory;
-              });
-            }
-          }}
-        >
-          {Object.keys(packageItemsTree).length > 0 && (
-            <TreeDirectory
-              selectedPackage={selectedPackage?.rosPackage}
-              providerName={selectedPackage?.providerName}
-              packageItemsTree={packageItemsTree}
-              onNodeSelect={(itemId: string) => handleSelect(itemId)}
-              onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
-                onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
-              }
-            />
-          )}
-        </Stack>
-      </Box>
+
       {selectedLaunchFile && (
         <LaunchFileModal
           selectedProvider={undefined}

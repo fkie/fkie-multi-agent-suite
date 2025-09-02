@@ -38,7 +38,7 @@ import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
 import useQueue from "@/renderer/hooks/useQueue";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
@@ -105,6 +105,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   );
   const [tooltipDelay, setTooltipDelay] = useState(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
   const [filterText, setFilterText] = useState("");
   const [providerNodes, setProviderNodes] = useState<TProviderNodes[]>([]);
@@ -141,6 +142,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
   /**
@@ -1510,22 +1512,24 @@ export default function HostTreeViewPanel(): JSX.Element {
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
         {indexQueueMain < 0 && (
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip
-              title="Reload node list"
-              placement="left"
-              enterDelay={tooltipDelay}
-              enterNextDelay={tooltipDelay}
-              disableInteractive
-            >
-              <IconButton
-                size="small"
-                onClick={() => {
-                  refreshAllProvider(true);
-                }}
+            {buttonLocation === BUTTON_LOCATIONS.LEFT && (
+              <Tooltip
+                title="Reload node list"
+                placement="left"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+                disableInteractive
               >
-                <RefreshIcon sx={{ fontSize: "inherit" }} />
-              </IconButton>
-            </Tooltip>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    refreshAllProvider(true);
+                  }}
+                >
+                  <RefreshIcon sx={{ fontSize: "inherit" }} />
+                </IconButton>
+              </Tooltip>
+            )}
             <SearchBar
               key={"search-bar-host"}
               onSearch={(value) => {
@@ -1535,6 +1539,24 @@ export default function HostTreeViewPanel(): JSX.Element {
               defaultValue={filterText}
               fullWidth
             />
+            {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
+              <Tooltip
+                title="Reload node list"
+                placement="left"
+                enterDelay={tooltipDelay}
+                enterNextDelay={tooltipDelay}
+                disableInteractive
+              >
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    refreshAllProvider(true);
+                  }}
+                >
+                  <RefreshIcon sx={{ fontSize: "inherit" }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </Stack>
         )}
         {indexQueueMain >= 0 && (
@@ -1556,11 +1578,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           </Paper>
         )}
         <Stack direction="row" height="100%" overflow="auto">
-          <Box height="100%">
-            {/* <Paper elevation={2} sx={{ border: 0 }} height="100%"> */}
-            {createButtonBox}
-            {/* </Paper> */}
-          </Box>
+          {buttonLocation === BUTTON_LOCATIONS.LEFT && <Box height="100%">{createButtonBox}</Box>}
           <Box width="100%" height="100%" overflow="auto">
             {(!rosCtx.providers || rosCtx.providers.length === 0) && (
               <Alert severity="info">
@@ -1579,6 +1597,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               stopNodes={stopNodesFromId}
             />
           </Box>
+          {buttonLocation === BUTTON_LOCATIONS.RIGHT && <Box height="100%">{createButtonBox}</Box>}
         </Stack>
       </Stack>
 

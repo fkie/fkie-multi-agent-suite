@@ -19,7 +19,7 @@ import SearchBar from "@/renderer/components/UI/SearchBar";
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
 import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { Provider } from "@/renderer/providers";
@@ -68,10 +68,14 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
   const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<boolean>(
     settingsCtx.get("avoidGroupWithOneItem") as boolean
   );
+  const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
   useEffect(() => {
     setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
+    setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
   function getAvailableProviders(): TProviderDescription[] {
@@ -503,14 +507,24 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     );
   }, [expanded, expandedFiltered, rootDataList, searchTerm, filteredTopics, avoidGroupWithOneItem]);
 
+  const createReloadButton = useMemo(() => {
+    return (
+      <Tooltip title="Reload topic list" placement="left" disableInteractive>
+        <IconButton
+          size="small"
+          onClick={() => {
+            getTopicList();
+          }}
+        >
+          <RefreshIcon sx={{ fontSize: "inherit" }} />
+        </IconButton>
+      </Tooltip>
+    );
+  }, []);
+
   const createPanel = useMemo(() => {
     return (
-      <Box
-        ref={ref}
-        height="100%"
-        overflow="auto"
-        sx={{ backgroundColor: settingsCtx.get("backgroundColor") as string }}
-      >
+      <Box ref={ref} height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
         <Stack
           spacing={1}
           height="100%"
@@ -520,33 +534,29 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
           // }}
         >
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip title="Reload topic list" placement="left" disableInteractive>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  getTopicList();
-                }}
-              >
-                <RefreshIcon sx={{ fontSize: "inherit" }} />
-              </IconButton>
-            </Tooltip>
+            {buttonLocation === BUTTON_LOCATIONS.LEFT && createReloadButton}
             <SearchBar
               onSearch={(term) => onSearch(term)}
               placeholder="Filter Topics (OR: <space>, AND: +, NOT: !)"
               defaultValue={searchTerm}
               fullWidth
             />
+            {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
-            <Box height="100%" sx={{ boxShadow: `0px 0px 5px ${alpha(grey[600], 0.4)}` }}>
-              {/* <Box height="100%" sx={{ borderRight: "solid", borderColor: "#D3D3D3", borderWidth: 1 }}> */}
-              {/* <Paper elevation={0} sx={{ border: 1 }} height="100%"> */}
-              {createButtonBox}
-              {/* </Paper> */}
-            </Box>
+            {buttonLocation === BUTTON_LOCATIONS.LEFT && (
+              <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+                {createButtonBox}
+              </Box>
+            )}
             <Box width="100%" height="100%" overflow="auto">
               {createTreeView}
             </Box>
+            {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
+              <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+                {createButtonBox}
+              </Box>
+            )}
           </Stack>
         </Stack>
       </Box>
@@ -558,7 +568,8 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     searchTerm,
     selectedItem,
     topicForSelected,
-    settingsCtx.changed,
+    backgroundColor,
+    buttonLocation,
     avoidGroupWithOneItem,
   ]);
   return createPanel;

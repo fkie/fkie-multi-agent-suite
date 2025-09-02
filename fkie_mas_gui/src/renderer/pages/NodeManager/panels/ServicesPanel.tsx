@@ -12,7 +12,7 @@ import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
 import { ServiceExtendedInfo } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
@@ -54,11 +54,13 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
   const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<boolean>(
     settingsCtx.get("avoidGroupWithOneItem") as boolean
   );
+  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
   useEffect(() => {
     setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
   function genKey(items: string[]): string {
@@ -143,7 +145,11 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
       eventOpenComponent(
         `call-service-${service.id}}`,
         `Call Service - ${service.name}`,
-        <ServiceCallerPanel serviceName={service.name} serviceType={service.srvType} providerId={service.nodeProviders[0]?.providerId} />,
+        <ServiceCallerPanel
+          serviceName={service.name}
+          serviceType={service.srvType}
+          providerId={service.nodeProviders[0]?.providerId}
+        />,
         true,
         LAYOUT_TAB_SETS.BORDER_RIGHT,
         new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
@@ -411,6 +417,21 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     );
   }, [expanded, expandedFiltered, rootDataList, searchTerm, avoidGroupWithOneItem]);
 
+  const createReloadButton = useMemo(() => {
+    return (
+      <Tooltip title="Reload service list" placement="left" disableInteractive>
+        <IconButton
+          size="small"
+          onClick={() => {
+            getServiceList();
+          }}
+        >
+          <RefreshIcon sx={{ fontSize: "inherit" }} />
+        </IconButton>
+      </Tooltip>
+    );
+  }, []);
+
   const createPanel = useMemo(() => {
     return (
       <Box ref={ref} height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
@@ -423,33 +444,29 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
           // }}
         >
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip title="Reload service list" placement="left" disableInteractive>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  getServiceList();
-                }}
-              >
-                <RefreshIcon sx={{ fontSize: "inherit" }} />
-              </IconButton>
-            </Tooltip>
+            {buttonLocation === BUTTON_LOCATIONS.LEFT && createReloadButton}
             <SearchBar
               onSearch={onSearch}
               placeholder="Filter Services (OR: <space>, AND: +, NOT: !)"
               defaultValue={searchTerm}
               fullWidth
             />
+            {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
           </Stack>
           <Stack direction="row" height="100%" overflow="auto">
-            <Box height="100%" sx={{ boxShadow: `0px 0px 5px ${alpha(grey[600], 0.4)}` }}>
-              {/* <Box height="100%" sx={{ borderRight: "solid", borderColor: `${alpha(grey[600], 0.4)}`, borderWidth: 1 }}> */}
-              {/* <Paper elevation={0} sx={{ border: 1 }} height="100%"> */}
-              {createButtonBox}
-              {/* </Paper> */}
-            </Box>
+            {buttonLocation === BUTTON_LOCATIONS.LEFT && (
+              <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+                {createButtonBox}
+              </Box>
+            )}
             <Box width="100%" height="100%" overflow="auto">
               {createTreeView}
             </Box>
+            {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
+              <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+                {createButtonBox}
+              </Box>
+            )}
           </Stack>
         </Stack>
       </Box>
@@ -461,7 +478,8 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     searchTerm,
     selectedItem,
     serviceForSelected,
-    settingsCtx.changed,
+    backgroundColor,
+    buttonLocation,
     avoidGroupWithOneItem,
   ]);
   return createPanel;

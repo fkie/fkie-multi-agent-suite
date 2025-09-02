@@ -7,7 +7,7 @@ import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { DEFAULT_BUG_TEXT, LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
 import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderRosNodes } from "@/renderer/providers/events";
@@ -38,10 +38,12 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx.changed]);
 
   async function deleteSelectedParameters(): Promise<void> {
@@ -168,10 +170,22 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
     );
   }, [rootData, forceReload, searched]);
 
-  return (
-    <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
-      <Stack spacing={1} height="100%">
-        <Stack direction="row" spacing={0.5} alignItems="center">
+  const createButtons = useMemo(() => {
+    return (
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        <Tooltip title="Reload parameter list" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setShowWarning(false);
+              setForceReload();
+            }}
+          >
+            <RefreshIcon sx={{ fontSize: "inherit" }} />
+          </IconButton>
+        </Tooltip>
+
+        {selectedParameter && (
           <Tooltip
             title="Delete selected ROS1 parameter"
             placement="bottom"
@@ -191,23 +205,24 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
               </IconButton>
             </span>
           </Tooltip>
-          <Tooltip title="Reload parameter list" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
-            <IconButton
-              size="small"
-              onClick={() => {
-                setShowWarning(false);
-                setForceReload();
-              }}
-            >
-              <RefreshIcon sx={{ fontSize: "inherit" }} />
-            </IconButton>
-          </Tooltip>
+        )}
+      </Stack>
+    );
+  }, [tooltipDelay, selectedParameter]);
+
+  return (
+    <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+      <Stack spacing={1} height="100%">
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {buttonLocation === BUTTON_LOCATIONS.LEFT && createButtons}
+
           <SearchBar
             onSearch={setSearched}
             placeholder="Filter parameters (OR: <space>, AND: +, NOT: !)"
             // defaultValue={initialSearchTerm}
             fullWidth
           />
+          {buttonLocation === BUTTON_LOCATIONS.RIGHT && createButtons}
         </Stack>
         {showWarning && (
           <Alert
