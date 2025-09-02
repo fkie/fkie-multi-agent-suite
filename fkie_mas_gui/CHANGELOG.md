@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.0 - 02.09.2025
+
+Added option to change the button location
+Added option for default behavior when double-clicking on running nodes
+Added possibility to add namespace to capability group
+Updated overview image
+Show local topics/services without node name in Node Details tab
+
 ## 4.5.10 - 27.08.2025
 
 Added a hit for discovery if zenoh is used
