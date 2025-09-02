@@ -271,6 +271,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",
   },
+  openScreenByDefault: {
+    label: "Open screen by default",
+    default: false,
+    type: "boolean",
+    description: "If true, double-clicking on a running node opens a screen terminal. Otherwise, the log file is opened. You can reverse the behavior by pressing the Shift key.",
+  },
   tabFullName: {
     label: "Show tab names with namespace",
     default: true,

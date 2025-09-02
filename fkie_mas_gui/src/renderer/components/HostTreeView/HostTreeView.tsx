@@ -81,6 +81,9 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     settingsCtx.get("avoidGroupWithOneItem") as string
   );
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [openScreenByDefault, setOpenScreenByDefault] = useState<string>(
+    settingsCtx.get("openScreenByDefault") as string
+  );
   const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(undefined);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -93,6 +96,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
       .map((item) => `(${item})`)
       .join("|");
     setSpamNodesRegExp(spamNodes ? new RegExp(String.raw`${spamNodes}`, "g") : undefined);
+    setOpenScreenByDefault(settingsCtx.get("openScreenByDefault") as string);
   }, [settingsCtx.changed]);
 
   function createTreeFromNodes(nodes: RosNode[]): void {
@@ -283,7 +287,10 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
           }
           // open screen or log
           if (!startStopAction) {
-            if (event.nativeEvent.shiftKey && (node.screens || []).length > 0) {
+            if (
+              Boolean(event.nativeEvent.shiftKey) !== Boolean(openScreenByDefault) &&
+              (node.screens || []).length > 0
+            ) {
               for (const screen of node.screens || []) {
                 navCtx.openTerminal(
                   CmdType.SCREEN,
