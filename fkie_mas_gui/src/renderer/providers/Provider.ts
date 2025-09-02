@@ -1233,6 +1233,15 @@ export default class Provider implements IProvider {
     return { namespace: rest.join("/"), level: rest.length - 1 };
   };
 
+  public toNodeGroup: (name: string) => { namespace: string; name: string } = (name) => {
+    const splits = name.split("/");
+    let ns = splits.slice(0, -1).join("/");
+    if (ns && !ns.startsWith("/")) {
+      ns = `/${ns}`;
+    }
+    return { namespace: ns, name: `{${splits.slice(splits.length - 1)}}` };
+  };
+
   /**
    * Get the list of nodes loaded in launch files. update launch files into provider object
    */
@@ -1317,7 +1326,7 @@ export default class Provider implements IProvider {
               } else {
                 const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
                 if (env_capability_group) {
-                  nodeGroup = { namespace: "", name: `{${env_capability_group}}` };
+                  nodeGroup = this.toNodeGroup(`${env_capability_group}`);
                 }
                 const parameters: RosParameter[] = launchNode.parameters || [];
                 // in ros2 we have a lot of temporary files with one parameter.
@@ -1338,15 +1347,14 @@ export default class Provider implements IProvider {
                       if (rosParameters) {
                         const capabilityGroup = rosParameters["capability_group"];
                         if (capabilityGroup) {
-                          const ns = "";
-                          nodeGroup = { namespace: ns, name: `{${capabilityGroup}}` };
+                          nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
                         }
                         allJoinedParams = { ...allJoinedParams, ...rosParameters };
                         joinedParam = true;
                       }
                     }
                   } else if (p.name === "capability_group") {
-                    nodeGroup = { namespace: "", name: `{${p.value}}` };
+                    nodeGroup = this.toNodeGroup(`${p.value}`);
                   }
                   if (!joinedParam) {
                     nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));

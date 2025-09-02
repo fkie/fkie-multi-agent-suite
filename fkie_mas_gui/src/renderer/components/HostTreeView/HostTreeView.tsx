@@ -126,7 +126,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
         let groupNamespace = "";
         let groupName = "";
         let nodeRestNamespace = node.namespace !== "/" ? node.namespace : "";
-        if (node.capabilityGroup.namespace) {
+        if (node.capabilityGroup.namespace && node.namespace.startsWith(node.capabilityGroup.namespace)) {
           groupNamespace = `${node.capabilityGroup.namespace}`;
           nodeRestNamespace = node.namespace.replace(groupNamespace, "");
         }
