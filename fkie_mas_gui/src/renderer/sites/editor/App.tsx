@@ -31,6 +31,8 @@ export default function EditorApp(): JSX.Element {
   const dialogRef = useRef(null);
 
   async function initProvider(): Promise<void> {
+    rosCtx.setShowSnackbarReloadLaunchNotification(false);
+    rosCtx.setShowSnackbarBinaryChangedNotification(false);
     const queryString = window.location.search;
     console.log(`queryString: ${queryString}`);
     const urlParams = new URLSearchParams(queryString);

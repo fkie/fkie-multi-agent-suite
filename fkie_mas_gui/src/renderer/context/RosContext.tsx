@@ -84,6 +84,8 @@ export interface IRosProviderContext {
   isLocalHost: (host: string) => boolean;
   addProvider: (provider: Provider) => void;
   updateLocalNodes: (providerId: string, nodes: string[]) => void;
+  setShowSnackbarReloadLaunchNotification: (show: boolean) => void;
+  setShowSnackbarBinaryChangedNotification: (show: boolean) => void;
 }
 
 export const DEFAULT = {
@@ -115,6 +117,8 @@ export const DEFAULT = {
   isLocalHost: (): boolean => false,
   addProvider: (): void => {},
   updateLocalNodes: (): void => {},
+  setShowSnackbarReloadLaunchNotification: () => {},
+  setShowSnackbarBinaryChangedNotification: () => {},
 };
 
 type TLoadLaunchResult = {
@@ -141,6 +145,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [localNodes, setLocalNodes] = useState<TLocalNode[]>([]);
+  const [showSnackbarReloadLaunchNotification, setShowSnackbarReloadLaunchNotification] = useState<boolean>(true);
+  const [showSnackbarBinaryChangedNotification, setShowSnackbarBinaryChangedNotification] = useState<boolean>(true);
 
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(DEFAULT.mapProviderRosNodes);
   // nodeMap: Map<string, RosNode>
@@ -515,7 +521,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
       return true;
     }
-    const hintMsg = "Is the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12."
+    const hintMsg =
+      "Is the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.";
     try {
       if (provider.isAvailable()) {
         provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
@@ -1066,7 +1073,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           }
         }
       }
-      if (nodes.length > 0) {
+      if (showSnackbarBinaryChangedNotification && nodes.length > 0) {
         emitCustomEvent(EVENT_PROVIDER_NODE_BINARY_MODIFIED, new EventProviderNodeBinaryModified(data.provider, nodes));
         // ask use if nodes should be restarted
         enqueueSnackbar("Binary changed!", {
@@ -1081,26 +1088,28 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         });
       }
     }
-    for (const arg of data.path.affected || []) {
-      enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
-        persist: true,
-        anchorOrigin: {
-          vertical: "top",
-          horizontal: "right",
-        },
-        preventDuplicate: true,
-        content: (key, message) => {
-          return createReloadFileAlertComponent(
-            key,
-            `${message}`,
-            data.provider,
-            data.path.srcPath,
-            data.path.eventType,
-            arg,
-            reloadLaunchFile
-          );
-        },
-      });
+    if (showSnackbarReloadLaunchNotification) {
+      for (const arg of data.path.affected || []) {
+        enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
+          persist: true,
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+          preventDuplicate: true,
+          content: (key, message) => {
+            return createReloadFileAlertComponent(
+              key,
+              `${message}`,
+              data.provider,
+              data.path.srcPath,
+              data.path.eventType,
+              arg,
+              reloadLaunchFile
+            );
+          },
+        });
+      }
     }
   });
 
@@ -1268,6 +1277,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       isLocalHost,
       addProvider,
       updateLocalNodes,
+      setShowSnackbarReloadLaunchNotification,
+      setShowSnackbarBinaryChangedNotification,
     }),
 
     [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes, setMapProviderRosNodes]

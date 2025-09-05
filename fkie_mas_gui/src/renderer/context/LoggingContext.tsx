@@ -1,4 +1,4 @@
-import Fade from "@mui/material/Fade";
+// import Fade from "@mui/material/Fade";
 import { VariantType, useSnackbar } from "notistack";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
@@ -84,7 +84,8 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
 
     if (showSnackbar) {
       enqueueSnackbar(`${description}`, {
-        TransitionComponent: Fade,
+        // TransitionComponent: Fade,
+        // preventDuplicate: true,
         content: (key, message) => (
           <LoggingDetailsComponent
             id={key}

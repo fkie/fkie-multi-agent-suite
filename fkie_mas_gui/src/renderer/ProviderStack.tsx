@@ -68,7 +68,7 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
           horizontal: "right",
         }}
         dense
-        preventDuplicate
+        // preventDuplicate <= Do not use here: this causes the editor to lose focus. Use in enqueueSnackbar instead.
       >
         <LoggingProvider>
           <ElectronProvider>
