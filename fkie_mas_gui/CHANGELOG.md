@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.6.1 - 05.09.2025
+
+added rosout_to_diag script to daemon
+fixed losing focus in the editor after saving
+reduced rate of file modification events
+
 ## 4.6.0 - 02.09.2025
 
 Added option to change the button location

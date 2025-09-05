@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.5 (05.09.2025)
+------------------
+* added rosout_to_diag script to daemon
+* reduced rate of file modification events
+
 4.6.4 (27.08.2025)
 ------------------
 * Fixed update services

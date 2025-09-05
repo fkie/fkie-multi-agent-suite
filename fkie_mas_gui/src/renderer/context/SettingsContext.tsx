@@ -37,7 +37,7 @@ export const BUTTON_LOCATIONS = { LEFT: "LEFT", RIGHT: "RIGHT" };
 export const LAUNCH_FILE_EXTENSIONS = [".launch", "launch.xml", "launch.py", "launch.yaml", "launch.yml"];
 
 export const DEFAULT_SETTINGS = {
-  MIN_VERSION_DAEMON: "4.6.4",
+  MIN_VERSION_DAEMON: "4.6.5",
   fgColor: "#1a73e8",
   bgColor: "#fafafa",
   fgColorForDarkMode: "#B8E7FB",
