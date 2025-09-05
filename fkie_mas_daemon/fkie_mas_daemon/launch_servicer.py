@@ -52,7 +52,7 @@ from rosidl_runtime_py import get_action_interfaces
 from rosidl_runtime_py import set_message_fields
 from rosidl_runtime_py import message_to_ordereddict
 import rosidl_parser.definition
-from watchdog.events import FileSystemEvent
+from watchdog.events import FileModifiedEvent
 from watchdog.events import LoggingEventHandler
 from watchdog.observers import Observer
 import csv
@@ -61,6 +61,7 @@ import os
 import re
 import shlex
 import sys
+import time
 import traceback
 from importlib import import_module
 # from launch.launch_context import LaunchContext
@@ -138,6 +139,7 @@ class LaunchServicer(LoggingEventHandler):
         self._node_exec = {}  # node name <-> executable path
         self._included_files = []
         self._included_dirs = []
+        self._last_mod_times = {}
         self._is_running = True
         self._peers = {}
         self._loaded_files: Dict[CfgId, LaunchConfig] = dict()
@@ -176,12 +178,25 @@ class LaunchServicer(LoggingEventHandler):
         self._is_running = False
         self._watchdog_observer.stop()
 
-    def on_any_event(self, event: FileSystemEvent):
+    def on_modified(self, event: FileModifiedEvent):
         if event.event_type in ['opened', 'closed']:
             return
         path = ''
         if event.src_path in self._real_paths:
             path = self._real_paths[event.src_path]
+        # modification events trigger multiple times, see https://github.com/gorakhargosh/watchdog/issues/346
+        current_time = time.time()
+        last_trigger_time = 0
+        try:
+            last_trigger_time = self._last_mod_times[path]
+        except KeyError:
+            pass
+        if (current_time - last_trigger_time) > 1:
+            last_trigger_time = current_time
+            self._last_mod_times[path] = current_time
+        else:
+            return
+
         if path in self._included_files:
             affected_launch_files = []
             for launch_path, path_list in self._observed_launch_files.items():

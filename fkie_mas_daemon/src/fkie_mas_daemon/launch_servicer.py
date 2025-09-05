@@ -15,6 +15,7 @@ import roslib.names
 import roslib.packages
 import rospkg
 import threading
+import time
 import traceback
 
 import json
@@ -137,6 +138,7 @@ class LaunchServicer(LoggingEventHandler):
         self._included_files = []
         self._included_dirs = []
         self._launch_includes = {}
+        self._last_mod_times = {}
         self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
@@ -182,6 +184,18 @@ class LaunchServicer(LoggingEventHandler):
         path = event.src_path
         if event.src_path in self._real_paths:
             path = self._real_paths[event.src_path]
+        # modification events trigger multiple times, see https://github.com/gorakhargosh/watchdog/issues/346
+        current_time = time.time()
+        last_trigger_time = 0
+        try:
+            last_trigger_time = self._last_mod_times[path]
+        except KeyError:
+            pass
+        if (current_time - last_trigger_time) > 1:
+            last_trigger_time = current_time
+            self._last_mod_times[path] = current_time
+        else:
+            return
         if path in self._included_files:
             affected_launch_files = []
             for launch_path, path_list in self._launch_includes.items():
