@@ -100,6 +100,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "Display buttons for additional functions that are otherwise accessible via key modifiers",
     group: "Appearance",
   },
+  buttonLocation: {
+    label: "Location of the control buttons",
+    type: "string",
+    default: BUTTON_LOCATIONS.RIGHT,
+    options: [BUTTON_LOCATIONS.RIGHT, BUTTON_LOCATIONS.LEFT],
+    description: "",
+    group: "Appearance",
+  },
   checkForUpdates: {
     label: "Check for updates on start",
     default: true,
@@ -155,6 +163,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
       "When communicating with the MAS daemon, the messages from the listed URIs are output as debug messages.",
     group: "Logging",
   },
+  openScreenByDefault: {
+    label: "Open screen by default",
+    default: false,
+    type: "boolean",
+    description:
+      "If true, double-clicking on a running node opens a screen terminal. Otherwise, the log file is opened. You can reverse the behavior by pressing the Shift key.",
+    group: "Logging",
+  },
   capabilityGroupParameter: {
     label: "Capability Group parameter",
     freeSolo: true,
@@ -177,14 +193,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     max: 15,
     description: "Number of recently loaded files displayed in the Package Explorer tab.",
   },
-  ntpServer: {
-    label: "NTP Server",
-    freeSolo: true,
-    type: "string[]",
-    default: ["ntp.ubuntu.com"],
-    options: ["ntp.ubuntu.com"],
-    group: "Parametrization",
-  },
   logCommand: {
     label: "Log command prefix",
     description: "Terminal command to display the log file. The file name is appended. (+F: waiting for more data)",
@@ -192,7 +200,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     freeSolo: true,
     default: "/usr/bin/less -fLQR +G +F",
     options: ["/usr/bin/less -fLQR +G", "/usr/bin/less -fLQR +G +F"],
-    group: "Parametrization",
+    group: "Logging",
   },
   color: {
     label: "Color",
@@ -273,20 +281,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "Do not create a collapsible group with an element in it. Use name with namespace instead.",
   },
-  buttonLocation: {
-    label: "Location of the control buttons",
-    type: "string",
-    default: BUTTON_LOCATIONS.RIGHT,
-    options: [BUTTON_LOCATIONS.RIGHT, BUTTON_LOCATIONS.LEFT],
-    description: "",
-  },
-  openScreenByDefault: {
-    label: "Open screen by default",
-    default: false,
-    type: "boolean",
-    description:
-      "If true, double-clicking on a running node opens a screen terminal. Otherwise, the log file is opened. You can reverse the behavior by pressing the Shift key.",
-  },
   tabFullName: {
     label: "Show tab names with namespace",
     default: true,
@@ -327,6 +321,13 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
       });
       return validEntries.join(",");
     },
+  },
+  ntpServer: {
+    label: "NTP Server",
+    freeSolo: true,
+    type: "string[]",
+    default: ["ntp.ubuntu.com"],
+    options: ["ntp.ubuntu.com"],
   },
   editorOpenExternal: {
     label: "Open editor in external window by default",
