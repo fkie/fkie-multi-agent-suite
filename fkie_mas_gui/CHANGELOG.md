@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.2 - 09.09.2025
+
+Fixed location info shown in gui (discovery node for ROS1)
+Added launch file indicator for nodes
+Fixed a selection of launch-file when multiple are available
+Fixed start node witch multiple launch files (daemon node for ROS2)
+Changed group of some parameter settings
+
 ## 4.6.1 - 05.09.2025
 
 added rosout_to_diag script to daemon

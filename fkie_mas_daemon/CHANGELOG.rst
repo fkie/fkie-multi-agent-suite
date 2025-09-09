@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.6 (09.09.2025)
+------------------
+* Fixed start node witch multiple launch files
+
 4.6.5 (05.09.2025)
 ------------------
 * added rosout_to_diag script to daemon

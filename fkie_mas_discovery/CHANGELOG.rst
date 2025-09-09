@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.5 (09.09.2025)
+------------------
+* Fixed location info shown in gui (discovery node for ROS1)
+
 4.1.4 (05.06.2025)
 ------------------
 * Fixed build discovery with ros kilted, switched from fastrtps to fastdds
