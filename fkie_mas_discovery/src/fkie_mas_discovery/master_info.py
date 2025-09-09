@@ -1423,7 +1423,8 @@ class MasterInfo(object):
                 ros_node.node_API_URI = node.uri
                 ros_node.masteruri = node.masteruri
                 ros_node.pid = node.pid
-                ros_node.location = 'local' if node.isLocal else 'remote'
+                ros_node.location = [get_hostname(node.uri)]
+                ros_node.is_local = node.isLocal
                 status = 'unknown'
                 if node.pid is not None:
                     status = 'running'
