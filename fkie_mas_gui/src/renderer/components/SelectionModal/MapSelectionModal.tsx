@@ -47,8 +47,9 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
       return { title: o.title, list: o.list.length <= 3 ? o.list : [] };
     })
   );
+  const [selectedRadioItems, setSelectedRadioItems] = useState<{ [key: string]: string }>(initRadioMap(list));
 
-  function initRadioMap(initList: MapSelectionItem[]): { [key: string]: string[] } {
+  function initRadioMap(initList: MapSelectionItem[]): { [key: string]: string } {
     // convert list to map the 'title' as key and first list element as item
     const result = {};
     for (const o of initList) {
@@ -56,8 +57,6 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
     }
     return result;
   }
-
-  const [selectedRadioItems, setSelectedRadioItems] = useState<{ [key: string]: string[] }>(initRadioMap(list));
 
   function handleToggle(title: string, value: string): void {
     const newSelectedItems = structuredClone(selectedItems);
@@ -75,7 +74,7 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
 
   function handleRadio(title: string, value: string): void {
     const newSelectedItems = { ...selectedRadioItems };
-    newSelectedItems[title] = [value];
+    newSelectedItems[title] = value;
     setSelectedRadioItems(newSelectedItems);
   }
 
@@ -92,7 +91,7 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
     if (useRadioGroup) {
       // convert map state to list of maps with 'title' and 'list' keys
       const result: MapSelectionItem[] = Object.keys(selectedRadioItems).map((key) => {
-        return { title: key, list: selectedRadioItems[key] };
+        return { title: key, list: [selectedRadioItems[key]] };
       });
       onConfirmCallback(result);
     } else {
