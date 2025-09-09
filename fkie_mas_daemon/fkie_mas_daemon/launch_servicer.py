@@ -573,26 +573,23 @@ class LaunchServicer(LoggingEventHandler):
         # cfgid = CfgId(request.path, request.masteruri)
         # TODO: check if we need daemonuri as identification
         cfgid = CfgId(request.path, '')
-        if cfgid in self._loaded_files:
-            try:
-                if cfgid in self._loaded_files:
-                    self._remove_launch_from_observer(self._loaded_files[cfgid])
-                    del self._loaded_files[cfgid]
-                    result.status.code = 'OK'
-                    # notify GUI about changes
-                    self.websocket.publish('ros.launch.changed', {
-                        'path': request.path, 'action': 'unloaded'})
-                else:
-                    result.status.code = 'ERROR'
-                    result.status.msg = f"{request.path} not found"
-            except Exception as e:
-                err_text = "%s unloading failed!" % request.path
-                err_details = "%s: %s" % (err_text, e)
-                Log.warn("Unloading launch file: %s", err_details)
-                result.status.code = 'ERROR'
-                result.status.msg = err_details
-        else:
-            result.status.code = 'FILE_NOT_FOUND'
+        try:
+            if cfgid in list(self._loaded_files.keys()):
+                self._remove_launch_from_observer(self._loaded_files[cfgid])
+                del self._loaded_files[cfgid]
+                result.status.code = 'OK'
+                # notify GUI about changes
+                self.websocket.publish('ros.launch.changed', {
+                    'path': request.path, 'action': 'unloaded'})
+            else:
+                result.status.code = 'FILE_NOT_FOUND'
+                result.status.msg = f"{request.path} not found"
+        except Exception as e:
+            err_text = "%s unloading failed!" % request.path
+            err_details = "%s: %s" % (err_text, e)
+            Log.warn("Unloading launch file: %s", err_details)
+            result.status.code = 'ERROR'
+            result.status.msg = err_details
         return json.dumps(result, cls=SelfEncoder)
 
     def get_list(self) -> List[LaunchContent]:
@@ -632,7 +629,7 @@ class LaunchServicer(LoggingEventHandler):
             launch_configs = []
             if request.opt_launch:
                 cfgid = CfgId(request.opt_launch, request.masteruri)
-                if cfgid in self._loaded_files:
+                if cfgid in list(self._loaded_files.keys()):
                     launch_configs.append(self._loaded_files[cfgid])
             if not launch_configs:
                 # get launch configurations with given node
