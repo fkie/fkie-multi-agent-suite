@@ -287,6 +287,12 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "boolean",
     description: "",
   },
+  showLaunchFileIndicatorForNodes: {
+    label: "Show the launchfile indicator for nodes",
+    default: true,
+    type: "boolean",
+    description: "",
+  },
   spamNodes: {
     label: "Spam Nodes",
     freeSolo: true,

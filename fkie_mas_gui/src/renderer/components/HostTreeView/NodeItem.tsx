@@ -11,10 +11,19 @@ import WarningIcon from "@mui/icons-material/Warning";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { forwardRef, useContext, useEffect, useState } from "react";
+import { FileIcon } from "react-file-icon";
 
 import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { DiagnosticLevel, LaunchCallService, LaunchNodeInfo, RosNode, RosNodeStatus } from "@/renderer/models";
+import {
+  DiagnosticLevel,
+  getFileExtension,
+  getFileName,
+  LaunchCallService,
+  LaunchNodeInfo,
+  RosNode,
+  RosNodeStatus,
+} from "@/renderer/models";
 import { EventNodeDiagnostic } from "@/renderer/providers/events";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
@@ -23,7 +32,7 @@ import { TRosMessageStruct } from "@/types/TRosMessageStruct";
 import { treeItemClasses } from "@mui/x-tree-view";
 import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
-import { getDiagnosticColor } from "../UI/Colors";
+import { colorFromHostname, getDiagnosticColor } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -51,9 +60,15 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [showLaunchFile, setShowLaunchFile] = useState<boolean>(settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean);
   const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
   const [timerPeriod, setTimerPeriod] = useState<number[]>([]);
   const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
+
+  useEffect(() => {
+      setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
+      setShowLaunchFile(settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean);
+    }, [settingsCtx, settingsCtx.changed]);
 
   function getColorFromLifecycle(state: string, isDarkMode = false): string {
     switch (state) {
@@ -257,7 +272,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         },
       }}
       label={
-        <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
+        <Stack ref={ref} direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
           {nodeIcon}
           <Stack
             direction="row"
@@ -287,71 +302,115 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               {labelText}
             </Typography>
           </Stack>
-          {node.tags.map((tag: TTag) => (
-            <Tooltip
-              key={tag.id}
-              title={`${tag.tooltip}`}
-              placement="left"
-              disableInteractive
-              onClick={(event) => {
-                if (tag.onClick) {
-                  tag.onClick(event);
-                }
-              }}
-            >
-              {typeof tag.data === "string" ? (
-                <div>
-                  <Tag text={tag.data} color={tag.color} />
-                </div>
-              ) : (
-                tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
-              )}
-            </Tooltip>
-          ))}
-          {node.getRosLoggersCount() > 0 && (
-            <Tooltip title="User changed logging level" placement="left">
-              <IconButton
-                size="small"
+          <Stack direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
+            {node.tags.map((tag: TTag) => (
+              <Tooltip
+                key={tag.id}
+                title={`${tag.tooltip}`}
+                placement="left"
+                disableInteractive
                 onClick={(event) => {
-                  if (onShowLoggersClick) {
-                    onShowLoggersClick(event, itemId);
+                  if (tag.onClick) {
+                    tag.onClick(event);
                   }
                 }}
               >
-                <SettingsInputCompositeOutlinedIcon style={{ fontSize: "inherit", rotate: "90deg" }} />
-              </IconButton>
-            </Tooltip>
-          )}
-          {node.status !== RosNodeStatus.RUNNING && timerPeriod.length > 0 && (
-            <Tooltip title={`Delayed start due to configuration ${JSON.stringify(timerPeriod)} sec`} placement="left">
-              <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
-            </Tooltip>
-          )}
-          {(node.status === RosNodeStatus.RUNNING || node.status === RosNodeStatus.ONLY_SCREEN) &&
-            sigKillTimeout.length > 0 && (
-              <Tooltip
-                title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} ms`}
-                placement="left"
-              >
-                <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
+                {typeof tag.data === "string" ? (
+                  <div>
+                    <Tag text={tag.data} color={tag.color} />
+                  </div>
+                ) : (
+                  tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
+                )}
               </Tooltip>
-            )}{" "}
-          {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
-            <Tooltip title="Multiple Screens" placement="left">
-              <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
-            </Tooltip>
-          )}
-          {node.status === RosNodeStatus.RUNNING && (node.screens || []).length < 1 && (
-            <Tooltip title="No Screens" placement="left">
-              <DesktopAccessDisabledOutlinedIcon style={{ fontSize: "inherit" }} />
-            </Tooltip>
-          )}
-          {node.status !== RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
-            <Tooltip title="Ghost Screens" placement="left">
-              <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
-            </Tooltip>
-          )}
-        </Box>
+            ))}
+            {node.getRosLoggersCount() > 0 && (
+              <Tooltip title="User changed logging level" placement="left">
+                <IconButton
+                  size="small"
+                  onClick={(event) => {
+                    if (onShowLoggersClick) {
+                      onShowLoggersClick(event, itemId);
+                    }
+                  }}
+                >
+                  <SettingsInputCompositeOutlinedIcon style={{ fontSize: "inherit", rotate: "90deg" }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {node.status !== RosNodeStatus.RUNNING && timerPeriod.length > 0 && (
+              <Tooltip title={`Delayed start due to configuration ${JSON.stringify(timerPeriod)} sec`} placement="left">
+                <ScheduleSendIcon color="warning" style={{ fontSize: "inherit" }} />
+              </Tooltip>
+            )}
+            {(node.status === RosNodeStatus.RUNNING || node.status === RosNodeStatus.ONLY_SCREEN) &&
+              sigKillTimeout.length > 0 && (
+                <Tooltip
+                  title={`sigkill timeout after stop command ${JSON.stringify(sigKillTimeout)} ms`}
+                  placement="left"
+                >
+                  <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
+                </Tooltip>
+              )}{" "}
+            {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
+              <Tooltip title="Multiple Screens" placement="left">
+                <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+              </Tooltip>
+            )}
+            {node.status === RosNodeStatus.RUNNING && (node.screens || []).length < 1 && (
+              <Tooltip title="No Screens" placement="left">
+                <DesktopAccessDisabledOutlinedIcon style={{ fontSize: "inherit" }} />
+              </Tooltip>
+            )}
+            {node.status !== RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
+              <Tooltip title="Ghost Screens" placement="left">
+                <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+              </Tooltip>
+            )}
+            {showLaunchFile && node.launchInfo.size > 0 &&
+              [...node.launchInfo.values()].map((launchInfo) => {
+                const fileExtension = getFileExtension(launchInfo.launch_name as string);
+                const color = colorFromHostname(launchInfo.launch_name || "");
+                return (
+                  <Tooltip
+                    key={launchInfo.launch_name}
+                    title={
+                      <Stack padding={0} margin={0}>
+                        <Typography fontWeight="bold" fontSize="inherit">
+                          {getFileName(launchInfo.launch_name || "")}
+                        </Typography>
+                        <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                          Path:
+                        </Typography>
+                        <div>{launchInfo.launch_name}</div>
+                        {launchInfo.launch_name?.localeCompare(launchInfo.file_name || "") !== 0 && (
+                          <Stack>
+                            <Typography fontWeight={"bold"} fontSize={"inherit"}>
+                              node within the included file:
+                            </Typography>
+                            <div>{launchInfo.file_name}</div>
+                          </Stack>
+                        )}
+                      </Stack>
+                    }
+                    placement="left"
+                  >
+                    <Box sx={{ ml: "0.5em", width: 15, height: 18 }}>
+                      <FileIcon
+                        extension={fileExtension}
+                        labelUppercase
+                        {...{
+                          color: grey[300],
+                          labelColor: color,
+                          type: fileExtension === "py" ? "code" : "settings",
+                        }}
+                      />
+                    </Box>
+                  </Tooltip>
+                );
+              })}
+          </Stack>
+        </Stack>
       }
       {...other}
     />

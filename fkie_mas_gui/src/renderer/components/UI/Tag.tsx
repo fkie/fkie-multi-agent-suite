@@ -1,4 +1,4 @@
-import { Chip, ChipPropsColorOverrides, Tooltip } from "@mui/material";
+import { Chip, ChipPropsColorOverrides, Stack, Tooltip, Typography } from "@mui/material";
 import { OverridableStringUnion } from "@mui/types";
 import { forwardRef } from "react";
 
@@ -55,11 +55,15 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
         color={isDefaultColor ? (color as TagColor) : "default"}
         style={isDefaultColor ? {} : { backgroundColor: color }}
         label={
-          <>
-            <strong>{title}</strong>
-            {newText}
+          <Stack direction="row" spacing="0.3em">
+            <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+              {title}
+            </Typography>
+            <Typography variant="body2" align="justify" noWrap>
+              {newText}
+            </Typography>
             {copyButton && <CopyButton value={copyButton} fontSize="0.6em" />}
-          </>
+          </Stack>
         }
         sx={chipSX}
         ref={ref}
