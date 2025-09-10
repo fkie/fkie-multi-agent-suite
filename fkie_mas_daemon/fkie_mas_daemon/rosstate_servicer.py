@@ -492,8 +492,9 @@ class RosStateServicer:
         # the status is updated in _check_discovery_node() in a thread
         # in the meantime, the cached list is returned
         # after the state is ready, a 'ros.nodes.changed' notification will be send
-        if (self._ros_node_list is None or forceRefresh) and not self._state_jsonify.is_updating():
+        if forceRefresh:
             self._force_refresh = True
+        if (self._ros_node_list is None or forceRefresh) and not self._state_jsonify.is_updating():
             self._ros_node_list = []
             self._ros_service_dict = {}
             self._ros_topic_dict = {}
