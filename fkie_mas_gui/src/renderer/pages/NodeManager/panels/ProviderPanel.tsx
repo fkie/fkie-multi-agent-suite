@@ -73,11 +73,16 @@ export default function ProviderPanel(): JSX.Element {
             let domainId = -1;
             for (const line of lines) {
               if (!line.includes("grep") && line.includes("ros.fkie/screens/") && line.includes("mas-daemon")) {
-                const match = line.match(/screen_(\d+)\.cfg/);
-                if (match?.[1]) {
-                  domainId = Number.parseInt(match[1], 10);
-                } else {
+                const match = line.match(/screen\.cfg/);
+                if (match) {
                   domainId = 0;
+                } else {
+                  const match = line.match(/screen_(\d+)\.cfg/);
+                  if (match?.[1]) {
+                    domainId = Number.parseInt(match[1], 10);
+                  } else {
+                    domainId = Number.parseInt(rosCtx.rosInfo?.domainId || "0");
+                  }
                 }
               }
             }

@@ -14,7 +14,7 @@ export const getDefaultPortFromRos: (
     return rosVersion === "2" ? 11811 + networkId : 11911 + networkId;
   }
   let uriShift = 0;
-  if (ros1MasterUri && ros1MasterUri !== "default") {
+  if (rosVersion === "1" && ros1MasterUri && ros1MasterUri !== "default") {
     // shift port if ROS_MASTER_URI has not a default port
     uriShift = (Number.parseInt(ros1MasterUri.split(":").slice(-1)[0]) - 11311) * 101;
   }

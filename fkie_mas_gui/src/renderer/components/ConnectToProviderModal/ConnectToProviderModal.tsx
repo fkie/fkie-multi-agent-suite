@@ -169,7 +169,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
 
     DEFAULT_PARAMETER.networkId = import.meta.env.VITE_ROS_DOMAIN_ID
       ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID)
-      : optionNetworkId;
+      : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
     DEFAULT_PARAMETER.rmwImplementation = import.meta.env.VITE_RMW_IMPLEMENTATION
       ? import.meta.env.VITE_RMW_IMPLEMENTATION
       : undefined;

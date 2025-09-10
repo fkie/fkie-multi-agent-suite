@@ -157,8 +157,14 @@ def create_screen_cfg(clear_previous: bool = False) -> None:
     :raise ScreenHandlerException: if the screen binary not found.
     '''
     dId = ''
-    if ('ROS_DOMAIN_ID' in os.environ):
-        dId = f'_{os.environ["ROS_DOMAIN_ID"]}'
+    domain_id = 0
+    if 'ROS_DOMAIN_ID' in os.environ:
+        try:
+            domain_id = int(os.environ["ROS_DOMAIN_ID"])
+        except Exception:
+            pass
+    if domain_id > 0:
+        dId = f'_{domain_id}'
     filename = os.path.join(SETTINGS_PATH, 'screens', f'screen{dId}.cfg')
     if clear_previous and os.path.exists(filename):
         os.remove(filename)
