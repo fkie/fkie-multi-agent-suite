@@ -3,6 +3,7 @@
 if ! command -v jq &> /dev/null; then
     echo -e "\e[31mjq is not installed. Please install jq to run the script.\e[0m"
     echo "sudo apt install jq"
+    read  -n 1 -p "Press <any key> to quit"
     exit 1
 fi
 
@@ -36,6 +37,13 @@ while getopts grphwfes:u:  flag; do
     esac
 done
 
+function exit_with_no() {
+    if [[ ! -z $WAIT_FOR_KEY ]]; then
+        read  -n 1 -p "Press <any key> to quit"
+    fi
+    exit $1
+}
+
 # check for OS and ROS_DISTRO
 if [[ -z $NO_ROS ]]; then
     OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
@@ -43,7 +51,7 @@ if [[ -z $NO_ROS ]]; then
         echo -e "detected OS_CODENAME=\e[36m$OS_CODENAME\e[0m"
     else
         echo -e "\e[31mdebian packages are only available for focal, jammy and noble, exit\e[0m"
-        exit 1
+        exit_with_no 1
     fi
 
     if [[ "$ROS_DISTRO" == "noetic" || "$ROS_DISTRO" == "galactic" || "$ROS_DISTRO" == "humble" || "$ROS_DISTRO" == "jazzy" || "$ROS_DISTRO" == "kilted" ]]; then
@@ -51,10 +59,10 @@ if [[ -z $NO_ROS ]]; then
     else
         if [ -z "$ROS_DISTRO" ]; then
             echo -e "\e[31mROS_DISTRO is not set, please set up your ROS environment first.\e[0m"
-            exit 1
+            exit_with_no 1
         else
             echo -e "\e[31mno debian packages for $ROS_DISTRO available.\e[0m"
-            exit 1
+            exit_with_no 1
         fi
     fi
 fi
@@ -65,7 +73,7 @@ if [[ ! -z $UNINSTALL ]]; then
     echo -e "\033[36m🔐 sudo apt remove fkie-mas-gui *fkie-mas-*\e[0m"
     sudo apt remove fkie-mas-gui *fkie-mas-*
     echo -e "\e[32mfinished.\e[0m"
-    exit 0
+    exit_with_no 0
 fi
 
 if [[ "$ROS_DISTRO" != "noetic" ]]; then
@@ -75,7 +83,7 @@ if [[ "$ROS_DISTRO" != "noetic" ]]; then
             echo -e "\e[31mYou are using MAS packages in your workspace. Please update them with git and rebuild them.\e[0m"
             echo -e "\e[31mOr remove them from the workspace to install them as debian packages.\e[0m"
             if [ -z $FORCE_INSTALL ]; then
-                exit 1
+                exit_with_no 1
             fi
         fi
     fi
@@ -93,13 +101,13 @@ fi
 # Check whether the releases have been successfully retrieved
 if [ $? -ne 0 ]; then
     echo -e "\e[31mError when retrieving the releases from github.com\e[0m"
-    exit 1
+    exit_with_no 1
 fi
 
 MESSAGE=$(echo "$RELEASES" | jq -r 'if type=="array" then false else has("message") end')
 if [ "$MESSAGE" = true ] ; then
     echo -e "$RELEASES"
-    exit 1
+    exit_with_no 1
 fi
 
 if [ -z $FORCE_VERSION ]; then
@@ -216,7 +224,7 @@ function get_package() {
 
         if [ ! -z "$DEB_FILE" ]; then
             if ! download_and_verify_deb "$DEB_FILE" "$DEB_URL" "$EXPECTED_DIGEST" "$TMP_DIR"; then
-                exit 1
+                exit_with_no 1
             fi
             DEBS_TO_INSTALL+=("$TMP_DIR/$DEB_FILE")
         fi
@@ -238,7 +246,7 @@ if [[ -z $NO_ROS ]]; then
         echo -e "detected OS_CODENAME=\e[36m$OS_CODENAME\e[0m"
     else
         echo -e "\e[31mdebian packages are only available for focal, jammy and noble, exit\e[0m"
-        exit 1
+        exit_with_no 1
     fi
 
     get_package "python3-websockets" $OS_CODENAME
