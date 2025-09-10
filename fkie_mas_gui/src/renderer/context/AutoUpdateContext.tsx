@@ -26,6 +26,7 @@ export interface IAutoUpdateContext {
   isAppImage: boolean;
   getUpdateCli: (gui: boolean, ros: boolean) => string;
   installDebian: (gui: boolean, ros: boolean) => void;
+  installing: boolean;
   setLocalProviderId: (providerId: string) => void;
 }
 
@@ -46,6 +47,7 @@ export const DEFAULT = {
     return "";
   },
   installDebian: (): void => {},
+  installing: false,
   setLocalProviderId: (): void => {},
 };
 
@@ -69,6 +71,7 @@ export function AutoUpdateProvider({
   const [downloadProgress, setDownloadProgress] = useState<ProgressInfo | null>(null);
   const [updateError, setUpdateError] = useState<string>("");
   const [requestedInstallUpdate, setRequestedInstallUpdate] = useState<boolean>(false);
+  const [installing, setInstalling] = useState<boolean>(false);
   const [localProviderId, setLocalProviderId] = useState<string>("");
   const [isAppImage, setIsAppImage] = useState<boolean>(true);
   const [updateChannel, setChannel] = useLocalStorage<"prerelease" | "release" | string>(
@@ -111,7 +114,7 @@ export function AutoUpdateProvider({
     }
   }
 
-  function installDebian(gui: boolean, ros: boolean): void {
+  const installDebian: (gui: boolean, ros: boolean) => Promise<void> = async (gui, ros) => {
     logCtx.info(
       `start update for gui(${gui}) on ros(${ros}) on channel (${updateChannel}) to version (${updateAvailable?.version})`,
       "",
@@ -120,11 +123,24 @@ export function AutoUpdateProvider({
     setUpdateError("");
     const providerId = getLocalProviderId();
     if (providerId) {
-      navCtx.openTerminal(CmdType.CMD, providerId, "", "", getUpdateCli(gui, ros), false, false);
+      setInstalling(true);
+      await navCtx.openTerminal(CmdType.CMD, providerId, "", "", getUpdateCli(gui, ros), false, false);
+      setInstalling(false);
+    } else if (window.commandExecutor) {
+      setInstalling(true);
+      const terminalResult = await window.commandExecutor?.execTerminal(
+        null,
+        "'update mas'",
+        `'${getUpdateCli(gui, ros)} -w'`
+      );
+      setInstalling(false);
+      if (!terminalResult.result) {
+        setUpdateError(`${terminalResult.message}. Please try to start the local TTYD.`);
+      }
     } else {
       setUpdateError("Could not connect to the local TTYD. Please start the local TTYD.");
     }
-  }
+  };
 
   function getTitle(release: JSONObject): string {
     const date = (release.published_at as string).split("T")[0];
@@ -325,7 +341,7 @@ export function AutoUpdateProvider({
     if (updateAvailable?.version === packageJson.version) {
       setUpdateAvailable(null);
     }
-  }, [updateAvailable])
+  }, [updateAvailable]);
 
   const attributesMemo = useMemo(
     () => ({
@@ -343,6 +359,7 @@ export function AutoUpdateProvider({
       isAppImage,
       getUpdateCli,
       installDebian,
+      installing,
       setLocalProviderId,
     }),
     [
@@ -355,6 +372,7 @@ export function AutoUpdateProvider({
       updateError,
       requestedInstallUpdate,
       isAppImage,
+      installing,
     ]
   );
 

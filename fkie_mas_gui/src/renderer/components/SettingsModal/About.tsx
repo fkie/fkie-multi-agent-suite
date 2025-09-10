@@ -125,6 +125,8 @@ export default function About(): JSX.Element {
                   <Button color="primary" onClick={() => auCtx.requestInstallUpdate()} variant="text">
                     Restart required
                   </Button>
+                ) : auCtx?.installing ? (
+                  <CircularProgress style={{ marginLeft: "0.5em" }} size="1em" />
                 ) : (
                   <Button
                     color="primary"

@@ -61,7 +61,7 @@ export interface INavigationContext {
     cmd: string,
     externalKeyModifier: boolean,
     forceOpenTerminal: boolean
-  ) => void;
+  ) => Promise<void>;
 }
 
 export const DEFAULT = {
@@ -78,7 +78,9 @@ export const DEFAULT = {
   setSelectedProviders: (): void => {},
   openEditor: (): void => {},
   openSubscriber: (): void => {},
-  openTerminal: (): void => {},
+  openTerminal: (): Promise<void> => {
+    return Promise.resolve();
+  },
   startPublisher: (): void => {},
 };
 
@@ -216,7 +218,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
           provider.connection.host,
           provider.connection.port,
           topicName || "",
-          topicType || "",
+          topicType || ""
         );
       } else {
         emitCustomEvent(
