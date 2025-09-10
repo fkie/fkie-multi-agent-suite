@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.6.4 - 10.09.2025
+
+Fixed force refresh for nodes
+Update MAS even without TTYD running.
+Fixed wait option in install debian script
+
 ## 4.6.3 - 10.09.2025
 
 Fixed determination of the port based on the ROS domain ID for ROS1

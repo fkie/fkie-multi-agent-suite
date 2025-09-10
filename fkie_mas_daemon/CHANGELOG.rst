@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.7 (10.09.2025)
+------------------
+* Fixed force refresh for nodes
+
 4.6.6 (09.09.2025)
 ------------------
 * Fixed start node witch multiple launch files
