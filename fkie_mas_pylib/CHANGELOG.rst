@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.4.2 (10.09.2025)
+------------------
+* Fixed determination of the port based on the ROS domain ID for ROS1
+
 4.4.1 (28.05.2025)
 ------------------
 * Added method for determining the child process of a given pid

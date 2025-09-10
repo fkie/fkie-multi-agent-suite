@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.6.3 - 10.09.2025
+
+Fixed determination of the port based on the ROS domain ID for ROS1
+
 ## 4.6.2 - 09.09.2025
 
 Fixed location info shown in gui (discovery node for ROS1)
