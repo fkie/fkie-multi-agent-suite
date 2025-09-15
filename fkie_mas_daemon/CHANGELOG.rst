@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.8 (15.09.2025)
+------------------
+* Fixed load launch files with arguments inside eval block
+
 4.6.7 (10.09.2025)
 ------------------
 * Fixed force refresh for nodes

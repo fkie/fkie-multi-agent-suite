@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.5 - 15.09.2025
+
+Fixed show capability groups for ros1
+Fixed load launch files with arguments inside eval block
+Fixed reload topic and service list
+Show launch file icons only, if more then one or zero are loaded
+Added option to differ launch with default and zero domain id
+
 ## 4.6.4 - 10.09.2025
 
 Fixed force refresh for nodes
