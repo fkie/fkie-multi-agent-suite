@@ -835,6 +835,7 @@ class LaunchConfig(object):
                                         description=perform_to_string(self.context, entity.description),
                                         choices=entity.choices)
                     launch_file_obj.default_inc_args.append(la)
+                    entity.execute(self.context)
             elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                 # launch.actions.declare_launch_argument.DeclareLaunchArgument
                 try:
