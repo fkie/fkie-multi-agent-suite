@@ -267,9 +267,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
 
     useEffect(() => {
       updateTopics();
-      if (!startParameter.networkId && import.meta.env.VITE_ROS_DOMAIN_ID) {
-        setNetworkId(Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID));
-      }
     }, []);
 
     useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
@@ -393,7 +390,10 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       const launchCfg = new ProviderLaunchConfiguration(host, startParameter.rosVersion);
       launchCfg.daemon.enable = startParameter.daemon.enable;
       launchCfg.discovery.enable = startParameter.discovery.enable;
-      if (startParameter.networkId) launchCfg.networkId = startParameter.networkId;
+      launchCfg.networkId =
+        startParameter.networkId === -1
+          ? Number.parseInt(`${rosCtx.rosInfo?.domainId || "0"}`)
+          : startParameter.networkId;
       launchCfg.rmwImplementation = startParameter.rmwImplementation;
       launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
       if (startParameter.discovery.robotHosts && startParameter.discovery.robotHosts.length > 0)
@@ -1442,8 +1442,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                         // display="flex"
                         color="info"
                         onClick={(event) => {
-                          setOptionNetworkId(0);
-                          DEFAULT_PARAMETER.networkId = 0;
+                          setOptionNetworkId(-1);
+                          DEFAULT_PARAMETER.networkId = -1;
                           setStartParameter(DEFAULT_PARAMETER);
                           setForceRestart(false);
                           setSelectedHistory("");
