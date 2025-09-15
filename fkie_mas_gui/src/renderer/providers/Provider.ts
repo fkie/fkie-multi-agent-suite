@@ -1308,8 +1308,9 @@ export default class Provider implements IProvider {
                     if (p.name === capabilityGroupOfNode) {
                       // update capability group
                       groupParameterFound = true;
-                      const ns = launchNode.node_namespace ? launchNode.node_namespace : "";
-                      nodeGroup = { namespace: ns, name: `{${p.value}}` };
+                      if (p.value) {
+                        nodeGroup = this.toNodeGroup(`${p.value}`);
+                      }
                     }
                   } else if (nodeParameters.length > 0) {
                     // we found one parameter of the node, but current parameter is not in node namespace => skip all further parameter
@@ -1318,8 +1319,8 @@ export default class Provider implements IProvider {
                   } else if (!groupParameterFound && p.name.endsWith(capabilityGroupParamName)) {
                     // use capability group parameter in the higher level namespace until we found one in the node namespace
                     const { namespace } = this.toNamespace(p.name);
-                    if (uniqueNodeName.startsWith(namespace)) {
-                      nodeGroup = { namespace: namespace, name: `{${p.value}}` };
+                    if (uniqueNodeName.startsWith(namespace) && p.value) {
+                      nodeGroup = this.toNodeGroup(`${p.value}`);
                     }
                   }
                 }
