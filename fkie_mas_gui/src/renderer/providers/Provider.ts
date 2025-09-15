@@ -1297,7 +1297,7 @@ export default class Provider implements IProvider {
               const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
               if (this.rosVersion === "1") {
-                const parameters: RosParameter[] = launchNode.parameters || [];
+                const parameters: RosParameter[] = launchFile.parameters || [];
                 for (const p of parameters) {
                   if (nodesParametersFound) {
                     // skip parse further parameter if we found one and next was not in node namespace
