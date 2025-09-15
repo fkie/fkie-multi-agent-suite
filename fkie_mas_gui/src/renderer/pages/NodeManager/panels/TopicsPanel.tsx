@@ -520,7 +520,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
         </IconButton>
       </Tooltip>
     );
-  }, []);
+  }, [rosCtx.providers]);
 
   const createPanel = useMemo(() => {
     return (
@@ -571,6 +571,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     backgroundColor,
     buttonLocation,
     avoidGroupWithOneItem,
+    rosCtx.providers,
   ]);
   return createPanel;
 });

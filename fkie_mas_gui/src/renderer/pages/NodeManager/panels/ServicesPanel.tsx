@@ -430,7 +430,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
         </IconButton>
       </Tooltip>
     );
-  }, []);
+  }, [rosCtx.providers]);
 
   const createPanel = useMemo(() => {
     return (
@@ -481,6 +481,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     backgroundColor,
     buttonLocation,
     avoidGroupWithOneItem,
+    rosCtx.providers,
   ]);
   return createPanel;
 });
