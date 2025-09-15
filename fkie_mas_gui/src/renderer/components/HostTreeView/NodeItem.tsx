@@ -60,15 +60,17 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const settingsCtx = useContext(SettingsContext);
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
-  const [showLaunchFile, setShowLaunchFile] = useState<boolean>(settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean);
+  const [showLaunchFile, setShowLaunchFile] = useState<boolean>(
+    settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean
+  );
   const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
   const [timerPeriod, setTimerPeriod] = useState<number[]>([]);
   const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
 
   useEffect(() => {
-      setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
-      setShowLaunchFile(settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean);
-    }, [settingsCtx, settingsCtx.changed]);
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
+    setShowLaunchFile(settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean);
+  }, [settingsCtx, settingsCtx.changed]);
 
   function getColorFromLifecycle(state: string, isDarkMode = false): string {
     switch (state) {
@@ -367,7 +369,8 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                 <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
               </Tooltip>
             )}
-            {showLaunchFile && node.launchInfo.size > 0 &&
+            {showLaunchFile &&
+              node.launchInfo.size > 1 &&
               [...node.launchInfo.values()].map((launchInfo) => {
                 const fileExtension = getFileExtension(launchInfo.launch_name as string);
                 const color = colorFromHostname(launchInfo.launch_name || "");
@@ -409,6 +412,23 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                   </Tooltip>
                 );
               })}
+            {showLaunchFile && node.launchInfo.size === 0 && !node.system_node && (
+              <Tooltip
+                title="There is no launch file available to restart the node."
+                placement="left"
+              >
+                <Box sx={{ ml: "0.5em", width: 15, height: 18 }}>
+                  <FileIcon
+                    labelUppercase
+                    {...{
+                      color: red[300],
+                      labelColor: "red",
+                      type: "settings",
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            )}
           </Stack>
         </Stack>
       }
