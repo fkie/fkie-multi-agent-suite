@@ -697,7 +697,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                 />
               </Box>
 
-              <Stack direction="row">
+              <Stack direction="row" alignItems="center" spacing="0.5em" margin="0.5em">
                 {/* <FormControl> */}
                 <RadioGroup
                   row
@@ -721,11 +721,12 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                   size="small"
                   variant="outlined"
                   style={{ minWidth: "9em" }}
-                  InputProps={{ inputProps: { min: 0, max: 99 } }}
+                  InputProps={{ inputProps: { min: -1, max: 99 } }}
                   // fullWidth
                   onChange={(e) => setNetworkId(Number(`${e.target.value}`))}
                   value={startParameter.networkId}
                 />
+                {startParameter.networkId === -1 && <Typography>Use default domain ID</Typography>}
               </Stack>
               <Stack spacing={2} direction="row">
                 {startProviderIsSubmitting ? (

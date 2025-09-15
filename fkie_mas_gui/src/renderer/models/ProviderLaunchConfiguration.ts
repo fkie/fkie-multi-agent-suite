@@ -23,7 +23,7 @@ export default class ProviderLaunchConfiguration {
   /** ROS version as string of {'1', '2'} */
   rosVersion: string = "1";
 
-  networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : 0;
+  networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : -1;
 
   rmwImplementation: string | undefined = import.meta.env.VITE_RMW_IMPLEMENTATION;
 
@@ -82,14 +82,18 @@ export default class ProviderLaunchConfiguration {
   };
 
   public terminalStartCmd(): TResult {
+    let domainPrefix = "";
+    if (this.networkId >= 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
+    }
     const portNumber = this.terminal.port || 8681;
     const ttydPath = this.terminal.path || "ttyd";
     const ttydCmd = `${ttydPath} --writable --port ${portNumber} bash`;
     let cmd = "";
     if (this.rosVersion === "1") {
-      cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
+      cmd = `${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
     } else if (this.rosVersion === "2") {
-      cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
+      cmd = `${domainPrefix}ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
     } else {
       return {
         result: false,
@@ -123,12 +127,12 @@ export default class ProviderLaunchConfiguration {
     const nameArg = `--name=${namespace}/${dName}`;
 
     let domainPrefix = "";
-    if (this.networkId !== undefined && this.networkId !== 0) {
+    if (this.networkId >= 0) {
       domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
     }
     let rmwPrefix = "";
     if (this.rmwImplementation) {
-      rmwPrefix = ` RMW_IMPLEMENTATION=${this.rmwImplementation} `
+      rmwPrefix = ` RMW_IMPLEMENTATION=${this.rmwImplementation} `;
     }
     const forceArg = this.force.start ? "--force " : "";
     if (this.rosVersion === "1") {
@@ -182,8 +186,12 @@ export default class ProviderLaunchConfiguration {
           : " ";
       let cmdMasterSync = "";
       const forceArg = this.force.start ? "--force " : "";
+      let domainPrefix = "";
+      if (this.networkId >= 0) {
+        domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
+      }
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
-      cmdMasterSync = `${ros1MasterUriPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${
+      cmdMasterSync = `${ros1MasterUriPrefix}${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py  ${
         this.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam}`;
       // combine commands and execute
@@ -218,12 +226,12 @@ export default class ProviderLaunchConfiguration {
     } ${forceArg}${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
 
     let domainPrefix = "";
-    if (this.networkId !== undefined && this.networkId !== 0) {
+    if (this.networkId >= 0) {
       domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
     }
     let rmwPrefix = "";
     if (this.rmwImplementation) {
-      rmwPrefix = ` RMW_IMPLEMENTATION=${this.rmwImplementation} `
+      rmwPrefix = ` RMW_IMPLEMENTATION=${this.rmwImplementation} `;
     }
     if (this.rosVersion === "1") {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
@@ -243,7 +251,11 @@ export default class ProviderLaunchConfiguration {
   public dynamicReconfigureClientCmd(nodeName: string, ros1MasterUri: string): TResult {
     const nameArg = `--name=/dynamic_reconfigure${nodeName}`;
     const envArg = `ROS_MASTER_URI=${ros1MasterUri}`;
-    const cmd = `${envArg} rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
+    let domainPrefix = "";
+    if (this.networkId >= 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
+    }
+    const cmd = `${envArg} ${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
     return { result: true, message: cmd } as TResult;
   }
 }
