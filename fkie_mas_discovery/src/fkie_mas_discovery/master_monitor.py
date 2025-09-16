@@ -1137,7 +1137,7 @@ class MasterMonitor:
                 if div_screen_nodes or div_screens:
                     Log.debug(
                         f"publish ros.screen.list with {len(json_msg)} nodes.")
-                    self.wsClient.publish('ros.screen.list', json_msg)
+                    self.wsClient.publish('ros.screen.list', {"screens": json_msg})
                     self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
@@ -1148,6 +1148,7 @@ class MasterMonitor:
 
     def getScreenList(self) -> str:
         Log.info('Request to [ros.screen.get_list]')
+        self._screen_do_check = True
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self._screen_json_msg, cls=SelfEncoder)
 
