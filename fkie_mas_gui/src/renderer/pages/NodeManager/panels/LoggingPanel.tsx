@@ -262,7 +262,7 @@ export default function LoggingPanel(): JSX.Element {
             <div style={{ whiteSpace: "pre-line" }}>{JSON.stringify(row.details).replaceAll("\\n", "\n")}</div>
           )}
         </TableCell>
-        <TableCell className="tableCell" key="empty" sx={{ color }} />
+        <TableCell className="tableCell" key={`empty-${row.id}`} sx={{ color }} />
       </>
     );
   }
