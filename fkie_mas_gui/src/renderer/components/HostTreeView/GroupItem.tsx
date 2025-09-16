@@ -104,10 +104,19 @@ const getGroupStatusLocal: (treeItems: NodeTreeItem[]) => number = (treeItems) =
   let allLocal = true;
   let hasLocal = false;
   for (const treeItem of treeItems) {
-    if (treeItem.node?.isLocal) {
-      hasLocal = true;
+    if (treeItem.node) {
+      if (treeItem.node?.isLocal) {
+        hasLocal = true;
+      } else {
+        allLocal = false;
+      }
     } else {
-      allLocal = false;
+      const groupStatus = getGroupStatusLocal(treeItem.children);
+      if (groupStatus === GroupStatusLocal.ALL) {
+        hasLocal = true;
+      } else if (groupStatus === GroupStatusLocal.NONE) {
+        allLocal = false;
+      }
     }
   }
   if (allLocal) {
