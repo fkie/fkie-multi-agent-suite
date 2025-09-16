@@ -625,10 +625,13 @@ class LaunchServicer(LoggingEventHandler):
         # Covert input dictionary into a proper python object
         request = request_json
         result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
+        daemonuri = ""
+        if hasattr(request, 'masteruri'):
+            daemonuri = request.masteruri
         try:
             launch_configs = []
             if request.opt_launch:
-                cfgid = CfgId(request.opt_launch, request.masteruri)
+                cfgid = CfgId(request.opt_launch, daemonuri)
                 if cfgid in list(self._loaded_files.keys()):
                     launch_configs.append(self._loaded_files[cfgid])
             if not launch_configs:

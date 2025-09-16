@@ -1780,7 +1780,7 @@ export default class Provider implements IProvider {
       `${node.launchPath}`, // opt_launch
       "", // log level
       "", // log format
-      node.masteruri?.length > 0 ? node.masteruri : `${this.rosState.masteruri}`, // masteruri
+      node.masteruri?.length > 0 ? node.masteruri : this.rosState.masteruri || "", // masteruri
       true, // reload global parameters
       "", // cmd
       node.ignore_timer || false
