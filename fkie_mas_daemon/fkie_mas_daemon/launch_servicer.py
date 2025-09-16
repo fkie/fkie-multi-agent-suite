@@ -1045,6 +1045,7 @@ class LaunchServicer(LoggingEventHandler):
         Log.info(f"{self.__class__.__name__}: Request to [ros.launch.call_service]: {request_json}")
         request = request_json
         result = LaunchMessageStruct(request.srv_type)
+        result.valid = False
         try:
             # action looks like a service, but need a special handling
             if self._is_action_type(request.srv_type) or request.service_name.find("/_action/") != -1:
@@ -1062,8 +1063,9 @@ class LaunchServicer(LoggingEventHandler):
         except Exception as e:
             result.error_msg = 'Exception while calling service: %r' % e
         else:
-            result.data = message_to_ordereddict(response)
-            result.valid = True
+            if response is not None:
+                result.data = message_to_ordereddict(response)
+                result.valid = True
         finally:
             nmd.ros_node.destroy_client(request.service_name)
         return json.dumps(result, cls=SelfEncoder)
