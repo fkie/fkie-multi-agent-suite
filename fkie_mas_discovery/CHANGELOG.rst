@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.6 (16.09.2025)
+------------------
+* Fixed update screens for ROS1 nodes
+
 4.1.5 (09.09.2025)
 ------------------
 * Fixed location info shown in gui (discovery node for ROS1)

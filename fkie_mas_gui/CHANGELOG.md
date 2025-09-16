@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.6 - 16.09.2025
+
+Fixed update screens for ros1 nodes
+Fixed update group state in nodes tab
+Fixed group state with groups only
+Fixed render error with ros1 nodes
+Fixed format xml
+
 ## 4.6.5 - 15.09.2025
 
 Fixed show capability groups for ros1
