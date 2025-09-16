@@ -164,7 +164,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   const getSelectedNodes = useCallback(() => {
     return getNodesFromIds(navCtx.selectedNodes);
-  }, [navCtx.selectedNodes]);
+  }, [navCtx.selectedNodes, providerNodes]);
 
   // debounced search callback
   // search in the origin node list and create a new tree
@@ -1499,7 +1499,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         )}
       </ButtonGroup>
     );
-  }, [navCtx.selectedNodes, navCtx.selectedProviders]);
+  }, [navCtx.selectedNodes, navCtx.selectedProviders, providerNodes]);
 
   return (
     <Box

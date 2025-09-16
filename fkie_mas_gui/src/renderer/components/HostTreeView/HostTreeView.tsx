@@ -678,8 +678,12 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     },
     [
       // do not include keyNodeList
-      settingsCtx,
+      visibleNodes,
+      expanded,
+      providerNodeTree,
       selectedItems,
+      rosCtx,
+      settingsCtx.changed,
       rosCtx.nodeMap,
       // NodesCount,
     ]
