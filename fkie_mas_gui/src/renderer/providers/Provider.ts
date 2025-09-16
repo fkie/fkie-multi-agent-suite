@@ -843,7 +843,7 @@ export default class Provider implements IProvider {
           rn.services = n.services;
           // add screens
           // TODO: Filter screens that belongs to the same master URI
-          rn.screens = n.screens;
+          rn.screens = n.screens || [];
           rn.isLocal = n.is_local;
           nodeList.set(n.id, rn);
         }
