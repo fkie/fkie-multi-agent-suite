@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.9 (16.09.2025)
+------------------
+* Fixed update lifecycle state of composable nodes
+* Improved update ros2 state
+* Fixed start node with multiple launch files
+
 4.6.8 (15.09.2025)
 ------------------
 * Fixed load launch files with arguments inside eval block

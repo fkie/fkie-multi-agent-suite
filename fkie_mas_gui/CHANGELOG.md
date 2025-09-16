@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.7 - 16.09.2025
+
+Fixed icon for lifecycle of composable node
+Fixed update lifecycle state of composable nodes
+Improved update ros2 state
+Fixed start node with multiple launch files
+Fixed rendering of the log tab
+
 ## 4.6.6 - 16.09.2025
 
 Fixed update screens for ros1 nodes
