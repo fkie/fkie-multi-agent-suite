@@ -70,7 +70,7 @@ class RosStateServicer:
         Log.info("Create ros_state servicer")
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._endpoints_ts: Dict[str, float] = {}  # uri : timestamp
-        self._ros_node_list: List[RosNode] = None
+        self._ros_node_list: List[RosNode] = []
         self._ros_service_dict: Dict[str, RosService] = {}
         self._ros_topic_dict: Dict[str, RosTopic] = {}
         self._ros_node_list_mutex = threading.RLock()
@@ -83,7 +83,7 @@ class RosStateServicer:
         self._ts_state_updated = 0
         self._ts_state_notified = 0
         self._last_seen_participant_count = 0
-        self._rate_check_discovery_node = 2  # Hz
+        self._rate_check_discovery_node = 1  # Hz
         self._thread_check_discovery_node = None
         self._on_shutdown = False
         self._state_jsonify = RosStateJsonify(monitor_servicer)
@@ -212,7 +212,7 @@ class RosStateServicer:
                         send_notification = True
                 except Exception:
                     pass
-            if self._state_jsonify.updated_since_request() or (send_notification and not self._state_jsonify.is_updating()):
+            if (self._state_jsonify.updated_since_request() or send_notification) and not self._state_jsonify.is_updating():
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count
                 # trigger screen servicer to update
