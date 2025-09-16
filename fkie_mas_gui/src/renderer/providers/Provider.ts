@@ -1128,8 +1128,14 @@ export default class Provider implements IProvider {
           nodesUpdated = true;
           this.rosNodes[idxNode].screens = nScr;
         }
-        if (nScr.length > 0 && this.rosNodes[idxNode].status === RosNodeStatus.INACTIVE) {
-          this.rosNodes[idxNode].status = RosNodeStatus.ONLY_SCREEN;
+        if (nScr.length > 0) {
+          if (this.rosNodes[idxNode].status === RosNodeStatus.INACTIVE) {
+            nodesUpdated = true;
+            this.rosNodes[idxNode].status = RosNodeStatus.ONLY_SCREEN;
+          }
+        } else if (this.rosNodes[idxNode].status === RosNodeStatus.ONLY_SCREEN) {
+          nodesUpdated = true;
+          this.rosNodes[idxNode].status = RosNodeStatus.INACTIVE;
         }
       } else {
         // create a new node for screen
