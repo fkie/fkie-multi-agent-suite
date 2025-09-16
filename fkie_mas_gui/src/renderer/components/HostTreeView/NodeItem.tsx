@@ -92,8 +92,9 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         const color = node.diagnosticColor
           ? node.diagnosticColor
           : getDiagnosticColor(node.diagnosticLevel || DiagnosticLevel.OK, isDarkMode);
+        const IconType = node.isLocal ? CircleIcon : ReportIcon;
         if (!node.lifecycle_state) {
-          return !node.isLocal ? (
+          return (
             <Tooltip
               key={`tooltip-icon-${node.id}`}
               title={
@@ -106,17 +107,15 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                     parameter, nor is the GID of the node detected by mas-discovery.
                   </Typography>
                   <Typography fontSize={"inherit"}>
-                    Note: no checks for life cycle, composable node or other service calls are performed!
+                    Note: no status checks for life cycle, composable node or other service calls are performed!
                   </Typography>
                 </div>
               }
               placement="left"
               disableInteractive
             >
-              <ReportIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+              <IconType style={{ marginRight: 0.5, width: 20, color: color }} />
             </Tooltip>
-          ) : (
-            <CircleIcon style={{ marginRight: 0.5, width: 20, color: color }} />
           );
         }
         const colorBorder = getColorFromLifecycle(node.lifecycle_state, isDarkMode);
@@ -127,7 +126,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
             placement="left"
             disableInteractive
           >
-            <CircleIcon
+            <IconType
               style={{ marginRight: 0.5, width: 20, height: 20, color: color, borderColor: colorBorder }}
               sx={{
                 border: 3,
@@ -413,10 +412,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                 );
               })}
             {showLaunchFile && node.launchInfo.size === 0 && !node.system_node && (
-              <Tooltip
-                title="There is no launch file available to restart the node."
-                placement="left"
-              >
+              <Tooltip title="There is no launch file available to restart the node." placement="left">
                 <Box sx={{ ml: "0.5em", width: 15, height: 18 }}>
                   <FileIcon
                     labelUppercase

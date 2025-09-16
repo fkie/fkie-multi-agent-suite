@@ -844,7 +844,7 @@ export default class Provider implements IProvider {
           // add screens
           // TODO: Filter screens that belongs to the same master URI
           rn.screens = n.screens || [];
-          rn.isLocal = n.is_local;
+          rn.isLocal = n.is_local || false;
           nodeList.set(n.id, rn);
         }
 

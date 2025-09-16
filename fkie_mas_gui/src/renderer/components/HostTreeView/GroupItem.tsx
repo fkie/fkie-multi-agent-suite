@@ -210,6 +210,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
   const { treeItems, groupName, isDarkMode = false } = props;
   const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems));
   const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
+  const [groupStatusLocal, setGroupStatusLocal] = useState<number>(getGroupStatusLocal(treeItems));
   const [color, setColor] = useState<string>(getGroupIconColor(treeItems, isDarkMode));
   const [colorBorder, setColorBorder] = useState<string>(getColorFromLifecycle(groupLifecycleStatus, isDarkMode));
 
@@ -217,6 +218,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
     setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems));
     setGroupStatus(getGroupStatus(treeItems));
     setColor(getGroupIconColor(treeItems, isDarkMode));
+    setGroupStatusLocal(getGroupStatusLocal(treeItems));
   }, [treeItems, isDarkMode]);
 
   useEffect(() => {
@@ -238,7 +240,6 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
     if (groupLifecycleStatus === GroupLifecycleStatus.NO_ONE) {
       switch (groupStatus) {
         case GroupStatus.ALL_RUNNING: {
-          const groupStatusLocal = getGroupStatusLocal(treeItems);
           if (groupStatusLocal === GroupStatusLocal.NONE) {
             return (
               <Tooltip
@@ -325,7 +326,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
         />
       </Tooltip>
     );
-  }, [groupLifecycleStatus, colorBorder, color, groupStatus]);
+  }, [groupLifecycleStatus, colorBorder, color, groupStatus, groupStatusLocal]);
 
   return createIcon;
 });
