@@ -122,7 +122,7 @@ export default class XmlBeautify {
       }
       // </elm> //
       else if (ar[ix].search(/<\//) > -1) {
-        str += !inComment ? shift[--deep] + ar[ix] : ar[ix];
+        str += !inComment ? shift[Math.max(--deep, 0)] + ar[ix] : ar[ix];
       }
       // <elm/> //
       else if (ar[ix].search(/\/>/) > -1) {
