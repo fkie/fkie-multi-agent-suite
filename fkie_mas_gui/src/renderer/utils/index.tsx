@@ -144,10 +144,12 @@ export function basename(name: string): string {
 
 export function idFromDDSLocations(locations: string[]): string {
   for (const l of locations) {
-    if (!l?.includes("SHM")) {
-      const items = l.split(":");
-      items.pop();
-      return items.join(":");
+    if (l) {
+      if (!l.includes("SHM")) {
+        const items = l.split(":");
+        items.pop();
+        return items.join(":");
+      }
     }
   }
   return `${locations}`;
