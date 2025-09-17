@@ -272,30 +272,25 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
           paddingLeft: "8px",
         },
       }}
+      // onClick={onClick}
+      onDoubleClick={(event) => {
+        if (onDoubleClick) {
+          onDoubleClick(event, itemId);
+          event.stopPropagation();
+        }
+      }}
+      onMouseDown={(event) => {
+        if (event.button === 1) {
+          if (onMiddleClick) {
+            onMiddleClick(event, itemId);
+            event.stopPropagation();
+          }
+        }
+      }}
       label={
         <Stack ref={ref} direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
           {nodeIcon}
-          <Stack
-            direction="row"
-            // onClick={onClick}
-            onDoubleClick={(event) => {
-              if (onDoubleClick) {
-                onDoubleClick(event, itemId);
-                event.stopPropagation();
-              }
-            }}
-            onMouseDown={(event) => {
-              if (event.button === 1) {
-                if (onMiddleClick) {
-                  onMiddleClick(event, itemId);
-                  event.stopPropagation();
-                }
-              }
-            }}
-            flexGrow="1"
-            paddingLeft={0.5}
-            sx={{ userSelect: "none" }}
-          >
+          <Stack direction="row" flexGrow="1" paddingLeft={0.5} sx={{ userSelect: "none" }}>
             <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
               {namespacePart}
             </Typography>

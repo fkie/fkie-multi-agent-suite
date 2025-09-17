@@ -382,7 +382,12 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
             iconContainer: { onClick: handleIconContainerClick },
           } as TreeItemSlotProps
         }
-        onDoubleClick={(event) => onDoubleClick(event, itemId)}
+        onDoubleClick={(event) => {
+          if (onDoubleClick) {
+            onDoubleClick(event, itemId);
+            event.stopPropagation();
+          }
+        }}
         sx={{
           [`& .${treeItemClasses.content}`]: {
             paddingLeft: "7px",
@@ -391,18 +396,7 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
         label={
           <Box display="flex" alignItems="center" paddingLeft={0.0}>
             {icon}
-            <Stack
-              direction="row"
-              onDoubleClick={(event) => {
-                if (onDoubleClick) {
-                  onDoubleClick(event, itemId);
-                  event.stopPropagation();
-                }
-              }}
-              paddingLeft={0.5}
-              flexGrow={1}
-              sx={{ userSelect: "none" }}
-            >
+            <Stack direction="row" paddingLeft={0.5} flexGrow={1} sx={{ userSelect: "none" }}>
               {groupName}
             </Stack>
 
