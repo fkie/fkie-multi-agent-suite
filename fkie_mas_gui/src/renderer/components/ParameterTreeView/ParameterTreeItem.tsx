@@ -16,6 +16,7 @@ import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState 
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import RosContext from "@/renderer/context/RosContext";
+import SettingsContext from "@/renderer/context/SettingsContext";
 import { RosParameter, RosParameterRange, RosParameterValue } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { treeItemClasses } from "@mui/x-tree-view";
@@ -46,6 +47,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
 
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
+  const settingsCtx = useContext(SettingsContext);
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);
   const [value, setValue] = useState(fixStringArray(paramInfo.value));
@@ -54,6 +56,11 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   const [namespace, setNamespace] = useState<string>("");
   const [showDescription, setShowDescription] = useState<boolean>(false);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
+  const [showParameterType, setShowParameterType] = useState<boolean>(settingsCtx.get("showParameterType") as boolean);
+
+  useEffect(() => {
+    setShowParameterType(settingsCtx.get("showParameterType") as boolean);
+  }, [settingsCtx.changed]);
 
   function updateValue(val: RosParameterValue): void {
     setValue(fixStringArray(val));
@@ -373,93 +380,99 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
             );
           }}
         >
-          <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-            <Grid sx={{ flexGrow: 1 }} size={4}>
-              <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
-                <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
-                  {namespace}
-                </Typography>{" "}
-                <Typography
-                  variant="body2"
-                  sx={{ fontSize: "inherit", fontWeight: "bold" }}
-                  onClick={(e) => {
-                    if (e.detail === 2) {
-                      navigator.clipboard.writeText(paramInfo.name);
-                      logCtx.success(`${paramInfo.name} copied!`);
-                    }
-                  }}
-                >
-                  {name}
-                </Typography>
-                {!showDescription && (paramInfo.description || paramInfo.additional_constraints) && (
-                  <Tooltip
-                    title={`${paramInfo.description}${paramInfo.additional_constraints ? `; Constraints: ${paramInfo.additional_constraints}` : ""}`}
-                    placement="right"
-                    disableInteractive
-                  >
-                    <span>
-                      <IconButton
-                        color="default"
-                        onClick={(event) => {
-                          setShowDescription((prev) => !prev);
-                          event.stopPropagation();
-                        }}
-                        size="small"
-                      >
-                        <InfoOutlinedIcon fontSize="inherit" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                )}
-                {showDescription && (
-                  <Stack sx={{ paddingLeft: "0.5em", flexGrow: 1 }} direction="column">
+          <Stack sx={{ flexGrow: 1 }} direction="column">
+            <Grid container spacing={"1em"} sx={{alignItems: "center"}}>
+              <Grid sx={{ flexGrow: 1 }} size={1}>
+                <Stack direction="column" sx={{ minHeight: "2em" }}>
+                  <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
+                    <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
+                      {namespace}
+                    </Typography>{" "}
                     <Typography
                       variant="body2"
-                      sx={{ fontSize: "-0.5em", fontStyle: "italic" }}
+                      sx={{ fontSize: "inherit", fontWeight: "bold", overflow: "hidden", textOverflow: "ellipsis" }}
                       onClick={(e) => {
-                        setShowDescription((prev) => !prev);
-                        e.stopPropagation();
+                        if (e.detail === 2) {
+                          navigator.clipboard.writeText(paramInfo.name);
+                          logCtx.success(`${paramInfo.name} copied!`);
+                        }
                       }}
                     >
-                      {paramInfo.description}
+                      {name}
                     </Typography>
-                    {paramInfo.additional_constraints && (
-                      <Typography
-                        variant="body2"
-                        sx={{ fontSize: "-0.5em", fontStyle: "italic" }}
-                        onClick={(e) => {
-                          setShowDescription((prev) => !prev);
-                          e.stopPropagation();
-                        }}
+                    {(paramInfo.description || paramInfo.additional_constraints) && (
+                      <Tooltip
+                        title={`${paramInfo.description}${paramInfo.additional_constraints ? `; Constraints: ${paramInfo.additional_constraints}` : ""}`}
+                        placement="right"
+                        disableInteractive
                       >
-                        Constraints: {paramInfo.additional_constraints}
-                      </Typography>
+                        <span>
+                          <IconButton
+                            color="default"
+                            onClick={(event) => {
+                              setShowDescription((prev) => !prev);
+                              event.stopPropagation();
+                            }}
+                            size="small"
+                          >
+                            <InfoOutlinedIcon fontSize="inherit" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                     )}
                   </Stack>
-                )}
-              </Stack>
-            </Grid>
-            <Grid size={6}>
-              <Stack direction="row" sx={{ alignItems: "center" }}>
-                {provider.rosVersion === "1" && parameterType ? (
-                  <OverflowMenu
-                    icon={
+                </Stack>
+              </Grid>
+              <Grid sx={{ flexGrow: 1 }} size={showParameterType ? 2 : 1}>
+                <Stack direction="row" sx={{ alignItems: "center" }}>
+                  {showParameterType && provider.rosVersion === "1" && parameterType ? (
+                    <OverflowMenu
+                      icon={
+                        <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">
+                          [{parameterType}]
+                        </Typography>
+                      }
+                      options={typeOptions}
+                      id="provider-options"
+                    />
+                  ) : (
+                    showParameterType && (
                       <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">
                         [{parameterType}]
                       </Typography>
-                    }
-                    options={typeOptions}
-                    id="provider-options"
-                  />
-                ) : (
-                  <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">
-                    [{parameterType}]
+                    )
+                  )}
+                  {paramInfo && renderInput}
+                </Stack>
+              </Grid>
+            </Grid>
+            {showDescription && (
+              <Stack sx={{ flexGrow: 1 }} direction="column">
+                <Typography
+                  variant="body2"
+                  sx={{ fontSize: "-0.5em", fontStyle: "italic" }}
+                  onClick={(e) => {
+                    setShowDescription((prev) => !prev);
+                    e.stopPropagation();
+                  }}
+                >
+                  {paramInfo.description}
+                </Typography>
+                {paramInfo.additional_constraints && (
+                  <Typography
+                    variant="body2"
+                    sx={{ fontSize: "-0.5em", fontStyle: "italic" }}
+                    onClick={(e) => {
+                      setShowDescription((prev) => !prev);
+                      e.stopPropagation();
+                    }}
+                  >
+                    Constraints: {paramInfo.additional_constraints}
                   </Typography>
                 )}
-                {paramInfo && renderInput}
               </Stack>
-            </Grid>
-          </Grid>
+            )}
+          </Stack>
           <Menu
             open={contextMenu != null}
             onClose={() => setContextMenu(null)}

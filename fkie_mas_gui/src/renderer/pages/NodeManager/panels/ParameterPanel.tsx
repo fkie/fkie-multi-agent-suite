@@ -1,6 +1,7 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { Alert, AlertTitle, Box, IconButton, Stack, Tooltip } from "@mui/material";
+import TypeSpecimenIcon from "@mui/icons-material/TypeSpecimen";
+import { Alert, AlertTitle, Box, IconButton, Stack, ToggleButton, Tooltip } from "@mui/material";
 import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 
 import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
@@ -39,11 +40,13 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
+  const [showParameterType, setShowParameterType] = useState<boolean>(settingsCtx.get("showParameterType") as boolean);
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     setButtonLocation(settingsCtx.get("buttonLocation") as string);
+    setShowParameterType(settingsCtx.get("showParameterType") as boolean);
   }, [settingsCtx.changed]);
 
   async function deleteSelectedParameters(): Promise<void> {
@@ -184,6 +187,16 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
             <RefreshIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
+        <Tooltip title="Show parameter types" placement="bottom" enterDelay={tooltipDelay} disableInteractive>
+          <ToggleButton
+            size="small"
+            value="check"
+            selected={showParameterType}
+            onChange={() => settingsCtx.set("showParameterType", !showParameterType)}
+          >
+            <TypeSpecimenIcon sx={{ fontSize: "inherit" }} />
+          </ToggleButton>
+        </Tooltip>
 
         {selectedParameter && (
           <Tooltip
@@ -208,7 +221,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
         )}
       </Stack>
     );
-  }, [tooltipDelay, selectedParameter]);
+  }, [tooltipDelay, selectedParameter, showParameterType]);
 
   return (
     <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>

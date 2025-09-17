@@ -370,6 +370,13 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "",
     group: "Window behavior",
   },
+  showParameterType: {
+    label: "Show parameter types in parameter panel",
+    default: true,
+    type: "boolean",
+    description: "",
+    group: "hidden",
+  },
 };
 
 interface ISettingProvider {

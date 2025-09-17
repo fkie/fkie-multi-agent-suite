@@ -96,10 +96,12 @@ export default function GuiPanel(): JSX.Element {
       values[item.name] = settingsCtx.get(item.name);
       if (filter.length <= 1 || item.name.toLocaleLowerCase().includes(filter)) {
         const group = item.param.group ? item.param.group : "Application";
-        if (!groupedDict[group]) {
-          groupedDict[group] = [];
+        if (group !== "hidden") {
+          if (!groupedDict[group]) {
+            groupedDict[group] = [];
+          }
+          groupedDict[group].push(item);
         }
-        groupedDict[group].push(item);
       }
     }
     const newGrouped: IGroupEntry[] = [];
