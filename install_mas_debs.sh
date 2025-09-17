@@ -44,6 +44,14 @@ function exit_with_no() {
     exit $1
 }
 
+if [[ -z $UNINSTALL ]]; then
+    echo -e "🔓 root privileges are required for installation"
+    if ! sudo -v; then
+      echo -e "\n❌ installation canceled"
+      exit 1
+    fi
+fi
+
 # check for OS and ROS_DISTRO
 if [[ -z $NO_ROS ]]; then
     OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
