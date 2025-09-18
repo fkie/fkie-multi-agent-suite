@@ -21,6 +21,7 @@ import windowStateKeeper from "./windowStateKeeper";
 
 const installUpdates = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PACKAGES);
 const installPrerelease = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PRERELEASE_PACKAGES);
+const headless = hasArgument(ARGUMENTS.HEADLESS);
 
 // Disable security warnings and set react app path on dev env
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
@@ -34,6 +35,10 @@ import * as sourceMap from "source-map-support";
 
 if (process.env.NODE_ENV === "production") {
   sourceMap.install();
+}
+
+if (headless) {
+  log.info("run in headless mode!");
 }
 
 // app.disableHardwareAcceleration();
@@ -100,11 +105,13 @@ const createWindow = async (): Promise<void> => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      if (mainWindowStateKeeper.isMaximized) mainWindow.maximize();
-      mainWindow.show();
+    if (!headless) {
+      if (process.env.START_MINIMIZED) {
+        mainWindow.minimize();
+      } else {
+        if (mainWindowStateKeeper.isMaximized) mainWindow.maximize();
+        mainWindow.show();
+      }
     }
   });
 

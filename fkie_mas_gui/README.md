@@ -61,20 +61,20 @@ npm run build
 Run the app in developer mode:
 
 ```bash
-npm run dev
+npm run dev:ns
 ```
 
 The app will start automatically the local daemon and master discovery nodes.
 
 ## Start only as node (without GUI)
 
-Starts a server on default port 6274. You can override the port with **npm run server -- --port 6363**.
+Starts a server on default port 6274. You can override the port with **npm run dev:ns -- --headless --port 6363**.
 
 ```bash
-npm run server
+npm run dev:ns -- --headless
 ```
 
-Then open in browser <http://localhost:6274/out/renderer/index.html>
+Then open in browser <http://localhost:6274>
 
 ## Websocket communication
 

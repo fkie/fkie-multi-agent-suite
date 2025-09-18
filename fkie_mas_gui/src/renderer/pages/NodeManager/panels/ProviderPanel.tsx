@@ -136,7 +136,7 @@ export default function ProviderPanel(): JSX.Element {
   useEffect(() => {
     if (window.commandExecutor && !rosCtx.rosInfo) return;
     getDomainId();
-  }, [rosCtx.rosInfo, rosCtx.providers, window.commandExecutor]);
+  }, [rosCtx.rosInfo, window.commandExecutor]);
 
   const createReloadButton = useMemo(() => {
     return (
