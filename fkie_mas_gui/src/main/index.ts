@@ -7,6 +7,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
+import appIcon from "@public/mas.png?asset";
 import { BrowserWindow, app, shell } from "electron";
 import log from "electron-log";
 import { join } from "node:path";
@@ -77,7 +78,7 @@ const createWindow = async (): Promise<void> => {
     y: mainWindowStateKeeper.y,
     width: mainWindowStateKeeper.width,
     height: mainWindowStateKeeper.height,
-    icon: "public/icons/mas.png",
+    icon: appIcon,
     webPreferences: {
       sandbox: false,
       nodeIntegration: true,

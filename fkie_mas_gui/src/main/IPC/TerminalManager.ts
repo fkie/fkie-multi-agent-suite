@@ -1,5 +1,7 @@
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
+import ioIcon from "@public/crystal_clear_show_io.png?asset";
+import logIcon from "@public/crystal_clear_show_log.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
@@ -92,10 +94,7 @@ export default class TerminalManager implements TTerminalManager {
       y: editorWindowStateKeeper.y,
       width: editorWindowStateKeeper.width,
       height: editorWindowStateKeeper.height,
-      icon:
-        `${info}` === "log"
-          ? "public/icons/crystal_clear_show_log.png"
-          : "public/icons/crystal_clear_show_io.png",
+      icon: `${info}` === "log" ? logIcon : ioIcon,
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,

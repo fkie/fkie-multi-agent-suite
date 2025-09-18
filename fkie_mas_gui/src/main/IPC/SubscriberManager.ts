@@ -1,5 +1,6 @@
 import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
+import subIcon from "@public/sekkyumu_topic_echo.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
@@ -81,7 +82,7 @@ export default class SubscriberManager implements TSubscriberManager {
       y: editorWindowStateKeeper.y,
       width: editorWindowStateKeeper.width,
       height: editorWindowStateKeeper.height,
-      icon: "public/icons/sekkyumu_topic_echo.png",
+      icon: subIcon,
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,

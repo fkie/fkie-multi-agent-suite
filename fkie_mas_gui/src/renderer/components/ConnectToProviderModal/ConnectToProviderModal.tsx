@@ -507,6 +507,10 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
           let host: string = remoteHost.host;
           if (remoteHost.host) host = remoteHost.host;
           setStartProviderDescription(`Connecting to ${host} ...`);
+          if (host === "localhost" && !window.commandExecutor && window.location.href) {
+            // if running in browser, we need the hostname called in URL
+            host = new URL(window.location.href).hostname;
+          }
           console.log(`connecting to ${host}:${port}`);
           const newProvider = new Provider(
             settingsCtx,

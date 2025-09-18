@@ -7,6 +7,7 @@ export default defineConfig({
     resolve: {
       alias: {
         "@": resolve("./src"),
+        "@public": resolve("./src/renderer/assets")
       },
     },
     plugins: [externalizeDepsPlugin()],

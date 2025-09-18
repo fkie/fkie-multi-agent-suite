@@ -74,7 +74,7 @@ Starts a server on default port 6274. You can override the port with **npm run s
 npm run server
 ```
 
-Then open in browser <http://localhost:6274>
+Then open in browser <http://localhost:6274/out/renderer/index.html>
 
 ## Websocket communication
 

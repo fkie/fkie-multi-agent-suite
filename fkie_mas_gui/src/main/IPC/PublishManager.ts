@@ -1,5 +1,6 @@
 import { PublishCloseCallback, PublishManagerEvents, TPublishManager } from "@/types";
 import { is } from "@electron-toolkit/utils";
+import pubIcon from "@public/sekkyumu_topic_pub.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
@@ -79,7 +80,7 @@ export default class PublishManager implements TPublishManager {
       y: pubWindowStateKeeper.y,
       width: pubWindowStateKeeper.width,
       height: pubWindowStateKeeper.height,
-      icon: "public/icons/sekkyumu_topic_pub.png",
+      icon: pubIcon,
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,

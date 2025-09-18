@@ -7,6 +7,7 @@ import {
   TLaunchArg,
 } from "@/types";
 import { is } from "@electron-toolkit/utils";
+import editorIcon from "@public/crystal_clear_edit_launch.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
 import { join } from "node:path";
 import windowStateKeeper from "../windowStateKeeper";
@@ -142,7 +143,7 @@ export default class EditorManager implements TEditorManager {
       y: editorWindowStateKeeper.y,
       width: editorWindowStateKeeper.width,
       height: editorWindowStateKeeper.height,
-      icon: "public/icons/crystal_clear_edit_launch.png",
+      icon: editorIcon,
       webPreferences: {
         sandbox: false,
         nodeIntegration: true,
