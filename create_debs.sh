@@ -70,6 +70,7 @@ fi
 DEP_INSTALLED=$(dpkg -l | grep debhelper)
 if [ -z "$DEP_INSTALLED" ]; then
     echo "Install required dependencies"
+    echo -e "sudo apt install -y python3-bloom python3-rosdep fakeroot debhelper dh-python"
     sudo apt install -y python3-bloom python3-rosdep fakeroot debhelper dh-python
 fi
 
