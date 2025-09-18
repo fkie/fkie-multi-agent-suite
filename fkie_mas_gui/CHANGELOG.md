@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.6.8 - 18.09.2025
+
+Added start in headless mode
+Added echo for deb build script
+Fixed icon of installed mas gui
+Updated parameter panel design
+Fixed double click handling in nodes tab
+the sudo password is requested at the beginning of the installation.
+
 ## 4.6.7 - 16.09.2025
 
 Fixed icon for lifecycle of composable node
