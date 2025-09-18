@@ -68,10 +68,10 @@ The app will start automatically the local daemon and master discovery nodes.
 
 ## Start only as node (without GUI)
 
-Starts a server on default port 6274. You can override the port with **npm run dev:ns -- --headless --port 6363**.
+Starts a server on default port 6274. You can change the port in **electron.vite.config.ts**.
 
 ```bash
-npm run dev:ns -- --headless
+npm run server:ns
 ```
 
 Then open in browser <http://localhost:6274>
