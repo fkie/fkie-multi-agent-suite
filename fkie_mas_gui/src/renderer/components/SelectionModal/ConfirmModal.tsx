@@ -7,11 +7,18 @@ interface ConfirmModalProps {
   title: string;
   message: string;
   onConfirmCallback: () => void;
-  onCancelCallback: () => void;
+  onCancelCallback?: () => void;
+  showCancelButton?: boolean;
 }
 
 const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function ConfirmModal(props, ref) {
-  const { title, message, onConfirmCallback = (): void => {}, onCancelCallback = (): void => {} } = props;
+  const {
+    title,
+    message,
+    onConfirmCallback = (): void => {},
+    onCancelCallback = (): void => {},
+    showCancelButton = true,
+  } = props;
 
   const [open, setOpen] = useState(true);
 
@@ -53,11 +60,13 @@ const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function Conf
       </DialogContent>
 
       <DialogActions>
-        <Button autoFocus color="primary" onClick={() => handleClose("cancel")}>
-          Cancel
-        </Button>
+        {showCancelButton && (
+          <Button autoFocus color="primary" onClick={() => handleClose("cancel")}>
+            Cancel
+          </Button>
+        )}
 
-        <Button color="warning" onClick={() => onConfirm()}>
+        <Button autoFocus={!showCancelButton} color="warning" onClick={() => onConfirm()}>
           Ok
         </Button>
       </DialogActions>

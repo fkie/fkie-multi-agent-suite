@@ -6,6 +6,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal/ConnectToProviderModal";
+import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
@@ -20,6 +21,7 @@ export default function ProviderPanel(): JSX.Element {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [openConnect, setOpenConnect] = useState(false);
+  const [noSourcedROS, setNoSourcedROS] = useState(false);
   const [providerRowsFiltered, setProviderRowsFiltered] = useState<Provider[]>([]);
   const [filterText, setFilterText] = useState("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -104,8 +106,12 @@ export default function ProviderPanel(): JSX.Element {
           console.log(`error while lookup for running daemons: ${error} `);
         }
       }
-      if (!window.commandExecutor || rosCtx.rosInfo?.version) {
+      if (!window.commandExecutor) {
         setOpenConnect(true);
+      } else if (rosCtx.rosInfo?.version) {
+        setOpenConnect(true);
+      } else {
+        setNoSourcedROS(true);
       }
     }
   }
@@ -207,6 +213,16 @@ export default function ProviderPanel(): JSX.Element {
             onCloseDialog={() => {
               setOpenConnect(false);
             }}
+          />
+        )}
+        {noSourcedROS && (
+          <ConfirmModal
+            title="Is ROS sourced?"
+            message="The ROS version could not be determined. This indicates that setup.bash was not sourced. Please restart mas-gui after sourcing!"
+            onConfirmCallback={() => {
+              setNoSourcedROS(false);
+            }}
+            showCancelButton={false}
           />
         )}
       </Stack>
