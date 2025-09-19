@@ -57,6 +57,7 @@
     "electron-settings": "^4.0.4",
     "electron-updater": "^6.3.9",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "express": "^5.1.0",
     "flexlayout-react": "^0.8.17",
     "hostile": "^1.4.0",
     "json5": "^2.2.3",

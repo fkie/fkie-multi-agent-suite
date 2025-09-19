@@ -22,6 +22,7 @@ export default function ProviderPanel(): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const [openConnect, setOpenConnect] = useState(false);
   const [noSourcedROS, setNoSourcedROS] = useState(false);
+  const [noRosVersion, setNoRosVersion] = useState(false);
   const [providerRowsFiltered, setProviderRowsFiltered] = useState<Provider[]>([]);
   const [filterText, setFilterText] = useState("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -46,6 +47,7 @@ export default function ProviderPanel(): JSX.Element {
           console.warn(
             `can't join to ${import.meta.env.VITE_JOIN_ID}: unknown ROS_VERSION; use VITE_ROS_VERSION to set ros version`
           );
+          setNoRosVersion(true);
           return;
         }
         const domainId = Number.parseInt(import.meta.env.VITE_JOIN_ID);
@@ -221,6 +223,16 @@ export default function ProviderPanel(): JSX.Element {
             message="The ROS version could not be determined. This indicates that setup.bash was not sourced. Please restart mas-gui after sourcing!"
             onConfirmCallback={() => {
               setNoSourcedROS(false);
+            }}
+            showCancelButton={false}
+          />
+        )}
+        {noRosVersion && (
+          <ConfirmModal
+            title={`can't join to ROS domain id ${import.meta.env.VITE_JOIN_ID}`}
+            message={`VITE_JOIN_ID is set to ${import.meta.env.VITE_JOIN_ID} but ROS_VERSION is unknown. Use VITE_ROS_VERSION to set ros version`}
+            onConfirmCallback={() => {
+              setNoRosVersion(false);
             }}
             showCancelButton={false}
           />

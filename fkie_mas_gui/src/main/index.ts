@@ -10,18 +10,22 @@ import { electronApp, is, optimizer } from "@electron-toolkit/utils";
 import appIcon from "@public/mas.png?asset";
 import { BrowserWindow, app, shell } from "electron";
 import log from "electron-log";
-import { join } from "node:path";
-import { ARGUMENTS, hasArgument, registerArguments } from "./CommandLineInterface";
+import express from "express";
+import path, { join } from "node:path";
+import * as sourceMap from "source-map-support";
+import { ARGUMENTS, getArgument, hasArgument, registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
 import { updateDebianPackages } from "./IPC/CommandExecutor";
 import MenuBuilder from "./menu";
 import windowStateKeeper from "./windowStateKeeper";
-// import installer from 'electron-devtools-installer'
-// import electrondebug from 'electron-debug'
+
+// register command line options
+registerArguments();
 
 const installUpdates = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PACKAGES);
 const installPrerelease = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PRERELEASE_PACKAGES);
 const headless = hasArgument(ARGUMENTS.HEADLESS);
+const headlessServerPort = getArgument(ARGUMENTS.HEADLESS_SERVER_PORT);
 
 // Disable security warnings and set react app path on dev env
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
@@ -31,14 +35,8 @@ let autoUpdateManager: AutoUpdateManager | null = null;
 let dialogManager: DialogManager | null = null;
 let shutdownManager: ShutdownManager | null = null;
 
-import * as sourceMap from "source-map-support";
-
 if (process.env.NODE_ENV === "production") {
   sourceMap.install();
-}
-
-if (headless) {
-  log.info("run in headless mode!");
 }
 
 // app.disableHardwareAcceleration();
@@ -60,6 +58,40 @@ if (headless) {
 //     forceDownload
 //   ).catch(console.log)
 // }
+
+const startServer = async (): Promise<void> => {
+  let dirPrefix = "/";
+
+  if (__dirname.indexOf("/app.asar/") > 0) {
+    dirPrefix = path.join(__dirname, "../renderer");
+  } else {
+    dirPrefix = path.join(__dirname, "../../dist/linux-unpacked/resources/app.asar/out/renderer");
+  }
+
+  // fs.readFileSync('/opt/mas-gui/resources/app.asar/file.txt')
+  const serverApp = express();
+
+  log.info("");
+  log.info(`Listening on port: ${headlessServerPort}`);
+  log.info("");
+
+  serverApp.listen(Number.parseInt(headlessServerPort));
+
+  serverApp.get("/", async (_req, res) => {
+    res.sendFile(`${dirPrefix}/index.html`);
+  });
+
+  serverApp.use(async (req, res) => {
+    log.info(`req: ${JSON.stringify(req.path)}`);
+    res.sendFile(`${dirPrefix}/${req.path}`);
+  });
+};
+
+if (headless) {
+  log.info("");
+  log.info("run in headless mode!");
+  startServer();
+}
 
 const createWindow = async (): Promise<void> => {
   if (installUpdates || installPrerelease) {
@@ -168,9 +200,6 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
-
-// register command line options
-registerArguments();
 
 // start app
 app
