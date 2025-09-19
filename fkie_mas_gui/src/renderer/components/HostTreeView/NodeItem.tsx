@@ -8,7 +8,7 @@ import ReportIcon from "@mui/icons-material/Report";
 import ScheduleSendIcon from "@mui/icons-material/ScheduleSend";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import WarningIcon from "@mui/icons-material/Warning";
-import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Badge, Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { forwardRef, useContext, useEffect, useState } from "react";
 import { FileIcon } from "react-file-icon";
@@ -290,13 +290,28 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       label={
         <Stack ref={ref} direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
           {nodeIcon}
-          <Stack direction="row" flexGrow="1" paddingLeft={0.5} sx={{ userSelect: "none" }}>
+          <Stack direction="row" flexGrow="1" paddingLeft={0.5} sx={{ userSelect: "none" }} alignItems="center">
             <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
               {namespacePart}
             </Typography>
             <Typography variant="body2" sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}>
               {labelText}
             </Typography>
+            {node.countSameName > 1 && (
+              <Tooltip
+                title={`${node.countSameName} nodes with the same name have been defined. Only the first node will be started on play!`}
+                placement="top"
+                disableInteractive
+              >
+                <Badge
+                  badgeContent={node.countSameName}
+                  color="error"
+                  sx={{
+                    left: 15,
+                  }}
+                />
+              </Tooltip>
+            )}
           </Stack>
           <Stack direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
             {node.tags.map((tag: TTag) => (

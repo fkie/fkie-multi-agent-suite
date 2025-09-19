@@ -1291,6 +1291,7 @@ export default class Provider implements IProvider {
         // Add nodes from launch files to the list of nodes
         for (const launchFile of this.launchFiles) {
           const nodes: LaunchNodeInfo[] = launchFile.nodes || [];
+          const nodesCount: { [key: string]: number } = {};
           for (const [idxLn, launchNode] of nodes.entries()) {
             // get parameter of a node and determine the capability group parameter
             const nodeParameters: RosParameter[] = [];
@@ -1300,6 +1301,20 @@ export default class Provider implements IProvider {
             // const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
             const uniqueNodeName = launchNode.node_name ? launchNode.node_name : launchNode.unique_name;
             if (uniqueNodeName) {
+              if (nodesCount[uniqueNodeName]) {
+                nodesCount[uniqueNodeName] += 1;
+              } else {
+                nodesCount[uniqueNodeName] = 1;
+              }
+              if (nodesCount[uniqueNodeName] > 1) {
+                const iNode = this.rosNodes.findIndex((n) => {
+                  return n.name === uniqueNodeName;
+                });
+                if (iNode >= 0) {
+                  this.rosNodes[iNode].countSameName = nodesCount[uniqueNodeName];
+                }
+                continue;
+              }
               const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
               // update parameters
               if (this.rosVersion === "1") {
@@ -1379,6 +1394,7 @@ export default class Provider implements IProvider {
                   );
                 }
               }
+
               if (launchNode.node_name && nodeGroup.name) {
                 nodeGroups[launchNode.node_name] = nodeGroup;
               }
@@ -1428,6 +1444,7 @@ export default class Provider implements IProvider {
                   this.rosNodes[iNode].capabilityGroup = nodeGroup;
                 }
                 nodeIsRunning = true;
+                this.rosNodes[iNode].countSameName = nodesCount[uniqueNodeName];
               }
 
               if (!nodeIsRunning) {
@@ -1452,6 +1469,7 @@ export default class Provider implements IProvider {
                   return screen.name === n.name;
                 });
                 n.screens = screens.length > 0 ? screens[0].screens : [];
+                n.countSameName = nodesCount[uniqueNodeName];
                 this.rosNodes.push(n);
               }
             }

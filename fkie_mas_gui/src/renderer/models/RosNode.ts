@@ -178,6 +178,8 @@ export default class RosNode {
 
   ignore_timer: boolean | undefined;
 
+  countSameName: number = 0;
+
   constructor(
     id = "",
     name = "",
