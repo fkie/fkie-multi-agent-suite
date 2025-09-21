@@ -1,18 +1,19 @@
 import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "@/types";
 import { app, BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
-import { hasArgument } from "../CommandLineInterface";
+import CommandLine from "./CommandLine";
 
 /**
  * Class ShutdownManager: Handles termination of the app
  */
 export default class ShutdownManager implements TShutdownManager {
   mainWindow: BrowserWindow | null = null;
+  commandLine: CommandLine | null = null;
   closeTimeout: ReturnType<typeof setTimeout> | null = null;
-  headless = hasArgument("headless");
 
-  constructor(mainWindow: BrowserWindow) {
+  constructor(mainWindow: BrowserWindow, commandLine: CommandLine) {
     this.mainWindow = mainWindow;
+    this.commandLine = commandLine;
     this.registerHandlers();
   }
 
@@ -27,7 +28,7 @@ export default class ShutdownManager implements TShutdownManager {
   }
 
   public emitCloseAppRequest = (): void => {
-    if (this.headless) this.quitGui();
+    if (this.commandLine?.getArg("headless")) this.quitGui();
     else {
       this.closeTimeout = setTimeout(() => {
         this.quitGui();
@@ -47,7 +48,7 @@ export default class ShutdownManager implements TShutdownManager {
    * Destroy main window and quit the electron app
    */
   public quitGui = (): void => {
-    if (!this.headless) log.info("Quitting GUI...");
+    if (!this.commandLine?.getArg("headless")) log.info("Quitting GUI...");
     this.cancelCloseTimeout();
     this.mainWindow?.destroy();
     app.quit();

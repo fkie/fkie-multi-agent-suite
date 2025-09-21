@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
-import { getArgument } from "../CommandLineInterface";
+import CommandLine from "./CommandLine";
 import { SystemInfo } from "./SystemInfo";
 
 const textDecoder = new TextDecoder();
@@ -14,6 +14,7 @@ const textDecoder = new TextDecoder();
  * Class CommandExecutor: Execute commands locally or remote using SSH2 interface
  */
 export default class CommandExecutor implements TCommandExecutor {
+  commandLine: CommandLine | null = null;
   localCredential: ConnectConfig;
 
   // TODO: read ssh config to get username for a given host
@@ -37,7 +38,8 @@ export default class CommandExecutor implements TCommandExecutor {
     title: "-T",
   };
 
-  constructor() {
+  constructor(commandLine: CommandLine) {
+    this.commandLine = commandLine;
     const sshPath = `${os.homedir()}/.ssh`;
 
     try {
@@ -141,7 +143,7 @@ export default class CommandExecutor implements TCommandExecutor {
 
     // Set the STDIO config: Ignore or redirect STDOUT/STDERR to current console
     let stdioOptions: StdioOptions | undefined = ["ignore", "pipe", "pipe"];
-    const parentOut = getArgument("show-output-from-background-processes") === "true";
+    const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
     if (parentOut) {
       stdioOptions = ["inherit", "pipe", "pipe"];
     }
@@ -237,7 +239,7 @@ export default class CommandExecutor implements TCommandExecutor {
     keyIndex = 0
   ) => {
     console.log(`exec an ${credential.host}: ${command}`);
-    const parentOut = getArgument("show-output-from-background-processes") === "true";
+    const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
     const connectionConfig = this.generateConfig(credential, keyIndex);
     return new Promise((resolve) => {
       if (!command)

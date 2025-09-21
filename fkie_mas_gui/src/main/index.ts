@@ -13,27 +13,28 @@ import log from "electron-log";
 import express from "express";
 import path, { join } from "node:path";
 import * as sourceMap from "source-map-support";
-import { getArgument, hasArgument, registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
-import { updateDebianPackages } from "./IPC/CommandExecutor";
+import CommandExecutor, { updateDebianPackages } from "./IPC/CommandExecutor";
+import CommandLine from "./IPC/CommandLine";
 import MenuBuilder from "./menu";
 import windowStateKeeper from "./windowStateKeeper";
-
-// register command line options
-registerArguments();
-
-const installUpdates = hasArgument("update-debs");
-const installPrerelease = hasArgument("update-debs-prerelease");
-const headless = hasArgument("headless");
-const headlessServerPort = getArgument("headless-server-port");
-
-// Disable security warnings and set react app path on dev env
-process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
 
 let mainWindow: BrowserWindow | null = null;
 let autoUpdateManager: AutoUpdateManager | null = null;
 let dialogManager: DialogManager | null = null;
 let shutdownManager: ShutdownManager | null = null;
+const commandLine: CommandLine = new CommandLine();
+const commandExecutor = new CommandExecutor(commandLine);
+commandExecutor.registerHandlers();
+
+
+const installUpdates = commandLine.getArg("update-debs") as boolean;
+const installPrerelease = commandLine.getArg("update-debs-prerelease") as boolean;
+const headless = commandLine.getArg("headless") as boolean;
+const headlessServerPort = commandLine.getArg("headless-server-port") as number;
+
+// Disable security warnings and set react app path on dev env
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
 
 if (process.env.NODE_ENV === "production") {
   sourceMap.install();
@@ -75,7 +76,7 @@ const startServer = async (): Promise<void> => {
   log.info(`Listening on port: ${headlessServerPort}`);
   log.info("");
 
-  serverApp.listen(Number.parseInt(headlessServerPort));
+  serverApp.listen(headlessServerPort);
 
   serverApp.get("/", async (_req, res) => {
     res.sendFile(`${dirPrefix}/index.html`);
@@ -87,16 +88,16 @@ const startServer = async (): Promise<void> => {
       // instead of env.js we send our desired env file
       res.type("text/javascript");
       res.send(`const CliArgs = {
-  "show-output-from-background-processes": { "default": "true", "fromEnv": "", "hint": "" },
-  "headless": { "default": "", "fromEnv": "", "hint": "" },
-  "headless-server-port": { "default": "6275", "fromEnv": "", "hint": "" },
+  "hide-output-from-background-processes": { "default": ${commandLine.getArg("hide-output-from-background-processes")} },
+  "headless": { "default": ${commandLine.getArg("headless")} },
+  "headless-server-port": { "default": ${commandLine.getArg("headless-server-port")} },
   "update-debs": { "default": "", "fromEnv": "", "hint": "" },
   "update-debs-prerelease": { "default": "", "fromEnv": "", "hint": "" },
-  "ros-version": { "default": "${getArgument("ros-version") ? getArgument("ros-version") : process.env.ROS_VERSION}", "fromEnv": "ROS_VERSION", "hint": "" },
-  "ros-domain-id": { "default": "${getArgument("ros-domain-id") ? getArgument("ros-domain-id") : process.env.ROS_DOMAIN_ID}", "fromEnv": "ROS_DOMAIN_ID", "hint": "" },
-  "rmw-implementation": { "default": "${hasArgument("rmw_implementation") ? getArgument("rmw_implementation") : process.env.RMW_IMPLEMENTATION}", "fromEnv": "RMW_IMPLEMENTATION", "hint": "" },
-  "join": { "default": "${getArgument("join")}", "fromEnv": "", "hint": "" },
-  "start": { "default": "${hasArgument("start")}", "fromEnv": "", "hint": "" }
+  "ros-version": { "default": "${commandLine.getArg("ros-version") || ""}" },
+  "ros-domain-id": { "default": ${commandLine.getArg("ros-domain-id")} },
+  "rmw-implementation": { "default": "${commandLine.getArg("rmw-implementation") || ""}" },
+  "join": { "default": ${commandLine.getArg("join")} },
+  "start": { "default": ${commandLine.getArg("start")} }
 };
 export {
   CliArgs as C
@@ -155,7 +156,7 @@ const createWindow = async (): Promise<void> => {
   autoUpdateManager = new AutoUpdateManager(mainWindow);
 
   // Handle app shutdown.
-  shutdownManager = new ShutdownManager(mainWindow);
+  shutdownManager = new ShutdownManager(mainWindow, commandLine);
 
   mainWindow.on("ready-to-show", () => {
     if (!mainWindow) {

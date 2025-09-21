@@ -103,8 +103,6 @@ if (process.contextIsolated) {
     // Register Command Line
     contextBridge.exposeInMainWorld("commandLine", {
       getArgument: (name: string) => ipcRenderer.invoke(CommandLineEvents.getArgument, name),
-
-      hasArgument: (name: string) => ipcRenderer.invoke(CommandLineEvents.hasArgument, name),
     } as TCommandLine);
 
     // Register ROS Info

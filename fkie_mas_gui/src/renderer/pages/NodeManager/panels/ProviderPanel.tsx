@@ -28,7 +28,6 @@ export default function ProviderPanel(): JSX.Element {
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
-  const [joinArg, setJoinArg] = useState<{ host: string; id: number }>({ host: "", id: -1 });
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
@@ -42,33 +41,29 @@ export default function ProviderPanel(): JSX.Element {
 
   async function getDomainId(): Promise<void> {
     if (rosCtx.providers.length === 0) {
-      if (settingsCtx.hasArgument("start") && window.commandExecutor) {
+      if (settingsCtx.getArgument("start") && window.commandExecutor) {
         setOpenConnect(true);
         return;
       }
+      const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
       // do we have a join environment parameter
-      if (joinArg.id >= 0) {
+      if (settingsCtx.getArgument("join") && rosDomainId >= 0) {
         if (!rosCtx.rosInfo?.version && !settingsCtx.getArgument("ros-version")) {
-          console.warn(
-            `can't join to ${joinArg.host ? joinArg.host : "localhost"}:${joinArg.id}: unknown ROS_VERSION; use --ros-version to set ros version`
-          );
+          console.warn(`can't join to ${rosDomainId}: unknown ROS_VERSION; use --ros-version to set ros version`);
           setNoRosVersion(true);
           return;
         }
-        const domainId = joinArg.id;
-        if (domainId >= 0) {
-          const newProvider = new Provider(
-            settingsCtx,
-            "localhost",
-            rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version"),
-            undefined,
-            domainId,
-            undefined,
-            logCtx
-          );
-          await rosCtx.connectToProvider(newProvider);
-          return;
-        }
+        const newProvider = new Provider(
+          settingsCtx,
+          "localhost",
+          rosCtx.rosInfo?.version || (settingsCtx.getArgument("ros-version") as string),
+          undefined,
+          rosDomainId,
+          undefined,
+          logCtx
+        );
+        await rosCtx.connectToProvider(newProvider);
+        return;
       }
       // try to get local domain id from running mas processes
       if (rosCtx.rosInfo?.version) {
@@ -115,8 +110,10 @@ export default function ProviderPanel(): JSX.Element {
       }
       if (!window.commandExecutor) {
         setOpenConnect(true);
-      } else if (rosCtx.rosInfo?.version || joinArg.id >= 0) {
-        setOpenConnect(true);
+      } else if (rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version")) {
+        if (rosDomainId >= 0) {
+          setOpenConnect(true);
+        }
       } else {
         setNoSourcedROS(true);
       }
@@ -147,23 +144,8 @@ export default function ProviderPanel(): JSX.Element {
   }, [rosCtx.providers, filterText]);
 
   useEffect(() => {
-    if (window.commandExecutor && !rosCtx.rosInfo) return;
-    getDomainId();
-  }, [rosCtx.rosInfo, window.commandExecutor, joinArg]);
-
-  useEffect(() => {
-    // join can be localhost:1 or 1
-    const splits = settingsCtx.getArgument("join").split(":");
-    if (splits.length === 1) {
-      const id = Number.parseInt(splits[0]);
-      if (id >= 0) {
-        setJoinArg({ host: "", id: id });
-      }
-    } else if (splits.length === 2) {
-      const id = Number.parseInt(splits[1]);
-      if (id >= 0) {
-        setJoinArg({ host: splits[0], id: id });
-      }
+    if (settingsCtx.updatedArgs > 0 || !window.commandLine) {
+      getDomainId();
     }
   }, [settingsCtx.updatedArgs]);
 
@@ -233,9 +215,15 @@ export default function ProviderPanel(): JSX.Element {
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
         {openConnect && (
           <ConnectToProviderModal
-            defaultHost={settingsCtx.hasArgument("start") ? joinArg.host : undefined}
-            defaultRosDomainId={settingsCtx.hasArgument("start") ? joinArg.id : undefined}
-            startOnOpen={settingsCtx.hasArgument("start")}
+            defaultHost={undefined}
+            defaultRosDomainId={
+              settingsCtx.getArgument("start")
+                ? settingsCtx.getArgument("ros-domain-id")
+                  ? (settingsCtx.getArgument("ros-domain-id") as number)
+                  : Number.parseInt(rosCtx.rosInfo?.domainId || "0")
+                : undefined
+            }
+            startOnOpen={window.commandExecutor ? (settingsCtx.getArgument("start") as boolean) : false}
             onCloseDialog={() => {
               setOpenConnect(false);
             }}
@@ -253,8 +241,8 @@ export default function ProviderPanel(): JSX.Element {
         )}
         {noRosVersion && (
           <ConfirmModal
-            title={`can't join to ROS domain id ${joinArg.host ? joinArg.host : "localhost"}:${joinArg.id}`}
-            message={`--join is set to ${joinArg.host ? joinArg.host : ""}:${joinArg.id} but ROS_VERSION is unknown. Use --ros-version to set ros version`}
+            title={`can't join to ROS domain id ${settingsCtx.getArgument("ros-domain-id")}`}
+            message={`--join is set to ${settingsCtx.getArgument("ros-domain-id")} but ROS_VERSION is unknown. Use --ros-version to set ros version`}
             onConfirmCallback={() => {
               setNoRosVersion(false);
             }}

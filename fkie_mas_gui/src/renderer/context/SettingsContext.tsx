@@ -22,7 +22,7 @@ export const getDefaultPortFromRos: (
   return rosVersion === "2" ? 35430 + networkId : 35685 + uriShift + networkId;
 };
 
-type TCliArg = { default: string; hint: string };
+type TCliArg = { default: string | boolean | number | undefined; hint: string };
 
 export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
@@ -32,8 +32,7 @@ export interface ISettingsContext {
   getDefault: (attribute: string) => JSONValue | undefined;
   set: (attribute: string, value: JSONValue, settingsCtx?: ISettingsContext) => void;
   getParamList: () => { name: string; param: ISettingsParam }[];
-  getArgument: (name: string) => string;
-  hasArgument: (name: string) => boolean;
+  getArgument: (name: string) => string | boolean | number | undefined;
 }
 
 export const LOG_LEVEL_LIST = ["DEBUG", "INFO", "SUCCESS", "WARN", "ERROR"];
@@ -63,9 +62,6 @@ export const DEFAULT_SETTINGS = {
   },
   getArgument: () => {
     return "";
-  },
-  hasArgument: () => {
-    return false;
   },
 };
 
@@ -448,12 +444,7 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
     const results = await Promise.all(
       Object.keys(CliArgs).map(async (argName) => {
         const result = await window.commandLine?.getArgument(argName);
-        if (!result) {
-          const has = await window.commandLine?.hasArgument(argName);
-          return { name: argName, data: { default: has ? "true" : "", hint: "" } };
-        } else {
-          return { name: argName, data: { default: result, hint: "" } };
-        }
+        return { name: argName, data: { default: result, hint: "" } };
       })
     );
     const newCliArgs: { [name: string]: TCliArg } = {};
@@ -471,15 +462,8 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
   }, [window.commandLine]);
 
   const getArgument = useCallback(
-    (name: string): string => {
+    (name: string): string | boolean | number | undefined => {
       return cliArgs[name]?.default;
-    },
-    [cliArgs]
-  );
-
-  const hasArgument = useCallback(
-    (name: string): boolean => {
-      return cliArgs[name]?.default === "true";
     },
     [cliArgs]
   );
@@ -494,7 +478,6 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
       set,
       getParamList,
       getArgument,
-      hasArgument,
     }),
     [changed, updatedArgs]
   );

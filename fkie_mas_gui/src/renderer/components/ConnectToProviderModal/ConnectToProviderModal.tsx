@@ -179,17 +179,22 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     );
 
     useEffect(() => {
-      DEFAULT_PARAMETER.networkId = settingsCtx.getArgument("ros-domain-id")
-        ? Number.parseInt(settingsCtx.getArgument("ros-domain-id"))
-        : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
-      DEFAULT_PARAMETER.rmwImplementation = settingsCtx.getArgument("rmw-implementation")
-        ? settingsCtx.getArgument("rmw-implementation")
+      const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
+      const networkId =
+        rosDomainId >= 0 ? rosDomainId : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
+      const rmwImplementation = settingsCtx.getArgument("rmw-implementation")
+        ? (settingsCtx.getArgument("rmw-implementation") as string)
         : undefined;
-      DEFAULT_PARAMETER.rosVersion = settingsCtx.getArgument("ros-version")
-        ? settingsCtx.getArgument("ros-version")
+      const rosVersion = settingsCtx.getArgument("ros-version")
+        ? (settingsCtx.getArgument("ros-version") as string)
         : (settingsCtx.get("rosVersion") as string);
-      setStartParameter(mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault) as ProviderLaunchConfiguration);
-    }, [settingsCtx, settingsCtx.updatedArgs]);
+      startParameter.networkId = networkId;
+      startParameter.rosVersion = rosVersion;
+      startParameter.rmwImplementation = rmwImplementation;
+      setOptionNetworkId(networkId);
+
+      updateStartParameter();
+    }, [settingsCtx.updatedArgs]);
 
     const [startConfigurations, setStartConfigurations] = useLocalStorage<TSavedStartConfiguration[]>(
       "ConnectToProviderModal:startConfigurations",
@@ -276,7 +281,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     useEffect(() => {
       if (startOnOpen) {
         if (defaultHost) setHostValues([{ host: defaultHost }]);
-        if (defaultRosDomainId)  {
+        if (defaultRosDomainId >= 0) {
           startParameter.networkId = defaultRosDomainId;
           updateStartParameter();
         }

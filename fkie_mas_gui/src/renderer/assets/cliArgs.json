@@ -1,52 +1,72 @@
 {
-  "show-output-from-background-processes": {
-    "default": "true",
+  "hide-output-from-background-processes": {
+    "default": false,
     "fromEnv": "",
+    "switch": true,
+    "toInt": false,
     "hint": ""
   },
   "headless": {
-    "default": "",
+    "default": false,
     "fromEnv": "",
+    "switch": true,
+    "toInt": false,
     "hint": "Starts a web server instead of the GUI."
   },
   "headless-server-port": {
-    "default": "6275",
+    "default": 6275,
     "fromEnv": "",
+    "toInt": true,
+    "switch": false,
     "hint": "Port for the web server, if started in headless mode."
   },
   "update-debs": {
-    "default": "",
+    "default": false,
     "fromEnv": "",
+    "toInt": false,
+    "switch": true,
     "hint": "Update Debian packages."
   },
   "update-debs-prerelease": {
-    "default": "",
+    "default": false,
     "fromEnv": "",
+    "toInt": false,
+    "switch": true,
     "hint": "Update Debian packages from the pre-release branch"
   },
   "ros-version": {
     "default": "2",
     "fromEnv": "ROS_VERSION",
+    "toInt": false,
+    "switch": false,
     "hint": "Set ROS version. (for web server)"
   },
   "ros-domain-id": {
-    "default": "",
+    "default": -1,
     "fromEnv": "ROS_DOMAIN_ID",
+    "toInt": true,
+    "switch": false,
     "hint": "Set ROS domain id. (for web server)"
   },
   "rmw-implementation": {
     "default": "",
     "fromEnv": "RMW_IMPLEMENTATION",
+    "toInt": false,
+    "switch": false,
     "hint": "Override RMW_IMPLEMENTATION"
   },
   "join": {
-    "default": "",
+    "default": false,
     "fromEnv": "",
-    "hint": "Joins on start to given ROS domain id [host], e.g.: localhost:0"
+    "toInt": false,
+    "switch": true,
+    "hint": "Joins on start to current ROS domain id"
   },
   "start": {
-    "default": "",
+    "default": false,
     "fromEnv": "",
+    "toInt": false,
+    "switch": true,
     "hint": "If 'join' is set, start the ROS-MAS nodes."
   }
 }
