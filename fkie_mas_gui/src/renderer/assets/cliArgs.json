@@ -1,0 +1,52 @@
+{
+  "show-output-from-background-processes": {
+    "default": "true",
+    "fromEnv": "",
+    "hint": ""
+  },
+  "headless": {
+    "default": "",
+    "fromEnv": "",
+    "hint": "Starts a web server instead of the GUI."
+  },
+  "headless-server-port": {
+    "default": "6275",
+    "fromEnv": "",
+    "hint": "Port for the web server, if started in headless mode."
+  },
+  "update-debs": {
+    "default": "",
+    "fromEnv": "",
+    "hint": "Update Debian packages."
+  },
+  "update-debs-prerelease": {
+    "default": "",
+    "fromEnv": "",
+    "hint": "Update Debian packages from the pre-release branch"
+  },
+  "ros-version": {
+    "default": "2",
+    "fromEnv": "ROS_VERSION",
+    "hint": "Set ROS version. (for web server)"
+  },
+  "ros-domain-id": {
+    "default": "",
+    "fromEnv": "ROS_DOMAIN_ID",
+    "hint": "Set ROS domain id. (for web server)"
+  },
+  "rmw-implementation": {
+    "default": "",
+    "fromEnv": "RMW_IMPLEMENTATION",
+    "hint": "Override RMW_IMPLEMENTATION"
+  },
+  "join": {
+    "default": "",
+    "fromEnv": "",
+    "hint": "Joins on start to given ROS domain id [host], e.g.: localhost:0"
+  },
+  "start": {
+    "default": "",
+    "fromEnv": "",
+    "hint": "If 'join' is set, start the ROS-MAS nodes."
+  }
+}

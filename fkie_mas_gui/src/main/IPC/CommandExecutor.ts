@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
-import { ARGUMENTS, getArgument } from "../CommandLineInterface";
+import { getArgument } from "../CommandLineInterface";
 import { SystemInfo } from "./SystemInfo";
 
 const textDecoder = new TextDecoder();
@@ -141,7 +141,7 @@ export default class CommandExecutor implements TCommandExecutor {
 
     // Set the STDIO config: Ignore or redirect STDOUT/STDERR to current console
     let stdioOptions: StdioOptions | undefined = ["ignore", "pipe", "pipe"];
-    const parentOut = getArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES) === "true";
+    const parentOut = getArgument("show-output-from-background-processes") === "true";
     if (parentOut) {
       stdioOptions = ["inherit", "pipe", "pipe"];
     }
@@ -237,7 +237,7 @@ export default class CommandExecutor implements TCommandExecutor {
     keyIndex = 0
   ) => {
     console.log(`exec an ${credential.host}: ${command}`);
-    const parentOut = getArgument(ARGUMENTS.SHOW_OUTPUT_FROM_BACKGROUND_PROCESSES) === "true";
+    const parentOut = getArgument("show-output-from-background-processes") === "true";
     const connectionConfig = this.generateConfig(credential, keyIndex);
     return new Promise((resolve) => {
       if (!command)

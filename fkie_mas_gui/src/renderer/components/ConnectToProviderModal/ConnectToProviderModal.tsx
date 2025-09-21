@@ -143,12 +143,15 @@ function mergeDeepConfig(
 }
 
 interface ConnectToProviderModalProps {
+  defaultHost?: string;
+  defaultRosDomainId?: number;
+  startOnOpen?: boolean;
   onCloseDialog: () => void;
 }
 
 const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModalProps>(
   function ConnectToProviderModal(props, ref) {
-    const { onCloseDialog = (): void => {} } = props;
+    const { defaultHost = "", defaultRosDomainId = -1, startOnOpen = false, onCloseDialog = (): void => {} } = props;
 
     const rosCtx = useContext(RosContext);
     const settingsCtx = useContext(SettingsContext);
@@ -167,15 +170,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       DEFAULT_PARAMETER.networkId
     );
 
-    DEFAULT_PARAMETER.networkId = import.meta.env.VITE_ROS_DOMAIN_ID
-      ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID)
-      : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
-    DEFAULT_PARAMETER.rmwImplementation = import.meta.env.VITE_RMW_IMPLEMENTATION
-      ? import.meta.env.VITE_RMW_IMPLEMENTATION
-      : undefined;
-    DEFAULT_PARAMETER.rosVersion = import.meta.env.VITE_ROS_VERSION
-      ? import.meta.env.VITE_ROS_VERSION
-      : (settingsCtx.get("rosVersion") as string);
     const [startParameterDefault, setStartConfigurationsDefault] = useLocalStorage<ProviderLaunchConfiguration>(
       "ConnectToProviderModal:startParameter",
       DEFAULT_PARAMETER
@@ -183,6 +177,20 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     const [startParameter, setStartParameter] = useState<ProviderLaunchConfiguration>(
       mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault) as ProviderLaunchConfiguration
     );
+
+    useEffect(() => {
+      DEFAULT_PARAMETER.networkId = settingsCtx.getArgument("ros-domain-id")
+        ? Number.parseInt(settingsCtx.getArgument("ros-domain-id"))
+        : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
+      DEFAULT_PARAMETER.rmwImplementation = settingsCtx.getArgument("rmw-implementation")
+        ? settingsCtx.getArgument("rmw-implementation")
+        : undefined;
+      DEFAULT_PARAMETER.rosVersion = settingsCtx.getArgument("ros-version")
+        ? settingsCtx.getArgument("ros-version")
+        : (settingsCtx.get("rosVersion") as string);
+      setStartParameter(mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault) as ProviderLaunchConfiguration);
+    }, [settingsCtx, settingsCtx.updatedArgs]);
+
     const [startConfigurations, setStartConfigurations] = useLocalStorage<TSavedStartConfiguration[]>(
       "ConnectToProviderModal:startConfigurations",
       []
@@ -266,7 +274,16 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     }
 
     useEffect(() => {
-      updateTopics();
+      if (startOnOpen) {
+        if (defaultHost) setHostValues([{ host: defaultHost }]);
+        if (defaultRosDomainId)  {
+          startParameter.networkId = defaultRosDomainId;
+          updateStartParameter();
+        }
+        handleStartProvider();
+      } else {
+        updateTopics();
+      }
     }, []);
 
     useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {

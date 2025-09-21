@@ -7,6 +7,7 @@ import {
   AuUpdateDownloadedCallback,
   AuUpdateErrorCallback,
   CommandExecutorEvents,
+  CommandLineEvents,
   DialogManagerEvents,
   EditorCloseCallback,
   EditorManagerEvents,
@@ -18,6 +19,7 @@ import {
   SubscriberManagerEvents,
   TAutoUpdateManager,
   TCommandExecutor,
+  TCommandLine,
   TEditorManager,
   TerminalCloseCallback,
   TerminalManagerEvents,
@@ -97,6 +99,13 @@ if (process.contextIsolated) {
       execTerminal: (credential: ConnectConfig, title: string, command: string) =>
         ipcRenderer.invoke(CommandExecutorEvents.execTerminal, credential, title, command),
     } as TCommandExecutor);
+
+    // Register Command Line
+    contextBridge.exposeInMainWorld("commandLine", {
+      getArgument: (name: string) => ipcRenderer.invoke(CommandLineEvents.getArgument, name),
+
+      hasArgument: (name: string) => ipcRenderer.invoke(CommandLineEvents.hasArgument, name),
+    } as TCommandLine);
 
     // Register ROS Info
     contextBridge.exposeInMainWorld("rosInfo", {

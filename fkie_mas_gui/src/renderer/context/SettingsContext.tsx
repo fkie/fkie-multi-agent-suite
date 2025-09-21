@@ -1,8 +1,9 @@
 import { JSONObject, JSONValue } from "@/types";
-import React, { createContext, useMemo, useReducer } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useReducer, useState } from "react";
 
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import URI from "@/renderer/models/uris";
+import CliArgs from "../assets/cliArgs.json";
 
 export const getDefaultPortFromRos: (
   connectionType: string,
@@ -21,13 +22,18 @@ export const getDefaultPortFromRos: (
   return rosVersion === "2" ? 35430 + networkId : 35685 + uriShift + networkId;
 };
 
+type TCliArg = { default: string; hint: string };
+
 export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
   changed: number;
+  updatedArgs: number;
   get: (attribute: string) => JSONValue | undefined;
   getDefault: (attribute: string) => JSONValue | undefined;
   set: (attribute: string, value: JSONValue, settingsCtx?: ISettingsContext) => void;
   getParamList: () => { name: string; param: ISettingsParam }[];
+  getArgument: (name: string) => string;
+  hasArgument: (name: string) => boolean;
 }
 
 export const LOG_LEVEL_LIST = ["DEBUG", "INFO", "SUCCESS", "WARN", "ERROR"];
@@ -44,6 +50,7 @@ export const DEFAULT_SETTINGS = {
   bgColorForDarkMod: "#424242",
 
   changed: 0,
+  updatedArgs: 0,
   get: (): JSONValue | undefined => {
     return undefined;
   },
@@ -53,6 +60,12 @@ export const DEFAULT_SETTINGS = {
   set: (): void => {},
   getParamList: (): { name: string; param: ISettingsParam }[] => {
     return [];
+  },
+  getArgument: () => {
+    return "";
+  },
+  hasArgument: () => {
+    return false;
   },
 };
 
@@ -139,7 +152,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   rosVersion: {
     label: "Default ROS version",
-    default: import.meta.env.VITE_ROS_VERSION ? import.meta.env.VITE_ROS_VERSION : "2",
+    default: CliArgs["ros-version"] ? CliArgs["ros-version"] : "2",
     type: "string",
     options: ["1", "2"],
     readOnly: false,
@@ -388,7 +401,9 @@ export const SettingsContext = createContext<ISettingsContext>(DEFAULT_SETTINGS)
 export function SettingsProvider({ children }: ISettingProvider): ReturnType<React.FC<ISettingProvider>> {
   const { MIN_VERSION_DAEMON } = DEFAULT_SETTINGS;
   const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
+  const [updatedArgs, forceUpdateArgs] = useReducer((x) => x + 1, 0);
   const [config, setConfig] = useLocalStorage<JSONObject>("SettingsContext:config", {});
+  const [cliArgs, setCliArgs] = useState<{ [name: string]: TCliArg }>(CliArgs);
 
   function get(attribute: string): JSONValue | undefined {
     if (attribute in config) {
@@ -429,16 +444,59 @@ export function SettingsProvider({ children }: ISettingProvider): ReturnType<Rea
     return params;
   }
 
+  async function readCommandLineArgs(): Promise<void> {
+    const results = await Promise.all(
+      Object.keys(CliArgs).map(async (argName) => {
+        const result = await window.commandLine?.getArgument(argName);
+        if (!result) {
+          const has = await window.commandLine?.hasArgument(argName);
+          return { name: argName, data: { default: has ? "true" : "", hint: "" } };
+        } else {
+          return { name: argName, data: { default: result, hint: "" } };
+        }
+      })
+    );
+    const newCliArgs: { [name: string]: TCliArg } = {};
+    for (const { name, data } of results) {
+      newCliArgs[name] = data;
+    }
+    setCliArgs(newCliArgs);
+    forceUpdateArgs();
+  }
+
+  useEffect(() => {
+    if (window.commandLine) {
+      readCommandLineArgs();
+    }
+  }, [window.commandLine]);
+
+  const getArgument = useCallback(
+    (name: string): string => {
+      return cliArgs[name]?.default;
+    },
+    [cliArgs]
+  );
+
+  const hasArgument = useCallback(
+    (name: string): boolean => {
+      return cliArgs[name]?.default === "true";
+    },
+    [cliArgs]
+  );
+
   const attributesMemo = useMemo(
     () => ({
       MIN_VERSION_DAEMON,
       changed,
+      updatedArgs,
       get,
       getDefault,
       set,
       getParamList,
+      getArgument,
+      hasArgument,
     }),
-    [changed]
+    [changed, updatedArgs]
   );
 
   return <SettingsContext.Provider value={attributesMemo}>{children}</SettingsContext.Provider>;

@@ -28,6 +28,7 @@ export default function ProviderPanel(): JSX.Element {
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
+  const [joinArg, setJoinArg] = useState<{ host: string; id: number }>({ host: "", id: -1 });
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
@@ -41,21 +42,25 @@ export default function ProviderPanel(): JSX.Element {
 
   async function getDomainId(): Promise<void> {
     if (rosCtx.providers.length === 0) {
+      if (settingsCtx.hasArgument("start") && window.commandExecutor) {
+        setOpenConnect(true);
+        return;
+      }
       // do we have a join environment parameter
-      if (import.meta.env.VITE_JOIN_ID) {
-        if (!rosCtx.rosInfo?.version && !import.meta.env.VITE_ROS_VERSION) {
+      if (joinArg.id >= 0) {
+        if (!rosCtx.rosInfo?.version && !settingsCtx.getArgument("ros-version")) {
           console.warn(
-            `can't join to ${import.meta.env.VITE_JOIN_ID}: unknown ROS_VERSION; use VITE_ROS_VERSION to set ros version`
+            `can't join to ${joinArg.host ? joinArg.host : "localhost"}:${joinArg.id}: unknown ROS_VERSION; use --ros-version to set ros version`
           );
           setNoRosVersion(true);
           return;
         }
-        const domainId = Number.parseInt(import.meta.env.VITE_JOIN_ID);
+        const domainId = joinArg.id;
         if (domainId >= 0) {
           const newProvider = new Provider(
             settingsCtx,
             "localhost",
-            rosCtx.rosInfo?.version || import.meta.env.VITE_ROS_VERSION,
+            rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version"),
             undefined,
             domainId,
             undefined,
@@ -110,7 +115,7 @@ export default function ProviderPanel(): JSX.Element {
       }
       if (!window.commandExecutor) {
         setOpenConnect(true);
-      } else if (rosCtx.rosInfo?.version) {
+      } else if (rosCtx.rosInfo?.version || joinArg.id >= 0) {
         setOpenConnect(true);
       } else {
         setNoSourcedROS(true);
@@ -144,7 +149,23 @@ export default function ProviderPanel(): JSX.Element {
   useEffect(() => {
     if (window.commandExecutor && !rosCtx.rosInfo) return;
     getDomainId();
-  }, [rosCtx.rosInfo, window.commandExecutor]);
+  }, [rosCtx.rosInfo, window.commandExecutor, joinArg]);
+
+  useEffect(() => {
+    // join can be localhost:1 or 1
+    const splits = settingsCtx.getArgument("join").split(":");
+    if (splits.length === 1) {
+      const id = Number.parseInt(splits[0]);
+      if (id >= 0) {
+        setJoinArg({ host: "", id: id });
+      }
+    } else if (splits.length === 2) {
+      const id = Number.parseInt(splits[1]);
+      if (id >= 0) {
+        setJoinArg({ host: splits[0], id: id });
+      }
+    }
+  }, [settingsCtx.updatedArgs]);
 
   const createReloadButton = useMemo(() => {
     return (
@@ -212,6 +233,9 @@ export default function ProviderPanel(): JSX.Element {
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
         {openConnect && (
           <ConnectToProviderModal
+            defaultHost={settingsCtx.hasArgument("start") ? joinArg.host : undefined}
+            defaultRosDomainId={settingsCtx.hasArgument("start") ? joinArg.id : undefined}
+            startOnOpen={settingsCtx.hasArgument("start")}
             onCloseDialog={() => {
               setOpenConnect(false);
             }}
@@ -229,8 +253,8 @@ export default function ProviderPanel(): JSX.Element {
         )}
         {noRosVersion && (
           <ConfirmModal
-            title={`can't join to ROS domain id ${import.meta.env.VITE_JOIN_ID}`}
-            message={`VITE_JOIN_ID is set to ${import.meta.env.VITE_JOIN_ID} but ROS_VERSION is unknown. Use VITE_ROS_VERSION to set ros version`}
+            title={`can't join to ROS domain id ${joinArg.host ? joinArg.host : "localhost"}:${joinArg.id}`}
+            message={`--join is set to ${joinArg.host ? joinArg.host : ""}:${joinArg.id} but ROS_VERSION is unknown. Use --ros-version to set ros version`}
             onConfirmCallback={() => {
               setNoRosVersion(false);
             }}

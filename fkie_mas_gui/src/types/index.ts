@@ -8,6 +8,7 @@ import {
   TAutoUpdateManager,
 } from "./AutoUpdateManager";
 import { CommandExecutorEvents, TCommandExecutor } from "./CommandExecutor";
+import { CommandLineEvents, TCommandLine } from "./CommandLine";
 import { DialogManagerEvents, TDialogManager } from "./DialogManager";
 import { EditorCloseCallback, EditorManagerEvents, FileRangeCallback, TEditorManager } from "./EditorManager";
 import { TFileRange } from "./FileRange";
@@ -28,6 +29,7 @@ import { TTag } from "./TTag";
 export {
   AutoUpdateManagerEvents,
   CommandExecutorEvents,
+  CommandLineEvents,
   DialogManagerEvents,
   EditorManagerEvents,
   PublishManagerEvents,
@@ -49,6 +51,7 @@ export type {
   SubscriberCloseCallback,
   TAutoUpdateManager,
   TCommandExecutor,
+  TCommandLine,
   TDialogManager,
   TEditorManager,
   TerminalCloseCallback,

@@ -48,6 +48,7 @@ export default defineConfig({
           publisher: resolve("src/renderer/publisher.html"),
           subscriber: resolve("src/renderer/subscriber.html"),
           terminal: resolve("src/renderer/terminal.html"),
+          cliArgs: resolve("src/renderer/assets/cliArgs.json"),
         },
       },
     },

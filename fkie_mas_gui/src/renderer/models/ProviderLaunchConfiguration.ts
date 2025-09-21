@@ -23,9 +23,9 @@ export default class ProviderLaunchConfiguration {
   /** ROS version as string of {'1', '2'} */
   rosVersion: string = "1";
 
-  networkId: number = import.meta.env.VITE_ROS_DOMAIN_ID ? Number.parseInt(import.meta.env.VITE_ROS_DOMAIN_ID) : -1;
+  networkId: number = -1;
 
-  rmwImplementation: string | undefined = import.meta.env.VITE_RMW_IMPLEMENTATION;
+  rmwImplementation: string | undefined = undefined;
 
   daemon: {
     enable: boolean;

@@ -1,7 +1,7 @@
 import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "@/types";
 import { app, BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
-import { ARGUMENTS, hasArgument } from "../CommandLineInterface";
+import { hasArgument } from "../CommandLineInterface";
 
 /**
  * Class ShutdownManager: Handles termination of the app
@@ -9,7 +9,7 @@ import { ARGUMENTS, hasArgument } from "../CommandLineInterface";
 export default class ShutdownManager implements TShutdownManager {
   mainWindow: BrowserWindow | null = null;
   closeTimeout: ReturnType<typeof setTimeout> | null = null;
-  headless = hasArgument(ARGUMENTS.HEADLESS);
+  headless = hasArgument("headless");
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;

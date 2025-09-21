@@ -1,6 +1,7 @@
 import {
   TAutoUpdateManager,
   TCommandExecutor,
+  TCommandLine,
   TDialogManager,
   TEditorManager,
   TPublishManager,
@@ -23,5 +24,6 @@ declare global {
     terminalManager?: TTerminalManager;
     autoUpdate?: TAutoUpdateManager;
     commandExecutor?: TCommandExecutor;
+    commandLine?: TCommandLine;
   }
 }

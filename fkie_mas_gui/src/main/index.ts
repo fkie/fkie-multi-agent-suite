@@ -13,7 +13,7 @@ import log from "electron-log";
 import express from "express";
 import path, { join } from "node:path";
 import * as sourceMap from "source-map-support";
-import { ARGUMENTS, getArgument, hasArgument, registerArguments } from "./CommandLineInterface";
+import { getArgument, hasArgument, registerArguments } from "./CommandLineInterface";
 import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
 import { updateDebianPackages } from "./IPC/CommandExecutor";
 import MenuBuilder from "./menu";
@@ -22,10 +22,10 @@ import windowStateKeeper from "./windowStateKeeper";
 // register command line options
 registerArguments();
 
-const installUpdates = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PACKAGES);
-const installPrerelease = hasArgument(ARGUMENTS.UPDATE_MAS_DEBIAN_PRERELEASE_PACKAGES);
-const headless = hasArgument(ARGUMENTS.HEADLESS);
-const headlessServerPort = getArgument(ARGUMENTS.HEADLESS_SERVER_PORT);
+const installUpdates = hasArgument("update-debs");
+const installPrerelease = hasArgument("update-debs-prerelease");
+const headless = hasArgument("headless");
+const headlessServerPort = getArgument("headless-server-port");
 
 // Disable security warnings and set react app path on dev env
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
@@ -81,8 +81,32 @@ const startServer = async (): Promise<void> => {
     res.sendFile(`${dirPrefix}/index.html`);
   });
 
+  serverApp.use((req, res, next) => {
+    const url = req.path;
+    if (url.includes("/assets/cliArgs")) {
+      // instead of env.js we send our desired env file
+      res.type("text/javascript");
+      res.send(`const CliArgs = {
+  "show-output-from-background-processes": { "default": "true", "fromEnv": "", "hint": "" },
+  "headless": { "default": "", "fromEnv": "", "hint": "" },
+  "headless-server-port": { "default": "6275", "fromEnv": "", "hint": "" },
+  "update-debs": { "default": "", "fromEnv": "", "hint": "" },
+  "update-debs-prerelease": { "default": "", "fromEnv": "", "hint": "" },
+  "ros-version": { "default": "${getArgument("ros-version") ? getArgument("ros-version") : process.env.ROS_VERSION}", "fromEnv": "ROS_VERSION", "hint": "" },
+  "ros-domain-id": { "default": "${getArgument("ros-domain-id") ? getArgument("ros-domain-id") : process.env.ROS_DOMAIN_ID}", "fromEnv": "ROS_DOMAIN_ID", "hint": "" },
+  "rmw-implementation": { "default": "${hasArgument("rmw_implementation") ? getArgument("rmw_implementation") : process.env.RMW_IMPLEMENTATION}", "fromEnv": "RMW_IMPLEMENTATION", "hint": "" },
+  "join": { "default": "${getArgument("join")}", "fromEnv": "", "hint": "" },
+  "start": { "default": "${hasArgument("start")}", "fromEnv": "", "hint": "" }
+};
+export {
+  CliArgs as C
+};
+      `);
+      return;
+    }
+    next();
+  });
   serverApp.use(async (req, res) => {
-    log.info(`req: ${JSON.stringify(req.path)}`);
     res.sendFile(`${dirPrefix}/${req.path}`);
   });
 };
