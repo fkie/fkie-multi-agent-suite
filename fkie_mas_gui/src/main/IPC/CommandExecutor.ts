@@ -370,9 +370,9 @@ export default class CommandExecutor implements TCommandExecutor {
         const resolvedPath = fs.realpathSync(t, null);
         const basename = path.basename(resolvedPath);
         if (["terminator", "gnome-terminal", "xfce4-terminal"].includes(basename)) {
-          terminalExecOpt = "-x";
+          terminalExecOpt = "-x /bin/bash -c";
         } else {
-          terminalExecOpt = "-e";
+          terminalExecOpt = "-e /bin/bash -c";
         }
         if (["terminator", "gnome-terminal", "gnome-terminal.wrapper"].includes(basename)) {
           // If your external terminal close after the execution, you can change this behavior in profiles.
@@ -381,6 +381,9 @@ export default class CommandExecutor implements TCommandExecutor {
         } else if (["xfce4-terminal", "xterm", "lxterm", "uxterm"].includes(basename)) {
           noCloseOpt = "";
           terminalTitleOpt = "-T";
+        } else if (["konsole"].includes(basename)) {
+          noCloseOpt = "--noclose";
+          terminalTitleOpt = "";
         }
         terminalEmulator = t;
         break;
@@ -462,7 +465,7 @@ export async function updateDebianPackages(prerelease: boolean = false): Promise
           "/tmp/install_mas_debs.sh",
           "&&",
           "bash",
-          "/tmp/install_mas_debs.sh"
+          "/tmp/install_mas_debs.sh",
         ],
         {
           shell: true,

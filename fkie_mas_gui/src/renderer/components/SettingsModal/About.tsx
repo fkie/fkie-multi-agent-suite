@@ -160,6 +160,20 @@ export default function About(): JSX.Element {
             <Typography variant="body1" color="red">
               {auCtx.updateError}
             </Typography>
+            <Stack mb="0.5em" mt="0.5em" direction="column">
+              <Typography variant="body1" color="green">
+                You can try to change the default terminal using the following command and run the update again:
+              </Typography>
+              <Stack ml="1em" direction="row" alignItems="center">
+                <Typography variant="body1" color="grey">
+                  sudo update-alternatives --config x-terminal-emulator
+                </Typography>
+                <CopyButton value={"sudo update-alternatives --config x-terminal-emulator"} />
+              </Stack>
+              <Typography variant="body1" color="green">
+                Or try to start the local TTYD.
+              </Typography>{" "}
+            </Stack>
           </Stack>
         )}
         {!auCtx.isAppImage && (

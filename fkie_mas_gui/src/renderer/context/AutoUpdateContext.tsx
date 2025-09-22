@@ -135,7 +135,7 @@ export function AutoUpdateProvider({
       );
       setInstalling(false);
       if (!terminalResult.result) {
-        setUpdateError(`${terminalResult.message}. Please try to start the local TTYD.`);
+        setUpdateError(`${terminalResult.message}`);
       }
     } else {
       setUpdateError("Could not connect to the local TTYD. Please start the local TTYD.");
