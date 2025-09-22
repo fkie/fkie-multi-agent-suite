@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.9 - 22.09.2025
+
+Added host command line option
+Added commandline parameters for headless mode
+Added headless server to debian package
+Added warning if multiple nodes with same name are defined in a launch file
+Add info dialog if ros was not sourced
+
 ## 4.6.8 - 18.09.2025
 
 Added start in headless mode
