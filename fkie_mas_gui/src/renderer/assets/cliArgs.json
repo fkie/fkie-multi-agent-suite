@@ -39,14 +39,14 @@
     "fromEnv": "ROS_VERSION",
     "type": "string",
     "switch": false,
-    "hint": "Set ROS version {1, 2}."
+    "hint": "Set ROS version {1, 2}. Sourced from ROS_VERSION by default."
   },
   "ros-domain-id": {
     "default": -1,
     "fromEnv": "ROS_DOMAIN_ID",
     "type": "int",
     "switch": false,
-    "hint": "Set ROS domain id."
+    "hint": "Set ROS domain id. Sourced from ROS_DOMAIN_ID by default."
   },
   "host": {
     "default": "",
@@ -60,7 +60,7 @@
     "fromEnv": "RMW_IMPLEMENTATION",
     "type": "string",
     "switch": false,
-    "hint": "Override RMW_IMPLEMENTATION"
+    "hint": "Override RMW_IMPLEMENTATION. Sourced from RMW_IMPLEMENTATION by default."
   },
   "join": {
     "default": false,
