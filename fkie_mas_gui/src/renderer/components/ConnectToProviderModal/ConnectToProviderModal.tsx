@@ -143,25 +143,30 @@ function mergeDeepConfig(
 }
 
 interface ConnectToProviderModalProps {
-  defaultHost?: string;
-  defaultRosDomainId?: number;
   startOnOpen?: boolean;
   onCloseDialog: () => void;
 }
 
 const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModalProps>(
   function ConnectToProviderModal(props, ref) {
-    const { defaultHost = "", defaultRosDomainId = -1, startOnOpen = false, onCloseDialog = (): void => {} } = props;
-
     const rosCtx = useContext(RosContext);
     const settingsCtx = useContext(SettingsContext);
     const logCtx = useContext(LoggingContext);
+    const hostArg: string | undefined = settingsCtx.getArgument("host") as string | undefined;
+    const defaultHost: string[] = hostArg ? hostArg?.split(",") : ["localhost"];
+    const { startOnOpen = false, onCloseDialog = (): void => {} } = props;
 
     const [open, setOpen] = useState(true);
     const [openTerminalTooltip, setOpenTerminalTooltip] = useState(false);
 
     const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
-    const [hostValues, setHostValues] = useState<THostIp[]>([{ host: "localhost" }]);
+    const [hostValues, setHostValues] = useState<THostIp[]>(
+      defaultHost.map((h) => {
+        return {
+          host: h,
+        };
+      })
+    );
     const [hostInputValue, setHostInputValue] = useState<string>("");
     const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
@@ -247,7 +252,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         hostListLocal.push({ ip: "127.0.0.1", host: "localhost" });
       }
       setHostList(hostListLocal);
-      setHostValues([{ host: "localhost" }]);
     }, [rosCtx.systemInfo]);
 
     function updateTopics(): void {
@@ -280,11 +284,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
 
     useEffect(() => {
       if (startOnOpen) {
-        if (defaultHost) setHostValues([{ host: defaultHost }]);
-        if (defaultRosDomainId >= 0) {
-          startParameter.networkId = defaultRosDomainId;
-          updateStartParameter();
-        }
         handleStartProvider();
       } else {
         updateTopics();

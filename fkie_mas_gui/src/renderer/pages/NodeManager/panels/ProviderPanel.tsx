@@ -215,15 +215,11 @@ export default function ProviderPanel(): JSX.Element {
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
         {openConnect && (
           <ConnectToProviderModal
-            defaultHost={undefined}
-            defaultRosDomainId={
-              settingsCtx.getArgument("start")
-                ? settingsCtx.getArgument("ros-domain-id")
-                  ? (settingsCtx.getArgument("ros-domain-id") as number)
-                  : Number.parseInt(rosCtx.rosInfo?.domainId || "0")
-                : undefined
+            startOnOpen={
+              rosCtx.providers.length === 0 && window.commandExecutor
+                ? (settingsCtx.getArgument("start") as boolean)
+                : false
             }
-            startOnOpen={window.commandExecutor ? (settingsCtx.getArgument("start") as boolean) : false}
             onCloseDialog={() => {
               setOpenConnect(false);
             }}

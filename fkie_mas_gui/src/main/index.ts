@@ -11,6 +11,7 @@ import appIcon from "@public/mas.png?asset";
 import { BrowserWindow, app, shell } from "electron";
 import log from "electron-log";
 import express from "express";
+import os from "node:os";
 import path, { join } from "node:path";
 import * as sourceMap from "source-map-support";
 import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
@@ -26,7 +27,6 @@ let shutdownManager: ShutdownManager | null = null;
 const commandLine: CommandLine = new CommandLine();
 const commandExecutor = new CommandExecutor(commandLine);
 commandExecutor.registerHandlers();
-
 
 const installUpdates = commandLine.getArg("update-debs") as boolean;
 const installPrerelease = commandLine.getArg("update-debs-prerelease") as boolean;
@@ -73,7 +73,7 @@ const startServer = async (): Promise<void> => {
   const serverApp = express();
 
   log.info("");
-  log.info(`Listening on port: ${headlessServerPort}`);
+  log.info(`Listening on: http://${os.hostname() ? os.hostname() : "localhost"}:${headlessServerPort}`);
   log.info("");
 
   serverApp.listen(headlessServerPort);
@@ -95,6 +95,7 @@ const startServer = async (): Promise<void> => {
   "update-debs-prerelease": { "default": "", "fromEnv": "", "hint": "" },
   "ros-version": { "default": "${commandLine.getArg("ros-version") || ""}" },
   "ros-domain-id": { "default": ${commandLine.getArg("ros-domain-id")} },
+  "host": { "default": ${commandLine.getArg("host")} },
   "rmw-implementation": { "default": "${commandLine.getArg("rmw-implementation") || ""}" },
   "join": { "default": ${commandLine.getArg("join")} },
   "start": { "default": ${commandLine.getArg("start")} }

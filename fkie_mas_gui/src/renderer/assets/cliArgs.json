@@ -3,69 +3,76 @@
     "default": false,
     "fromEnv": "",
     "switch": true,
-    "toInt": false,
+    "type": "boolean",
     "hint": ""
   },
   "headless": {
     "default": false,
     "fromEnv": "",
     "switch": true,
-    "toInt": false,
+    "type": "boolean",
     "hint": "Starts a web server instead of the GUI."
   },
   "headless-server-port": {
     "default": 6275,
     "fromEnv": "",
-    "toInt": true,
+    "type": "int",
     "switch": false,
     "hint": "Port for the web server, if started in headless mode."
   },
   "update-debs": {
     "default": false,
     "fromEnv": "",
-    "toInt": false,
+    "type": "boolean",
     "switch": true,
     "hint": "Update Debian packages."
   },
   "update-debs-prerelease": {
     "default": false,
     "fromEnv": "",
-    "toInt": false,
+    "type": "boolean",
     "switch": true,
     "hint": "Update Debian packages from the pre-release branch"
   },
   "ros-version": {
-    "default": "2",
+    "default": "",
     "fromEnv": "ROS_VERSION",
-    "toInt": false,
+    "type": "string",
     "switch": false,
-    "hint": "Set ROS version. (for web server)"
+    "hint": "Set ROS version {1, 2}."
   },
   "ros-domain-id": {
     "default": -1,
     "fromEnv": "ROS_DOMAIN_ID",
-    "toInt": true,
+    "type": "int",
     "switch": false,
-    "hint": "Set ROS domain id. (for web server)"
+    "hint": "Set ROS domain id."
+  },
+  "host": {
+    "default": "",
+    "fromEnv": "",
+    "type": "string",
+    "switch": false,
+    "hint": "If --start is active, the hosts (separated by commas) can be specified here."
   },
   "rmw-implementation": {
     "default": "",
     "fromEnv": "RMW_IMPLEMENTATION",
-    "toInt": false,
+    "type": "string",
     "switch": false,
     "hint": "Override RMW_IMPLEMENTATION"
   },
   "join": {
     "default": false,
     "fromEnv": "",
-    "toInt": false,
+    "type": "boolean",
     "switch": true,
     "hint": "Joins on start to current ROS domain id"
   },
   "start": {
     "default": false,
     "fromEnv": "",
-    "toInt": false,
+    "type": "boolean",
     "switch": true,
     "hint": "If 'join' is set, start the ROS-MAS nodes."
   }
