@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.6.10 - 22.09.2025
+
+Fixed update debian packages with external terminal
+
 ## 4.6.9 - 22.09.2025
 
 Added host command line option
