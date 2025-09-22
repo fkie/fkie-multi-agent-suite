@@ -35,6 +35,13 @@ wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-mul
 mas-gui
 ```
 
+### Run as web server
+
+```bash
+mas-gui --headless
+```
+Then open in browser <http://localhost:6275>
+
 ## Alternative Install
 
 Using AppImage and source build
