@@ -427,11 +427,11 @@ def main(argv=sys.argv) -> int:
 
         elif args.show_ros_log:
             settings = Settings()
-            logfile = screen.get_ros_logfile(node=args.show_ros_log)
+            node_name = args.show_ros_log.replace('{HOST}', ros_host_suffix())
+            logfile = screen.get_logfile(node=node_name)
             if not os.path.isfile(logfile):
-                raise Exception('ros logfile not found for: %s' %
-                                args.show_ros_log)
-            cmd = ' '.join([settings.param('log_viewer'), str(logfile)])
+                raise Exception(f'ros logfile not found for: {node_name}')
+            cmd = ' '.join([settings.param('log_viewer', "/usr/bin/less -fLQR +G +F"), str(logfile)])
             Log.info(cmd)
             p = subprocess.Popen(shlex.split(cmd))
             p.wait()
@@ -447,7 +447,7 @@ def main(argv=sys.argv) -> int:
         elif args.delete_logs:
             logfile = screen.get_logfile(node=args.delete_logs)
             pidfile = screen.get_pid_file(node=args.delete_logs)
-            roslog = screen.get_ros_logfile(node=args.delete_logs)
+            roslog = screen.get_logfile(node=args.delete_logs)
             if os.path.isfile(logfile):
                 os.remove(logfile)
             if os.path.isfile(pidfile):
