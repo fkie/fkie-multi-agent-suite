@@ -411,7 +411,6 @@ export default function PackageExplorerPanel(): JSX.Element {
         }
         // Add the currently launched file to the front of the array.
         hostHistory.unshift(launchFile);
-        console.log(`unshift ${JSON.stringify(launchFile)}: ${JSON.stringify(hostHistory)}`);
         // Cap host history length
         hostHistory.slice(0, settingsCtx.get("launchHistoryLength") as number);
         // Ensure that no two items with the same ID are inserted.

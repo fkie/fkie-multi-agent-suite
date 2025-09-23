@@ -98,23 +98,6 @@ interface FileEditorPanelProps {
   launchArgs: TLaunchArg[];
 }
 
-export class IncludesProvider implements languages.LinkProvider {
-  public modelLinks: { [id: string]: languages.ILink[] } = {};
-
-  public provideLinks: (
-    model: editor.ITextModel,
-    token: CancellationToken
-  ) => languages.ProviderResult<languages.ILinksList> = (model) => {
-    return { links: this.modelLinks[model.uri.path] };
-  };
-  // public resolveLink: (link: languages.ILink, token: CancellationToken) => languages.ProviderResult<languages.ILink> = (
-  //   link,
-  //   token
-  // ) => {
-  //   return link;
-  // };
-}
-
 export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Element {
   const { tabId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
   const monaco = Monaco.useMonaco();
@@ -157,8 +140,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [ownUriPaths, setOwnUriPaths] = useState<string[]>([]);
   const [ownUriToPackageDict] = useState({});
   const [monacoDisposables, setMonacoDisposables] = useState<IDisposable[]>([]);
+  const [monacoLinkDisposables, setMonacoLinkDisposables] = useState<IDisposable[]>([]);
   const [monacoViewStates] = useState(new Map());
-  const [modelLinks] = useState({});
+  const [modelLinks, setModelLinks] = useState({});
 
   const [enableGlobalSearch, setEnableGlobalSearch] = useState(false);
   const [enableExplorer, setEnableExplorer] = useState(false);
@@ -177,8 +161,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [historyModels, setHistoryModels] = useState<THistoryModel[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [escapePressCount, setEscapePressCount] = useState<number>(0);
-
-  // const [includesProvider] = useState<IncludesProvider>(new IncludesProvider());
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
@@ -307,6 +289,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
     }
     modelLinks[model.uri.path] = newLinks;
+    setModelLinks({ ...modelLinks });
   };
 
   function updateOpenFiles(result: TModelResult): void {
@@ -384,7 +367,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           editorRef.current.restoreViewState(viewState);
         }
       }
-      updateIncludeDecorations(result.model, includedFiles);
+      await updateIncludeDecorations(result.model, includedFiles);
       setActiveModel({
         path: result.model.uri.path,
         modified: isModified(result.model),
@@ -606,7 +589,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             window.editorManager?.changed(id, activeModel.path, true);
           }
         }
-        updateIncludeDecorations(activeModel?.model, includedFiles);
+        await updateIncludeDecorations(activeModel?.model, includedFiles);
       }
     },
     [activeModel, setActiveModel, monacoCtx.getModel, updateModifiedFiles]
@@ -682,6 +665,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       // clear monaco disposables:
       // disposable objects includes autocomplete, code definition and editor actions
       for (const d of monacoDisposables) {
+        d?.dispose();
+      }
+      for (const d of monacoLinkDisposables) {
         d?.dispose();
       }
       setMonacoDisposables([]);
@@ -890,16 +876,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       })
     );
 
-    for (const e of ["ros2xml", "ros1xml", "launch", "python"]) {
-      addMonacoDisposable(
-        monaco.languages.registerLinkProvider(e, {
-          provideLinks: (model) => {
-            const links = modelLinks[model.uri.path];
-            return { links: links ? links : [] };
-          },
-        } as languages.LinkProvider)
-      );
-    }
     const isRos2 = provider?.rosVersion === "2";
     // personalize launch file objects
     for (const e of ["ros2xml", "ros1xml", "launch", "python"]) {
@@ -990,6 +966,28 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
     }
   }
+
+  useEffect(() => {
+    if (!monaco) return;
+    const newLinkDisposables: IDisposable[] = [];
+
+    for (const e of ["ros2xml", "ros1xml", "launch", "python"]) {
+      newLinkDisposables.push(
+        monaco.languages.registerLinkProvider(e, {
+          provideLinks: (model) => {
+            const links = modelLinks[model.uri.path];
+            return { links: links ? links : [] };
+          },
+        } as languages.LinkProvider)
+      );
+    }
+    setMonacoLinkDisposables((prev) => {
+      for (const d of prev) {
+        d?.dispose();
+      }
+      return newLinkDisposables;
+    });
+  }, [monaco, modelLinks]);
 
   function addContextMenu(): void {
     if (!monaco) return;
