@@ -57,10 +57,10 @@
   },
   "rmw-implementation": {
     "default": "",
-    "fromEnv": "RMW_IMPLEMENTATION",
+    "fromEnv": "",
     "type": "string",
     "switch": false,
-    "hint": "Override RMW_IMPLEMENTATION. Sourced from RMW_IMPLEMENTATION by default."
+    "hint": "Override RMW_IMPLEMENTATION."
   },
   "join": {
     "default": false,
