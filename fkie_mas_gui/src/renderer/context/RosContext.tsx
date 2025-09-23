@@ -619,6 +619,22 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         );
         provider.isLocalHost = isLocal;
         provider.startConfiguration = config;
+        if (isLocal) {
+          // update hostname to prevent add a local provider twice
+          if (systemInfo?.osInfo?.hostname) {
+            provider.hostnames.push(systemInfo?.osInfo?.hostname);
+          }
+          if (systemInfo?.networkInterfaces) {
+            for (const item of systemInfo?.networkInterfaces || []) {
+              if (item.ip4) {
+                provider.hostnames.push(item.ip4);
+              }
+              if (item.ip6) {
+                provider.hostnames.push(item.ip6);
+              }
+            }
+          }
+        }
         // add provider using add queue
         setProvidersAddQueue((oldValues) => [...oldValues, provider]);
         // return false;

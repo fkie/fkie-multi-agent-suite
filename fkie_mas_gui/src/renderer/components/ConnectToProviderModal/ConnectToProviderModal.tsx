@@ -208,7 +208,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
       const networkId =
         rosDomainId >= 0 ? rosDomainId : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
-      const rmwImplementation = forceRmwImplementation && settingsCtx.getArgument("rmw-implementation")
+      const rmwImplementation = forceRmwImplementation || settingsCtx.getArgument("rmw-implementation")
         ? (settingsCtx.getArgument("rmw-implementation") as string)
         : undefined;
       const rosVersion = settingsCtx.getArgument("ros-version")
