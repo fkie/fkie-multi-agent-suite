@@ -111,9 +111,7 @@ export default function ProviderPanel(): JSX.Element {
       if (!window.commandExecutor) {
         setOpenConnect(true);
       } else if (rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version")) {
-        if (rosDomainId >= 0) {
-          setOpenConnect(true);
-        }
+        setOpenConnect(true);
       } else {
         setNoSourcedROS(true);
       }
