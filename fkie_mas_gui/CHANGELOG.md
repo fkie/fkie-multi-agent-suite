@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.6.13 - 23.09.2025
+
+Fixed open connect dialog if daemon is not running and ros_domain_id is not set
+
 ## 4.6.12 - 23.09.2025
 
 Fixed load included link decorations
