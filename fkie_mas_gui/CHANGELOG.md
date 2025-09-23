@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.11 - 23.09.2025
+
+Added button to show daemon log for ros2 if start was failed
+Fixed show_ros_log parameter (for ROS2 daemon)
+Fix to avoid showing multiple local provider
+Ensure that no two items with the same ID are inserted into the launch history
+Do not use the RMW_IMPLEMENTATION by default from environment
+
 ## 4.6.10 - 22.09.2025
 
 Fixed update debian packages with external terminal

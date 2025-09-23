@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.10 (23.09.2025)
+------------------
+* Fixed show_ros_log parameter
+
 4.6.9 (16.09.2025)
 ------------------
 * Fixed update lifecycle state of composable nodes
