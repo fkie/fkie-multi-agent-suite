@@ -183,24 +183,6 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault) as ProviderLaunchConfiguration
     );
 
-    useEffect(() => {
-      const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
-      const networkId =
-        rosDomainId >= 0 ? rosDomainId : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
-      const rmwImplementation = settingsCtx.getArgument("rmw-implementation")
-        ? (settingsCtx.getArgument("rmw-implementation") as string)
-        : undefined;
-      const rosVersion = settingsCtx.getArgument("ros-version")
-        ? (settingsCtx.getArgument("ros-version") as string)
-        : (settingsCtx.get("rosVersion") as string);
-      startParameter.networkId = networkId;
-      startParameter.rosVersion = rosVersion;
-      startParameter.rmwImplementation = rmwImplementation;
-      setOptionNetworkId(networkId);
-
-      updateStartParameter();
-    }, [settingsCtx.updatedArgs]);
-
     const [startConfigurations, setStartConfigurations] = useLocalStorage<TSavedStartConfiguration[]>(
       "ConnectToProviderModal:startConfigurations",
       []
@@ -221,6 +203,24 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
 
     const [startProviderDescription, setStartProviderDescription] = useState("");
     const [startProviderIsSubmitting, setStartProviderIsSubmitting] = useState(false);
+
+    useEffect(() => {
+      const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
+      const networkId =
+        rosDomainId >= 0 ? rosDomainId : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
+      const rmwImplementation = forceRmwImplementation && settingsCtx.getArgument("rmw-implementation")
+        ? (settingsCtx.getArgument("rmw-implementation") as string)
+        : undefined;
+      const rosVersion = settingsCtx.getArgument("ros-version")
+        ? (settingsCtx.getArgument("ros-version") as string)
+        : (settingsCtx.get("rosVersion") as string);
+      startParameter.networkId = networkId;
+      startParameter.rosVersion = rosVersion;
+      startParameter.rmwImplementation = rmwImplementation;
+      setOptionNetworkId(networkId);
+
+      updateStartParameter();
+    }, [settingsCtx.updatedArgs]);
 
     function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
       if (reason && reason === "backdropClick") return;
@@ -415,7 +415,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
         startParameter.networkId === -1
           ? Number.parseInt(`${rosCtx.rosInfo?.domainId || "0"}`)
           : startParameter.networkId;
-      launchCfg.rmwImplementation = startParameter.rmwImplementation;
+      launchCfg.rmwImplementation = forceRmwImplementation ? startParameter.rmwImplementation : "";
       launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
       if (startParameter.discovery.robotHosts && startParameter.discovery.robotHosts.length > 0)
         launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
