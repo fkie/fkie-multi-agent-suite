@@ -22,7 +22,7 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -58,8 +58,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
   const logCtx = useContext(LoggingContext);
 
   const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help"];
-  const [openTimeButton, setOpenTimeButton] = useState(false);
-  const anchorRef = useRef(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showHelpTime, setShowHelpTime] = useState<boolean>(false);
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState<boolean>(false);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -116,14 +115,6 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
     } else if (index === 3) {
       setShowHelpTime(true);
     }
-    setOpenTimeButton(false);
-  }
-
-  function handleCloseTimeButton(event: MouseEvent | TouchEvent): void {
-    if (anchorRef.current && anchorRef.current === event.target) {
-      return;
-    }
-    setOpenTimeButton(false);
   }
 
   /**
@@ -162,7 +153,13 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
     if (!provider.discovery) {
       const rmwImplementation = provider.systemEnv.RMW_IMPLEMENTATION as string;
       if (rmwImplementation === "rmw_zenoh_cpp") {
-        tags.push({ id: "no-discovery-with-zenoh", data: "discovery issues", tooltip: "For zenoh, not all nodes can be assigned to hosts  and not all updates can be detected automatically.", color: "orange" });
+        tags.push({
+          id: "no-discovery-with-zenoh",
+          data: "discovery issues",
+          tooltip:
+            "For zenoh, not all nodes can be assigned to hosts  and not all updates can be detected automatically.",
+          color: "orange",
+        });
       } else {
         tags.push({ id: "no-discovery", data: "No Discovery", tooltip: "", color: "orange" });
       }
@@ -253,21 +250,24 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
                 <IconButton
                   edge="start"
                   aria-label={`Time not in sync for approx. ${formatTime(provider.timeDiff)}`}
-                  ref={anchorRef}
-                  onClick={() => {
-                    setOpenTimeButton(true);
+                  onClick={(event) => {
+                    setAnchorEl(anchorEl ? null : event.currentTarget);
+                    event.stopPropagation();
+                  }}
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
                   }}
                 >
                   <WatchLaterIcon sx={{ color: orange[500] }} />
                 </IconButton>
                 <Popper
                   sx={{
-                    zIndex: 1,
+                    zIndex: 999,
                   }}
-                  open={openTimeButton}
-                  anchorEl={anchorRef.current}
+                  open={Boolean(anchorEl)}
+                  anchorEl={anchorEl}
                   transition
-                  disablePortal
+                  disablePortal={false}
                 >
                   {({ TransitionProps, placement }) => (
                     <Grow
@@ -277,14 +277,17 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
                       }}
                     >
                       <Paper>
-                        <ClickAwayListener onClickAway={handleCloseTimeButton}>
+                        <ClickAwayListener onClickAway={() => setAnchorEl(null)}>
                           <MenuList id="set-time-button-menu" autoFocusItem>
                             {optionsTimeButton.map((option, index) => (
                               <MenuItem
                                 key={option}
                                 // disabled={index === 2}
                                 // selected={index === X}
-                                onClick={(event) => handleMenuTimeItemClick(event, index)}
+                                onClick={(event) => {
+                                  setAnchorEl(null);
+                                  handleMenuTimeItemClick(event, index);
+                                }}
                               >
                                 {option}
                               </MenuItem>

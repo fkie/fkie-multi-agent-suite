@@ -358,7 +358,7 @@ export class Terminal extends React.Component<Props, XtermState> {
       if (await this.provider.updateTimeDiff()) {
         this.socket?.send(
           textEncoder.encode(
-            `${CommandClient.INPUT}sudo /bin/date -s ${new Date(this.provider.timestamp).toISOString()}\n\r`
+            `${CommandClient.INPUT}sudo /bin/date -s ${new Date(this.provider.timestamp).toISOString()}\n`
           )
         );
       }
