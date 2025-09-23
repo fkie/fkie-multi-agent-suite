@@ -411,9 +411,14 @@ export default function PackageExplorerPanel(): JSX.Element {
         }
         // Add the currently launched file to the front of the array.
         hostHistory.unshift(launchFile);
-        // Cap host history length and return the merged histories.
-        // TODO: Make the history length a parameter.
-        return [...hostHistory.slice(0, settingsCtx.get("launchHistoryLength") as number), ...otherHistory];
+        console.log(`unshift ${JSON.stringify(launchFile)}: ${JSON.stringify(hostHistory)}`);
+        // Cap host history length
+        hostHistory.slice(0, settingsCtx.get("launchHistoryLength") as number);
+        // Ensure that no two items with the same ID are inserted.
+        // return the merged histories.
+        return [...hostHistory, ...otherHistory].filter(
+          (value, index, self) => index === self.findIndex((t) => t.id === value.id)
+        );
       }
       return prevHistory;
     });
