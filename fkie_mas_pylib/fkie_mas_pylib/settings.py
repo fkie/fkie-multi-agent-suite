@@ -93,7 +93,7 @@ class Settings:
             else:
                 result = value
         except Exception as exc:
-            Log.debug(f"Cant't get parameter '{param_name}': {exc}")
+            Log.debug(f"Cant't get parameter '{param_name}': {exc}; return default: {result}")
         return result
 
     def set_param(self, param_name, value, tag=':value'):

@@ -3,6 +3,7 @@ import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import JoinFullIcon from "@mui/icons-material/JoinFull";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
 import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -74,6 +75,14 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     },
     [rosCtx]
   );
+
+  async function showDaemonLog(provider: Provider): Promise<void> {
+    await window.commandExecutor?.execTerminal(
+      provider.isLocalHost ? null : { host: provider.host() },
+      "'show daemon log'",
+      "'ros2 run fkie_mas_daemon mas-remote-node.py --show_ros_log /mas/_daemon_{HOST}'"
+    );
+  }
 
   async function handleJoinProvider(provider: Provider): Promise<void> {
     await rosCtx.connectToProvider(provider);
@@ -263,6 +272,19 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
               </span>
             </Tooltip>
 
+            {window.commandExecutor && rosCtx.rosInfo?.version === "2" && (
+              <Tooltip title="Show daemon log" placement="bottom" disableInteractive>
+                <IconButton
+                  color="default"
+                  onClick={() => {
+                    showDaemonLog(provider);
+                  }}
+                >
+                  <TextSnippetOutlinedIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            )}
+
             <Tooltip title="Join to running daemon" placement="bottom" disableInteractive>
               <IconButton
                 color="default"
@@ -280,6 +302,18 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
         return (
           <Stack direction="row" alignItems="center">
             <div style={{ color: "grey" }}>{provider.connectionState}</div>
+            {window.commandExecutor && rosCtx.rosInfo?.version === "2" && (
+              <Tooltip title="Show daemon log" placement="bottom" disableInteractive>
+                <IconButton
+                  color="default"
+                  onClick={() => {
+                    showDaemonLog(provider);
+                  }}
+                >
+                  <TextSnippetOutlinedIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            )}
             {window.commandExecutor && (
               <Tooltip title="Start daemon" placement="bottom" disableInteractive>
                 <IconButton
