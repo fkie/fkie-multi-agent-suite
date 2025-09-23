@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.6.12 - 23.09.2025
+
+Fixed load included link decorations
+Fixed open date context menu
+
 ## 4.6.11 - 23.09.2025
 
 Added button to show daemon log for ros2 if start was failed
