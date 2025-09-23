@@ -18,7 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { CancellationToken, IDisposable, Uri, editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
+import { IDisposable, Uri, editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 import { ForwardedRef, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
