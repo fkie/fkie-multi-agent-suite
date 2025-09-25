@@ -112,11 +112,18 @@ export default function NodeManager(): JSX.Element {
   const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [tabFullName, setTabFullName] = useState<boolean>(settingsCtx.get("tabFullName") as boolean);
+  const [enablePopout, setEnablePopout] = useState<boolean>(
+    !window.commandExecutor && window.location.href.indexOf(":6275") === -1
+  );
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setTabFullName(settingsCtx.get("tabFullName") as boolean);
   }, [settingsCtx.changed]);
+
+  useEffect(() => {
+    setEnablePopout(!window.commandExecutor && window.location.href.indexOf(":6275") === -1);
+  }, [window.commandExecutor, window.location.href]);
 
   function hasTab(layout, tabId): boolean {
     if (!layout.children) return false;
@@ -139,8 +146,8 @@ export default function NodeManager(): JSX.Element {
     // biome-ignore lint/complexity/noForEach: <explanation>
     layout.children.forEach((item) => {
       if (item.type === "tab") {
-        if (item.enablePopout !== !window.commandExecutor) {
-          item.enablePopout = !window.commandExecutor;
+        if (item.enablePopout !== enablePopout) {
+          item.enablePopout = enablePopout;
           result = true;
         }
       }
@@ -265,7 +272,7 @@ export default function NodeManager(): JSX.Element {
           component: data.id,
           panelGroup: data.panelGroup,
           enableClose: data.closable,
-          enablePopout: !window.commandExecutor,
+          enablePopout: enablePopout,
           config: data.config,
         };
         layoutComponents[data.id] = data.component;
@@ -778,16 +785,19 @@ export default function NodeManager(): JSX.Element {
   }
 
   /** removes all tab from layout not listed in LAYOUT_TAB_LIST */
-  const cleanAndSaveLayout = useDebounceCallback((/* model */) => {
-    const modelJson = model.toJson();
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    modelJson.borders?.forEach((item) => {
-      item.selected = -1;
-      removeGenericTabs(item);
-    });
-    modelJson.layout = removeGenericTabs(modelJson.layout);
-    setLayoutJson(modelJson);
-  }, 500);
+  const cleanAndSaveLayout = useDebounceCallback(
+    (/* model */) => {
+      const modelJson = model.toJson();
+      // biome-ignore lint/complexity/noForEach: <explanation>
+      modelJson.borders?.forEach((item) => {
+        item.selected = -1;
+        removeGenericTabs(item);
+      });
+      modelJson.layout = removeGenericTabs(modelJson.layout);
+      setLayoutJson(modelJson);
+    },
+    500
+  );
 
   const isInstallUpdateRequested = useCallback(() => {
     return auCtx.requestedInstallUpdate;
