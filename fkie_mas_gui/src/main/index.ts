@@ -90,14 +90,14 @@ const startServer = async (): Promise<void> => {
   serverApp.listen(headlessServerPort);
 
   serverApp.get("/", async (_req, res) => {
-    let filePath = `${dirPrefix}/index.html`;
-    filePath = fs.realpathSync(path.resolve(filePath));
-    if (!filePath.startsWith(dirPrefix)) {
+    const filePath = `${dirPrefix}/index.html`;
+    const realPath = fs.realpathSync(path.resolve(filePath));
+    if (!realPath.startsWith(dirPrefix)) {
       res.statusCode = 403;
       res.end();
       return;
     }
-    res.sendFile(filePath);
+    res.sendFile(realPath);
   });
 
   serverApp.use((req, res, next) => {
@@ -127,21 +127,20 @@ export {
     next();
   });
   serverApp.use(async (req, res) => {
-    let filePath = `${dirPrefix}/${req.path}`;
+    const filePath = `${dirPrefix}/${req.path}`;
     try {
-      filePath = fs.realpathSync(path.resolve(filePath));
-      fs.existsSync(filePath);
+      const realPath = fs.realpathSync(path.resolve(filePath));
+      fs.existsSync(realPath);
+      if (!realPath.startsWith(dirPrefix)) {
+        res.statusCode = 403;
+        res.end();
+        return;
+      }
+      res.sendFile(realPath);
     } catch {
       res.statusCode = 404;
       res.end();
-      return;
     }
-    if (!filePath.startsWith(dirPrefix)) {
-      res.statusCode = 403;
-      res.end();
-      return;
-    }
-    res.sendFile(filePath);
   });
 };
 
