@@ -625,7 +625,6 @@ export default function PackageExplorerPanel(): JSX.Element {
         {createPackageSelector}
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
       </Stack>
-
       <Stack direction="row" height="100%" overflow="auto">
         {buttonLocation === BUTTON_LOCATIONS.LEFT && (
           <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
@@ -659,6 +658,12 @@ export default function PackageExplorerPanel(): JSX.Element {
                 }
               }}
             >
+              {(!rosCtx.providers || rosCtx.providers.length === 0) && (
+                <Alert severity="info" style={{ minWidth: 0, marginTop: 10}}>
+                  <AlertTitle>No providers available</AlertTitle>
+                  Please connect to a ROS provider
+                </Alert>
+              )}
               {Object.keys(packageItemsTree).length > 0 && (
                 <TreeDirectory
                   selectedPackage={selectedPackage?.rosPackage}
@@ -679,7 +684,6 @@ export default function PackageExplorerPanel(): JSX.Element {
           </Box>
         )}
       </Stack>
-
       {selectedLaunchFile && (
         <LaunchFileModal
           selectedProvider={undefined}
@@ -687,12 +691,6 @@ export default function PackageExplorerPanel(): JSX.Element {
           setSelectedLaunchFile={setSelectedLaunchFile}
           onLaunchCallback={() => {}}
         />
-      )}
-      {(!rosCtx.providers || rosCtx.providers.length === 0) && (
-        <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
-          <AlertTitle>No providers available</AlertTitle>
-          Please connect to a ROS provider
-        </Alert>
       )}
     </Stack>
   );
