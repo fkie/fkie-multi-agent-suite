@@ -11,6 +11,7 @@ import appIcon from "@public/mas.png?asset";
 import { BrowserWindow, app, shell } from "electron";
 import log from "electron-log";
 import express from "express";
+import fs from "node:fs";
 import os from "node:os";
 import path, { join } from "node:path";
 import * as sourceMap from "source-map-support";
@@ -79,7 +80,10 @@ const startServer = async (): Promise<void> => {
   serverApp.listen(headlessServerPort);
 
   serverApp.get("/", async (_req, res) => {
-    res.sendFile(`${dirPrefix}/index.html`);
+    const path = `${dirPrefix}/index.html`;
+    if (fs.existsSync(path)) {
+      res.sendFile(path);
+    }
   });
 
   serverApp.use((req, res, next) => {
@@ -109,7 +113,10 @@ export {
     next();
   });
   serverApp.use(async (req, res) => {
-    res.sendFile(`${dirPrefix}/${req.path}`);
+    const path = `${dirPrefix}/${req.path}`;
+    if (fs.existsSync(path)) {
+      res.sendFile(path);
+    }
   });
 };
 
