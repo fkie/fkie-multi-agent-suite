@@ -130,7 +130,6 @@ export {
     const filePath = `${dirPrefix}/${req.path}`;
     try {
       const realPath = fs.realpathSync(path.resolve(filePath));
-      fs.existsSync(realPath);
       if (!realPath.startsWith(dirPrefix)) {
         res.statusCode = 403;
         res.end();
