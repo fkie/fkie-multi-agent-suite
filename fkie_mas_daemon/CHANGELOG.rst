@@ -2,8 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.11 (30.09.2025)
+-------------------
+* fixed crash of the daemon on exception while load_launch
+
 4.6.10 (23.09.2025)
-------------------
+-------------------
 * Fixed show_ros_log parameter
 
 4.6.9 (16.09.2025)

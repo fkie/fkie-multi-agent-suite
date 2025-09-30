@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <package format="3">
   <name>fkie_mas_daemon</name>
-  <version>4.6.10</version>
+  <version>4.6.11</version>
   <description>A daemon node to manage ROS launch files and launch nodes from loaded files.</description>
 
   <license>MIT</license>

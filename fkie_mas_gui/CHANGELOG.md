@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.6.15 - 30.09.2025
+
+Fixed crash of the daemon on exception while load_launch
+Fixed updating the package list when a package is selected
+
 ## 4.6.14 - 25.09.2025
 
 Disabled pop-outs for headless mode
