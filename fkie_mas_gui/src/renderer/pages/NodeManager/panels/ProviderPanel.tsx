@@ -53,16 +53,8 @@ export default function ProviderPanel(): JSX.Element {
           setNoRosVersion(true);
           return;
         }
-        const newProvider = new Provider(
-          settingsCtx,
-          "localhost",
-          rosCtx.rosInfo?.version || (settingsCtx.getArgument("ros-version") as string),
-          undefined,
-          rosDomainId,
-          undefined,
-          logCtx
-        );
-        await rosCtx.connectToProvider(newProvider);
+
+        setOpenConnect(true);
         return;
       }
       // try to get local domain id from running mas processes
@@ -218,6 +210,7 @@ export default function ProviderPanel(): JSX.Element {
                 ? (settingsCtx.getArgument("start") as boolean)
                 : false
             }
+            joinOnOpen={rosCtx.providers.length === 0 && (settingsCtx.getArgument("join") as boolean)}
             onCloseDialog={() => {
               setOpenConnect(false);
             }}

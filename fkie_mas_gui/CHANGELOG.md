@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.6.14 - 25.09.2025
+
+Disabled pop-outs for headless mode
+Changed location of the info box in the packages tab
+Fixed join operator for headless mode
+Fixed "Missing rate limiting" reported by CodeQL
+
 ## 4.6.13 - 23.09.2025
 
 Fixed open connect dialog if daemon is not running and ros_domain_id is not set

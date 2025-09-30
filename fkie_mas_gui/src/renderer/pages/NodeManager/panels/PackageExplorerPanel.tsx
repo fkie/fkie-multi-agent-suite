@@ -106,6 +106,8 @@ export default function PackageExplorerPanel(): JSX.Element {
   }, [settingsCtx.changed]);
 
   async function updatePackageList(force: boolean = false): Promise<void> {
+    if (!rosCtx.initialized) return;
+    if (!rosCtx.providers) return;
     setLoading(true);
     // if providerId is valid we update only packages of this provider
     let newPackageList: ProviderPackage[] = [];
@@ -650,6 +652,12 @@ export default function PackageExplorerPanel(): JSX.Element {
             }
           }}
         >
+          {(!rosCtx.providers || rosCtx.providers.length === 0) && (
+            <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
+              <AlertTitle>No providers available</AlertTitle>
+              Please connect to a ROS provider
+            </Alert>
+          )}
           {ignoringNonRelevantPackageFiles && (
             <Tag
               key="ignore-non-relevant-packages"
@@ -678,7 +686,6 @@ export default function PackageExplorerPanel(): JSX.Element {
           </Box>
         )}
       </Stack>
-
       {selectedLaunchFile && (
         <LaunchFileModal
           selectedProvider={undefined}
@@ -686,12 +693,6 @@ export default function PackageExplorerPanel(): JSX.Element {
           setSelectedLaunchFile={setSelectedLaunchFile}
           onLaunchCallback={() => {}}
         />
-      )}
-      {(!rosCtx.providers || rosCtx.providers.length === 0) && (
-        <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
-          <AlertTitle>No providers available</AlertTitle>
-          Please connect to a ROS provider
-        </Alert>
       )}
     </Stack>
   );

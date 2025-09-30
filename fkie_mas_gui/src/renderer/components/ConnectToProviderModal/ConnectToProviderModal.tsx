@@ -144,6 +144,7 @@ function mergeDeepConfig(
 
 interface ConnectToProviderModalProps {
   startOnOpen?: boolean;
+  joinOnOpen?: boolean;
   onCloseDialog: () => void;
 }
 
@@ -154,7 +155,7 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     const logCtx = useContext(LoggingContext);
     const hostArg: string | undefined = settingsCtx.getArgument("host") as string | undefined;
     const defaultHost: string[] = hostArg ? hostArg?.split(",") : ["localhost"];
-    const { startOnOpen = false, onCloseDialog = (): void => {} } = props;
+    const { startOnOpen = false, joinOnOpen = false, onCloseDialog = (): void => {} } = props;
 
     const [open, setOpen] = useState(true);
     const [openTerminalTooltip, setOpenTerminalTooltip] = useState(false);
@@ -208,9 +209,10 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
       const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
       const networkId =
         rosDomainId >= 0 ? rosDomainId : Number.parseInt(`${rosCtx.rosInfo?.domainId || optionNetworkId}`);
-      const rmwImplementation = forceRmwImplementation || settingsCtx.getArgument("rmw-implementation")
-        ? (settingsCtx.getArgument("rmw-implementation") as string)
-        : undefined;
+      const rmwImplementation =
+        forceRmwImplementation || settingsCtx.getArgument("rmw-implementation")
+          ? (settingsCtx.getArgument("rmw-implementation") as string)
+          : undefined;
       const rosVersion = settingsCtx.getArgument("ros-version")
         ? (settingsCtx.getArgument("ros-version") as string)
         : (settingsCtx.get("rosVersion") as string);
@@ -285,6 +287,8 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
     useEffect(() => {
       if (startOnOpen) {
         handleStartProvider();
+      } else if (joinOnOpen) {
+        handleJoinProvider();
       } else {
         updateTopics();
       }

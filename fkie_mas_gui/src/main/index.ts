@@ -11,6 +11,8 @@ import appIcon from "@public/mas.png?asset";
 import { BrowserWindow, app, shell } from "electron";
 import log from "electron-log";
 import express from "express";
+import RateLimit from "express-rate-limit";
+import fs from "node:fs";
 import os from "node:os";
 import path, { join } from "node:path";
 import * as sourceMap from "source-map-support";
@@ -76,10 +78,26 @@ const startServer = async (): Promise<void> => {
   log.info(`Listening on: http://${os.hostname() ? os.hostname() : "localhost"}:${headlessServerPort}`);
   log.info("");
 
+  // set up rate limiter: maximum of five requests per minute
+  const limiter = RateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // max 1000 requests per windowMs
+  });
+
+  // apply rate limiter to all requests
+  serverApp.use(limiter);
+
   serverApp.listen(headlessServerPort);
 
   serverApp.get("/", async (_req, res) => {
-    res.sendFile(`${dirPrefix}/index.html`);
+    const filePath = `${dirPrefix}/index.html`;
+    const realPath = fs.realpathSync(path.resolve(filePath));
+    if (!realPath.startsWith(dirPrefix)) {
+      res.statusCode = 403;
+      res.end();
+      return;
+    }
+    res.sendFile(realPath);
   });
 
   serverApp.use((req, res, next) => {
@@ -95,7 +113,7 @@ const startServer = async (): Promise<void> => {
   "update-debs-prerelease": { "default": "", "fromEnv": "", "hint": "" },
   "ros-version": { "default": "${commandLine.getArg("ros-version") || ""}" },
   "ros-domain-id": { "default": ${commandLine.getArg("ros-domain-id")} },
-  "host": { "default": ${commandLine.getArg("host")} },
+  "host": { "default": "${commandLine.getArg("host")}" },
   "rmw-implementation": { "default": "${commandLine.getArg("rmw-implementation") || ""}" },
   "join": { "default": ${commandLine.getArg("join")} },
   "start": { "default": ${commandLine.getArg("start")} }
@@ -109,7 +127,19 @@ export {
     next();
   });
   serverApp.use(async (req, res) => {
-    res.sendFile(`${dirPrefix}/${req.path}`);
+    const filePath = `${dirPrefix}/${req.path}`;
+    try {
+      const realPath = fs.realpathSync(path.resolve(filePath));
+      if (!realPath.startsWith(dirPrefix)) {
+        res.statusCode = 403;
+        res.end();
+        return;
+      }
+      res.sendFile(realPath);
+    } catch {
+      res.statusCode = 404;
+      res.end();
+    }
   });
 };
 

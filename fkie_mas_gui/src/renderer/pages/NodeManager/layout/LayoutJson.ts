@@ -6,6 +6,8 @@ interface IJsonBorderNodeExt extends IJsonBorderNode {
   id: string;
 }
 
+const enablePopout = !window.commandExecutor && window.location.href.indexOf(":6275") === -1;
+
 const DEFAULT_LAYOUT = {
   global: {
     splitterSize: 5,
@@ -34,7 +36,7 @@ const DEFAULT_LAYOUT = {
           name: "Logging",
           component: LAYOUT_TABS.LOGGING,
           enableClose: false,
-          enablePopout: !window.commandExecutor,
+          enablePopout: enablePopout,
         },
       ],
     },
@@ -89,7 +91,7 @@ const DEFAULT_LAYOUT = {
                 name: "Hosts",
                 component: LAYOUT_TABS.HOSTS,
                 enableClose: false,
-                enablePopout: !window.commandExecutor,
+                enablePopout: enablePopout,
               },
             ],
           },
@@ -105,7 +107,7 @@ const DEFAULT_LAYOUT = {
                 name: "Packages",
                 component: LAYOUT_TABS.PACKAGES,
                 enableClose: false,
-                enablePopout: !window.commandExecutor,
+                enablePopout: enablePopout,
               },
               {
                 id: LAYOUT_TABS.NODE_DETAILS,
@@ -113,7 +115,7 @@ const DEFAULT_LAYOUT = {
                 name: "Node Details",
                 component: LAYOUT_TABS.NODE_DETAILS,
                 enableClose: false,
-                enablePopout: !window.commandExecutor,
+                enablePopout: enablePopout,
               },
             ],
           },
@@ -130,7 +132,7 @@ const DEFAULT_LAYOUT = {
             name: "Nodes",
             component: LAYOUT_TABS.NODES,
             enableClose: false,
-            enablePopout: !window.commandExecutor,
+            enablePopout: enablePopout,
           },
         ],
       },
