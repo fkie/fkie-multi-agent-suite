@@ -740,7 +740,7 @@ export default function NodesDetailsPanel(): JSX.Element {
             <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
               {nodeShow.namespace !== "/" && (
                 <Tooltip title="namespace" placement="bottom" disableInteractive>
-                  <Typography variant="subtitle2" align="center">
+                  <Typography variant="subtitle2" align="center" style={{ overflowWrap: "anywhere" }}>
                     {nodeShow?.namespace}
                   </Typography>
                 </Tooltip>
