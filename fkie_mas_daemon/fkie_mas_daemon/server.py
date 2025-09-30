@@ -197,7 +197,8 @@ class Server:
         }
         result = self.launch_servicer.load_launch(LaunchLoadRequest(path=request.path), return_as_json=False)
         if result.status.code != "OK":
-            raise Exception(result.status.msg)
+            Log.warn(f"start launch failed: {result.status.msg}")
+            # raise Exception(result.status.msg)
         # TODO start nodes
         return response
 
@@ -217,7 +218,7 @@ class Server:
         result = self.launch_servicer.load_launch(
             LaunchLoadRequest(path=request.path), return_as_json=False)
         if result.status.code != "OK":
-            raise Exception(result.status.msg)
+            Log.warn(f"load launch failed: {result.status.msg}")
         return response
 
     async def _rosservice_start_node(self, request, response):
@@ -237,5 +238,5 @@ class Server:
         }
         result = self.launch_servicer.start_node(LaunchNode(name=request.node), return_as_json=False)
         if result.status.code != "OK":
-            raise Exception(result.status.msg)
+            Log.warn(f"start node failed: {result.status.msg}")
         return response
