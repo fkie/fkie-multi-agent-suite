@@ -106,8 +106,6 @@ export default function PackageExplorerPanel(): JSX.Element {
   }, [settingsCtx.changed]);
 
   async function updatePackageList(force: boolean = false): Promise<void> {
-    if (!rosCtx.initialized) return;
-    if (!rosCtx.providers) return;
     setLoading(true);
     // if providerId is valid we update only packages of this provider
     let newPackageList: ProviderPackage[] = [];
@@ -131,14 +129,18 @@ export default function PackageExplorerPanel(): JSX.Element {
     setPackageList(newPackageList.sort(comparePackageItems));
     if (!selectedPackage) {
       setPackageListFiltered(newPackageList);
+    } else {
+      handleOnSelectPackage(selectedPackage);
     }
     setLoading(false);
   }
 
   // Update files when selected provider changes
   useEffect(() => {
+    if (!rosCtx.initialized) return;
+    if (!rosCtx.providers) return;
     updatePackageList();
-  }, [rosCtx.initialized]);
+  }, [rosCtx.initialized, rosCtx.providers]);
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
     if (data.newState === ConnectionState.STATES.CONNECTED) {
@@ -150,7 +152,7 @@ export default function PackageExplorerPanel(): JSX.Element {
    * Reset all states considering launch file history.
    */
   const updateStates = useCallback(() => {
-    if (selectedPackage) return;
+    // if (selectedPackage) return;
     const provPackageHistory: TPackageItemsTree = {};
     for (const prov of rosCtx.providers) {
       const provHistory = launchFileHistory.filter(
@@ -540,7 +542,7 @@ export default function PackageExplorerPanel(): JSX.Element {
         </IconButton>
       </Tooltip>
     );
-  }, []);
+  }, [selectedPackage, rosCtx.initialized, rosCtx.providers]);
 
   const createButtons = useMemo(() => {
     return (
@@ -620,61 +622,58 @@ export default function PackageExplorerPanel(): JSX.Element {
       sx={{ backgroundColor: backgroundColor }}
       // paddingLeft="10px"
     >
-      <Stack direction="row" alignItems="center">
+      <Stack direction="row" alignItems="center" height="3.5em">
         {buttonLocation === BUTTON_LOCATIONS.LEFT && createReloadButton}
         {createPackageSelector}
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
       </Stack>
 
-      <Stack direction="row" height="100%" overflow="auto">
+      <Stack direction="row" height="calc(100% - 3.5em)">
         {buttonLocation === BUTTON_LOCATIONS.LEFT && (
-          <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+          <Box sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }} flexDirection="column" flexGrow={1}>
             {createButtons}
           </Box>
         )}
-        <Box width="100%" height="100%" overflow="auto">
-          <Stack direction="column" width="100% ">
-            {ignoringNonRelevantPackageFiles && (
-              <Tag
-                key="ignore-non-relevant-packages"
-                color="warning"
-                title="Ignoring non-relevant package files"
-                text="The folder contains too many files"
-                wrap
-              />
-            )}
-          </Stack>
-          <Box height="100%" overflow="auto" display="flex" flexDirection="row">
-            <Stack
-              direction="column"
-              onKeyUp={(e) => {
-                if (e.key === "Delete") {
-                  // remove launch file from history
-                  setLaunchFileHistory((prevHistory) => {
-                    if (selectedFile) {
-                      return prevHistory.filter((file) => file.id !== selectedFile.id);
-                    }
-                    return prevHistory;
-                  });
+        <Stack
+          width="100%"
+          overflow="auto"
+          direction="column"
+          onKeyUp={(e) => {
+            if (e.key === "Delete") {
+              // remove launch file from history
+              setLaunchFileHistory((prevHistory) => {
+                if (selectedFile) {
+                  return prevHistory.filter((file) => file.id !== selectedFile.id);
                 }
-              }}
-            >
-              {Object.keys(packageItemsTree).length > 0 && (
-                <TreeDirectory
-                  selectedPackage={selectedPackage?.rosPackage}
-                  providerName={selectedPackage?.providerName}
-                  packageItemsTree={packageItemsTree}
-                  onNodeSelect={(itemId: string) => handleSelect(itemId)}
-                  onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
-                    onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
-                  }
-                />
-              )}
-            </Stack>
-          </Box>
-        </Box>
+                return prevHistory;
+              });
+            }
+          }}
+        >
+          {ignoringNonRelevantPackageFiles && (
+            <Tag
+              key="ignore-non-relevant-packages"
+              color="warning"
+              title="Ignoring non-relevant package files"
+              text="The folder contains too many files"
+              direction="column"
+              wrap
+            />
+          )}
+          {Object.keys(packageItemsTree).length > 0 && (
+            <TreeDirectory
+              selectedPackage={selectedPackage?.rosPackage}
+              providerName={selectedPackage?.providerName}
+              packageItemsTree={packageItemsTree}
+              onNodeSelect={(itemId: string) => handleSelect(itemId)}
+              onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
+                onFileDoubleClick(label, itemId, ctrlKey, shiftKey)
+              }
+            />
+          )}
+        </Stack>
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
-          <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+          <Box sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }} flexDirection="column" flexGrow={1}>
             {createButtons}
           </Box>
         )}

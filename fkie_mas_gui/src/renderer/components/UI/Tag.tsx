@@ -1,4 +1,5 @@
 import { Chip, ChipPropsColorOverrides, Stack, Tooltip, Typography } from "@mui/material";
+import { ResponsiveStyleValue } from "@mui/system";
 import { OverridableStringUnion } from "@mui/types";
 import { forwardRef } from "react";
 
@@ -20,13 +21,23 @@ interface TagProps {
   color?: string;
   copyButton?: string;
   wrap?: boolean;
+  direction?: ResponsiveStyleValue<"row" | "row-reverse" | "column" | "column-reverse"> | undefined;
   tooltip?: string | JSX.Element;
   onClick?: (event: React.MouseEvent) => void;
   onDoubleClick?: (event: React.MouseEvent) => void;
 }
 
 const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
-  const { className, title = "", text = "", color = "info", copyButton = "", wrap = true, tooltip = "" } = props;
+  const {
+    className,
+    title = "",
+    text = "",
+    color = "info",
+    copyButton = "",
+    wrap = true,
+    direction = "row",
+    tooltip = "",
+  } = props;
   const isDefaultColor = chipDefaultColors.includes(color);
 
   const chipSX = {
@@ -55,7 +66,7 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
         color={isDefaultColor ? (color as TagColor) : "default"}
         style={isDefaultColor ? {} : { backgroundColor: color }}
         label={
-          <Stack direction="row" spacing="0.3em">
+          <Stack direction={direction} spacing="0.3em">
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
               {title}
             </Typography>
