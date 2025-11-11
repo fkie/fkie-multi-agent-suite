@@ -102,6 +102,6 @@
     "react-dom": "^18.3.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.19.1",
-    "vite": "^6.3.5"
+    "vite": "^6.4.1"
   }
 }
