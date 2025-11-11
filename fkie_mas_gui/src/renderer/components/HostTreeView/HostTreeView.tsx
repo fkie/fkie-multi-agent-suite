@@ -154,7 +154,7 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const guidStr = node.guid ? `-${node.guid}` : "";
+              const guidStr = node.guid ? ` ${node.guid}` : "";
               const groupName = a.slice(0, -1).join("/");
               const treePath = `${groupName}#${nodeNameWithoutNamespace(node)}${guidStr}`;
               r.nodeTree.push({
