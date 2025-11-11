@@ -41,41 +41,46 @@ export default class CommandExecutor implements TCommandExecutor {
   constructor(commandLine: CommandLine) {
     this.commandLine = commandLine;
     const sshPath = `${os.homedir()}/.ssh`;
-
-    try {
-      // read host/user configuration from ssh config
-      fs.readFile(`${sshPath}/config`, "utf8", (err, data) => {
-        if (err) {
-          log.warn(`error while read ${sshPath}/config`);
-          return;
+    let currentHost: string | null = null;
+    const readSshLine = async (line: string): Promise<void> => {
+      const nLine = line.trim();
+      if (nLine.startsWith("Host ")) {
+        currentHost = nLine.split(" ")[1];
+      } else if ((nLine.startsWith("User ") || nLine.startsWith("user ")) && currentHost) {
+        const username = nLine.split(" ")[1];
+        this.sshUsers[currentHost] = username;
+      } else if ((nLine.startsWith("Port ") || nLine.startsWith("port ")) && currentHost) {
+        const port = nLine.split(" ")[1];
+        this.sshPorts[currentHost] = Number.parseInt(port);
+      } else if (nLine.startsWith("IdentityFile ") && currentHost) {
+        const identPath: string = nLine.split(" ")[1].replace("~", os.homedir());
+        try {
+          this.sshKeys[currentHost] = fs.readFileSync(identPath);
+        } catch (error) {
+          console.error(`error while read specified IdentityFile "${identPath}": ${error}`);
         }
-        const configLines = data.split("\n");
-        let currentHost: string | null = null;
-
-        for (const line of configLines) {
-          const nLine = line.trim();
-          if (nLine.startsWith("Host ")) {
-            currentHost = nLine.split(" ")[1];
-          } else if ((nLine.startsWith("User ") || nLine.startsWith("user ")) && currentHost) {
-            const username = nLine.split(" ")[1];
-            this.sshUsers[currentHost] = username;
-          } else if ((nLine.startsWith("Port ") || nLine.startsWith("port ")) && currentHost) {
-            const port = nLine.split(" ")[1];
-            this.sshPorts[currentHost] = Number.parseInt(port);
-          } else if (nLine.startsWith("IdentityFile ") && currentHost) {
-            const identPath: string = nLine.split(" ")[1].replace("~", os.homedir());
-            try {
-              this.sshKeys[currentHost] = fs.readFileSync(identPath);
-            } catch (error) {
-              console.error(`error while read specified IdentityFile "${identPath}": ${error}`);
-            }
+      }
+    };
+    const readSshConfig = async (): Promise<void> => {
+      try {
+        // read host/user configuration from ssh config
+        fs.readFile(`${sshPath}/config`, "utf8", async (err, data) => {
+          if (err) {
+            log.warn(`error while read ${sshPath}/config`);
+            return;
           }
-        }
-        // log.info("SSH-configuration (host and username):", this.sshUsers);
-      });
-    } catch (error) {
-      console.error(`error while read ssh configuration file "${sshPath}/config": ${error}`);
-    }
+          const configLines = data.split("\n");
+
+          for (const line of configLines) {
+            await readSshLine(line);
+          }
+          log.info(`found ${Object.keys(this.sshUsers).length} host configurations`);
+        });
+      } catch (error) {
+        console.error(`error while read ssh configuration file "${sshPath}/config": ${error}`);
+      }
+    };
+    readSshConfig();
 
     try {
       // read private ssh keys
@@ -421,9 +426,17 @@ export default class CommandExecutor implements TCommandExecutor {
         [c.username, c.host].join("@"),
       ].join(" ");
     }
-    const shCommand = `/bin/sh -c "${command.replace(/^'|^"/, '').replace(/'$|"$/, '')}"`;
+    const shCommand = `/bin/sh -c "${command.replace(/^'|^"/, "").replace(/'$|"$/, "")}"`;
     const cmd = `${terminalEmulator} ${terminalTitle} ${noCloseOpt} ${terminalExecOpt} '${sshCmd} ${shCommand}'`;
     return this.exec(null, cmd);
+  }
+
+  private wildcardMatch(text: string | undefined, pattern: string) {
+    if (text === undefined) {
+      return undefined;
+    }
+    const regexPattern = new RegExp(`^${pattern.replace(/\?/g, ".").replace(/\*/g, ".*")}$`);
+    return regexPattern.test(text);
   }
 
   /**
@@ -433,9 +446,13 @@ export default class CommandExecutor implements TCommandExecutor {
   private generateConfig(credential: ConnectConfig, keyIndex: number): ConnectConfig {
     let privateKey: Buffer | undefined;
 
-    const sshHost: string | undefined = credential.host ? this.sshUsers[credential.host] : undefined;
-    const sshPort: number | undefined = credential.host ? this.sshPorts[credential.host] : undefined;
-    const sshKey: Buffer | undefined = credential.host ? this.sshKeys[credential.host] : undefined;
+    const matchedHosts = Object.keys(this.sshUsers).find((pattern) => {
+      const matched = this.wildcardMatch(credential.host, pattern);
+      return matched;
+    });
+    const sshUser: string | undefined = matchedHosts ? this.sshUsers[matchedHosts] : undefined;
+    const sshPort: number | undefined = matchedHosts ? this.sshPorts[matchedHosts] : undefined;
+    const sshKey: Buffer | undefined = matchedHosts ? this.sshKeys[matchedHosts] : undefined;
     if (!sshKey && !credential.password && keyIndex < this.privateSshKeys.length) {
       // no key in configuration and no password, try find key
       privateKey = this.privateSshKeys[keyIndex];
@@ -443,8 +460,8 @@ export default class CommandExecutor implements TCommandExecutor {
 
     const config: ConnectConfig = {
       host: credential.host,
-      port: credential.port || sshPort,
-      username: credential.username || sshHost || os.userInfo().username,
+      port: sshPort || credential.port,
+      username: sshUser || credential.username || os.userInfo().username,
       password: credential.password || undefined,
       privateKey: sshKey || privateKey,
     };
