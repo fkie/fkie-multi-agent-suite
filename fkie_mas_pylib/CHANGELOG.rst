@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.5.0 (11.11.2025)
+------------------
+* Added requester to callback arguments if requester is in signature
+
 4.4.2 (10.09.2025)
 ------------------
 * Fixed determination of the port based on the ROS domain ID for ROS1

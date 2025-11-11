@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.7.0 - 11.11.2025
+
+Added notification if launch file was reloaded by another instance
+Fixed: sorting nodes in the host view
+Evaluate wildcard hostnames in the ssh configuration
+Improved host input in the connection dialog
+Updated vite dependency version
+Fixed the style of the “Node Details” tab when the namespace is too long
+
 ## 4.6.15 - 30.09.2025
 
 Fixed crash of the daemon on exception while load_launch

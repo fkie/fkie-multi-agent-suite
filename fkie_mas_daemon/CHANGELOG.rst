@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.7.0 (11.11.2025)
+-------------------
+* report the requester on each launch file action
+
 4.6.11 (30.09.2025)
 -------------------
 * fixed crash of the daemon on exception while load_launch
