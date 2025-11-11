@@ -2211,9 +2211,9 @@ export default class Provider implements IProvider {
    */
   public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => void = async (msg, forceRefresh = false) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
-    const msgObj = msg as unknown as { path: string; action: string };
+    const msgObj = msg as unknown as { path: string; action: string; requester: string };
     if (msgObj?.path) {
-      emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path));
+      emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path, msgObj.requester || ""));
     }
     if (await this.lockRequest("updateRosNodes")) {
       return;

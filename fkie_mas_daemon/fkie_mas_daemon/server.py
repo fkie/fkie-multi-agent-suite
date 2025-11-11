@@ -172,7 +172,7 @@ class Server:
         self.ros_node.destroy_publisher(self.pub_endpoint)
 
     def load_launch_file(self, path, autostart=False):
-        self.launch_servicer.load_launch(LaunchLoadRequest(path=xml.interpret_path(path)))
+        self.launch_servicer.load_launch(LaunchLoadRequest(path=xml.interpret_path(path)), requester="ROS service call")
         if autostart:
             nodes = self.launch_servicer.list_nodes()
             launch_nodes = [LaunchNode(n) for n in nodes]
@@ -195,7 +195,7 @@ class Server:
             "masteruri": "",
             "host": "",
         }
-        result = self.launch_servicer.load_launch(LaunchLoadRequest(path=request.path), return_as_json=False)
+        result = self.launch_servicer.load_launch(LaunchLoadRequest(path=request.path), requester="ROS service call", return_as_json=False)
         if result.status.code != "OK":
             Log.warn(f"start launch failed: {result.status.msg}")
             # raise Exception(result.status.msg)
@@ -216,7 +216,7 @@ class Server:
         }
 
         result = self.launch_servicer.load_launch(
-            LaunchLoadRequest(path=request.path), return_as_json=False)
+            LaunchLoadRequest(path=request.path), requester="ROS service call", return_as_json=False)
         if result.status.code != "OK":
             Log.warn(f"load launch failed: {result.status.msg}")
         return response

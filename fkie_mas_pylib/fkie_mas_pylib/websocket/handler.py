@@ -12,6 +12,7 @@ import threading
 from types import SimpleNamespace
 import websockets
 import websockets.sync.server
+from inspect import signature
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.interface import SelfAllEncoder
 from fkie_mas_pylib.websocket.queue import QueueItem, PQueue
@@ -157,7 +158,11 @@ class WebSocketHandler:
         error = None
         reply = ''
         try:
-            result = callback(*(arg for arg in args))
+            sig = signature(callback)
+            if ('requester' in sig.parameters):
+                result = callback(*(arg for arg in args), requester=self.address)
+            else:
+                result = callback(*(arg for arg in args))
             if not isinstance(result, str):
                 result = json.dumps(result, cls=SelfAllEncoder)
         except Exception as err:

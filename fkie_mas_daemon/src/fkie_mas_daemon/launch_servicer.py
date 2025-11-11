@@ -417,7 +417,7 @@ class LaunchServicer(LoggingEventHandler):
         except Exception as e:
             Log.error("_add_launch_to_observer %s:\n%s" % (str(path), e))
 
-    def load_launch(self, request_json: LaunchLoadRequest, return_as_json=True) -> LaunchLoadReply:
+    def load_launch(self, request_json: LaunchLoadRequest, *, requester: str = "", return_as_json=True) -> LaunchLoadReply:
         """
         Loads launch file by request
         """
@@ -548,7 +548,7 @@ class LaunchServicer(LoggingEventHandler):
 
             # notify GUI about changes
             self.websocket.publish('ros.launch.changed', {
-                                   'path': launchfile, 'action': 'loaded'})
+                                   'path': launchfile, 'action': 'loaded', 'requester': requester})
             self._add_launch_to_observer(launchfile)
         except Exception as e:
             import traceback
@@ -562,7 +562,7 @@ class LaunchServicer(LoggingEventHandler):
         result.status.code = "OK"
         return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
-    def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+    def reload_launch(self, request_json: LaunchLoadRequest, *, requester: str = "") -> LaunchLoadReply:
         """
         Reloads launch file by request
         """
@@ -653,7 +653,7 @@ class LaunchServicer(LoggingEventHandler):
 
                 # notify GUI about changes
                 self.websocket.publish('ros.launch.changed', {
-                                       'path': request.path, 'action': 'reloaded'})
+                                       'path': request.path, 'action': 'reloaded', 'requester': requester})
                 self._add_launch_to_observer(request.path)
             except Exception as e:
                 print(traceback.format_exc())
@@ -669,7 +669,7 @@ class LaunchServicer(LoggingEventHandler):
             return json.dumps(result, cls=SelfEncoder)
         return json.dumps(result, cls=SelfEncoder)
 
-    def unload_launch(self, request_json: LaunchFile) -> LaunchLoadReply:
+    def unload_launch(self, request_json: LaunchFile, *, requester: str = "") -> LaunchLoadReply:
         Log.debug("Request to [ros.launch.unload]")
 
         # Covert input dictionary into a proper python object
@@ -688,7 +688,7 @@ class LaunchServicer(LoggingEventHandler):
 
                 # notify GUI about changes
                 self.websocket.publish('ros.launch.changed', {
-                                       'path': request.path, 'action': 'unloaded'})
+                                       'path': request.path, 'action': 'unloaded', 'requester': requester})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))

@@ -31,11 +31,12 @@ interface ReloadFileComponentProps {
   modification: PATH_EVENT_TYPE;
   launchFile: string;
   onReload: (providerId: string, launchFile: string) => void;
+  onReloaded: (providerId: string, launchFile: string, requester: string) => void;
 }
 
 const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentProps>(
   function ReloadFileAlertComponent(props, ref) {
-    const { id, message, provider, modifiedFile, modification, launchFile, onReload } = props;
+    const { id, message, provider, modifiedFile, modification, launchFile, onReload, onReloaded } = props;
 
     const settingsCtx = useContext(SettingsContext);
     const { closeSnackbar } = useSnackbar();
@@ -84,6 +85,7 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
       (data: EventProviderLaunchLoaded) => {
         if (data.provider.id === provider.id) {
           if (data.launchFile === launchFile) {
+            onReloaded(data.provider.id, data.launchFile, data.requester);
             handleDismiss();
           }
         }

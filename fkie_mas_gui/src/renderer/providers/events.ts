@@ -197,9 +197,12 @@ export class EventProviderLaunchLoaded {
 
   launchFile: string;
 
-  constructor(provider: Provider, launchFile: string) {
+  requester: string;
+
+  constructor(provider: Provider, launchFile: string, requester: string) {
     this.provider = provider;
     this.launchFile = launchFile;
+    this.requester = requester;
   }
 }
 

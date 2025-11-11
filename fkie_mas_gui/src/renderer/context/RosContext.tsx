@@ -479,7 +479,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
       const result = await launchFile(provider, modifiedFile, args, true);
       if (result?.success) {
-        logCtx.success(`Launch file [${getFileName(modifiedFile)}] reloaded`, `File: ${modifiedFile}`);
+        logCtx.success(`Launch file [${getFileName(modifiedFile)}] reloaded`, `File: ${modifiedFile}`, false);
 
         // check if nodes have to be restarted
         if (result.reply?.changed_nodes && result.reply.changed_nodes.length > 0) {
@@ -1014,6 +1014,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         modification={modification}
         launchFile={launchFilePath}
         onReload={onReload}
+        onReloaded={(providerId: string, launchFile: string, requester: string) => {
+          logCtx.success(
+            `Launch file [${getFileName(launchFile)}] reloaded`,
+            `Requester: ${requester}\nFile: ${launchFile}`,
+            true
+          );
+        }}
       />
     );
   }
