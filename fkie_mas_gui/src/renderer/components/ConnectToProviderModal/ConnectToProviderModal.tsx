@@ -696,11 +696,22 @@ const ConnectToProviderModal = forwardRef<HTMLDivElement, ConnectToProviderModal
                   size="medium"
                   options={hostList}
                   freeSolo
+                  clearOnBlur
                   ListboxProps={{ style: { maxHeight: 150 } }}
                   sx={{ margin: 0 }}
                   getOptionLabel={(option: string | THostIp) => host2label(option)}
                   renderInput={(params) => (
-                    <TextField {...params} variant="standard" label="Add Hosts" placeholder=" add " />
+                    <TextField
+                      {...params}
+                      variant="standard"
+                      label="Add Hosts"
+                      placeholder=" add "
+                      onBlur={(event) => {
+                        if (event.target.value) {
+                          setHostValues((prev) => [...prev, host2host(event.target.value)]);
+                        }
+                      }}
+                    />
                   )}
                   value={hostValues}
                   onChange={(_event, newValue) => {
