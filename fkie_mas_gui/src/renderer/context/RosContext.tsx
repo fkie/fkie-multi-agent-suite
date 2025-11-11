@@ -1014,7 +1014,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         modification={modification}
         launchFile={launchFilePath}
         onReload={onReload}
-        onReloaded={(providerId: string, launchFile: string, requester: string) => {
+        onReloaded={(_providerId: string, launchFile: string, requester: string) => {
           logCtx.success(
             `Launch file [${getFileName(launchFile)}] reloaded`,
             `Requester: ${requester}\nFile: ${launchFile}`,

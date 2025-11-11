@@ -59,9 +59,9 @@ export default class EditorProvider extends Provider {
 
   public updateRosNodes: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
-    const msgObj = msg as unknown as { path: string; action: string };
+    const msgObj = msg as unknown as { path: string; action: string; requester: string };
     if (msgObj?.path) {
-      emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path));
+      emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path, msgObj.requester));
     }
   };
 }
