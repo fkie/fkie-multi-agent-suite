@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.7.1 - 14.11.2025
+
+fixed error when loading 'capability groups' for included files
+
 ## 4.7.0 - 11.11.2025
 
 Added notification if launch file was reloaded by another instance

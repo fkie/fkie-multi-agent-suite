@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.7.1 (14.11.2025)
+-------------------
+* fixed error when loading 'capability groups' for included files
+* added test launch files for capability group
+
 4.7.0 (11.11.2025)
 -------------------
 * report the requester on each launch file action
