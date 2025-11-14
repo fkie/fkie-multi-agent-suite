@@ -148,7 +148,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
   },
   rosVersion: {
     label: "Default ROS version",
-    default: CliArgs["ros-version"] ? CliArgs["ros-version"] : "2",
+    default: CliArgs["ros-version"].default ? CliArgs["ros-version"].default : "2",
     type: "string",
     options: ["1", "2"],
     readOnly: false,
@@ -170,6 +170,13 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: Object.values(URI).sort(),
     description:
       "When communicating with the MAS daemon, the messages from the listed URIs are output as debug messages.",
+    group: "Logging",
+  },
+  logPrintToConsole: {
+    label: "Print to console",
+    default: true,
+    type: "boolean",
+    description: "Prints the log output to the console",
     group: "Logging",
   },
   openScreenByDefault: {

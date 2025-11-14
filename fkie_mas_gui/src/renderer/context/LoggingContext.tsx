@@ -54,12 +54,15 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [countErrors, setCountErrors] = useState<number>(0);
   const [debugByUri, setDebugByUri] = useState<string[]>(settingsCtx.get("debugByUri") as string[]);
+  const [currentLogLevel, setCurrentLogLevel] = useState<string[]>(settingsCtx.get("guiLogLevel") as string[]);
+  const [printToConsole, setPrintToConsole] = useState<boolean>(settingsCtx.get("logPrintToConsole") as boolean);
 
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    console.log(`debug by uri ${settingsCtx.get("debugByUri")}`);
-    setDebugByUri(settingsCtx.get("debugByUri") as string[]);
+    setDebugByUri([...(settingsCtx.get("debugByUri") as string[])]);
+    setCurrentLogLevel([...(settingsCtx.get("guiLogLevel") as string[])]);
+    setPrintToConsole(settingsCtx.get("logPrintToConsole") as boolean);
   }, [settingsCtx, settingsCtx.changed]);
 
   function createLog(
@@ -71,16 +74,16 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
   ): void {
     // add new log event
     setLogs((prevLogs) => [new LogEvent(level, description, details), ...prevLogs]);
+    if (printToConsole) {
+      if (level === LoggingLevel.ERROR) {
+        console.error(level, description, details);
+        setCountErrors(countErrors + 1);
+      } else if (level === LoggingLevel.WARN) console.warn(level, description, details);
+      else if (level === LoggingLevel.DEBUG) console.debug(level, description, details);
+      else console.info(level, description, details);
+    }
     // check settings logger level
-    const value = settingsCtx.get("guiLogLevel");
-    if (Array.isArray(value) && !value.includes(level)) return;
-
-    if (level === LoggingLevel.ERROR) {
-      console.error(level, description, details);
-      setCountErrors(countErrors + 1);
-    } else if (level === LoggingLevel.WARN) console.warn(level, description, details);
-    else if (level === LoggingLevel.DEBUG) console.debug(level, description, details);
-    else console.info(level, description, details);
+    if (Array.isArray(currentLogLevel) && !currentLogLevel.includes(level)) return;
 
     if (showSnackbar) {
       enqueueSnackbar(`${description}`, {
