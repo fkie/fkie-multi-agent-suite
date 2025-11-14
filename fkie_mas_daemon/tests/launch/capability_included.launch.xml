@@ -1,0 +1,7 @@
+<launch>
+  <arg name="capability_group" default="3 xml"/>
+  <node name="rviz2" pkg="rviz2" exec="rviz2">
+    <param name="capability_group" value="$(var capability_group)"/>
+  </node>
+
+</launch>

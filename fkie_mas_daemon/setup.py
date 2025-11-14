@@ -21,6 +21,18 @@ else:
     import xml.etree.ElementTree as ET
     from setuptools import setup
 
+    test_launch_dir = "tests/launch"
+    test_launch_files = [
+        'autostart.launch.xml',
+        'capability_included.launch.py',
+        'capability_included.launch.xml',
+        'capability.launch.xml',
+        'included.launch.xml',
+        'params.yaml',
+        'test_composable_launch.py',
+        'test_included_launch.py',
+    ]
+
     resource_files = [
         'tests/resources/description_example.launch',
         'tests/resources/include_dummy.launch',
@@ -50,12 +62,14 @@ else:
              ['resource/' + package_name]),
             (f'share/{package_name}', ['package.xml']),
             (f'share/{package_name}/test/launch',
-             ['tests/launch/test_composable_launch.py', 'tests/launch/test_included_launch.py',
-             'tests/launch/autostart.launch.xml', 'tests/launch/params.yaml',
-             'tests/launch/included.launch.xml']),
+             [f'{test_launch_dir}/{lf}' for lf in test_launch_files]),
             # (f'share/{package_name}/tests/resources', resource_files),
             (f'lib/{package_name}',
-             ['scripts/mas-remote-node.py', 'scripts/mas-respawn', 'scripts/mas-restart.py', 'scripts/mas-rosout-to-diag.py'])
+             ['scripts/mas-remote-node.py',
+              'scripts/mas-respawn',
+              'scripts/mas-restart.py',
+              'scripts/mas-rosout-to-diag.py'
+             ])
         ],
         install_requires=['setuptools', 'ruamel.yaml', 'launch-xml'],
         zip_safe=True,

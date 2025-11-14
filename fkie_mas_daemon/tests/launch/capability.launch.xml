@@ -1,0 +1,16 @@
+<launch>
+
+  <arg name="capability_group" default="1 include"/>
+
+  <node name="rviz" pkg="rviz2" exec="rviz2">
+    <param name="capability_group" value="0 gui" />
+  </node>
+
+  <include file="$(find-pkg-share fkie_mas_daemon)/test/launch/capability_included.launch.py">
+    <arg name="capability_group" value="$(var capability_group)_py"/>
+  </include>
+
+  <include file="$(find-pkg-share fkie_mas_daemon)/test/launch/capability_included.launch.xml">
+    <arg name="capability_group" value="$(var capability_group)_xml"/>
+  </include>
+</launch>
