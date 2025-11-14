@@ -838,6 +838,7 @@ class LaunchConfig(object):
                     entity.execute(self.context)
             elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                 # launch.actions.declare_launch_argument.DeclareLaunchArgument
+                self.context._push_launch_configurations()
                 try:
                     cfg_actions = entity.execute(self.context)
                     if PRINT_DEBUG_LOAD:
@@ -857,12 +858,8 @@ class LaunchConfig(object):
                         for cac in cfg_actions:
                             if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
                                 cac.execute(self.context)
-                                arg_name = cac.name
-                                if isinstance(cac.name, List):
-                                    arg_name = cac.name[0].perform(self.context)
-                                arg_value = cac.value
-                                if isinstance(cac.value, List):
-                                    arg_value = cac.value[0].perform(self.context)
+                                arg_name = perform_substitutions(self.context, cac.name)
+                                arg_value = perform_substitutions(self.context, cac.value)
                                 if PRINT_DEBUG_LOAD:
                                     print(
                                         f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
@@ -886,6 +883,8 @@ class LaunchConfig(object):
                 except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
                     raise Exception('%s (%s)' % (
                         err, entity.launch_description_source.location))
+                finally:
+                    self.context._pop_launch_configurations()
             elif isinstance(entity, launch.actions.group_action.GroupAction):
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
