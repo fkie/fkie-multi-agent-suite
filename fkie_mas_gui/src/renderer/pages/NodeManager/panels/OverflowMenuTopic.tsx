@@ -5,7 +5,7 @@ import MoreVertSharpIcon from "@mui/icons-material/MoreVert";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import TroubleshootOutlinedIcon from "@mui/icons-material/TroubleshootOutlined";
 import { Stack, Typography } from "@mui/material";
-import { forwardRef, useMemo } from "react";
+import { useMemo } from "react";
 
 import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 
@@ -24,13 +24,12 @@ interface OverflowMenuTopicProps {
   onClick: (type: EMenuTopic, topic: string, messageType: string, providerId: string) => void;
 }
 
-const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(function OverflowMenuTopic(props, ref) {
+export default function OverflowMenuTopic(props: OverflowMenuTopicProps): JSX.Element {
   const { topicName, messageType, providerId, onClick } = props;
 
   const createMenu = useMemo(() => {
     return (
       <OverflowMenu
-        ref={ref}
         icon={<MoreVertSharpIcon sx={{ fontSize: "inherit" }} />}
         options={[
           {
@@ -100,6 +99,4 @@ const OverflowMenuTopic = forwardRef<HTMLDivElement, OverflowMenuTopicProps>(fun
   }, [topicName, providerId]);
 
   return createMenu;
-});
-
-export default OverflowMenuTopic;
+}

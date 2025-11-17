@@ -15,7 +15,7 @@ import {
   Radio,
   RadioGroup,
 } from "@mui/material";
-import { ForwardedRef, forwardRef, useRef, useState } from "react";
+import { useState } from "react";
 
 import DraggablePaper from "../UI/DraggablePaper";
 
@@ -32,7 +32,7 @@ interface MapSelectionModalProps {
   useRadioGroup?: boolean;
 }
 
-const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(function MapSelectionModal(props, ref) {
+export default function MapSelectionModal(props: MapSelectionModalProps): JSX.Element {
   const {
     title = "Confirm Selection",
     list,
@@ -100,8 +100,6 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
     handleClose("confirmed");
   }
 
-  const dialogRef = useRef(ref);
-
   return (
     <Dialog
       key="map-selection"
@@ -110,11 +108,7 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
       fullWidth
       scroll="paper"
       maxWidth="md"
-      ref={dialogRef as ForwardedRef<HTMLDivElement>}
-      PaperProps={{
-        component: DraggablePaper,
-        dialogRef: dialogRef,
-      }}
+      PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
@@ -205,6 +199,4 @@ const MapSelectionModal = forwardRef<HTMLDivElement, MapSelectionModalProps>(fun
       </DialogActions>
     </Dialog>
   );
-});
-
-export default MapSelectionModal;
+}

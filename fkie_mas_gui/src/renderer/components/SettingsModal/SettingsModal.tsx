@@ -34,14 +34,7 @@ export default function SettingsModal(): JSX.Element {
         id="settings-dialog"
         scroll="paper"
         ref={dialogRef}
-        PaperProps={{
-          component: DraggablePaper,
-          dialogRef: dialogRef,
-          sx: {
-            minHeight: "80vh",
-            maxHeight: "80vh",
-          },
-        }}
+        PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
         fullWidth
         maxWidth="md"

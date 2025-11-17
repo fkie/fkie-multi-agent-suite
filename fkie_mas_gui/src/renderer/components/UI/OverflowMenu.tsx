@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { OverridableStringUnion } from "@mui/types";
-import React, { forwardRef, useContext, useState } from "react";
+import React, { useContext, useState } from "react";
 
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "./Colors";
@@ -50,7 +50,7 @@ interface OverflowMenuProps {
   tooltip?: string;
 }
 
-const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function OverflowMenu(props, ref) {
+export default function OverflowMenu(props: OverflowMenuProps): JSX.Element {
   const {
     id = "overflow-menu",
     icon = <MoreVertSharpIcon sx={{ fontSize: "inherit" }} />,
@@ -96,7 +96,6 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
 
   return (
     <StyledBadge
-      ref={ref}
       color="default"
       badgeContent={`${options.length}`}
       invisible={!showBadge || options.length === 0}
@@ -149,6 +148,4 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
       </Menu>
     </StyledBadge>
   );
-});
-
-export default OverflowMenu;
+}

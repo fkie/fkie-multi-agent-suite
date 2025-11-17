@@ -1,7 +1,7 @@
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { treeItemClasses } from "@mui/x-tree-view";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -23,7 +23,7 @@ interface TopicTreeItemProps {
   selectedItem: string | null;
 }
 
-const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function TopicTreeItem(props, ref) {
+export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
   const { itemId, rootPath, topicInfo, selectedItem } = props;
 
   const logCtx = useContext(LoggingContext);
@@ -226,7 +226,6 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
   return (
     <StyledTreeItem
       itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
       sx={{
         [`& .${treeItemClasses.content}`]: {
           paddingLeft: 0,
@@ -449,6 +448,4 @@ const TopicTreeItem = forwardRef<HTMLDivElement, TopicTreeItemProps>(function To
       }
     />
   );
-});
-
-export default TopicTreeItem;
+}

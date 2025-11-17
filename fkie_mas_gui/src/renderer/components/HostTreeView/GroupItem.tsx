@@ -6,7 +6,7 @@ import { blue, green, grey, red, yellow } from "@mui/material/colors";
 import { treeItemClasses, TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
 import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
 import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
-import { forwardRef, LegacyRef, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
@@ -206,7 +206,7 @@ interface GroupIconProps {
   isDarkMode: boolean;
 }
 
-export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function GroupIcon(props, ref) {
+export function GroupIcon(props: GroupIconProps): JSX.Element {
   const { treeItems, groupName, isDarkMode = false } = props;
   const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems));
   const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
@@ -310,7 +310,6 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
     }
     return (
       <Tooltip
-        ref={ref}
         key={`tooltip-icon-${groupLifecycleStatus}`}
         title={`Lifecycle state: '${getNameFromLifecycle(groupLifecycleStatus)}'`}
         placement="left"
@@ -329,7 +328,7 @@ export const GroupIcon = forwardRef<HTMLDivElement, GroupIconProps>(function Gro
   }, [groupLifecycleStatus, colorBorder, color, groupStatus, groupStatusLocal]);
 
   return createIcon;
-});
+}
 
 /** Returns count of nodes for given group */
 export function NodesCount(children: NodeTreeItem[]): number {
@@ -354,7 +353,7 @@ interface GroupItemProps {
   onDoubleClick: (event: React.MouseEvent, id: string) => void;
 }
 
-const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(props, ref) {
+export default function GroupItem(props: GroupItemProps): JSX.Element {
   const { itemId, groupName, icon = <></>, countChildren = 0, onDoubleClick = (): void => {}, ...children } = props;
 
   // avoid selection if collapse icon was clicked
@@ -374,7 +373,6 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
     return (
       <StyledTreeItem
         itemId={itemId}
-        ref={ref as LegacyRef<HTMLLIElement>}
         slotProps={
           {
             label: { onClick: handleLabelClick },
@@ -409,6 +407,4 @@ const GroupItem = forwardRef<HTMLDivElement, GroupItemProps>(function GroupItem(
   }, [itemId, countChildren, icon, handleIconContainerClick]);
 
   return createGroupItem;
-});
-
-export default GroupItem;
+}

@@ -1,7 +1,7 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -56,7 +56,7 @@ type HostTreeViewProps = {
   showLoggers: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
 };
 
-const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function HostTreeView(props, ref) {
+export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   const {
     visibleNodes,
     isFiltered = false,
@@ -698,7 +698,6 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
     const tree = (
       <SimpleTreeView
         // apiRef={apiRef}
-        ref={ref as LegacyRef<HTMLUListElement>}
         aria-label="node list"
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         multiSelect
@@ -790,6 +789,4 @@ const HostTreeView = forwardRef<HTMLDivElement, HostTreeViewProps>(function Host
   ]);
 
   return generateTree;
-});
-
-export default HostTreeView;
+}

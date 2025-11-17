@@ -22,7 +22,7 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
@@ -50,7 +50,7 @@ interface HostItemProps {
   children: React.ReactNode;
 }
 
-const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(props, ref) {
+export default function HostItem(props: HostItemProps): JSX.Element {
   const { provider, stopNodes = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
   const settingsCtx = useContext(SettingsContext);
   const navCtx = useContext(NavigationContext);
@@ -221,7 +221,7 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       sx={getHostStyle(provider)}
       onDoubleClick={(event) => onDoubleClick(event, provider.id)}
       label={
-        <Box ref={ref} display="flex" alignItems="center" paddingLeft={0.0}>
+        <Box display="flex" alignItems="center" paddingLeft={0.0}>
           {provider.rosState.ros_version === "1" && (
             <Tooltip
               title="Toggle Master Sync"
@@ -380,6 +380,4 @@ const HostItem = forwardRef<HTMLDivElement, HostItemProps>(function HostItem(pro
       {...children}
     />
   );
-});
-
-export default HostItem;
+}

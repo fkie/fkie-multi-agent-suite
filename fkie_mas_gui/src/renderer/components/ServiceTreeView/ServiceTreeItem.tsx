@@ -1,5 +1,5 @@
 import { Box, Menu, MenuItem, Stack, Typography } from "@mui/material";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
@@ -16,7 +16,7 @@ interface ServiceTreeItemProps {
   selectedItem: string | null;
 }
 
-const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(function ServiceTreeItem(props, ref) {
+export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Element {
   const { itemId, rootPath, serviceInfo, selectedItem } = props;
 
   // color = "#1a73e8",
@@ -89,7 +89,6 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
   return (
     <StyledTreeItem
       itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
       sx={{
         [`& .${treeItemClasses.content}`]: {
           paddingLeft: 0,
@@ -264,6 +263,4 @@ const ServiceTreeItem = forwardRef<HTMLDivElement, ServiceTreeItemProps>(functio
       }
     />
   );
-});
-
-export default ServiceTreeItem;
+}

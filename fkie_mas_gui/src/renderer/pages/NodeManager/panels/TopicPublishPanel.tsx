@@ -20,7 +20,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
@@ -47,7 +47,7 @@ interface TopicPublishPanelProps {
   providerId?: string;
 }
 
-const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(function TopicPublishPanel(props, ref) {
+export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.Element {
   const { topicName = undefined, topicType = undefined, providerId = undefined } = props;
 
   const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
@@ -435,7 +435,7 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
   );
 
   return (
-    <Box ref={ref} height="100%" overflow="auto" alignItems="center" sx={getHostStyle()}>
+    <Box height="100%" overflow="auto" alignItems="center" sx={getHostStyle()}>
       <Stack spacing={1} margin={0.5}>
         <Stack direction="row" spacing={1}>
           {messageStruct && (messageStruct.def || []).length > 0 && (
@@ -727,6 +727,4 @@ const TopicPublishPanel = forwardRef<HTMLDivElement, TopicPublishPanelProps>(fun
       </Stack>
     </Box>
   );
-});
-
-export default TopicPublishPanel;
+}

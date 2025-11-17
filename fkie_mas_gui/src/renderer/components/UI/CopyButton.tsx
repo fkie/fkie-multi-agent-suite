@@ -1,6 +1,6 @@
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { IconButton } from "@mui/material";
-import { forwardRef, useContext } from "react";
+import { useContext } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 
@@ -10,7 +10,7 @@ interface CopyButtonProps {
   fontSize?: string;
 }
 
-const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>((props, _ref) => {
+export default function CopyButton(props: CopyButtonProps): JSX.Element {
   const { value, fontSize = "inherit", logText = value } = props;
   const logCtx = useContext(LoggingContext);
 
@@ -29,6 +29,4 @@ const CopyButton = forwardRef<HTMLDivElement, CopyButtonProps>((props, _ref) => 
       <ContentCopyIcon sx={{ fontSize: { fontSize } }} />
     </IconButton>
   );
-});
-
-export default CopyButton;
+}

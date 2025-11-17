@@ -26,14 +26,7 @@ export default function AboutModal(): JSX.Element {
         id="about-dialog"
         scroll="paper"
         ref={dialogRef}
-        PaperProps={{
-          component: DraggablePaper,
-          dialogRef: dialogRef,
-          sx: {
-            minHeight: "80vh",
-            maxHeight: "80vh",
-          },
-        }}
+        PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
         fullWidth
         maxWidth="md"

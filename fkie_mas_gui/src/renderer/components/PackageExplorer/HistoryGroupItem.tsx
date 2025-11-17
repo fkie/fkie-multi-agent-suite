@@ -1,6 +1,6 @@
 import HistoryIcon from "@mui/icons-material/History";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
 import SettingsContext from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "../UI";
@@ -14,7 +14,7 @@ interface HistoryGroupItemProps {
   onDoubleClick?: (labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
 
-const HistoryGroupItem = forwardRef<HTMLDivElement, HistoryGroupItemProps>(function HistoryGroupItem(props, ref) {
+export default function HistoryGroupItem(props: HistoryGroupItemProps): JSX.Element {
   const { itemId, providerName, onClick = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
 
   const settingsCtx = useContext(SettingsContext);
@@ -45,7 +45,6 @@ const HistoryGroupItem = forwardRef<HTMLDivElement, HistoryGroupItemProps>(funct
 
   return (
     <StyledRootTreeItem
-      ref={ref as LegacyRef<HTMLLIElement>}
       itemId={itemId}
       label={
         <Box
@@ -86,6 +85,4 @@ const HistoryGroupItem = forwardRef<HTMLDivElement, HistoryGroupItemProps>(funct
       {...children}
     />
   );
-});
-
-export default HistoryGroupItem;
+}

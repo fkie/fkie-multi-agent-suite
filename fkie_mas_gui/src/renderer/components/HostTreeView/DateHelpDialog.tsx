@@ -7,14 +7,13 @@ import {
   DialogTitle,
   Typography,
 } from "@mui/material";
-import { forwardRef } from "react";
 
 interface DateHelpDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-const DateHelpDialog = forwardRef<HTMLDivElement, DateHelpDialogProps>(function DateHelpDialog(props, ref) {
+export default function DateHelpDialog(props: DateHelpDialogProps): JSX.Element {
   const { open, onClose = (): void => {}, ...other } = props;
 
   const codeSnippet = `
@@ -23,7 +22,6 @@ const DateHelpDialog = forwardRef<HTMLDivElement, DateHelpDialogProps>(function 
 
   return (
     <Dialog
-      ref={ref}
       sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }}
       maxWidth="md"
       open={open}
@@ -65,6 +63,4 @@ const DateHelpDialog = forwardRef<HTMLDivElement, DateHelpDialogProps>(function 
       </DialogActions>
     </Dialog>
   );
-});
-
-export default DateHelpDialog;
+}

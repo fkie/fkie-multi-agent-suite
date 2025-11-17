@@ -6,7 +6,7 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, LegacyRef, useContext } from "react";
+import React, { useContext } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import StyledTreeItem from "./StyledTreeItem";
@@ -20,7 +20,7 @@ interface TopicGroupTreeItemProps {
   children: React.ReactNode;
 }
 
-const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(function TopicGroupTreeItem(props, ref) {
+export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.Element {
   const { itemId, rootPath, groupName, countChildren, hasIncompatibleQos, ...children } = props;
 
   const logCtx = useContext(LoggingContext);
@@ -41,7 +41,6 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
   return (
     <StyledTreeItem
       itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
       slotProps={
         {
           label: { onClick: handleLabelClick },
@@ -112,6 +111,4 @@ const TopicGroupTreeItem = forwardRef<HTMLDivElement, TopicGroupTreeItemProps>(f
       {...children}
     />
   );
-});
-
-export default TopicGroupTreeItem;
+}

@@ -1,7 +1,6 @@
 import { Chip, ChipPropsColorOverrides, Stack, Tooltip, Typography } from "@mui/material";
 import { ResponsiveStyleValue } from "@mui/system";
 import { OverridableStringUnion } from "@mui/types";
-import { forwardRef } from "react";
 
 import CopyButton from "./CopyButton";
 
@@ -27,7 +26,7 @@ interface TagProps {
   onDoubleClick?: (event: React.MouseEvent) => void;
 }
 
-const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
+export default function Tag(props: TagProps): JSX.Element {
   const {
     className,
     title = "",
@@ -77,10 +76,7 @@ const Tag = forwardRef<HTMLDivElement, TagProps>(function Tag(props, ref) {
           </Stack>
         }
         sx={chipSX}
-        ref={ref}
       />
     </Tooltip>
   );
-});
-
-export default Tag;
+}

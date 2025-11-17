@@ -12,7 +12,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React, { forwardRef, LegacyRef, useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import RosContext from "@/renderer/context/RosContext";
@@ -30,7 +30,7 @@ interface ParameterTreeItemProps {
   provider: Provider;
 }
 
-const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(function ParameterTreeItem(props, ref) {
+export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.Element {
   const { itemId, namespacePart, paramInfo, provider } = props;
 
   function fixStringArray(val: RosParameterValue): RosParameterValue {
@@ -347,7 +347,6 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
   return (
     <StyledTreeItem
       itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
       sx={{
         [`& .${treeItemClasses.content}`]: {
           paddingLeft: 0,
@@ -381,7 +380,7 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
           }}
         >
           <Stack sx={{ flexGrow: 1 }} direction="column">
-            <Grid container spacing={"1em"} sx={{alignItems: "center"}}>
+            <Grid container spacing={"1em"} sx={{ alignItems: "center" }}>
               <Grid sx={{ flexGrow: 1 }} size={1}>
                 <Stack direction="column" sx={{ minHeight: "2em" }}>
                   <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
@@ -502,6 +501,4 @@ const ParameterTreeItem = forwardRef<HTMLDivElement, ParameterTreeItemProps>(fun
       }
     />
   );
-});
-
-export default ParameterTreeItem;
+}

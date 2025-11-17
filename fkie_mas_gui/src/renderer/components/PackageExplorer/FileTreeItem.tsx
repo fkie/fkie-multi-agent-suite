@@ -1,6 +1,6 @@
 import { Box, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
-import { forwardRef, LegacyRef, useState } from "react";
+import { useState } from "react";
 import { FileIcon } from "react-file-icon";
 
 import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
@@ -18,7 +18,7 @@ interface PackageItemTreeProps {
   onDoubleClick?: (labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
 
-const FileTreeItem = forwardRef<HTMLDivElement, PackageItemTreeProps>(function FileTreeItem(props, ref) {
+export default function FileTreeItem(props: PackageItemTreeProps): JSX.Element {
   const { itemId, file, showPackage = false, onClick = (): void => {}, onDoubleClick = (): void => {} } = props;
 
   const fileExtension = getFileExtension(file.name as string);
@@ -28,7 +28,6 @@ const FileTreeItem = forwardRef<HTMLDivElement, PackageItemTreeProps>(function F
 
   return (
     <StyledTreeItem
-      ref={ref as LegacyRef<HTMLLIElement>}
       itemId={itemId}
       sx={{
         [`& .${treeItemClasses.content}`]: {
@@ -68,6 +67,4 @@ const FileTreeItem = forwardRef<HTMLDivElement, PackageItemTreeProps>(function F
       }
     />
   );
-});
-
-export default FileTreeItem;
+}

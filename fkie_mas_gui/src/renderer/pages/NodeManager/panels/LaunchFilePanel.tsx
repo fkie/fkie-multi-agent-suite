@@ -2,7 +2,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Alert, AlertTitle, Box, Chip, ListItem, ListItemButton, ListItemText, Stack, Typography } from "@mui/material";
 import { SimpleTreeView, TreeItem } from "@mui/x-tree-view";
-import { forwardRef, useContext } from "react";
+import { useContext } from "react";
 import { VariableSizeList } from "react-window";
 
 import { SettingsContext } from "@/renderer/context/SettingsContext";
@@ -17,7 +17,7 @@ interface LaunchFilePanelProps {
   launchContent: LaunchContent;
 }
 
-const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(function LaunchFilePanel(props, ref) {
+export default function LaunchFilePanel(props: LaunchFilePanelProps): JSX.Element {
   const { launchContent } = props;
 
   const settingsCtx = useContext(SettingsContext);
@@ -82,7 +82,6 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
 
   return (
     <Box
-      ref={ref}
       // width="100%"
       height="100%"
       overflow="auto"
@@ -226,6 +225,4 @@ const LaunchFilePanel = forwardRef<HTMLDivElement, LaunchFilePanelProps>(functio
       )}
     </Box>
   );
-});
-
-export default LaunchFilePanel;
+}

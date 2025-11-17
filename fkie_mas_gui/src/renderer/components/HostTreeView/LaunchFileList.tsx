@@ -11,7 +11,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
-import { forwardRef, useCallback, useContext } from "react";
+import { useCallback, useContext } from "react";
 
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
@@ -38,7 +38,7 @@ interface LaunchFileListProps {
   onMouseOver: (event: React.MouseEvent) => void;
 }
 
-const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function LaunchFileList(props, ref) {
+export default function LaunchFileList(props: LaunchFileListProps): JSX.Element {
   const {
     providerId,
     launchContentList,
@@ -85,7 +85,7 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
   // );
 
   return (
-    <Box ref={ref}>
+    <Box>
       <List dense disablePadding onMouseOver={(event) => onMouseOver(event)}>
         {launchContentList.length > 0 &&
           launchContentList.sort(compareLaunchFiles).map((lc) => {
@@ -197,6 +197,4 @@ const LaunchFileList = forwardRef<HTMLDivElement, LaunchFileListProps>(function 
       </List>
     </Box>
   );
-});
-
-export default LaunchFileList;
+}

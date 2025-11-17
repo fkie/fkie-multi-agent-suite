@@ -1,23 +1,18 @@
-import { Paper } from "@mui/material";
-import { forwardRef, LegacyRef } from "react";
+import { Paper, PaperProps } from "@mui/material";
+import { useRef } from "react";
 import Draggable from "react-draggable";
 
-interface DraggablePaperProps {
-  dialogRef: React.RefObject<HTMLElement> | undefined;
-}
-
-const DraggablePaper = forwardRef<HTMLDivElement, DraggablePaperProps>(function DraggablePaper(props, ref) {
-  const { dialogRef = undefined, ...otherProps } = props;
+function DraggablePaper(props: PaperProps) {
+  const nodeRef = useRef<HTMLDivElement>(null);
   return (
     <Draggable
-      ref={ref as LegacyRef<Draggable>}
-      nodeRef={dialogRef}
+      nodeRef={nodeRef as React.RefObject<HTMLDivElement>}
       handle="#draggable-dialog-title"
       cancel={'[class*="MuiDialogContent-root"]'}
     >
-      <Paper ref={dialogRef as React.RefObject<HTMLDivElement>} {...otherProps} />
+      <Paper {...props} ref={nodeRef} />
     </Draggable>
   );
-});
+}
 
 export default DraggablePaper;

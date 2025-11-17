@@ -13,7 +13,7 @@ import {
   ListItemText,
   Stack,
 } from "@mui/material";
-import { ForwardedRef, forwardRef, useRef, useState } from "react";
+import { useState } from "react";
 
 import DraggablePaper from "../UI/DraggablePaper";
 
@@ -25,7 +25,7 @@ interface ListSelectionModalProps {
   onCancelCallback?: () => void;
 }
 
-const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(function ListSelectionModal(props, ref) {
+export default function ListSelectionModal(props: ListSelectionModalProps): JSX.Element {
   const {
     title = "Confirm Selection",
     list,
@@ -64,20 +64,14 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
     handleClose("confirmed");
   }
 
-  const dialogRef = useRef(ref);
-
   return (
     <Dialog
-      ref={dialogRef as ForwardedRef<HTMLDivElement>}
       open={open}
       onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
       fullWidth
       scroll="paper"
       maxWidth="md"
-      PaperProps={{
-        component: DraggablePaper,
-        dialogRef: dialogRef,
-      }}
+      PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
@@ -149,6 +143,4 @@ const ListSelectionModal = forwardRef<HTMLDivElement, ListSelectionModalProps>(f
       </DialogActions>
     </Dialog>
   );
-});
-
-export default ListSelectionModal;
+}

@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
@@ -35,7 +35,7 @@ interface ServiceCallerPanelProps {
   providerId: string;
 }
 
-const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(function ServiceCallerPanel(props, ref) {
+export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.Element {
   const { serviceName, serviceType, providerId } = props;
 
   const logCtx = useContext(LoggingContext);
@@ -287,7 +287,7 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
   }, [resultMessage, settingsCtx.changed]);
 
   return (
-    <Box ref={ref} height="100%" overflow="auto" alignItems="center" sx={getHostStyle()}>
+    <Box height="100%" overflow="auto" alignItems="center" sx={getHostStyle()}>
       <Stack spacing={1} margin={1}>
         {serviceStruct && (serviceStruct.def || []).length > 0 && (
           <Stack direction="row" spacing={1}>
@@ -417,6 +417,4 @@ const ServiceCallerPanel = forwardRef<HTMLDivElement, ServiceCallerPanelProps>(f
       </Stack>
     </Box>
   );
-});
-
-export default ServiceCallerPanel;
+}

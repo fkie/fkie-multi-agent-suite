@@ -1,7 +1,7 @@
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import { IconButton, Menu, MenuItem, TextField } from "@mui/material";
-import { forwardRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface SearchBarProps {
   onSearch: (term: string) => void;
@@ -13,7 +13,7 @@ interface SearchBarProps {
   autoFocus?: boolean;
 }
 
-const SearchBar = forwardRef<HTMLDivElement, SearchBarProps>(function SearchBar(props, ref) {
+export default function SearchBar(props: SearchBarProps): JSX.Element {
   const {
     onSearch,
     onCloseRequest = (): void => {},
@@ -45,7 +45,6 @@ const SearchBar = forwardRef<HTMLDivElement, SearchBarProps>(function SearchBar(
   return (
     <>
       <TextField
-        ref={ref}
         autoFocus={autoFocus}
         onChange={(newValue) => {
           setSearched(newValue.target.value);
@@ -120,6 +119,4 @@ const SearchBar = forwardRef<HTMLDivElement, SearchBarProps>(function SearchBar(
       </Menu>
     </>
   );
-});
-
-export default SearchBar;
+}

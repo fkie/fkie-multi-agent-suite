@@ -1,6 +1,6 @@
 import { TFileRange, TLaunchArg } from "@/types";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { LoggingContext } from "../../context/LoggingContext";
@@ -28,7 +28,6 @@ export default function EditorApp(): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
-  const dialogRef = useRef(null);
 
   async function initProvider(): Promise<void> {
     rosCtx.setShowSnackbarReloadLaunchNotification(false);
@@ -122,11 +121,7 @@ export default function EditorApp(): JSX.Element {
           onClose={() => setModifiedEditorTabs([])}
           fullWidth
           maxWidth="sm"
-          ref={dialogRef}
-          PaperProps={{
-            component: DraggablePaper,
-            dialogRef: dialogRef,
-          }}
+          PaperComponent={DraggablePaper}
           aria-labelledby="draggable-dialog-title"
         >
           <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">

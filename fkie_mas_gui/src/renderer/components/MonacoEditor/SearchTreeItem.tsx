@@ -1,13 +1,13 @@
 import { Stack, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
-    TreeItem,
-    treeItemClasses,
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  TreeItem,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, LegacyRef } from "react";
+import React from "react";
 
 const SearchTreeItemRoot = styled(TreeItem)(({ theme }) => ({
   color: theme.palette.text.secondary,
@@ -48,7 +48,7 @@ interface SearchFileTreeItemProps {
   children: React.ReactNode;
 }
 
-const SearchFileTreeItem = forwardRef<HTMLDivElement, SearchFileTreeItemProps>(function SearchFileTreeItem(props, ref) {
+export function SearchFileTreeItem(props: SearchFileTreeItemProps): JSX.Element {
   const { itemId, fileName, countChildren, ...children } = props;
 
   // avoid selection if collapse icon was clicked
@@ -67,7 +67,6 @@ const SearchFileTreeItem = forwardRef<HTMLDivElement, SearchFileTreeItemProps>(f
   return (
     <SearchTreeItemRoot
       itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
       slotProps={
         {
           label: { onClick: handleLabelClick },
@@ -92,7 +91,7 @@ const SearchFileTreeItem = forwardRef<HTMLDivElement, SearchFileTreeItemProps>(f
       {...children}
     />
   );
-});
+}
 
 interface SearchResultTreeItemProps {
   itemId: string;
@@ -102,54 +101,49 @@ interface SearchResultTreeItemProps {
   children?: React.ReactNode;
 }
 
-const SearchResultTreeItem = forwardRef<HTMLDivElement, SearchResultTreeItemProps>(
-  function SearchResultTreeItem(props, ref) {
-    const { itemId, lineNumber, lineText, onClick = (): void => {}, ...children } = props;
+export function SearchResultTreeItem(props: SearchResultTreeItemProps): JSX.Element {
+  const { itemId, lineNumber, lineText, onClick = (): void => {}, ...children } = props;
 
-    // avoid selection if collapse icon was clicked
-    let toggled = false;
-    const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
-      event.defaultMuiPrevented = toggled;
-      toggled = false;
-    };
+  // avoid selection if collapse icon was clicked
+  let toggled = false;
+  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
+    event.defaultMuiPrevented = toggled;
+    toggled = false;
+  };
 
-    const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
+  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
 
-    const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
-      toggled = true;
-    };
+  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
+    toggled = true;
+  };
 
-    return (
-      <SearchTreeItemRoot
-        itemId={itemId}
-        ref={ref as LegacyRef<HTMLLIElement>}
-        slotProps={
-          {
-            label: { onClick: handleLabelClick },
-            content: { onClick: handleContentClick },
-            iconContainer: { onClick: handleIconContainerClick },
-          } as TreeItemSlotProps
-        }
-        label={
-          <Stack direction="column">
-            <Stack spacing={1} direction="row" alignItems="center">
-              <Typography variant="body2" sx={{ fontWeight: "inherit" }}>
-                {lineNumber}
-              </Typography>
+  return (
+    <SearchTreeItemRoot
+      itemId={itemId}
+      slotProps={
+        {
+          label: { onClick: handleLabelClick },
+          content: { onClick: handleContentClick },
+          iconContainer: { onClick: handleIconContainerClick },
+        } as TreeItemSlotProps
+      }
+      label={
+        <Stack direction="column">
+          <Stack spacing={1} direction="row" alignItems="center">
+            <Typography variant="body2" sx={{ fontWeight: "inherit" }}>
+              {lineNumber}
+            </Typography>
 
-              <Typography noWrap variant="caption" color="inherit">
-                {lineText}
-              </Typography>
-            </Stack>
+            <Typography noWrap variant="caption" color="inherit">
+              {lineText}
+            </Typography>
           </Stack>
-        }
-        onClick={() => {
-          onClick();
-        }}
-        {...children}
-      />
-    );
-  }
-);
-
-export { SearchFileTreeItem, SearchResultTreeItem };
+        </Stack>
+      }
+      onClick={() => {
+        onClick();
+      }}
+      {...children}
+    />
+  );
+}

@@ -21,7 +21,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 import { v4 as uuid } from "uuid";
@@ -54,7 +54,7 @@ interface TopicEchoPanelProps {
   defaultNoData: boolean;
 }
 
-const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function TopicEchoPanel(props, ref) {
+export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element {
   const { showOptions = true, defaultProvider = "", defaultTopic = "", defaultNoData = false } = props;
 
   const rosCtx = useContext(RosContext);
@@ -668,7 +668,6 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
 
   return (
     <Stack
-      ref={ref}
       onKeyDown={(event) => onKeyDown(event)}
       height="100%"
       overflow="auto"
@@ -696,6 +695,4 @@ const TopicEchoPanel = forwardRef<HTMLDivElement, TopicEchoPanelProps>(function 
       </Stack>
     </Stack>
   );
-});
-
-export default TopicEchoPanel;
+}

@@ -5,7 +5,7 @@ import Label from "@mui/icons-material/Label";
 import { Box, Stack } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
 import SettingsContext from "@/renderer/context/SettingsContext";
@@ -35,7 +35,7 @@ interface ParameterRootTreeProps {
   onSelectParams: (provider: Provider, params: RosParameter[]) => void;
 }
 
-const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(function ParameterRootTree(props, ref) {
+export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.Element {
   const {
     provider,
     rosNode = undefined,
@@ -299,7 +299,7 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
   }, [tree, requesting, requestError, avoidGroupWithOneItem]);
 
   return (
-    <Box ref={ref}>
+    <Box>
       <Stack direction="row" sx={{ flexGrow: 1 }}>
         {(searched.length < EXPAND_ON_SEARCH_MIN_CHARS || (tree && tree.length > 0) || findIn(searched, [itemId])) && (
           <SimpleTreeView
@@ -348,6 +348,4 @@ const ParameterRootTree = forwardRef<HTMLDivElement, ParameterRootTreeProps>(fun
       </Stack>
     </Box>
   );
-});
-
-export default ParameterRootTree;
+}

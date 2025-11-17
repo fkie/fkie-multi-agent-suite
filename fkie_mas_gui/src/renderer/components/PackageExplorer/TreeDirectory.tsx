@@ -1,7 +1,7 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { forwardRef, LegacyRef, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { RosPackage } from "@/renderer/models";
 import { generateUniqueId } from "@/renderer/utils";
@@ -19,7 +19,7 @@ interface TreeDirectoryProps {
   onFileDoubleClick: (label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
 
-const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function TreeDirectory(props, ref) {
+export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
   const {
     packageItemsTree,
     selectedPackage = undefined,
@@ -168,7 +168,6 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
   const generateTree = useMemo(() => {
     return (
       <SimpleTreeView
-        ref={ref as LegacyRef<HTMLUListElement>}
         aria-label="package list"
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // use either the expanded state or the key of the file directory (expand the first layer)
@@ -242,6 +241,4 @@ const TreeDirectory = forwardRef<HTMLDivElement, TreeDirectoryProps>(function Tr
   ]);
 
   return generateTree;
-});
-
-export default TreeDirectory;
+}

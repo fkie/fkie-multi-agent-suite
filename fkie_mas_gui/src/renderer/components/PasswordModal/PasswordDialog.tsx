@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material";
-import { forwardRef, useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { ConnectConfig } from "ssh2";
 
 import RosContext from "@/renderer/context/RosContext";
@@ -14,7 +14,7 @@ interface PasswordDialogProps {
   onClose: (provider: Provider) => void;
 }
 
-const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function PasswordDialog(props, ref) {
+export default function PasswordDialog(props: PasswordDialogProps): JSX.Element {
   const { provider, connectConfig, launchConfig, onClose = (): void => {} } = props;
 
   const rosCtx = useContext(RosContext);
@@ -57,7 +57,7 @@ const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function 
   `;
 
   return (
-    <Dialog ref={ref} open={open} onClose={handleClose}>
+    <Dialog open={open} onClose={handleClose}>
       <DialogTitle>SSH login @{connectConfig.host}</DialogTitle>
       <DialogContent>
         <Button
@@ -119,6 +119,4 @@ const PasswordDialog = forwardRef<HTMLDivElement, PasswordDialogProps>(function 
       </DialogActions>
     </Dialog>
   );
-});
-
-export default PasswordDialog;
+}

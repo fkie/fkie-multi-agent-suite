@@ -3,13 +3,13 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
 import {
-    TreeItem,
-    treeItemClasses,
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  TreeItem,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { forwardRef, LegacyRef, useContext } from "react";
+import React, { useContext } from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { FileIcon } from "react-file-icon";
 
@@ -69,7 +69,7 @@ interface FileTreeItemProps {
   children: React.ReactNode;
 }
 
-const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function FileTreeItem(props, ref) {
+export default function FileTreeItem(props: FileTreeItemProps): JSX.Element {
   const { tabId, itemId, item, selected, modified, ...children } = props;
   const logCtx = useContext(LoggingContext);
   const fileExtension = getFileExtension(item.file.inc_path as string);
@@ -111,7 +111,6 @@ const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function File
   return (
     <FileTreeItemRoot
       itemId={itemId}
-      ref={ref as LegacyRef<HTMLLIElement>}
       slotProps={
         {
           label: { onClick: handleLabelClick },
@@ -205,6 +204,4 @@ const FileTreeItem = forwardRef<HTMLDivElement, FileTreeItemProps>(function File
       {...children}
     />
   );
-});
-
-export default FileTreeItem;
+}

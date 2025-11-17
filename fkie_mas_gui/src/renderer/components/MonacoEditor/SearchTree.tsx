@@ -5,7 +5,7 @@ import { Box, CircularProgress, IconButton, Stack, Tooltip, Typography } from "@
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { editor } from "monaco-editor/esm/vs/editor/editor.api";
-import { forwardRef, LegacyRef, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { MonacoContext } from "@/renderer/context/MonacoContext";
@@ -21,7 +21,7 @@ interface SearchTreeProps {
   searchTerm: string;
 }
 
-const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTree(props, ref) {
+export default function SearchTree(props: SearchTreeProps): JSX.Element {
   const { tabId, providerId, searchTerm = "", ownUriPaths = [] } = props;
 
   const monacoCtx = useContext(MonacoContext);
@@ -145,12 +145,13 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
       )}
       <SimpleTreeView
         aria-label="Search results"
-        ref={ref as LegacyRef<HTMLUListElement>}
         expansionTrigger={"iconContainer"}
         expandedItems={expandedSearchResults}
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
-        onExpandedItemsChange={(_event: React.SyntheticEvent | null, itemIds: string[]) => setExpandedSearchResults(itemIds)}
+        onExpandedItemsChange={(_event: React.SyntheticEvent | null, itemIds: string[]) =>
+          setExpandedSearchResults(itemIds)
+        }
         onSelectedItemsChange={(_event, itemId) => {
           if (itemId) {
             const index = expandedSearchResults.indexOf(itemId);
@@ -195,6 +196,4 @@ const SearchTree = forwardRef<HTMLDivElement, SearchTreeProps>(function SearchTr
       </SimpleTreeView>
     </Stack>
   );
-});
-
-export default SearchTree;
+}

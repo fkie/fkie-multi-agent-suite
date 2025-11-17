@@ -9,7 +9,7 @@ import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/materi
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { forwardRef, useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
@@ -47,7 +47,7 @@ interface TopicsPanelProps {
   initialSearchTerm?: string;
 }
 
-const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function TopicsPanel(props, ref) {
+export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
   const { initialSearchTerm = "" } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
@@ -524,7 +524,7 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
 
   const createPanel = useMemo(() => {
     return (
-      <Box ref={ref} height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+      <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
         <Stack
           spacing={1}
           height="100%"
@@ -574,6 +574,4 @@ const TopicsPanel = forwardRef<HTMLDivElement, TopicsPanelProps>(function Topics
     rosCtx.providers,
   ]);
   return createPanel;
-});
-
-export default TopicsPanel;
+}

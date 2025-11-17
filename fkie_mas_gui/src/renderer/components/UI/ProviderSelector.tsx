@@ -1,5 +1,5 @@
 import { MenuItem, Select } from "@mui/material";
-import { forwardRef, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import { RosContext } from "@/renderer/context/RosContext";
 
@@ -8,7 +8,7 @@ interface ProviderSelectorProps {
   setSelectedProvider: (providerId: string) => void;
 }
 
-const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(function ProviderSelector(props, ref) {
+export default function ProviderSelector(props: ProviderSelectorProps): JSX.Element {
   const { defaultProvider = "", setSelectedProvider = (): void => {} } = props;
   const rosCtx = useContext(RosContext);
   const [currentProvider, setCurrentProvider] = useState<string>(defaultProvider);
@@ -58,7 +58,6 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
 
   return (
     <Select
-      ref={ref}
       autoWidth={false}
       value={currentProvider}
       onChange={(event) => {
@@ -80,6 +79,4 @@ const ProviderSelector = forwardRef<HTMLDivElement, ProviderSelectorProps>(funct
       })}
     </Select>
   );
-});
-
-export default ProviderSelector;
+}

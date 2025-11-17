@@ -15,7 +15,7 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Button, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
-import { forwardRef, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { colorFromHostname, CopyButton } from "../UI";
 
@@ -26,7 +26,7 @@ type TopicDetailsItemsProps = {
   nodeName: string;
 };
 
-const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(function TopicDetailsItem(props, ref) {
+export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Element {
   const { providerId, topicId, showConnections = true, nodeName = "" } = props;
 
   const logCtx = useContext(LoggingContext);
@@ -500,11 +500,9 @@ const TopicDetailsItem = forwardRef<HTMLDivElement, TopicDetailsItemsProps>(func
   }, [topicInfo]);
 
   return (
-    <Stack direction="column" alignItems="left" spacing={0} ref={ref}>
+    <Stack direction="column" alignItems="left" spacing={0}>
       {createInfo}
       {showInfo && createExtendedInfo}
     </Stack>
   );
-});
-
-export default TopicDetailsItem;
+}

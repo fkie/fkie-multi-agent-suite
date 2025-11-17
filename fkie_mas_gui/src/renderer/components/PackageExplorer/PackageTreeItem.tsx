@@ -1,7 +1,7 @@
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, red } from "@mui/material/colors";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
 import SettingsContext from "@/renderer/context/SettingsContext";
 import { colorFromHostname } from "../UI";
@@ -19,7 +19,7 @@ interface PackageTreeItemProps {
   onDoubleClick?: (labelText: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
 
-const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(function PackageTreeItem(props, ref) {
+export default function PackageTreeItem(props: PackageTreeItemProps): JSX.Element {
   const {
     itemId,
     packageName,
@@ -62,7 +62,6 @@ const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(functio
 
   return (
     <StyledRootTreeItem
-      ref={ref as LegacyRef<HTMLLIElement>}
       itemId={itemId}
       label={
         <Box
@@ -116,6 +115,4 @@ const PackageTreeItem = forwardRef<HTMLDivElement, PackageTreeItemProps>(functio
       {...children}
     />
   );
-});
-
-export default PackageTreeItem;
+}

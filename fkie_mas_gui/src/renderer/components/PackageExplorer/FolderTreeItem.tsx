@@ -1,7 +1,6 @@
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
-import { forwardRef, LegacyRef } from "react";
 
 import { treeItemClasses } from "@mui/x-tree-view";
 import StyledTreeItem from "./StyledTreeItem";
@@ -15,12 +14,11 @@ interface FolderTreeItemProps {
   onDoubleClick?: (directoryName: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
 
-const FolderTreeItem = forwardRef<HTMLDivElement, FolderTreeItemProps>(function FolderTreeItem(props, ref) {
+export default function FolderTreeItem(props: FolderTreeItemProps): JSX.Element {
   const { itemId, directoryName, path, onClick = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
 
   return (
     <StyledTreeItem
-      ref={ref as LegacyRef<HTMLLIElement>}
       itemId={itemId}
       sx={{
         [`& .${treeItemClasses.content}`]: {
@@ -64,6 +62,4 @@ const FolderTreeItem = forwardRef<HTMLDivElement, FolderTreeItemProps>(function 
       {...children}
     />
   );
-});
-
-export default FolderTreeItem;
+}

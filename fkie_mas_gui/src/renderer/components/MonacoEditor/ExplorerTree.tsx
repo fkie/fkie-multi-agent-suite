@@ -1,7 +1,7 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { forwardRef, LegacyRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { RosContext } from "@/renderer/context/RosContext";
 import { LaunchArgument, LaunchIncludedFile } from "@/renderer/models";
@@ -34,7 +34,7 @@ interface ExplorerTreeProps {
   modifiedUriPaths: string[];
 }
 
-const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function ExplorerTree(props, ref) {
+export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
   const {
     tabId,
     providerId,
@@ -129,11 +129,12 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
   return (
     <SimpleTreeView
       aria-label="Explorer"
-      ref={ref as LegacyRef<HTMLUListElement>}
       expansionTrigger={"iconContainer"}
       expandedItems={expandedExplorerResults}
       slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-      onExpandedItemsChange={(_event: React.SyntheticEvent | null, itemIds: string[]) => setExpandedExplorerResults(itemIds)}
+      onExpandedItemsChange={(_event: React.SyntheticEvent | null, itemIds: string[]) =>
+        setExpandedExplorerResults(itemIds)
+      }
       onSelectedItemsChange={(_event, itemId) => {
         if (itemId) {
           const index = expandedExplorerResults.indexOf(itemId);
@@ -158,6 +159,4 @@ const ExplorerTree = forwardRef<HTMLDivElement, ExplorerTreeProps>(function Expl
       }, [includeFilesToTree, includeRoot, selectedUriPath])}
     </SimpleTreeView>
   );
-});
-
-export default ExplorerTree;
+}

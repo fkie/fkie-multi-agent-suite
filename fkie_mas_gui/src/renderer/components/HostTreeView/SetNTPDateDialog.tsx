@@ -1,5 +1,5 @@
 import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { forwardRef, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 
@@ -9,7 +9,7 @@ interface SetNTPDateDialogProps {
   onClose: (cmd: string) => void;
 }
 
-const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(function SetNTPDateDialog(props, ref) {
+export default function SetNTPDateDialog(props: SetNTPDateDialogProps): JSX.Element {
   const { open, defaultCmd, onClose = (): void => {} } = props;
 
   const settingsCtx = useContext(SettingsContext);
@@ -39,7 +39,6 @@ const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(funct
 
   return (
     <Dialog
-      ref={ref}
       sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }}
       maxWidth="xs"
       open={open}
@@ -79,6 +78,4 @@ const SetNTPDateDialog = forwardRef<HTMLDivElement, SetNTPDateDialogProps>(funct
       </DialogActions>
     </Dialog>
   );
-});
-
-export default SetNTPDateDialog;
+}

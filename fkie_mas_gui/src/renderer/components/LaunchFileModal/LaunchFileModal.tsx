@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { ForwardedRef, forwardRef, HTMLAttributes, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { HTMLAttributes, useCallback, useContext, useEffect, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
@@ -35,8 +35,13 @@ interface LaunchFileModalProps {
   onLaunchCallback: () => void;
 }
 
-const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(function LaunchFileModal(props, ref) {
-  const { selectedProvider = undefined, selectedLaunchFile, setSelectedLaunchFile, onLaunchCallback = (): void => {} } = props;
+export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Element {
+  const {
+    selectedProvider = undefined,
+    selectedLaunchFile,
+    setSelectedLaunchFile,
+    onLaunchCallback = (): void => {},
+  } = props;
 
   const rosCtx = useContext(RosContext);
   const logCtx = useContext(LoggingContext);
@@ -113,9 +118,9 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
               // special: add true/false if value is true or false and no history available
               if (historyList.length === 1) {
                 if (`${argValue}`.toLocaleLowerCase().localeCompare("true") === 0) {
-                  historyList.push("false")
+                  historyList.push("false");
                 } else if (`${argValue}`.toLocaleLowerCase().localeCompare("false") === 0) {
-                  historyList.push("true")
+                  historyList.push("true");
                 }
               }
               argList.push({
@@ -354,18 +359,13 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
     return Number.isNaN(Number(value));
   }
 
-  const dialogRef = useRef(ref);
   return (
     <Dialog
       open={open}
       onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
       fullWidth
       scroll="paper"
-      ref={dialogRef as ForwardedRef<HTMLDivElement>}
-      PaperProps={{
-        component: DraggablePaper,
-        dialogRef: dialogRef,
-      }}
+      PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
@@ -574,6 +574,4 @@ const LaunchFileModal = forwardRef<HTMLDivElement, LaunchFileModalProps>(functio
       </DialogActions>
     </Dialog>
   );
-});
-
-export default LaunchFileModal;
+}

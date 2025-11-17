@@ -6,7 +6,7 @@ import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/materi
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
@@ -35,7 +35,7 @@ interface ServicesPanelProps {
   initialSearchTerm?: string;
 }
 
-const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function ServicesPanel(props, ref) {
+export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
   const { initialSearchTerm = "" } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
@@ -434,7 +434,7 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
 
   const createPanel = useMemo(() => {
     return (
-      <Box ref={ref} height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+      <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
         <Stack
           spacing={1}
           height="100%"
@@ -484,6 +484,4 @@ const ServicesPanel = forwardRef<HTMLDivElement, ServicesPanelProps>(function Se
     rosCtx.providers,
   ]);
   return createPanel;
-});
-
-export default ServicesPanel;
+}

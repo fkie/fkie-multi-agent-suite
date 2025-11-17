@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
@@ -31,7 +31,7 @@ interface NodeLoggerPanelProps {
   node: RosNode;
 }
 
-const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(function NodeLoggerPanel(props, ref) {
+export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Element {
   const { node } = props;
 
   const rosCtx = useContext(RosContext);
@@ -202,7 +202,6 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
 
   return (
     <Stack
-      ref={ref}
       spacing={1}
       height="100%"
       // width="100%"
@@ -384,5 +383,4 @@ const NodeLoggerPanel = forwardRef<HTMLDivElement, NodeLoggerPanelProps>(functio
       </TableContainer>
     </Stack>
   );
-});
-export default NodeLoggerPanel;
+}

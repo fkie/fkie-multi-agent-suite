@@ -10,7 +10,7 @@ import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInpu
 import WarningIcon from "@mui/icons-material/Warning";
 import { Badge, Box, IconButton, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
-import { forwardRef, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { FileIcon } from "react-file-icon";
 
 import RosContext from "@/renderer/context/RosContext";
@@ -45,7 +45,7 @@ interface NodeItemProps {
   onShowLoggersClick: (event: React.MouseEvent, itemId: string) => void;
 }
 
-const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(props, ref) {
+export default function NodeItem(props: NodeItemProps): JSX.Element {
   const {
     itemId,
     node,
@@ -314,7 +314,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         }
       }}
       label={
-        <Stack ref={ref} direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
+        <Stack direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
           <Stack
             direction="row"
             flexGrow={1}
@@ -492,6 +492,4 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       {...other}
     />
   );
-});
-
-export default NodeItem;
+}

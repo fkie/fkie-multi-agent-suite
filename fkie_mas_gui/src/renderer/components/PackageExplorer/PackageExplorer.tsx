@@ -2,7 +2,7 @@ import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import InputIcon from "@mui/icons-material/Input";
 import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from "@mui/material";
-import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import LoggingContext from "@/renderer/context/LoggingContext";
@@ -37,7 +37,7 @@ interface PackageExplorerProps {
   reloadPackage: number;
 }
 
-const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(function PackageExplorer(props, ref) {
+export default function PackageExplorer(props: PackageExplorerProps): JSX.Element {
   const { packageList = [], selectedProvider = "", reloadPackage = 0 } = props;
 
   const logCtx = useContext(LoggingContext);
@@ -331,7 +331,7 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
   );
 
   return (
-    <Stack ref={ref}>
+    <Stack>
       <Stack>
         <Stack direction="row" justifyItems="expand" alignItems="center">
           <Autocomplete
@@ -497,5 +497,4 @@ const PackageExplorer = forwardRef<HTMLDivElement, PackageExplorerProps>(functio
       )}
     </Stack>
   );
-});
-export default PackageExplorer;
+}

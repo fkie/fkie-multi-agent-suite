@@ -1,3 +1,6 @@
+import { RosContext } from "@/renderer/context/RosContext";
+import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { generateUniqueId } from "@/renderer/utils";
 import AppsIcon from "@mui/icons-material/Apps";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
@@ -19,11 +22,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { ForwardedRef, useCallback, useContext, useRef, useState } from "react";
-
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { generateUniqueId } from "@/renderer/utils";
+import { useCallback, useContext, useState } from "react";
 import DraggablePaper from "../UI/DraggablePaper";
 import SelectDomainIdModal from "./SelectDomainIdModal";
 
@@ -84,7 +83,7 @@ const applicationRows = [
   },
 ];
 
-function ExternalAppsModal(ref): JSX.Element {
+export default function ExternalAppsModal(): JSX.Element {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
@@ -112,7 +111,7 @@ function ExternalAppsModal(ref): JSX.Element {
       let rmwImplementation = "";
       if (rosCtx.rosInfo?.rmwImplementation) {
         // set RMW_IMPLEMENTATION only if the variable is valid for the gui
-        rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`
+        rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
       }
       if (domainIds?.length === 0) {
         window.commandExecutor?.exec(null, command);
@@ -131,13 +130,11 @@ function ExternalAppsModal(ref): JSX.Element {
     let rmwImplementation = "";
     if (rosCtx.rosInfo?.rmwImplementation) {
       // set RMW_IMPLEMENTATION only if the variable is valid for the gui
-      rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`
+      rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
     }
     window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
     setShowSelectDialog(undefined);
   }, []);
-
-  const dialogRef = useRef(ref);
 
   return (
     <Stack padding={0}>
@@ -147,11 +144,7 @@ function ExternalAppsModal(ref): JSX.Element {
         fullWidth
         scroll="paper"
         maxWidth="md"
-        ref={dialogRef as ForwardedRef<HTMLDivElement>}
-        PaperProps={{
-          component: DraggablePaper,
-          dialogRef: dialogRef,
-        }}
+        PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
       >
         <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
@@ -260,5 +253,3 @@ function ExternalAppsModal(ref): JSX.Element {
     </Stack>
   );
 }
-
-export default ExternalAppsModal;

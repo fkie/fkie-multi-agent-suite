@@ -852,8 +852,6 @@ export default function NodeManager(): JSX.Element {
     }
   }
 
-  const dialogRef = useRef(null);
-
   return (
     <Stack
       onKeyDown={(event) => onKeyDown(event)}
@@ -928,11 +926,7 @@ export default function NodeManager(): JSX.Element {
           fullWidth
           scroll="paper"
           maxWidth="sm"
-          ref={dialogRef}
-          PaperProps={{
-            component: DraggablePaper,
-            dialogRef: dialogRef,
-          }}
+          PaperComponent={DraggablePaper}
           aria-labelledby="draggable-dialog-title"
         >
           <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">

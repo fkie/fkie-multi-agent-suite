@@ -2,7 +2,7 @@ import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Card, CardActions, Collapse, IconButton, Paper, Stack, Typography } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
-import React, { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
 import { SettingsContext } from "@/renderer/context/SettingsContext";
@@ -16,7 +16,7 @@ interface LoggingDetailsComponentProps {
   onDetailsClick: (id: SnackbarKey | undefined, event: React.MouseEvent) => void;
 }
 
-const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsComponentProps>((props, ref) => {
+export default function LoggingDetailsComponent(props: LoggingDetailsComponentProps): JSX.Element {
   const settingsCtx = useContext(SettingsContext);
   const { id, message, details, variant, onDetailsClick } = props;
 
@@ -89,7 +89,7 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
   }, [expanded, variant, message, id, details]);
 
   return (
-    <SnackbarContent ref={ref}>
+    <SnackbarContent>
       <Card
         sx={{
           marginBottom: 3,
@@ -135,8 +135,7 @@ const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsCompone
       </Card>
     </SnackbarContent>
   );
-});
+}
 
 LoggingDetailsComponent.displayName = "LoggingDetailsComponent";
 
-export default LoggingDetailsComponent;

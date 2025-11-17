@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
-import { ForwardedRef, forwardRef, useRef, useState } from "react";
+import { useState } from "react";
 
 import DraggablePaper from "../UI/DraggablePaper";
 
@@ -11,7 +11,7 @@ interface ConfirmModalProps {
   showCancelButton?: boolean;
 }
 
-const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function ConfirmModal(props, ref) {
+export default function ConfirmModal(props: ConfirmModalProps): JSX.Element {
   const {
     title,
     message,
@@ -35,20 +35,14 @@ const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function Conf
     handleClose("confirmed");
   }
 
-  const dialogRef = useRef(ref);
-
   return (
     <Dialog
-      ref={dialogRef as ForwardedRef<HTMLDivElement>}
       open={open}
       onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
       fullWidth
       scroll="paper"
       maxWidth="sm"
-      PaperProps={{
-        component: DraggablePaper,
-        dialogRef: dialogRef,
-      }}
+      PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
       <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
@@ -72,6 +66,4 @@ const ConfirmModal = forwardRef<HTMLDivElement, ConfirmModalProps>(function Conf
       </DialogActions>
     </Dialog>
   );
-});
-
-export default ConfirmModal;
+}
