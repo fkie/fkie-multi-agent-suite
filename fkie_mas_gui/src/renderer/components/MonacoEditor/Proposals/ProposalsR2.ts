@@ -151,6 +151,15 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
       tag: "push_ros_namespace",
       proposals: [...all, createProposal("namespace", 'namespace="${1:NAMESPACE}"', "Assigned namespace")],
     },
+    {
+      tag: "composable_node",
+      proposals: [
+        ...all,
+        name,
+        createProposal("pkg", 'pkg="${1:PACKAGE}"', "Name of the package where the node is to be found"),
+        createProposal("namespace", 'namespace="${1:NAMESPACE}"', "Assigned namespace"),
+      ],
+    },
   ];
 }
 

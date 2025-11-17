@@ -45,7 +45,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualified_push_ros_namespace_attrs: /if|unless|namespace/,
   qualified_timer_attrs: /period/,
   qualified_load_composable_node_attrs: /if|unless|target/,
-  qualified_composable_node_attrs: /if|unless|name|pkg|plugin/,
+  qualified_composable_node_attrs: /if|unless|name|namespace|pkg|plugin/,
   qualified_xml_attrs: /version/,
 
   qualifiedSubs: /find-pkg-prefix|find-pkg-share|find-exec|exec-in-package|var|env|eval|dirname|command/,
