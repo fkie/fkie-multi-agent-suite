@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import { useContext, useEffect, useState } from "react";
+import { forwardRef, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { SettingsContext } from "@/renderer/context/SettingsContext";
@@ -34,7 +34,8 @@ interface ReloadFileComponentProps {
   onReloaded: (providerId: string, launchFile: string, requester: string) => void;
 }
 
-export default function ReloadFileAlertComponent(props: ReloadFileComponentProps): JSX.Element {
+const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentProps>(
+  function ReloadFileAlertComponent(props, ref) {
     const { id, message, provider, modifiedFile, modification, launchFile, onReload, onReloaded } = props;
 
     const settingsCtx = useContext(SettingsContext);
@@ -93,7 +94,7 @@ export default function ReloadFileAlertComponent(props: ReloadFileComponentProps
     );
 
     return (
-      <SnackbarContent>
+      <SnackbarContent ref={ref}>
         <Card
           sx={{
             // marginTop: 7,
@@ -174,3 +175,6 @@ export default function ReloadFileAlertComponent(props: ReloadFileComponentProps
       </SnackbarContent>
     );
   }
+);
+
+export default ReloadFileAlertComponent;
