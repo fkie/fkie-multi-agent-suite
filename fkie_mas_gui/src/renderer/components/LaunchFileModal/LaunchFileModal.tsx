@@ -189,6 +189,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
   // The user clicked on launch, fill arguments a make a request to provider
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const launchSelectedFile = useCallback(async (): Promise<void> => {
+    setOpen(false);
     if (!selectedLaunch) return;
 
     const provider = rosCtx.getProviderById(selectedProvider || selectedLaunchFile.providerId || "", true);
@@ -248,7 +249,6 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
           "Please check your provider configuration"
         );
       } else if (resultLaunchLoadFile.status.code === "OK") {
-        setOpen(false);
         if (resultLaunchLoadFile.status.msg) {
           logCtx.warn(
             `Launch file [${getFileName(path)}] loaded with warnings`,
