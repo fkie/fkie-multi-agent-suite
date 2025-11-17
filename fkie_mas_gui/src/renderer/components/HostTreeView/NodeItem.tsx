@@ -8,7 +8,7 @@ import ReportIcon from "@mui/icons-material/Report";
 import ScheduleSendIcon from "@mui/icons-material/ScheduleSend";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
 import WarningIcon from "@mui/icons-material/Warning";
-import { Badge, Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Badge, Box, IconButton, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { forwardRef, useContext, useEffect, useState } from "react";
 import { FileIcon } from "react-file-icon";
@@ -63,6 +63,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
   const [showLaunchFile, setShowLaunchFile] = useState<boolean>(
     settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean
   );
+  const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
   const [nodeIcon, setNodeIcon] = useState(getNodeIcon(node, isDarkMode));
   const [timerPeriod, setTimerPeriod] = useState<number[]>([]);
   const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
@@ -86,6 +87,58 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
         return isDarkMode ? yellow[600] : yellow[500];
     }
   }
+
+  const callLifecycleService: (node: RosNode, transitionId: number) => void = async (node, transitionId) => {
+    const provider = rosCtx.getProviderById(node.providerId as string, true);
+    await provider?.callService(
+      new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
+        type: "lifecycle_msgs/srv/ChangeState",
+        name: "",
+        useNow: false,
+        def: [
+          {
+            name: "transition",
+            useNow: false,
+            def: [
+              {
+                name: "id",
+                useNow: false,
+                def: [],
+                type: "uint8",
+                is_array: false,
+                value: `${transitionId}`,
+              },
+              { name: "label", useNow: false, def: [], type: "string", is_array: false },
+            ],
+            type: "lifecycle_msgs/Transition",
+            is_array: false,
+          },
+        ],
+        is_array: false,
+      } as TRosMessageStruct)
+    );
+  };
+
+  function getLifecycleMenuItems(node: RosNode): JSX.Element[] {
+    // add menu to change the lifecycle state
+    return (
+      node.lifecycle_available_transitions?.map((item) => {
+        return (
+          <MenuItem
+            key={`context-menu-${item.label}`}
+            sx={{ fontSize: "0.8em" }}
+            onClick={async (): Promise<void> => {
+              setContextMenu(null);
+              callLifecycleService(node, item.id);
+            }}
+          >
+            {item.label}
+          </MenuItem>
+        );
+      }) || []
+    );
+  }
+
   function getNodeIcon(node: RosNode, isDarkMode = false): JSX.Element {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
@@ -145,34 +198,7 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
                 name: item.label,
                 key: item.label,
                 onClick: async (): Promise<void> => {
-                  const provider = rosCtx.getProviderById(node.providerId as string, true);
-                  await provider?.callService(
-                    new LaunchCallService(`${node.name}/change_state`, "lifecycle_msgs/srv/ChangeState", {
-                      type: "lifecycle_msgs/srv/ChangeState",
-                      name: "",
-                      useNow: false,
-                      def: [
-                        {
-                          name: "transition",
-                          useNow: false,
-                          def: [
-                            {
-                              name: "id",
-                              useNow: false,
-                              def: [],
-                              type: "uint8",
-                              is_array: false,
-                              value: `${item.id}`,
-                            },
-                            { name: "label", useNow: false, def: [], type: "string", is_array: false },
-                          ],
-                          type: "lifecycle_msgs/Transition",
-                          is_array: false,
-                        },
-                      ],
-                      is_array: false,
-                    } as TRosMessageStruct)
-                  );
+                  callLifecycleService(node, item.id);
                 },
               };
             })}
@@ -289,29 +315,46 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
       }}
       label={
         <Stack ref={ref} direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
-          {nodeIcon}
-          <Stack direction="row" flexGrow="1" paddingLeft={0.5} sx={{ userSelect: "none" }} alignItems="center">
-            <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
-              {namespacePart}
-            </Typography>
-            <Typography variant="body2" sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}>
-              {labelText}
-            </Typography>
-            {node.countSameName > 1 && (
-              <Tooltip
-                title={`${node.countSameName} nodes with the same name have been defined. Only the first node will be started on play!`}
-                placement="top"
-                disableInteractive
-              >
-                <Badge
-                  badgeContent={node.countSameName}
-                  color="error"
-                  sx={{
-                    left: 15,
-                  }}
-                />
-              </Tooltip>
-            )}
+          <Stack
+            direction="row"
+            flexGrow={1}
+            alignItems="center"
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setContextMenu(
+                contextMenu === null
+                  ? {
+                      mouseX: event.clientX + 2,
+                      mouseY: event.clientY - 6,
+                    }
+                  : null
+              );
+            }}
+          >
+            {nodeIcon}
+            <Stack direction="row" paddingLeft={0.5} sx={{ userSelect: "none" }} alignItems="center">
+              <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
+                {namespacePart}
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}>
+                {labelText}
+              </Typography>
+              {node.countSameName > 1 && (
+                <Tooltip
+                  title={`${node.countSameName} nodes with the same name have been defined. Only the first node will be started on play!`}
+                  placement="top"
+                  disableInteractive
+                >
+                  <Badge
+                    badgeContent={node.countSameName}
+                    color="error"
+                    sx={{
+                      left: 15,
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </Stack>
           </Stack>
           <Stack direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
             {node.tags.map((tag: TTag) => (
@@ -436,6 +479,14 @@ const NodeItem = forwardRef<HTMLDivElement, NodeItemProps>(function NodeItem(pro
               </Tooltip>
             )}
           </Stack>
+          <Menu
+            open={contextMenu != null}
+            onClose={() => setContextMenu(null)}
+            anchorReference="anchorPosition"
+            anchorPosition={contextMenu != null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
+          >
+            {getLifecycleMenuItems(node)}
+          </Menu>
         </Stack>
       }
       {...other}

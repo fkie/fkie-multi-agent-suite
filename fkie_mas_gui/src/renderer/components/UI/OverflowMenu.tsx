@@ -114,7 +114,7 @@ const OverflowMenu = forwardRef<HTMLDivElement, OverflowMenuProps>(function Over
           aria-haspopup="true"
           disabled={disabled}
           onClick={handleClick}
-          onMouseDown={handleClick}
+          // onMouseDown={handleClick}
         >
           {icon}
         </IconButton>
