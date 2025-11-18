@@ -52,6 +52,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
   const [lastOpenPath, setLastOpenPath] = useLocalStorage("lastOpenPath", "");
   const [currentArgs, setCurrentArgs] = useState<LaunchArgumentWithHistory[]>([]);
   const [scrollBar, setScrollBar] = useState<string>("auto");
+  const [lastKey, setLastKey] = useState<string>("");
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -367,6 +368,12 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
       scroll="paper"
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
+      onKeyUp={(event) => {
+        if (lastKey === "Enter") {
+          launchSelectedFile();
+        } else setLastKey(event.key);
+      }}
+      onMouseUp={() => setLastKey("")}
     >
       <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
         Launch file
@@ -390,7 +397,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                         size="small"
                         fullWidth
                         autoHighlight
-                        clearOnEscape
+                        // clearOnEscape
                         disableListWrap
                         handleHomeEndKeys={false}
                         // noOptionsText="Package not found"
