@@ -428,8 +428,8 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                           );
                         }}
                         onChange={(_event, newArgValue) => {
-                          setCurrentArgs(
-                            currentArgs.map((item) => {
+                          setCurrentArgs((prev) =>
+                            prev.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = newArgValue as string;
                                 // update last path
@@ -442,8 +442,8 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                           );
                         }}
                         onInputChange={(_event, newInputValue) => {
-                          setCurrentArgs(
-                            currentArgs.map((item) => {
+                          setCurrentArgs((prev) =>
+                            prev.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = newInputValue;
                                 // update last path
@@ -472,8 +472,8 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                           });
                           if (newIndex < 0) newIndex = options.length - 1;
                           else if (newIndex > options.length - 1) newIndex = 0;
-                          setCurrentArgs(
-                            currentArgs.map((item) => {
+                          setCurrentArgs((prev) =>
+                            prev.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = options[newIndex];
                                 // update last path on wheel
@@ -502,8 +502,8 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                         variant="outlined"
                         size="small"
                         onChange={(event) => {
-                          setCurrentArgs(
-                            currentArgs.map((item) => {
+                          setCurrentArgs((prev) =>
+                            prev.map((item) => {
                               if (item.name === arg.name) {
                                 item.value = event.target.value;
                               }
