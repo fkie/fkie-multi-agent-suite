@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.7.3 - 18.11.2025
+
+Highlight true/false in XML launch files
+Added let proposal
+Fixed proposals for unless and if in XML launch file
+Fixed go back/forward in editor
+
 ## 4.7.2 - 18.11.2025
 
 Load launch file on pressed enter load dialog
