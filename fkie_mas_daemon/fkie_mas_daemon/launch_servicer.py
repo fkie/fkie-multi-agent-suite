@@ -951,7 +951,7 @@ class LaunchServicer(LoggingEventHandler):
             else:
                 opt_str += ' -p 10'
             if request.use_rostime:
-                opt_str += ' --use-rostime'
+                opt_str += ' --use-sim-time'
             fullname = f"/mas_publisher/{request.topic_name.strip('/')}".replace(
                 '/', '_')
             opt_str += f' -n {fullname}'
