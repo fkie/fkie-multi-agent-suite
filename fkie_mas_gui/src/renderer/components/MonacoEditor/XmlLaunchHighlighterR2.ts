@@ -24,7 +24,7 @@ const tagsArray = [
 
 export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   defaultToken: "",
-  ignoreCase: true,
+  ignoreCase: false,
 
   qualifiedTags: new RegExp(`${tagsArray.join("|")}`),
 
@@ -147,6 +147,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
     // special attributes
     value: [
       [/([^"^$]*)(\$\()/, ["attribute.value", { token: "delimiter.start", bracket: "@open", next: "@subst" }]],
+      [/(false|true)(")/, ["error-token", { token: "", bracket: "@close", next: "@pop" }]],
       [/([^"]*)(")/, ["attribute.value", { token: "", bracket: "@close", next: "@pop" }]],
     ],
     subst: [
