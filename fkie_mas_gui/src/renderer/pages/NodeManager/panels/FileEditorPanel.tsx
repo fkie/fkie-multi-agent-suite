@@ -335,12 +335,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       appendToHistory: boolean = true
     ): Promise<boolean> => {
       if (!uriPath) return false;
-      setCurrentFile({ name: getFileName(uriPath), requesting: true, path: uriPath });
       setNotificationDescription("Getting file from provider...");
       // If model does not exist, try to fetch it
       const result: TModelResult = await monacoCtx.getModel(tabId, providerId, uriPath, forceReload);
-      setCurrentFile({ name: getFileName(uriPath), requesting: false, path: uriPath });
       setNotificationDescription("");
+      setCurrentFile({ name: getFileName(uriPath), requesting: false, path: uriPath });
 
       // get model from path if exists
       if (!result.model) {
@@ -386,7 +385,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       setCurrentLaunchArgs(launchArgs);
       if (appendToHistory) {
         const curMod = { uriPath: result.model.uri.path, range: range, launchArgs: launchArgs };
-        setHistoryModels((prev) => [...prev, curMod]);
+        setHistoryModels((prev) => {
+          if (historyIndex === -1) {
+            return [...prev, curMod];
+          }
+          return [...prev.slice(0, historyIndex + 1), curMod, ...prev.slice(historyIndex + 1)];
+        });
+        setHistoryIndex((prev) => prev + 1);
       }
 
       return true;
@@ -400,7 +405,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       monacoCtx.getModel,
       setActiveModel,
       updateModifiedFiles,
+      historyIndex,
       setHistoryModels,
+      setHistoryIndex,
     ]
   );
 
@@ -408,25 +415,21 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // open one from history
     const historyModel = historyModels.at(historyIndex);
     if (historyModel) setEditorModel(historyModel.uriPath, historyModel.range, historyModel.launchArgs, false, false);
-  }, [historyIndex]);
+  }, [historyIndex, editorRef.current]);
 
   const openPrevModel = useCallback(() => {
     setHistoryIndex((prev) => {
-      if (prev === -1 && historyModels.length > 1) {
-        return historyModels.length - 2;
-      }
-      if (prev > 0) {
-        return prev - 1;
-      }
+      if (prev > 0) return prev - 1;
       return prev;
     });
-  }, [historyIndex, historyModels]);
+  }, [historyModels]);
 
   const openNextModel = useCallback(() => {
     setHistoryIndex((prev) => {
-      return prev < historyModels.length - 1 ? prev + 1 : prev;
+      if (prev < historyModels.length - 1) return prev + 1;
+      return prev;
     });
-  }, [historyIndex, historyModels]);
+  }, [historyModels]);
 
   /** select node definition on event. */
   useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data: TEventEditorSelectRange) => {
@@ -1276,7 +1279,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 <IconButton
                   edge="end"
                   aria-label="preview"
-                  disabled={historyModels.length <= 1}
+                  disabled={historyModels.length === 1 || historyIndex === 0}
                   onClick={() => {
                     openPrevModel();
                   }}
@@ -1290,7 +1293,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 <IconButton
                   edge="end"
                   aria-label="preview"
-                  disabled={historyIndex === -1 || historyModels.length - historyIndex <= 1}
+                  disabled={!(historyIndex !== -1 && historyIndex + 1 < historyModels.length)}
                   onClick={() => {
                     openNextModel();
                   }}
