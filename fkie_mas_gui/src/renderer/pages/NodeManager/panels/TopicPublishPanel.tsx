@@ -2,6 +2,7 @@ import { StopCircleOutlined } from "@mui/icons-material";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditIcon from "@mui/icons-material/Edit";
+import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
   Alert,
@@ -10,13 +11,16 @@ import {
   Box,
   Button,
   ButtonGroup,
+  Checkbox,
   CircularProgress,
   Divider,
   FormControl,
+  FormControlLabel,
   FormLabel,
   IconButton,
   Stack,
   TextField,
+  ToggleButton,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -67,6 +71,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const [messageStruct, setMessageStruct] = useState<TRosMessageStruct>();
   const [messageStructOrg, setMessageStructOrg] = useState<TRosMessageStruct>();
   const [publishRate, setPublishRate] = useState<string>("1");
+  const [useSimTime, setUseSimTime] = useState<boolean>(false);
   const [provider, setProvider] = useState<Provider | null>(null);
   const [inputElements, setInputElements] = useState<React.ReactNode | null>(null);
   const [hasPublisher, setHasPublisher] = useState<boolean>(false);
@@ -381,7 +386,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         once,
         latched,
         false,
-        false,
+        useSimTime,
         substituteKeywords,
         qos
       )
@@ -519,7 +524,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
             />
           </FormControl>
         </Stack>
-        <Stack direction="row" spacing={2} display="flex" alignItems="center">
+        <Stack direction="row" spacing={1} display="flex" alignItems="center">
           <Autocomplete
             id={`publish-rate-${topicName}`}
             handleHomeEndKeys={false}
@@ -553,20 +558,16 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
               setPublishRate(publishRateSelections[newIndex]);
             }}
           />
-          {/* <FormGroup>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  id={`${topicName?.replace("/", "-")}-substitute-keywords`}
-                  checked={substituteKeywords}
-                  onChange={(event) => {
-                    setSubstituteKeywords(event.target.checked);
-                  }}
-                />
-              }
-              label="Substitute keywords"
-            />
-          </FormGroup> */}
+          <Tooltip title="use sim time" placement="bottom" disableInteractive>
+            <ToggleButton
+              size="small"
+              value="use-sim-time"
+              selected={useSimTime}
+              onChange={() => setUseSimTime((prev) => !prev)}
+            >
+              <MonitorHeartIcon sx={{ fontSize: "inherit" }} />
+            </ToggleButton>
+          </Tooltip>
           {historyLength > 0 && (
             <Stack direction="column" spacing={1} alignItems="left">
               <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>Publish history</FormLabel>
