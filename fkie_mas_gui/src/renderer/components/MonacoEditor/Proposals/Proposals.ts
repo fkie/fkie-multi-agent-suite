@@ -17,10 +17,10 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
   }
 
   const all = [
-    createProposal("if", 'if="${arg ${1:VALUE}}"', "If value evaluates to true, include tag and its contents."),
+    createProposal("if", 'if="$(arg ${1:VALUE})"', "If value evaluates to true, include tag and its contents."),
     createProposal(
       "unless",
-      'unless="${arg ${1:VALUE}}"',
+      'unless="$(arg ${1:VALUE})"',
       "Unless value evaluates to true (which means if value evaluates to false), include tag and its contents."
     ),
   ];
