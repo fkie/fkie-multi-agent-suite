@@ -331,5 +331,6 @@ export function getTagProposals(
       `${open}extra_arg name="\${1:NAME}" value="\${2:VALUE}" /${close}`,
       "Add a new extra argument"
     ),
+    createProposal("let", `${open}let name="\${1:NAME}" value="\${2:VALUE}" /${close}`, ""),
   ];
 }
