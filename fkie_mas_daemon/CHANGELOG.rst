@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.7.2 (18.11.2025)
+-------------------
+* fixed start publisher with simtime
+
 4.7.1 (14.11.2025)
 -------------------
 * fixed error when loading 'capability groups' for included files

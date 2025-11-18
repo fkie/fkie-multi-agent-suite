@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.7.2 - 18.11.2025
+
+Load launch file on pressed enter load dialog
+Added option to start publisher with simtime
+Close load dialog before loadings the launch file to avoid multiple load trigger
+Added lifecycle context menu to node name
+Added namespace tag for composable_node in XML launch file proposals
+Improved log settings
+
 ## 4.7.1 - 14.11.2025
 
 fixed error when loading 'capability groups' for included files
