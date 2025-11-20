@@ -59,7 +59,7 @@ export default class RosNode {
   /**
    * ROS node API URI (where the node is running)
    */
-  node_API_URI: string;
+  node_API_URI?: string;
 
   /**
    * status: check [RosNodeStatus]
@@ -79,7 +79,7 @@ export default class RosNode {
   /**
    * The ROS_MASTER_URI the node was originally registered
    */
-  masteruri: string;
+  masteruri?: string;
 
   /**
    * Describes whether the node is running on the same host as the ROS master. Possible values: local, remote
@@ -106,22 +106,22 @@ export default class RosNode {
   /**
    * List of topics subscribed by the node
    */
-  subscribers: RosTopicId[] | undefined;
+  subscribers?: RosTopicId[];
 
   /**
    * List of topics published by the node
    */
-  publishers: RosTopicId[] | undefined;
+  publishers?: RosTopicId[];
 
   /**
    * List of services available in the node
    */
-  services: RosTopicId[] | undefined;
+  services?: RosTopicId[] ;
 
   /**
    * List of Active screens
    */
-  screens: string[] | undefined;
+  screens?: string[];
 
   /** List of diagnostic messages associated with this node.
    * The list of DiagnosticArray messages represents the history.
@@ -129,7 +129,7 @@ export default class RosNode {
   diagnosticArray: DiagnosticArray[] = [];
 
   /** Calculated values of the last diagnosticArray message. */
-  diagnosticLevel: DiagnosticLevel | undefined = DiagnosticLevel.OK;
+  diagnosticLevel?: DiagnosticLevel = DiagnosticLevel.OK;
   diagnosticMessage: string = "";
   diagnosticColor: string = "";
 
@@ -159,26 +159,28 @@ export default class RosNode {
    */
   rosLoggers: { [id: string]: string } = {};
 
-  guid: string | undefined;
+  guid?: string;
 
   /**
    * True if the node is a container
    */
 
-  is_container: boolean | undefined;
+  is_container?: boolean;
   /**
    * The node name of the composable/nodelet's parent
    */
-  container_name: string | undefined;
+  container_name?: string;
 
   dynamicReconfigureServices: string[] = [];
 
-  lifecycle_state?: string | undefined;
-  lifecycle_available_transitions: { label: string; id: number }[] | undefined;
+  lifecycle_state?: string;
+  lifecycle_available_transitions?: { label: string; id: number }[];
 
-  ignore_timer: boolean | undefined;
+  ignore_timer?: boolean;
 
   countSameName: number = 0;
+
+  toRemove?: boolean = undefined;
 
   constructor(
     id = "",

@@ -316,10 +316,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    * Trigger updateRosNodes() of the provider.
    */
   const updateNodeList = useCallback(
-    async (providerId: string): Promise<void> => {
+    async (providerId: string, force?: boolean): Promise<void> => {
       logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "", false);
       const provider = getProviderById(providerId);
-      await provider?.updateRosNodes({}, false);
+      if (provider) {
+        await provider.updateRosNodes({}, force);
+        await provider.updateTimeDiff();
+        await provider.updateDiagnostics(null);
+      }
     },
     [getProviderById, logCtx]
   );

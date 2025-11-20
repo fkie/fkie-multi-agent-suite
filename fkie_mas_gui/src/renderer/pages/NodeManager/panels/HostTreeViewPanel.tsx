@@ -905,9 +905,9 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
 
-  useEffect(() => {
-    refreshAllProvider(false);
-  }, [rosCtx.providers]);
+  // useEffect(() => {
+  //   refreshAllProvider(false);
+  // }, [rosCtx.providers]);
 
   useEffect(() => {
     // apply filter to nodes if search text was changed by user or nodes are updated by provider

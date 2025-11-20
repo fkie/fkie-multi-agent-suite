@@ -287,20 +287,21 @@ export default class Provider implements IProvider {
 
   public updateDaemonInit: () => void = async () => {
     this.getDaemonVersion()
-      .then((dv) => {
+      .then(async (dv) => {
         if (this.isAvailable()) {
+          this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           this.daemonVersion = dv;
-          this.updateSystemWarnings();
-          this.updateTimeDiff();
-          this.getProviderSystemInfo();
-          this.getProviderSystemEnv();
-          // this.updateRosNodes({});
-          this.updateDiagnostics(null);
+          await this.updateSystemWarnings();
+          await this.updateTimeDiff();
+          await this.getProviderSystemInfo();
+          await this.getProviderSystemEnv();
+          await this.updateDiagnostics(null);
           // this.getPackageList();  <- this request is done by package explorer
           // this.updateScreens();  <. this request is performed while update nodes
           // this.launchGetList();
-          this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
-          this.updateProviderList();
+          await this.updateRosNodes({}, true);
+          await this.updateTimeDiff();
+          await this.updateProviderList();
           return true;
         }
         return false;
@@ -1163,7 +1164,7 @@ export default class Provider implements IProvider {
     this.rosNodes.forEach((node: RosNode, idx: number) => {
       if (node.status !== RosNodeStatus.RUNNING) {
         if (node.screens && node.screens.length > 0) {
-          const screenMapping = this.screens.find((s) => node.id === s.name);
+          const screenMapping = this.screens.find((s) => node.name === s.name);
           if (!screenMapping) {
             nodesUpdated = true;
             this.rosNodes[idx].screens = [];
@@ -1798,7 +1799,7 @@ export default class Provider implements IProvider {
       `${node.launchPath}`, // opt_launch
       "", // log level
       "", // log format
-      node.masteruri?.length > 0 ? node.masteruri : this.rosState.masteruri || "", // masteruri
+      ((node.masteruri || "")?.length > 0 ? node.masteruri : this.rosState.masteruri) || "", // masteruri
       true, // reload global parameters
       "", // cmd
       node.ignore_timer || false
@@ -2213,7 +2214,10 @@ export default class Provider implements IProvider {
     this.logger?.debug(`Trigger update ros nodes for ${this.id}`, "");
     const msgObj = msg as unknown as { path: string; action: string; requester: string };
     if (msgObj?.path) {
-      emitCustomEvent(EVENT_PROVIDER_LAUNCH_LOADED, new EventProviderLaunchLoaded(this, msgObj.path, msgObj.requester || ""));
+      emitCustomEvent(
+        EVENT_PROVIDER_LAUNCH_LOADED,
+        new EventProviderLaunchLoaded(this, msgObj.path, msgObj.requester || "")
+      );
     }
     if (await this.lockRequest("updateRosNodes")) {
       return;
@@ -2222,7 +2226,7 @@ export default class Provider implements IProvider {
     // get nodes from remote provider
     const nlUnfiltered = await this.getNodeList(forceRefresh);
     const sameIdDict = {};
-    const nl = nlUnfiltered.filter((n) => {
+    const nl: RosNode[] = nlUnfiltered.filter((n) => {
       let ignored = false;
 
       // ignore nodes, which belongs to a discovered remote provider.
