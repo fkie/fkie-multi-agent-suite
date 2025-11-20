@@ -587,9 +587,14 @@ export default function HostTreeViewPanel(): JSX.Element {
           } else {
             addStatusQueueMain("STOP", node.name, true, "sent SIGTERM to executable");
           }
+        } else {
+          addStatusQueueMain("STOP", node.name, false, "no screen to stop");
         }
       }
+    } else {
+      addStatusQueueMain("STOP", "undefined", false, "invalid node");
     }
+
     return Promise.resolve();
   }
 
@@ -1129,7 +1134,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                   onClick={() => {
                     unregisterSelectedNodes();
                   }}
-                  disabled={selectedNodes.filter((node) => node.masteruri?.length > 0).length === 0}
+                  disabled={selectedNodes.filter((node) => (node.masteruri || "").length > 0).length === 0}
                 >
                   <DeleteForeverIcon fontSize="inherit" />
                 </IconButton>
@@ -1214,7 +1219,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                   } else {
                     for (const node of driItems) {
                       for (const dri of node.dynamicReconfigureServices) {
-                        startDynamicReconfigure(dri, node.masteruri);
+                        startDynamicReconfigure(dri, node.masteruri || "");
                       }
                     }
                   }
