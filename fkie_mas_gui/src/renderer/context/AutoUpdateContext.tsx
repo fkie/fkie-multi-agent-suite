@@ -13,6 +13,7 @@ import { SettingsContext } from "./SettingsContext";
 
 export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
+  checkedThisRun: boolean;
   checkForUpdate: () => void;
   updateChannel: string;
   checkTimestamp: number;
@@ -33,6 +34,7 @@ export interface IAutoUpdateContext {
 export const DEFAULT = {
   autoUpdateManager: null,
   updateChannel: "release",
+  checkedThisRun: false,
   checkTimestamp: 0,
   checkForUpdate: (): void => {},
   setUpdateChannel: (): void => {},
@@ -67,6 +69,7 @@ export function AutoUpdateProvider({
   const minDelayBetweenAutoChecks = 86400; // one day in seconds
   const [autoUpdateManager, setAutoUpdateManager] = useState<TAutoUpdateManager | null>(null);
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
+  const [checkedThisRun, setCheckedThisRun] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useLocalStorage<UpdateInfo | null>("AutoUpdate:updateAvailable", null);
   const [downloadProgress, setDownloadProgress] = useState<ProgressInfo | null>(null);
   const [updateError, setUpdateError] = useState<string>("");
@@ -109,6 +112,7 @@ export function AutoUpdateProvider({
         autoUpdateManager.setChannel(channel as "prerelease" | "release");
       }
       autoUpdateManager.checkForUpdate();
+      setCheckedThisRun(true);
     } else {
       fetchRelease(channel ? channel : updateChannel);
     }
@@ -239,6 +243,7 @@ export function AutoUpdateProvider({
       setUpdateError(errorMessage);
     } finally {
       setCheckingForUpdate(false);
+      setCheckedThisRun(true);
     }
   };
 
@@ -347,6 +352,7 @@ export function AutoUpdateProvider({
     () => ({
       autoUpdateManager,
       checkForUpdate,
+      checkedThisRun,
       updateChannel,
       checkTimestamp,
       setUpdateChannel,
@@ -364,6 +370,7 @@ export function AutoUpdateProvider({
     }),
     [
       autoUpdateManager,
+      checkedThisRun,
       updateChannel,
       checkTimestamp,
       checkingForUpdate,

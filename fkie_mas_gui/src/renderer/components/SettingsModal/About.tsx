@@ -72,7 +72,7 @@ export default function About(): JSX.Element {
         </Stack>
         {auCtx.autoUpdateManager && (
           <Stack ml="1em" direction="column">
-            {!auCtx.checkingForUpdate && !auCtx.updateAvailable && !auCtx.updateError && (
+            {auCtx.checkedThisRun && !auCtx.checkingForUpdate && !auCtx.updateAvailable && !auCtx.updateError && (
               <Typography variant="body1" color="green">
                 Your version is up to date!
               </Typography>
