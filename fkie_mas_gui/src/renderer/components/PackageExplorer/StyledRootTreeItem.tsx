@@ -13,12 +13,14 @@ const StyledRootTreeItem = styled(TreeItem)(({ theme }) => ({
       fontWeight: theme.typography.fontWeightRegular,
     },
     "&:hover": {
-      backgroundColor: theme.palette.action.hover,
+      // backgroundColor: theme.palette.action.hover,
+      backgroundColor: "transparent",
     },
     "&.Mui-selected": {
-      // backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      // color: 'var(--tree-view-color)',
+      backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
+      color: "var(--tree-view-color)",
     },
+
     [`& .${treeItemClasses.label}`]: {
       fontWeight: "inherit",
       color: "inherit",
