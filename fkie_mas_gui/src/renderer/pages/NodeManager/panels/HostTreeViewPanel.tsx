@@ -232,14 +232,14 @@ export default function HostTreeViewPanel(): JSX.Element {
    */
   const handleNodesSelect = useCallback(
     (itemIds: string[]) => {
-      const selectedNoes: string[] = [];
+      const selectedNodes: string[] = [];
       for (const id of itemIds) {
         const n = rosCtx.nodeMap.get(id);
         if (n) {
-          selectedNoes.push(id);
+          selectedNodes.push(id);
         }
       }
-      navCtx.setSelectedNodes(selectedNoes, false);
+      navCtx.setSelectedNodes(selectedNodes, false);
     },
     [navCtx, rosCtx.nodeMap]
   );
@@ -919,7 +919,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     setProviderNodes((prev) => [
       ...prev.filter((item) => rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0),
     ]);
-  }, [rosCtx.providers]);
+  }, [rosCtx.mapProviderRosNodes]);
 
   useEffect(() => {
     if (nodesToStart) {

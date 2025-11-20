@@ -246,10 +246,17 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           ...nodeList,
           ...keyNodeList
             .filter((entry) => {
-              if (entry.key.includes("#")) {
-                return entry.key === item;
+              // running nodes ends with id in their name, loaded from launch file not
+              // we have to remove id if we compare running with not running nodes
+              const [entryName, entryId] = entry.key.split(" ");
+              const [itemName, itemId] = item.split(" ");
+              if (entryName === itemName) {
+                if (entryId && itemId) {
+                  return entryId === itemId;
+                }
+                return true;
               }
-              return entry.key.startsWith(item);
+              return false;
             })
             .map((entry) => {
               return entry.idGlobal ? entry.idGlobal : "";
@@ -486,7 +493,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     namespace.unshift("");
     // add node name
     namespace.push(node);
-    return { isValidNode: name !== undefined, provider: provider, node_name: removeDDSuid(namespace.join("/")) };
+    return { isValidNode: node !== undefined, provider: provider, node_name: removeDDSuid(namespace.join("/")) };
   }
 
   /**
@@ -502,10 +509,19 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             const newKey = keyNodeList.filter((keyItem) => {
               const keyItemSplitted = keyToNodeName(keyItem.key);
               if (keyItemSplitted.isValidNode) {
-                return (
-                  selItemSplitted.provider === keyItemSplitted.provider &&
-                  selItemSplitted.node_name === keyItemSplitted.node_name
-                );
+                if (selItemSplitted.provider === keyItemSplitted.provider) {
+                  // running nodes ends with id in their name, loaded from launch file not
+                  // we have to remove id if we compare running with not running nodes
+                  const [entryName, entryId] = keyItemSplitted.node_name.split(" ");
+                  const [itemName, itemId] = selItemSplitted.node_name.split(" ");
+                  if (entryName === itemName) {
+                    if (entryId && itemId) {
+                      return entryId === itemId;
+                    }
+                    return true;
+                  }
+                }
+                return false;
               }
               return false;
             });
