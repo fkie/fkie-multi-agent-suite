@@ -74,6 +74,6 @@
     "fromEnv": "",
     "type": "boolean",
     "switch": true,
-    "hint": "If 'join' is set, start the ROS-MAS nodes."
+    "hint": "Starts the ROS-MAS nodes"
   }
 }
