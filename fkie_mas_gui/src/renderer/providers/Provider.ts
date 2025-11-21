@@ -299,7 +299,7 @@ export default class Provider implements IProvider {
           // this.getPackageList();  <- this request is done by package explorer
           // this.updateScreens();  <. this request is performed while update nodes
           // this.launchGetList();
-          await this.updateRosNodes({}, true);
+          await this.updateRosNodes({}, false);
           await this.updateTimeDiff();
           await this.updateProviderList();
           return true;

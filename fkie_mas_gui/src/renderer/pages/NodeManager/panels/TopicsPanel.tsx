@@ -126,7 +126,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
 
   function getTopicList(): void {
     for (const provider of rosCtx.providers) {
-      provider.updateRosTopics();
+      provider.updateRosNodes({}, true);
     }
   }
 

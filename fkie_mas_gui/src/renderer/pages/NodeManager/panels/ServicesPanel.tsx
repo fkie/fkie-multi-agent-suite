@@ -93,7 +93,7 @@ export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
 
   function getServiceList(): void {
     for (const provider of rosCtx.providers) {
-      provider.updateRosServices();
+      provider.updateRosNodes({}, true);
     }
   }
 
