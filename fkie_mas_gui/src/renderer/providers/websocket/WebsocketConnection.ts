@@ -86,7 +86,10 @@ export default class WebsocketConnection extends ProviderConnection {
       this.onClose(event.reason, `${event.code}`);
     });
     this.websocket.addEventListener("error", (event) => {
-      this.logger?.error(`error on connect to ${this.websocket?.url}`, `event.type: ${JSON.stringify(event.type)}\nIs the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.`);
+      this.logger?.error(
+        `error on connect to ${this.websocket?.url}`,
+        `event.type: ${JSON.stringify(event.type)}\nIs the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.`
+      );
       this.websocket = null;
       return Promise.resolve(false);
     });
@@ -249,6 +252,7 @@ export default class WebsocketConnection extends ProviderConnection {
             result: false,
             message: 'Server response malformed. Response must include either "result"' + ' or "error", but not both.',
             data: null,
+            error: "malformed response",
           } as TResultData);
 
         if (this.queue[message.id].timeout) {
@@ -260,6 +264,7 @@ export default class WebsocketConnection extends ProviderConnection {
             result: false,
             message: message.error,
             data: null,
+            error: "error",
           } as TResultData);
         } else {
           this.queue[message.id].promise[0]({
