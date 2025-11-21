@@ -628,6 +628,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                         color="default"
                         title="CMD:"
                         text={`${launchInfo.cmd}`}
+                        tooltip={`${launchInfo.cmd}`}
                         wrap
                         copyButton={`${launchInfo.cmd}`}
                       />
