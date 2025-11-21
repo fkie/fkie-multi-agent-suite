@@ -39,7 +39,6 @@ using namespace fkie_mas_msgs::msg;
 
 using participant_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, ParticipantEntitiesInfo>;
 
-
 // from rmw_fastrtps_shared_cpp
 template <typename ByteT>
 void copy_from_byte_array_to_fastrtps_guid(
@@ -73,68 +72,90 @@ void copy_from_fastrtps_guid_to_byte_array(
 
 // FROM rmw::impl::cpp
 std::map<std::string, std::vector<uint8_t>>
-parse_key_value(const std::vector<uint8_t> & kv)
+parse_key_value(const std::vector<uint8_t> &kv)
 {
-  std::map<std::string, std::vector<uint8_t>> m;
+    std::map<std::string, std::vector<uint8_t>> m;
 
-  bool keyfound = false;
+    bool keyfound = false;
 
-  std::string key;
-  std::vector<uint8_t> value;
-  uint8_t prev = '\0';
+    std::string key;
+    std::vector<uint8_t> value;
+    uint8_t prev = '\0';
 
-  if (kv.size() == 0) {
-    goto not_valid;
-  }
+    if (kv.size() == 0)
+    {
+        goto not_valid;
+    }
 
-  for (uint8_t u8 : kv) {
-    if (keyfound) {
-      if ((u8 == ';') && (prev != ';')) {
+    for (uint8_t u8 : kv)
+    {
+        if (keyfound)
+        {
+            if ((u8 == ';') && (prev != ';'))
+            {
+                prev = u8;
+                continue;
+            }
+            else if ((u8 != ';') && (prev == ';'))
+            {
+                if (value.size() == 0)
+                {
+                    goto not_valid;
+                }
+                m[key] = value;
+
+                key.clear();
+                value.clear();
+                keyfound = false;
+            }
+            else
+            {
+                value.push_back(u8);
+            }
+        }
+        if (!keyfound)
+        {
+            if (u8 == '=')
+            {
+                if (key.size() == 0)
+                {
+                    goto not_valid;
+                }
+                keyfound = true;
+            }
+            else if (isalnum(u8))
+            {
+                key.push_back(u8);
+            }
+            else if ((u8 == '\0') && (key.size() == 0) && (m.size() > 0))
+            {
+                break; // accept trailing '\0' characters
+            }
+            else if ((prev != ';') || (key.size() > 0))
+            {
+                goto not_valid;
+            }
+        }
         prev = u8;
-        continue;
-      } else if ((u8 != ';') && (prev == ';')) {
-        if (value.size() == 0) {
-          goto not_valid;
+    }
+    if (keyfound)
+    {
+        if (value.size() == 0)
+        {
+            goto not_valid;
         }
         m[key] = value;
-
-        key.clear();
-        value.clear();
-        keyfound = false;
-      } else {
-        value.push_back(u8);
-      }
     }
-    if (!keyfound) {
-      if (u8 == '=') {
-        if (key.size() == 0) {
-          goto not_valid;
-        }
-        keyfound = true;
-      } else if (isalnum(u8)) {
-        key.push_back(u8);
-      } else if ((u8 == '\0') && (key.size() == 0) && (m.size() > 0)) {
-        break;  // accept trailing '\0' characters
-      } else if ((prev != ';') || (key.size() > 0)) {
+    else if (key.size() > 0)
+    {
         goto not_valid;
-      }
     }
-    prev = u8;
-  }
-  if (keyfound) {
-    if (value.size() == 0) {
-      goto not_valid;
-    }
-    m[key] = value;
-  } else if (key.size() > 0) {
-    goto not_valid;
-  }
-  return m;
+    return m;
 not_valid:
-  // This is not a failure this is something that can happen because the participant_qos userData
-  // is used. Other participants in the system not created by rmw could use userData for something
-  // else.
-  return std::map<std::string, std::vector<uint8_t>>();
+    // This is not a failure this is something that can happen because the participant_qos userData
+    // is used. Other participants in the system not created by rmw could use userData for something
+    // else.
+    return std::map<std::string, std::vector<uint8_t>>();
 }
 
 /**
@@ -183,6 +204,8 @@ public:
             domain_id = atoi(ros_domain_id);
         }
         participant_ = eprosima::fastrtps::rtps::RTPSDomain::createParticipant(domain_id, participant_attr, this);
+        graph_event_ = this->get_graph_event();
+        timer_ = this->create_wall_timer(500ms, std::bind(&CustomParticipantListener::check_graph, this));
     }
 
     void shutdown()
@@ -191,11 +214,22 @@ public:
         eprosima::fastrtps::rtps::RTPSDomain::stopAll();
     }
 
+    void check_graph()
+    {
+        this->wait_for_graph_change(graph_event_, 300ms);
+        if (graph_event_->check_and_clear())
+        {
+            RCLCPP_DEBUG(this->get_logger(), "graph change detected");
+            publish_notification(3, "graph_event");
+        }
+    }
+
     void onSubscriberDiscovery(
         eprosima::fastrtps::rtps::RTPSParticipant *participant,
         eprosima::fastrtps::rtps::ReaderDiscoveryInfo &&info)
     {
         (void)participant;
+        // use graph event
 
         // if (eprosima::fastrtps::rtps::ReaderDiscoveryInfo::CHANGED_QOS_READER != info.status)
         // {
@@ -209,8 +243,8 @@ public:
         //     }
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_READER);
         // }
-        std::string name = info.info.topicName().c_str();
-        publish_notification(2, name);
+        // std::string name = info.info.topicName().c_str();
+        // publish_notification(2, name);
         // if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
         // {
         // }
@@ -221,6 +255,7 @@ public:
         eprosima::fastrtps::rtps::WriterDiscoveryInfo &&info)
     {
         (void)participant;
+        // use graph event
 
         // if (eprosima::fastrtps::rtps::WriterDiscoveryInfo::CHANGED_QOS_WRITER != info.status)
         // {
@@ -236,8 +271,8 @@ public:
         //     }
         //     process_discovery_info(info.info, isnew, fkie_mas_msgs::msg::TopicEntity::INFO_WRITER);
         // }
-        std::string name = info.info.topicName().c_str();
-        publish_notification(1, name);
+        // std::string name = info.info.topicName().c_str();
+        // publish_notification(1, name);
         // if (name.rfind("rq/", 0) != 0 && name.rfind("rr/", 0) != 0)
         // {
         //     publish_notification(1, name);
@@ -354,6 +389,9 @@ private:
     eprosima::fastrtps::rtps::RTPSParticipant *participant_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
     rclcpp::Publisher<fkie_mas_msgs::msg::ChangedState>::SharedPtr publisher_;
     rclcpp::Publisher<fkie_mas_msgs::msg::Participants>::SharedPtr publisher_participants_;
+    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Event::SharedPtr graph_event_;
+
     std::string daemon_topic_;
     double stamp_;
     participant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
