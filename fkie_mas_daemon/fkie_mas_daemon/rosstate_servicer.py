@@ -10,7 +10,10 @@
 
 from fkie_mas_daemon.monitor_servicer import MonitorServicer
 from fkie_mas_daemon.rosstate_jsonify import RosStateJsonify
-from fkie_mas_daemon.rosstate_jsonify import ParticipantGid
+from fkie_mas_daemon.rosstate_jsonify import ServiceNameWoPrefix
+from fkie_mas_daemon.rosstate_jsonify import ServiceType
+from fkie_mas_daemon.rosstate_jsonify import TopicNameWoPrefix
+from fkie_mas_daemon.rosstate_jsonify import TopicType
 import fkie_mas_daemon as nmd
 from fkie_mas_msgs.msg import Endpoint
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
@@ -40,6 +43,7 @@ from typing import Dict
 from typing import List
 from numbers import Number
 from typing import Text
+from typing import Tuple
 from typing import Union
 
 import os
@@ -61,6 +65,7 @@ try:
 except:
     print("Can't include rcl_interfaces.srv.GetLoggerLevels: logger interface disabled!")
 
+
 ENDPOINT_TIMEOUT_SEC = 120.0
 
 
@@ -71,8 +76,8 @@ class RosStateServicer:
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._endpoints_ts: Dict[str, float] = {}  # uri : timestamp
         self._ros_node_list: List[RosNode] = []
-        self._ros_service_dict: Dict[str, RosService] = {}
-        self._ros_topic_dict: Dict[str, RosTopic] = {}
+        self._ros_service_dict: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService] = {}
+        self._ros_topic_dict: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic] = {}
         self._ros_node_list_mutex = threading.RLock()
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
         self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
@@ -202,7 +207,7 @@ class RosStateServicer:
                             self._ts_state_updated = time.time()
             send_notification = False
             participant_count = None
-            # as some services are called during the update, it may take some time
+            # send only if websocket clients are connected
             if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
                 send_notification = True
             else:
@@ -212,6 +217,7 @@ class RosStateServicer:
                         send_notification = True
                 except Exception:
                     pass
+            # as some services are called during the update, it may take some time
             if (self._state_jsonify.updated_since_request() or send_notification) and not self._state_jsonify.is_updating():
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count
@@ -222,7 +228,7 @@ class RosStateServicer:
                 self._update_participants = False
                 # create state
                 try:
-                    state = self._state_jsonify.get_nodes_as_json(self._ts_state_updated, update_participants)
+                    state = self._state_jsonify.get_nodes_as_json(self._ts_state_updated, update_participants, self._force_refresh)
                     with self._ros_node_list_mutex:
                         # set status only with lock, as this method runs in a thread
                         self._force_refresh = False
@@ -231,7 +237,7 @@ class RosStateServicer:
                         self._ros_topic_dict = self._state_jsonify.get_topics()
                         self._ts_state_notified = self._state_jsonify.timestamp_state()
                         self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
-                        self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+                        self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
                 except Exception:
                     import traceback
                     print(traceback.format_exc())
@@ -346,12 +352,26 @@ class RosStateServicer:
             node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
             return json.dumps(node_list, cls=SelfEncoder)
 
+    def _topic_in_filter(self, topic_name: str, topic_type: str, filter: List[RosTopicId]) -> bool:
+        if len(filter) == 0:
+            return True
+        for ft in filter:
+            name_ok = True
+            type_ok = True
+            if ft.name:
+                name_ok = topic_name == ft.name
+            if ft.msg_type:
+                type_ok = topic_type == ft.msg_type
+            if name_ok and type_ok:
+                return True
+        return False
+
     def get_service_list(self, filter: List[RosTopicId] = []) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_services]")
         with self._ros_node_list_mutex:
             result: List[RosService] = []
             for id, service in self._ros_service_dict.items():
-                if len(filter) == 0 or str(id) in filter:
+                if self._topic_in_filter(id[0], id[1], filter):
                     result.append(service)
             return json.dumps(result, cls=SelfEncoder)
 
@@ -360,7 +380,7 @@ class RosStateServicer:
         with self._ros_node_list_mutex:
             result: List[RosTopic] = []
             for id, topic in self._ros_topic_dict.items():
-                if len(filter) == 0 or str(id) in filter:
+                if self._topic_in_filter(id[0], id[1], filter):
                     result.append(topic)
             return json.dumps(result, cls=SelfEncoder)
 
