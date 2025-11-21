@@ -164,7 +164,8 @@ class IncompatibleQos:
 
 
 class EndpointInfo:
-    def __init__(self, node_id: str, qos: Union[RosQos, None], incompatible_qos: List[IncompatibleQos]) -> None:
+    def __init__(self, gid: str, node_id: str, qos: Union[RosQos, None], incompatible_qos: List[IncompatibleQos]) -> None:
+        self.gid = gid
         self.node_id = node_id
         self.qos = qos
         self.incompatible_qos = incompatible_qos
@@ -172,7 +173,7 @@ class EndpointInfo:
 
 class RosTopic:
     def __init__(self, name: str, msg_type: str) -> None:
-        self.id = name
+        self.id = str(RosTopicId(name, msg_type))
         self.name = name
         self.msg_type = msg_type
         self.publisher: List[EndpointInfo] = []
@@ -180,6 +181,9 @@ class RosTopic:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+    def get_topic_id(self):
+        return RosTopicId(self.name, self.msg_type)
 
 
 class RosTopicId:
@@ -193,6 +197,7 @@ class RosTopicId:
 
 class RosService:
     def __init__(self, name: str, srv_type: str) -> None:
+        self.id = str(RosTopicId(name, srv_type))
         self.name = name
         self.srv_type = srv_type
         self.masteruri = ""
@@ -200,9 +205,13 @@ class RosService:
         self.provider: List[str] = []
         self.requester: List[str] = []
         self.location = "unknown"
+        self.is_request = False
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+    def get_topic_id(self):
+        return RosTopicId(self.name, self.srv_type)
 
 
 class RosParameterRange:
