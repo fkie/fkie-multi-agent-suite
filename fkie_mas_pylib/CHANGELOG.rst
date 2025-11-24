@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.6.0 (24.11.2025)
+------------------
+* Added id to RosTopic and RosService
+
 4.5.0 (11.11.2025)
 ------------------
 * Added requester to callback arguments if requester is in signature

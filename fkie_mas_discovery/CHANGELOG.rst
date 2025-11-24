@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.2.0 (24.11.2025)
+------------------
+* Added ROS graph change detection
+
 4.1.6 (16.09.2025)
 ------------------
 * Fixed update screens for ROS1 nodes

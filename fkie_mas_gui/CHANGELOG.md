@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.8.0 - 24.11.2025
+
+Added ROS graph change detection to discovery node
+Fixed forced update topic and service list
+Reduced count of updates
+Added id to RosTopic and RosService
+Added tooltip for CMD in node details
+Do not show errors in the snackbar for already running requests
+Fixed deselection of nodes when they are updated
+Changed the highlighting when hovering
+Reduced the effort required for updates
+Fixed error when processing the stop queue
+Fixed version update info, if updates have not yet been checked for after startup
+Updated cli description
+
 ## 4.7.3 - 18.11.2025
 
 Highlight true/false in XML launch files

@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.8.0 (24.11.2025)
+------------------
+* Reduced the effort required for updates
+* Reduced count of updates
+
 4.7.2 (18.11.2025)
 -------------------
 * fixed start publisher with simtime
