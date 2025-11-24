@@ -34,8 +34,8 @@ export default function useLocalStorage<T>(key: string, initialValue: T): [T, Se
       const item = window.localStorage.getItem(key);
       return item ? (parseJSON(item) as T) : initialValue;
     } catch (error) {
-      const msg = `Error reading localStorage key "${key}":`
-      console.warn(msg, error);
+      const msg = `Error reading localStorage key "${key}": ${error}`
+      console.warn(msg);
       return initialValue;
     }
   }, [initialValue, key]);
@@ -68,8 +68,8 @@ export default function useLocalStorage<T>(key: string, initialValue: T): [T, Se
       // We dispatch a custom event so every useLocalStorage hook are notified
       window.dispatchEvent(keyEvent);
     } catch (error) {
-      const msg = `Error setting localStorage key "${key}":`;
-      console.warn(msg, error);
+      const msg = `Error setting localStorage key "${key}": ${error}`;
+      console.warn(msg);
     }
   };
 
