@@ -1,5 +1,10 @@
 # Changelog
 
+## 4.8.1 - 25.11.2025
+
+Reduced number of service calls for updating composable and lifecycle nodes
+Fixed "Use of externally-controlled format string" warning
+
 ## 4.8.0 - 24.11.2025
 
 Added ROS graph change detection to discovery node
