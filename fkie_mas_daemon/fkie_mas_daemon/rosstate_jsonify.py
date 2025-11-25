@@ -225,15 +225,20 @@ class RosStateJsonify:
     # The status of composable or lifecycle nodes is determined by calling services. This is done in a separate thread.
     # This is done in such a way that no changes are missed. With a newer 'ts_state_updated' the parameters are cached and the thread is started again if necessary when it is finished.
     def get_nodes_as_json(self, ts_state_updated, update_participants: bool, forceRefresh: bool = False) -> List[RosNode]:
+        updates_with_service_calls = True
         if not forceRefresh:
             if self._updated_since_request or (ts_state_updated <= self._timestamp_state):
                 if self._updated_since_request:
                     self._updated_since_request = False
+                    # do not update composable and lifecycle nodes after these requests are completed
+                    # service calls cause graph events in ROS
+                    updates_with_service_calls = False
                     self._timestamp_state = time.time()
                 Log.debug(f"{self.__class__.__name__}: report cached state")
                 with self._lock_update_services:
                     return self._current_nodes
-        Log.debug(f"{self.__class__.__name__}: create graph for websocket")
+        Log.debug(
+            f"{self.__class__.__name__}: create graph for websocket; update composables and lifecycle: {updates_with_service_calls}")
         # clear the warnings
         self._ros_state_warnings = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
         if self.monitor_servicer:
@@ -289,12 +294,13 @@ class RosStateJsonify:
                         Log.debug(
                             f"{self.__class__.__name__}:      add provider {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
                         tp.provider.append(ros_node.id)
-                        if self._is_local_composable_service(tp.name, ros_node):
-                            composable_services.append(tp.name)
-                        if self._is_lifecycle_state_service(tp.name, tp.srv_type, ros_node):
-                            lifecycle_state_services.append((tp.name, ros_node.name))
-                        if self._is_lifecycle_transitions_service(tp.name, tp.srv_type, ros_node):
-                            lifecycle_transition_services.append((tp.name, ros_node.name))
+                        if updates_with_service_calls:
+                            if self._is_local_composable_service(tp.name, ros_node):
+                                composable_services.append(tp.name)
+                            if self._is_local_lifecycle_state_service(tp.name, tp.srv_type, ros_node):
+                                lifecycle_state_services.append((tp.name, ros_node.name))
+                            if self._is_local_lifecycle_transitions_service(tp.name, tp.srv_type, ros_node):
+                                lifecycle_transition_services.append((tp.name, ros_node.name))
                     elif tp.is_request and ros_node.id not in tp.requester:
                         Log.debug(
                             f"{self.__class__.__name__}:      add requester {ros_node.id} {pub_info.node_namespace}/{pub_info.node_name}")
@@ -343,12 +349,13 @@ class RosStateJsonify:
                             Log.debug(
                                 f"{self.__class__.__name__}:      add provider {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
                             tp.provider.append(ros_node.id)
-                            if self._is_local_composable_service(tp.name, ros_node):
-                                composable_services.append(tp.name)
-                            if self._is_lifecycle_state_service(tp.name, tp.srv_type, ros_node):
-                                lifecycle_state_services.append((tp.name, ros_node.name))
-                            if self._is_lifecycle_transitions_service(tp.name, tp.srv_type, ros_node):
-                                lifecycle_transition_services.append((tp.name, ros_node.name))
+                            if updates_with_service_calls:
+                                if self._is_local_composable_service(tp.name, ros_node):
+                                    composable_services.append(tp.name)
+                                if self._is_local_lifecycle_state_service(tp.name, tp.srv_type, ros_node):
+                                    lifecycle_state_services.append((tp.name, ros_node.name))
+                                if self._is_local_lifecycle_transitions_service(tp.name, tp.srv_type, ros_node):
+                                    lifecycle_transition_services.append((tp.name, ros_node.name))
                         elif not tp.is_request and ros_node.id not in tp.requester:
                             Log.debug(
                                 f"{self.__class__.__name__}:      add requester {ros_node.id} {sub_info.node_namespace}/{sub_info.node_name}")
@@ -378,12 +385,13 @@ class RosStateJsonify:
                                 srv = RosService(service_name, service_type)
                                 cached_data.service_objs[(service_name, service_type)] = srv
                                 srv.provider.append(node.id)
-                                if self._is_local_composable_service(service_name, node):
-                                    composable_services.append(service_name)
-                                if self._is_lifecycle_state_service(service_name, service_type, node):
-                                    lifecycle_state_services.append((service_name, node.name))
-                                if self._is_lifecycle_transitions_service(service_name, service_type, node):
-                                    lifecycle_transition_services.append((service_name, node.name))
+                                if updates_with_service_calls:
+                                    if self._is_local_composable_service(service_name, node):
+                                        composable_services.append(service_name)
+                                    if self._is_local_lifecycle_state_service(service_name, service_type, node):
+                                        lifecycle_state_services.append((service_name, node.name))
+                                    if self._is_local_lifecycle_transitions_service(service_name, service_type, node):
+                                        lifecycle_transition_services.append((service_name, node.name))
                                 if srv.id not in cached_data.service_by_id:
                                     node.services.append(srv.get_topic_id())
                                 cached_data.service_by_id[srv.id] = srv
@@ -511,13 +519,17 @@ class RosStateJsonify:
         return False
 
     def _is_local_composable_service(self, service_name, ros_node: RosNode) -> bool:
-        if service_name.endswith('/_container/list_nodes') and ros_node.is_local:
+        if not ros_node.is_local:
+            return False
+        if service_name.endswith('/_container/list_nodes'):
             # check only local nodes
             ros_node.is_container = True
             return True
         return False
 
-    def _is_lifecycle_state_service(self, service_name, service_type, ros_node: RosNode) -> bool:
+    def _is_local_lifecycle_state_service(self, service_name, service_type, ros_node: RosNode) -> bool:
+        if not ros_node.is_local:
+            return False
         if service_name.endswith('/get_state') and service_type == "lifecycle_msgs/srv/GetState":
             # check only local nodes
             ros_node.lifecycle_state = "unknown"
@@ -527,7 +539,9 @@ class RosStateJsonify:
             return True
         return False
 
-    def _is_lifecycle_transitions_service(self, service_name, service_type, ros_node: RosNode) -> bool:
+    def _is_local_lifecycle_transitions_service(self, service_name, service_type, ros_node: RosNode) -> bool:
+        if not ros_node.is_local:
+            return False
         if service_name.endswith('/get_available_transitions') and service_type == "lifecycle_msgs/srv/GetAvailableTransitions":
             # check only local nodes
             ros_node.lifecycle_available_transitions = []
@@ -538,7 +552,7 @@ class RosStateJsonify:
         return False
 
     def _thread_update_services_call(self, composable_services: List[str] = [], lifecycle_state_services: List[Tuple[ServiceName, NodeFullName]] = [], lifecycle_transition_services: List[Tuple[ServiceName, NodeFullName]] = []):
-        if len(composable_services) == 0 and len(lifecycle_state_services) == 0:
+        if len(composable_services) == 0 and len(lifecycle_state_services) == 0 and lifecycle_transition_services == 0:
             self._thread_update_services = None
             return
         try:

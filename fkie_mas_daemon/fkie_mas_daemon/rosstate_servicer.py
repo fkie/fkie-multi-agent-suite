@@ -225,7 +225,8 @@ class RosStateServicer:
                         self._ros_topic_dict = self._state_jsonify.get_topics()
                         self._ts_state_notified = self._state_jsonify.timestamp_state()
                         self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
-                        self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
+                        if not self._state_jsonify.is_updating():
+                            self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
                 except Exception:
                     import traceback
                     print(traceback.format_exc())
