@@ -1,5 +1,5 @@
 import { Model } from "flexlayout-react";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { getBaseName } from "@/renderer/models";
 import {
@@ -27,7 +27,7 @@ export interface INavigationContext {
   nodesHistory: string[][];
   setSelectedFromHistory: () => string[];
   selectedProviders: string[];
-  setSelectedProviders: (providers: string[]) => void;
+  setSelectedProviders: (providers: string[], forceUpdate?: boolean) => void;
   layoutModel: Model | null;
   setLayoutModel: (model: Model) => void;
   openEditor: (
@@ -97,8 +97,14 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
 
   const [selectedNodes, _setSelectedNodes] = useState<string[]>(DEFAULT.selectedNodes);
   const [nodesHistory, setNodesHistory] = useState<string[][]>([]);
-  const [selectedProviders, setSelectedProviders] = useState<string[]>(DEFAULT.selectedProviders);
+  const [selectedProviders, _setSelectedProviders] = useState<string[]>(DEFAULT.selectedProviders);
   const [layoutModel, setLayoutModel] = useState<Model | null>(null);
+
+  const setSelectedProviders: (providers: string[], forceUpdate?: boolean) => void = (providers, forceUpdate = false) => {
+    if (forceUpdate || JSON.stringify(selectedProviders) !== JSON.stringify(providers)) {
+      _setSelectedProviders(providers);
+    }
+  };
 
   const setSelectedNodes: (nodes: string[], addToHistory: boolean) => void = (nodes, addToHistory = true) => {
     if (JSON.stringify(selectedNodes) !== JSON.stringify(nodes)) {

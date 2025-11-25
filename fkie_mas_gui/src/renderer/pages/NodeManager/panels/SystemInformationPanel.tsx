@@ -1,11 +1,16 @@
-import { Box, Stack, Typography } from "@mui/material";
-import { useContext, useEffect, useMemo, useState } from "react";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Box, Button, Stack, Typography } from "@mui/material";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
+import { colorFromHostname } from "@/renderer/components/UI";
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import SearchBar from "@/renderer/components/UI/SearchBar";
+import Tag from "@/renderer/components/UI/Tag";
+import NavigationContext from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { SystemWarning } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { generateUniqueId } from "@/renderer/utils";
@@ -18,18 +23,24 @@ interface SystemInformationPanelProps {
 export default function SystemInformationPanel(props: SystemInformationPanelProps): JSX.Element {
   const { providerId = "" } = props;
 
+  const navCtx = useContext(NavigationContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
+  const [showProviderDetails, setShowProviderDetails] = useLocalStorage("NodesDetailsPanel:showProviderDetails", true);
   const [systemInfoContent, setSystemInfoContent] = useState<TSystemInfo | null>(null);
   const [provider, setProvider] = useState<Provider | undefined>();
-  const [providerDetails, setProviderDetails] = useState<JSONObject | TSystemInfo | null>({});
+  const [providerDetails, setProviderDetails] = useState<JSONObject | TSystemInfo | null>(null);
   const [providerWarnings, setProviderWarnings] = useState<SystemWarning[]>([]);
   const [filter, setFilter] = useState("");
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+  const [useDarkMode, setUseDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+    setUseDarkMode(settingsCtx.get("useDarkMode") as boolean);
   }, [settingsCtx.changed]);
 
   /** filter dictionaries with system information by given filter */
@@ -68,12 +79,10 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
         addKey = true;
       }
       if (addKey) {
-        return {
-          ...object,
-          [key]: nested,
-        };
+        Object.assign(object, {[key]: nested});
+        return object;
       }
-      return { ...object };
+      return object;
     }, {});
   }
 
@@ -81,7 +90,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
     if (provider?.isLocalHost) {
       setSystemInfoContent(filterNestObject(rosCtx.systemInfo));
     }
-  }, [provider, filter, setSystemInfoContent]);
+  }, [provider, filter]);
 
   useEffect(() => {
     if (provider) {
@@ -121,96 +130,218 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
 
   useEffect(() => {
     setProvider(rosCtx.getProviderById(providerId));
-  }, [providerId, rosCtx, rosCtx.getProviderById]);
+  }, [providerId, rosCtx]);
 
-  const createProviderDetails = useMemo(() => {
-    return (
-      <Stack sx={{ width: "100%" }}>
-        <h5>Provider Details</h5>
-        <JsonView
-          src={providerDetails}
-          dark={settingsCtx.get("useDarkMode") as boolean}
-          theme="a11y"
-          enableClipboard={false}
-          ignoreLargeArray={false}
-          collapseObjectsAfterLength={3}
-          displaySize={"collapsed"}
-          collapsed={(params: {
-            node: Record<string, unknown> | Array<unknown>; // Object or array
-            indexOrName: number | string | undefined;
-            depth: number;
-            size: number; // Object's size or array's length
-          }) => {
-            if (params.indexOrName === undefined) return false;
-            return true;
-          }}
-        />
-      </Stack>
-    );
-  }, [providerDetails, settingsCtx.changed]);
-
-  const createSystemInfoContent = useMemo(() => {
-    return (
-      <Stack sx={{ width: "100%" }}>
-        <h5>This System Information</h5>
-        <JsonView
-          src={systemInfoContent}
-          dark={settingsCtx.get("useDarkMode") as boolean}
-          theme="a11y"
-          enableClipboard={false}
-          ignoreLargeArray={false}
-          // collapseObjectsAfterLength={3}
-          displaySize={"collapsed"}
-          collapsed={(params: {
-            node: Record<string, unknown> | Array<unknown>; // Object or array
-            indexOrName: number | string | undefined;
-            depth: number;
-            size: number; // Object's size or array's length
-          }) => {
-            if (params.indexOrName === undefined) return false;
-            return true;
-          }}
-        />
-      </Stack>
-    );
-  }, [systemInfoContent, settingsCtx.changed]);
-
-  return (
-    <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
-      <Stack direction="column" margin="0.5em" spacing="0.5em">
-        <SearchBar onSearch={(value) => setFilter(value.toLocaleLowerCase())} placeholder="filter" defaultValue="" />
-        <Stack spacing={1} direction="row">
-          <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-            Name:
-          </Typography>
-          <Typography variant="h5">{provider?.name()}</Typography>
-          <CopyButton value={`${provider?.name()}`} />
-        </Stack>
-        {providerWarnings.length > 0 && (
-          <Stack sx={{ width: "100%" }}>
-            <h5>Warnings</h5>
-            {providerWarnings.map((item) => {
-              return (
-                <Stack key={generateUniqueId()} sx={{ width: "100%" }}>
-                  <Typography variant="subtitle1" color="red">
-                    {item.msg}
-                  </Typography>
-                  <Typography paddingLeft={1} variant="body1">
-                    {item.details}
-                  </Typography>
-                  {item.hint && (
-                    <Typography paddingLeft={1} variant="body1" fontStyle="italic">
-                      Hint: {item.hint}
-                    </Typography>
-                  )}
-                </Stack>
-              );
-            })}
-          </Stack>
-        )}
-        {providerDetails && createProviderDetails}
-        {systemInfoContent && createSystemInfoContent}
-      </Stack>
-    </Box>
+  const getHostStyle = useCallback(
+    (providerName: string | undefined) => {
+      if (providerName && colorizeHosts) {
+        return {
+          borderTopStyle: "solid",
+          borderTopColor: colorFromHostname(providerName),
+          borderTopWidth: "0.4em",
+        };
+      }
+      return {};
+    },
+    [settingsCtx.changed]
   );
+
+  const createProviderDetailsView = useMemo(() => {
+    if (!provider) return <></>;
+    const rmwImplementation = provider.systemEnv.RMW_IMPLEMENTATION as string;
+    return (
+      <Stack
+        key={providerId}
+        // spacing={1}
+        alignItems="left"
+        marginBottom={1.5}
+      >
+        <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(provider.name())}>
+          <Typography
+            variant="subtitle1"
+            style={{
+              // cursor: "pointer",
+              color: "#fff",
+              backgroundColor: "#16a085",
+            }}
+            align="center"
+          >
+            <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
+              <Typography variant="subtitle2" align="center">
+                {provider.connection.uri}
+              </Typography>
+              <Box>
+                {provider.name()} <CopyButton value={`${provider?.name()}`} />
+              </Box>
+            </Stack>
+          </Typography>
+        </Stack>
+        <Stack spacing={0.5}>
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={provider.daemon ? "default" : "error"}
+              title="daemon:"
+              // title={`${RosNodeStatusInfo[node.status]}`}
+              text={provider.daemon ? "running" : "not running"}
+              wrap
+            />
+          </Stack>
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={provider.discovery ? "default" : "warning"}
+              title="discovery:"
+              // title={`${RosNodeStatusInfo[node.status]}`}
+              text={provider.discovery ? "running" : "not running"}
+              wrap
+            />
+          </Stack>
+          <Stack direction="row" spacing={0.5}>
+            <Tag
+              color={provider.daemon ? "default" : "error"}
+              title="nodes:"
+              text={`${navCtx.selectedNodes.length}`}
+              wrap
+            />
+          </Stack>
+          {rmwImplementation && (
+            <Stack direction="row" spacing={0.5}>
+              <Tag
+                color={"default"}
+                title="RMW_IMPLEMENTATION:"
+                // title={`${RosNodeStatusInfo[node.status]}`}
+                text={rmwImplementation}
+                wrap
+              />
+            </Stack>
+          )}
+          {provider.hostnames && (
+            <Stack direction="row" spacing={0.5}>
+              <Tag
+                color={"default"}
+                title="host:"
+                // title={`${RosNodeStatusInfo[node.status]}`}
+                text={JSON.stringify(provider.hostnames)}
+                wrap
+              />
+            </Stack>
+          )}
+          <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+            <Stack direction="column" spacing="0.5em" alignItems="left">
+              {providerWarnings.length > 0 && (
+                <Stack sx={{ width: "100%" }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Warnings
+                  </Typography>
+                  {providerWarnings.map((item) => {
+                    return (
+                      <Stack key={generateUniqueId()} sx={{ width: "100%" }}>
+                        <Typography variant="subtitle1" color="red">
+                          {item.msg}
+                        </Typography>
+                        <Typography paddingLeft={1} variant="body1">
+                          {item.details}
+                        </Typography>
+                        {item.hint && (
+                          <Typography paddingLeft={1} variant="body1" fontStyle="italic">
+                            Hint: {item.hint}
+                          </Typography>
+                        )}
+                      </Stack>
+                    );
+                  })}
+                </Stack>
+              )}
+              <Stack
+                direction="row"
+                alignItems="center"
+                onClick={() => {
+                  setShowProviderDetails((prev) => !prev);
+                }}
+              >
+                <ExpandMoreIcon
+                  style={{ transform: `${showProviderDetails ? "" : "rotate(-90deg)"}` }}
+                  fontSize="small"
+                />
+                <Button
+                  size="small"
+                  style={{
+                    textTransform: "none",
+                    color: "inherit",
+                  }}
+                >
+                  <Typography variant="caption" fontWeight="bold">
+                    Details:
+                  </Typography>
+                </Button>
+              </Stack>
+              {showProviderDetails && (providerDetails || systemInfoContent) && (
+                <SearchBar
+                  onSearch={(value) => setFilter(value.toLocaleLowerCase())}
+                  placeholder="filter"
+                  defaultValue=""
+                />
+              )}
+              {showProviderDetails && providerDetails && (
+                <JsonView
+                  src={providerDetails}
+                  dark={useDarkMode}
+                  theme="a11y"
+                  enableClipboard={false}
+                  ignoreLargeArray={false}
+                  collapseObjectsAfterLength={3}
+                  displaySize={"collapsed"}
+                  collapsed={(params: {
+                    node: Record<string, unknown> | Array<unknown>; // Object or array
+                    indexOrName: number | string | undefined;
+                    depth: number;
+                    size: number; // Object's size or array's length
+                  }) => {
+                    if (params.indexOrName === undefined) return false;
+                    return true;
+                  }}
+                />
+              )}
+              {showProviderDetails && systemInfoContent && (
+                <Stack sx={{ width: "100%" }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    This System Information
+                  </Typography>
+                  <JsonView
+                    src={systemInfoContent}
+                    dark={useDarkMode}
+                    theme="a11y"
+                    enableClipboard={false}
+                    ignoreLargeArray={false}
+                    // collapseObjectsAfterLength={3}
+                    displaySize={"collapsed"}
+                    collapsed={(params: {
+                      node: Record<string, unknown> | Array<unknown>; // Object or array
+                      indexOrName: number | string | undefined;
+                      depth: number;
+                      size: number; // Object's size or array's length
+                    }) => {
+                      if (params.indexOrName === undefined) return false;
+                      return true;
+                    }}
+                  />
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+        </Stack>
+      </Stack>
+    );
+  }, [
+    navCtx.selectedProviders,
+    navCtx.selectedNodes,
+    provider,
+    showProviderDetails,
+    providerDetails,
+    systemInfoContent,
+    useDarkMode,
+    providerWarnings,
+    backgroundColor,
+  ]);
+
+  return createProviderDetailsView;
 }

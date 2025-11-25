@@ -28,7 +28,7 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
-import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { useCustomEventListener } from "react-custom-events";
 import semver from "semver";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
@@ -36,6 +36,7 @@ import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { RosNode } from "@/renderer/models";
 import { CmdType, ConnectionState, Provider } from "@/renderer/providers";
 import {
   EVENT_PROVIDER_ACTIVITY,
@@ -43,10 +44,7 @@ import {
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
 } from "@/renderer/providers/eventTypes";
-import { LAYOUT_TABS, LayoutTabConfig } from "../layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
 import { EMenuProvider } from "./OverflowMenuProvider";
-import SystemInformationPanel from "./SystemInformationPanel";
 
 interface ProviderPanelRowProps {
   provider: Provider;
@@ -122,21 +120,29 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
 
   async function onProviderMenuClick(
     actionType: EMenuProvider,
-    providerName: string,
-    providerId: string
+    provider: Provider
   ): Promise<void> {
     if (actionType === EMenuProvider.INFO) {
-      emitCustomEvent(
-        EVENT_OPEN_COMPONENT,
-        eventOpenComponent(
-          `provider-info-${providerName}`,
-          providerName,
-          <SystemInformationPanel providerId={providerId} />,
-          true,
-          LAYOUT_TABS.HOSTS,
-          new LayoutTabConfig(false, "info")
-        )
-      );
+      const nodes = Array.from(rosCtx.nodeMap)
+        .filter((value: [string, RosNode]) => {
+          return value[0].startsWith(provider.id);
+        })
+        .map((value) => {
+          return value[0];
+        });
+      navCtx.setSelectedProviders([provider.id], true);
+      navCtx.setSelectedNodes(nodes, false);
+      // emitCustomEvent(
+      //   EVENT_OPEN_COMPONENT,
+      //   eventOpenComponent(
+      //     `provider-info-${providerName}`,
+      //     providerName,
+      //     <SystemInformationPanel providerId={providerId} />,
+      //     true,
+      //     LAYOUT_TABS.HOSTS,
+      //     new LayoutTabConfig(false, "info")
+      //   )
+      // );
       return;
     }
     if (actionType === EMenuProvider.DELETE) {
@@ -354,7 +360,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
           <IconButton
             color="default"
             onClick={() => {
-              onProviderMenuClick(EMenuProvider.INFO, provider.name(), provider.id);
+              onProviderMenuClick(EMenuProvider.INFO, provider);
             }}
           >
             <WarningAmberIcon color="warning" fontSize="inherit" />
@@ -470,7 +476,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
               underline="none"
               color="inherit"
               onClick={() => {
-                onProviderMenuClick(EMenuProvider.INFO, provider.name(), provider.id);
+                onProviderMenuClick(EMenuProvider.INFO, provider);
               }}
             >
               <Typography variant="body2">{provider.name()}</Typography>
@@ -593,13 +599,6 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
             </Tooltip>
           )}
         </TableCell>
-        {/* <TableCell style={{ padding: 0 }}>
-    <OverflowMenuProvider
-      onClick={onProviderMenuClick}
-      providerId={provider.id}
-      providerName={provider.name()}
-    />
-  </TableCell> */}
       </TableRow>
     );
   }, [provider, providersActivity, updated]);

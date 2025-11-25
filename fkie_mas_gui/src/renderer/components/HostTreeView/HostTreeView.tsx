@@ -562,6 +562,15 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     }
   }, [selectedItems]);
 
+  useEffect(() => {
+    if (
+      navCtx.selectedProviders.length === 1 &&
+      (selectedItems.length !== 1 || !selectedItems.includes(navCtx.selectedProviders[0]))
+    ) {
+      handleSelect(null, navCtx.selectedProviders);
+    }
+  }, [navCtx.selectedProviders]);
+
   /**
    * Callback when the event of removing a launch file is triggered
    */

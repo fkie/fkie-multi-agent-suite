@@ -30,6 +30,7 @@ import {
   EVENT_PROVIDER_ROS_TOPICS,
 } from "@/renderer/providers/eventTypes";
 import { EventNodeDiagnostic } from "@/renderer/providers/events";
+import SystemInformationPanel from "./SystemInformationPanel";
 
 function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): number {
   if (a.name < b.name) {
@@ -108,82 +109,6 @@ export default function NodesDetailsPanel(): JSX.Element {
     [settingsCtx.changed]
   );
 
-  const createProviderDetailsView = useMemo(() => {
-    const providerId = navCtx.selectedProviders?.[0];
-    const provider = rosCtx.getProviderById(providerId);
-    if (!provider) return;
-    const rmwImplementation = provider.systemEnv.RMW_IMPLEMENTATION as string;
-    return (
-      <Stack
-        key={providerId}
-        // spacing={1}
-        alignItems="left"
-        marginBottom={1.5}
-      >
-        <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(provider.name())}>
-          <Typography
-            variant="subtitle1"
-            style={{
-              // cursor: "pointer",
-              color: "#fff",
-              backgroundColor: "#16a085",
-            }}
-            align="center"
-          >
-            <Stack spacing={0} sx={{ fontWeight: "bold", m: 0, paddingTop: "0.2em" }}>
-              <Typography variant="subtitle2" align="center">
-                {provider.connection.uri}
-              </Typography>
-              <Box>{provider.name()}</Box>
-            </Stack>
-          </Typography>
-        </Stack>
-        <Stack spacing={0.5}>
-          <Stack direction="row" spacing={0.5}>
-            <Tag
-              color={provider.daemon ? "default" : "error"}
-              title="daemon:"
-              // title={`${RosNodeStatusInfo[node.status]}`}
-              text={provider.daemon ? "running" : "not running"}
-              wrap
-            />
-          </Stack>
-          <Stack direction="row" spacing={0.5}>
-            <Tag
-              color={provider.discovery ? "default" : "warning"}
-              title="discovery:"
-              // title={`${RosNodeStatusInfo[node.status]}`}
-              text={provider.discovery ? "running" : "not running"}
-              wrap
-            />
-          </Stack>
-          {rmwImplementation && (
-            <Stack direction="row" spacing={0.5}>
-              <Tag
-                color={"default"}
-                title="RMW_IMPLEMENTATION:"
-                // title={`${RosNodeStatusInfo[node.status]}`}
-                text={rmwImplementation}
-                wrap
-              />
-            </Stack>
-          )}
-          {provider.hostnames && (
-            <Stack direction="row" spacing={0.5}>
-              <Tag
-                color={"default"}
-                title="host:"
-                // title={`${RosNodeStatusInfo[node.status]}`}
-                text={JSON.stringify(provider.hostnames)}
-                wrap
-              />
-            </Stack>
-          )}
-        </Stack>
-      </Stack>
-    );
-  }, [navCtx.selectedProviders]);
-
   const createDiagnostics = useMemo(() => {
     if (!nodeShow) return <></>;
     if ((nodeShow.diagnosticLevel || 0) > 0 || nodeShow.diagnosticColor) {
@@ -225,11 +150,7 @@ export default function NodesDetailsPanel(): JSX.Element {
                       <Typography variant="body1" marginLeft="1.5em" marginRight="0.5em">
                         {daIndex + 1}:
                       </Typography>
-                      <Typography
-                        variant="body1"
-                        style={getDiagnosticStyle(ds.level || 0)}
-                        paddingLeft="0.5em"
-                      >
+                      <Typography variant="body1" style={getDiagnosticStyle(ds.level || 0)} paddingLeft="0.5em">
                         {getDiagnosticLevelName(ds.level || 0)}: {ds.message}
                       </Typography>
                     </Stack>
@@ -246,7 +167,12 @@ export default function NodesDetailsPanel(): JSX.Element {
                           <Typography variant="body1" marginLeft="3em" marginRight="0.5em" marginBottom={1}>
                             {dsItem.key}:
                           </Typography>
-                          <Typography variant="body1" paddingLeft="0.5em" marginBottom={1} color={dsItem.key === "color" ? dsItem.value : undefined}>
+                          <Typography
+                            variant="body1"
+                            paddingLeft="0.5em"
+                            marginBottom={1}
+                            color={dsItem.key === "color" ? dsItem.value : undefined}
+                          >
                             {dsItem.value}
                           </Typography>
                         </Stack>
@@ -683,8 +609,6 @@ export default function NodesDetailsPanel(): JSX.Element {
         alignItems="left"
         height="100%"
       >
-        {navCtx.selectedProviders.length === 1 && createProviderDetailsView}
-
         {navCtx.selectedNodes.length > 1 && (
           <Stack direction="row" justifyContent="center">
             <Typography color="grey" variant="body2">
@@ -810,7 +734,25 @@ export default function NodesDetailsPanel(): JSX.Element {
 
   return (
     <Box width="100%" height="100%" sx={{ backgroundColor: backgroundColor }}>
-      {createDetailsView}
+      {nodeShow && navCtx.selectedProviders.length > 0 ? (
+        <Stack
+          // spacing={1}
+          key={nodeShow.idGlobal}
+          alignItems="left"
+          height="100%"
+        >
+          {navCtx.selectedProviders.length > 1 && (
+            <Stack direction="row" justifyContent="center">
+              <Typography color="grey" variant="body2">
+                selected: {navCtx.selectedProviders.length}, displayed: 1
+              </Typography>
+            </Stack>
+          )}
+          <SystemInformationPanel providerId={navCtx.selectedProviders[0]}/>
+        </Stack>
+      ) : (
+        createDetailsView
+      )}
 
       {!nodeShow && (
         <Alert severity="info" style={{ minWidth: 0 }}>
