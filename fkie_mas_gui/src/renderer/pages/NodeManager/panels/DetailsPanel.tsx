@@ -111,7 +111,7 @@ export default function DetailsPanel(): JSX.Element {
 
   const createDiagnostics = useMemo(() => {
     if (!nodeShow) return <></>;
-    if ((nodeShow.diagnosticLevel || 0) > 0 || nodeShow.diagnosticColor) {
+    if ((nodeShow.diagnostic?.diagnosticLevel || 0) > 0 || nodeShow.diagnostic?.getColor(isDarkMode)) {
       return (
         <Stack paddingTop="0.5em">
           <Stack
@@ -132,13 +132,13 @@ export default function DetailsPanel(): JSX.Element {
                 color: "inherit",
               }}
             >
-              <Typography variant="body1" style={getDiagnosticStyle(nodeShow.diagnosticLevel || 0)} marginBottom={1}>
-                {getDiagnosticLevelName(nodeShow.diagnosticLevel || 0)}: {nodeShow.diagnosticMessage}
+              <Typography variant="body1" style={getDiagnosticStyle(nodeShow.diagnostic?.diagnosticLevel || 0)} marginBottom={1}>
+                {getDiagnosticLevelName(nodeShow.diagnostic?.diagnosticLevel || 0)}: {nodeShow.diagnostic?.diagnosticMessage}
               </Typography>
             </Button>
           </Stack>
           {showDiagnosticHistory &&
-            nodeShow.diagnosticArray.map((da, daIndex) => {
+            nodeShow.diagnostic?.diagnosticArray.map((da, daIndex) => {
               return da.status?.map((ds, dsIndex) => {
                 return (
                   <Stack
@@ -529,7 +529,7 @@ export default function DetailsPanel(): JSX.Element {
                 <Stack key={launchPath} marginTop={"0.5em"}>
                   <Typography variant="caption">
                     <Box sx={{ fontWeight: "bold" }}>
-                      {`${launchPath.split("/").slice(-1)} [${launchInfo.parameters?.length}]`}
+                      {`${launchPath.split("/").slice(-1)} [${launchInfo.parametersJoined?.length}]`}
                     </Box>
                   </Typography>
                   {launchInfo.cmd && (
@@ -560,9 +560,9 @@ export default function DetailsPanel(): JSX.Element {
                       />
                     </Stack>
                   )}
-                  {launchInfo.parameters && launchInfo.parameters.length > 0 && (
+                  {launchInfo.parametersJoined && launchInfo.parametersJoined.length > 0 && (
                     <JsonView
-                      src={launchInfo.parameters?.reduce((dictionary, param: RosParameter) => {
+                      src={launchInfo.parametersJoined?.reduce((dictionary, param: RosParameter) => {
                         dictionary[param.name] = param.value;
                         return dictionary;
                       }, {})}

@@ -1,9 +1,11 @@
 // ROS related imports
 import { TRosMessageStruct, rosMessageStructToString } from "../../types/TRosMessageStruct";
 import DaemonVersion from "./DaemonVersion";
-import DiagnosticArray, {
+import DiagnosticInfo, {
+  DiagnosticArray,
   DiagnosticKeyValue,
   DiagnosticLevel,
+  DiagnosticNodeInfo,
   DiagnosticStatus,
   getDiagnosticLevelName,
   getMaxDiagnosticLevel,
@@ -57,8 +59,10 @@ import URI from "./uris";
 export {
   DaemonVersion,
   DiagnosticArray,
+  DiagnosticInfo,
   DiagnosticKeyValue,
   DiagnosticLevel,
+  DiagnosticNodeInfo,
   DiagnosticStatus,
   FileItem,
   FileLanguageAssociations,

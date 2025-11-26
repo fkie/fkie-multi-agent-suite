@@ -131,7 +131,6 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
     debouncedCallbackFilterText(filterText);
   }, [loggers, filterText]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, () => {
     getLoggers(currentNode);
   });

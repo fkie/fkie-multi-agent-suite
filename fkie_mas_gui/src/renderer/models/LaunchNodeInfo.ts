@@ -31,6 +31,8 @@ export default class LaunchNodeInfo {
 
   parameters: RosParameter[] | null;
 
+  parametersJoined?: RosParameter[];
+
   env: JSONObject | null;
 
   additional_env: unknown[] | null;

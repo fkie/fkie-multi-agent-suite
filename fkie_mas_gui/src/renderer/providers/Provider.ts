@@ -8,6 +8,8 @@ import { ISettingsContext } from "../context/SettingsContext";
 import {
   DaemonVersion,
   DiagnosticArray,
+  DiagnosticInfo,
+  DiagnosticStatus,
   FileItem,
   LaunchCallService,
   LaunchContent,
@@ -166,28 +168,22 @@ export default class Provider implements IProvider {
    */
   discovery: boolean = false;
 
-  /**
-   * Launch files loaded on provider
-   */
+  /** ros states */
   launchFiles: LaunchContent[] = [];
-
-  rosNodes: RosNode[] = [];
+  packages: RosPackage[] = [];
+  rosRunningNodes: RosNode[] = []; // list with running nodes only
+  rosNodes: RosNode[] = []; // Combined list of rosRunningNodes, screens and launchFiles
   rosServices: RosService[] = [];
   rosTopics: RosTopic[] = [];
+  screens: ScreensMapping[] = [];
+  diagnosticInfo: DiagnosticInfo = new DiagnosticInfo();
 
   /** List of nodes with same GUID */
   sameIdDict: { [guid: string]: string[] } = {};
 
-  /**
-   * Package list
-   */
-  packages: RosPackage[] = [];
-
   /** Providers discovered by this provider.
    * For each provider in this list an event (EVENT_PROVIDER_DISCOVERED) will be emitted. */
   remoteProviders: Provider[] = [];
-
-  screens: ScreensMapping[] = [];
 
   systemInfo: TSystemInfo = {};
 
@@ -208,11 +204,10 @@ export default class Provider implements IProvider {
   /** Warnings reported by the provider. */
   warnings: SystemWarningGroup[] = [];
 
-  /**
-   * External logger
-   */
+  /** External logger. Updated by RosContext on each Logger update. */
   logger: ILoggingContext | null;
 
+  /** External settings */
   settings: ISettingsContext;
 
   callAttempts: number = 10;
@@ -223,14 +218,13 @@ export default class Provider implements IProvider {
 
   startConfiguration: ProviderLaunchConfiguration | null = null;
 
-  // started echo topics to the received echo events
+  // started echo topics to receive echo events
   private echoTopics: string[] = [];
 
-  /**
-   * Keep tracks of running async request, to prevent multiple executions
-   */
+  /** Keep tracks of running async request, to prevent multiple executions */
   private currentRequestList = new Set();
 
+  /** Timer to determine the delay to provider */
   private currentDelayTimer: NodeJS.Timeout | null = null;
 
   /**
@@ -294,13 +288,13 @@ export default class Provider implements IProvider {
           await this.updateTimeDiff();
           await this.getProviderSystemInfo();
           await this.getProviderSystemEnv();
-          await this.updateDiagnostics(null);
           // this.getPackageList();  <- this request is done by package explorer
           // this.updateScreens();  <. this request is performed while update nodes
           // this.launchGetList();
           await this.updateRosNodes({}, false);
           await this.updateTimeDiff();
           await this.updateProviderList();
+          await this.updateDiagnostics(null);
           return true;
         }
         return false;
@@ -375,7 +369,6 @@ export default class Provider implements IProvider {
         }
         break;
       case CmdType.LOG: {
-        // eslint-disable-next-line no-case-declarations
         const logPaths = await this.getLogPaths([nodeName]);
         if (logPaths.length > 0) {
           // `tail -f ${logPaths[0].screen_log} \r`,
@@ -770,7 +763,7 @@ export default class Provider implements IProvider {
   /**
    * Get list of available nodes using the uri URI.ROS_NODES_GET_LIST
    */
-  public getNodeList: (forceRefresh: boolean) => Promise<RosNode[]> = async (forceRefresh = false) => {
+  protected getNodeList: (forceRefresh: boolean) => Promise<RosNode[]> = async (forceRefresh = false) => {
     interface IRosNode {
       id: string;
       name: string;
@@ -1170,9 +1163,335 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
+  public mergeNodeStates: () => Promise<null> = async () => {
+    const dynamicReconfigureNodes = new Set<string>();
+
+    // check if nodes are not available or run in other host (not monitoring)
+    const nodes: RosNode[] = this.rosRunningNodes
+      .map((n) => {
+        // idGlobal should be the same for life of the node on remote host
+        n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
+        n.providerName = this.name();
+        n.providerId = this.id;
+        n.diagnostic = this.diagnosticInfo.get(n.name);
+
+        // check the run state of the node to close the restart questions
+        const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
+        if (oldNode) {
+          if (oldNode.pid !== n.pid) {
+            emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
+          }
+        }
+        if (n.system_node) {
+          n.group = this.settings.get("namespaceSystemNodes") as string;
+        }
+
+        // update infos available only for ROS1 nodes
+        const noApiUri = !n.node_API_URI || n.node_API_URI.length === 0;
+        const noMasteruri = !n.masteruri || n.masteruri.length === 0;
+        if (!noApiUri && !noMasteruri) {
+          if (!n.pid || n.pid <= 0) {
+            const hostApiUir = n.node_API_URI?.split(":")[0];
+            const hostMasterUri = n.masteruri?.split(":")[0];
+
+            if (hostApiUir === hostMasterUri) {
+              // node runs on the same host, but it is not available
+              // probably the node is dead
+              n.status = RosNodeStatus.DEAD;
+            } else {
+              // node runs on a different host, we can not monitor its state
+              // will be shown as XXXX
+              n.status = RosNodeStatus.NOT_MONITORED;
+            }
+          }
+          // check if the node has dynamic reconfigure service
+          const services: RosTopicId[] = n.services || [];
+          for (const service of services) {
+            if (service.name.endsWith("/set_parameters")) {
+              const serviceNs = service.name.slice(0, -15);
+              n.dynamicReconfigureServices.push(serviceNs);
+              if (serviceNs !== n.name) {
+                dynamicReconfigureNodes.add(serviceNs);
+              }
+            }
+          }
+        }
+        return n;
+      })
+      .map((n) => {
+        if (dynamicReconfigureNodes.has(n.name)) {
+          n.dynamicReconfigureServices.push(n.name);
+        }
+        return n;
+      });
+    this.rosNodes = nodes;
+    // apply the launch nodes
+    let changed = this.applyLaunchInfo();
+    // update the screens
+    changed = this.applyScreens() || changed;
+    if (changed) {
+      emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
+    }
+    return Promise.resolve(null);
+  };
+
+  public applyLaunchInfo: () => boolean = () => {
+    const capabilityGroupParamName = `/${this.settings.get("capabilityGroupParameter")}`;
+    const nodeGroups: { [nodeName: string]: { namespace?: string; name?: string } } = {};
+    // update nodes
+    // Add nodes from launch files to the list of nodes
+    for (const launchFile of this.launchFiles) {
+      const nodes: LaunchNodeInfo[] = launchFile.nodes || [];
+      const nodesCount: { [key: string]: number } = {};
+      for (const [idxLn, launchNode] of nodes.entries()) {
+        // get parameter of a node and determine the capability group parameter
+        const nodeParameters: RosParameter[] = [];
+        let nodeGroup: { namespace?: string; name?: string } = {};
+        let groupParameterFound = false;
+        let nodesParametersFound = false;
+        // const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
+        const uniqueNodeName = launchNode.node_name ? launchNode.node_name : launchNode.unique_name;
+        if (uniqueNodeName) {
+          if (nodesCount[uniqueNodeName]) {
+            nodesCount[uniqueNodeName] += 1;
+          } else {
+            nodesCount[uniqueNodeName] = 1;
+          }
+          if (nodesCount[uniqueNodeName] > 1) {
+            const iNode = this.rosNodes.findIndex((n) => {
+              return n.name === uniqueNodeName;
+            });
+            if (iNode >= 0) {
+              this.rosNodes[iNode].countSameName = nodesCount[uniqueNodeName];
+            }
+            continue;
+          }
+          const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
+          // update parameters
+          if (this.rosVersion === "1") {
+            const parameters: RosParameter[] = launchFile.parameters || [];
+            for (const p of parameters) {
+              if (nodesParametersFound) {
+                // skip parse further parameter if we found one and next was not in node namespace
+                // assumption: parameters are sorted
+                // break;
+              } else if (p.name.startsWith(uniqueNodeName)) {
+                nodeParameters.push(p);
+                if (p.name === capabilityGroupOfNode) {
+                  // update capability group
+                  groupParameterFound = true;
+                  if (p.value) {
+                    nodeGroup = this.toNodeGroup(`${p.value}`);
+                  }
+                }
+              } else if (nodeParameters.length > 0) {
+                // we found one parameter of the node, but current parameter is not in node namespace => skip all further parameter
+                // assumption: parameters are sorted
+                nodesParametersFound = true;
+              } else if (!groupParameterFound && p.name.endsWith(capabilityGroupParamName)) {
+                // use capability group parameter in the higher level namespace until we found one in the node namespace
+                const { namespace } = this.toNamespace(p.name);
+                if (uniqueNodeName.startsWith(namespace) && p.value) {
+                  nodeGroup = this.toNodeGroup(`${p.value}`);
+                }
+              }
+            }
+          } else {
+            const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
+            if (env_capability_group) {
+              nodeGroup = this.toNodeGroup(`${env_capability_group}`);
+            }
+            const parameters: RosParameter[] = launchNode.parameters || [];
+            // in ros2 we have a lot of temporary files with one parameter.
+            // We join the content of these files to one dictionary
+            let allJoinedParams = {};
+            for (const p of parameters) {
+              let joinedParam = false;
+              if (p.type.indexOf("yaml") >= 0 || p.type === "dict") {
+                try{
+                let allNodes = p.value["/**"];
+                if (!allNodes && launchNode.node_name) {
+                  allNodes = p.value[launchNode.node_name];
+                }
+                if (!allNodes && launchNode.node_name) {
+                  // TODO: split node name and get the path step by step from: {ns: {node: {ros__parameters}}}
+                }
+                if (allNodes) {
+                  let rosParameters = allNodes["ros__parameters"];
+                  if (!rosParameters) {
+                    rosParameters = allNodes;
+                  }
+                  if (rosParameters) {
+                    const capabilityGroup = rosParameters["capability_group"];
+                    if (capabilityGroup) {
+                      nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
+                    }
+                    allJoinedParams = { ...allJoinedParams, ...rosParameters };
+                    joinedParam = true;
+                  }
+                }
+              } catch (error) {
+                console.error(`ERROR: ${error}: ${JSON.stringify(p)}`);
+              }
+              } else if (p.name === "capability_group") {
+                nodeGroup = this.toNodeGroup(`${p.value}`);
+              }
+              if (!joinedParam) {
+                nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "dict", this.id));
+              }
+            }
+            if (Object.keys(allJoinedParams).length > 0) {
+              nodeParameters.push(
+                new RosParameter(
+                  launchNode.node_name || "",
+                  "/tmp/launch_params_*/**/ros__parameters",
+                  allJoinedParams,
+                  "yaml",
+                  this.id
+                )
+              );
+            }
+          }
+
+          if (launchNode.node_name && nodeGroup.name) {
+            nodeGroups[launchNode.node_name] = nodeGroup;
+          }
+          let associations: string[] = [];
+          const lAssociations = launchFile.associations || [];
+          for (const item of lAssociations) {
+            if (item.node === uniqueNodeName) {
+              associations = item.nodes || [];
+            }
+          }
+          nodes[idxLn].associations = associations;
+          nodes[idxLn].parametersJoined = nodeParameters;
+
+          // determine sigkill_timeout
+          if (!launchNode.sigkill_timeout || launchNode.sigkill_timeout <= 0) {
+            let killTime: RosParameterValue | undefined = undefined;
+            killTime = LaunchNodeInfo.getParam(nodeParameters || [], launchNode.node_name || "", "mas/kill_on_stop");
+            if (killTime === undefined) {
+              killTime = LaunchNodeInfo.getParam(nodeParameters || [], launchNode.node_name || "", "nm/kill_on_stop");
+            }
+            if (killTime === undefined) {
+              killTime = LaunchNodeInfo.getEnvParam(launchNode.env, "MAS_KILL_ON_STOP");
+            }
+            if (killTime !== undefined) {
+              nodes[idxLn].sigkill_timeout = Number.parseInt(killTime as string);
+            }
+          }
+
+          //launchPaths
+          //parameters
+          // if node exist (it is running), only update the associated launch file
+          let nodeIsRunning = false;
+          const iNode = this.rosNodes.findIndex((n) => {
+            return n.name === uniqueNodeName;
+          });
+          if (iNode >= 0) {
+            this.rosNodes[iNode].launchInfo.set(launchFile.path, launchNode);
+            if (nodeGroup.name) {
+              this.rosNodes[iNode].capabilityGroup = nodeGroup;
+            }
+            nodeIsRunning = true;
+            this.rosNodes[iNode].countSameName = nodesCount[uniqueNodeName];
+          }
+
+          if (!nodeIsRunning) {
+            // if node is not running add it as inactive node
+            const n = new RosNode(
+              uniqueNodeName,
+              uniqueNodeName,
+              launchNode.node_namespace ? launchNode.node_namespace : "/",
+              "",
+              RosNodeStatus.INACTIVE
+            );
+            n.launchInfo.set(launchFile.path, launchNode);
+            // idGlobal should be the same for life of the node on remote host
+            n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
+            n.providerName = this.name();
+            n.providerId = this.id;
+            n.isLocal = true;
+            if (nodeGroup.name) {
+              n.capabilityGroup = nodeGroup;
+            }
+            const screens = this.screens.filter((screen) => {
+              return screen.name === n.name;
+            });
+            n.screens = screens.length > 0 ? screens[0].screens : [];
+            n.countSameName = nodesCount[uniqueNodeName];
+            this.rosNodes.push(n);
+          }
+        }
+      }
+    }
+
+    // set tags for nodelets/composable and other tags)
+    const composableManagers: string[] = [];
+    for (const [idx, n] of this.rosNodes.entries()) {
+      // const nodeGroup = nodeGroups[n.name];
+      // if (nodeGroup) {
+      //   this.rosNodes[idx].capabilityGroup = nodeGroup;
+      // }
+      // Check if this is a nodelet/composable and assign tags accordingly.
+      const composableParents = n.getAllContainers();
+      const tags: TTag[] = [];
+      for (const item of composableParents) {
+        const composableParent = item.split("|").slice(-1).at(0);
+        if (composableParent) {
+          if (!composableManagers.includes(composableParent)) {
+            composableManagers.push(composableParent);
+          }
+          tags.push({
+            id: `nodelet-${composableParent}`,
+            data: "Nodelet",
+            color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
+            tooltip: `Composable node, container: ${composableParent}`,
+          });
+        }
+      }
+      // mark nodes with same GUID
+      if (n.guid && this.sameIdDict[n.guid]?.length > 1) {
+        tags.push({
+          id: n.guid,
+          data: FingerprintIcon,
+          color: colorFromHostname(n.guid),
+          tooltip: `Nodes with same id ${n.guid}`,
+          onClick: (event: React.MouseEvent) => {
+            // if (n.guid) navigator.clipboard.writeText(n.guid);
+            // this.logger?.success(`${n.guid} copied!`, "", true);
+            emitCustomEvent(EVENT_FILTER_NODES, eventFilterNodes(n.guid as string));
+            event?.stopPropagation();
+          },
+        });
+      }
+
+      if (tags.length > 0) {
+        this.rosNodes[idx].tags = tags;
+      }
+    }
+    // Assign tags to the found nodelet/composable managers.
+    for (const managerId of composableManagers) {
+      const node = this.rosNodes.find((n) => n.id === managerId || n.name === managerId);
+      if (node) {
+        const tag: TTag = {
+          id: "Manager",
+          data: "Manager",
+          color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
+          tooltip: "Manager of a composable nodes",
+        };
+        if (!node.tags) {
+          node.tags = [tag];
+        } else {
+          node.tags.unshift(tag);
+        }
+      }
+    }
+    return this.launchFiles.length > 0;
+  };
+
   /** Update the screens of the node and create a new node it not exists */
-  public applyScreens: (screens: ScreensMapping[] | null) => boolean = (screens = null) => {
-    this.screens = screens ? screens : [];
+  public applyScreens: () => boolean = () => {
     let nodesUpdated: boolean = false;
     // update nodes
     // if node exist (it is running), only update the associated launch file
@@ -1237,10 +1556,6 @@ export default class Provider implements IProvider {
       }
     });
     this.rosNodes = this.rosNodes.filter((node) => !nodesToRemove.includes(node.idGlobal));
-    emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
-    if (nodesUpdated) {
-      emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
-    }
     return nodesUpdated;
   };
 
@@ -1251,7 +1566,8 @@ export default class Provider implements IProvider {
   public updateScreens: () => Promise<boolean> = async () => {
     const result = await this.getScreenList();
     if (result) {
-      this.applyScreens(result);
+      this.screens = result;
+      emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
@@ -1270,27 +1586,8 @@ export default class Provider implements IProvider {
       }
     }
     // update the screens
-    const timestamp = Date.now();
-    const isDarkMode = this.settings.get("useDarkMode") as boolean;
-    const diagStatus = diags.status || [];
-    const matchingNodes: RosNode[] = [];
-    for (const status of diagStatus) {
-      // match the name without leading slash
-      // match the name with dots instead of slashes
-      // match the name with trailing logger name
-      const statusName = `/${status.name.replace(/^\/+/, "").replaceAll(".", "/")}`;
-      const matchingNode: RosNode | undefined = this.rosNodes.find(
-        (node) => node.name === statusName || statusName.startsWith(`${node.name}/`)
-      );
-      if (matchingNode) {
-        // update nodes diagnostics
-        matchingNode.addDiagnosticStatus(status, timestamp, isDarkMode);
-        matchingNodes.push(matchingNode);
-      }
-      for (const matchingNode of matchingNodes) {
-        emitCustomEvent(EVENT_NODE_DIAGNOSTIC, new EventNodeDiagnostic(this, matchingNode));
-      }
-    }
+    this.diagnosticInfo.add(diags);
+    await this.mergeNodeStates();
     return Promise.resolve(true);
   };
 
@@ -1312,7 +1609,7 @@ export default class Provider implements IProvider {
    * Get the list of nodes loaded in launch files. update launch files into provider object
    */
   public updateLaunchContent: () => Promise<boolean> = async () => {
-    const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true).then((value: TResultData) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_GET_LIST, [], true).then(async (value: TResultData) => {
       if (value.result) {
         const parsedList = value.data as LaunchContent[];
         const launchList: LaunchContent[] = [];
@@ -1345,264 +1642,8 @@ export default class Provider implements IProvider {
         this.launchFiles = launchList;
         emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
 
-        const capabilityGroupParamName = `/${this.settings.get("capabilityGroupParameter")}`;
-        const nodeGroups: { [nodeName: string]: { namespace?: string; name?: string } } = {};
-        // update nodes
-        // Add nodes from launch files to the list of nodes
-        for (const launchFile of this.launchFiles) {
-          const nodes: LaunchNodeInfo[] = launchFile.nodes || [];
-          const nodesCount: { [key: string]: number } = {};
-          for (const [idxLn, launchNode] of nodes.entries()) {
-            // get parameter of a node and determine the capability group parameter
-            const nodeParameters: RosParameter[] = [];
-            let nodeGroup: { namespace?: string; name?: string } = {};
-            let groupParameterFound = false;
-            let nodesParametersFound = false;
-            // const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
-            const uniqueNodeName = launchNode.node_name ? launchNode.node_name : launchNode.unique_name;
-            if (uniqueNodeName) {
-              if (nodesCount[uniqueNodeName]) {
-                nodesCount[uniqueNodeName] += 1;
-              } else {
-                nodesCount[uniqueNodeName] = 1;
-              }
-              if (nodesCount[uniqueNodeName] > 1) {
-                const iNode = this.rosNodes.findIndex((n) => {
-                  return n.name === uniqueNodeName;
-                });
-                if (iNode >= 0) {
-                  this.rosNodes[iNode].countSameName = nodesCount[uniqueNodeName];
-                }
-                continue;
-              }
-              const capabilityGroupOfNode = `${uniqueNodeName}${capabilityGroupParamName}`;
-              // update parameters
-              if (this.rosVersion === "1") {
-                const parameters: RosParameter[] = launchFile.parameters || [];
-                for (const p of parameters) {
-                  if (nodesParametersFound) {
-                    // skip parse further parameter if we found one and next was not in node namespace
-                    // assumption: parameters are sorted
-                    // break;
-                  } else if (p.name.startsWith(uniqueNodeName)) {
-                    nodeParameters.push(p);
-                    if (p.name === capabilityGroupOfNode) {
-                      // update capability group
-                      groupParameterFound = true;
-                      if (p.value) {
-                        nodeGroup = this.toNodeGroup(`${p.value}`);
-                      }
-                    }
-                  } else if (nodeParameters.length > 0) {
-                    // we found one parameter of the node, but current parameter is not in node namespace => skip all further parameter
-                    // assumption: parameters are sorted
-                    nodesParametersFound = true;
-                  } else if (!groupParameterFound && p.name.endsWith(capabilityGroupParamName)) {
-                    // use capability group parameter in the higher level namespace until we found one in the node namespace
-                    const { namespace } = this.toNamespace(p.name);
-                    if (uniqueNodeName.startsWith(namespace) && p.value) {
-                      nodeGroup = this.toNodeGroup(`${p.value}`);
-                    }
-                  }
-                }
-              } else {
-                const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
-                if (env_capability_group) {
-                  nodeGroup = this.toNodeGroup(`${env_capability_group}`);
-                }
-                const parameters: RosParameter[] = launchNode.parameters || [];
-                // in ros2 we have a lot of temporary files with one parameter.
-                // We join the content of these files to one dictionary
-                let allJoinedParams = {};
-                for (const p of parameters) {
-                  let joinedParam = false;
-                  if (p.type.indexOf("yaml") >= 0 || p.type === "dict") {
-                    let allNodes = p.value["/**"];
-                    if (!allNodes && launchNode.node_name) {
-                      allNodes = p.value[launchNode.node_name];
-                    }
-                    if (!allNodes && launchNode.node_name) {
-                      // TODO: split node name and get the path step by step from: {ns: {node: {ros__parameters}}}
-                    }
-                    if (allNodes) {
-                      const rosParameters = allNodes["ros__parameters"];
-                      if (rosParameters) {
-                        const capabilityGroup = rosParameters["capability_group"];
-                        if (capabilityGroup) {
-                          nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
-                        }
-                        allJoinedParams = { ...allJoinedParams, ...rosParameters };
-                        joinedParam = true;
-                      }
-                    }
-                  } else if (p.name === "capability_group") {
-                    nodeGroup = this.toNodeGroup(`${p.value}`);
-                  }
-                  if (!joinedParam) {
-                    nodeParameters.push(new RosParameter(launchNode.node_name || "", p.name, p.value, "", this.id));
-                  }
-                }
-                if (Object.keys(allJoinedParams).length > 0) {
-                  nodeParameters.push(
-                    new RosParameter(
-                      launchNode.node_name || "",
-                      "/tmp/launch_params_*/**/ros__parameters",
-                      allJoinedParams,
-                      "yaml",
-                      this.id
-                    )
-                  );
-                }
-              }
-
-              if (launchNode.node_name && nodeGroup.name) {
-                nodeGroups[launchNode.node_name] = nodeGroup;
-              }
-              let associations: string[] = [];
-              const lAssociations = launchFile.associations || [];
-              for (const item of lAssociations) {
-                if (item.node === uniqueNodeName) {
-                  associations = item.nodes || [];
-                }
-              }
-              nodes[idxLn].associations = associations;
-              nodes[idxLn].parameters = nodeParameters;
-
-              // determine sigkill_timeout
-              if (!launchNode.sigkill_timeout || launchNode.sigkill_timeout <= 0) {
-                let killTime: RosParameterValue | undefined = undefined;
-                killTime = LaunchNodeInfo.getParam(
-                  nodeParameters || [],
-                  launchNode.node_name || "",
-                  "mas/kill_on_stop"
-                );
-                if (killTime === undefined) {
-                  killTime = LaunchNodeInfo.getParam(
-                    nodeParameters || [],
-                    launchNode.node_name || "",
-                    "nm/kill_on_stop"
-                  );
-                }
-                if (killTime === undefined) {
-                  killTime = LaunchNodeInfo.getEnvParam(launchNode.env, "MAS_KILL_ON_STOP");
-                }
-                if (killTime !== undefined) {
-                  nodes[idxLn].sigkill_timeout = Number.parseInt(killTime as string);
-                }
-              }
-
-              //launchPaths
-              //parameters
-              // if node exist (it is running), only update the associated launch file
-              let nodeIsRunning = false;
-              const iNode = this.rosNodes.findIndex((n) => {
-                return n.name === uniqueNodeName;
-              });
-              if (iNode >= 0) {
-                this.rosNodes[iNode].launchInfo.set(launchFile.path, launchNode);
-                if (nodeGroup.name) {
-                  this.rosNodes[iNode].capabilityGroup = nodeGroup;
-                }
-                nodeIsRunning = true;
-                this.rosNodes[iNode].countSameName = nodesCount[uniqueNodeName];
-              }
-
-              if (!nodeIsRunning) {
-                // if node is not running add it as inactive node
-                const n = new RosNode(
-                  uniqueNodeName,
-                  uniqueNodeName,
-                  launchNode.node_namespace ? launchNode.node_namespace : "/",
-                  "",
-                  RosNodeStatus.INACTIVE
-                );
-                n.launchInfo.set(launchFile.path, launchNode);
-                // idGlobal should be the same for life of the node on remote host
-                n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
-                n.providerName = this.name();
-                n.providerId = this.id;
-                n.isLocal = true;
-                if (nodeGroup.name) {
-                  n.capabilityGroup = nodeGroup;
-                }
-                const screens = this.screens.filter((screen) => {
-                  return screen.name === n.name;
-                });
-                n.screens = screens.length > 0 ? screens[0].screens : [];
-                n.countSameName = nodesCount[uniqueNodeName];
-                this.rosNodes.push(n);
-              }
-            }
-          }
-        }
-
-        // set tags for nodelets/composable and other tags)
-        const composableManagers: string[] = [];
-        for (const [idx, n] of this.rosNodes.entries()) {
-          const nodeGroup = nodeGroups[n.name];
-          if (nodeGroup) {
-            this.rosNodes[idx].capabilityGroup = nodeGroup;
-          }
-          // Check if this is a nodelet/composable and assign tags accordingly.
-          const composableParents = n.getAllContainers();
-          const tags: TTag[] = [];
-          for (const item of composableParents) {
-            const composableParent = item.split("|").slice(-1).at(0);
-            if (composableParent) {
-              if (!composableManagers.includes(composableParent)) {
-                composableManagers.push(composableParent);
-              }
-              tags.push({
-                id: `nodelet-${composableParent}`,
-                data: "Nodelet",
-                color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
-                tooltip: `Composable node, container: ${composableParent}`,
-              });
-            }
-          }
-          // mark nodes with same GUID
-          if (n.guid && this.sameIdDict[n.guid]?.length > 1) {
-            tags.push({
-              id: n.guid,
-              data: FingerprintIcon,
-              color: colorFromHostname(n.guid),
-              tooltip: `Nodes with same id ${n.guid}`,
-              onClick: (event: React.MouseEvent) => {
-                // if (n.guid) navigator.clipboard.writeText(n.guid);
-                // this.logger?.success(`${n.guid} copied!`, "", true);
-                emitCustomEvent(EVENT_FILTER_NODES, eventFilterNodes(n.guid as string));
-                event?.stopPropagation();
-              },
-            });
-          }
-
-          if (tags.length > 0) {
-            this.rosNodes[idx].tags = tags;
-          }
-        }
-        // Assign tags to the found nodelet/composable managers.
-        for (const managerId of composableManagers) {
-          const node = this.rosNodes.find((n) => n.id === managerId || n.name === managerId);
-          if (node) {
-            const tag: TTag = {
-              id: "Manager",
-              data: "Manager",
-              color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
-              tooltip: "Manager of a composable nodes",
-            };
-            if (!node.tags) {
-              node.tags = [tag];
-            } else {
-              node.tags.unshift(tag);
-            }
-          }
-        }
-
         this.daemon = true;
-        const changed = this.applyScreens(this.screens);
-        if (!changed) {
-          emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
-        }
+
         return true;
       }
 
@@ -2115,12 +2156,20 @@ export default class Provider implements IProvider {
         if (value.result) {
           // handle the result of type: {result: bool, message: str}
           if (!Array.isArray(value.data) && !value.result) {
-            this.logger?.error(`Provider [${this.id}]: Error at getNodeLoggers(): ${value.message}`, "", value.error !== "running");
+            this.logger?.error(
+              `Provider [${this.id}]: Error at getNodeLoggers(): ${value.message}`,
+              "",
+              value.error !== "running"
+            );
             return [];
           }
           return value.data as LoggerConfig[];
         }
-        this.logger?.warn(`Provider [${this.id}]: Error at getNodeLoggers()`, `${value.message}`, value.error !== "running");
+        this.logger?.warn(
+          `Provider [${this.id}]: Error at getNodeLoggers()`,
+          `${value.message}`,
+          value.error !== "running"
+        );
         return [];
       }
     );
@@ -2377,78 +2426,14 @@ export default class Provider implements IProvider {
       }
       return !ignored;
     });
-
-    const dynamicReconfigureNodes = new Set<string>();
-
-    // check if nodes are not available or run in other host (not monitoring)
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    nl.forEach((n) => {
-      // idGlobal should be the same for life of the node on remote host
-      n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
-      n.providerName = this.name();
-      n.providerId = this.id;
-
-      // copy (selected) old state
-      const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
-      if (oldNode) {
-        n.diagnosticArray = oldNode.diagnosticArray;
-        n.diagnosticLevel = oldNode.diagnosticLevel;
-        n.diagnosticMessage = oldNode.diagnosticMessage;
-        n.diagnosticColor = oldNode.diagnosticColor;
-        n.launchPath = oldNode.launchPath;
-        n.group = oldNode.group;
-        n.launchInfo = oldNode.launchInfo;
-        n.rosLoggers = oldNode.rosLoggers;
-        n.is_container = oldNode.is_container;
-        n.container_name = oldNode.container_name;
-        n.screens = oldNode.screens;
-        if (oldNode.pid !== n.pid) {
-          emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
-        }
-      } else if (n.system_node) {
-        n.group = this.settings.get("namespaceSystemNodes") as string;
-      }
-
-      if (!n.node_API_URI || n.node_API_URI.length === 0) return;
-      if (!n.masteruri || n.masteruri.length === 0) return;
-
-      // update infos available only for ROS1 nodes
-      if (!n.pid || n.pid <= 0) {
-        const hostApiUir = n.node_API_URI.split(":")[0];
-        const hostMasterUri = n.masteruri.split(":")[0];
-
-        if (hostApiUir === hostMasterUri) {
-          // node runs on the same host, but it is not available
-          // probably the node is dead
-          n.status = RosNodeStatus.DEAD;
-        } else {
-          // node runs on a different host, we can not monitor its state
-          // will be shown as XXXX
-          n.status = RosNodeStatus.NOT_MONITORED;
-        }
-      }
-      // check if the node has dynamic reconfigure service
-      const services: RosTopicId[] = n.services || [];
-      for (const service of services) {
-        if (service.name.endsWith("/set_parameters")) {
-          const serviceNs = service.name.slice(0, -15);
-          n.dynamicReconfigureServices.push(serviceNs);
-          if (serviceNs !== n.name) {
-            dynamicReconfigureNodes.add(serviceNs);
-          }
-        }
-      }
-    });
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    nl.forEach((n) => {
-      if (dynamicReconfigureNodes.has(n.name)) {
-        n.dynamicReconfigureServices.push(n.name);
-      }
-    });
-    this.rosNodes = nl;
     this.sameIdDict = sameIdDict;
+    this.rosRunningNodes = nl;
+    await this.mergeNodeStates();
     await this.updateLaunchContent();
-    await this.updateScreens();
+    await this.mergeNodeStates();
+    if (await this.updateScreens()) {
+      await this.mergeNodeStates();
+    }
     this.updateRosServices();
     this.updateRosTopics();
     this.unlockRequest("updateRosNodes");
@@ -2522,7 +2507,9 @@ export default class Provider implements IProvider {
       return;
     }
 
-    this.applyScreens(msg.screens as unknown as ScreensMapping[]);
+    this.screens = msg.screens as unknown as ScreensMapping[];
+    emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
+    this.mergeNodeStates();
   };
 
   /**

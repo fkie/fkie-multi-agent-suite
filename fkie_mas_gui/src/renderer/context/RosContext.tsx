@@ -336,6 +336,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       logCtx.debug(`Triggering update of ROS launch files from ${providerId}`, "");
       const provider = getProviderById(providerId);
       await provider?.updateLaunchContent();
+      await provider?.mergeNodeStates();
     },
     [getProviderById, logCtx]
   );
