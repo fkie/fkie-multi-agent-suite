@@ -114,7 +114,7 @@ export default function PackageExplorerPanel(): JSX.Element {
 
     for (const provider of rosCtx.providers) {
       if (provider.connectionState === ConnectionState.STATES.CONNECTED) {
-        if (!provider.packages || force) {
+        if (provider.packages.length === 0 || force) {
           const pl = await provider.getPackageList(force);
           newPackageList = [
             ...newPackageList,

@@ -181,11 +181,10 @@ export default class Provider implements IProvider {
   /**
    * Package list
    */
-  packages?: RosPackage[];
+  packages: RosPackage[] = [];
 
   /** Providers discovered by this provider.
    * For each provider in this list an event (EVENT_PROVIDER_DISCOVERED) will be emitted. */
-  // eslint-disable-next-line no-use-before-define
   remoteProviders: Provider[] = [];
 
   screens: ScreensMapping[] = [];
