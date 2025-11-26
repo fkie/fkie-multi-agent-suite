@@ -886,12 +886,14 @@ class LaunchConfig(object):
                 finally:
                     self.context._pop_launch_configurations()
             elif isinstance(entity, launch.actions.group_action.GroupAction):
+                self.context._push_launch_configurations()
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
                 include_line_number, position_in_file, raw_text = self.find_definition(
                     file_content, 'group', position_in_file, include_close_bracket=False)
                 self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
+                self.context._pop_launch_configurations()
             elif isinstance(entity, launch.actions.timer_action.TimerAction):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} timer period: {entity.period}")
@@ -966,7 +968,8 @@ class LaunchConfig(object):
             try:
                 return roslib.packages.find_resource(self.package_name, self.launch_name).pop()
             except Exception:
-                raise LaunchConfigException(f'launch file {self.launch_name} not found!')
+                return self.__launch_file
+                # raise LaunchConfigException(f'launch file {self.launch_name} not found!')
         raise LaunchConfigException(f'launch file {self.__launch_file} not found!')
 
     @property
