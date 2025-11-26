@@ -77,12 +77,12 @@ const DEFAULT_LAYOUT = {
     children: [
       {
         type: "row",
-        weight: 30,
+        weight: 25,
         children: [
           {
             id: LAYOUT_TAB_SETS.HOSTS,
             type: "tabset",
-            weight: 30,
+            weight: 35,
             tabSetEnableClose: false,
             children: [
               {
@@ -97,7 +97,7 @@ const DEFAULT_LAYOUT = {
           },
           {
             type: "tabset",
-            weight: 30,
+            weight: 65,
             selected: 0,
             tabSetEnableClose: false,
             children: [
@@ -124,7 +124,7 @@ const DEFAULT_LAYOUT = {
       {
         id: LAYOUT_TAB_SETS.CENTER,
         type: "tabset",
-        weight: 70,
+        weight: 75,
         children: [
           {
             id: LAYOUT_TABS.NODES,
