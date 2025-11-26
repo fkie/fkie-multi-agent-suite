@@ -160,6 +160,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
           { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
           { token: "subst.arg", foreground: "#BA2121", fontStyle: "bold" },
           { token: "comment", foreground: "#666666", fontStyle: "italic" },
+          { token: "error-token", foreground: "#ff3c00ff", fontStyle: "italic strikethrough" },
         ],
       });
       monaco.editor.defineTheme("vs-ros-dark", {
@@ -175,6 +176,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
           { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
           { token: "subst.arg", foreground: "#996633", fontStyle: "bold" },
           { token: "comment", foreground: "#999999", fontStyle: "italic" },
+          { token: "error-token", foreground: "#ff3c00ff", fontStyle: "italic strikethrough" },
         ],
       });
     });

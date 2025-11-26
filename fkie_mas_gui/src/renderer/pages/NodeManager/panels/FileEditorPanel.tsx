@@ -836,32 +836,36 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     if (!monaco) return;
 
     monaco.languages.register({ id: "ros2xml" });
-    monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
-    monaco.languages.setLanguageConfiguration("ros2xml", {
-      comments: { blockComment: ["<!--", "-->"] },
-      autoClosingPairs: [
-        { open: "<", close: ">" },
-        { open: '"', close: '"' },
-        { open: "'", close: "'" },
-      ],
-      brackets: [["<", ">"]],
-      onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
-    });
+    addMonacoDisposable(monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage));
+    addMonacoDisposable(
+      monaco.languages.setLanguageConfiguration("ros2xml", {
+        comments: { blockComment: ["<!--", "-->"] },
+        autoClosingPairs: [
+          { open: "<", close: ">" },
+          { open: '"', close: '"' },
+          { open: "'", close: "'" },
+        ],
+        brackets: [["<", ">"]],
+        onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
+      })
+    );
 
     monaco.languages.register({ id: "ros1xml" });
-    monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
-    monaco.languages.setLanguageConfiguration("ros1xml", {
-      comments: { blockComment: ["<!--", "-->"] },
-      autoClosingPairs: [
-        { open: "<", close: ">" },
-        { open: '"', close: '"' },
-      ],
-      brackets: [["<", ">"]],
-      onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
-    });
+    addMonacoDisposable(monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage));
+    addMonacoDisposable(
+      monaco.languages.setLanguageConfiguration("ros1xml", {
+        comments: { blockComment: ["<!--", "-->"] },
+        autoClosingPairs: [
+          { open: "<", close: ">" },
+          { open: '"', close: '"' },
+        ],
+        brackets: [["<", ">"]],
+        onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
+      })
+    );
 
     monaco.languages.register({ id: "python" });
-    monaco.languages.setMonarchTokensProvider("python", PythonLanguage);
+    addMonacoDisposable(monaco.languages.setMonarchTokensProvider("python", PythonLanguage));
 
     // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
@@ -875,6 +879,26 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         open(resource: Uri): boolean | Promise<boolean> {
           emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, pathFromUri(resource.path), null));
           return true;
+        },
+      })
+    );
+    addMonacoDisposable(
+      monaco.languages.registerHoverProvider("ros2xml", {
+        provideHover: (model, position) => {
+          const wordInfo = model.getWordAtPosition(position);
+          if (!wordInfo) return null;
+          if (wordInfo.word === "false" || wordInfo.word === "true") {
+            return {
+              range: new monaco.Range(
+                position.lineNumber,
+                wordInfo.startColumn,
+                position.lineNumber,
+                wordInfo.endColumn
+              ),
+              contents: [{ value: "**eval needs capitals**" }],
+            };
+          }
+          return null;
         },
       })
     );
