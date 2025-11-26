@@ -1,9 +1,9 @@
 <launch>
   <let name="use_gdb" value="1"/>
-  <arg name="sim" default="True" />
+  <arg name="sim" default="true" />
   <group>
     <let name="launch-prefix" value="gdb -ex run -ex bt -batch --args" if="$(var use_gdb)"/>
-    <node name="rviz2" pkg="rviz2" exec="rviz2" if="$(var sim)">
+    <node name="rviz2" pkg="rviz2" exec="rviz2" if="$(eval \'$(var sim)\')">
       <param name="capability_group" value="gui" />
       <param from="$(find-pkg-share fkie_mas_daemon)/test/launch/params.yaml"/>
     </node>

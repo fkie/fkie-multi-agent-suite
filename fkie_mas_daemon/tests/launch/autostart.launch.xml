@@ -1,13 +1,14 @@
 <launch>
   <arg name="global_frame" default="world"/>
   <set_env name="TEST" value="VALUE" />
-  <arg name="sim" default="false" />
+  <arg name="sim" default="true" />
   <group>
     <set_env name="TEST1" value="VALUE" />
     <unset_env name="NAME" />
     <node name="rviz" pkg="rviz2" exec="rviz2">
       <param name="capability_group" value="gui" />
       <param from="$(find-pkg-share fkie_mas_daemon)/test/launch/params.yaml"/>
+      <param name="use_sim_time" value="$(var sim)" />
     </node>
   </group>
   <group>
