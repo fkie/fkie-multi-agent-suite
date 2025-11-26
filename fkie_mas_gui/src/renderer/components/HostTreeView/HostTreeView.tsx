@@ -472,7 +472,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         return getParentAndChildrenIds(selectedIds);
       });
       // inform details panel tab about selected nodes by user
-      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
+      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
     },
     [getParentAndChildrenIds]
   );

@@ -27,7 +27,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
 
-  const [showProviderDetails, setShowProviderDetails] = useLocalStorage("NodesDetailsPanel:showProviderDetails", true);
+  const [showProviderDetails, setShowProviderDetails] = useLocalStorage("DetailsPanel:showProviderDetails", true);
   const [systemInfoContent, setSystemInfoContent] = useState<TSystemInfo | null>(null);
   const [provider, setProvider] = useState<Provider | undefined>();
   const [providerDetails, setProviderDetails] = useState<JSONObject | TSystemInfo | null>(null);

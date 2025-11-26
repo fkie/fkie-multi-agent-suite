@@ -15,7 +15,7 @@ const LAYOUT_TABS = {
   PACKAGES: "packages_tab",
   HOSTS: "hosts_tab",
   PARAMETER: "parameter_tab",
-  NODE_DETAILS: "node_details_tab",
+  DETAILS: "details_tab",
   TOPICS: "topics_tab",
   SERVICES: "services_tab",
   SETTINGS: "settings-tab",

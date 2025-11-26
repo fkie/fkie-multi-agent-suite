@@ -74,9 +74,9 @@ import {
 import { IExtTerminalConfig } from "./layout/LayoutTabConfig";
 import "./NodeManager.css";
 import AboutPanel from "./panels/AboutPanel";
+import DetailsPanel from "./panels/DetailsPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
-import NodesDetailsPanel from "./panels/NodesDetailsPanel";
 // import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
 import PackageExplorerPanel from "./panels/PackageExplorerPanel";
 import ParameterPanel from "./panels/ParameterPanel";
@@ -184,13 +184,17 @@ export default function NodeManager(): JSX.Element {
   }, [layoutJson]);
 
   useEffect(() => {
-    if (settingsCtx.get("resetLayout") || !hasTab(layoutJson.layout, LAYOUT_TABS.NODES)) {
+    if (
+      settingsCtx.get("resetLayout") ||
+      !hasTab(layoutJson.layout, LAYOUT_TABS.NODES) ||
+      !hasTab(layoutJson.layout, LAYOUT_TABS.DETAILS)
+    ) {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set("resetLayout", false);
       logCtx.success("Layout reset!");
     }
-  }, [settingsCtx.changed, layoutJson, setLayoutJson, setModel, settingsCtx, hasTab, logCtx]);
+  }, [settingsCtx.changed, layoutJson]);
 
   /** Hide bottom panel on close of last terminal */
   function deleteTab(tabId: string): void {
@@ -409,8 +413,8 @@ export default function NodeManager(): JSX.Element {
         return <ProviderPanel key="hosts-panel" />;
       case LAYOUT_TABS.PACKAGES:
         return <PackageExplorerPanel key="pkg-panel" />;
-      case LAYOUT_TABS.NODE_DETAILS:
-        return <NodesDetailsPanel key="node-details-panel" />;
+      case LAYOUT_TABS.DETAILS:
+        return <DetailsPanel key="node-details-panel" />;
       case LAYOUT_TABS.LOGGING:
         return <LoggingPanel key="logging-panel" />;
       case LAYOUT_TABS.TOPICS:
@@ -456,7 +460,7 @@ export default function NodeManager(): JSX.Element {
     if (
       ![
         "Hosts",
-        "Node Details",
+        "Details",
         "Packages",
         "Nodes",
         "Topics",
@@ -498,7 +502,7 @@ export default function NodeManager(): JSX.Element {
         );
         renderValues.name = "Option";
         break;
-      // case LAYOUT_TABS.NODE_DETAILS:
+      // case LAYOUT_TABS.DETAILS:
       //   renderValues.buttons.push(<OverflowMenuNodeDetails key="overflow-node-details" />);
       //   break;
       default:

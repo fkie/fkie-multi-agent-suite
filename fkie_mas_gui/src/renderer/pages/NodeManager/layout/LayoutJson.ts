@@ -77,7 +77,7 @@ const DEFAULT_LAYOUT = {
     children: [
       {
         type: "row",
-        width: 350,
+        weight: 30,
         children: [
           {
             id: LAYOUT_TAB_SETS.HOSTS,
@@ -97,7 +97,7 @@ const DEFAULT_LAYOUT = {
           },
           {
             type: "tabset",
-            weight: 70,
+            weight: 30,
             selected: 0,
             tabSetEnableClose: false,
             children: [
@@ -110,10 +110,10 @@ const DEFAULT_LAYOUT = {
                 enablePopout: enablePopout,
               },
               {
-                id: LAYOUT_TABS.NODE_DETAILS,
+                id: LAYOUT_TABS.DETAILS,
                 type: "tab",
-                name: "Node Details",
-                component: LAYOUT_TABS.NODE_DETAILS,
+                name: "Details",
+                component: LAYOUT_TABS.DETAILS,
                 enableClose: false,
                 enablePopout: enablePopout,
               },

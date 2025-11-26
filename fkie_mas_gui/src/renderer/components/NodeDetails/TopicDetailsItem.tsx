@@ -432,7 +432,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                   const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
                   navCtx.setSelectedNodes([id], true);
                   // inform details panel tab about selected nodes by user
-                  emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
+                  emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                 }}
               >
                 {pubNodeName}
@@ -478,7 +478,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                   const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
                   navCtx.setSelectedNodes([id], true);
                   // inform details panel tab about selected nodes by user
-                  emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODE_DETAILS, "default"));
+                  emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                 }}
               >
                 {subNodeName}

@@ -5,12 +5,12 @@ import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 
 export default function OverflowMenuNodeDetails(): JSX.Element {
-  const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", false);
-  const [showPublishers, setShowPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
-  const [showSubscribers, setShowSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
-  const [showServices, setShowServices] = useLocalStorage("NodesDetailsPanel:showServices", false);
-  const [showConnections, setShowConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
-  const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
+  const [showNodeInfo, setShowNodeInfo] = useLocalStorage("DetailsPanel:showNodeInfo", false);
+  const [showPublishers, setShowPublishers] = useLocalStorage("DetailsPanel:showPublishers", true);
+  const [showSubscribers, setShowSubscribers] = useLocalStorage("DetailsPanel:showSubscribers", true);
+  const [showServices, setShowServices] = useLocalStorage("DetailsPanel:showServices", false);
+  const [showConnections, setShowConnections] = useLocalStorage("DetailsPanel:showConnections", true);
+  const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("DetailsPanel:showLaunchParameter", true);
 
   const createMenu = useMemo(() => {
     return (

@@ -42,7 +42,7 @@ function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): numb
   return 0;
 }
 
-export default function NodesDetailsPanel(): JSX.Element {
+export default function DetailsPanel(): JSX.Element {
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const navCtx = useContext(NavigationContext);
@@ -55,15 +55,15 @@ export default function NodesDetailsPanel(): JSX.Element {
   const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
 
   const [showDiagnosticHistory, setShowDiagnosticHistory] = useLocalStorage(
-    "NodesDetailsPanel:showDiagnosticHistory",
+    "DetailsPanel:showDiagnosticHistory",
     false
   );
-  const [showNodeInfo, setShowNodeInfo] = useLocalStorage("NodesDetailsPanel:showNodeInfo", true);
-  const [showPublishers, setShowPublishers] = useLocalStorage("NodesDetailsPanel:showPublishers", true);
-  const [showSubscribers, setShowSubscribers] = useLocalStorage("NodesDetailsPanel:showSubscribers", true);
-  const [showServices, setShowServices] = useLocalStorage("NodesDetailsPanel:showServices", true);
-  const [showConnections] = useLocalStorage("NodesDetailsPanel:showConnections", true);
-  const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("NodesDetailsPanel:showLaunchParameter", true);
+  const [showNodeInfo, setShowNodeInfo] = useLocalStorage("DetailsPanel:showNodeInfo", true);
+  const [showPublishers, setShowPublishers] = useLocalStorage("DetailsPanel:showPublishers", true);
+  const [showSubscribers, setShowSubscribers] = useLocalStorage("DetailsPanel:showSubscribers", true);
+  const [showServices, setShowServices] = useLocalStorage("DetailsPanel:showServices", true);
+  const [showConnections] = useLocalStorage("DetailsPanel:showConnections", true);
+  const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("DetailsPanel:showLaunchParameter", true);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
 
