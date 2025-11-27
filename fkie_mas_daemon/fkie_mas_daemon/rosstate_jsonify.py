@@ -117,6 +117,7 @@ class RosStateJsonify:
         self._ros_state_warnings: SystemWarningGroup = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
         self._updated_since_request = False
         self._timestamp_state = -1
+        self._timestamp_state_srv_calls = -1
         self._lock_update_services = threading.RLock()
         self._thread_update_services = None
         self._use_name_as_node_id = self.get_rwm_implementation() in ["rmw_zenoh_cpp"]
@@ -225,15 +226,13 @@ class RosStateJsonify:
     # The status of composable or lifecycle nodes is determined by calling services. This is done in a separate thread.
     # This is done in such a way that no changes are missed. With a newer 'ts_state_updated' the parameters are cached and the thread is started again if necessary when it is finished.
     def get_nodes_as_json(self, ts_state_updated, update_participants: bool, forceRefresh: bool = False) -> List[RosNode]:
-        updates_with_service_calls = True
+        # do not update composable and lifecycle nodes after these requests are completed
+        # service calls cause graph events in ROS
+        updates_with_service_calls = self._thread_update_services == None and time.time() - \
+            self._timestamp_state_srv_calls > 2.
         if not forceRefresh:
             if self._updated_since_request or (ts_state_updated <= self._timestamp_state):
-                if self._updated_since_request:
-                    self._updated_since_request = False
-                    # do not update composable and lifecycle nodes after these requests are completed
-                    # service calls cause graph events in ROS
-                    updates_with_service_calls = False
-                    self._timestamp_state = time.time()
+                self._updated_since_request = False
                 Log.debug(f"{self.__class__.__name__}: report cached state")
                 with self._lock_update_services:
                     return self._current_nodes
@@ -626,6 +625,7 @@ class RosStateJsonify:
         finally:
             self._thread_update_services = None
             self._updated_since_request = True
+            self._timestamp_state_srv_calls = time.time()
 
     def _update_composable_node(self, composable_nodes: Dict[NodeFullName, NodeFullName], future: WaitFuture) -> None:
         container_name = future.service_name.replace('/_container/list_nodes', '')
