@@ -1,4 +1,4 @@
-import { JSONObject, TResult, TResultData, TResultProcess, TSystemInfo, TTag } from "@/types";
+import { JSONObject, JSONValue, TResult, TResultData, TResultProcess, TSystemInfo, TTag } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
@@ -1308,31 +1308,31 @@ export default class Provider implements IProvider {
             for (const p of parameters) {
               let joinedParam = false;
               if (p.type.indexOf("yaml") >= 0 || p.type === "dict") {
-                try{
-                let allNodes = p.value["/**"];
-                if (!allNodes && launchNode.node_name) {
-                  allNodes = p.value[launchNode.node_name];
-                }
-                if (!allNodes && launchNode.node_name) {
-                  // TODO: split node name and get the path step by step from: {ns: {node: {ros__parameters}}}
-                }
-                if (allNodes) {
-                  let rosParameters = allNodes["ros__parameters"];
-                  if (!rosParameters) {
-                    rosParameters = allNodes;
+                try {
+                  let allNodes = p.value["/**"];
+                  if (!allNodes && launchNode.node_name) {
+                    allNodes = p.value[launchNode.node_name];
                   }
-                  if (rosParameters) {
-                    const capabilityGroup = rosParameters["capability_group"];
-                    if (capabilityGroup) {
-                      nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
+                  if (!allNodes && launchNode.node_name) {
+                    // TODO: split node name and get the path step by step from: {ns: {node: {ros__parameters}}}
+                  }
+                  if (allNodes) {
+                    let rosParameters = allNodes["ros__parameters"];
+                    if (!rosParameters) {
+                      rosParameters = allNodes;
                     }
-                    allJoinedParams = { ...allJoinedParams, ...rosParameters };
-                    joinedParam = true;
+                    if (rosParameters) {
+                      const capabilityGroup = rosParameters["capability_group"];
+                      if (capabilityGroup) {
+                        nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
+                      }
+                      allJoinedParams = { ...allJoinedParams, ...rosParameters };
+                      joinedParam = true;
+                    }
                   }
+                } catch (error) {
+                  console.error(`ERROR: ${error}: ${JSON.stringify(p)}`);
                 }
-              } catch (error) {
-                console.error(`ERROR: ${error}: ${JSON.stringify(p)}`);
-              }
               } else if (p.name === "capability_group") {
                 nodeGroup = this.toNodeGroup(`${p.value}`);
               }
@@ -2342,7 +2342,7 @@ export default class Provider implements IProvider {
    * Callback of master daemon ready status (true/false)
    */
   private callbackDaemonReady: (msg: JSONObject) => void = (msg) => {
-    // this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, '', this.id);
+    // this.logger?.debugInterface(URI.ROS_DAEMON_READY, msg, "", this.id);
     if (this.currentDelayTimer) {
       clearTimeout(this.currentDelayTimer);
       this.currentDelayTimer = null;
@@ -2490,12 +2490,10 @@ export default class Provider implements IProvider {
 
   public callbackChangedFile: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debugInterface(URI.ROS_PATH_CHANGED, msg, "", this.id);
-    if (!msg || (await this.lockRequest("callbackChangedFile"))) {
+    if (!msg) {
       return;
     }
-
     emitCustomEvent(EVENT_PROVIDER_PATH_EVENT, new EventProviderPathEvent(this, msg as unknown as PathEvent));
-    this.unlockRequest("callbackChangedFile");
   };
 
   /**
@@ -2506,7 +2504,6 @@ export default class Provider implements IProvider {
     if (!msg) {
       return;
     }
-
     this.screens = msg.screens as unknown as ScreensMapping[];
     emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
     this.mergeNodeStates();
@@ -2634,7 +2631,7 @@ export default class Provider implements IProvider {
             this.unlockRequest(uri);
             return {
               result: false,
-              message: `[URI] (${uri}) [${this.id}]: Max call attempts (${this.callAttempts}) reached!`,
+              message: `ws://${uri} [${this.id}]: max call attempts (${this.callAttempts}) reached!`,
               data: null,
               error: "max attempts",
             } as TResultData;
@@ -2642,8 +2639,8 @@ export default class Provider implements IProvider {
 
           // didn't work, wait and repeat
           this.logger?.info(
-            `[URI] (${uri}) [${this.id}]`,
-            `Waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
+            `ws://${this.id}?${uri}: waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
+            "",
             false
           );
           await delay(this.delayCallAttempts);
@@ -2654,7 +2651,7 @@ export default class Provider implements IProvider {
       const result = await callRequest(uri, args, undefined, timeout);
       // const result = await this.connection.call(uri, args);
       this.unlockRequest(uri);
-      this.logger?.debugInterface(uri, result, "", this.name());
+      this.logger?.debugInterface(uri, result, "", this.id);
       return result;
     };
 

@@ -19,6 +19,9 @@ export const levelColors = {
   warning: {
     color: "#ff9800", // amber
   },
+  warn: {
+    color: "#ff9800", // amber
+  },
 };
 
 export const levelColorsWbg = {
@@ -43,6 +46,10 @@ export const levelColorsWbg = {
     color: "#fff",
   },
   warning: {
+    backgroundColor: levelColors.warning.color, // amber
+    color: "#fff",
+  },
+  warn: {
     backgroundColor: levelColors.warning.color, // amber
     color: "#fff",
   },

@@ -136,7 +136,7 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
   function debugInterface(
     uri: string,
     msg: TResult | JSONObject | string,
-    details?: TResult | JSONObject | string,
+    details?: string,
     providerName?: string
   ): void {
     // check settings to debug by uri
@@ -146,24 +146,14 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
       if (msg && typeof msg === "string" && msg.length > 0) parsedMsg = JSON.parse(msg);
       else parsedMsg = msg;
     } catch (errorParse: unknown) {
-      warn(`[URI] ${providerName} (${uri}): error while read debug message`, JSON.stringify(errorParse));
+      warn(`ws://${providerName}?${uri}: error while read debug message`, JSON.stringify(errorParse));
       parsedMsg = msg;
     }
 
-    let parseDetails: TResult | JSONObject | string = {};
-    if (details) {
-      try {
-        if (typeof details === "string" && details.length > 0) {
-          parseDetails = JSON.parse(details);
-        } else parseDetails = details;
-      } catch (errorParse: unknown) {
-        warn(`[URI] ${providerName} (${uri}): error while read debug details`, JSON.stringify(errorParse));
-        parseDetails = details;
-      }
-    }
+    const detailsStr = details ? `: ${details}` : "";
 
     if (Array.isArray(debugByUri) && debugByUri.includes(uri)) {
-      debug(`[URI] ${providerName} (${uri}): ${JSON.stringify(parseDetails)}}`, JSON.stringify(parsedMsg));
+      debug(`ws://${providerName}?${uri}${detailsStr}`, JSON.stringify(parsedMsg));
     }
   }
 
