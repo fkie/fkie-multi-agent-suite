@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.8.2 - 27.11.2025
+
+Removed snackbar info
+Log panel revised
+Fixed layout that is corrupted after MAS update and layout reset
+Changed update strategy of the ros nodes
+Fixed environment variable set in a launch group
+Adjust default layout weights
+Added warning for true/false in launch dialog
+Added warning for true/false not capitalized in XML launch files
+Renamed "Node Details" to "Details" tab
+Show host details in the node details window instead of in a new tab
+
 ## 4.8.1 - 25.11.2025
 
 Reduced number of service calls for updating composable and lifecycle nodes

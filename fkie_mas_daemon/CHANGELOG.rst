@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.8.2 (27.11.2025)
+------------------
+* Reduced number of service calls for updating composable and lifecycle nodes (2)
+* fixed environment variable set in a launch group
+
 4.8.1 (25.11.2025)
 ------------------
 * Reduced number of service calls for updating composable and lifecycle nodes
