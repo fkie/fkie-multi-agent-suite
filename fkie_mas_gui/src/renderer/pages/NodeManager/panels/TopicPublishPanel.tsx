@@ -718,7 +718,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         </Stack>
 
         {inputElements}
-        {!messageStruct && (
+        {!messageStruct && !editMessageType && (
           <Alert severity="error" style={{ minWidth: 0 }}>
             <AlertTitle>{`Message definition for ${topicName}[${currentMessageType}] not found!`}</AlertTitle>
           </Alert>

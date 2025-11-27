@@ -194,7 +194,10 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
     externalKeyModifier: boolean,
     forceOpenTerminal: boolean
   ): Promise<void> {
-    const provider = rosCtx.getProviderById(providerId);
+    let provider = rosCtx.getProviderById(providerId);
+    if (!provider) {
+      provider = rosCtx.getLocalProvider()[0];
+    }
     if (provider) {
       const id = `pub-${provider.connection.host}-${provider.connection.port}-${topicName}`;
       // open in external window depending on setting and key modifier and if no tab already existing
