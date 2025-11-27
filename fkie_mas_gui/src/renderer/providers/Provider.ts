@@ -1,4 +1,4 @@
-import { JSONObject, JSONValue, TResult, TResultData, TResultProcess, TSystemInfo, TTag } from "@/types";
+import { JSONObject, TResult, TResultData, TResultProcess, TSystemInfo, TTag } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
@@ -9,7 +9,6 @@ import {
   DaemonVersion,
   DiagnosticArray,
   DiagnosticInfo,
-  DiagnosticStatus,
   FileItem,
   LaunchCallService,
   LaunchContent,
@@ -52,7 +51,6 @@ import ConnectionState from "./ConnectionState";
 import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
 import RosProviderState from "./RosProviderState";
 import {
-  EVENT_NODE_DIAGNOSTIC,
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_DISCOVERED,
@@ -71,7 +69,6 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "./eventTypes";
 import {
-  EventNodeDiagnostic,
   EventProviderActivity,
   EventProviderDelay,
   EventProviderDiscovered,

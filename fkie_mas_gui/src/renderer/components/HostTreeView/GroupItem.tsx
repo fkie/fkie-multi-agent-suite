@@ -136,7 +136,7 @@ const getGroupDiagnosticLevel: (treeItems: NodeTreeItem[]) => DiagnosticLevel = 
       groupLevel = getMaxDiagnosticLevel(groupLevel, childrenLevel) || DiagnosticLevel.OK;
     }
     if (treeItem.node) {
-      groupLevel = getMaxDiagnosticLevel(groupLevel, treeItem.node.diagnosticLevel) || DiagnosticLevel.OK;
+      groupLevel = getMaxDiagnosticLevel(groupLevel, treeItem.node.diagnostic?.diagnosticLevel) || DiagnosticLevel.OK;
     }
   }
   return groupLevel;
@@ -149,8 +149,8 @@ function getGroupIconColor(treeItems: NodeTreeItem[], isDarkMode: boolean = fals
   // get color from diagnosticColor of the nodes
   const nodeColors: string[] = [];
   for (const nodeItem of treeItems) {
-    if (nodeItem.node?.diagnosticColor) {
-      nodeColors.push(nodeItem.node?.diagnosticColor);
+    if (nodeItem.node?.diagnostic?.getColor(isDarkMode)) {
+      nodeColors.push(nodeItem.node?.diagnostic?.getColor(isDarkMode));
     }
   }
   if (nodeColors.length > 0) {

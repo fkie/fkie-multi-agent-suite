@@ -1,12 +1,6 @@
 /* eslint-disable camelcase */
 import { TTag } from "@/types";
-import { getDiagnosticColor } from "../components/UI/Colors";
-import DiagnosticArray, {
-  DiagnosticLevel,
-  DiagnosticNodeInfo,
-  DiagnosticStatus,
-  getMaxDiagnosticLevel,
-} from "./Diagnostics";
+import { DiagnosticNodeInfo } from "./Diagnostics";
 import LaunchNodeInfo from "./LaunchNodeInfo";
 import RosTopicId from "./RosTopicId";
 

@@ -16,7 +16,6 @@ import { FileIcon } from "react-file-icon";
 import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import {
-  DiagnosticLevel,
   getFileExtension,
   getFileName,
   LaunchCallService,
@@ -32,7 +31,7 @@ import { TRosMessageStruct } from "@/types/TRosMessageStruct";
 import { treeItemClasses } from "@mui/x-tree-view";
 import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
-import { colorFromHostname, getDiagnosticColor } from "../UI/Colors";
+import { colorFromHostname } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -142,9 +141,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   function getNodeIcon(node: RosNode, isDarkMode = false): JSX.Element {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
-        const color = node.diagnosticColor
-          ? node.diagnosticColor
-          : getDiagnosticColor(node.diagnosticLevel || DiagnosticLevel.OK, isDarkMode);
+        const color = node.diagnostic?.getColor(isDarkMode);
         const IconType = node.isLocal ? CircleIcon : ReportIcon;
         if (!node.lifecycle_state) {
           return (

@@ -22,7 +22,7 @@ export interface ILoggingContext {
   debugInterface: (
     uri: string,
     result: TResult | JSONObject | string,
-    details?: TResult | JSONObject | string,
+    details?: string,
     providerName?: string
   ) => void;
 }
