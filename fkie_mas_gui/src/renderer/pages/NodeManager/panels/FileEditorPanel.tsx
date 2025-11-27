@@ -25,12 +25,8 @@ import SplitPane, { Pane, SashContent } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 
 import ExplorerTree from "@/renderer/components/MonacoEditor/ExplorerTree";
-import { PythonLanguage } from "@/renderer/components/MonacoEditor/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "@/renderer/components/MonacoEditor/PythonLaunchProposals";
 import SearchTree from "@/renderer/components/MonacoEditor/SearchTree";
-import XmlBeautify from "@/renderer/components/MonacoEditor/XmlBeautify";
-import { Ros1XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighter";
-import { Ros2XmlLanguage } from "@/renderer/components/MonacoEditor/XmlLaunchHighlighterR2";
 import {
   createDocumentSymbols,
   createXMLDependencyProposals,
@@ -827,45 +823,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     });
   }
 
-  function formatXml(xml: string, tab = 2): string {
-    const xmlResult = new XmlBeautify().beautify(xml, tab);
-    return xmlResult;
-  }
-
   function configureMonacoEditor(): void {
     if (!monaco) return;
-
-    monaco.languages.register({ id: "ros2xml" });
-    addMonacoDisposable(monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage));
-    addMonacoDisposable(
-      monaco.languages.setLanguageConfiguration("ros2xml", {
-        comments: { blockComment: ["<!--", "-->"] },
-        autoClosingPairs: [
-          { open: "<", close: ">" },
-          { open: '"', close: '"' },
-          { open: "'", close: "'" },
-        ],
-        brackets: [["<", ">"]],
-        onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
-      })
-    );
-
-    monaco.languages.register({ id: "ros1xml" });
-    addMonacoDisposable(monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage));
-    addMonacoDisposable(
-      monaco.languages.setLanguageConfiguration("ros1xml", {
-        comments: { blockComment: ["<!--", "-->"] },
-        autoClosingPairs: [
-          { open: "<", close: ">" },
-          { open: '"', close: '"' },
-        ],
-        brackets: [["<", ">"]],
-        onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
-      })
-    );
-
-    monaco.languages.register({ id: "python" });
-    addMonacoDisposable(monaco.languages.setMonarchTokensProvider("python", PythonLanguage));
 
     // monaco.editor.setTheme("ros2xml");
     let packages: RosPackage[] = [];
@@ -879,26 +838,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         open(resource: Uri): boolean | Promise<boolean> {
           emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, pathFromUri(resource.path), null));
           return true;
-        },
-      })
-    );
-    addMonacoDisposable(
-      monaco.languages.registerHoverProvider("ros2xml", {
-        provideHover: (model, position) => {
-          const wordInfo = model.getWordAtPosition(position);
-          if (!wordInfo) return null;
-          if (wordInfo.word === "false" || wordInfo.word === "true") {
-            return {
-              range: new monaco.Range(
-                position.lineNumber,
-                wordInfo.startColumn,
-                position.lineNumber,
-                wordInfo.endColumn
-              ),
-              contents: [{ value: "**eval needs capitals**" }],
-            };
-          }
-          return null;
         },
       })
     );
@@ -959,34 +898,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             displayName: "ROS Symbols",
             provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
               return isRos2 ? createDocumentSymbolsR2(model) : createDocumentSymbols(model);
-            },
-          })
-        );
-        addMonacoDisposable(
-          monaco.languages.registerDocumentFormattingEditProvider("ros1xml", {
-            async provideDocumentFormattingEdits(
-              model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
-            ) {
-              return [
-                {
-                  range: model.getFullModelRange(),
-                  text: formatXml(model.getValue()),
-                },
-              ];
-            },
-          })
-        );
-        addMonacoDisposable(
-          monaco.languages.registerDocumentFormattingEditProvider("ros2xml", {
-            async provideDocumentFormattingEdits(
-              model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
-            ) {
-              return [
-                {
-                  range: model.getFullModelRange(),
-                  text: formatXml(model.getValue()),
-                },
-              ];
             },
           })
         );

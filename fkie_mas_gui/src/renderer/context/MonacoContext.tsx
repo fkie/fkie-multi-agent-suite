@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import * as MonacoReact from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
+import { editor } from "monaco-editor/esm/vs/editor/editor.api";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
@@ -39,6 +40,10 @@ import {
   eventEditorSelectRange,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { TFileRange, TLaunchArg } from "@/types";
+import { PythonLanguage } from "../components/MonacoEditor/PythonLaunchHighlighter";
+import XmlBeautify from "../components/MonacoEditor/XmlBeautify";
+import { Ros1XmlLanguage } from "../components/MonacoEditor/XmlLaunchHighlighter";
+import { Ros2XmlLanguage } from "../components/MonacoEditor/XmlLaunchHighlighterR2";
 import { LoggingContext } from "./LoggingContext";
 import { RosContext } from "./RosContext";
 
@@ -143,6 +148,11 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     });
   }, []);
 
+  function formatXml(xml: string, tab = 2): string {
+    const xmlResult = new XmlBeautify().beautify(xml, tab);
+    return xmlResult;
+  }
+
   useEffect(() => {
     monaco?.languages.typescript.javascriptDefaults.setEagerModelSync(true);
     monaco?.languages.typescript.typescriptDefaults.setEagerModelSync(true);
@@ -160,7 +170,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
           { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
           { token: "subst.arg", foreground: "#BA2121", fontStyle: "bold" },
           { token: "comment", foreground: "#666666", fontStyle: "italic" },
-          { token: "error-token", foreground: "#ff3c00ff", fontStyle: "italic strikethrough" },
+          { token: "error-token", foreground: "#ff0000ff", fontStyle: "bold underline" },
         ],
       });
       monaco.editor.defineTheme("vs-ros-dark", {
@@ -176,9 +186,78 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
           { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
           { token: "subst.arg", foreground: "#996633", fontStyle: "bold" },
           { token: "comment", foreground: "#999999", fontStyle: "italic" },
-          { token: "error-token", foreground: "#ff3c00ff", fontStyle: "italic strikethrough" },
+          { token: "error-token", foreground: "#ff0000ff", fontStyle: "bold underline" },
         ],
       });
+      monaco.languages.registerHoverProvider("ros2xml", {
+        provideHover: (model, position) => {
+          const wordInfo = model.getWordAtPosition(position);
+          if (!wordInfo) return null;
+          if (wordInfo.word === "false" || wordInfo.word === "true") {
+            return {
+              range: new monaco.Range(
+                position.lineNumber,
+                wordInfo.startColumn,
+                position.lineNumber,
+                wordInfo.endColumn
+              ),
+              contents: [{ value: "Use uppercase True/False, otherwise some eval statements may fail." }],
+            };
+          }
+          return null;
+        },
+      });
+      monaco.languages.register({ id: "ros2xml" });
+      monaco.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
+      monaco.languages.setLanguageConfiguration("ros2xml", {
+        comments: { blockComment: ["<!--", "-->"] },
+        autoClosingPairs: [
+          { open: "<", close: ">" },
+          { open: '"', close: '"' },
+          { open: "'", close: "'" },
+        ],
+        brackets: [["<", ">"]],
+        onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
+      });
+      monaco.languages.registerDocumentFormattingEditProvider("ros2xml", {
+        async provideDocumentFormattingEdits(
+          model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
+        ) {
+          return [
+            {
+              range: model.getFullModelRange(),
+              text: formatXml(model.getValue()),
+            },
+          ];
+        },
+      });
+
+      monaco.languages.register({ id: "ros1xml" });
+      monaco.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
+      monaco.languages.setLanguageConfiguration("ros1xml", {
+        comments: { blockComment: ["<!--", "-->"] },
+        autoClosingPairs: [
+          { open: "<", close: ">" },
+          { open: '"', close: '"' },
+        ],
+        brackets: [["<", ">"]],
+        onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
+      });
+      monaco.languages.registerDocumentFormattingEditProvider("ros1xml", {
+        async provideDocumentFormattingEdits(
+          model: editor.ITextModel /*, options: languages.FormattingOptions, token: CancellationToken */
+        ) {
+          return [
+            {
+              range: model.getFullModelRange(),
+              text: formatXml(model.getValue()),
+            },
+          ];
+        },
+      });
+
+      monaco.languages.register({ id: "python" });
+      monaco.languages.setMonarchTokensProvider("python", PythonLanguage);
     });
   }, [monaco]);
 
@@ -248,7 +327,11 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
               }
             } else {
               saveItem.message = `Provider ${tabInfo.providerId} not found`;
-              logCtx.error(`Provider ${tabInfo.providerId} not found`, `can not save file: ${path}`, "not saved, no provider");
+              logCtx.error(
+                `Provider ${tabInfo.providerId} not found`,
+                `can not save file: ${path}`,
+                "not saved, no provider"
+              );
             }
           } else {
             saveItem.message = "Model not found";

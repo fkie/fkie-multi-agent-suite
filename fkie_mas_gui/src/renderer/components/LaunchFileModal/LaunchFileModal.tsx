@@ -53,6 +53,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
   const [currentArgs, setCurrentArgs] = useState<LaunchArgumentWithHistory[]>([]);
   const [scrollBar, setScrollBar] = useState<string>("auto");
   const [lastKey, setLastKey] = useState<string>("");
+  const booleanWordRegex = /\b(true|false)\b/;
 
   // Make a request to provider and get Launch attributes like required arguments, status and paths
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -119,9 +120,9 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
               // special: add true/false if value is true or false and no history available
               if (historyList.length === 1) {
                 if (`${argValue}`.toLocaleLowerCase().localeCompare("true") === 0) {
-                  historyList.push("false");
+                  historyList.push("False");
                 } else if (`${argValue}`.toLocaleLowerCase().localeCompare("false") === 0) {
-                  historyList.push("true");
+                  historyList.push("True");
                 }
               }
               argList.push({
@@ -266,7 +267,11 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
         setMessageLaunchLoaded("Please fill all arguments");
       } else {
         setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
-        logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`, "could not load file");
+        logCtx.error(
+          `Could not load file: "${path}"`,
+          `Error message: ${resultLaunchLoadFile.status.msg}`,
+          "could not load file"
+        );
       }
     } else {
       logCtx.error(
@@ -418,6 +423,13 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                             variant="outlined"
                             margin="dense"
                             size="small"
+                            error={booleanWordRegex.test(arg.value)}
+                            helperText={
+                              booleanWordRegex.test(arg.value)
+                                ? "Use uppercase True/False, otherwise some eval statements may fail."
+                                : ""
+                            }
+
                             // autoFocus
                           />
                         )}
@@ -513,6 +525,12 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
                         value={arg.value}
                         variant="outlined"
                         size="small"
+                        error={booleanWordRegex.test(arg.value)}
+                        helperText={
+                          booleanWordRegex.test(arg.value)
+                            ? "Use uppercase True/False, otherwise some eval statements may fail."
+                            : ""
+                        }
                         onChange={(event) => {
                           setCurrentArgs((prev) =>
                             prev.map((item) => {
