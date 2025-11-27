@@ -16,6 +16,7 @@ import { FileIcon } from "react-file-icon";
 import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import {
+  DiagnosticLevel,
   getFileExtension,
   getFileName,
   LaunchCallService,
@@ -31,7 +32,7 @@ import { TRosMessageStruct } from "@/types/TRosMessageStruct";
 import { treeItemClasses } from "@mui/x-tree-view";
 import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
-import { colorFromHostname } from "../UI/Colors";
+import { colorFromHostname, getDiagnosticColor } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -141,9 +142,12 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   function getNodeIcon(node: RosNode, isDarkMode = false): JSX.Element {
     switch (node.status) {
       case RosNodeStatus.RUNNING: {
-        const color = node.diagnostic?.getColor(isDarkMode);
+        const color = node.diagnostic?.getColor(isDarkMode) || getDiagnosticColor(DiagnosticLevel.OK, isDarkMode);
         const IconType = node.isLocal ? CircleIcon : ReportIcon;
         if (!node.lifecycle_state) {
+          if (node.pid || node.screens) {
+            return <IconType style={{ marginRight: 0.5, width: 20, color: color }} />;
+          }
           return (
             <Tooltip
               key={`tooltip-icon-${node.id}`}
@@ -218,7 +222,16 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
 
       case RosNodeStatus.ONLY_SCREEN: {
         const color = isDarkMode ? green[600] : green[500];
-        return <DvrIcon style={{ marginRight: 0.5, width: 20, color: color }} />;
+        return (
+          <Tooltip
+            key={`tooltip-icon-${node.id}`}
+            title={"Only screen, no ROS data available for this process"}
+            placement="left"
+            disableInteractive
+          >
+            <DvrIcon style={{ marginRight: 0.5, width: 20, color: color }} />
+          </Tooltip>
+        );
       }
 
       case RosNodeStatus.INACTIVE: {
