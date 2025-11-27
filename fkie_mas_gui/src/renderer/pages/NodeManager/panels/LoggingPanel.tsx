@@ -57,7 +57,7 @@ export default function LoggingPanel(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const settingsCtx = useContext(SettingsContext);
   const [logLevel, setLogLevel] = useLocalStorage<LoggingLevel>("LoggingPanel:level", LoggingLevel.INFO);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   function showLogLevel(level: string): boolean {
@@ -93,7 +93,7 @@ export default function LoggingPanel(): JSX.Element {
 
   function rowContent(_index: number, row: LogEvent): JSX.Element {
     const color = levelColors[row.level.toLowerCase()];
-    const details = JSON.stringify(row.details).replaceAll("\\n", "\n").replaceAll('\\"', '"').replace(/^"|"$/g, "");;
+    const details = JSON.stringify(row.details).replaceAll("\\n", "\n").replaceAll('\\"', '"').replace(/^"|"$/g, "");
     const detailsSize = details.length || 0;
     const detailsSizeStr = convertBytes(detailsSize);
     return (
@@ -128,11 +128,14 @@ export default function LoggingPanel(): JSX.Element {
               sx={{
                 fontFamily: "sans-serif",
                 fontSize: "0.9em",
+                whiteSpace: "normal",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
                 textOverflow: "ellipsis",
               }}
             >
               {row.description}
-              {detailsSize >= 200 && (
+              {detailsSize >= 300 && (
                 <IconButton
                   sx={{
                     fontSize: "0.9em",
@@ -158,11 +161,14 @@ export default function LoggingPanel(): JSX.Element {
                   fontFamily: "monospace",
                   fontSize: "0.8em",
                   overflow: "hidden",
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                   textOverflow: "ellipsis",
-                  whiteSpace: "pre-line",
+                  // whiteSpace: "pre-line",
                 }}
               >
-                {detailsSize > 1000 ? `${details.slice(0, 1000)}...` : details}
+                {detailsSize > 300 ? `${details.slice(0, 300)}...` : details}
               </Typography>
             )}
           </Stack>
@@ -191,7 +197,7 @@ export default function LoggingPanel(): JSX.Element {
         <Select
           id="log-level-select"
           value={logLevel}
-          sx={{ fontSize: "0.8em", }}
+          sx={{ fontSize: "0.8em" }}
           size="small"
           // autoWidth={true}
           variant="standard"
@@ -243,6 +249,7 @@ export default function LoggingPanel(): JSX.Element {
         key="logging-panel"
         // useWindowScroll
         style={{
+          overflow: "auto",
           backgroundColor: settingsCtx.get("backgroundColor") as string,
         }}
         data={logCtx.logs.filter((log) => showLogLevel(log.level) && log.description.includes(searchTerm))}
