@@ -284,7 +284,7 @@ export default function NodeManager(): JSX.Element {
         setAddToLayout((oldValue) => [tab, ...oldValue]);
       }
     },
-    [layoutComponents, setAddToLayout]
+    [layoutComponents, model]
   );
 
   /** close tabs on signals from tab itself (e.g. ctrl+d) */
@@ -399,7 +399,7 @@ export default function NodeManager(): JSX.Element {
       }
       setAddToLayout([...addToLayout]);
     }
-  }, [addToLayout, getPanelId, model]);
+  }, [addToLayout, model]);
 
   function factory(node: TabNode): JSX.Element {
     const component = node.getComponent();
