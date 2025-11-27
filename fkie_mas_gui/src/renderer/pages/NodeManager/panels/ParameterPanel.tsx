@@ -54,7 +54,8 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
       if (!selectedParameter.provider.deleteParameters) {
         logCtx.error(
           `Provider ${selectedParameter.provider.name()} does not support [deleteParameters] method`,
-          DEFAULT_BUG_TEXT
+          DEFAULT_BUG_TEXT,
+          "deleteParameters not supported"
         );
         return;
       }
@@ -73,10 +74,15 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
           if (result.result) {
             logCtx.success(
               `Parameter deleted successfully from ${selectedParameter.provider.name()}`,
-              `${JSON.stringify(selectedParameter.params)}`
+              `${JSON.stringify(selectedParameter.params)}`,
+              "parameter deleted"
             );
           } else {
-            logCtx.error(`Could not delete parameters from ${selectedParameter.provider.name()}`, `${result.message}`);
+            logCtx.error(
+              `Could not delete parameters from ${selectedParameter.provider.name()}`,
+              `${result.message}`,
+              "delete parameters failed"
+            );
           }
         })
       );

@@ -31,19 +31,19 @@ export default function PublisherApp(): JSX.Element {
     const topic = urlParams.get("topicName");
     const topicType = urlParams.get("topicType");
     if (!host || !port) {
-      logCtx.error(`invalid address ${host}:${port}`, "", false);
+      logCtx.error(`invalid address ${host}:${port}`, "");
       return;
     }
     if (!topic) {
-      logCtx.error(`invalid topic ${topic}`, "", false);
+      logCtx.error(`invalid topic ${topic}`, "");
       return;
     }
     if (!topicType) {
-      logCtx.error(`invalid topicType ${topicType}`, "", false);
+      logCtx.error(`invalid topicType ${topicType}`, "");
       return;
     }
     if (!id) {
-      logCtx.error(`no id found ${id}`, "", false);
+      logCtx.error(`no id found ${id}`, "");
       return;
     }
     document.title = `Publish - ${getFileName(topic)}`;
@@ -57,7 +57,7 @@ export default function PublisherApp(): JSX.Element {
         topicType: topicType,
       });
     } else {
-      logCtx.error(`connection to ${host}:${port} failed`, "", false);
+      logCtx.error(`connection to ${host}:${port} failed`, "");
     }
   }
 

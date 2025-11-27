@@ -175,7 +175,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
                           aria-label="load launch warnings"
                           onClick={(event) => {
                             navigator.clipboard.writeText(lc.warnings.join("\n"));
-                            logCtx.info("Warnings copied to clipboard");
+                            logCtx.info("Warnings copied to clipboard", "", "Warnings copied to clipboard");
                             event.stopPropagation();
                           }}
                         >

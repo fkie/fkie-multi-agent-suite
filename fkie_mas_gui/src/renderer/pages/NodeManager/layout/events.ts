@@ -1,4 +1,5 @@
-import { TFileRange, TLaunchArg } from "@/types";
+import { InfoStateLevel, TFileRange, TInfoState, TLaunchArg } from "@/types";
+import { emitCustomEvent } from "react-custom-events";
 import LayoutTabConfig from "./LayoutTabConfig";
 
 export const EVENT_CLOSE_COMPONENT = "EVENT_CLOSE_COMPONENT" as const;
@@ -9,6 +10,7 @@ export const EVENT_EDITOR_SELECT_RANGE = "EVENT_EDITOR_SELECT_RANGE" as const;
 export const EVENT_FILTER_NODES = "EVENT_FILTER_NODES" as const;
 export const EVENT_FILTER_TOPICS = "EVENT_FILTER_TOPICS" as const;
 export const EVENT_FILTER_SERVICES = "EVENT_FILTER_SERVICES" as const;
+export const EVENT_INFO_STATE = "EVENT_INFO_STATE" as const;
 
 export type TEventId = {
   id: string;
@@ -17,7 +19,6 @@ export type TEventId = {
 export type TFilterText = {
   data: string;
 };
-
 
 export type TEventOpenComponent = {
   id: string;
@@ -34,6 +35,28 @@ export type TEventEditorSelectRange = {
   fileRange: TFileRange | null;
   launchArgs?: TLaunchArg[];
 };
+
+export type TEventInfoState = {
+  level: InfoStateLevel;
+  message: string;
+};
+
+export function sendStateSuccess(message: string) {
+  emitCustomEvent(EVENT_INFO_STATE, { level: InfoStateLevel.SUCCESS, message: `✅ ${message}` } as TInfoState);
+}
+
+export function sendStateInfo(message: string) {
+  emitCustomEvent(EVENT_INFO_STATE, { level: InfoStateLevel.INFO, message: `ℹ️ ${message}` } as TInfoState);
+}
+
+export function sendStateWarn(message: string) {
+  emitCustomEvent(EVENT_INFO_STATE, { level: InfoStateLevel.WARN, message: `⚠️ ${message}` } as TInfoState);
+}
+
+export function sendStateError(message: string) {
+  emitCustomEvent(EVENT_INFO_STATE, { level: InfoStateLevel.ERROR, message: `❌ ${message}` } as TInfoState);
+}
+
 
 export function eventOpenComponent(
   id: string,

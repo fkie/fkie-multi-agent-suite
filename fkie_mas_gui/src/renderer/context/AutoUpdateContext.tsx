@@ -100,7 +100,7 @@ export function AutoUpdateProvider({
     logCtx.info(
       `Check for new ${updateChannel}${isAppImage ? " for AppImage" : " for debian"} on https://github.com/fkie/fkie-multi-agent-suite`,
       "",
-      false
+      "check for AppImage update"
     );
     setUpdateAvailable(null);
     setUpdateError("");
@@ -122,7 +122,7 @@ export function AutoUpdateProvider({
     logCtx.info(
       `start update for gui(${gui}) on ros(${ros}) on channel (${updateChannel}) to version (${updateAvailable?.version})`,
       "",
-      false
+      "start update"
     );
     setUpdateError("");
     const providerId = getLocalProviderId();
@@ -301,7 +301,7 @@ export function AutoUpdateProvider({
     });
     autoUpdateManager?.onUpdateAvailable((info) => {
       setUpdateAvailable(info);
-      logCtx.info(`New version ${info.version} of AppImage is available!`, "");
+      logCtx.info(`New version ${info.version} of AppImage is available!`, "", "update available");
     });
     autoUpdateManager?.onUpdateNotAvailable(() => {
       setUpdateAvailable(null);

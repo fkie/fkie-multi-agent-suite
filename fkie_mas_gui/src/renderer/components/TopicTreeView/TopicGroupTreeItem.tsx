@@ -73,7 +73,7 @@ export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.
                 onClick={(e) => {
                   if (e.detail === 2) {
                     navigator.clipboard.writeText(`${rootPath}${groupName}`);
-                    logCtx.success(`${rootPath}${groupName} copied!`);
+                    logCtx.success(`${rootPath}${groupName} copied!`, "", "topic group copied");
                     e.stopPropagation();
                   }
                 }}

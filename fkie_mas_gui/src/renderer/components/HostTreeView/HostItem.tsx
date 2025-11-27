@@ -73,7 +73,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     if (provider) {
       const localProviders = rosCtx.getLocalProvider();
       if (localProviders.length === 0) {
-        logCtx.error("localhost provider not found", "", true);
+        logCtx.error("localhost provider not found", "", "localhost provider not found");
         return;
       }
       if (local) {

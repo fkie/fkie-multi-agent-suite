@@ -51,19 +51,19 @@ export default function EditorApp(): JSX.Element {
       launchArgs = JSON.parse(launchArgsStr);
     }
     if (!host || !port) {
-      logCtx.error(`invalid address ${host}:${port}`, "", false);
+      logCtx.error(`invalid address ${host}:${port}`, "");
       return;
     }
     if (!path) {
-      logCtx.error(`launch path ${path}`, "", false);
+      logCtx.error(`launch path ${path}`, "");
       return;
     }
     if (!rootLaunch) {
-      logCtx.error(`root launch path ${rootLaunch}`, "", false);
+      logCtx.error(`root launch path ${rootLaunch}`, "");
       return;
     }
     if (!id) {
-      logCtx.error(`no id found ${id}`, "", false);
+      logCtx.error(`no id found ${id}`, "");
       return;
     }
     document.title = `Editor - ${getFileName(rootLaunch)}`;
@@ -79,7 +79,7 @@ export default function EditorApp(): JSX.Element {
         launchArgs: launchArgs,
       });
     } else {
-      logCtx.error(`connection to ${host}:${port} failed`, "", false);
+      logCtx.error(`connection to ${host}:${port} failed`, "");
     }
   }
 

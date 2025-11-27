@@ -315,7 +315,7 @@ export default function PackageExplorer(props: PackageExplorerProps): JSX.Elemen
           } as RosPackage);
           return;
         }
-        logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`);
+        logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`, "", "package not found");
         return;
       }
       if (isFileLaunch) {
@@ -436,7 +436,7 @@ export default function PackageExplorer(props: PackageExplorerProps): JSX.Elemen
                   onClick={() => {
                     if (selectedFile?.path) {
                       navigator.clipboard.writeText(selectedFile.path);
-                      logCtx.success(`${selectedFile.path} copied!`);
+                      logCtx.success(`${selectedFile.path} copied!`, "", "path copied");
                     }
                   }}
                 >

@@ -378,7 +378,7 @@ export default function PackageExplorerPanel(): JSX.Element {
           } as ProviderPackage);
           return;
         }
-        logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`);
+        logCtx.error(`package ${callbackFile.package} not found! Try to reload list.`, "", "package not found");
         return;
       }
       if (isFileLaunch) {
@@ -605,7 +605,7 @@ export default function PackageExplorerPanel(): JSX.Element {
               onClick={() => {
                 if (selectedFile?.path) {
                   navigator.clipboard.writeText(selectedFile.path);
-                  logCtx.success(`${selectedFile.path} copied!`);
+                  logCtx.success(`${selectedFile.path} copied!`, "", "path copied");
                 }
               }}
             >

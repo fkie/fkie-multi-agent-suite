@@ -77,11 +77,11 @@ export default class WebsocketConnection extends ProviderConnection {
     if (this.websocket !== null) return Promise.resolve(true);
     this.websocket = new WebSocket(this.uri);
     this.websocket.addEventListener("open", () => {
-      this.logger?.info(`websocket connected to ${this.websocket?.url}`, "", false);
+      this.logger?.info(`websocket connected to ${this.websocket?.url}`, "", "connected");
       this.onOpen();
     });
     this.websocket.addEventListener("close", (event: CloseEvent) => {
-      this.logger?.info(`websocket disconnected from ${this.uri}`, "");
+      this.logger?.info(`websocket disconnected from ${this.uri}`, "", "disconnected");
       this.websocket = null;
       this.onClose(event.reason, `${event.code}`);
     });
@@ -222,7 +222,7 @@ export default class WebsocketConnection extends ProviderConnection {
   closeSubscriptions: () => Promise<void> = async () => {
     Object.keys(this.subscriptions).every(async (key) => {
       await this.call("unsub", [key]).catch((error) => {
-        this.logger?.warn(`failed unregister ${key}`, `${error}`, false);
+        this.logger?.warn(`failed unregister ${key}`, `${error}`);
       });
     });
     this.subscriptions = {};
@@ -283,7 +283,7 @@ export default class WebsocketConnection extends ProviderConnection {
         }
       }
     } catch (error) {
-      this.logger?.warn(`[${this.uri}] error while handle received message: ${error}`, `${JSON.stringify(msg)}`, false);
+      this.logger?.warn(`[${this.uri}] error while handle received message: ${error}`, `${JSON.stringify(msg)}`);
     }
   };
 }

@@ -240,15 +240,15 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
             if (providerObj) {
               const saveResult = await providerObj.saveFileContent(fileToSave);
               if (saveResult.bytesWritten > 0) {
-                logCtx.success("Successfully saved file", `path: ${path}`);
+                logCtx.success("Successfully saved file", `path: ${path}`, "saved");
                 saveItem.result = true;
               } else {
                 saveItem.message = `Error while save file ${path}: ${saveResult.error}`;
-                logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
+                logCtx.error(`Error while save file ${path}`, `${saveResult.error}`, "not saved");
               }
             } else {
               saveItem.message = `Provider ${tabInfo.providerId} not found`;
-              logCtx.error(`Provider ${tabInfo.providerId} not found`, `can not save file: ${path}`);
+              logCtx.error(`Provider ${tabInfo.providerId} not found`, `can not save file: ${path}`, "not saved, no provider");
             }
           } else {
             saveItem.message = "Model not found";
@@ -320,7 +320,8 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
         if (!model) {
           logCtx.error(
             `Could not create model for included file: [${file.fileName}]`,
-            `Host: ${provider.host()}, root file: ${file.path}`
+            `Host: ${provider.host()}, root file: ${file.path}`,
+            "file model error"
           );
         }
         return Promise.resolve({ model: model, file, error });

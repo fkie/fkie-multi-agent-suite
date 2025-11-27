@@ -526,11 +526,7 @@ export default class Provider implements IProvider {
         if (value.result) {
           return value.data as RosProviderState[];
         }
-        this.logger?.error(
-          `Provider [${this.id}]: Error at updateProviderList()`,
-          `${value.message}`,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Error at updateProviderList()`, `${value.message}`);
         this.setConnectionState(
           ConnectionState.STATES.ERRORED,
           `Provider [${this.id}]: updateProviderList() result: ${value.message}`
@@ -610,7 +606,7 @@ export default class Provider implements IProvider {
           result.host = this.host();
           return result;
         }
-        this.logger?.error(`Provider [${this.id}]: can not get content for ${path}: `, `${value.message}`, false);
+        this.logger?.error(`Provider [${this.id}]: can not get content for ${path}: `, `${value.message}`);
         return null;
       }
     );
@@ -633,7 +629,7 @@ export default class Provider implements IProvider {
         return value.data as number;
       }
       error = value.message as string;
-      this.logger?.error(`Provider [${this.id}]: can not save content to ${file.path}: `, `${error}`, false);
+      this.logger?.error(`Provider [${this.id}]: can not save content to ${file.path}: `, `${error}`);
       return -1;
     });
     if (bitesWritten > 0) {
@@ -660,7 +656,7 @@ export default class Provider implements IProvider {
           return value.data as DaemonVersion;
         }
         error = value.message;
-        this.logger?.error(`Provider [${this.id}]: Error at getDaemonVersion()`, `${error}`, false);
+        this.logger?.error(`Provider [${this.id}]: Error at getDaemonVersion()`, `${error}`);
         this.daemon = false;
         return null;
       }
@@ -682,11 +678,7 @@ export default class Provider implements IProvider {
         this.systemInfo = (value.data as { system_info: object }).system_info;
         return this.systemInfo;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getProviderSystemInfo()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getProviderSystemInfo()`, `${value.message}`);
       return {};
     });
     return Promise.resolve(systemInfo);
@@ -701,11 +693,7 @@ export default class Provider implements IProvider {
         this.systemEnv = (value.data as { environment: JSONObject }).environment;
         return this.systemEnv;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getProviderSystemEnv()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getProviderSystemEnv()`, `${value.message}`);
       return {};
     });
     return Promise.resolve(systemEnv);
@@ -737,7 +725,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as TProviderTimestamp;
       }
-      this.logger?.error(`Provider [${this.id}]: Error at updateTimeDiff()`, `${value.message}`, false);
+      this.logger?.error(`Provider [${this.id}]: Error at updateTimeDiff()`, `${value.message}`);
       return {
         timestamp: 0,
         diff: 0,
@@ -793,7 +781,7 @@ export default class Provider implements IProvider {
       this.logger?.error(
         `Provider [${this.id}]: Error at getNodeList()`,
         `${value.message}`,
-        value.error !== "running"
+        "update ros state failed"
       );
       return [];
     });
@@ -884,11 +872,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as unknown as RosService[];
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getServiceList()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getServiceList()`, `${value.message}`);
       return [];
     });
 
@@ -903,11 +887,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as unknown as RosTopic[];
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getTopicList()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getTopicList()`, `${value.message}`);
       return [];
     });
 
@@ -922,11 +902,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as string;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getSystemUri()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getSystemUri()`, `${value.message}`);
       return "";
     });
     return result;
@@ -956,7 +932,7 @@ export default class Provider implements IProvider {
       this.logger?.error(
         `Provider [${this.id}]: Error at getPackageList()`,
         `${value.message}`,
-        value.error !== "running"
+        "update packages failed"
       );
       return [];
     });
@@ -998,11 +974,7 @@ export default class Provider implements IProvider {
         }
         return fileList;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getPackageList()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getPackageList()`, `${value.message}`);
       return [];
     });
     return Promise.resolve(result);
@@ -1024,11 +996,7 @@ export default class Provider implements IProvider {
         }
         return logPathList;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getLogPaths()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getLogPaths()`, `${value.message}`);
       return [];
     });
 
@@ -1055,11 +1023,7 @@ export default class Provider implements IProvider {
         }
         return logPathList;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at clearLogPaths()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at clearLogPaths()`, `${value.message}`);
       return [];
     });
     return Promise.resolve(result);
@@ -1073,11 +1037,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as Result;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at rosCleanPurge()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at rosCleanPurge()`, `${value.message}`);
       return {
         result: false,
         message: `Provider [${this.id}]: Error at rosCleanPurge(): ${value.message}`,
@@ -1094,7 +1054,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as Result;
       }
-      this.logger?.error(`Provider [${this.id}]: Error at shutdown()`, `${value.message}`, value.error !== "running");
+      this.logger?.error(`Provider [${this.id}]: Error at shutdown()`, `${value.message}`);
       return {
         result: false,
         message: `Provider [${this.id}]: Error at shutdown(): ${value.message}`,
@@ -1119,11 +1079,7 @@ export default class Provider implements IProvider {
         if (value.result) {
           return value.data as LaunchLoadReply;
         }
-        this.logger?.error(
-          `Provider [${this.id}]: Error at launchLoadFile()`,
-          `${value.message}`,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Error at launchLoadFile()`, `${value.message}`);
         return null;
       });
     else {
@@ -1131,11 +1087,7 @@ export default class Provider implements IProvider {
         if (value.result) {
           return value.data as LaunchLoadReply;
         }
-        this.logger?.error(
-          `Provider [${this.id}]: Error at launchLoadFile()`,
-          `${value.message}`,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Error at launchLoadFile()`, `${value.message}`);
         return null;
       });
     }
@@ -1150,11 +1102,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as LaunchLoadReply;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at launchUnloadFile()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at launchUnloadFile()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);
@@ -1455,8 +1403,6 @@ export default class Provider implements IProvider {
           color: colorFromHostname(n.guid),
           tooltip: `Nodes with same id ${n.guid}`,
           onClick: (event: React.MouseEvent) => {
-            // if (n.guid) navigator.clipboard.writeText(n.guid);
-            // this.logger?.success(`${n.guid} copied!`, "", true);
             emitCustomEvent(EVENT_FILTER_NODES, eventFilterNodes(n.guid as string));
             event?.stopPropagation();
           },
@@ -1648,11 +1594,7 @@ export default class Provider implements IProvider {
         this.daemon = false;
       }
 
-      this.logger?.error(
-        `Provider [${this.id}]: Error at updateLaunchContent()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at updateLaunchContent()`, `${value.message}`);
       this.launchFiles = [];
       return false;
     });
@@ -1691,11 +1633,7 @@ export default class Provider implements IProvider {
           return launchList;
         }
 
-        this.logger?.error(
-          `Provider [${this.id}]: Error at launchGetIncludedFiles()`,
-          `${value.message}`,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Error at launchGetIncludedFiles()`, `${value.message}`);
         return null;
       }
     );
@@ -1712,18 +1650,10 @@ export default class Provider implements IProvider {
         if (response.valid) {
           return response;
         }
-        this.logger?.error(
-          `Provider [${this.id}]: Can't parse message: ${request}`,
-          response.error_msg,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Can't parse message: ${request}`, response.error_msg);
         return null;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getMessageStruct()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getMessageStruct()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);
@@ -1739,18 +1669,10 @@ export default class Provider implements IProvider {
         if (response.valid) {
           return response;
         }
-        this.logger?.error(
-          `Provider [${this.id}]: Can't parse service: ${request}`,
-          response.error_msg,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Can't parse service: ${request}`, response.error_msg);
         return null;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getServiceStruct()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getServiceStruct()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);
@@ -1764,11 +1686,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as boolean;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at publishMessage()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at publishMessage()`, `${value.message}`);
       return false;
     });
     return result;
@@ -1786,11 +1704,7 @@ export default class Provider implements IProvider {
         const response = value.data as LaunchMessageStruct;
         return response;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at callService()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at callService()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);
@@ -1808,11 +1722,7 @@ export default class Provider implements IProvider {
         const response = value.data as string[];
         return response;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getRosMessageMessageTypes()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getRosMessageMessageTypes()`, `${value.message}`);
       return [];
     });
     return Promise.resolve(result);
@@ -1862,11 +1772,7 @@ export default class Provider implements IProvider {
         const parsed: boolean = value.data as boolean;
         return parsed;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at startSubscriber()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at startSubscriber()`, `${value.message}`);
       return false;
     });
     if (result) {
@@ -1897,11 +1803,7 @@ export default class Provider implements IProvider {
         const res = value.data as Result;
         return res;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at stopSubscriber()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at stopSubscriber()`, `${value.message}`);
       return new Result(false, value.message as string);
     });
     return Promise.resolve(result);
@@ -2061,8 +1963,7 @@ export default class Provider implements IProvider {
         if (!parsed.result) {
           this.logger?.error(
             `Provider [${this.id}]: Fail to kill the node [${name}]: ${parsed.message}`,
-            parsed.message,
-            false
+            parsed.message
           );
         }
         return parsed;
@@ -2086,11 +1987,7 @@ export default class Provider implements IProvider {
         }
         return screenList;
       }
-      this.logger?.error(
-        `Provider [${this.id}]: Error at getScreenList()`,
-        `${value.message}`,
-        value.error !== "running"
-      );
+      this.logger?.error(`Provider [${this.id}]: Error at getScreenList()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);
@@ -2104,7 +2001,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as DiagnosticArray;
       }
-      this.logger?.error(`Provider [${this.id}]: Error at getDiagnostics()`, `${value.message}`, false);
+      this.logger?.error(`Provider [${this.id}]: Error at getDiagnostics()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);
@@ -2123,15 +2020,10 @@ export default class Provider implements IProvider {
         }
         this.logger?.error(
           `Provider [${this.id}]: Error at updateSystemWarnings()`,
-          `reported message is not an array ${JSON.stringify(warnings)}`,
-          value.error !== "running"
+          `reported message is not an array ${JSON.stringify(warnings)}`
         );
       } else {
-        this.logger?.error(
-          `Provider [${this.id}]: Error at updateSystemWarnings()`,
-          `${value.message}`,
-          value.error !== "running"
-        );
+        this.logger?.error(`Provider [${this.id}]: Error at updateSystemWarnings()`, `${value.message}`);
       }
       return null;
     });
@@ -2153,20 +2045,12 @@ export default class Provider implements IProvider {
         if (value.result) {
           // handle the result of type: {result: bool, message: str}
           if (!Array.isArray(value.data) && !value.result) {
-            this.logger?.error(
-              `Provider [${this.id}]: Error at getNodeLoggers(): ${value.message}`,
-              "",
-              value.error !== "running"
-            );
+            this.logger?.error(`Provider [${this.id}]: Error at getNodeLoggers(): ${value.message}`, "");
             return [];
           }
           return value.data as LoggerConfig[];
         }
-        this.logger?.warn(
-          `Provider [${this.id}]: Error at getNodeLoggers()`,
-          `${value.message}`,
-          value.error !== "running"
-        );
+        this.logger?.warn(`Provider [${this.id}]: Error at getNodeLoggers()`, `${value.message}`);
         return [];
       }
     );
@@ -2532,10 +2416,10 @@ export default class Provider implements IProvider {
   };
 
   private registerCallback: (uri: string, callback: (msg: JSONObject) => void) => void = async (uri, callback) => {
-    this.logger?.debug(`Provider: (${this.name()}) Subscribing to: [${uri}]`, "", false);
+    this.logger?.debug(`Provider: (${this.name()}) Subscribing to: [${uri}]`, "");
     const result = await this.connection.subscribe(uri, callback);
     if (!result.result) {
-      this.logger?.error(`Provider: (${this.name()}) Subscribing to: [${uri}] failed: ${result.message}`, "", false);
+      this.logger?.error(`Provider: (${this.name()}) Subscribing to: [${uri}] failed: ${result.message}`, "");
     }
   };
 
@@ -2551,9 +2435,9 @@ export default class Provider implements IProvider {
       })
       .then(() => {
         // await this.connection.connection.closeRegistrations();
-        this.logger?.info(`register callbacks for ${this.id}`, "", false);
+        this.logger?.info(`register callbacks for ${this.id}`, "");
         for (const item of this.getCallbacks()) {
-          this.logger?.info(`  register callback for ${item.uri}`, "", false);
+          this.logger?.info(`  register callback for ${item.uri}`, "");
           this.registerCallback(item.uri, item.callback);
         }
         return true;
@@ -2594,7 +2478,7 @@ export default class Provider implements IProvider {
         try {
           const r = await this.connection.call(_uri, _args, _timeout).catch((err) => {
             // TODO
-            // this.logger?.warn(`failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`, '', false);
+            // this.logger?.warn(`failed call ${_uri}@${this.name()}: ${JSON.stringify(err)}`, '');
             if (Object.keys(err).includes("result")) {
               err.data = null;
               return err;
@@ -2637,8 +2521,7 @@ export default class Provider implements IProvider {
           // didn't work, wait and repeat
           this.logger?.info(
             `ws://${this.id}?${uri}: waiting (${this.delayCallAttempts} ms) Attempt: [${currentAttempt}/${this.callAttempts}]`,
-            "",
-            false
+            ""
           );
           await delay(this.delayCallAttempts);
           return callRequest(_uri, _args, currentAttempt + 1, timeout);
@@ -2672,11 +2555,11 @@ export default class Provider implements IProvider {
   */
   private lockRequest: (request: string) => Promise<boolean> = async (request) => {
     if (this.currentRequestList.has(request)) {
-      this.logger?.debug(`[${this.id}]: Wait 1 sec for release request to: [${request}]`, "", false);
+      this.logger?.debug(`[${this.id}]: Wait 1 sec for release request to: [${request}]`, "");
       // TODO: wait until release?
       await delay(1000);
       if (this.currentRequestList.has(request)) {
-        this.logger?.debug(`[${this.id}]: Ignoring request to: [${request}]`, "", false);
+        this.logger?.debug(`[${this.id}]: Ignoring request to: [${request}]`, "");
         return Promise.resolve(true);
       }
     }

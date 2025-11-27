@@ -168,7 +168,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
     navigator.clipboard.writeText(
       `${currentTopicName} ${qos ? qosFromJson(qos).toString() : ""} ${currentMessageType} '${json}'`
     );
-    logCtx.success("message publish object copied!");
+    logCtx.success("message publish object copied!", "", "message publish object copied");
   }, [messageStruct, currentTopicName, currentMessageType]);
 
   const updateMessageTypeFromTopic = useCallback(async () => {

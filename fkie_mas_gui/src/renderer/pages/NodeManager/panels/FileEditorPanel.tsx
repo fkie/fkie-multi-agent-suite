@@ -512,7 +512,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           if (!savedFiles.includes(editorModel.uri.path)) {
             setSavedFiles([...savedFiles, editorModel.uri.path]);
           }
-          logCtx.success("Successfully saved file", `path: ${path}`);
+          logCtx.success("Successfully saved file", `path: ${path}`, "saved");
           setSavedModelVersions((prev) => [
             ...prev.filter((item) => {
               return item.path !== editorModel.uri.path;
@@ -522,10 +522,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
           await getIncludedFiles();
         } else {
-          logCtx.error(`Error while save file ${path}`, `${saveResult.error}`);
+          logCtx.error(`Error while save file ${path}`, `${saveResult.error}`, "not saved");
         }
       } else {
-        logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`);
+        logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`, "not saved");
       }
     },
     [providerId, savedFiles, rootFilePath, rosCtx.getProviderById]
@@ -1336,7 +1336,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                     const path = activeModel?.path;
                     const result = await setEditorModel(path, selectionRange, currentLaunchArgs, true);
                     if (result) {
-                      logCtx.success(`File reloaded [${getFileName(path)}]`);
+                      logCtx.success(`File reloaded [${getFileName(path)}]`, "", `${getFileName(path)} reloaded`);
                     }
                   }
                 }}

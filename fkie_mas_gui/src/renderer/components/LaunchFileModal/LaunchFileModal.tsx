@@ -93,7 +93,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
         const result: LaunchLoadReply | null = await provider.launchLoadFile(request, false);
         if (!result) return;
         if (result.status.code === "ALREADY_OPEN") {
-          logCtx.warn(`Launch file [${getFileName(path)}] was already loaded`, `File: ${path}`);
+          logCtx.warn(`Launch file [${getFileName(path)}] was already loaded`, `File: ${path}`, "already loaded");
           setMessageLaunchLoaded("Launch file was already loaded");
 
           // nothing else to do return
@@ -152,10 +152,11 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
           if (result.status.msg) {
             logCtx.warn(
               `Launch file [${getFileName(path)}] loaded with warnings`,
-              `File: ${path}\n${result.status.msg}`
+              `File: ${path}\n${result.status.msg}`,
+              "loaded with warnings"
             );
           } else {
-            logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+            logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`, "launch file loaded");
           }
 
           // nothing else to do return
@@ -165,14 +166,15 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
 
         if (result.status.code === "ERROR") {
           setMessageLaunchLoaded(result.status.msg || "");
-          logCtx.error(`Error on load "${getFileName(path)}"`, `Error message: ${result.status.msg}`);
+          logCtx.error(`Error on load "${getFileName(path)}"`, `Error message: ${result.status.msg}`, "load error");
         }
 
         setOpen(true);
       } else {
         logCtx.error(
           `The provider [${selectedProvider}] does not support [launchLoadFile]`,
-          "Please check your provider configuration"
+          "Please check your provider configuration",
+          "not supported by provider"
         );
       }
     },
@@ -247,27 +249,30 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
       if (!resultLaunchLoadFile) {
         logCtx.error(
           "Invalid response for [launchLoadFile], check DAEMON screen output",
-          "Please check your provider configuration"
+          "Please check your provider configuration",
+          "not supported by provider"
         );
       } else if (resultLaunchLoadFile.status.code === "OK") {
         if (resultLaunchLoadFile.status.msg) {
           logCtx.warn(
             `Launch file [${getFileName(path)}] loaded with warnings`,
-            `File: ${path}\n${resultLaunchLoadFile.status.msg}`
+            `File: ${path}\n${resultLaunchLoadFile.status.msg}`,
+            "loaded with warnings"
           );
         } else {
-          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`);
+          logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`, "launch file loaded");
         }
       } else if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
         setMessageLaunchLoaded("Please fill all arguments");
       } else {
         setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
-        logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`);
+        logCtx.error(`Could not load file: "${path}"`, `Error message: ${resultLaunchLoadFile.status.msg}`, "could not load file");
       }
     } else {
       logCtx.error(
         `The provider [${selectedProvider}] does not support [launchLoadFile]`,
-        "Please check your provider configuration"
+        "Please check your provider configuration",
+        "not supported by provider"
       );
     }
 

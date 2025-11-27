@@ -95,7 +95,7 @@ export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.El
     if (!provider.isAvailable()) return;
     // check if provider supports [getNodeParameters]
     if (!provider.getNodeParameters) {
-      logCtx.error(`Provider ${provider.name()} does not support [getNodeParameters] method`, DEFAULT_BUG_TEXT);
+      logCtx.error(`Provider ${provider.name()} does not support [getNodeParameters] method`, DEFAULT_BUG_TEXT, "not supported getNodeParameters");
       return;
     }
     setRequestError("");

@@ -370,7 +370,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
             onClick={() => setShowInfo((prev) => !prev)}
             onDoubleClick={() => {
               navigator.clipboard.writeText(topicId.name);
-              logCtx.info(`${topicId.name} copied`);
+              logCtx.info(`${topicId.name} copied`, "", `${topicId.name} copied`);
             }}
           >
             {`${topicName}`}

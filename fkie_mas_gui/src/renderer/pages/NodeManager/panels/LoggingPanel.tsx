@@ -144,7 +144,7 @@ export default function LoggingPanel(): JSX.Element {
                   component="span"
                   onClick={() => {
                     navigator.clipboard.writeText(details);
-                    logCtx.info(`Text with ${detailsSizeStr} copied!`);
+                    logCtx.info(`Text with ${detailsSizeStr} copied!`, "", "copied to clipboard");
                   }}
                 >
                   copy {detailsSizeStr}

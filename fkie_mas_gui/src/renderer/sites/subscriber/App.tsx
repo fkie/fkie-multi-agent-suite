@@ -35,15 +35,15 @@ export default function SubscriberApp(): JSX.Element {
     const noDataParam = urlParams.get("noData");
     const noData = noDataParam ? JSON.parse(noDataParam) : false;
     if (!host || !port) {
-      logCtx.error(`invalid address ${host}:${port}`, "", false);
+      logCtx.error(`invalid address ${host}:${port}`, "");
       return;
     }
     if (!topic) {
-      logCtx.error(`invalid topic ${topic}`, "", false);
+      logCtx.error(`invalid topic ${topic}`, "");
       return;
     }
     if (!id) {
-      logCtx.error(`no id found ${id}`, "", false);
+      logCtx.error(`no id found ${id}`, "");
       return;
     }
     document.title = `Echo - ${getFileName(topic)}`;
@@ -58,7 +58,7 @@ export default function SubscriberApp(): JSX.Element {
         noData: noData,
       });
     } else {
-      logCtx.error(`connection to ${host}:${port} failed`, "", false);
+      logCtx.error(`connection to ${host}:${port} failed`, "");
     }
   }
 

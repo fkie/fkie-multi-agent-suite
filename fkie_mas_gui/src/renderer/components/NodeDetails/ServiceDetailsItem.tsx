@@ -137,7 +137,7 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
             onClick={() => setShowInfo((prev) => !prev)}
             onDoubleClick={() => {
               navigator.clipboard.writeText(serviceId.name);
-              logCtx.info(`${serviceId.name} copied`);
+              logCtx.info(`${serviceId.name} copied`, "", `${serviceId.name} copied`);
             }}
           >
             {`${serviceName}`}

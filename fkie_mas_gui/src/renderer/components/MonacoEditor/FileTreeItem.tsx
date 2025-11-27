@@ -160,7 +160,7 @@ export default function FileTreeItem(props: FileTreeItemProps): JSX.Element {
                 }}
                 onDoubleClick={(event) => {
                   navigator.clipboard.writeText(item.file.inc_path);
-                  logCtx.success(`${item.file.inc_path} copied!`);
+                  logCtx.success(`${item.file.inc_path} copied!`, "", "path copied");
                   event.stopPropagation();
                 }}
                 color={!item.file.exists ? "red" : item.file.conditional_excluded ? "orange" : ""}

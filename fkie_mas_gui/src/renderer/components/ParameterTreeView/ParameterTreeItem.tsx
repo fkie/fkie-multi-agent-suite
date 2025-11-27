@@ -100,7 +100,8 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
     if (!provider.setParameter) {
       logCtx.error(
         `Provider ${rosCtx.getProviderName(parameter.providerId)} does not support [setParameter] method`,
-        ""
+        "",
+        "not supported setParameter"
       );
       return;
     }
@@ -125,7 +126,7 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
     const result = await provider.setParameter(parameter.name, parameter.type, `${parameter.value}`, parameter.node);
 
     if (result.result) {
-      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`);
+      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`, "parameter updated");
       if (result.value) {
         updateValue(result.value);
         parameter.value = result.value;
@@ -134,7 +135,7 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
         paramInfo.type = result.value_type;
       }
     } else {
-      logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`);
+      logCtx.error(`Could not update parameter [${parameter.name}]`, `${result.message}`, "parameter not updated");
       parameter.value = oldValue;
       updateValue(oldValue);
     }
@@ -393,7 +394,7 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
                       onClick={(e) => {
                         if (e.detail === 2) {
                           navigator.clipboard.writeText(paramInfo.name);
-                          logCtx.success(`${paramInfo.name} copied!`);
+                          logCtx.success(`${paramInfo.name} copied!`, "", "parameter copied");
                         }
                       }}
                     >

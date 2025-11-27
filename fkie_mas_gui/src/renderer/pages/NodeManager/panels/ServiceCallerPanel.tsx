@@ -102,7 +102,7 @@ export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.
   const onCopyToClipboard = useCallback(() => {
     const json = serviceStruct ? rosMessageStructToString(serviceStruct, false, false) : "{}";
     navigator.clipboard.writeText(`${serviceName} ${serviceType} "${json}"`);
-    logCtx.success("service call input copied!");
+    logCtx.success("service call input copied!", "", "service call input copied");
   }, [serviceStruct]);
 
   const getServiceStructData = useCallback(async () => {

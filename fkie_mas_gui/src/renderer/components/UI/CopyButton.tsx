@@ -22,7 +22,7 @@ export default function CopyButton(props: CopyButtonProps): JSX.Element {
       onClick={() => {
         navigator.clipboard.writeText(value);
         if (logText) {
-          logCtx.info(`${logText} copied!`);
+          logCtx.info(`${logText} copied!`, "", "copied to clipboard");
         }
       }}
     >

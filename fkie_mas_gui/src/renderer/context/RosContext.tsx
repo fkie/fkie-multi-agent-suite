@@ -317,7 +317,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
    */
   const updateNodeList = useCallback(
     async (providerId: string, force?: boolean): Promise<void> => {
-      logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "", false);
+      logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "");
       const provider = getProviderById(providerId);
       if (provider) {
         await provider.updateRosNodes({}, force);
@@ -484,7 +484,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
       const result = await launchFile(provider, modifiedFile, args, true);
       if (result?.success) {
-        logCtx.success(`Launch file [${getFileName(modifiedFile)}] reloaded`, `File: ${modifiedFile}`, false);
+        logCtx.success(`Launch file [${getFileName(modifiedFile)}] reloaded`, `File: ${modifiedFile}`, `${getFileName(modifiedFile)} reloaded`);
 
         // check if nodes have to be restarted
         if (result.reply?.changed_nodes && result.reply.changed_nodes.length > 0) {
@@ -512,7 +512,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
       }
       if (result && !result.success) {
-        logCtx.error(`Launch file error: ${result.error}`, `Provider: ${provider.name()} File: ${modifiedFile}`);
+        logCtx.error(`Launch file error: ${result.error}`, `Provider: ${provider.name()} File: ${modifiedFile}`, "not reloaded");
       }
     }
   }
@@ -556,7 +556,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         provider.type
       }) in [ws://${provider.connection.host}:${provider.connection.port}]`;
       // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
-      logCtx.error(error, hintMsg);
+      logCtx.error(error, hintMsg, "connection failed");
       provider.errorDetails = `${error}`;
       provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
     } catch (error: unknown) {
@@ -581,12 +581,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           try {
             prov.updateProviderList();
             prov.getDaemonVersion().catch((err) => {
-              logCtx.debug(`refreshProvider ${prov.name()} failed`, JSON.stringify(err), false);
+              logCtx.debug(`refreshProvider ${prov.name()} failed`, JSON.stringify(err));
               connectToProvider(prov);
             });
           } catch (error: unknown) {
             // ignore errors while refresh
-            logCtx.debug("refreshProviderList failed", JSON.stringify(error), false);
+            logCtx.debug("refreshProviderList failed", JSON.stringify(error));
           }
           return true;
         }
@@ -702,7 +702,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartDaemon) {
             if (!resultStartDaemon.result) {
               if (resultStartDaemon.connectConfig) {
-                logCtx.error("Request password", `${JSON.stringify(resultStartDaemon.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartDaemon.connectConfig)}`, "password request");
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartDaemon.connectConfig)
@@ -710,14 +710,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Error while start daemon on host '${config.host}'`, resultStartDaemon.message);
+              logCtx.error(`Error while start daemon on host '${config.host}'`, resultStartDaemon.message, `${config.host} daemon not started`);
               provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDaemon.message);
               allStarted = false;
             }
-            logCtx.success(`daemon on host '${config.host}' started successfully`, "");
+            logCtx.success(`daemon on host '${config.host}' started successfully`, "", `${config.host} daemon started`);
           }
         } else {
-          logCtx.error(`Failed to create daemon start command: ${cmd.message}`, JSON.stringify(config));
+          logCtx.error(`Failed to create daemon start command: ${cmd.message}`, JSON.stringify(config), `${config.host} daemon not started`);
         }
       }
       // Start Discovery
@@ -729,7 +729,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartDiscovery) {
             if (!resultStartDiscovery.result) {
               if (resultStartDiscovery.connectConfig) {
-                logCtx.error("Request password", `${JSON.stringify(resultStartDiscovery.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartDiscovery.connectConfig)}`, "password request");
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartDiscovery.connectConfig)
@@ -737,14 +737,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Error while start discovery on host '${config.host}'`, resultStartDiscovery.message);
+              logCtx.error(`Error while start discovery on host '${config.host}'`, resultStartDiscovery.message, `${config.host} discovery not started`);
               provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDiscovery.message);
               allStarted = false;
             }
-            logCtx.success(`discovery on host '${config.host}' started successfully`, "");
+            logCtx.success(`discovery on host '${config.host}' started successfully`, "", `${config.host} discovery started`);
           }
         } else {
-          logCtx.error(`Failed to create discovery start command: ${cmd.message}`, JSON.stringify(config));
+          logCtx.error(`Failed to create discovery start command: ${cmd.message}`, JSON.stringify(config), `${config.host} discovery not started`);
         }
       }
 
@@ -757,7 +757,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartSync) {
             if (!resultStartSync.result) {
               if (resultStartSync.connectConfig) {
-                logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`, "password request");
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartSync.connectConfig)
@@ -765,14 +765,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Error while start sync on host '${config.host}'`, resultStartSync.message);
+              logCtx.error(`Error while start sync on host '${config.host}'`, resultStartSync.message, `${config.host} sync not started`);
               allStarted = false;
             } else {
-              logCtx.success(`Sync on host '${config.host}' started successfully`, "");
+              logCtx.success(`Sync on host '${config.host}' started successfully`, "", `${config.host} sync started`);
             }
           }
         } else {
-          logCtx.error(`Failed to create sync start command: ${cmd.message}`, JSON.stringify(config));
+          logCtx.error(`Failed to create sync start command: ${cmd.message}`, JSON.stringify(config), `${config.host} sync not started`);
         }
       }
 
@@ -786,7 +786,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (resultStartTerminal) {
             if (!resultStartTerminal.result) {
               if (resultStartTerminal.connectConfig) {
-                logCtx.error("Request password", `${JSON.stringify(resultStartTerminal.connectConfig)}`);
+                logCtx.error("Request password", `${JSON.stringify(resultStartTerminal.connectConfig)}`, "password request");
                 emitCustomEvent(
                   EVENT_PROVIDER_AUTH_REQUEST,
                   new EventProviderAuthRequest(provider, config, resultStartTerminal.connectConfig)
@@ -794,14 +794,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
                 allStarted = false;
                 return false;
               }
-              logCtx.error(`Error while start terminal on host '${config.host}'`, resultStartTerminal.message);
+              logCtx.error(`Error while start terminal on host '${config.host}'`, resultStartTerminal.message, `${config.host} ttyd not started`);
               allStarted = false;
             } else {
-              logCtx.success(`ttyd on host '${config.host}' started successfully`, "");
+              logCtx.success(`ttyd on host '${config.host}' started successfully`, "", `${config.host} ttyd started`);
             }
           }
         } else {
-          logCtx.error(`Failed to create terminal start command: ${cmd.message}`, JSON.stringify(config));
+          logCtx.error(`Failed to create terminal start command: ${cmd.message}`, JSON.stringify(config), `${config.host} ttyd not started`);
         }
       }
 
@@ -811,7 +811,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         connectToProvider(provider);
       }, 2000);
     } catch (error) {
-      logCtx.error(`Error starting host: ${config.host}`, `${error}`);
+      logCtx.error(`Error starting host: ${config.host}`, `${error}`, `${config.host} start failed`);
       allStarted = false;
       const provider = getProviderByHosts([config.host], config.port, null);
       if (provider !== null) {
@@ -962,7 +962,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   ): Promise<void> {
     const provider = getProviderById(providerId) as Provider;
     if (!provider) {
-      logCtx.error(`Can not start subscriber for: ${topic}`, `Provider not found: ${providerId}`);
+      logCtx.error(`Can not start subscriber for: ${topic}`, `Provider not found: ${providerId}`, "subscriber not started");
       return;
     }
 
@@ -978,7 +978,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   async function unregisterSubscriber(providerId: string, topic: string): Promise<void> {
     const provider = getProviderById(providerId) as Provider;
     if (!provider) {
-      logCtx.error(`Can not stop subscriber for: ${topic}`, `Provider not found: ${providerId}`);
+      logCtx.error(`Can not stop subscriber for: ${topic}`, `Provider not found: ${providerId}`, "subscriber not unregistered");
       return;
     }
 
@@ -987,7 +987,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     if (result) {
       logCtx.debug(`Stopped subscriber node for '${topic} on '${provider.name()}'`, "");
     } else {
-      logCtx.error(`Can not stop subscriber node for: ${topic} on '${provider.name()}`, `${result}`);
+      logCtx.error(`Can not stop subscriber node for: ${topic} on '${provider.name()}`, `${result}`, "subscriber not stopped");
     }
   }
 
@@ -1023,7 +1023,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           logCtx.success(
             `Launch file [${getFileName(launchFile)}] reloaded`,
             `Requester: ${requester}\nFile: ${launchFile}`,
-            true
+            "reloaded"
           );
         }}
       />
@@ -1144,6 +1144,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data: EventProviderRosNodes) => {
+      // logCtx.info(`ROS nodes for ${data.provider.name()} updated`, "", `ROS nodes for ${data.provider.name()} updated`)
       // add nodes to map
       const newMap = new Map();
       const newNodeMap = new Map();

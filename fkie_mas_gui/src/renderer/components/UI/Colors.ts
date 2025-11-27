@@ -1,4 +1,5 @@
 import { DiagnosticLevel } from "@/renderer/models/Diagnostics";
+import { InfoStateLevel } from "@/types";
 
 export const levelColors = {
   debug: {
@@ -94,6 +95,21 @@ export function getDiagnosticColor(lvl: DiagnosticLevel, isDarkMode: boolean): s
     case DiagnosticLevel.ERROR:
       return isDarkMode ? "#e53935" : "#d32f2f"; // dark red
     case DiagnosticLevel.STALE:
+      return isDarkMode ? "#1e88e5" : "#2196f3"; // nice blue
+    default:
+      return isDarkMode ? "#fbc02d" : "#FFD700"; // yellow
+  }
+}
+
+export function getInfoStateColor(lvl: InfoStateLevel, isDarkMode: boolean): string {
+  switch (lvl) {
+    case InfoStateLevel.SUCCESS:
+      return isDarkMode ? "#43a047" : "#43a047"; // green
+    case InfoStateLevel.WARN:
+      return isDarkMode ? "#fb8c00" : "#ff9800"; // amber
+    case InfoStateLevel.ERROR:
+      return isDarkMode ? "#e53935" : "#d32f2f"; // dark red
+    case InfoStateLevel.INFO:
       return isDarkMode ? "#1e88e5" : "#2196f3"; // nice blue
     default:
       return isDarkMode ? "#fbc02d" : "#FFD700"; // yellow

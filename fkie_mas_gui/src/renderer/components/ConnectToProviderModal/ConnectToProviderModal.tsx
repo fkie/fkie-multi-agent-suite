@@ -815,7 +815,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                           const launchCfg = createLaunchConfigFor(hosts[0]);
                           const commands = createCommandsFor(launchCfg);
                           navigator.clipboard.writeText(commands.join("\n"));
-                          logCtx.success("Commands copied!");
+                          logCtx.success("Commands copied!", "", "commands copied");
                         }
                       }}
                     >

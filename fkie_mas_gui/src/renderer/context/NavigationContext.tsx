@@ -209,10 +209,10 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             terminalCmd.cmd
           );
           if (!result?.result) {
-            logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${result?.message}`, true);
+            logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${result?.message}`, "publisher not started");
           }
         } catch (error) {
-          logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${error}`, true);
+          logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${error}`, "publisher not started");
         }
         return;
       }
@@ -271,10 +271,10 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             terminalCmd.cmd
           );
           if (!result?.result) {
-            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, true);
+            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, "subscriber not started");
           }
         } catch (error) {
-          logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, true);
+          logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, "subscriber not started");
         }
         return;
       }
@@ -358,10 +358,10 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             terminalCmd.cmd
           );
           if (!result?.result) {
-            logCtx.error(`Can't open external terminal on ${provider.host()}`, `${result?.message}`, true);
+            logCtx.error(`Can't open external terminal on ${provider.host()}`, `${result?.message}`, "no external terminal");
           }
         } catch (error) {
-          logCtx.error(`Can't open external terminal on ${provider.host()}`, `${error}`, true);
+          logCtx.error(`Can't open external terminal on ${provider.host()}`, `${error}`, "no external terminal");
         }
         return;
       }

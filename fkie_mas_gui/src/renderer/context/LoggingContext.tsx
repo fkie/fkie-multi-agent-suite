@@ -1,30 +1,25 @@
-// import Fade from "@mui/material/Fade";
-import { VariantType, useSnackbar } from "notistack";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent } from "react-custom-events";
 
-import LoggingDetailsComponent from "@/renderer/components/UI/LoggingDetailsComponent";
 import { LogEvent, LoggingLevel } from "@/renderer/models";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "@/renderer/pages/NodeManager/layout/LayoutDefines";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import {
+  sendStateError,
+  sendStateInfo,
+  sendStateSuccess,
+  sendStateWarn,
+} from "@/renderer/pages/NodeManager/layout/events";
 import { JSONObject, TResult } from "@/types";
 import { SettingsContext } from "./SettingsContext";
 
 export interface ILoggingContext {
   logs: LogEvent[];
   countErrors: number;
-  debug: (description: string, details?: string, showSnackbar?: boolean) => void;
-  info: (description: string, details?: string, showSnackbar?: boolean) => void;
-  success: (description: string, details?: string, showSnackbar?: boolean) => void;
-  warn: (description: string, details?: string, showSnackbar?: boolean) => void;
-  error: (description: string, details?: string, showSnackbar?: boolean) => void;
+  debug: (description: string, details?: string) => void;
+  info: (description: string, details?: string, stateInfo?: string) => void;
+  success: (description: string, details?: string, stateInfo?: string) => void;
+  warn: (description: string, details?: string, stateInfo?: string) => void;
+  error: (description: string, details?: string, stateInfo?: string) => void;
   clearLogs: () => void;
-  debugInterface: (
-    uri: string,
-    result: TResult | JSONObject | string,
-    details?: string,
-    providerName?: string
-  ) => void;
+  debugInterface: (uri: string, result: TResult | JSONObject | string, details?: string, providerName?: string) => void;
 }
 
 export interface ILoggingProvider {
@@ -57,21 +52,13 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
   const [currentLogLevel, setCurrentLogLevel] = useState<string[]>(settingsCtx.get("guiLogLevel") as string[]);
   const [printToConsole, setPrintToConsole] = useState<boolean>(settingsCtx.get("logPrintToConsole") as boolean);
 
-  const { enqueueSnackbar } = useSnackbar();
-
   useEffect(() => {
     setDebugByUri([...(settingsCtx.get("debugByUri") as string[])]);
     setCurrentLogLevel([...(settingsCtx.get("guiLogLevel") as string[])]);
     setPrintToConsole(settingsCtx.get("logPrintToConsole") as boolean);
   }, [settingsCtx, settingsCtx.changed]);
 
-  function createLog(
-    level: LoggingLevel,
-    description: string,
-    details: string,
-    showSnackbar: boolean,
-    snackbarVariant: VariantType
-  ): void {
+  function createLog(level: LoggingLevel, description: string, details: string): void {
     // add new log event
     setLogs((prevLogs) => [new LogEvent(level, description, details), ...prevLogs]);
     if (printToConsole) {
@@ -84,49 +71,30 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
     }
     // check settings logger level
     if (Array.isArray(currentLogLevel) && !currentLogLevel.includes(level)) return;
-
-    if (showSnackbar) {
-      enqueueSnackbar(`${description}`, {
-        // TransitionComponent: Fade,
-        // preventDuplicate: true,
-        content: (key, message) => (
-          <LoggingDetailsComponent
-            id={key}
-            message={message}
-            details={details}
-            variant={snackbarVariant}
-            onDetailsClick={() => {
-              emitCustomEvent(
-                EVENT_OPEN_COMPONENT,
-                // biome-ignore lint/complexity/noUselessFragments: <explanation>
-                eventOpenComponent(LAYOUT_TABS.LOGGING, "Logging Panel", <></>, false, LAYOUT_TAB_SETS.BORDER_BOTTOM)
-              );
-            }}
-          />
-        ),
-        variant: snackbarVariant,
-      });
-    }
   }
 
-  function debug(description: string, details: string = "", showSnackbar: boolean = false): void {
-    createLog(LoggingLevel.DEBUG, description, details, showSnackbar, "default");
+  function debug(description: string, details: string = ""): void {
+    createLog(LoggingLevel.DEBUG, description, details);
   }
 
-  function info(description: string, details: string = "", showSnackbar: boolean = true): void {
-    createLog(LoggingLevel.INFO, description, details, showSnackbar, "info");
+  function info(description: string, details: string = "", stateInfo?: string): void {
+    createLog(LoggingLevel.INFO, description, details);
+    if (stateInfo) sendStateInfo(stateInfo);
   }
 
-  function success(description: string, details: string = "", showSnackbar: boolean = true): void {
-    createLog(LoggingLevel.SUCCESS, description, details, showSnackbar, "success");
+  function success(description: string, details: string = "", stateInfo?: string): void {
+    createLog(LoggingLevel.SUCCESS, description, details);
+    if (stateInfo) sendStateSuccess(stateInfo);
   }
 
-  function warn(description: string, details: string = "", showSnackbar: boolean = true): void {
-    createLog(LoggingLevel.WARN, description, details, showSnackbar, "warning");
+  function warn(description: string, details: string = "", stateInfo?: string): void {
+    createLog(LoggingLevel.WARN, description, details);
+    if (stateInfo) sendStateWarn(stateInfo);
   }
 
-  function error(description: string, details: string = "", showSnackbar: boolean = true): void {
-    createLog(LoggingLevel.ERROR, description, details, showSnackbar, "error");
+  function error(description: string, details: string = "", stateInfo?: string): void {
+    createLog(LoggingLevel.ERROR, description, details);
+    if (stateInfo) sendStateError(stateInfo);
   }
 
   function clearLogs(): void {

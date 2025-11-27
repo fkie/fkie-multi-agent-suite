@@ -18,6 +18,7 @@ import { PublishCloseCallback, PublishManagerEvents, TPublishManager } from "./P
 import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "./ShutdownManager";
 import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberManager } from "./SubscriberManager";
 import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "./TerminalManager";
+import { InfoStateLevel, TInfoState } from "./TInfoState";
 import { TResult } from "./TResult";
 import { TResultData } from "./TResultData";
 import { TResultProcess } from "./TResultProcess";
@@ -32,6 +33,7 @@ export {
   CommandLineEvents,
   DialogManagerEvents,
   EditorManagerEvents,
+  InfoStateLevel,
   PublishManagerEvents,
   ShutdownManagerEvents,
   SubscriberManagerEvents,
@@ -57,6 +59,7 @@ export type {
   TerminalCloseCallback,
   TerminateCallback,
   TFileRange,
+  TInfoState,
   TLaunchArg,
   TPublishManager,
   TResult,

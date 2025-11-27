@@ -589,14 +589,14 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
 
         // parse remove result output
         if (resultLaunchUnloadFile.status.code === "OK") {
-          logCtx.success(`Launch file [${getFileName(path)}] removed`, `Path: ${path}`);
+          logCtx.success(`Launch file [${getFileName(path)}] removed`, `Path: ${path}`, `${getFileName(path)} unloaded`);
         } else if (resultLaunchUnloadFile.status.code === "FILE_NOT_FOUND") {
-          logCtx.error("Could not remove launch file", `File not found: ${path}`);
+          logCtx.error("Could not remove launch file", `File not found: ${path}`, "file not found");
         } else {
-          logCtx.error("Could not remove launch file", `Error: ${resultLaunchUnloadFile.status.msg}`);
+          logCtx.error("Could not remove launch file", `Error: ${resultLaunchUnloadFile.status.msg}`, "could not remove launch file");
         }
       } else {
-        logCtx.error("Invalid reply from [launchUnloadFile]", "This is probably a bug, please report it as issue.");
+        logCtx.error("Invalid reply from [launchUnloadFile]", "This is probably a bug, please report it as issue.", "invalid reply");
       }
     },
     [logCtx, rosCtx.providers]

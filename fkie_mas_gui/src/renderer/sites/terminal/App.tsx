@@ -34,11 +34,11 @@ export default function TerminalApp(): JSX.Element {
     const screen = urlParams.get("screen");
     const cmd = urlParams.get("cmd");
     if (!host || !port) {
-      logCtx.error(`invalid address ${host}:${port}`, "", false);
+      logCtx.error(`invalid address ${host}:${port}`, "");
       return;
     }
     if (!id) {
-      logCtx.error(`no id found ${id}`, "", false);
+      logCtx.error(`no id found ${id}`, "");
       return;
     }
     const nodeName = node ? node : "bash";
@@ -55,7 +55,7 @@ export default function TerminalApp(): JSX.Element {
         cmd: cmd ? cmd : "",
       });
     } else {
-      logCtx.error(`connection to ${host}:${port} failed`, "", false);
+      logCtx.error(`connection to ${host}:${port} failed`, "");
     }
   }
 

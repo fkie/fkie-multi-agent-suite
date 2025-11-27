@@ -132,7 +132,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(serviceInfo.name);
-                      logCtx.info(`${serviceInfo.name} copied!`);
+                      logCtx.info(`${serviceInfo.name} copied!`, "", `${serviceInfo.name} copied!`);
                       e.stopPropagation();
                     }
                   }}
@@ -145,7 +145,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(serviceInfo.name);
-                      logCtx.info(`${serviceInfo.name} copied!`);
+                      logCtx.info(`${serviceInfo.name} copied!`, "", `${serviceInfo.name} copied!`);
                       e.stopPropagation();
                     }
                   }}
@@ -169,7 +169,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(serviceInfo.srvType);
-                      logCtx.info(`${serviceInfo.srvType} copied!`);
+                      logCtx.info(`${serviceInfo.srvType} copied!`, "", `${serviceInfo.srvType} copied!`);
                       e.stopPropagation();
                     }
                   }}

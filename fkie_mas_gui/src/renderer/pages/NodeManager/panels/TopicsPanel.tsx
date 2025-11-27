@@ -296,7 +296,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
       if (provId) {
         navCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
       } else {
-        logCtx.warn("no publisher available");
+        logCtx.warn("no publisher available", "", "no publisher available");
       }
     }
   }

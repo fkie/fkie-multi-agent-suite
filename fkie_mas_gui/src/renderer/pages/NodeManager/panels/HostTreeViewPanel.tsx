@@ -311,7 +311,11 @@ export default function HostTreeViewPanel(): JSX.Element {
       // open only for first node
       const node = nodes[0];
       if (node.launchInfo.size === 0) {
-        logCtx.error(`Could not find launch file for node: [${node.name}]`, `Node Info: ${JSON.stringify(node)}`);
+        logCtx.error(
+          `Could not find launch file for node: [${node.name}]`,
+          `Node Info: ${JSON.stringify(node)}`,
+          "no launch files"
+        );
         return;
       }
       const launchInfos = Array.from(node.launchInfo.entries());
@@ -833,15 +837,15 @@ export default function HostTreeViewPanel(): JSX.Element {
 
           if (result.result && result.message.indexOf("Purging ROS node logs") === -1) {
             // should not happen, probably error
-            logCtx.error("Could not delete logs", result.message);
+            logCtx.error("Could not delete logs", result.message, "logs not deleted");
           } else if (result.result) {
-            logCtx.success("Logs removed successfully", result.message);
+            logCtx.success("Logs removed successfully", result.message, "logs removed");
           } else {
-            logCtx.error("Could not delete logs", result.message);
+            logCtx.error("Could not delete logs", result.message, "logs not deleted");
           }
         })
       ).catch((error) => {
-        logCtx.error("Could not clear logs for providers", error);
+        logCtx.error("Could not clear logs for providers", error, "could not clear logs");
       });
     }
   }
@@ -880,10 +884,14 @@ export default function HostTreeViewPanel(): JSX.Element {
       } else {
         const result: TResultClearPath[] = await provider.clearLogPaths([node.name]);
         if (result.length === 0) {
-          logCtx.error(`Could not delete log files for node: [${node.name}]`, JSON.stringify(result));
+          logCtx.error(
+            `Could not delete log files for node: [${node.name}]`,
+            JSON.stringify(result),
+            "logs not deleted"
+          );
           addStatusQueueMain("CLEAR_LOG", node.name, false, JSON.stringify(result));
         } else if (!result[0].result) {
-          logCtx.error(`Could not delete log files for node: [${node.name}]`, result[0].message);
+          logCtx.error(`Could not delete log files for node: [${node.name}]`, result[0].message, "logs not deleted");
           addStatusQueueMain("CLEAR_LOG", node.name, false, result[0].message);
         } else {
           addStatusQueueMain("CLEAR_LOG", node.name, true, `Removed log files for node: [${node.name}]`);
@@ -963,7 +971,11 @@ export default function HostTreeViewPanel(): JSX.Element {
           for (const item of failed) {
             infoDict[item.itemName] = item.message;
           }
-          logCtx.warn(`Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`, JSON.stringify(infoDict), true);
+          logCtx.warn(
+            `Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`,
+            JSON.stringify(infoDict),
+            `Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`
+          );
         }
       }
       // queue is finished, print success results
@@ -981,7 +993,11 @@ export default function HostTreeViewPanel(): JSX.Element {
           for (const item of success) {
             infoDict[item.itemName] = item.message;
           }
-          logCtx.success(`${success.length} nodes ${action[1]}`, JSON.stringify(infoDict), true);
+          logCtx.success(
+            `${success.length} nodes ${action[1]}`,
+            JSON.stringify(infoDict),
+            `${success.length} nodes ${action[1]}`
+          );
         }
       }
       // clear queue and results
@@ -1275,7 +1291,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                     }
                     setNodeScreens(screens);
                     if (screens.length === 0) {
-                      logCtx.info("no screens found", "", true);
+                      logCtx.info("no screens found", "", "no screens found");
                     }
                   }
                 } else {

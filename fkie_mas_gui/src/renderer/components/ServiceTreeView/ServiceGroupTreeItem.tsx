@@ -71,7 +71,7 @@ export default function ServiceGroupTreeItem(props: ServiceGroupTreeItemProps): 
                 onClick={(e) => {
                   if (e.detail === 2) {
                     navigator.clipboard.writeText(`${rootPath}${groupName}`);
-                    logCtx.info(`${rootPath}${groupName} copied!`);
+                    logCtx.info(`${rootPath}${groupName} copied!`, "", `${rootPath}${groupName} copied!`);
                     e.stopPropagation();
                   }
                 }}

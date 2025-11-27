@@ -269,7 +269,7 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(topicInfo.name);
-                      logCtx.success(`${topicInfo.name} copied!`);
+                      logCtx.success(`${topicInfo.name} copied!`, "", "topic name copied");
                       e.stopPropagation();
                     }
                   }}
@@ -282,7 +282,7 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(topicInfo.name);
-                      logCtx.success(`${topicInfo.name} copied!`);
+                      logCtx.success(`${topicInfo.name} copied!`, "", "topic name copied");
                       e.stopPropagation();
                     }
                   }}
@@ -312,7 +312,7 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
                   onClick={(e) => {
                     if (e.detail === 2) {
                       navigator.clipboard.writeText(topicInfo.msgType);
-                      logCtx.success(`${topicInfo.msgType} copied!`);
+                      logCtx.success(`${topicInfo.msgType} copied!`, "", "topic type copied");
                       e.stopPropagation();
                     }
                   }}

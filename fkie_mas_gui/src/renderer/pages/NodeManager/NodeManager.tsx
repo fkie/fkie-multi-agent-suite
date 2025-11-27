@@ -66,9 +66,11 @@ import { basename } from "@/renderer/utils";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import {
   EVENT_CLOSE_COMPONENT,
+  EVENT_INFO_STATE,
   EVENT_OPEN_COMPONENT,
   eventOpenComponent,
   TEventId,
+  TEventInfoState,
   TEventOpenComponent,
 } from "./layout/events";
 import { IExtTerminalConfig } from "./layout/LayoutTabConfig";
@@ -78,6 +80,8 @@ import DetailsPanel from "./panels/DetailsPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
 // import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
+import { getInfoStateColor } from "@/renderer/components/UI/Colors";
+import { TInfoState } from "@/types";
 import PackageExplorerPanel from "./panels/PackageExplorerPanel";
 import ParameterPanel from "./panels/ParameterPanel";
 import ProviderPanel from "./panels/ProviderPanel";
@@ -112,6 +116,10 @@ export default function NodeManager(): JSX.Element {
   const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [tabFullName, setTabFullName] = useState<boolean>(settingsCtx.get("tabFullName") as boolean);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [infoStates, setInfoStates] = useState<TInfoState[]>([]);
+  const [infoStateTimer, setInfoStateTimer] = useState<NodeJS.Timeout | undefined>();
+  const [currentInfoState, setCurrentInfoState] = useState<TInfoState | undefined>();
   const [enablePopout, setEnablePopout] = useState<boolean>(
     !window.commandExecutor && window.location.href.indexOf(":6275") === -1
   );
@@ -119,11 +127,42 @@ export default function NodeManager(): JSX.Element {
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setTabFullName(settingsCtx.get("tabFullName") as boolean);
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
   }, [settingsCtx.changed]);
 
   useEffect(() => {
     setEnablePopout(!window.commandExecutor && window.location.href.indexOf(":6275") === -1);
   }, [window.commandExecutor, window.location.href]);
+
+  useEffect(() => {
+    console.log(`infoStates, infoStateTimer: ${infoStates.length}; ${infoStateTimer}`);
+    if (!infoStateTimer && infoStates.length > 0) {
+      setCurrentInfoState(infoStates[0]);
+      setInfoStateTimer(
+        setTimeout(() => {
+          console.log(`time call: ${infoStates.length}`);
+          setInfoStates((prev) => prev.slice(1));
+          setInfoStateTimer(undefined);
+        }, 1500)
+      );
+    } else if (infoStates.length === 0) {
+      setCurrentInfoState(undefined);
+    }
+  }, [infoStates, infoStateTimer]);
+
+  useCustomEventListener(
+    EVENT_INFO_STATE,
+    (data: TEventInfoState) => {
+      setInfoStates((prev) => {
+        const has = prev.filter((item) => item.level === data.level && item.message === data.message);
+        if (has.length > 0) {
+          return prev;
+        }
+        return [...prev, { level: data.level, message: data.message } as TInfoState];
+      });
+    },
+    []
+  );
 
   function hasTab(layout, tabId): boolean {
     if (!layout.children) return false;
@@ -192,7 +231,7 @@ export default function NodeManager(): JSX.Element {
       setLayoutJson(DEFAULT_LAYOUT);
       setModel(Model.fromJson(DEFAULT_LAYOUT));
       settingsCtx.set("resetLayout", false);
-      logCtx.success("Layout reset!");
+      logCtx.success("Layout reset!", "", "layout reset");
     }
   }, [settingsCtx.changed, layoutJson]);
 
@@ -451,7 +490,11 @@ export default function NodeManager(): JSX.Element {
       );
       deleteTab(tabNodeId);
     } catch (error) {
-      logCtx.error(`Can't open external terminal for ${config.nodeName}`, JSON.stringify(error), true);
+      logCtx.error(
+        `Can't open external terminal for ${config.nodeName}`,
+        JSON.stringify(error),
+        "not external terminal"
+      );
     }
   }
 
@@ -704,6 +747,16 @@ export default function NodeManager(): JSX.Element {
       // }
     }
     if (node.getId() === LAYOUT_TAB_SETS.BORDER_BOTTOM) {
+      if (currentInfoState) {
+        renderValues.buttons.push(
+          <Tooltip key="tooltip-log" title="" disableInteractive>
+            <Typography style={{ color: getInfoStateColor(currentInfoState.level, isDarkMode) }}>
+              {currentInfoState.message}
+            </Typography>
+          </Tooltip>
+        );
+      }
+
       // add settings to bottom border
       pAddTabStickyButton(
         renderValues.buttons,
