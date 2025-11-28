@@ -1426,7 +1426,7 @@ export default class Provider implements IProvider {
         if (!node.tags) {
           node.tags = [tag];
         } else {
-          node.tags.unshift(tag);
+          node.tags = [tag, ...node.tags.filter((item) => item.id !== tag.id)];
         }
       }
     }
