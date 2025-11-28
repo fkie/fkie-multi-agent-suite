@@ -135,12 +135,10 @@ export default function NodeManager(): JSX.Element {
   }, [window.commandExecutor, window.location.href]);
 
   useEffect(() => {
-    console.log(`infoStates, infoStateTimer: ${infoStates.length}; ${infoStateTimer}`);
     if (!infoStateTimer && infoStates.length > 0) {
       setCurrentInfoState(infoStates[0]);
       setInfoStateTimer(
         setTimeout(() => {
-          console.log(`time call: ${infoStates.length}`);
           setInfoStates((prev) => prev.slice(1));
           setInfoStateTimer(undefined);
         }, 1500)

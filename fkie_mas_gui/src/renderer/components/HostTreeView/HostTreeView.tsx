@@ -13,6 +13,7 @@ import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType, Provider } from "@/renderer/providers";
 import { generateUniqueId, idFromDDSLocations, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
+import { Alert, AlertTitle, Box } from "@mui/material";
 import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
@@ -589,14 +590,26 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
 
         // parse remove result output
         if (resultLaunchUnloadFile.status.code === "OK") {
-          logCtx.success(`Launch file [${getFileName(path)}] removed`, `Path: ${path}`, `${getFileName(path)} unloaded`);
+          logCtx.success(
+            `Launch file [${getFileName(path)}] removed`,
+            `Path: ${path}`,
+            `${getFileName(path)} unloaded`
+          );
         } else if (resultLaunchUnloadFile.status.code === "FILE_NOT_FOUND") {
           logCtx.error("Could not remove launch file", `File not found: ${path}`, "file not found");
         } else {
-          logCtx.error("Could not remove launch file", `Error: ${resultLaunchUnloadFile.status.msg}`, "could not remove launch file");
+          logCtx.error(
+            "Could not remove launch file",
+            `Error: ${resultLaunchUnloadFile.status.msg}`,
+            "could not remove launch file"
+          );
         }
       } else {
-        logCtx.error("Invalid reply from [launchUnloadFile]", "This is probably a bug, please report it as issue.", "invalid reply");
+        logCtx.error(
+          "Invalid reply from [launchUnloadFile]",
+          "This is probably a bug, please report it as issue.",
+          "invalid reply"
+        );
       }
     },
     [logCtx, rosCtx.providers]
@@ -721,74 +734,98 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   const generateTree = useMemo(() => {
     const newKeyNodeList: { key: string; idGlobal: string }[] = [];
     const tree = (
-      <SimpleTreeView
-        // apiRef={apiRef}
-        aria-label="node list"
-        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-        multiSelect
-        expandedItems={expanded}
-        // sx={{ height: '100%' }}
-        selectedItems={selectedItems}
-        onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleToggle(event, itemIds)}
-        onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleSelect(event, itemIds)}
-        expansionTrigger={"iconContainer"}
-        // selectionPropagation={{ parents: true, descendants: true }}
+      <Box
+        width="100%"
+        height="100%"
+        overflow="auto"
+        onClick={() => {
+          // deselect topics
+          setSelectedItems([]);
+        }}
       >
-        {providerNodeTree?.sort(compareTreeProvider).map((item) => {
-          let providerIsAvailable = false;
-          let p = rosCtx.getProviderById(item.providerId as string, true);
-          if (p?.isAvailable()) {
-            providerIsAvailable = true;
+        {(!rosCtx.providers || rosCtx.providers.length === 0) && (
+          <Alert severity="info">
+            <AlertTitle>No providers available</AlertTitle>
+            Please connect to a ROS provider
+          </Alert>
+        )}
+        <SimpleTreeView
+          onClick={(event) => {
+            // enable deselection
+            event.stopPropagation();
+          }}
+          // apiRef={apiRef}
+          aria-label="node list"
+          slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
+          multiSelect
+          expandedItems={expanded}
+          // sx={{ height: '100%' }}
+          selectedItems={selectedItems}
+          onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
+            handleToggle(event, itemIds)
           }
-          if (!p) {
-            // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
-            // We create a new "not connected" provider.
-            if (item.providerId) {
-              p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
-              p.id = item.providerId;
-            } else {
-              return "";
+          onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
+            handleSelect(event, itemIds)
+          }
+          expansionTrigger={"iconContainer"}
+          // selectionPropagation={{ parents: true, descendants: true }}
+        >
+          {providerNodeTree?.sort(compareTreeProvider).map((item) => {
+            let providerIsAvailable = false;
+            let p = rosCtx.getProviderById(item.providerId as string, true);
+            if (p?.isAvailable()) {
+              providerIsAvailable = true;
             }
-          }
-          // loop through available hosts
-          return (
-            <HostItem
-              key={p.id}
-              provider={p}
-              stopNodes={(idGlobalNodes: string[]) => {
-                stopNodes(idGlobalNodes);
-              }}
-              onDoubleClick={(event: React.MouseEvent, id: string) => {
-                handleDoubleClick(event, id);
-              }}
-            >
-              {/* Show launch files if host is available (have children) */}
-              {providerIsAvailable && (
-                <LaunchFileList
-                  onMouseOver={(event: React.MouseEvent) => {
-                    event.stopPropagation();
-                  }}
-                  providerId={p.id}
-                  launchContentList={p.launchFiles}
-                  selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
-                    selectNodesFromLaunch(providerId, launch)
-                  }
-                  onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
-                    onRemoveLaunch(providerId, path, masteruri)
-                  }
-                  onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
-                    onReloadLaunch(providerId, path, masteruri)
-                  }
-                />
-              )}
+            if (!p) {
+              // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
+              // We create a new "not connected" provider.
+              if (item.providerId) {
+                p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
+                p.id = item.providerId;
+              } else {
+                return "";
+              }
+            }
+            // loop through available hosts
+            return (
+              <HostItem
+                key={p.id}
+                provider={p}
+                stopNodes={(idGlobalNodes: string[]) => {
+                  stopNodes(idGlobalNodes);
+                }}
+                onDoubleClick={(event: React.MouseEvent, id: string) => {
+                  handleDoubleClick(event, id);
+                }}
+              >
+                {/* Show launch files if host is available (have children) */}
+                {providerIsAvailable && (
+                  <LaunchFileList
+                    onMouseOver={(event: React.MouseEvent) => {
+                      event.stopPropagation();
+                    }}
+                    providerId={p.id}
+                    launchContentList={p.launchFiles}
+                    selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
+                      selectNodesFromLaunch(providerId, launch)
+                    }
+                    onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
+                      onRemoveLaunch(providerId, path, masteruri)
+                    }
+                    onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
+                      onReloadLaunch(providerId, path, masteruri)
+                    }
+                  />
+                )}
 
-              {item.children.sort(compareTreeItems).map((sortItem) => {
-                return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
-              })}
-            </HostItem>
-          );
-        })}
-      </SimpleTreeView>
+                {item.children.sort(compareTreeItems).map((sortItem) => {
+                  return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
+                })}
+              </HostItem>
+            );
+          })}
+        </SimpleTreeView>
+      </Box>
     );
     setKeyNodeList(newKeyNodeList);
     return tree;

@@ -381,12 +381,17 @@ export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
   const createTreeView = useMemo(() => {
     return (
       <SimpleTreeView
+        onClick={(event) => {
+          // enable deselection
+          event.stopPropagation();
+        }}
         aria-label="services"
         expandedItems={searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
         expansionTrigger={"iconContainer"}
         onExpandedItemsChange={(_event, itemIds: string[]) => handleToggle(itemIds)}
+        selectedItems={selectedItem}
         onSelectedItemsChange={(_event, itemId: string | null) => {
           setSelectedItem(itemId || "");
           const copyExpanded = [...(searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
@@ -453,7 +458,15 @@ export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
             />
             {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
           </Stack>
-          <Stack direction="row" height="100%" overflow="auto">
+          <Stack
+            direction="row"
+            height="100%"
+            overflow="auto"
+            onClick={() => {
+              // deselect topics
+              setSelectedItem("");
+            }}
+          >
             {buttonLocation === BUTTON_LOCATIONS.LEFT && (
               <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
                 {createButtonBox}

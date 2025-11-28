@@ -1600,24 +1600,16 @@ export default function HostTreeViewPanel(): JSX.Element {
         )}
         <Stack direction="row" height="100%" overflow="auto">
           {buttonLocation === BUTTON_LOCATIONS.LEFT && <Box height="100%">{createButtonBox}</Box>}
-          <Box width="100%" height="100%" overflow="auto">
-            {(!rosCtx.providers || rosCtx.providers.length === 0) && (
-              <Alert severity="info">
-                <AlertTitle>No providers available</AlertTitle>
-                Please connect to a ROS provider
-              </Alert>
-            )}
-            <HostTreeView
-              // providerNodeTree={providerNodeTree}
-              visibleNodes={visibleNodes}
-              isFiltered={filterText.length > 0}
-              onNodeSelect={handleNodesSelect}
-              onProviderSelect={handleProviderSelect}
-              showLoggers={createLoggerPanelFromId}
-              startNodes={startNodesFromId}
-              stopNodes={stopNodesFromId}
-            />
-          </Box>
+          <HostTreeView
+            // providerNodeTree={providerNodeTree}
+            visibleNodes={visibleNodes}
+            isFiltered={filterText.length > 0}
+            onNodeSelect={handleNodesSelect}
+            onProviderSelect={handleProviderSelect}
+            showLoggers={createLoggerPanelFromId}
+            startNodes={startNodesFromId}
+            stopNodes={stopNodesFromId}
+          />
           {buttonLocation === BUTTON_LOCATIONS.RIGHT && <Box height="100%">{createButtonBox}</Box>}
         </Stack>
       </Stack>

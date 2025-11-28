@@ -8,8 +8,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { useDebounceCallback } from "@react-hook/debounce";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
@@ -89,9 +88,8 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
     //  return `${name}#${type}#${providerId}`;
   }
 
-  async function updateTopicList(): Promise<void> {
+  const updateTopicList: () => Promise<void> = useCallback(async () => {
     if (!rosCtx.initialized) return;
-
     function addTopic(rosTopic: RosTopic, rosNode: RosNode): void {
       const topicInfo: TopicExtendedInfo = newTopicsMap.get(genKey([rosTopic.name, rosTopic.msg_type]));
       if (topicInfo) {
@@ -122,7 +120,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
       return aCountSep < bCountSep ? 1 : -1;
     });
     setTopics(newTopics);
-  }
+  }, [rosCtx.initialized, rosCtx.providers]);
 
   function getTopicList(): void {
     for (const provider of rosCtx.providers) {
@@ -139,25 +137,28 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
   });
 
   // debounced search callback
-  const onSearch = useDebounceCallback((newSearchTerm) => {
-    setSearchTerm(newSearchTerm);
-    if (!newSearchTerm) {
-      setFilteredTopics(topics);
-      return;
-    }
+  const onSearch = useCallback(
+    (newSearchTerm: string) => {
+      setSearchTerm(newSearchTerm);
+      if (!newSearchTerm) {
+        setFilteredTopics(topics);
+        return;
+      }
 
-    const newFilteredTopics = topics.filter((topic: TopicExtendedInfo) => {
-      const isMatch = findIn(newSearchTerm, [
-        topic.name,
-        topic.msgType,
-        ...topic.publishers.map((item: EndpointExtendedInfo) => `${item.info.node_id} ${item.providerName}`),
-        ...topic.subscribers.map((item: EndpointExtendedInfo) => `${item.info.node_id} ${item.providerName}`),
-      ]);
-      return isMatch;
-    });
+      const newFilteredTopics = topics.filter((topic: TopicExtendedInfo) => {
+        const isMatch = findIn(newSearchTerm, [
+          topic.name,
+          topic.msgType,
+          ...topic.publishers.map((item: EndpointExtendedInfo) => `${item.info.node_id} ${item.providerName}`),
+          ...topic.subscribers.map((item: EndpointExtendedInfo) => `${item.info.node_id} ${item.providerName}`),
+        ]);
+        return isMatch;
+      });
 
-    setFilteredTopics(newFilteredTopics);
-  }, 300);
+      setFilteredTopics(newFilteredTopics);
+    },
+    [topics]
+  );
 
   // Get topic list
   useEffect(() => {
@@ -471,12 +472,17 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
   const createTreeView = useMemo(() => {
     return (
       <SimpleTreeView
+        onClick={(event) => {
+          // enable deselection
+          event.stopPropagation();
+        }}
         aria-label="topics"
         expandedItems={searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         // defaultEndIcon={<div style={{ width: 24 }} />}
         expansionTrigger={"iconContainer"}
         onExpandedItemsChange={(_event, itemIds) => handleToggle(itemIds)}
+        selectedItems={selectedItem}
         onSelectedItemsChange={(_event, itemId) => {
           setSelectedItem(itemId || "");
           const copyExpanded = [...(searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
@@ -505,7 +511,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
         })}
       </SimpleTreeView>
     );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm, filteredTopics, avoidGroupWithOneItem]);
+  }, [expanded, expandedFiltered, rootDataList, searchTerm, avoidGroupWithOneItem, selectedItem]);
 
   const createReloadButton = useMemo(() => {
     return (
@@ -543,7 +549,15 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
             />
             {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
           </Stack>
-          <Stack direction="row" height="100%" overflow="auto">
+          <Stack
+            direction="row"
+            height="100%"
+            overflow="auto"
+            onClick={() => {
+              // deselect topics
+              setSelectedItem("");
+            }}
+          >
             {buttonLocation === BUTTON_LOCATIONS.LEFT && (
               <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
                 {createButtonBox}
