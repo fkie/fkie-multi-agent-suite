@@ -57,3 +57,4 @@ def wait_until_futures_done(futures: List[WaitFuture], timeout: float = 5.0):
     for future in futures:
         if not future.finished:
             future.future.cancel()
+        future.client.destroy()
