@@ -14,8 +14,6 @@ import TerminalIcon from "@mui/icons-material/Terminal";
 import TuneIcon from "@mui/icons-material/Tune";
 import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 import {
-  Alert,
-  AlertTitle,
   Box,
   ButtonGroup,
   Divider,
