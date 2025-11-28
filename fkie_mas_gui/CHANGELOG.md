@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.9.0 - 28.11.2025
+
+Allow deselection of topics, services, and nodes
+Added octet to input elements in publish panel
+Fixed open publish panel if no topic is selected
+Optimized handling in the publish panel
+
 ## 4.8.2 - 27.11.2025
 
 Removed snackbar info

@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.9.0 (28.11.2025)
+------------------
+* added octet to input elements in publish panel
+* changed return value for ros.launch.publish_message
+
 4.8.2 (27.11.2025)
 ------------------
 * Reduced number of service calls for updating composable and lifecycle nodes (2)
