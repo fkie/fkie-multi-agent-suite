@@ -132,8 +132,6 @@ class RosStateServicer:
         self._lock_check = threading.RLock()
         self._thread_check_discovery_node = threading.Thread(target=self._check_discovery_node, daemon=True)
         self._thread_check_discovery_node.start()
-        self._thread_check_discovery_node = threading.Thread(target=self._check_discovery_node, daemon=True)
-        self._thread_check_discovery_node.start()
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
@@ -206,7 +204,7 @@ class RosStateServicer:
                 except Exception:
                     pass
             # as some services are called during the update, it may take some time
-            if (self._state_jsonify.updated_since_request() or send_notification) and not self._state_jsonify.is_updating():
+            if send_notification and not self._state_jsonify.is_updating():
                 if participant_count is not None:
                     self._last_seen_participant_count = participant_count
                 # trigger screen servicer to update
@@ -216,17 +214,21 @@ class RosStateServicer:
                 self._update_participants = False
                 # create state
                 try:
-                    state = self._state_jsonify.get_nodes_as_json(self._ts_state_updated, update_participants, self._force_refresh)
+                    state = self._state_jsonify.get_nodes_as_json(
+                        self._ts_state_updated, update_participants, self._force_refresh)
                     with self._ros_node_list_mutex:
                         # set status only with lock, as this method runs in a thread
                         self._force_refresh = False
                         self._ros_node_list = state
                         self._ros_service_dict = self._state_jsonify.get_services()
                         self._ros_topic_dict = self._state_jsonify.get_topics()
-                        self._ts_state_notified = self._state_jsonify.timestamp_state()
                         self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
-                        if not self._state_jsonify.is_updating():
-                            self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
+                        skipped_one_with_service_calls = self._state_jsonify.count_last_states_with_service_calls() != 1
+                        if not self._state_jsonify.is_updating() and self._ts_state_notified < self._state_jsonify.timestamp_state():
+                            # skip the first update with service calls
+                            if skipped_one_with_service_calls:
+                                self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
+                                self._ts_state_notified = self._state_jsonify.timestamp_state()
                 except Exception:
                     import traceback
                     print(traceback.format_exc())
@@ -261,6 +263,7 @@ class RosStateServicer:
         Unregister the subscribed topic
         '''
         self._on_shutdown = True
+        self._state_jsonify.stop()
         if hasattr(self, 'sub_discovered_state') and self.sub_discovered_state is not None:
             nmd.ros_node.destroy_subscription(self.sub_discovered_state)
             del self.sub_discovered_state
@@ -280,15 +283,11 @@ class RosStateServicer:
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
             self.publish_discovery_state()
-        # notify WebSocket clients, but not to often
-        # notifications are sent from _check_discovery_node()
-        if not (msg.topic_name.startswith("rq/") or msg.topic_name.startswith("rr/") or msg.topic_name == "ros_discovery_info") or msg.topic_name.endswith('/load_nodeReply') or msg.topic_name.endswith('/unload_nodeReply'):
-            # ignore changes caused by service requests
-            if msg.type == 0:
-                # update participants on on next ros state update
-                self._update_participants = True
-            with self._lock_check:
-                self._ts_state_updated = time.time()
+        if msg.type == 0:
+            # update participants on on next ros state update
+            self._update_participants = True
+        with self._lock_check:
+            self._ts_state_updated = time.time()
 
     def _on_msg_participants(self, msg: Participants):
         '''
