@@ -1681,15 +1681,15 @@ export default class Provider implements IProvider {
   /**
    * Start Publisher
    */
-  public publishMessage: (request: LaunchPublishMessage) => Promise<boolean> = async (request) => {
+  public publishMessage: (request: LaunchPublishMessage) => Promise<TResult> = async (request) => {
     const result = await this.makeCall(URI.ROS_LAUNCH_PUBLISH_MESSAGE, [request], true).then((value: TResultData) => {
       if (value.result) {
-        return value.data as boolean;
+        return value.data as TResult;
       }
       this.logger?.error(`Provider [${this.id}]: Error at publishMessage()`, `${value.message}`);
-      return false;
+      return { result: result.result, message: result.message };
     });
-    return result;
+    return Promise.resolve(result);
   };
 
   /**
@@ -2527,11 +2527,11 @@ export default class Provider implements IProvider {
           return callRequest(_uri, _args, currentAttempt + 1, timeout);
         }
       };
-
+      this.logger?.debugInterface(uri, args as unknown as JSONObject, "request", this.id);
       const result = await callRequest(uri, args, undefined, timeout);
       // const result = await this.connection.call(uri, args);
       this.unlockRequest(uri);
-      this.logger?.debugInterface(uri, result, "", this.id);
+      this.logger?.debugInterface(uri, result, "reply", this.id);
       return result;
     };
 

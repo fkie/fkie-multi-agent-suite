@@ -886,6 +886,8 @@ class LaunchServicer(LoggingEventHandler):
         result = value
         if 'int' in value_type:
             result = int(value)
+        elif 'octet' in value_type:
+            result = int(value)
         elif 'float' in value_type or 'double' in value_type:
             result = float(value)
         elif value_type.startswith('bool'):
@@ -931,7 +933,8 @@ class LaunchServicer(LoggingEventHandler):
                         result[field['name']] = sub_result
         return result
 
-    def publish_message(self, request_json: LaunchPublishMessage) -> None:
+    def publish_message(self, request_json: LaunchPublishMessage) -> str:
+        result = None
         try:
             # Convert input dictionary into a proper python object
             request = request_json
@@ -982,7 +985,11 @@ class LaunchServicer(LoggingEventHandler):
                             object_id=f"ros_topic_pub_{request.topic_name}", description=f"publish to topic {request.topic_name}")
         except Exception:
             import traceback
-            print(traceback.format_exc())
+            error_msg = traceback.format_exc()
+            print(error_msg)
+            result = {"result": False, "message": error_msg}
+        result = {"result": True, "message": ""}
+        return json.dumps(result, cls=SelfEncoder)
 
     def _is_action_type(self, identifier: str) -> bool:
         return identifier.find("/action/") != -1

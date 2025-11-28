@@ -73,6 +73,7 @@ const Components = {
   double: StringInput,
   string: StringInput,
   time: StringInput,
+  octet: StringInput,
 };
 
 interface InputElementsProps {

@@ -51,7 +51,6 @@ interface TopicPublishPanelProps {
 
 export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.Element {
   const { topicName = undefined, topicType = undefined, providerId = undefined } = props;
-
   const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
   const [historyLength, setHistoryLength] = useState(0);
   const logCtx = useContext(LoggingContext);
@@ -60,10 +59,11 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const [substituteKeywords, setSubstituteKeywords] = useState(true);
   const [editTopicName, setEditTopicName] = useState<boolean>(false);
   const [editMessageType, setEditMessageType] = useState<boolean>(false);
+  const [obtainingMsgStruct, setObtainingMsgStruct] = useState<boolean>(false);
   const [topicNameOptions, setTopicNameOptions] = useState<string[]>([]);
   const [messageTypeOptions, setMessageTypeOptions] = useState<string[]>([]);
   const [currentTopicName, setCurrentTopicName] = useState<string>(topicName || "unknown");
-  const [currentProviderId, setCurrentProviderId] = useState<string | undefined>(providerId);
+  const [currentProviderId, setCurrentProviderId] = useState<string>(providerId || "");
   const [currentMessageType, setCurrentMessageType] = useState<string>(topicType || "unknown");
   const [searchTerm, setSearchTerm] = useState("");
   const [messageStruct, setMessageStruct] = useState<TRosMessageStruct>();
@@ -78,37 +78,35 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
   const publishRateSelections = ["1", "once", "latched"];
 
+  useEffect(() => {
+    if (currentProviderId) {
+      const provider = rosCtx.getProviderById(currentProviderId, true);
+      if (!provider || !provider.isAvailable()) {
+        setProvider(null);
+      } else {
+        setProvider(provider);
+      }
+    }
+  }, [currentProviderId]);
+
+  useEffect(() => {
+    if (!provider) return;
+    updateTopicNameOptions();
+    getAvailableMessageTypes();
+  }, [provider]);
+
   // Make a request to provider and get known message types
   const getAvailableMessageTypes = useCallback(async (): Promise<void> => {
-    setMessageTypeOptions([]);
-    if (!currentProviderId) {
-      return;
-    }
-    const provider = rosCtx.getProviderById(currentProviderId, true);
     if (!provider || !provider.isAvailable()) return;
-
     const result: string[] = await provider.getRosMessageMessageTypes();
     if (result.length === 0) return;
     setMessageTypeOptions(result);
-  }, [currentProviderId, rosCtx.providers]);
+  }, [provider, rosCtx.providers]);
 
   const updateTopicNameOptions = useCallback((): void => {
-    setMessageTypeOptions([]);
-    if (!currentProviderId) {
-      return;
-    }
-    const provider = rosCtx.getProviderById(currentProviderId, true);
-    if (!provider || !provider.isAvailable()) return;
+    if (!provider) return;
     setTopicNameOptions(provider.rosTopics.map((topic) => topic.name));
-  }, []);
-
-  useEffect(() => {
-    updateTopicNameOptions();
-  }, [rosCtx.mapProviderRosNodes, currentProviderId]);
-
-  useEffect(() => {
-    getAvailableMessageTypes();
-  }, [currentProviderId]);
+  }, [provider, rosCtx.providers]);
 
   // get item history after the history was loaded
   const fromHistory = useCallback(
@@ -121,7 +119,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         setMessageStruct(JSON.parse(JSON.stringify(historyItem.msg)));
       }
     },
-    [history, setPublishRate, setSubstituteKeywords, setMessageStruct]
+    [history, currentMessageType, setPublishRate, setSubstituteKeywords, setMessageStruct]
   );
 
   // get item history after the history was loaded
@@ -172,15 +170,13 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   }, [messageStruct, currentTopicName, currentMessageType]);
 
   const updateMessageTypeFromTopic = useCallback(async () => {
-    const newProvider = rosCtx.getProviderById(currentProviderId || "", true);
-    if (newProvider) {
-      setProvider(newProvider);
+    if (provider) {
       let msgType = "";
       if (currentTopicName) {
         if (msgType.length === 0 || msgType === "unknown") {
           // Get messageType from node list of the provider
-          for (const node of newProvider.rosNodes) {
-            if (node.providerId === currentProviderId) {
+          for (const node of provider.rosNodes) {
+            if (node.providerId === provider.id) {
               for (const topic of node.subscribers || []) {
                 if (msgType === "" && currentTopicName === topic.name) {
                   msgType = topic.msg_type;
@@ -199,23 +195,23 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       }
       if (msgType && msgType !== "unknown") {
         setCurrentMessageType(msgType);
-      } else {
-        setCurrentMessageType("unknown");
-        setInputElements(null);
-        setMessageStruct(undefined);
+        // } else {
+        //   setCurrentMessageType("unknown");
+        //   setInputElements(null);
+        //   setMessageStruct(undefined);
       }
-    } else {
-      setCurrentMessageType("unknown");
-      setInputElements(null);
-      setMessageStruct(undefined);
+      // } else {
+      //   setCurrentMessageType("unknown");
+      //   setInputElements(null);
+      //   setMessageStruct(undefined);
     }
-  }, [currentTopicName, currentProviderId, rosCtx]);
+  }, [currentTopicName, provider, currentMessageType, rosCtx]);
 
   const getTopicStructData = useCallback(async () => {
     if (currentMessageType && currentMessageType !== "unknown") {
-      const newProvider = rosCtx.getProviderById(currentProviderId || "", true);
-      if (newProvider) {
-        const msgStruct = await newProvider.getMessageStruct(currentMessageType);
+      if (provider) {
+        setObtainingMsgStruct(true);
+        const msgStruct = await provider.getMessageStruct(currentMessageType);
         if (msgStruct) {
           setMessageStructOrg(msgStruct.data);
           setMessageStruct(msgStruct.data);
@@ -228,10 +224,11 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
               showRoot={false}
             />
           );
+          setObtainingMsgStruct(false);
         }
       }
     }
-  }, [currentMessageType, currentProviderId, rosCtx]);
+  }, [currentMessageType, provider, rosCtx]);
 
   // debounced filter callback
   const updateInputElements = useCallback(
@@ -254,12 +251,17 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   );
 
   function stopPublisher(): void {
-    if (provider && topicName) {
-      const publisherName = `/_mas_publisher${topicName.replaceAll("/", "_")}`;
+    if (provider && currentTopicName) {
+      const publisherName = getPublisherName();
       // biome-ignore lint/complexity/noForEach: <explanation>
       provider.rosNodes.forEach(async (node) => {
         if (node.name === publisherName) {
-          await provider.stopNode(node.id);
+          const result = await provider.stopNode(node.id);
+          if (result.result) {
+            logCtx.success(`Stopped publisher ${publisherName}`, "", `Stopped publisher ${publisherName}`);
+          } else {
+            logCtx.warn(`Failed to stop publisher ${publisherName}`, result.message, `Failed to stop ${publisherName}`);
+          }
         }
       });
     }
@@ -285,9 +287,10 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   useEffect(() => {
     if (editMessageType) return;
+    if (!provider) return;
     if (!currentMessageType || currentMessageType === "unknown") return;
     getTopicStructData();
-  }, [currentMessageType, editMessageType]);
+  }, [currentMessageType, editMessageType, provider]);
 
   useEffect(() => {
     if (!messageStruct) return;
@@ -300,21 +303,15 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   }, [searchTerm]);
 
   useEffect(() => {
-    if (editMessageType) {
-      getAvailableMessageTypes();
-    }
-  }, [editMessageType]);
-
-  useEffect(() => {
-    if (provider && topicName) {
-      const publisherName = `/_mas_publisher${topicName.replaceAll("/", "_")}`;
+    if (provider && currentTopicName) {
+      const publisherName = getPublisherName();
       setHasPublisher(
         provider.rosNodes.filter((node) => {
           return node.name === publisherName;
         }).length > 0
       );
     }
-  }, [provider, rosCtx.mapProviderRosNodes, topicName]);
+  }, [provider, rosCtx.mapProviderRosNodes, currentTopicName]);
 
   function findQoSFromSub(): RosQos | undefined {
     // find first available subscriber with QoS
@@ -345,6 +342,11 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
     return qos;
   }
 
+  function getPublisherName(): string {
+    const prefix = currentTopicName.startsWith("/") ? "" : "_";
+    return `/_mas_publisher${prefix}${currentTopicName.replaceAll("/", "_")}`;
+  }
+
   async function handleStartPublisher(): Promise<void> {
     if (!messageStruct) return;
     setStartPublisherDescription("Starting publisher...");
@@ -364,8 +366,6 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       }
     }
 
-    console.log(`Start publisher with rate '${publishRate}' and message: ${messageStr}`);
-
     const once = publishRate === "once";
     const latched = publishRate === "latched";
     let rate = 0.0;
@@ -375,7 +375,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
     // find first available subscriber with QoS
     const qos: RosQos | undefined = findQoSFromSub();
 
-    await provider?.publishMessage(
+    const result = await provider?.publishMessage(
       new LaunchPublishMessage(
         currentTopicName,
         currentMessageType,
@@ -389,17 +389,26 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         qos
       )
     );
+    const publisherName = getPublisherName();
+    if (result?.result) {
+      logCtx.success(
+        `Started publisher for ${currentTopicName} with rate '${publishRate}' and message type: ${currentMessageType}`,
+        `${messageStr}`,
+        `started publisher ${publisherName}`
+      );
+    } else {
+      logCtx.warn(`Failed to start publisher ${publisherName}`, result?.message, `Failed to start ${publisherName}`);
+    }
+    setStartPublisherIsSubmitting(false);
     // close modal
     setTimeout(() => {
-      setStartPublisherIsSubmitting(false);
       setStartPublisherDescription("");
-    }, 3000);
+    }, 5000);
   }
 
   useEffect(() => {
     if (hasPublisher) {
       setStartPublisherIsSubmitting(false);
-      setStartPublisherDescription("");
     }
   }, [hasPublisher]);
 
@@ -610,7 +619,6 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
           {startPublisherIsSubmitting ? (
             <Stack direction="row" spacing={1}>
               <CircularProgress size="1em" />
-              <div>{`${startPublisherDescription} ${messageStruct ? rosMessageStructToString(messageStruct, false, false) : ""}`}</div>
             </Stack>
           ) : (
             <Button
@@ -627,13 +635,28 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
             <Tooltip title="Stop running publisher node" placement="bottom">
               <IconButton
                 sx={{
-                  padding: "0.8em",
+                  paddingLeft: "0.8em",
                 }}
                 onClick={() => stopPublisher()}
               >
                 <StopCircleOutlined sx={{ fontSize: "inherit" }} />
               </IconButton>
             </Tooltip>
+          )}
+          {startPublisherDescription && (
+            <Typography
+              variant="body1"
+              sx={{
+                fontFamily: "monospace",
+                fontSize: "0.8em",
+                overflow: "hidden",
+                whiteSpace: "normal",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                textOverflow: "ellipsis",
+                // whiteSpace: "pre-line",
+              }}
+            >{`Message: ${messageStruct ? rosMessageStructToString(messageStruct, false, false) : ""}`}</Typography>
           )}
         </Box>
         <Divider />
@@ -718,9 +741,20 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         </Stack>
 
         {inputElements}
-        {!messageStruct && !editMessageType && (
+        {obtainingMsgStruct && (
+          <Alert severity="info" style={{ minWidth: 0 }}>
+            <AlertTitle>{`Obtaining message definition for ${currentMessageType}`}</AlertTitle>{" "}
+            <CircularProgress size="1em" />
+          </Alert>
+        )}
+        {!obtainingMsgStruct && !messageStruct && !editMessageType && (
           <Alert severity="error" style={{ minWidth: 0 }}>
-            <AlertTitle>{`Message definition for ${topicName}[${currentMessageType}] not found!`}</AlertTitle>
+            <AlertTitle>{`Message definition for ${currentTopicName}[${currentMessageType}] not found!`}</AlertTitle>
+          </Alert>
+        )}
+        {!obtainingMsgStruct && !messageStruct && editMessageType && (
+          <Alert severity="info" style={{ minWidth: 0 }}>
+            <AlertTitle>{`Finish editing to obtain message definition for ${currentMessageType}`}</AlertTitle>
           </Alert>
         )}
       </Stack>

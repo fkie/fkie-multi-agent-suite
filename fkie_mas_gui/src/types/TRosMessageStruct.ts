@@ -82,6 +82,8 @@ function str2typedValue(
     result = Number(value);
   } else if (valueType.search("float") !== -1 || valueType.search("double") !== -1) {
     result = Number(value);
+  } else   if (valueType.search("octet") !== -1) {
+    result = Number(value);
   } else if (valueType.startsWith("bool")) {
     try {
       result = ["yes", "true", "t", "y", "1"].includes(result.toLowerCase());
