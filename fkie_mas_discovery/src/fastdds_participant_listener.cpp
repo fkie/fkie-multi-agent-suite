@@ -313,7 +313,7 @@ public:
     {
       msg.participants.push_back(it_dp->second);
     }
-    RCLCPP_INFO(get_logger(), " publish update with with %lu participants", msg.participants.size());
+    RCLCPP_DEBUG(get_logger(), " publish update with with %lu participants", msg.participants.size());
     publisher_participants_->publish(msg);
   }
 
@@ -333,7 +333,7 @@ public:
     {
     case eprosima::fastdds::rtps::ParticipantDiscoveryStatus::DISCOVERED_PARTICIPANT:
     {
-      RCLCPP_INFO(get_logger(), "onParticipantDiscovery: new participant %s", participant_guid.c_str());
+      RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery: new participant %s", participant_guid.c_str());
       std::lock_guard<std::mutex> guard(mutex_);
       auto itp = discoveredParticipants_.find(info.guid);
       if (itp == discoveredParticipants_.end())
@@ -351,13 +351,13 @@ public:
       if (name_found != map.end())
       {
         pi.enclave = std::string(name_found->second.begin(), name_found->second.end());
-        RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   name '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
+        RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery:   name '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
       } // get as defined since foxy
       auto enclave_found = map.find("enclave");
       if (enclave_found != map.end())
       {
         pi.enclave = std::string(enclave_found->second.begin(), enclave_found->second.end());
-        RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   enclave '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
+        RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery:   enclave '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
       }
       for (auto i = info.default_locators.unicast.begin(); i != info.default_locators.unicast.end(); ++i)
       {
@@ -377,7 +377,7 @@ public:
       // only consider known GUIDs
       if (itp != discoveredParticipants_.end())
       {
-        RCLCPP_INFO(get_logger(), "onParticipantDiscovery: remove participant %s:", to_string(info.guid).c_str());
+        RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery: remove participant %s:", to_string(info.guid).c_str());
         discoveredParticipants_.erase(itp);
       }
       publish_participants();
