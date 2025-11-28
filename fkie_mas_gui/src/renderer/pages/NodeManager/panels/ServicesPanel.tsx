@@ -458,21 +458,21 @@ export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
             />
             {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
           </Stack>
-          <Stack
-            direction="row"
-            height="100%"
-            overflow="auto"
-            onClick={() => {
-              // deselect topics
-              setSelectedItem("");
-            }}
-          >
+          <Stack direction="row" height="100%" overflow="auto">
             {buttonLocation === BUTTON_LOCATIONS.LEFT && (
               <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
                 {createButtonBox}
               </Box>
             )}
-            <Box width="100%" height="100%" overflow="auto">
+            <Box
+              width="100%"
+              height="100%"
+              overflow="auto"
+              onClick={() => {
+                // deselect topics
+                setSelectedItem("");
+              }}
+            >
               {createTreeView}
             </Box>
             {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
