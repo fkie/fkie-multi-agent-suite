@@ -502,6 +502,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         // not running or in the list with started nodes
         const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
         if (managerNode) {
+          console.log(`MANAGER: ${managerNode.name}; ${node.name}`);
           managerNode.launchPath = node.launchPath;
         }
         add2start(managerNode);

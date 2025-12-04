@@ -44,6 +44,9 @@ from fkie_mas_daemon.version import detect_version
 
 
 class Server:
+
+    ENDPOINT_NOTIFICATION_INTERVAL = 30.0
+
     def __init__(self, ros_node, *, default_domain_id=-1):
         self.ros_node = ros_node
         self.ws_port = ws_port()
@@ -82,13 +85,13 @@ class Server:
         self.monitor_servicer = MonitorServicer(self._settings, self.ws_server)
         self.file_servicer = FileServicer(self.ws_server)
         self.screen_servicer = ScreenServicer(self.ws_server)
-        self.rosstate_servicer = RosStateServicer(self.ws_server, self.monitor_servicer)
+        self.ros_state_servicer = RosStateServicer(self.ws_server, self.monitor_servicer, self.ENDPOINT_NOTIFICATION_INTERVAL)
         self.parameter_servicer = ParameterServicer(self.ws_server)
         self.launch_servicer = LaunchServicer(
             self.ws_server,
             ws_port=self.ws_port,
         )
-        self.version_servicer = VersionServicer(self.ws_server, self.rosstate_servicer)
+        self.version_servicer = VersionServicer(self.ws_server, self.ros_state_servicer)
 
         self.rosname = ns_join(
             nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
@@ -108,7 +111,7 @@ class Server:
         self.launch_servicer = None
         self.monitor_servicer = None
         self.screen_servicer = None
-        self.rosstate_servicer = None
+        self.ros_state_servicer = None
         self.parameter_servicer = None
 
     def start(self, port: int, displayed_name: Text = "") -> bool:
@@ -122,7 +125,7 @@ class Server:
         self._endpoint_msg.name = self.name
         self._endpoint_msg.uri = f"ws://{get_host_name()}:{port}"
         self.ws_server.start_threaded(port)
-        self.rosstate_servicer.start()
+        self.ros_state_servicer.start()
         self.screen_servicer.start()
         self.publish_daemon_state(True)
         self._ws_send_status(True)
@@ -148,7 +151,7 @@ class Server:
         try:
             if not self._on_shutdown:
                 self.pub_endpoint.publish(self._endpoint_msg)
-                self._endpoint_timer = threading.Timer(60.0, self.publish_daemon_state)
+                self._endpoint_timer = threading.Timer(self.ENDPOINT_NOTIFICATION_INTERVAL, self.publish_daemon_state)
                 self._endpoint_timer.start()
         except Exception as a:
             pass
@@ -166,7 +169,7 @@ class Server:
         self.launch_servicer.stop()
         self.file_servicer.stop()
         self.monitor_servicer.stop()
-        self.rosstate_servicer.stop()
+        self.ros_state_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
         self.ros_node.destroy_publisher(self.pub_endpoint)
@@ -181,7 +184,7 @@ class Server:
     def stop_all_nodes(self):
         nodes = self.launch_servicer.list_nodes()
         for n in nodes:
-            self.rosstate_servicer.stop_node(n)
+            self.ros_state_servicer.stop_node(n)
 
     async def _rosservice_start_launch(self, request, response):
         Log.info(f"call service to load and start {request.path}")

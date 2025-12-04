@@ -39,7 +39,7 @@ export default function useQueue<T>(onProgress: (progress: number) => void): TQu
    * @param list List with items.
    */
   const update = useCallback(
-    function (list: T[]): void {
+    (list: T[]): void => {
       setAddToQueue(list);
     },
     [setAddToQueue]
@@ -47,7 +47,7 @@ export default function useQueue<T>(onProgress: (progress: number) => void): TQu
 
   /** Clear queue and all result states */
   const clear = useCallback(
-    function (): void {
+    (): void => {
       setQueue([]);
       setCurrentIndex(-1);
       setResultStatus([]);
@@ -60,7 +60,7 @@ export default function useQueue<T>(onProgress: (progress: number) => void): TQu
    * Change the current index by call next().
    */
   const get = useCallback(
-    function (): T | null {
+    (): T | null => {
       if (currentIndex >= 0 && currentIndex < queue.length) {
         return queue[currentIndex];
       }
@@ -74,7 +74,7 @@ export default function useQueue<T>(onProgress: (progress: number) => void): TQu
    * Increase the current index and update the progress state.
    */
   const addStatus = useCallback(
-    function (action: string, itemName: string, success: boolean, message: string): void {
+    (action: string, itemName: string, success: boolean, message: string): void => {
       setResultStatus([...resultStatus, { action, itemName, success, message }]);
       // increase index and progress
       const nextIndex = currentIndex + 1;
@@ -87,16 +87,12 @@ export default function useQueue<T>(onProgress: (progress: number) => void): TQu
   );
 
   const success = useCallback(
-    function (action: string): StatusItem[] {
-      return resultStatus.filter((item) => item.success && action === item.action);
-    },
+    (action: string): StatusItem[] => resultStatus.filter((item) => item.success && action === item.action),
     [resultStatus]
   );
 
   const failed = useCallback(
-    function (action: string): StatusItem[] {
-      return resultStatus.filter((item) => !item.success && action === item.action);
-    },
+    (action: string): StatusItem[] => resultStatus.filter((item) => !item.success && action === item.action),
     [resultStatus]
   );
 

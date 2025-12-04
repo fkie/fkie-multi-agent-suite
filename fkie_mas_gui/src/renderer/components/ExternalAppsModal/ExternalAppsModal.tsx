@@ -123,7 +123,7 @@ export default function ExternalAppsModal(): JSX.Element {
         setShowSelectDialog({ command: command, domainIds: domainIds });
       }
     },
-    [setShowSelectDialog, rosCtx.providers]
+    [rosCtx.providers, rosCtx.rosInfo, window.commandExecutor]
   );
 
   const runAppWid = useCallback(async (command: string, domain_id: string) => {
@@ -134,7 +134,7 @@ export default function ExternalAppsModal(): JSX.Element {
     }
     window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
     setShowSelectDialog(undefined);
-  }, []);
+  }, [rosCtx]);
 
   return (
     <Stack padding={0}>

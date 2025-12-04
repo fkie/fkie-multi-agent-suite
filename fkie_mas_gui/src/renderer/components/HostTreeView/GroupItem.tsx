@@ -6,8 +6,9 @@ import { blue, green, grey, red, yellow } from "@mui/material/colors";
 import { treeItemClasses, TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
 import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
 import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 
+import RosContext, { IRosProviderContext } from "@/renderer/context/RosContext";
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
 import { EventNodeDiagnostic } from "@/renderer/providers/events";
@@ -36,35 +37,42 @@ const GroupLifecycleStatus = {
   NO_ONE: 10,
 };
 
-const getGroupLifecycleStatus: (treeItems: NodeTreeItem[]) => number = (treeItems) => {
+const getGroupLifecycleStatus: (treeItems: NodeTreeItem[], rosCtx: IRosProviderContext) => number = (
+  treeItems,
+  rosCtx
+) => {
   let groupStatus = GroupLifecycleStatus.NO_ONE;
   for (const treeItem of treeItems) {
     if (treeItem.children && treeItem.children.length > 0) {
-      const childrenStatus = getGroupLifecycleStatus(treeItem.children);
+      const childrenStatus = getGroupLifecycleStatus(treeItem.children, rosCtx);
       if (childrenStatus < groupStatus) {
         groupStatus = childrenStatus;
       }
     }
-    if (treeItem.node?.lifecycle_state) {
-      switch (treeItem.node.lifecycle_state) {
-        case "unconfigured":
-          groupStatus = GroupLifecycleStatus.NOT_CONFIGURED;
-          break;
-        case "inactive":
-          if (groupStatus > GroupLifecycleStatus.INACTIVE) {
-            groupStatus = GroupLifecycleStatus.INACTIVE;
-          }
-          break;
-        case "active":
-          if (groupStatus > GroupLifecycleStatus.ACTIVE) {
-            groupStatus = GroupLifecycleStatus.ACTIVE;
-          }
-          break;
-        case "finalized":
-          if (groupStatus > GroupLifecycleStatus.FINALIZED) {
-            groupStatus = GroupLifecycleStatus.FINALIZED;
-          }
-          break;
+    if (treeItem.node) {
+      const provider = rosCtx.getProviderById(treeItem.node.providerId as string, true);
+      const lc_state = provider?.getLifecycleForNode(treeItem.node?.id)?.state;
+      if (lc_state) {
+        switch (lc_state) {
+          case "unconfigured":
+            groupStatus = GroupLifecycleStatus.NOT_CONFIGURED;
+            break;
+          case "inactive":
+            if (groupStatus > GroupLifecycleStatus.INACTIVE) {
+              groupStatus = GroupLifecycleStatus.INACTIVE;
+            }
+            break;
+          case "active":
+            if (groupStatus > GroupLifecycleStatus.ACTIVE) {
+              groupStatus = GroupLifecycleStatus.ACTIVE;
+            }
+            break;
+          case "finalized":
+            if (groupStatus > GroupLifecycleStatus.FINALIZED) {
+              groupStatus = GroupLifecycleStatus.FINALIZED;
+            }
+            break;
+        }
       }
     }
   }
@@ -208,14 +216,15 @@ interface GroupIconProps {
 
 export function GroupIcon(props: GroupIconProps): JSX.Element {
   const { treeItems, groupName, isDarkMode = false } = props;
-  const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems));
+  const rosCtx = useContext(RosContext);
+  const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems, rosCtx));
   const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
   const [groupStatusLocal, setGroupStatusLocal] = useState<number>(getGroupStatusLocal(treeItems));
   const [color, setColor] = useState<string>(getGroupIconColor(treeItems, isDarkMode));
   const [colorBorder, setColorBorder] = useState<string>(getColorFromLifecycle(groupLifecycleStatus, isDarkMode));
 
   useEffect(() => {
-    setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems));
+    setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems, rosCtx));
     setGroupStatus(getGroupStatus(treeItems));
     setColor(getGroupIconColor(treeItems, isDarkMode));
     setGroupStatusLocal(getGroupStatusLocal(treeItems));
@@ -369,42 +378,75 @@ export default function GroupItem(props: GroupItemProps): JSX.Element {
     toggled = true;
   };
 
-  const createGroupItem = useMemo(() => {
-    return (
-      <StyledTreeItem
-        itemId={itemId}
-        slotProps={
-          {
-            label: { onClick: handleLabelClick },
-            content: { onClick: handleContentClick },
-            iconContainer: { onClick: handleIconContainerClick },
-          } as TreeItemSlotProps
-        }
-        onDoubleClick={(event) => {
-          if (onDoubleClick) {
-            onDoubleClick(event, itemId);
-            event.stopPropagation();
-          }
-        }}
-        sx={{
-          [`& .${treeItemClasses.content}`]: {
-            paddingLeft: "7px",
-          },
-        }}
-        label={
-          <Box display="flex" alignItems="center" paddingLeft={0.0}>
-            {icon}
-            <Stack direction="row" paddingLeft={0.5} flexGrow={1} sx={{ userSelect: "none" }}>
-              {groupName}
-            </Stack>
+  // const createGroupItem = useMemo(() => {
+  //   return (
+  //     <StyledTreeItem
+  //       itemId={itemId}
+  //       slotProps={
+  //         {
+  //           label: { onClick: handleLabelClick },
+  //           content: { onClick: handleContentClick },
+  //           iconContainer: { onClick: handleIconContainerClick },
+  //         } as TreeItemSlotProps
+  //       }
+  //       onDoubleClick={(event) => {
+  //         if (onDoubleClick) {
+  //           onDoubleClick(event, itemId);
+  //           event.stopPropagation();
+  //         }
+  //       }}
+  //       sx={{
+  //         [`& .${treeItemClasses.content}`]: {
+  //           paddingLeft: "7px",
+  //         },
+  //       }}
+  //       label={
+  //         <Box display="flex" alignItems="center" paddingLeft={0.0}>
+  //           {icon}
+  //           <Stack direction="row" paddingLeft={0.5} flexGrow={1} sx={{ userSelect: "none" }}>
+  //             {groupName}
+  //           </Stack>
 
-            {countChildren > 0 && <Typography variant="body2">[{countChildren}]</Typography>}
-          </Box>
-        }
-        {...children}
-      />
-    );
-  }, [itemId, countChildren, icon, handleIconContainerClick]);
+  //           {countChildren > 0 && <Typography variant="body2">[{countChildren}]</Typography>}
+  //         </Box>
+  //       }
+  //       {...children}
+  //     />
+  //   );
+  // }, [itemId, countChildren, icon, handleIconContainerClick]);
 
-  return createGroupItem;
+  return (
+    <StyledTreeItem
+      itemId={itemId}
+      slotProps={
+        {
+          label: { onClick: handleLabelClick },
+          content: { onClick: handleContentClick },
+          iconContainer: { onClick: handleIconContainerClick },
+        } as TreeItemSlotProps
+      }
+      onDoubleClick={(event) => {
+        if (onDoubleClick) {
+          onDoubleClick(event, itemId);
+          event.stopPropagation();
+        }
+      }}
+      sx={{
+        [`& .${treeItemClasses.content}`]: {
+          paddingLeft: "7px",
+        },
+      }}
+      label={
+        <Box display="flex" alignItems="center" paddingLeft={0.0}>
+          {icon}
+          <Stack direction="row" paddingLeft={0.5} flexGrow={1} sx={{ userSelect: "none" }}>
+            {groupName}
+          </Stack>
+
+          {countChildren > 0 && <Typography variant="body2">[{countChildren}]</Typography>}
+        </Box>
+      }
+      {...children}
+    />
+  );
 }

@@ -99,6 +99,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
 
           // nothing else to do return
           onLaunchCallback();
+          provider.updateLaunchContent();
           return;
         }
 
@@ -162,6 +163,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
 
           // nothing else to do return
           onLaunchCallback();
+          provider.updateLaunchContent();
           return;
         }
 
@@ -286,6 +288,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
     setSelectedLaunchFile(undefined);
 
     onLaunchCallback();
+    provider.updateLaunchContent();
 
     // trigger node's update (will force a reload using useEffect hook)
     // rosCtx.updateNodeList(provider.name());

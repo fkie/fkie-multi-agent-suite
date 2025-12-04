@@ -1,4 +1,4 @@
-import { generateUniqueId } from "../utils";
+import { generateUniqueId, tsStr } from "../utils";
 
 export enum LoggingLevel {
   DEBUG = "DEBUG",
@@ -44,11 +44,7 @@ export default class LogEvent {
     this.id = generateUniqueId();
     this.level = level;
     this.date = new Date();
-    const hours = String(this.date.getHours()).padStart(2, '0'); // Stunden (00-23)
-    const minutes = String(this.date.getMinutes()).padStart(2, '0'); // Minuten (00-59)
-    const seconds = String(this.date.getSeconds()).padStart(2, '0'); // Sekunden (00-59)
-    const ms = String(this.date.getMilliseconds()).padStart(3, '0'); // Millisekunden (00-999)
-    this.timestamp = `${hours}:${minutes}:${seconds}.${ms}`;
+    this.timestamp = tsStr(this.date);
     this.description = description;
     this.details = details;
   }

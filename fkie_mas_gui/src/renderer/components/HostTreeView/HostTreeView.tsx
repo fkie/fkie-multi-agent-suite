@@ -85,25 +85,30 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   const [openScreenByDefault, setOpenScreenByDefault] = useState<string>(
     settingsCtx.get("openScreenByDefault") as string
   );
-  const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(undefined);
+  const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(getSpamNodesRegExp());
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
-    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
+  function getSpamNodesRegExp(): RegExp | undefined {
     const spamNodes = (settingsCtx.get("spamNodes") as string)
       .split(",")
       .filter((item) => item.length > 0)
       .map((item) => `(${item})`)
       .join("|");
-    setSpamNodesRegExp(spamNodes ? new RegExp(String.raw`${spamNodes}`, "g") : undefined);
-    setOpenScreenByDefault(settingsCtx.get("openScreenByDefault") as string);
-  }, [settingsCtx.changed]);
+    return spamNodes ? new RegExp(String.raw`${spamNodes}`, "g") : undefined;
+  }
 
-  function createTreeFromNodes(nodes: RosNode[]): void {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
+    setSpamNodesRegExp(getSpamNodesRegExp());
+    setOpenScreenByDefault(settingsCtx.get("openScreenByDefault") as string);
+  }, [settingsCtx, settingsCtx.changed]);
+
+  const createTreeFromNodes: (nodes: RosNode[]) => void = useCallback((nodes) => {
     const namespaceSystemNodes: string = settingsCtx.get("namespaceSystemNodes") as string;
     const expandedGroups: string[] = [];
     const nodeItemMap = new Map();
+    const newKeyNodeList: KeyTreeItem[] = [];
     // generate node tree structure based on node list
     // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
     // ...and keep a list of the tree nodes
@@ -166,6 +171,10 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
                 providerId: undefined,
                 providerName: undefined,
               });
+              newKeyNodeList.push({
+                key: treePath,
+                idGlobal: node.idGlobal,
+              });
             } else {
               // create a (sub)group
               const treePath = name ? a.slice(0, idx + 1).join("/") : "";
@@ -178,12 +187,17 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
                 name: idx === 0 ? node.providerName || "" : a.slice(idx, idx + 1).join("/"), // top level is the provider
               });
               expandedGroups.push(treePath);
+              newKeyNodeList.push({
+                key: treePath,
+                idGlobal: undefined,
+              });
             }
           }
           return r[name];
         }, level);
       }
     }
+    setKeyNodeList(newKeyNodeList);
     setProviderNodeTree((prevTree) => {
       if (prevTree.length === 0) {
         // use either the expanded state or the key of the node tree (expand the first layer)
@@ -195,7 +209,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     if (isFiltered) {
       setExpanded(expandedGroups);
     }
-  }
+  }, [spamNodesRegExp]);
 
   useEffect(() => {
     createTreeFromNodes(visibleNodes);
@@ -325,7 +339,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         }
       });
     },
-    [rosCtx.nodeMap, keyNodeList]
+    [rosCtx.nodeMap, keyNodeList, openScreenByDefault]
   );
 
   /**
@@ -351,7 +365,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         }
       });
     },
-    [rosCtx.nodeMap, keyNodeList, getNodeIdsFromTreeIds]
+    [rosCtx.nodeMap, keyNodeList]
   );
 
   const handleClickOnLoggers = useCallback(
@@ -475,7 +489,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       // inform details panel tab about selected nodes by user
       emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
     },
-    [getParentAndChildrenIds]
+    [keyNodeList]
   );
 
   function keyToNodeName(key: string): { isValidNode: boolean; provider: string; node_name: string } {
@@ -534,7 +548,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         })
       ),
     ]);
-  }, [getParentAndChildrenIds, keyNodeList, rosCtx.mapProviderRosNodes]);
+  }, [keyNodeList, rosCtx.mapProviderRosNodes]);
 
   /**
    * synchronize selected items and available nodes (important in ROS2)
@@ -604,6 +618,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             "could not remove launch file"
           );
         }
+        provider.updateLaunchContent();
       } else {
         logCtx.error(
           "Invalid reply from [launchUnloadFile]",
@@ -660,7 +675,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * Create elements of the tree view component
    */
   const buildHostTreeViewItem = useCallback(
-    (providerId: string, treeItem: NodeTreeItem, newKeyNodeList: KeyTreeItem[]): JSX.Element => {
+    (providerId: string, treeItem: NodeTreeItem): JSX.Element => {
       if (!treeItem) {
         console.error("Invalid item ", providerId, treeItem);
         return <div key={`${providerId}#${generateUniqueId()}`} />;
@@ -678,10 +693,6 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       const itemId = treePath;
       if (node && children && children.length === 0) {
         // no children means that item is a RosNode
-        newKeyNodeList.push({
-          key: itemId,
-          idGlobal: node.idGlobal,
-        });
         return (
           <NodeItem
             // add all relevant infos to key to update the TreeItem visualization
@@ -696,7 +707,6 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         );
       }
       // valid children means that item is a group
-      newKeyNodeList.push({ key: itemId, idGlobal: undefined });
       return (
         <GroupItem
           key={itemId}
@@ -709,13 +719,14 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           }}
         >
           {children.sort(compareTreeItems).map((tItem) => {
-            return buildHostTreeViewItem(providerId, tItem, newKeyNodeList);
+            return buildHostTreeViewItem(providerId, tItem);
           })}
         </GroupItem>
       );
     },
     [
       // do not include keyNodeList
+      avoidGroupWithOneItem,
       visibleNodes,
       expanded,
       providerNodeTree,
@@ -731,124 +742,215 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * Memoize the generation of the tree to improve render performance
    * The idea is to prevent rerendering when scrolling/focusing the component
    */
-  const generateTree = useMemo(() => {
-    const newKeyNodeList: { key: string; idGlobal: string }[] = [];
-    const tree = (
-      <Box
-        width="100%"
-        height="100%"
-        overflow="auto"
-        onClick={() => {
-          // deselect topics
-          setSelectedItems([]);
+  // const generateTree = useMemo(() => {
+  //   const newKeyNodeList: { key: string; idGlobal: string }[] = [];
+  //   const tree = (
+  //     <Box
+  //       width="100%"
+  //       height="100%"
+  //       overflow="auto"
+  //       onClick={() => {
+  //         // deselect topics
+  //         setSelectedItems([]);
+  //       }}
+  //     >
+  //       {(!rosCtx.providers || rosCtx.providers.length === 0) && (
+  //         <Alert severity="info">
+  //           <AlertTitle>No providers available</AlertTitle>
+  //           Please connect to a ROS provider
+  //         </Alert>
+  //       )}
+  //       <SimpleTreeView
+  //         onClick={(event) => {
+  //           // enable deselection
+  //           event.stopPropagation();
+  //         }}
+  //         // apiRef={apiRef}
+  //         aria-label="node list"
+  //         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
+  //         multiSelect
+  //         expandedItems={expanded}
+  //         // sx={{ height: '100%' }}
+  //         selectedItems={selectedItems}
+  //         onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
+  //           handleToggle(event, itemIds)
+  //         }
+  //         onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
+  //           handleSelect(event, itemIds)
+  //         }
+  //         expansionTrigger={"iconContainer"}
+  //         // selectionPropagation={{ parents: true, descendants: true }}
+  //       >
+  //         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
+  //           let providerIsAvailable = false;
+  //           let p = rosCtx.getProviderById(item.providerId as string, true);
+  //           if (p?.isAvailable()) {
+  //             providerIsAvailable = true;
+  //           }
+  //           if (!p) {
+  //             // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
+  //             // We create a new "not connected" provider.
+  //             if (item.providerId) {
+  //               p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
+  //               p.id = item.providerId;
+  //             } else {
+  //               return "";
+  //             }
+  //           }
+  //           // loop through available hosts
+  //           return (
+  //             <HostItem
+  //               key={p.id}
+  //               provider={p}
+  //               stopNodes={(idGlobalNodes: string[]) => {
+  //                 stopNodes(idGlobalNodes);
+  //               }}
+  //               onDoubleClick={(event: React.MouseEvent, id: string) => {
+  //                 handleDoubleClick(event, id);
+  //               }}
+  //             >
+  //               {/* Show launch files if host is available (have children) */}
+  //               {providerIsAvailable && (
+  //                 <LaunchFileList
+  //                   onMouseOver={(event: React.MouseEvent) => {
+  //                     event.stopPropagation();
+  //                   }}
+  //                   providerId={p.id}
+  //                   launchContentList={p.launchFiles}
+  //                   selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
+  //                     selectNodesFromLaunch(providerId, launch)
+  //                   }
+  //                   onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
+  //                     onRemoveLaunch(providerId, path, masteruri)
+  //                   }
+  //                   onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
+  //                     onReloadLaunch(providerId, path, masteruri)
+  //                   }
+  //                 />
+  //               )}
+
+  //               {item.children.sort(compareTreeItems).map((sortItem) => {
+  //                 return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
+  //               })}
+  //             </HostItem>
+  //           );
+  //         })}
+  //       </SimpleTreeView>
+  //     </Box>
+  //   );
+  //   setKeyNodeList(newKeyNodeList);
+  //   return tree;
+  // }, [
+  //   expanded,
+  //   providerNodeTree,
+  //   selectedItems,
+  //   rosCtx,
+  //   settingsCtx.changed,
+  //   rosCtx.nodeMap,
+  //   // handleToggle, <= causes too many re-renders
+  //   // handleSelect, <= causes too many re-renders
+  //   // getMasterSyncNode,     <= causes too many re-renders
+  //   // handleDoubleClick,     <= causes too many re-renders
+  //   // getProviderTags,       <= causes too many re-renders
+  //   // selectNodesFromLaunch, <= causes too many re-renders
+  //   // onRemoveLaunch,        <= causes too many re-renders
+  //   // onReloadLaunch,        <= causes too many re-renders
+  //   // toggleMasterSync,      <= causes too many re-renders
+  //   // createSingleTerminalCmdPanel,  <= causes too many re-renders
+  //   // buildHostTreeViewItem, <= causes too many re-renders
+  //   // setKeyNodeList,        <= causes too many re-renders
+  // ]);
+
+  // const newKeyNodeList: { key: string; idGlobal: string }[] = [];
+  // setKeyNodeList(newKeyNodeList);
+  return (
+    <Box
+      width="100%"
+      height="100%"
+      overflow="auto"
+      onClick={() => {
+        // deselect topics
+        setSelectedItems([]);
+      }}
+    >
+      {(!rosCtx.providers || rosCtx.providers.length === 0) && (
+        <Alert severity="info">
+          <AlertTitle>No providers available</AlertTitle>
+          Please connect to a ROS provider
+        </Alert>
+      )}
+      <SimpleTreeView
+        onClick={(event) => {
+          // enable deselection
+          event.stopPropagation();
         }}
+        // apiRef={apiRef}
+        aria-label="node list"
+        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
+        multiSelect
+        expandedItems={expanded}
+        // sx={{ height: '100%' }}
+        selectedItems={selectedItems}
+        onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleToggle(event, itemIds)}
+        onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleSelect(event, itemIds)}
+        expansionTrigger={"iconContainer"}
+        // selectionPropagation={{ parents: true, descendants: true }}
       >
-        {(!rosCtx.providers || rosCtx.providers.length === 0) && (
-          <Alert severity="info">
-            <AlertTitle>No providers available</AlertTitle>
-            Please connect to a ROS provider
-          </Alert>
-        )}
-        <SimpleTreeView
-          onClick={(event) => {
-            // enable deselection
-            event.stopPropagation();
-          }}
-          // apiRef={apiRef}
-          aria-label="node list"
-          slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-          multiSelect
-          expandedItems={expanded}
-          // sx={{ height: '100%' }}
-          selectedItems={selectedItems}
-          onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
-            handleToggle(event, itemIds)
+        {providerNodeTree?.sort(compareTreeProvider).map((item) => {
+          let providerIsAvailable = false;
+          let p = rosCtx.getProviderById(item.providerId as string, true);
+          if (p?.isAvailable()) {
+            providerIsAvailable = true;
           }
-          onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
-            handleSelect(event, itemIds)
+          if (!p) {
+            // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
+            // We create a new "not connected" provider.
+            if (item.providerId) {
+              p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
+              p.id = item.providerId;
+            } else {
+              return "";
+            }
           }
-          expansionTrigger={"iconContainer"}
-          // selectionPropagation={{ parents: true, descendants: true }}
-        >
-          {providerNodeTree?.sort(compareTreeProvider).map((item) => {
-            let providerIsAvailable = false;
-            let p = rosCtx.getProviderById(item.providerId as string, true);
-            if (p?.isAvailable()) {
-              providerIsAvailable = true;
-            }
-            if (!p) {
-              // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
-              // We create a new "not connected" provider.
-              if (item.providerId) {
-                p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
-                p.id = item.providerId;
-              } else {
-                return "";
-              }
-            }
-            // loop through available hosts
-            return (
-              <HostItem
-                key={p.id}
-                provider={p}
-                stopNodes={(idGlobalNodes: string[]) => {
-                  stopNodes(idGlobalNodes);
-                }}
-                onDoubleClick={(event: React.MouseEvent, id: string) => {
-                  handleDoubleClick(event, id);
-                }}
-              >
-                {/* Show launch files if host is available (have children) */}
-                {providerIsAvailable && (
-                  <LaunchFileList
-                    onMouseOver={(event: React.MouseEvent) => {
-                      event.stopPropagation();
-                    }}
-                    providerId={p.id}
-                    launchContentList={p.launchFiles}
-                    selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
-                      selectNodesFromLaunch(providerId, launch)
-                    }
-                    onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
-                      onRemoveLaunch(providerId, path, masteruri)
-                    }
-                    onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
-                      onReloadLaunch(providerId, path, masteruri)
-                    }
-                  />
-                )}
+          // loop through available hosts
+          return (
+            <HostItem
+              key={p.id}
+              provider={p}
+              stopNodes={(idGlobalNodes: string[]) => {
+                stopNodes(idGlobalNodes);
+              }}
+              onDoubleClick={(event: React.MouseEvent, id: string) => {
+                handleDoubleClick(event, id);
+              }}
+            >
+              {/* Show launch files if host is available (have children) */}
+              {providerIsAvailable && (
+                <LaunchFileList
+                  onMouseOver={(event: React.MouseEvent) => {
+                    event.stopPropagation();
+                  }}
+                  providerId={p.id}
+                  launchContentList={p.launchFiles}
+                  selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
+                    selectNodesFromLaunch(providerId, launch)
+                  }
+                  onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
+                    onRemoveLaunch(providerId, path, masteruri)
+                  }
+                  onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
+                    onReloadLaunch(providerId, path, masteruri)
+                  }
+                />
+              )}
 
-                {item.children.sort(compareTreeItems).map((sortItem) => {
-                  return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
-                })}
-              </HostItem>
-            );
-          })}
-        </SimpleTreeView>
-      </Box>
-    );
-    setKeyNodeList(newKeyNodeList);
-    return tree;
-  }, [
-    expanded,
-    providerNodeTree,
-    selectedItems,
-    rosCtx,
-    settingsCtx.changed,
-    rosCtx.nodeMap,
-    // handleToggle, <= causes too many re-renders
-    // handleSelect, <= causes too many re-renders
-    // getMasterSyncNode,     <= causes too many re-renders
-    // handleDoubleClick,     <= causes too many re-renders
-    // getProviderTags,       <= causes too many re-renders
-    // selectNodesFromLaunch, <= causes too many re-renders
-    // onRemoveLaunch,        <= causes too many re-renders
-    // onReloadLaunch,        <= causes too many re-renders
-    // toggleMasterSync,      <= causes too many re-renders
-    // createSingleTerminalCmdPanel,  <= causes too many re-renders
-    // buildHostTreeViewItem, <= causes too many re-renders
-    // setKeyNodeList,        <= causes too many re-renders
-  ]);
-
-  return generateTree;
+              {item.children.sort(compareTreeItems).map((sortItem) => {
+                return buildHostTreeViewItem(item.providerId as string, sortItem);
+              })}
+            </HostItem>
+          );
+        })}
+      </SimpleTreeView>
+    </Box>
+  );
 }

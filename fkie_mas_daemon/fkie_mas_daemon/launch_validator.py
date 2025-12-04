@@ -16,9 +16,9 @@ from fkie_mas_pylib import ros_pkg
 class LaunchValidator(object):
 
     def __init__(self):
-        self.launch_xsd = ros_pkg.get_share_files_path_from_package(
-            'fkie_mas_daemon', 'launch.xsd')
-        print('self.launch_xsd', self.launch_xsd)
+        # self.launch_xsd = ros_pkg.get_share_files_path_from_package(
+        #     'fkie_mas_daemon', 'launch.xsd')
+        # print('self.launch_xsd', self.launch_xsd)
         self.xmlschema = None
         # open and read schema file
         # TODO: fix xml launch schema

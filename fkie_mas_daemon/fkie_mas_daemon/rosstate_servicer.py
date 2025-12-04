@@ -31,6 +31,8 @@ from fkie_mas_pylib.defines import NM_NAMESPACE
 from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
 from fkie_mas_pylib.interface.launch_interface import LaunchContent
 from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
+from fkie_mas_pylib.interface.runtime_interface import RosComposable
+from fkie_mas_pylib.interface.runtime_interface import RosLifecycleState
 from fkie_mas_pylib.interface.runtime_interface import RosService
 from fkie_mas_pylib.interface.runtime_interface import RosTopicId
 from fkie_mas_pylib.interface.runtime_interface import RosTopic
@@ -66,44 +68,62 @@ except:
     print("Can't include rcl_interfaces.srv.GetLoggerLevels: logger interface disabled!")
 
 
-ENDPOINT_TIMEOUT_SEC = 120.0
+RATE_CHECK_DISCOVERY_NODE_HZ = 1.0
 
 
 class RosStateServicer:
 
-    def __init__(self, websocket: WebSocketServer, monitor_servicer: MonitorServicer = None, test_env=False):
+    def __init__(self, websocket: WebSocketServer, monitor_servicer: MonitorServicer = None, endpoint_notification_interval: int = 61.0, test_env=False):
         Log.info("Create ros_state servicer")
+        self._endpoint_timeout_sec = endpoint_notification_interval * 2.0 + 1.0
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._endpoints_ts: Dict[str, float] = {}  # uri : timestamp
         self._ros_node_list: List[RosNode] = []
+        self._ros_node_list_str: str = json.dumps(self._ros_node_list, cls=SelfEncoder)
+        self._ros_topic_list: List[RosNode] = []
+        self._ros_topic_list_str: str = json.dumps(self._ros_topic_list, cls=SelfEncoder)
+        self._ros_service_list: List[RosNode] = []
+        self._ros_service_list_str: str = json.dumps(self._ros_service_list, cls=SelfEncoder)
         self._ros_service_dict: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService] = {}
         self._ros_topic_dict: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic] = {}
         self._ros_node_list_mutex = threading.RLock()
+        self._ros_topic_list_mutex = threading.RLock()
+        self._ros_service_list_mutex = threading.RLock()
+        self._ros_lifecycle_mutex = threading.RLock()
+        self._ros_composable_mutex = threading.RLock()
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
         self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
-        self._update_participants = True
         self._force_refresh = False
         self._ts_state_updated = 0
         self._ts_state_notified = 0
         self._last_seen_participant_count = 0
-        self._rate_check_discovery_node = 1  # Hz
         self._thread_check_discovery_node = None
+        self._check_delay = 1.0 / RATE_CHECK_DISCOVERY_NODE_HZ
         self._on_shutdown = False
-        self._state_jsonify = RosStateJsonify(monitor_servicer)
+        self._state_jsonify = RosStateJsonify(cb_nodes=self._callback_nodes,
+                                              cb_topics=self._callback_topics,
+                                              cb_services=self._callback_services,
+                                              cb_composables=self._callback_composable_nodes,
+                                              cb_lifecycle=self._callback_lifecycle_state,
+                                              monitor_servicer=monitor_servicer)
         self.websocket = websocket
         self.monitor_servicer = monitor_servicer
+        self._lifecycle_state: List[RosLifecycleState] = []
+        self._composables_nodes: List[RosComposable] = []
         self._discovered_nodes_count = 0
         self._topic_types = ""
         self._timestamp = 0
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
-        websocket.register("ros.nodes.get_services", self.get_service_list)
-        websocket.register("ros.nodes.get_topics", self.get_topic_list)
+        websocket.register("ros.services.get_list", self.get_service_list)
+        websocket.register("ros.topics.get_list", self.get_topic_list)
         websocket.register("ros.nodes.get_loggers", self.get_loggers)
         websocket.register("ros.nodes.set_logger_level", self.set_logger_level)
         websocket.register("ros.nodes.stop_node", self.stop_node)
+        websocket.register("ros.nodes.get_lifecycle", self.get_lifecycle)
+        websocket.register("ros.nodes.get_composable", self.get_composable)
         websocket.register("ros.subscriber.stop", self.stop_subscriber)
         websocket.register("ros.provider.get_timestamp", self.get_provider_timestamp)
 
@@ -132,6 +152,65 @@ class RosStateServicer:
         self._lock_check = threading.RLock()
         self._thread_check_discovery_node = threading.Thread(target=self._check_discovery_node, daemon=True)
         self._thread_check_discovery_node.start()
+
+    def get_lifecycle(self) -> List[RosLifecycleState]:
+        with self._ros_lifecycle_mutex:
+            return self._lifecycle_state
+
+    def get_composable(self) -> List[RosComposable]:
+        with self._ros_composable_mutex:
+            return self._composables_nodes
+
+    def _callback_lifecycle_state(self, states: List[RosLifecycleState]):
+        with self._ros_lifecycle_mutex:
+            # remove from current list
+            filtered_list = []
+            for state in self._lifecycle_state:
+                if len([state for lc in states if lc.id == state.id]) == 0:
+                    filtered_list.append(state)
+            filtered_list.extend(states)
+            self._lifecycle_state = filtered_list
+            self.websocket.publish('ros.nodes.lifecycle', {"lifecycle": states})
+
+    def _callback_composable_nodes(self, composables: List[RosComposable]):
+        with self._ros_composable_mutex:
+            # remove from current list
+            filtered_list = []
+            for state in self._composables_nodes:
+                if len([state for cm in composables if cm.nodeId == state.nodeId]) == 0:
+                    filtered_list.append(state)
+            filtered_list.extend(composables)
+            self._composables_nodes = filtered_list
+            self.websocket.publish('ros.nodes.composable', {"composable": composables})
+
+    def _callback_nodes(self, nodes: List[RosNode]):
+        new_nodes_str = json.dumps(nodes, cls=SelfEncoder)
+        with self._ros_node_list_mutex:
+            self._ros_node_list = nodes
+            self._ts_state_notified = time.time()
+            if self._ros_node_list_str != new_nodes_str:
+                self._ros_node_list_str = new_nodes_str
+                self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
+                # update local nodes of the monitor servicer
+                self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
+
+    def _callback_topics(self, topics: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]):
+        new_topic_str = json.dumps([v for v in topics.values()], cls=SelfEncoder)
+        with self._ros_topic_list_mutex:
+            self._ros_topic_list = topics
+            self._ts_state_notified = time.time()
+            if self._ros_topic_list_str != new_topic_str:
+                self._ros_topic_list_str = new_topic_str
+                self.websocket.publish('ros.topics.changed', {"timestamp": self._ts_state_notified})
+
+    def _callback_services(self, services: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]):
+        new_service_str = json.dumps([v for v in services.values()], cls=SelfEncoder)
+        with self._ros_service_list_mutex:
+            self._ros_service_list = services
+            self._ts_state_notified = time.time()
+            if self._ros_service_list_str != new_service_str:
+                self._ros_service_list_str = new_service_str
+                self.websocket.publish('ros.services.changed', {"timestamp": self._ts_state_notified})
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
@@ -184,56 +263,37 @@ class RosStateServicer:
                     self.publish_discovery_state()
                     with self._lock_check:
                         self._ts_state_updated = time.time()
-            # if a change was detected by discovery node we received _on_msg_state()
-            # therefor the self._ts_state_updated was updated
+            # If a change was detected by discovery node we received _on_msg_state().
+            # Therefor the self._ts_state_updated was updated.
+            # But we delay the check for changes by
             update_ros_state = False
             with self._lock_check:
                 if self._ts_state_updated > self._ts_state_notified:
-                    if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
+                    if time.time() - self._ts_state_notified > self._check_delay:
                         update_ros_state = True
             send_notification = False
-            participant_count = None
             # send only if websocket clients are connected
             if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
                 send_notification = True
-            else:
+
+            if send_notification:
                 try:
-                    participant_count = len(nmd.ros_node.get_node_names())
-                    if self._last_seen_participant_count != participant_count:
-                        send_notification = True
-                except Exception:
-                    pass
-            # as some services are called during the update, it may take some time
-            if send_notification and not self._state_jsonify.is_updating():
-                if participant_count is not None:
-                    self._last_seen_participant_count = participant_count
-                # trigger screen servicer to update
-                nmd.launcher.server.screen_servicer.system_change()
-                # participants should only be retrieved from discovery if they have also changed
-                update_participants = self._update_participants
-                self._update_participants = False
-                # create state
-                try:
-                    state = self._state_jsonify.get_nodes_as_json(
-                        self._ts_state_updated, update_participants, self._force_refresh)
+                    # trigger screen servicer to update
+                    nmd.launcher.server.screen_servicer.system_change()
+                    # trigger the update of the ros state
+                    # The updates are received by callback defined in the __init__()
+                    self._state_jsonify.update_state(self._force_refresh)
                     with self._ros_node_list_mutex:
-                        # set status only with lock, as this method runs in a thread
                         self._force_refresh = False
-                        self._ros_node_list = state
-                        self._ros_service_dict = self._state_jsonify.get_services()
-                        self._ros_topic_dict = self._state_jsonify.get_topics()
-                        self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
-                        skipped_one_with_service_calls = self._state_jsonify.count_last_states_with_service_calls() != 1
-                        if not self._state_jsonify.is_updating() and self._ts_state_notified < self._state_jsonify.timestamp_state():
-                            # skip the first update with service calls
-                            if skipped_one_with_service_calls:
-                                self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
-                                self._ts_state_notified = self._state_jsonify.timestamp_state()
                 except Exception:
                     import traceback
-                    print(traceback.format_exc())
+                    msg = traceback.format_exc()
+                    Log.warn(msg)
+                    warnings_group: SystemWarningGroup = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
+                    warnings_group.append(SystemWarning(msg=msg))
+                    self.monitor_servicer.update_warning_groups([warnings_group])
 
-            # check for timeouted provider
+            # check time jumps
             now = time.time()
             if now < self._timestamp:
                 time_jump_msg = "Time jump into past detected! Restart all ROS nodes, includes MAS nodes, please!"
@@ -244,11 +304,12 @@ class RosStateServicer:
                 self.monitor_servicer.update_warning_groups([w_time_jump])
             else:
                 self._timestamp = now
+            # check for timeouted provider
             with self._lock_check:
                 removed_uris = []
                 for uri, ts in self._endpoints_ts.items():
-                    if now - ts > ENDPOINT_TIMEOUT_SEC:
-                        Log.info(f"{self.__class__.__name__}: remove outdated daemon {uri}")
+                    if now - ts > self._endpoint_timeout_sec:
+                        Log.info(f"{self.__class__.__name__}: remove outdated daemon {uri}, not seen for {now - ts} sec")
                         if uri in self._endpoints:
                             del self._endpoints[uri]
                         removed_uris.append(uri)
@@ -256,7 +317,7 @@ class RosStateServicer:
                     del self._endpoints_ts[uri]
                 if len(removed_uris) > 0:
                     self._publish_masters()
-            time.sleep(1.0 / self._rate_check_discovery_node)
+            time.sleep(self._check_delay)
 
     def stop(self):
         '''
@@ -283,9 +344,6 @@ class RosStateServicer:
             self.topic_state_publisher_count = nmd.ros_node.count_publishers(
                 self.topic_name_state)
             self.publish_discovery_state()
-        if msg.type == 0:
-            # update participants on on next ros state update
-            self._update_participants = True
         with self._lock_check:
             self._ts_state_updated = time.time()
 
@@ -307,8 +365,8 @@ class RosStateServicer:
         :param msg: the received message
         :type msg: fkie_mas_msgs.Endpoint<XXX>
         '''
-        Log.info(
-            f"{self.__class__.__name__}: new message on {self.topic_name_endpoint}")
+        Log.debug(
+            f"{self.__class__.__name__}: new endpoint on {self.topic_name_endpoint}: {msg.uri}")
         is_new = False
         with self._lock_check:
             if msg.on_shutdown:
@@ -330,15 +388,15 @@ class RosStateServicer:
             self._endpoints_ts[msg.uri] = time.time()
 
     def get_provider_list(self) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
         with self._lock_check:
             return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]; forceRefresh: {forceRefresh}")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]; forceRefresh: {forceRefresh}")
         with self._ros_node_list_mutex:
-            node_list: List[RosNode] = self._get_ros_node_list(forceRefresh)
-            return json.dumps(node_list, cls=SelfEncoder)
+            self._get_ros_node_list(forceRefresh)
+            return self._ros_node_list_str
 
     def _topic_in_filter(self, topic_name: str, topic_type: str, filter: List[RosTopicId]) -> bool:
         if len(filter) == 0:
@@ -355,25 +413,29 @@ class RosStateServicer:
         return False
 
     def get_service_list(self, filter: List[RosTopicId] = []) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_services]")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.topics.get_list]")
         with self._ros_node_list_mutex:
-            result: List[RosService] = []
-            for id, service in self._ros_service_dict.items():
-                if self._topic_in_filter(id[0], id[1], filter):
-                    result.append(service)
-            return json.dumps(result, cls=SelfEncoder)
+            filtered: List[RosService] = []
+            if len(filter) > 0:
+                for id, service in self._ros_service_dict.items():
+                    if self._topic_in_filter(id[0], id[1], filter):
+                        filtered.append(service)
+                return json.dumps(filtered, cls=SelfEncoder)
+            return self._ros_service_list_str
 
     def get_topic_list(self, filter: List[RosTopicId] = []) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_topics]")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.services.get_list]")
         with self._ros_node_list_mutex:
-            result: List[RosTopic] = []
-            for id, topic in self._ros_topic_dict.items():
-                if self._topic_in_filter(id[0], id[1], filter):
-                    result.append(topic)
-            return json.dumps(result, cls=SelfEncoder)
+            filtered: List[RosTopic] = []
+            if len(filter) > 0:
+                for id, topic in self._ros_topic_dict.items():
+                    if self._topic_in_filter(id[0], id[1], filter):
+                        filtered.append(topic)
+                return json.dumps(filtered, cls=SelfEncoder)
+            return self._ros_topic_list_str
 
     def get_loggers(self, name: str, loggers: List[str] = []) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', loggers: {loggers}")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', loggers: {loggers}")
         if not HAS_LOGGER_INTERFACE:
             raise Exception("ros2 version on this client does not support logger interface!")
         logger_names = loggers
@@ -404,7 +466,7 @@ class RosStateServicer:
         return json.dumps(loggerConfigs, cls=SelfEncoder)
 
     def set_logger_level(self, name: str, loggers: List[LoggerConfig]) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
         if not HAS_LOGGER_INTERFACE:
             raise Exception("ros2 version on this client does not support logger interface!")
         # request the current logger
@@ -437,9 +499,18 @@ class RosStateServicer:
         unloaded = False
         result = json.dumps({'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
         if node is not None:
+            if not node.container_name:
+                # composable node are determine by service call.
+                # we have to search in composable state for the node
+                with self._ros_composable_mutex:
+                    for state in self._composables_nodes:
+                        if node.name in state.nodes:
+                            node.container_name = state.containerName
+                            break
             if node.container_name:
                 unloaded = self.stop_composed_node(node)
             if not unloaded:
+                # it was not a composable node -> try to stop
                 result = nmd.launcher.server.screen_servicer.kill_node(node.name, signal.SIGTERM)
         if unloaded:
             result = json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
@@ -454,7 +525,7 @@ class RosStateServicer:
         return self.stop_node(os.path.join(ns, name))
 
     def get_provider_timestamp(self, timestamp) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
 
     def stop_composed_node(self, node: RosNode) -> bool:
@@ -483,7 +554,7 @@ class RosStateServicer:
             else:
                 Log.warn(f"{self.__class__.__name__}: -> Container node '{node.container_name}' not found")
         except Exception as err:
-            print(f"{err}")
+            Log.warn(f"{err}")
         return False
 
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
@@ -504,6 +575,7 @@ class RosStateServicer:
             self._force_refresh = True
         if (self._ros_node_list is None or forceRefresh) and not self._state_jsonify.is_updating():
             self._ros_node_list = []
+            self._ros_node_list_str = json.dumps(self._ros_node_list, cls=SelfEncoder)
             self._ros_service_dict = {}
             self._ros_topic_dict = {}
         return self._ros_node_list

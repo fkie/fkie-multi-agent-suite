@@ -162,9 +162,6 @@ export default class RosNode {
 
   dynamicReconfigureServices: string[] = [];
 
-  lifecycle_state?: string;
-  lifecycle_available_transitions?: { label: string; id: number }[];
-
   ignore_timer?: boolean;
 
   countSameName: number = 0;
@@ -212,12 +209,12 @@ export default class RosNode {
   public getLaunchComposableContainer(): string | null {
     if (this.launchPath) {
       const launchInfo = this.launchInfo.get(this.launchPath);
-      if (launchInfo?.composable_container) {
+      if (launchInfo?.composable_container && launchInfo?.composable_container !== launchInfo?.node_name) {
         return launchInfo?.composable_container;
       }
     } else if (this.launchInfo.size === 1) {
       const launchInfo = this.launchInfo.values().next().value;
-      if (launchInfo?.composable_container) {
+      if (launchInfo?.composable_container && launchInfo?.composable_container !== launchInfo?.node_name) {
         return launchInfo?.composable_container;
       }
     }
@@ -226,11 +223,15 @@ export default class RosNode {
 
   public getAllContainers(): string[] {
     const result: string[] = [];
-    if (this.container_name) {
+    if (this.container_name && this.container_name !== this.name) {
       result.push(this.container_name);
     }
     for (const launchInfo of this.launchInfo.values()) {
-      if (launchInfo.composable_container && !result.includes(launchInfo.composable_container)) {
+      if (
+        launchInfo.composable_container &&
+        launchInfo.composable_container !== this.name &&
+        !result.includes(launchInfo.composable_container)
+      ) {
         result.push(launchInfo.composable_container);
       }
     }

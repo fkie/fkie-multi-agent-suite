@@ -285,6 +285,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self._load_node_request = None
         if self.composable_container:
             self._load_node_request = self._create_composed_load_request(self._launch_context)
+        if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
+            self.composable_container = self.node_name
 
         #  remap_args: List[Tuple[str, str]] = None,
         #  output: str = '',
@@ -1060,7 +1062,7 @@ class LaunchConfig(object):
         for item in self.nodes():
             if (item.unique_name == name):
                 return item
-        Log.warn("Node '%s' NOT found" % name)
+        Log.debug(f"Node '{name}' NOT found; {self.filename}; nodes: {len(self._nodes)}")
         return None
 
     def run_node(self, name: str, ignore_timer=False) -> str:
@@ -1079,7 +1081,7 @@ class LaunchConfig(object):
             t.start()
             # TODO: add executable to observed files
             return f"{name} will be started in {node.timer_period} seconds"
-        if node.composable_container:
+        if node.composable_container and node.composable_container != node.node_name:
             # load plugin in container
             Log.info(f"Load node='{node.unique_name}'; as plugin into container='{node.composable_container}';")
             # skip check if container is running, it is done by the GUI

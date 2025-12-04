@@ -17,6 +17,8 @@ export default class SystemWarning {
    */
   hint: string | undefined;
 
+  timestamp?: number
+
   constructor(msg: string, details: string, hint: string) {
     this.msg = msg;
     this.details = details;

@@ -1,7 +1,9 @@
 /* eslint-disable max-classes-per-file */
 import { ConnectConfig } from "ssh2";
 import {
+  Composable,
   LaunchContent,
+  LifecycleState,
   PathEvent,
   ProviderLaunchConfiguration,
   RosNode,
@@ -241,3 +243,13 @@ export class EventNodeDiagnostic {
     this.node = node;
   }
 }
+
+export type TEventNodeLifecycle = {
+  provider: Provider;
+  lifecycle: LifecycleState;
+};
+
+export type TEventNodeComposable = {
+  provider: Provider;
+  composable: Composable;
+};

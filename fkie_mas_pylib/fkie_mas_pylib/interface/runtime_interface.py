@@ -5,6 +5,7 @@ import platform
 import psutil
 from typing import List, Dict, Union, Tuple
 import re
+import time
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib import names
 
@@ -194,6 +195,21 @@ class RosTopicId:
     def __str__(self):
         return f"{self.name}#{self.msg_type}"
 
+    def __hash__(self):
+        return hash((self.name, self.msg_type))
+
+    def __eq__(self, other):
+        if isinstance(other, RosTopicId):
+            if self.name != other.name:
+                return False
+            if self.msg_type != other.msg_type:
+                return False
+            return True
+        return False
+
+    def __nq__(self, other):
+        return not self == other
+
 
 class RosService:
     def __init__(self, name: str, srv_type: str) -> None:
@@ -315,11 +331,33 @@ class RosNode:
         self.parameters: List[RosParameter] = []
         self.system_node = False
         self.enclave = ""
-        self.lifecycle_state: str = None
-        self.lifecycle_available_transitions: List[Tuple[str, int]] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class RosComposable:
+
+    def __init__(self, container_name: str, node_id: str, nodes: List[str] = None) -> None:
+        self.containerName = container_name
+        self.nodeId = node_id
+        self.nodes: List[str] = [] if nodes is None else nodes
+
+
+class LifecycleTransition:
+    def __init__(self, label: str, id: int) -> None:
+        self.label = label
+        self.id = id
+
+
+class RosLifecycleState:
+
+    def __init__(self, id: str, name: str, state: str = "unknown", available_transitions: List[LifecycleTransition] = None) -> None:
+        self.id = id
+        self.name = name
+        self.state = state
+        self.available_transitions: List[LifecycleTransition] = [
+        ] if available_transitions is None else available_transitions
 
 
 class RosProvider:
@@ -486,6 +524,7 @@ class SystemWarning:
         self.msg = msg
         self.details = details
         self.hint = hint
+        self.timestamp = time.time()
 
 
 class SystemWarningGroup:

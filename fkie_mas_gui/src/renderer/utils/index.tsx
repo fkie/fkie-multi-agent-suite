@@ -154,3 +154,11 @@ export function idFromDDSLocations(locations: string[]): string {
   }
   return `${locations}`;
 }
+
+export function tsStr(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, "0"); // Stunden (00-23)
+  const minutes = String(date.getMinutes()).padStart(2, "0"); // Minuten (00-59)
+  const seconds = String(date.getSeconds()).padStart(2, "0"); // Sekunden (00-59)
+  const ms = String(date.getMilliseconds()).padStart(3, "0"); // Millisekunden (00-999)
+  return `${hours}:${minutes}:${seconds}.${ms}`;
+}

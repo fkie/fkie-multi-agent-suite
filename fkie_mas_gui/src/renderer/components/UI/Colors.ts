@@ -191,6 +191,17 @@ export const TagColors = [
   "purple",
 ];
 
+export function getTagColor(text: string): string {
+  // generate hashCode from text
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash << 5) - hash + text.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  // determine a color (map 31 unsigned bits to color list)
+  const index = Math.floor((Math.abs(hash) / 0x80000000) * TagColors.length);
+  return TagColors[index];
+}
 
 export function averageColor(colors: string[], isDarkMode: boolean): string {
   let totalR = 0;

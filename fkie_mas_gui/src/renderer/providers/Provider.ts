@@ -6,6 +6,7 @@ import { TagColors, colorFromHostname } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import {
+  Composable,
   DaemonVersion,
   DiagnosticArray,
   DiagnosticInfo,
@@ -22,6 +23,7 @@ import {
   LaunchNodeInfo,
   LaunchNodeReply,
   LaunchPublishMessage,
+  LifecycleState,
   LogPathItem,
   LoggerConfig,
   PathEvent,
@@ -51,6 +53,8 @@ import ConnectionState from "./ConnectionState";
 import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
 import RosProviderState from "./RosProviderState";
 import {
+  EVENT_NODE_COMPOSABLE,
+  EVENT_NODE_LIFECYCLE,
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_DISCOVERED,
@@ -85,6 +89,8 @@ import {
   EventProviderSubscriberEvent,
   EventProviderTimeDiff,
   EventProviderWarnings,
+  TEventNodeComposable,
+  TEventNodeLifecycle,
 } from "./events";
 import WebsocketConnection from "./websocket/WebsocketConnection";
 
@@ -174,6 +180,8 @@ export default class Provider implements IProvider {
   rosTopics: RosTopic[] = [];
   screens: ScreensMapping[] = [];
   diagnosticInfo: DiagnosticInfo = new DiagnosticInfo();
+  lifecycle: LifecycleState[] = [];
+  composable: Composable[] = [];
 
   /** List of nodes with same GUID */
   sameIdDict: { [guid: string]: string[] } = {};
@@ -268,10 +276,14 @@ export default class Provider implements IProvider {
       { uri: URI.ROS_DISCOVERY_READY, callback: this.callbackDiscoveryReady },
       { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateRosNodes },
       { uri: URI.ROS_NODES_CHANGED, callback: this.updateRosNodes },
+      { uri: URI.ROS_SERVICES_CHANGED, callback: this.callbackServicesChanged },
+      { uri: URI.ROS_TOPICS_CHANGED, callback: this.callbackTopicsChanged },
       { uri: URI.ROS_PATH_CHANGED, callback: this.callbackChangedFile },
       { uri: URI.ROS_SCREEN_LIST, callback: this.callbackScreensUpdate },
       { uri: URI.ROS_PROVIDER_WARNINGS, callback: this.callbackProviderWarnings },
       { uri: URI.ROS_PROVIDER_DIAGNOSTICS, callback: this.callbackDiagnosticsUpdate },
+      { uri: URI.ROS_NODES_LIFECYCLE, callback: this.callbackLifecycle },
+      { uri: URI.ROS_NODES_COMPOSABLE, callback: this.callbackComposable },
     ];
   };
 
@@ -289,9 +301,15 @@ export default class Provider implements IProvider {
           // this.updateScreens();  <. this request is performed while update nodes
           // this.launchGetList();
           await this.updateRosNodes({}, false);
+          await this.updateLaunchContent();
+          await this.updateScreens();
           await this.updateTimeDiff();
           await this.updateProviderList();
           await this.updateDiagnostics(null);
+          await this.getLifecycle();
+          await this.getComposable();
+          await this.updateRosServices();
+          await this.updateRosTopics();
           return true;
         }
         return false;
@@ -652,7 +670,6 @@ export default class Provider implements IProvider {
     const daemonVersion: DaemonVersion | null = await this.makeCall(URI.ROS_DAEMON_VERSION, [], true).then(
       (value: TResultData) => {
         if (value.result) {
-          console.log(`value as DaemonVersion: ${JSON.stringify(value.data as DaemonVersion)}`);
           return value.data as DaemonVersion;
         }
         error = value.message;
@@ -768,8 +785,8 @@ export default class Provider implements IProvider {
       guid: string | null;
       is_container: boolean | null;
       container_name: string | null;
-      lifecycle_state: string | null;
-      lifecycle_available_transitions: [string, number][] | null;
+      // lifecycle_state: string | null;
+      // lifecycle_available_transitions: [string, number][] | null;
     }
     const rawNodeList = await this.makeCall(URI.ROS_NODES_GET_LIST, [forceRefresh], true).then((value: TResultData) => {
       if (value.result) {
@@ -824,14 +841,14 @@ export default class Provider implements IProvider {
           if (n.container_name) {
             rn.container_name = n.container_name;
           }
-          if (n.lifecycle_state) {
-            rn.lifecycle_state = n.lifecycle_state;
-          }
-          if (n.lifecycle_available_transitions) {
-            rn.lifecycle_available_transitions = n.lifecycle_available_transitions.map((item) => {
-              return { label: item[0], id: item[1] };
-            });
-          }
+          // if (n.lifecycle_state) {
+          //   rn.lifecycle_state = n.lifecycle_state;
+          // }
+          // if (n.lifecycle_available_transitions) {
+          //   rn.lifecycle_available_transitions = n.lifecycle_available_transitions.map((item) => {
+          //     return { label: item[0], id: item[1] };
+          //   });
+          // }
           rn.publishers = n.publishers;
           rn.subscribers = n.subscribers;
           rn.services = n.services;
@@ -865,10 +882,10 @@ export default class Provider implements IProvider {
   }
 
   /**
-   * Get list of available service using the uri URI.ROS_NODES_GET_SERVICES
+   * Get list of available services
    */
   public getServiceList: (filter: RosTopicId[]) => Promise<RosService[]> = async (filter = []) => {
-    const rawSrvList = await this.makeCall(URI.ROS_NODES_GET_SERVICES, [filter], true).then((value: TResultData) => {
+    const rawSrvList = await this.makeCall(URI.ROS_SERVICES_GET_LIST, [filter], true).then((value: TResultData) => {
       if (value.result) {
         return value.data as unknown as RosService[];
       }
@@ -880,10 +897,10 @@ export default class Provider implements IProvider {
   };
 
   /**
-   * Get list of available topics using the uri URI.ROS_NODES_GET_TOPICS
+   * Get list of available topics
    */
   public getTopicList: (filter: RosTopicId[]) => Promise<RosTopic[]> = async (filter = []) => {
-    const rawTopicsList = await this.makeCall(URI.ROS_NODES_GET_TOPICS, [filter], true).then((value: TResultData) => {
+    const rawTopicsList = await this.makeCall(URI.ROS_TOPICS_GET_LIST, [filter], true).then((value: TResultData) => {
       if (value.result) {
         return value.data as unknown as RosTopic[];
       }
@@ -1371,65 +1388,6 @@ export default class Provider implements IProvider {
       }
     }
 
-    // set tags for nodelets/composable and other tags)
-    const composableManagers: string[] = [];
-    for (const [idx, n] of this.rosNodes.entries()) {
-      // const nodeGroup = nodeGroups[n.name];
-      // if (nodeGroup) {
-      //   this.rosNodes[idx].capabilityGroup = nodeGroup;
-      // }
-      // Check if this is a nodelet/composable and assign tags accordingly.
-      const composableParents = n.getAllContainers();
-      const tags: TTag[] = [];
-      for (const item of composableParents) {
-        const composableParent = item.split("|").slice(-1).at(0);
-        if (composableParent) {
-          if (!composableManagers.includes(composableParent)) {
-            composableManagers.push(composableParent);
-          }
-          tags.push({
-            id: `nodelet-${composableParent}`,
-            data: "Nodelet",
-            color: TagColors[composableManagers.indexOf(composableParent) % TagColors.length],
-            tooltip: `Composable node, container: ${composableParent}`,
-          });
-        }
-      }
-      // mark nodes with same GUID
-      if (n.guid && this.sameIdDict[n.guid]?.length > 1) {
-        tags.push({
-          id: n.guid,
-          data: FingerprintIcon,
-          color: colorFromHostname(n.guid),
-          tooltip: `Nodes with same id ${n.guid}`,
-          onClick: (event: React.MouseEvent) => {
-            emitCustomEvent(EVENT_FILTER_NODES, eventFilterNodes(n.guid as string));
-            event?.stopPropagation();
-          },
-        });
-      }
-
-      if (tags.length > 0) {
-        this.rosNodes[idx].tags = tags;
-      }
-    }
-    // Assign tags to the found nodelet/composable managers.
-    for (const managerId of composableManagers) {
-      const node = this.rosNodes.find((n) => n.id === managerId || n.name === managerId);
-      if (node) {
-        const tag: TTag = {
-          id: "Manager",
-          data: "Manager",
-          color: TagColors[composableManagers.indexOf(node.id) % TagColors.length],
-          tooltip: "Manager of a composable nodes",
-        };
-        if (!node.tags) {
-          node.tags = [tag];
-        } else {
-          node.tags = [tag, ...node.tags.filter((item) => item.id !== tag.id)];
-        }
-      }
-    }
     return this.launchFiles.length > 0;
   };
 
@@ -1511,6 +1469,7 @@ export default class Provider implements IProvider {
     if (result) {
       this.screens = result;
       emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
+      await this.mergeNodeStates();
       return Promise.resolve(true);
     }
     return Promise.resolve(false);
@@ -1584,9 +1543,8 @@ export default class Provider implements IProvider {
         }
         this.launchFiles = launchList;
         emitCustomEvent(EVENT_PROVIDER_LAUNCH_LIST, new EventProviderLaunchList(this, this.launchFiles));
-
         this.daemon = true;
-
+        await this.mergeNodeStates();
         return true;
       }
 
@@ -2310,13 +2268,6 @@ export default class Provider implements IProvider {
     this.sameIdDict = sameIdDict;
     this.rosRunningNodes = nl;
     await this.mergeNodeStates();
-    await this.updateLaunchContent();
-    await this.mergeNodeStates();
-    if (await this.updateScreens()) {
-      await this.mergeNodeStates();
-    }
-    this.updateRosServices();
-    this.updateRosTopics();
     this.unlockRequest("updateRosNodes");
   };
 
@@ -2369,6 +2320,24 @@ export default class Provider implements IProvider {
     this.unlockRequest("updateRosTopics");
   };
 
+  private callbackServicesChanged: (msg: JSONObject) => void = async (msg) => {
+    this.logger?.debugInterface(URI.ROS_SERVICES_CHANGED, msg, "", this.id);
+    if (!msg) {
+      return;
+    }
+
+    this.updateRosServices();
+  };
+
+  private callbackTopicsChanged: (msg: JSONObject) => void = async (msg) => {
+    this.logger?.debugInterface(URI.ROS_TOPICS_CHANGED, msg, "", this.id);
+    if (!msg) {
+      return;
+    }
+
+    this.updateRosTopics();
+  };
+
   public callbackChangedFile: (msg: JSONObject) => void = async (msg) => {
     this.logger?.debugInterface(URI.ROS_PATH_CHANGED, msg, "", this.id);
     if (!msg) {
@@ -2409,10 +2378,115 @@ export default class Provider implements IProvider {
     if (!msg) {
       return;
     }
-
     const msgParsed: SystemWarningGroup[] = msg as unknown as SystemWarningGroup[];
     this.warnings = msgParsed;
     emitCustomEvent(EVENT_PROVIDER_WARNINGS, new EventProviderWarnings(this, msgParsed));
+  };
+
+  /**
+   * Methods to handle lifecycle
+   * Uri:
+   *  - ros.nodes.get_lifecycle
+   *  - ros.nodes.lifecycle
+   */
+
+  public getLifecycleForNode(id: string): LifecycleState | undefined {
+    for (const lc of this.lifecycle) {
+      if (lc.id === id) {
+        return lc;
+      }
+    }
+    return undefined;
+  }
+
+  public getLifecycle: () => Promise<LifecycleState[]> = async () => {
+    this.logger?.debug(`Trigger update lifecycle for ${this.id}`, "");
+    if (await this.lockRequest("getLifecycle")) {
+      return this.lifecycle;
+    }
+    const rawLifecycleList = await this.makeCall(URI.ROS_NODES_GET_LIFECYCLE, [], true).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as unknown as LifecycleState[];
+      }
+      this.logger?.error(`Provider [${this.id}]: Error at getLifecycle()`, `${value.message}`);
+      return [];
+    });
+
+    this.lifecycle = rawLifecycleList;
+    for (const lc of rawLifecycleList) {
+      emitCustomEvent(EVENT_NODE_LIFECYCLE, { provider: this, lifecycle: lc } as TEventNodeLifecycle);
+    }
+    this.unlockRequest("getLifecycle");
+    return Promise.resolve(rawLifecycleList);
+  };
+
+  private callbackLifecycle: (msg: JSONObject) => void = async (msg) => {
+    this.logger?.debugInterface(URI.ROS_NODES_LIFECYCLE, msg, "", this.id);
+    if (!msg) {
+      return;
+    }
+
+    const lifecycle: LifecycleState[] = msg.lifecycle as unknown as LifecycleState[];
+    this.lifecycle = [
+      ...this.lifecycle.filter((ci) => lifecycle.filter((nci) => nci.id === ci.id).length === 0),
+      ...lifecycle,
+    ];
+    for (const cl of lifecycle) {
+      emitCustomEvent(EVENT_NODE_LIFECYCLE, { provider: this, lifecycle: cl } as TEventNodeLifecycle);
+    }
+  };
+
+  /**
+   * Methods to handle composable nodes
+   * Uri:
+   *  - ros.nodes.get_composable
+   *  - ros.nodes.composable
+   */
+
+  public getComposableForNode(id: string): Composable | undefined {
+    for (const ci of this.composable) {
+      if (ci.nodeId === id) {
+        return ci;
+      }
+    }
+    return undefined;
+  }
+
+  public getComposable: () => Promise<Composable[]> = async () => {
+    this.logger?.debug(`Trigger update composable for ${this.id}`, "");
+    if (await this.lockRequest("getComposable")) {
+      return this.composable;
+    }
+    const rawComposableList = await this.makeCall(URI.ROS_NODES_GET_COMPOSABLE, [], true).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as unknown as Composable[];
+      }
+      this.logger?.error(`Provider [${this.id}]: Error at getLifecycle()`, `${value.message}`);
+      return [];
+    });
+
+    this.composable = rawComposableList;
+    for (const ci of rawComposableList) {
+      emitCustomEvent(EVENT_NODE_COMPOSABLE, { provider: this, composable: ci } as TEventNodeComposable);
+    }
+    this.unlockRequest("getComposable");
+    return Promise.resolve(rawComposableList);
+  };
+
+  private callbackComposable: (msg: JSONObject) => void = async (msg) => {
+    this.logger?.debugInterface(URI.ROS_NODES_COMPOSABLE, msg, "", this.id);
+    if (!msg) {
+      return;
+    }
+
+    const composable: Composable[] = msg.composable as unknown as Composable[];
+    this.composable = [
+      ...this.composable.filter((ci) => composable.filter((nci) => nci.nodeId === ci.nodeId).length === 0),
+      ...composable,
+    ];
+    for (const ci of composable) {
+      emitCustomEvent(EVENT_NODE_COMPOSABLE, { provider: this, composable: ci } as TEventNodeComposable);
+    }
   };
 
   private registerCallback: (uri: string, callback: (msg: JSONObject) => void) => void = async (uri, callback) => {

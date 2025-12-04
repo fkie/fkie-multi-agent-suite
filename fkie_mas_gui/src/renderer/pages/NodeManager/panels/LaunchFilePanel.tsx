@@ -23,7 +23,7 @@ export default function LaunchFilePanel(props: LaunchFilePanelProps): JSX.Elemen
   const settingsCtx = useContext(SettingsContext);
   const nodes: LaunchNodeInfo[] = launchContent.nodes?.filter((e) => !e.composable_container) || [];
   const composableNodes: TComposableNodes[] = (launchContent.nodes || [])
-    .filter((e: LaunchNodeInfo) => e.composable_container)
+    .filter((e: LaunchNodeInfo) => e.composable_container && e.composable_container !== e.node_name)
     .reduce((tree: TComposableNodes[], composableNode: LaunchNodeInfo) => {
       const manager = tree.find((n) => n.manager && n.manager === composableNode.composable_container);
       if (manager) {

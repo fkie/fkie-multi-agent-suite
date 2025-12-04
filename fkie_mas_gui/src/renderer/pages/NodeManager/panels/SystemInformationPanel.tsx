@@ -13,8 +13,11 @@ import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { SystemWarning } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
-import { generateUniqueId } from "@/renderer/utils";
+import { EVENT_PROVIDER_WARNINGS } from "@/renderer/providers/eventTypes";
+import { EventProviderWarnings } from "@/renderer/providers/events";
+import { generateUniqueId, tsStr } from "@/renderer/utils";
 import { JSONObject, TSystemInfo } from "@/types";
+import { useCustomEventListener } from "react-custom-events";
 
 interface SystemInformationPanelProps {
   providerId?: string;
@@ -79,7 +82,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
         addKey = true;
       }
       if (addKey) {
-        Object.assign(object, {[key]: nested});
+        Object.assign(object, { [key]: nested });
         return object;
       }
       return object;
@@ -91,6 +94,22 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
       setSystemInfoContent(filterNestObject(rosCtx.systemInfo));
     }
   }, [provider, filter]);
+
+  const updateWarnings: () => void = useCallback(() => {
+    if (!provider) return;
+    // join warnings to one list
+    let warnings: SystemWarning[] = [];
+    for (const w of provider.warnings) {
+      warnings = [...warnings, ...(w.warnings || [])];
+    }
+    setProviderWarnings(warnings);
+  }, [provider]);
+
+  useCustomEventListener(EVENT_PROVIDER_WARNINGS, (data: EventProviderWarnings) => {
+    if (provider?.id === data.provider.id) {
+      updateWarnings();
+    }
+  });
 
   useEffect(() => {
     if (provider) {
@@ -119,12 +138,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
       const versionDate = provider.daemonVersion.date ? ` (${provider.daemonVersion.date})` : "";
       infoContent["Daemon version"] = `${provider.daemonVersion.version}${versionDate}`;
       setProviderDetails(filterNestObject(infoContent));
-      // join warnings to one list
-      let warnings: SystemWarning[] = [];
-      for (const w of provider.warnings) {
-        warnings = [...warnings, ...(w.warnings || [])];
-      }
-      setProviderWarnings(warnings);
+      updateWarnings();
     }
   }, [provider, filter]);
 
@@ -235,14 +249,21 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
                   {providerWarnings.map((item) => {
                     return (
                       <Stack key={generateUniqueId()} sx={{ width: "100%" }}>
-                        <Typography variant="subtitle1" color="red">
-                          {item.msg}
-                        </Typography>
-                        <Typography paddingLeft={1} variant="body1">
+                        <Stack direction="row" spacing={1}>
+                          {item.timestamp && (
+                            <Typography variant="body1" fontSize="0.9em" color="#ff9800">
+                              {tsStr(new Date(item.timestamp * 1000 || 0))}:
+                            </Typography>
+                          )}
+                          <Typography variant="body1" fontSize="0.9em" color="#ff9800">
+                            {item.msg}
+                          </Typography>
+                        </Stack>
+                        <Typography paddingLeft={1} variant="body1" fontSize="0.8em" color="#ff9800">
                           {item.details}
                         </Typography>
                         {item.hint && (
-                          <Typography paddingLeft={1} variant="body1" fontStyle="italic">
+                          <Typography paddingLeft={1} variant="body1" fontSize="0.9em" fontStyle="italic">
                             Hint: {item.hint}
                           </Typography>
                         )}

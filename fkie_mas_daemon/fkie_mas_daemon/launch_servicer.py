@@ -399,6 +399,7 @@ class LaunchServicer(LoggingEventHandler):
         # load launch configuration
         try:
             # validate xml
+            # TODO: create a valid and complete Schema for ROS2 launch files
             self.xml_validator.validate(launchfile)
             # test for required args
             provided_arg_names = [arg.name for arg in request.args]

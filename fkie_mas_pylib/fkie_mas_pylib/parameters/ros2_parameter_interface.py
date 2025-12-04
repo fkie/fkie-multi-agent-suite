@@ -45,6 +45,7 @@ class ParameterInterface:
             node=self.global_node, include_hidden_services=self.include_hidden_nodes)
 
         wait_futures: List[WaitFuture] = []
+
         # create clients for nodes which have the service
         for node_name in node_names:
             if nodes is not None and node_name.full_name not in nodes:
@@ -52,8 +53,13 @@ class ParameterInterface:
             service_name = f'{node_name.full_name}/list_parameters'
             if service_name in service_names:
                 Log.debug(f"{self.__class__.__name__}:  list_parameters '{service_name}'")
-                ready = create_service_future(self.global_node, wait_futures, "list_parameters", node_name.full_name, service_name,
-                                              ListParameters, ListParameters.Request())
+                ready = create_service_future(self.global_node,
+                                              wait_futures=wait_futures,
+                                              type="list_parameters",
+                                              node_name=node_name.full_name,
+                                              service_name=service_name,
+                                              srv_type=ListParameters,
+                                              request=ListParameters.Request())
                 if not ready:
                     Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
                     errors.append(f"service '{service_name}' is not ready, skip")
@@ -84,8 +90,13 @@ class ParameterInterface:
             Log.debug(f"{self.__class__.__name__}:  get parameters '{service_name}'")
             request = GetParameters.Request()
             request.names = parameters
-            ready = create_service_future(self.global_node, wait_futures, "get_parameters", node_name, service_name,
-                                          GetParameters, request)
+            ready = create_service_future(self.global_node,
+                                          wait_futures=wait_futures,
+                                          type="get_parameters",
+                                          node_name=node_name,
+                                          service_name=service_name,
+                                          srv_type=GetParameters,
+                                          request=request)
             if not ready:
                 Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
                 errors.append(f"service '{service_name}' is not ready, skip")
@@ -118,8 +129,13 @@ class ParameterInterface:
             Log.debug(f"{self.__class__.__name__}:  describe parameters '{service_name}'")
             request = DescribeParameters.Request()
             request.names = parameters
-            ready = create_service_future(self.global_node, wait_futures, "describe_parameters", node_name, service_name,
-                                          DescribeParameters, request)
+            ready = create_service_future(self.global_node,
+                                          wait_futures=wait_futures,
+                                          type="describe_parameters",
+                                          node_name=node_name,
+                                          service_name=service_name,
+                                          srv_type=DescribeParameters,
+                                          request=request)
             if not ready:
                 Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
                 errors.append(f"service '{service_name}' is not ready, skip")
@@ -339,8 +355,13 @@ class ParameterInterface:
         Log.debug(f"{self.__class__.__name__}:  set_parameters '{service_name}'")
         request = SetParameters.Request()
         request.parameters = parameters
-        ready = create_service_future(node, wait_futures, "set_parameters", node_name, service_name,
-                                      SetParameters, request)
+        ready = create_service_future(node,
+                                      wait_futures=wait_futures,
+                                      type="set_parameters",
+                                      node_name=node_name,
+                                      service_name=service_name,
+                                      srv_type=SetParameters,
+                                      request=request)
         if not ready:
             Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
 
@@ -366,8 +387,13 @@ class ParameterInterface:
         Log.debug(f"{self.__class__.__name__}:  get_parameters '{service_name}'")
         request = GetParameters.Request()
         request.names = parameters
-        ready = create_service_future(node, wait_futures, "get_parameter", node_name, service_name,
-                                      GetParameters, request)
+        ready = create_service_future(node,
+                                      wait_futures=wait_futures,
+                                      type="get_parameter",
+                                      node_name=node_name,
+                                      service_name=service_name,
+                                      srv_type=GetParameters,
+                                      request=request)
         if not ready:
             Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
 

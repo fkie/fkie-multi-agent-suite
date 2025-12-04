@@ -18,6 +18,7 @@ from rclpy.action import ActionClient
 from rclpy.client import SrvType
 from rclpy.client import SrvTypeRequest
 from rclpy.client import SrvTypeResponse
+from rclpy.executors import MultiThreadedExecutor
 from fkie_mas_daemon.server import Server
 from fkie_mas_pylib.defines import NM_DAEMON_NAME
 from fkie_mas_pylib.defines import NM_NAMESPACE
@@ -60,8 +61,6 @@ class RosNodeLauncher(object):
             self.ros_node = rclpy.create_node(self.name, namespace=NM_NAMESPACE)
 
         nmd.ros_node = self.ros_node
-        # self.executor = MultiThreadedExecutor(num_threads=5)
-        # self.executor.add_node(self.ros_node)
         # set loglevel to DEBUG
         # nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
 
@@ -82,12 +81,14 @@ class RosNodeLauncher(object):
         self.server.shutdown()
         if rclpy.ok():
             rclpy.shutdown()
+        self.ros_node.destroy_node()
         print('bye!')
 
     def exception_handler(self, loop, error):
         pass
 
     def spin(self):
+        executor = MultiThreadedExecutor()
         try:
             # start server and load launch files provided by arguments
             self.success_start = self.server.start(
@@ -95,7 +96,9 @@ class RosNodeLauncher(object):
             if self.success_start:
                 self._load_launches()
                 # self.executor.spin()
-                rclpy.spin(self.ros_node)
+                executor.add_node(self.ros_node)
+                executor.spin()
+                # rclpy.spin(self.ros_node)
                 # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
             self.exit_gracefully(-1, None)

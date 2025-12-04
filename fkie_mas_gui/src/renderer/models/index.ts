@@ -45,6 +45,8 @@ import ProviderLaunchConfiguration from "./ProviderLaunchConfiguration";
 // Screen related imports
 import ScreensMapping from "./ScreensMapping";
 // Other structs
+import Composable from "./Composable";
+import LifecycleState, { TLifecycleTransition } from "./LifecycleState";
 import LogEvent, { LoggingLevel } from "./LogEvent";
 import LoggerConfig, { LogLevelType } from "./LoggerConfig";
 import LogPathItem from "./LogPathItem";
@@ -57,6 +59,7 @@ import SystemWarningGroup from "./SystemWarningGroup";
 import URI from "./uris";
 
 export {
+  Composable,
   DaemonVersion,
   DiagnosticArray,
   DiagnosticInfo,
@@ -83,6 +86,7 @@ export {
   LaunchNodeReply,
   LaunchPublishMessage,
   LaunchReturnStatus,
+  LifecycleState,
   LogEvent,
   LogLevelType,
   LogPathItem,
@@ -126,6 +130,7 @@ export {
     IncompatibleQos,
     RosParameterRange,
     RosParameterValue,
+    TLifecycleTransition,
     TRosMessageStruct,
     TServiceNodeInfo
   };

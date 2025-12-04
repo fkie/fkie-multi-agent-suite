@@ -16,6 +16,7 @@ import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import {
+  LifecycleState,
   RosNode,
   RosNodeStatus,
   RosParameter,
@@ -26,10 +27,11 @@ import {
 } from "@/renderer/models";
 import {
   EVENT_NODE_DIAGNOSTIC,
+  EVENT_NODE_LIFECYCLE,
   EVENT_PROVIDER_ROS_SERVICES,
   EVENT_PROVIDER_ROS_TOPICS,
 } from "@/renderer/providers/eventTypes";
-import { EventNodeDiagnostic } from "@/renderer/providers/events";
+import { EventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
 import SystemInformationPanel from "./SystemInformationPanel";
 
 function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): number {
@@ -50,6 +52,7 @@ export default function DetailsPanel(): JSX.Element {
   const [indexOfSelected, setIndexOfSelected] = useState<number>(0);
   const [nodeShow, setNodeShow] = useState<RosNode | undefined>(undefined);
   const [logPaths, setLogPaths] = useState({}); // {node.idGlobal: LogPathItem}
+  const [lifecycle, setLifecycle] = useState<LifecycleState | undefined>();
   const [updateDiagnostics, forceUpdateDiagnostics] = useReducer((x) => x + 1, 0);
   const [updateServices, forceUpdateServices] = useReducer((x) => x + 1, 0);
   const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
@@ -81,6 +84,12 @@ export default function DetailsPanel(): JSX.Element {
     setIndexOfSelected(0);
   }, [navCtx.selectedNodes]);
 
+  useEffect(() => {
+    if (!nodeShow) return;
+    const provider = rosCtx.getProviderById(nodeShow.providerId as string, true);
+    setLifecycle(provider?.getLifecycleForNode(nodeShow.id));
+  }, [nodeShow]);
+
   useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
     forceUpdateServices();
   });
@@ -92,6 +101,13 @@ export default function DetailsPanel(): JSX.Element {
   useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
     if (data.node.name === nodeShow?.name) {
       forceUpdateDiagnostics();
+    }
+  });
+
+  useCustomEventListener(EVENT_NODE_LIFECYCLE, (data: TEventNodeLifecycle) => {
+    if (!nodeShow) return;
+    if (data.lifecycle.id === nodeShow.id && data.provider.id === nodeShow.providerId) {
+      setLifecycle(data.lifecycle);
     }
   });
 
@@ -132,8 +148,13 @@ export default function DetailsPanel(): JSX.Element {
                 color: "inherit",
               }}
             >
-              <Typography variant="body1" style={getDiagnosticStyle(nodeShow.diagnostic?.diagnosticLevel || 0)} marginBottom={1}>
-                {getDiagnosticLevelName(nodeShow.diagnostic?.diagnosticLevel || 0)}: {nodeShow.diagnostic?.diagnosticMessage}
+              <Typography
+                variant="body1"
+                style={getDiagnosticStyle(nodeShow.diagnostic?.diagnosticLevel || 0)}
+                marginBottom={1}
+              >
+                {getDiagnosticLevelName(nodeShow.diagnostic?.diagnosticLevel || 0)}:{" "}
+                {nodeShow.diagnostic?.diagnosticMessage}
               </Typography>
             </Button>
           </Stack>
@@ -236,21 +257,21 @@ export default function DetailsPanel(): JSX.Element {
                 />
               </Stack>
             )}
-            {nodeShow.lifecycle_state && (
+            {lifecycle?.state && (
               <Stack direction="row" spacing={0.5}>
-                <Tag color="default" title="Lifecycle:" text={`${nodeShow.lifecycle_state}`} wrap />
+                <Tag color="default" title="Lifecycle:" text={`${lifecycle?.state}`} wrap />
               </Stack>
             )}
-            {(nodeShow.lifecycle_available_transitions || []).length > 0 && (
+            {/* {(lifecycle?.available_transitions || []).length > 0 && (
               <Stack direction="row" spacing={0.5}>
                 <Tag
                   color="default"
                   title="Lifecycle transitions:"
-                  text={`${JSON.stringify(nodeShow.lifecycle_available_transitions)}`}
+                  text={`${JSON.stringify(lifecycle?.available_transitions)}`}
                   wrap
                 />
               </Stack>
-            )}
+            )} */}
             {nodeShow.id && nodeShow.id !== nodeShow.name && (
               <Stack direction="row" spacing={0.5}>
                 <Tag color="default" title="ID:" text={`${nodeShow.id}`} wrap />
@@ -273,15 +294,15 @@ export default function DetailsPanel(): JSX.Element {
             )}
             {nodeShow.container_name ? (
               <Stack direction="row" spacing={0.5}>
-                <Tag color="default" title="Composable Container:" text={`${nodeShow.container_name}`} wrap />
+                <Tag color="default" title="Container:" text={`${nodeShow.container_name}`} wrap />
               </Stack>
             ) : (
               nodeShow.getAllContainers().length > 0 && (
                 <Stack direction="row" spacing={0.5}>
                   <Tag
                     color="default"
-                    title="Composable Container:"
-                    text={`${JSON.stringify(nodeShow.getAllContainers())}`}
+                    title="Container:"
+                    text={`${nodeShow.getAllContainers().length === 1 ? nodeShow.getAllContainers()[0] : JSON.stringify(nodeShow.getAllContainers())}`}
                     wrap
                   />
                 </Stack>
@@ -369,7 +390,7 @@ export default function DetailsPanel(): JSX.Element {
         )}
       </Stack>
     );
-  }, [nodeShow, showNodeInfo, logPaths]);
+  }, [nodeShow, showNodeInfo, logPaths, lifecycle]);
 
   const createTopicsView = useMemo(() => {
     if (!nodeShow) return <></>;
@@ -723,6 +744,7 @@ export default function DetailsPanel(): JSX.Element {
     showServices,
     showLaunchParameter,
     showDiagnosticHistory,
+    lifecycle,
     // onTopicClick,    <= causes unnecessary rebuilds
     // onServiceClick,  <= causes unnecessary rebuilds
     rosCtx,
@@ -748,7 +770,7 @@ export default function DetailsPanel(): JSX.Element {
               </Typography>
             </Stack>
           )}
-          <SystemInformationPanel providerId={navCtx.selectedProviders[0]}/>
+          <SystemInformationPanel providerId={navCtx.selectedProviders[0]} />
         </Stack>
       ) : (
         createDetailsView

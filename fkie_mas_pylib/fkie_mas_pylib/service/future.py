@@ -1,9 +1,15 @@
 import rclpy
+from rclpy.callback_groups import CallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.client import SrvType
 from rclpy.client import SrvTypeRequest
 from rclpy.node import Node
 import time
 from typing import List
+from typing import Optional
+
+
+DEFAULT_FEATURE_GROUP = ReentrantCallbackGroup()
 
 
 class WaitFuture:
@@ -32,8 +38,9 @@ class WaitFuture:
         self.finished = future.done()
 
 
-def create_service_future(node: Node, wait_futures: List[WaitFuture], type: str, node_name: str, service_name: str, srv_type: SrvType, request: SrvTypeRequest) -> bool:
-    client = node.create_client(srv_type, service_name)
+def create_service_future(node: Node, *, wait_futures: List[WaitFuture], type: str, node_name: str, service_name: str, srv_type: SrvType, request: SrvTypeRequest, callback_group: Optional[CallbackGroup] = None) -> bool:
+    client = node.create_client(srv_type, service_name,
+                                callback_group=callback_group if callback_group is not None else DEFAULT_FEATURE_GROUP)
     if client.service_is_ready():
         ros_future = client.call_async(request)
         wait_futures.append(WaitFuture(type, node_name, service_name, ros_future, client))
