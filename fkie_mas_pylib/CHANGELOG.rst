@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.0.0 (05.12.2025)
+------------------
+* Added new types for lifecycle and composable nodes
+* Fixed shutdown service clients if they are failed
+
 4.6.0 (24.11.2025)
 ------------------
 * Added id to RosTopic and RosService

@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.0.0 (05.12.2025)
+------------------
+* Changed algorithm for updating ros state in daemon
+* Applied to changed API for communication with GUI
+* Reduced log info output
+
 4.9.0 (28.11.2025)
 ------------------
 * added octet to input elements in publish panel

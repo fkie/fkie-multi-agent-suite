@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.0.0 (05.12.2025)
+------------------
+* Applied to changed API for communication with GUI
+
 4.2.0 (24.11.2025)
 ------------------
 * Added ROS graph change detection

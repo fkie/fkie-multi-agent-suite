@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.0.0 - 05.12.2025
+
+Added arm64 to build debs
+Documentation updated and relevant sections in the code adjusted
+Refactor workflow to support multiple OS and architectures
+Behavior changed to update ROS status
+Changed algorithm for updating ros state in daemon
+Fixed manager tag in nodes info
+Reduced log info output
+Changed connected info to success
+Fixed deselection topics/services on click on action button
+
 ## 4.9.0 - 28.11.2025
 
 Allow deselection of topics, services, and nodes
