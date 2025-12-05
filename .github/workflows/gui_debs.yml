@@ -7,9 +7,16 @@ on:
 
 jobs:
   node-js:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: amd64
+            platform: linux/amd64
     steps:
       - uses: actions/checkout@v4
         with:
