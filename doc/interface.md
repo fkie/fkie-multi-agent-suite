@@ -24,7 +24,7 @@ Each URI has one of the following types:
 | [ros.topics.get_list](#rostopicsget_list-rpc)                               | RPC  |
 | [ros.nodes.changed](#rosnodeschanged-pub)                                   | PUB  |
 | [ros.services.changed](#rosserviceschanged-pub)                             | PUB  |
-| [ros.nodes.changed](#rostopicschanged-pub)                                  | PUB  |
+| [ros.topics.changed](#rostopicschanged-pub)                                 | PUB  |
 | [ros.provider.list](#rosproviderlist-pub)                                   | PUB  |
 | [ros.provider.get_list](#rosproviderget_list-rpc)                           | RPC  |
 | [ros.provider.get_timestamp](#rosproviderget_timestamp-rpc)                 | RPC  |
