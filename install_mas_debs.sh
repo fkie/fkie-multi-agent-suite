@@ -97,6 +97,22 @@ if [[ "$ROS_DISTRO" != "noetic" ]]; then
     fi
 fi
 
+# -----------------------------------------------------------
+# Detect system architecture (amd64 / arm64)
+# -----------------------------------------------------------
+ARCH=$(dpkg --print-architecture)
+
+echo -e "Detected architecture: \e[36m$ARCH\e[0m"
+
+case "$ARCH" in
+    amd64|arm64)
+        ;;
+    *)
+        echo -e "❌ \e[31mUnsupported architecture: $ARCH\e[0m"
+        exit_with_no 1
+        ;;
+esac
+
 TMP_DIR=/tmp/mas-debs
 
 RELEASES_URL="https://api.github.com/repos/fkie/fkie-multi-agent-suite/releases"
@@ -196,7 +212,7 @@ function get_package() {
     # Search for the file in the releases
     LATEST_VERSION=""
     while read -r ASSET_NAME FILE_URL DIGEST; do
-        if [[ "$ASSET_NAME" == $PACKAGE*$OS_CODENAME*.deb ]]; then
+        if [[ "$ASSET_NAME" =~ ^${PACKAGE}.*_${ARCH}\.deb$ ]]; then
             VERSION=$(echo "$ASSET_NAME" | grep -oP '\d+\.\d+\.\d+')
             if [[ -n "$VERSION" ]]; then
                 if [[ ! -n "$LATEST_VERSION" ]] || dpkg --compare-versions $LATEST_VERSION lt $VERSION; then
@@ -237,7 +253,7 @@ function get_package() {
             DEBS_TO_INSTALL+=("$TMP_DIR/$DEB_FILE")
         fi
     else
-        echo -e "⚠️ \e[38;5;208m No .deb-file for '$PACKAGE' found.\e[0m"
+        echo -e "⚠️ \e[38;5;208m No .deb file for '$PACKAGE' (arch $ARCH) found.\e[0m"
     fi
 }
 
@@ -249,6 +265,7 @@ fi
 if [[ -z $NO_ROS ]]; then
     echo "Get dependency packages for Multi-Agent-Suite"
 
+    echo "OS_CODENAME" $OS_CODENAME
     OS_CODENAME=$(env -i bash -c '. /etc/os-release; echo $VERSION_CODENAME')
     if [[ "$OS_CODENAME" == "focal"  || "$OS_CODENAME" == "jammy" || "$OS_CODENAME" == "noble" ]]; then
         echo -e "detected OS_CODENAME=\e[36m$OS_CODENAME\e[0m"
