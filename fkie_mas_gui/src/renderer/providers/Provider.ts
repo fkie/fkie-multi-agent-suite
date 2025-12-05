@@ -1,8 +1,6 @@
-import { JSONObject, TResult, TResultData, TResultProcess, TSystemInfo, TTag } from "@/types";
+import { JSONObject, TResult, TResultData, TResultProcess, TSystemInfo } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
-import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { emitCustomEvent } from "react-custom-events";
-import { TagColors, colorFromHostname } from "../components/UI/Colors";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import {
@@ -45,7 +43,6 @@ import {
   SystemWarningGroup,
   URI,
 } from "../models";
-import { EVENT_FILTER_NODES, eventFilterNodes } from "../pages/NodeManager/layout/events";
 import { delay, generateUniqueId } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";

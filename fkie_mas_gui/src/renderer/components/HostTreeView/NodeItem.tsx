@@ -27,8 +27,8 @@ import {
   RosNodeStatus,
 } from "@/renderer/models";
 import { EVENT_FILTER_NODES, eventFilterNodes } from "@/renderer/pages/NodeManager/layout/events";
-import { EventNodeDiagnostic, TEventNodeComposable, TEventNodeLifecycle } from "@/renderer/providers/events";
-import { EVENT_NODE_COMPOSABLE, EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
+import { TEventNodeComposable, TEventNodeLifecycle } from "@/renderer/providers/events";
+import { EVENT_NODE_COMPOSABLE, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
 import { TRosMessageStruct } from "@/types/TRosMessageStruct";
