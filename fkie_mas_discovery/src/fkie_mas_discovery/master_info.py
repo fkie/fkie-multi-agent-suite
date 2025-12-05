@@ -1375,7 +1375,7 @@ class MasterInfo(object):
                     discover_state_publisher = topic.type in [
                         'fkie_mas_msgs/MasterState']
                     if not iffilter.is_ignored_publisher(n, name, topic.type):
-                        ros_topic.publisher.append(EndpointInfo(n, None, []))
+                        ros_topic.publisher.append(EndpointInfo(n, n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
                         # node.publishers.append(ros_topic)
                         node.publishers.append(ros_topic_id)
@@ -1388,7 +1388,7 @@ class MasterInfo(object):
                         ros_nodes[n] = node
                 for n in topic.subscriberNodes:
                     if not iffilter.is_ignored_subscriber(n, name, topic.type):
-                        ros_topic.subscriber.append(EndpointInfo(n, None, []))
+                        ros_topic.subscriber.append(EndpointInfo(n, n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
                         # node.subscribers.append(ros_topic)
                         node.subscribers.append(ros_topic_id)

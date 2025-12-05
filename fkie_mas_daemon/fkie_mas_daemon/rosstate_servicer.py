@@ -52,6 +52,7 @@ import os
 import json
 import signal
 import socket
+import sys
 import threading
 import time
 
@@ -190,6 +191,7 @@ class RosStateServicer:
             self._ts_state_notified = time.time()
             if self._ros_node_list_str != new_nodes_str:
                 self._ros_node_list_str = new_nodes_str
+                Log.info(f"new node list; size: {sys.getsizeof(new_nodes_str) / 1024 / 1024:,.4f} Mbit")
                 self.websocket.publish('ros.nodes.changed', {"timestamp": self._ts_state_notified})
                 # update local nodes of the monitor servicer
                 self.monitor_servicer.update_local_node_names(self._state_jsonify.get_local_node_names())
@@ -201,6 +203,7 @@ class RosStateServicer:
             self._ts_state_notified = time.time()
             if self._ros_topic_list_str != new_topic_str:
                 self._ros_topic_list_str = new_topic_str
+                Log.info(f"new topics list; size: {sys.getsizeof(new_topic_str) / 1024 / 1024:,.4f} Mbit")
                 self.websocket.publish('ros.topics.changed', {"timestamp": self._ts_state_notified})
 
     def _callback_services(self, services: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]):
@@ -210,6 +213,7 @@ class RosStateServicer:
             self._ts_state_notified = time.time()
             if self._ros_service_list_str != new_service_str:
                 self._ros_service_list_str = new_service_str
+                Log.info(f"new services list; size: {sys.getsizeof(new_service_str) / 1024 / 1024:,.4f} Mbit")
                 self.websocket.publish('ros.services.changed', {"timestamp": self._ts_state_notified})
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:

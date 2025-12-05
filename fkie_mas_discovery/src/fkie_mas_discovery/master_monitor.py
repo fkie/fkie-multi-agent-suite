@@ -248,8 +248,8 @@ class MasterMonitor:
             self.wsClient.register("ros.screen.get_list", self.getScreenList)
             self.wsClient.register("ros.provider.get_list", self.getProviderList)
             self.wsClient.register("ros.nodes.get_list", self.get_node_list)
-            self.wsClient.register("ros.nodes.get_services", self.get_service_list)
-            self.wsClient.register("ros.nodes.get_topics", self.get_topic_list)
+            self.wsClient.register("ros.services.get_list", self.get_service_list)
+            self.wsClient.register("ros.topics.get_list", self.get_topic_list)
             self.wsClient.register("ros.nodes.stop_node", self.stop_node)
             self.wsClient.register("ros.subscriber.stop", self.stop_subscriber)
             self.wsClient.register("ros.provider.get_timestamp", self.getProviderTimestamp)
@@ -938,6 +938,8 @@ class MasterMonitor:
                 self.ts_updated = time.time()
                 result = {"timestamp": self.__new_master_state.timestamp}
                 self.wsClient.publish('ros.nodes.changed', result)
+                self.wsClient.publish('ros.topics.changed', result)
+                self.wsClient.publish('ros.services.changed', result)
                 self._screen_do_check = True
             return result
 
@@ -995,7 +997,7 @@ class MasterMonitor:
         return result
 
     def get_service_list(self, filter: List[RosTopicId] = []) -> str:
-        Log.info(f'Request to [ros.nodes.get_services]; filter: {filter}')
+        Log.info(f'Request to [ros.services.get_list]; filter: {filter}')
         service_list: List[RosService] = []
         with self._state_access_lock:
             if self.__master_state is not None:
@@ -1005,7 +1007,7 @@ class MasterMonitor:
         return result
 
     def get_topic_list(self, filter: List[RosTopicId] = []) -> str:
-        Log.info(f'Request to [ros.nodes.get_topics]; filter: {filter}')
+        Log.info(f'Request to [ros.topics.get_list]; filter: {filter}')
         topic_list: List[RosTopic] = []
         with self._state_access_lock:
             if self.__master_state is not None:

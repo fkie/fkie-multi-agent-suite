@@ -2458,7 +2458,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         return value.data as unknown as Composable[];
       }
-      this.logger?.error(`Provider [${this.id}]: Error at getLifecycle()`, `${value.message}`);
+      this.logger?.error(`Provider [${this.id}]: Error at getComposable()`, `${value.message}`);
       return [];
     });
 
