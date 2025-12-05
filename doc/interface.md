@@ -594,7 +594,7 @@ Kills the process
 {"version": str, "date": str}
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/DaemonVersion.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/DaemonVersion.ts)
 
 ### FileItem
 
@@ -609,7 +609,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](./src/renderer/models/FileItem.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/FileItem.ts)
 
 ### RosNode
 
@@ -639,7 +639,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.
 
 [RosTopicId](#rostopicid), [RosParameter](#rosparameter)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosNode.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosNode.ts)
 
 ### RosTopicId
 
@@ -650,7 +650,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosTopicId.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosTopicId.ts)
 
 ### RosParameter
 
@@ -668,7 +668,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosParameter.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosParameter.ts)
 
 [RosParameterRange](#rosparameterrange)
 
@@ -682,7 +682,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosParameter.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosParameter.ts)
 
 ### RosService
 
@@ -700,7 +700,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosService.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosService.ts)
 
 ### RosTopic
 
@@ -716,7 +716,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [EndpointInfo](#endpointinfo)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosTopic.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosTopic.ts)
 
 ### EndpointInfo
 
@@ -730,7 +730,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [RosQos](#rosqos), [IncompatibleQos](#incompatibleqos)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosTopic.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosTopic.ts)
 
 ### IncompatibleQos
 
@@ -742,7 +742,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosTopic.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosTopic.ts)
 
 ### RosQos
 
@@ -799,7 +799,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosQos.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosQos.ts)
 
 ### RosDuration
 
@@ -810,7 +810,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/RosDuration.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosDuration.ts)
 
 ### RosProvider
 
@@ -830,7 +830,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/providers/RosProviderState.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/providers/RosProviderState.ts)
 
 ### DiagnosticArray
 
@@ -843,7 +843,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [DiagnosticStatus](#diagnosticstatus)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/Diagnostics.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/Diagnostics.ts)
 
 ### DiagnosticStatus
 
@@ -862,7 +862,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/Diagnostics.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/Diagnostics.ts)
 
 ### SystemWarningGroup
 
@@ -878,7 +878,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [SystemWarning](#SystemWarning)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/SystemWarningGroup.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/SystemWarningGroup.ts)
 
 ### SystemWarning
 
@@ -890,7 +890,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/SystemWarning.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/SystemWarning.ts)
 
 ### RosPackage
 
@@ -901,7 +901,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](./src/renderer/models/RosPackage.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/RosPackage.ts)
 
 ### PathItem
 
@@ -914,7 +914,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](./src/renderer/models/PathItem.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/PathItem.ts)
 
 ### LogPathItem
 
@@ -928,7 +928,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](./src/renderer/models/LogPathItem.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LogPathItem.ts)
 
 ### LaunchCallService
 
@@ -940,7 +940,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/file_interface.
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchCallService.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchCallService.ts)
 
 ### LaunchMessageStruct
 
@@ -965,7 +965,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchCallService.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchCallService.ts)
 
 ### LaunchLoadRequest
 
@@ -984,7 +984,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchLoadRequest.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchLoadRequest.ts)
 
 ### LaunchArgument
 
@@ -998,7 +998,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchArgument.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchArgument.ts)
 
 ### LaunchLoadReply
 
@@ -1013,7 +1013,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchLoadReply.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchLoadReply.ts)
 
 ### LaunchReturnStatus
 
@@ -1038,7 +1038,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchReturnStatus.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchReturnStatus.ts)
 
 ### LaunchFile
 
@@ -1050,7 +1050,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchFile.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchFile.ts)
 
 ### LaunchContent
 
@@ -1068,7 +1068,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [RosParameter](#rosparameter), [LaunchAssociations](#launchassociations)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchContent.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchContent.ts)
 
 ### LaunchAssociations
 
@@ -1079,7 +1079,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchAssociations.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchAssociations.ts)
 
 ### LaunchNode
 
@@ -1099,7 +1099,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchReturnStatus](#launchreturnstatus)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchNode.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchNode.ts)
 
 ### LaunchNodeReply
 
@@ -1114,7 +1114,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchReturnStatus](#launchreturnstatus)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchNodeReply.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchNodeReply.ts)
 
 ### LaunchIncludedFilesRequest
 
@@ -1131,7 +1131,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchIncludedFilesRequest.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchIncludedFilesRequest.ts)
 
 ### LaunchIncludedFile
 
@@ -1152,7 +1152,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchIncludedFile.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchIncludedFile.ts)
 
 ### LaunchInterpretPathRequest
 
@@ -1165,7 +1165,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchInterpretPathRequest.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchInterpretPathRequest.ts)
 
 ### LaunchInterpretPathReply
 
@@ -1181,7 +1181,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [LaunchArgument](#launchargument), [LaunchReturnStatus](#launchreturnstatus)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchInterpretPathReply.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchInterpretPathReply.ts)
 
 ### LaunchPublishMessage
 
@@ -1202,7 +1202,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 [RosQos](#rosqos)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](./src/renderer/models/LaunchPublishMessage.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LaunchPublishMessage.ts)
 
 ### LoggerConfig
 
@@ -1215,7 +1215,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 
 **LogLevelType**: `UNKNOWN`, `DEBUG`, `ÌNFO`, `WARN`, `ERROR`, `FATAL`
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/LoggerConfig.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/LoggerConfig.ts)
 
 ### ScreensMapping
 
@@ -1226,7 +1226,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 }
 ```
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/ScreensMapping.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/ScreensMapping.ts)
 
 ### SubscriberNode
 
@@ -1243,7 +1243,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [RosQos](#rosqos), [SubscriberFilter](#subscriberfilter)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/SubscriberNode.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/SubscriberNode.ts)
 
 ### SubscriberFilter
 
@@ -1260,7 +1260,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [RosQos](#rosqos)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/SubscriberFilter.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/SubscriberFilter.ts)
 
 ### SubscriberEvent
 
@@ -1286,4 +1286,4 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
 
 [RosQos](#rosqos)
 
-Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](./src/renderer/models/SubscriberEvent.ts)
+Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interface.py), [GUI](../fkie_mas_gui/src/renderer/models/SubscriberEvent.ts)

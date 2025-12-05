@@ -106,7 +106,7 @@ mas-gui.AppImage --no-sandbox
 
 ## Documentation
 
-- [Websocket API](./fkie_mas_gui/interface.md) -- `Description of message formats for communication between GUI and daemon`
+- [Websocket API](./doc/interface.md) -- `Description of message formats for communication between GUI and daemon`
 
 > We are working on the documentation for the new version. Until then you can still use the old one. Apart from the package names, all old functions should be supported.
 
