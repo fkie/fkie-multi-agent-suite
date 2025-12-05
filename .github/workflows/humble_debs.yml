@@ -7,9 +7,19 @@ on:
 
 jobs:
   humble:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: amd64
+            platform: linux/amd64
+          - os: ubuntu-22.04-arm
+            arch: arm64
+            platform: linux/arm64
     container:
       image: ubuntu:jammy
     steps:
