@@ -106,6 +106,8 @@ mas-gui.AppImage --no-sandbox
 
 ## Documentation
 
+- [Websocket API](./fkie_mas_gui/interface.md) -- `Description of message formats for communication between GUI and daemon`
+
 > We are working on the documentation for the new version. Until then you can still use the old one. Apart from the package names, all old functions should be supported.
 
 - [multimaster_fkie](http://fkie.github.io/multimaster_fkie)
@@ -114,7 +116,7 @@ mas-gui.AppImage --no-sandbox
 - [Node Manager GUI](http://fkie.github.io/multimaster_fkie/node_manager.html) -- `A GUI to manage the configuration on local and remote ROS masters`
 - [Node Manager daemon](http://fkie.github.io/multimaster_fkie/node_manager_daemon.html) -- `Helper node allows an easy (auto)start of remote nodes and manage remote launch files`
 
-For ROS interfaces and parameterization see the [ROS Wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you can find example launch files in each package.
+For ROS interfaces and parameterization see the [ROS Wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you find example launch files in each package.
 
 ## License
 

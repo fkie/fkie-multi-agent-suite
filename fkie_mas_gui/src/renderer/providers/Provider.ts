@@ -975,7 +975,7 @@ export default class Provider implements IProvider {
    * @return Returns a list of [PathItem] elements
    */
   public getPathList: (path: string) => Promise<PathItem[]> = async (path) => {
-    const result = await this.makeCall(URI.ROS_PATH_GET_LIST_RECURSIVE, [path], true).then((value: TResultData) => {
+    const result = await this.makeCall(URI.ROS_PATH_GET_LIST, [path, true], true).then((value: TResultData) => {
       if (value.result) {
         const fileList: PathItem[] = [];
         const uniquePaths: string[] = [];
@@ -1727,13 +1727,13 @@ export default class Provider implements IProvider {
     this.echoTopics.push(request.topic);
     const result = await this.makeCall(URI.ROS_SUBSCRIBER_START, [request], true).then((value: TResultData) => {
       if (value.result) {
-        const parsed: boolean = value.data as boolean;
+        const parsed = value.data as TResult;
         return parsed;
       }
       this.logger?.error(`Provider [${this.id}]: Error at startSubscriber()`, `${value.message}`);
-      return false;
+      return {result: result.result, message: value.message} as TResult;
     });
-    if (result) {
+    if (result.result) {
       const cbTopic = this.generateSubscriberUri(request.topic);
       this.registerCallback(cbTopic, this.callbackNewSubscribedMessage);
       this.logger?.debug(
@@ -1741,7 +1741,7 @@ export default class Provider implements IProvider {
         ""
       );
     }
-    return Promise.resolve(result);
+    return Promise.resolve(result.result);
   };
 
   /**

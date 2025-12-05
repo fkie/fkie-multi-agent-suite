@@ -76,7 +76,7 @@ class RosQos:
         SYSTEM_DEFAULT = 0
         # The signal that establishes a Topic is alive comes from the ROS rmw layer.
         AUTOMATIC = 1
-        # Depricated: Explicitly asserting node liveliness is required in this case.
+        # Deprecated: Explicitly asserting node liveliness is required in this case.
         MANUAL_BY_NODE = 2
         # The signal that establishes a Topic is alive is at the Topic level. Only publishing a message
         # on the Topic or an explicit signal from the application to assert liveliness on the Topic
@@ -680,19 +680,6 @@ class DaemonVersion:
         return f"DaemonVersion<version: {self.version}, date: {self.date}>"
 
 
-class DiagnosticArray:
-    """
-    This message is used to send diagnostic information about the state of the host.
-:param timestamp:
-:param status: an array of components being reported on.
-
-    """
-
-    def __init__(self, timestamp: float, status: List[any]) -> None:
-        self.timestamp = timestamp
-        self.status = status
-
-
 class DiagnosticStatus:
     """
  This message holds the status of an individual component of the host.
@@ -722,6 +709,17 @@ class DiagnosticStatus:
         self.hardware_id = hardware_id
         self.values = values
 
+class DiagnosticArray:
+    """
+    This message is used to send diagnostic information about the state of the host.
+:param timestamp:
+:param status: an array of components being reported on.
+
+    """
+
+    def __init__(self, timestamp: float, status: List[DiagnosticStatus]) -> None:
+        self.timestamp = timestamp
+        self.status = status
 
 class LoggerConfig:
     """

@@ -280,11 +280,13 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
                 enterNextDelay={tooltipDelay}
                 disableInteractive
               >
-                <CopyButton
-                  value={`ROS_DOMAIN_ID=${currentProvider?.rosState.ros_domain_id || 0} ros2 topic pub -1 --keep-alive 3 ${currentQos ? qosFromJson(currentQos).toString() : ""} ${topicName} ${topicType} '${JSON.stringify(event)}'`}
-                  logText="ros2 pub string copied"
-                  fontSize="0.8em"
-                />
+                <>
+                  <CopyButton
+                    value={`ROS_DOMAIN_ID=${currentProvider?.rosState.ros_domain_id || 0} ros2 topic pub -1 --keep-alive 3 ${currentQos ? qosFromJson(currentQos).toString() : ""} ${topicName} ${topicType} '${JSON.stringify(event)}'`}
+                    logText="ros2 pub string copied"
+                    fontSize="0.8em"
+                  />
+                </>
               </Tooltip>
             </Stack>
           </Divider>

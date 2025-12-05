@@ -1314,7 +1314,7 @@ class LaunchServicer(LoggingEventHandler):
             result.append(reply)
         return json.dumps(result, cls=SelfEncoder)
 
-    def start_subscriber(self, request_json: SubscriberNode) -> bool:
+    def start_subscriber(self, request_json: SubscriberNode) -> str:
         # Covert input dictionary into a proper python object
         request = request_json
         topic = request.topic
@@ -1341,7 +1341,7 @@ class LaunchServicer(LoggingEventHandler):
         if request.tcp_no_delay:
             startcfg.args.append("--tcp_no_delay")
         launcher.run_node(startcfg)
-        return True
+        return json.dumps({"result": True, "message": ""}, cls=SelfEncoder)
 
     def list_nodes(self):
         result = []

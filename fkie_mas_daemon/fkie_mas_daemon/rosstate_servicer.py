@@ -519,10 +519,11 @@ class RosStateServicer:
             nmd.launcher.server.launch_servicer.node_stopped(node.name)
         return result
 
-    def stop_subscriber(self, topic_name: str) -> bool:
+    def stop_subscriber(self, topic_name: str) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
         ns, name = ros2_subscriber_nodename_tuple(topic_name)
-        return self.stop_node(os.path.join(ns, name))
+        result = self.stop_node(os.path.join(ns, name))
+        return json.dumps({"result": result, "message": ""}, cls=SelfEncoder)
 
     def get_provider_timestamp(self, timestamp) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")

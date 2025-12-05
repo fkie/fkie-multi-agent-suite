@@ -1167,9 +1167,10 @@ class MasterMonitor:
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
 
-    def stop_subscriber(self, topic_name: str) -> bool:
+    def stop_subscriber(self, topic_name: str) -> str:
         Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
-        return self.stop_node(f"/mas_subscriber/{topic_name.strip('/')}")
+        result = self.stop_node(f"/mas_subscriber/{topic_name.strip('/')}")
+        return json.dumps({"result": result, "message": ""}, cls=SelfEncoder)
 
     def getProviderTimestamp(self, timestamp) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")

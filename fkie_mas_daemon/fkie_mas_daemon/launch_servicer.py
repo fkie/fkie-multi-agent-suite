@@ -1095,7 +1095,7 @@ class LaunchServicer(LoggingEventHandler):
                 result.append(f"{pkg}/{message}")
         return json.dumps(result, cls=SelfEncoder)
 
-    def start_subscriber(self, request_json: SubscriberNode) -> bool:
+    def start_subscriber(self, request_json: SubscriberNode) -> str:
         # Covert input dictionary into a proper python object
         request = request_json
         topic = request.topic
@@ -1157,7 +1157,7 @@ class LaunchServicer(LoggingEventHandler):
         #     f"args while run node '{fullname}': '{args}', JOINED: {' '.join([screen_prefix, cmd] + args)}")
         SupervisedPopen(shlex.split(' '.join([screen_prefix, cmd] + args)), env=new_env,
                         object_id=f"run_node_{fullname}", description=f"Run [{package_name}]{executable}")
-        return True
+        return json.dumps({"result": True, "message": ""}, cls=SelfEncoder)
 
     def list_nodes(self):
         result = []

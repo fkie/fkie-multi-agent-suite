@@ -39,8 +39,6 @@ class FileServicer:
         websocket.register("ros.path.get_log_paths", self.getLogPaths)
         websocket.register("ros.path.clear_log_paths", self.clearLogPaths)
         websocket.register("ros.path.get_list", self.getPathList)
-        websocket.register("ros.path.get_list_recursive",
-                           self.getPathListRecursive)
         websocket.register("ros.file.get", self.getFileContent)
         websocket.register("ros.file.save", self.saveFileContent)
 
@@ -65,7 +63,8 @@ class FileServicer:
                     setup_bash = os.path.join(os.path.dirname(first_ws_path), "setup.bash")
                     Log.info(f"{self.__class__.__name__}:   source {setup_bash}")
                 if setup_bash and os.path.exists(setup_bash):
-                    result = subprocess.run(["/bin/bash", "-c", f"source {shlex.quote(setup_bash)}; env"], capture_output=True, stdin=subprocess.DEVNULL, text=True)
+                    result = subprocess.run(
+                        ["/bin/bash", "-c", f"source {shlex.quote(setup_bash)}; env"], capture_output=True, stdin=subprocess.DEVNULL, text=True)
                     if result.returncode == 0:
                         lines = result.stdout.split("\n")
                         env = {}
@@ -73,10 +72,10 @@ class FileServicer:
                             line = line.strip()
                             if "=" in line:
                                 key, value = line.split("=", 1)
-                                #if value.find("/opt/ros") >= 0:
+                                # if value.find("/opt/ros") >= 0:
                                 env[key] = value
                         os.environ.update(env)
-                        #os.environ.update(saved_environ)
+                        # os.environ.update(saved_environ)
             except Exception as err:
                 Log.warn(
                     f"{self.__class__.__name__}: Cannot reset package cache: {err}"
@@ -161,54 +160,6 @@ class FileServicer:
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)
 
-    def getPathList(self, inputPath: str) -> List[PathItem]:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.path.get_list] for {inputPath}"
-        )
-        path_list: List[PathItem] = []
-        # list the path
-        dirlist = os.listdir(inputPath)
-        for cfile in dirlist:
-            path = os.path.normpath("%s%s%s" % (inputPath, os.path.sep, cfile))
-            if os.path.isfile(path):
-                path_list.append(
-                    PathItem(
-                        path=path,
-                        mtime=os.path.getmtime(path),
-                        size=os.path.getsize(path),
-                        path_type="file",
-                    )
-                )
-            elif path in self.CB_DIR_CACHE:
-                path_list.append(
-                    PathItem(
-                        path=path,
-                        mtime=os.path.getmtime(path),
-                        size=os.path.getsize(path),
-                        path_type=self.CB_DIR_CACHE[path],
-                    )
-                )
-            elif os.path.isdir(path):
-                try:
-                    fileList = os.listdir(path)
-                    file_type = None
-                    if ros_pkg.is_package(fileList):
-                        file_type = "package"
-                    else:
-                        file_type = "dir"
-                    self.CB_DIR_CACHE[path] = file_type
-                    path_list.append(
-                        PathItem(
-                            path=path,
-                            mtime=os.path.getmtime(path),
-                            size=os.path.getsize(path),
-                            path_type=file_type,
-                        )
-                    )
-                except Exception as _:
-                    pass
-        return json.dumps(path_list, cls=SelfEncoder)
-
     def _glob(
         self,
         inputPath: str,
@@ -231,9 +182,18 @@ class FileServicer:
                         path_type="file",
                     )
                 )
-            elif os.path.isdir(filename) and recursive:
+            elif os.path.isdir(filename):
                 if name not in filter:
-                    dir_list.append(filename)
+                    path_list.append(
+                        PathItem(
+                            path=filename,
+                            mtime=os.path.getmtime(filename),
+                            size=os.path.getsize(filename),
+                            path_type="dir",
+                        )
+                    )
+                    if recursive:
+                        dir_list.append(filename)
         # glob the directories at the end
         for filename in dir_list:
             path_list.extend(
@@ -246,12 +206,10 @@ class FileServicer:
             )
         return path_list
 
-    def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.path.get_list_recursive] for {inputPath}"
-        )
+    def getPathList(self, inputPath: str, recursive: bool = False) -> List[PathItem]:
+        Log.info(f"Request to [ros.path.get_list] for {inputPath}, recursive: {recursive}")
         path_list: List[PathItem] = self._glob(
-            inputPath, recursive=True, withHidden=False, filter=["node_modules"]
+            inputPath, recursive=recursive, withHidden=False, filter=["node_modules"]
         )
 
         return json.dumps(path_list, cls=SelfEncoder)

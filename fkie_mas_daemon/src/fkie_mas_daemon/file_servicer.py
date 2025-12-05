@@ -49,8 +49,6 @@ class FileServicer:
         websocket.register("ros.path.get_log_paths", self.getLogPaths)
         websocket.register("ros.path.clear_log_paths", self.clearLogPaths)
         websocket.register("ros.path.get_list", self.getPathList)
-        websocket.register("ros.path.get_list_recursive",
-                           self.getPathListRecursive)
         websocket.register("ros.file.get", self.getFileContent)
         websocket.register("ros.file.save", self.saveFileContent)
 
@@ -99,52 +97,6 @@ class FileServicer:
             bytesWritten = outfile.write(content)
             return json.dumps(bytesWritten, cls=SelfEncoder)
 
-    def getPathList(self, inputPath: str) -> List[PathItem]:
-        Log.info("Request to [ros.path.get_list] for %s" % inputPath)
-        path_list: List[PathItem] = []
-        # list the path
-        dirlist = os.listdir(inputPath)
-        for cfile in dirlist:
-            path = os.path.normpath("%s%s%s" % (inputPath, os.path.sep, cfile))
-            if os.path.isfile(path):
-                path_list.append(
-                    PathItem(
-                        path=path,
-                        mtime=os.path.getmtime(path),
-                        size=os.path.getsize(path),
-                        path_type="file",
-                    )
-                )
-            elif path in self.CB_DIR_CACHE:
-                path_list.append(
-                    PathItem(
-                        path=path,
-                        mtime=os.path.getmtime(path),
-                        size=os.path.getsize(path),
-                        path_type=self.CB_DIR_CACHE[path],
-                    )
-                )
-            elif os.path.isdir(path):
-                try:
-                    fileList = os.listdir(path)
-                    file_type = None
-                    if ros_pkg.is_package(fileList):
-                        file_type = "package"
-                    else:
-                        file_type = "dir"
-                    self.CB_DIR_CACHE[path] = file_type
-                    path_list.append(
-                        PathItem(
-                            path=path,
-                            mtime=os.path.getmtime(path),
-                            size=os.path.getsize(path),
-                            path_type=file_type,
-                        )
-                    )
-                except Exception as _:
-                    pass
-        return json.dumps(path_list, cls=SelfEncoder)
-
     def _glob(
         self,
         inputPath: str,
@@ -167,9 +119,18 @@ class FileServicer:
                         path_type="file",
                     )
                 )
-            elif os.path.isdir(filename) and recursive:
+            elif os.path.isdir(filename):
                 if name not in filter:
-                    dir_list.append(filename)
+                    path_list.append(
+                        PathItem(
+                            path=filename,
+                            mtime=os.path.getmtime(filename),
+                            size=os.path.getsize(filename),
+                            path_type="dir",
+                        )
+                    )
+                    if recursive:
+                        dir_list.append(filename)
         # glob the directories at the end
         for filename in dir_list:
             path_list.extend(
@@ -182,12 +143,12 @@ class FileServicer:
             )
         return path_list
 
-    def getPathListRecursive(
-        self, inputPath: str, filter=["node_modules"]
+    def getPathList(
+        self, inputPath: str, recursive: bool = False, filter=["node_modules"]
     ) -> List[PathItem]:
-        Log.info("Request to [ros.path.get_list_recursive] for %s" % inputPath)
+        Log.info(f"Request to [ros.path.get_list] for {inputPath}, recursive: {recursive}")
         path_list: List[PathItem] = self._glob(
-            inputPath, recursive=True, withHidden=False, filter=["node_modules"]
+            inputPath, recursive=recursive, withHidden=False, filter=filter
         )
         return json.dumps(path_list, cls=SelfEncoder)
 
