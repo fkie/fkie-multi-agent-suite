@@ -578,7 +578,7 @@ class RosStateServicer:
         # after the state is ready, a 'ros.nodes.changed' notification will be send
         if forceRefresh:
             self._force_refresh = True
-        if (self._ros_node_list is None or forceRefresh) and not self._state_jsonify.is_updating():
+        if (self._ros_node_list is None or forceRefresh):
             self._ros_node_list = []
             self._ros_node_list_str = json.dumps(self._ros_node_list, cls=SelfEncoder)
             self._ros_service_dict = {}
