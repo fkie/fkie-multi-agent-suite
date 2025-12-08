@@ -254,7 +254,9 @@ function get_package() {
         fi
     else
         echo -e "⚠️ \e[38;5;208m No .deb file for '$PACKAGE' (arch $ARCH) found.\e[0m"
+        return 1
     fi
+    return 0
 }
 
 if [[ -z $NO_GUI ]]; then
@@ -274,7 +276,10 @@ if [[ -z $NO_ROS ]]; then
         exit_with_no 1
     fi
 
-    get_package "python3-websockets" $OS_CODENAME
+    if ! get_package "python3-websockets" $OS_CODENAME; then
+        echo -e "\e[38;5;208mPlease check your version. At least v12 is required. Install with:\e[0m"
+        echo -e "  \e[38;5;208mpip install 'websockets>=12.0'\e[0m"
+    fi
 
     echo "Get ROS packages for Multi-Agent-Suite"
     echo -e "detected ROS_DISTRO=\e[36m$ROS_DISTRO\e[0m"
