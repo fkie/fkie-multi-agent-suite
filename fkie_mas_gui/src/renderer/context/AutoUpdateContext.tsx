@@ -209,7 +209,7 @@ export function AutoUpdateProvider({
               .replace("\r\n\r\n", "<br/>")
               .replaceAll("\r\n", "<br/>"),
           } as UpdateInfo);
-        } else if (["prerelease", "release"].includes(channel) && semver.gt(release.name, packageJson.version)) {
+        } else if (["prerelease", "release"].includes(channel) && packageJson.version !== release.name) {
           // new release
           // create history
           let changes: string = "";
