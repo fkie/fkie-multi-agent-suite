@@ -321,7 +321,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "");
       const provider = getProviderById(providerId);
       if (provider) {
-        console.log("UPDA SROASMDASÖLDK");
         await provider.updateRosNodes({}, force);
         await provider.updateLaunchContent();
         await provider.updateScreens();
@@ -400,7 +399,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         provider.connection.host
       );
 
-      console.log(`LOAD LAUNCH: ${JSON.stringify(request)}`);
+      logCtx.debug(`launch launch file: ${JSON.stringify(request)}`);
       const resultLaunchLoadFile = await provider.launchLoadFile(request, reload);
 
       if (!resultLaunchLoadFile) {
@@ -413,8 +412,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
       if (resultLaunchLoadFile.status.code === "OK") {
         // trigger node's update (will force a reload using useEffect hook)
-        console.log("UDPA TELAUNCH");
-        updateNodeList(provider.id);
+        logCtx.debug("load launch file was successful, update launch list..");
+        // updateNodeList(provider.id);
         // updateLaunchList(provider.name());
         return { success: true, error: resultLaunchLoadFile.status.msg || "", reply: resultLaunchLoadFile };
       }

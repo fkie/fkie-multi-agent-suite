@@ -618,7 +618,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             "could not remove launch file"
           );
         }
-        provider.updateLaunchContent();
+        // provider.updateLaunchContent();
       } else {
         logCtx.error(
           "Invalid reply from [launchUnloadFile]",
@@ -696,7 +696,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         return (
           <NodeItem
             // add all relevant infos to key to update the TreeItem visualization
-            key={`${itemId}-${JSON.stringify(node.screens)}`}
+            key={`${itemId}-${node.screens?.length}-${node.launchInfo.size}`}
             itemId={itemId}
             node={node}
             namespacePart={namespacePart}

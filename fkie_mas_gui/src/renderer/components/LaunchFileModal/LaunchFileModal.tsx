@@ -160,10 +160,10 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
           } else {
             logCtx.success(`Launch file [${getFileName(path)}] loaded`, `File: ${path}`, "launch file loaded");
           }
-
+          // trigger update launch list
+          // provider.updateLaunchContent();
           // nothing else to do return
           onLaunchCallback();
-          provider.updateLaunchContent();
           return;
         }
 
@@ -288,7 +288,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
     setSelectedLaunchFile(undefined);
 
     onLaunchCallback();
-    provider.updateLaunchContent();
+    // provider.updateLaunchContent();
 
     // trigger node's update (will force a reload using useEffect hook)
     // rosCtx.updateNodeList(provider.name());

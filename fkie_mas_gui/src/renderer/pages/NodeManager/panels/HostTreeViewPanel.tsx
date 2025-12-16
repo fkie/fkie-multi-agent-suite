@@ -502,7 +502,6 @@ export default function HostTreeViewPanel(): JSX.Element {
         // not running or in the list with started nodes
         const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
         if (managerNode) {
-          console.log(`MANAGER: ${managerNode.name}; ${node.name}`);
           managerNode.launchPath = node.launchPath;
         }
         add2start(managerNode);
@@ -921,12 +920,12 @@ export default function HostTreeViewPanel(): JSX.Element {
     onSearch(filterText);
   }, [filterText, providerNodes]);
 
-  useEffect(() => {
-    // remove provider from our list if provider was removed in rosCtx
-    setProviderNodes((prev) => [
-      ...prev.filter((item) => rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0),
-    ]);
-  }, [rosCtx.mapProviderRosNodes]);
+  // useEffect(() => {
+  //   // remove provider from our list if provider was removed in rosCtx
+  //   setProviderNodes((prev) => [
+  //     ...prev.filter((item) => rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0),
+  //   ]);
+  // }, [rosCtx.mapProviderRosNodes]);
 
   useEffect(() => {
     if (nodesToStart) {

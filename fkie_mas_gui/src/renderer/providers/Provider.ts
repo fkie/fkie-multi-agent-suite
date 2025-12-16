@@ -229,6 +229,10 @@ export default class Provider implements IProvider {
   /** Timer to determine the delay to provider */
   private currentDelayTimer: NodeJS.Timeout | null = null;
 
+  private paramNamespaceSystemNodes: string = "{SYSTEM}";
+  private paramCapabilityGroup: string = "";
+  private paramLogCommand: string = "";
+
   /**
    * constructor that initializes a new instance of a provider object.
    *
@@ -249,6 +253,7 @@ export default class Provider implements IProvider {
   ) {
     this.logger = logger;
     this.settings = settings;
+    this.setSettingsCtx(settings);
     this.rosVersion = rosVersion;
     this.hostnames = [host];
     this.id = `${host}-${generateUniqueId()}`;
@@ -271,7 +276,7 @@ export default class Provider implements IProvider {
       { uri: URI.ROS_PROVIDER_LIST, callback: this.providerUpdated },
       { uri: URI.ROS_DAEMON_READY, callback: this.callbackDaemonReady },
       { uri: URI.ROS_DISCOVERY_READY, callback: this.callbackDiscoveryReady },
-      { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateRosNodes },
+      { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateLaunchContent },
       { uri: URI.ROS_NODES_CHANGED, callback: this.updateRosNodes },
       { uri: URI.ROS_SERVICES_CHANGED, callback: this.callbackServicesChanged },
       { uri: URI.ROS_TOPICS_CHANGED, callback: this.callbackTopicsChanged },
@@ -339,6 +344,9 @@ export default class Provider implements IProvider {
 
   public setSettingsCtx(settings: ISettingsContext): void {
     this.settings = settings;
+    this.paramNamespaceSystemNodes = this.settings.get("namespaceSystemNodes") as string;
+    this.paramCapabilityGroup = this.settings.get("capabilityGroupParameter") as string;
+    this.paramLogCommand = this.settings.get("logCommand") as string;
   }
 
   public setLoggerCtx(logger: ILoggingContext): void {
@@ -384,7 +392,7 @@ export default class Provider implements IProvider {
         const logPaths = await this.getLogPaths([nodeName]);
         if (logPaths.length > 0) {
           // `tail -f ${logPaths[0].screen_log} \r`,
-          result.cmd = `${this.settings.get("logCommand")} ${logPaths[0].screen_log}`;
+          result.cmd = `${this.paramLogCommand} ${logPaths[0].screen_log}`;
           result.log = logPaths[0].screen_log;
         }
         break;
@@ -1123,67 +1131,16 @@ export default class Provider implements IProvider {
   };
 
   public mergeNodeStates: () => Promise<null> = async () => {
-    const dynamicReconfigureNodes = new Set<string>();
-
     // check if nodes are not available or run in other host (not monitoring)
-    const nodes: RosNode[] = this.rosRunningNodes
-      .map((n) => {
-        // idGlobal should be the same for life of the node on remote host
-        n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
-        n.providerName = this.name();
-        n.providerId = this.id;
-        n.diagnostic = this.diagnosticInfo.get(n.name);
-
-        // check the run state of the node to close the restart questions
-        const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
-        if (oldNode) {
-          if (oldNode.pid !== n.pid) {
-            emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
-          }
-        }
-        if (n.system_node) {
-          n.group = this.settings.get("namespaceSystemNodes") as string;
-        }
-
-        // update infos available only for ROS1 nodes
-        const noApiUri = !n.node_API_URI || n.node_API_URI.length === 0;
-        const noMasteruri = !n.masteruri || n.masteruri.length === 0;
-        if (!noApiUri && !noMasteruri) {
-          if (!n.pid || n.pid <= 0) {
-            const hostApiUir = n.node_API_URI?.split(":")[0];
-            const hostMasterUri = n.masteruri?.split(":")[0];
-
-            if (hostApiUir === hostMasterUri) {
-              // node runs on the same host, but it is not available
-              // probably the node is dead
-              n.status = RosNodeStatus.DEAD;
-            } else {
-              // node runs on a different host, we can not monitor its state
-              // will be shown as XXXX
-              n.status = RosNodeStatus.NOT_MONITORED;
-            }
-          }
-          // check if the node has dynamic reconfigure service
-          const services: RosTopicId[] = n.services || [];
-          for (const service of services) {
-            if (service.name.endsWith("/set_parameters")) {
-              const serviceNs = service.name.slice(0, -15);
-              n.dynamicReconfigureServices.push(serviceNs);
-              if (serviceNs !== n.name) {
-                dynamicReconfigureNodes.add(serviceNs);
-              }
-            }
-          }
-        }
-        return n;
-      })
-      .map((n) => {
-        if (dynamicReconfigureNodes.has(n.name)) {
-          n.dynamicReconfigureServices.push(n.name);
-        }
-        return n;
-      });
+    const nodes: RosNode[] = this.rosRunningNodes.map((n) => {
+      // reset selected properties of each node
+      n.diagnostic = this.diagnosticInfo.get(n.name);
+      n.launchInfo = new Map();
+      n.screens = [];
+      return n;
+    });
     this.rosNodes = nodes;
+
     // apply the launch nodes
     let changed = this.applyLaunchInfo();
     // update the screens
@@ -1195,7 +1152,7 @@ export default class Provider implements IProvider {
   };
 
   public applyLaunchInfo: () => boolean = () => {
-    const capabilityGroupParamName = `/${this.settings.get("capabilityGroupParameter")}`;
+    const capabilityGroupParamName = `/${this.paramCapabilityGroup}`;
     const nodeGroups: { [nodeName: string]: { namespace?: string; name?: string } } = {};
     // update nodes
     // Add nodes from launch files to the list of nodes
@@ -1728,7 +1685,7 @@ export default class Provider implements IProvider {
         return parsed;
       }
       this.logger?.error(`Provider [${this.id}]: Error at startSubscriber()`, `${value.message}`);
-      return {result: result.result, message: value.message} as TResult;
+      return { result: result.result, message: value.message } as TResult;
     });
     if (result.result) {
       const cbTopic = this.generateSubscriberUri(request.topic);
@@ -2220,48 +2177,110 @@ export default class Provider implements IProvider {
       return;
     }
 
+    const dynamicReconfigureNodes = new Set<string>();
     // get nodes from remote provider
     const nlUnfiltered = await this.getNodeList(forceRefresh);
     const sameIdDict = {};
-    const nl: RosNode[] = nlUnfiltered.filter((n) => {
-      let ignored = false;
+    const nl: RosNode[] = nlUnfiltered
+      .filter((n) => {
+        let ignored = false;
 
-      // ignore nodes, which belongs to a discovered remote provider.
-      // Otherwise, the node is displayed under Not connected host.
-      if (
-        (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
-        (n.location instanceof String && n.location === "remote") ||
-        !n.isLocal
-      ) {
-        ignored = true;
-        ignored =
-          this.remoteProviders.filter((prov) => {
-            for (const nodeLocation of n.location) {
-              for (const provName of prov.hostnames) {
-                if (nodeLocation.includes(provName)) {
-                  return true;
+        // ignore nodes, which belongs to a discovered remote provider.
+        // Otherwise, the node is displayed under Not connected host.
+        if (
+          (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
+          (n.location instanceof String && n.location === "remote") ||
+          !n.isLocal
+        ) {
+          ignored = true;
+          ignored =
+            this.remoteProviders.filter((prov) => {
+              for (const nodeLocation of n.location) {
+                for (const provName of prov.hostnames) {
+                  if (nodeLocation.includes(provName)) {
+                    return true;
+                  }
                 }
               }
-            }
-            return false;
-          }).length > 0;
-      }
-
-      // update the list with same GUIDs
-      if (n.guid) {
-        const sameIdEntry = sameIdDict[n.guid];
-        if (sameIdEntry) {
-          sameIdEntry.push(n.id);
-        } else {
-          sameIdDict[n.guid] = [n.id];
+              return false;
+            }).length > 0;
         }
-      }
-      // exclude ignored nodes
-      for (const ignoredNode of this.IGNORED_NODES) {
-        if (n.name.indexOf(ignoredNode) !== -1) ignored = true;
-      }
-      return !ignored;
-    });
+
+        // update the list with same GUIDs
+        if (n.guid) {
+          const sameIdEntry = sameIdDict[n.guid];
+          if (sameIdEntry) {
+            sameIdEntry.push(n.id);
+          } else {
+            sameIdDict[n.guid] = [n.id];
+          }
+        }
+        // exclude ignored nodes
+        for (const ignoredNode of this.IGNORED_NODES) {
+          if (n.name.indexOf(ignoredNode) !== -1) ignored = true;
+        }
+        return !ignored;
+      })
+      .map((n) => {
+        // idGlobal should be the same for life of the node
+        n.idGlobal = `${this.id}${n.id.replaceAll("/", "#")}`;
+        n.providerName = this.name();
+        n.providerId = this.id;
+
+        // check the run state of the node to close the restart questions
+        const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
+        if (oldNode) {
+          if (oldNode.pid !== n.pid) {
+            emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
+          }
+        }
+        if (n.system_node) {
+          n.group = this.paramNamespaceSystemNodes;
+        }
+
+        return n;
+      })
+      .map((n) => {
+        // update infos available only for ROS1 nodes
+        const noApiUri = !n.node_API_URI || n.node_API_URI.length === 0;
+        const noMasteruri = !n.masteruri || n.masteruri.length === 0;
+        n.dynamicReconfigureServices = [];
+        if (!noApiUri && !noMasteruri) {
+          if (!n.pid || n.pid <= 0) {
+            const hostApiUir = n.node_API_URI?.split(":")[0];
+            const hostMasterUri = n.masteruri?.split(":")[0];
+
+            if (hostApiUir === hostMasterUri) {
+              // node runs on the same host, but it is not available
+              // probably the node is dead
+              n.status = RosNodeStatus.DEAD;
+            } else {
+              // node runs on a different host, we can not monitor its state
+              // will be shown as XXXX
+              n.status = RosNodeStatus.NOT_MONITORED;
+            }
+          }
+          // check if the node has dynamic reconfigure service
+          const services: RosTopicId[] = n.services || [];
+          for (const service of services) {
+            if (service.name.endsWith("/set_parameters")) {
+              const serviceNs = service.name.slice(0, -15);
+              n.dynamicReconfigureServices.push(serviceNs);
+              if (serviceNs !== n.name) {
+                dynamicReconfigureNodes.add(serviceNs);
+              }
+            }
+          }
+        }
+        return n;
+      })
+      .map((n) => {
+        if (dynamicReconfigureNodes.has(n.name)) {
+          n.dynamicReconfigureServices.push(n.name);
+        }
+        return n;
+      });
+
     this.sameIdDict = sameIdDict;
     this.rosRunningNodes = nl;
     await this.mergeNodeStates();

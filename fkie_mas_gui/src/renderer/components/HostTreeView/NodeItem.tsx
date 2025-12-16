@@ -606,18 +606,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
         {...other}
       />
     );
-  }, [
-    contextMenu,
-    showLaunchFile,
-    node,
-    showLaunchFile,
-    sigKillTimeout,
-    lifecycle,
-    timerPeriod,
-    nodeIcon,
-    isDarkMode,
-    composableTag,
-  ]);
+  }, [contextMenu, showLaunchFile, node, sigKillTimeout, lifecycle, timerPeriod, nodeIcon, isDarkMode, composableTag]);
 
   return createNode;
 }
