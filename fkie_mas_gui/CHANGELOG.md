@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.0.1 - 18.12.2025
+
+Fixed update launch info of a node after load or unload a launch file
+Fixed downgrade to release channel
+
 ## 5.0.0 - 05.12.2025
 
 Added arm64 to build debs
