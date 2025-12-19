@@ -1142,7 +1142,7 @@ export default class Provider implements IProvider {
     this.rosNodes = nodes;
 
     // apply the launch nodes
-    let changed = changedRunningNodes || this.applyLaunchInfo();
+    let changed = this.applyLaunchInfo() || changedRunningNodes;
     // update the screens
     changed = this.applyScreens() || changed;
     if (changed) {
