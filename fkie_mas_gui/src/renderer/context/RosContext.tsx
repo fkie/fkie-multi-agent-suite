@@ -1390,7 +1390,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setShowSnackbarBinaryChangedNotification,
     }),
 
-    [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes, setMapProviderRosNodes]
+    [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes]
   );
 
   return <RosContext.Provider value={attributesMemo}>{children}</RosContext.Provider>;

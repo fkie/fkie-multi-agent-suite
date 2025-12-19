@@ -1130,7 +1130,7 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
-  public mergeNodeStates: () => Promise<null> = async () => {
+  public mergeNodeStates: (changedRunningNodes?: boolean) => Promise<null> = async (changedRunningNodes = false) => {
     // check if nodes are not available or run in other host (not monitoring)
     const nodes: RosNode[] = this.rosRunningNodes.map((n) => {
       // reset selected properties of each node
@@ -1142,7 +1142,7 @@ export default class Provider implements IProvider {
     this.rosNodes = nodes;
 
     // apply the launch nodes
-    let changed = this.applyLaunchInfo();
+    let changed = changedRunningNodes || this.applyLaunchInfo();
     // update the screens
     changed = this.applyScreens() || changed;
     if (changed) {
@@ -2181,6 +2181,7 @@ export default class Provider implements IProvider {
     // get nodes from remote provider
     const nlUnfiltered = await this.getNodeList(forceRefresh);
     const sameIdDict = {};
+    let changed = false;
     const nl: RosNode[] = nlUnfiltered
       .filter((n) => {
         let ignored = false;
@@ -2231,8 +2232,11 @@ export default class Provider implements IProvider {
         const oldNode = this.rosNodes.find((item) => item.idGlobal === n.idGlobal);
         if (oldNode) {
           if (oldNode.pid !== n.pid) {
+            changed = true;
             emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
           }
+        } else {
+          changed = true;
         }
         if (n.system_node) {
           n.group = this.paramNamespaceSystemNodes;
@@ -2282,8 +2286,9 @@ export default class Provider implements IProvider {
       });
 
     this.sameIdDict = sameIdDict;
+    changed = changed || this.rosRunningNodes.length !== nl.length;
     this.rosRunningNodes = nl;
-    await this.mergeNodeStates();
+    await this.mergeNodeStates(changed);
     this.unlockRequest("updateRosNodes");
   };
 
