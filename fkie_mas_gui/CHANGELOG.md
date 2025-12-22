@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.0.2 - 22.12.2025
+
+Fixed update launch files
+Fixed open terminal in external window
+
 ## 5.0.1 - 18.12.2025
 
 Fixed update launch info of a node after load or unload a launch file
