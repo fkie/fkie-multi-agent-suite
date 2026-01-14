@@ -53,6 +53,11 @@ export type TModelResult = {
   error: string;
 };
 
+export type TModelVersion = {
+  path: string;
+  version: number;
+};
+
 export class ModifiedTabsInfo {
   tabId: string = "";
 
@@ -89,6 +94,7 @@ export class SaveResult {
 
 export interface IMonacoContext {
   monaco: MonacoReact.Monaco | null;
+  savedModelVersions: TModelVersion[];
   updateModifiedFiles: (tabId: string, providerId: string, uriPaths: string[]) => void;
   clearModifiedTabs: (tabIds: ModifiedTabsInfo[]) => void;
   getModifiedTabs: () => ModifiedTabsInfo[];
@@ -102,6 +108,8 @@ export interface IMonacoContext {
     forceReload: boolean
   ) => Promise<{ model: monaco.editor.ITextModel | null; file: FileItem | null; error: string }>;
   createModel: (tabId: string, file: FileItem) => monaco.editor.ITextModel | null;
+  saveFile(tabId: string, providerId: string, uriPath: string): Promise<SaveResult>;
+  isModifiedModel: (model: editor.ITextModel) => boolean;
 }
 
 export interface IMonacoProvider {
@@ -109,6 +117,7 @@ export interface IMonacoProvider {
 }
 export const DEFAULT_MONACO = {
   monaco: null,
+  savedModelVersions: [],
   updateModifiedFiles: (): void => {},
   clearModifiedTabs: (): void => {},
   getModifiedTabs: (): ModifiedTabsInfo[] => [],
@@ -122,8 +131,12 @@ export const DEFAULT_MONACO = {
       model: null,
       file: null,
       error: "",
-    } as TModelResult),
+    }),
   createModel: (): monaco.editor.ITextModel | null => null,
+  saveFile: (): Promise<SaveResult> => {
+    return Promise.resolve({ tabId: "", file: "", result: false, providerId: "", message: "" });
+  },
+  isModifiedModel: () => false,
 };
 
 export const MonacoContext = createContext<IMonacoContext>(DEFAULT_MONACO);
@@ -134,6 +147,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
   const logCtx = useContext(LoggingContext);
 
   const [modifiedFiles, setModifiedFiles] = useState<ModifiedTabsInfo[]>([]);
+  const [savedModelVersions, setSavedModelVersions] = useState<TModelVersion[]>([]);
 
   useEffect(() => {
     window.editorManager?.onFileRange(
@@ -299,6 +313,47 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     [modifiedFiles]
   );
 
+  const saveFile = useCallback(
+    async (tabId: string, providerId: string, uriPath: string): Promise<SaveResult> => {
+      const path = uriPath.split(":")[1];
+      const saveItem: SaveResult = new SaveResult(tabId, path, false, providerId, "");
+      if (!monaco) {
+        saveItem.message = "monaco is invalid";
+        return Promise.resolve(saveItem);
+      }
+      const editorModel = monaco.editor.getModel(monaco.Uri.file(uriPath));
+      if (editorModel) {
+        const path = editorModel.uri.path.split(":")[1];
+        // TODO change encoding if the file is encoded as HEX
+        const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
+        const providerObj = rosCtx.getProviderById(providerId, false);
+        if (providerObj) {
+          const saveResult = await providerObj.saveFileContent(fileToSave);
+          if (saveResult.bytesWritten > 0) {
+            setSavedModelVersions((prev) => [
+              ...prev.filter((item) => {
+                return item.path !== editorModel.uri.path;
+              }),
+              { path: editorModel.uri.path, version: editorModel.getAlternativeVersionId() } as TModelVersion,
+            ]);
+            logCtx.success("Successfully saved file", `path: ${path}`, "saved");
+            saveItem.result = true;
+          } else {
+            saveItem.message = `Error while save file ${path}: ${saveResult.error}`;
+            logCtx.error(`Error while save file ${path}`, `${saveResult.error}`, "not saved");
+          }
+        } else {
+          saveItem.message = `Provider ${providerId} not found`;
+          logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`, "not saved, no provider");
+        }
+      } else {
+        saveItem.message = `Model for ${path} not found`;
+      }
+      return Promise.resolve(saveItem);
+    },
+    [rosCtx]
+  );
+
   const saveModifiedFilesOfTabId = useCallback(
     async (tabId: string): Promise<SaveResult[]> => {
       if (!monaco) return Promise.resolve([]);
@@ -308,34 +363,7 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       const tabInfo: ModifiedTabsInfo = tabInfos[0];
       await Promise.all(
         tabInfo.uriPaths.map(async (uriPath) => {
-          const path = uriPath.split(":")[1];
-          const saveItem: SaveResult = new SaveResult(tabId, path, false, tabInfo.providerId, "");
-          const editorModel = monaco.editor.getModel(monaco.Uri.file(uriPath));
-          if (editorModel) {
-            const path = editorModel.uri.path.split(":")[1];
-            // TODO change encoding if the file is encoded as HEX
-            const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
-            const providerObj = rosCtx.getProviderById(tabInfo.providerId, false);
-            if (providerObj) {
-              const saveResult = await providerObj.saveFileContent(fileToSave);
-              if (saveResult.bytesWritten > 0) {
-                logCtx.success("Successfully saved file", `path: ${path}`, "saved");
-                saveItem.result = true;
-              } else {
-                saveItem.message = `Error while save file ${path}: ${saveResult.error}`;
-                logCtx.error(`Error while save file ${path}`, `${saveResult.error}`, "not saved");
-              }
-            } else {
-              saveItem.message = `Provider ${tabInfo.providerId} not found`;
-              logCtx.error(
-                `Provider ${tabInfo.providerId} not found`,
-                `can not save file: ${path}`,
-                "not saved, no provider"
-              );
-            }
-          } else {
-            saveItem.message = "Model not found";
-          }
+          const saveItem = await saveFile(tabId, tabInfo.providerId, uriPath);
           result.push(saveItem);
         })
       );
@@ -344,12 +372,25 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
     [logCtx, modifiedFiles, monaco, rosCtx]
   );
 
-  function createUriPath(tabId: string, path: string): string {
+  const isModifiedModel = useCallback(
+    (model: editor.ITextModel): boolean => {
+      const item: TModelVersion | undefined = savedModelVersions.find((item) => {
+        return item.path === model.uri.path;
+      });
+      if (item) {
+        return item.version !== model.getAlternativeVersionId();
+      }
+      return model.getAlternativeVersionId() > 1;
+    },
+    [savedModelVersions]
+  );
+
+  const createUriPath = useCallback((tabId: string, path: string): string => {
     if (path.indexOf(":") !== -1) {
       return path;
     }
     return `/${tabId}:${path}`;
-  }
+  }, []);
 
   /**
    * Return a monaco model from a given path
@@ -369,55 +410,62 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
    * Create a new monaco model from a given file
    * @param file - Original file
    */
-  function createModel(tabId: string, file: FileItem): monaco.editor.ITextModel | null {
-    if (!monaco) return null;
-    const pathUri = monaco.Uri.file(createUriPath(tabId, file.path));
-    // create monaco model, if it does not exists yet
-    const model = monaco.editor.getModel(pathUri);
-    if (model) {
-      // if (model.modified) {
-      //   // TODO: ask the user how to proceed
-      //   return model;
-      // }
-      model.dispose();
-    }
-    return monaco.editor.createModel(file.value, FileLanguageAssociations[file.extension], pathUri);
-  }
+  const createModel = useCallback(
+    (tabId: string, file: FileItem): monaco.editor.ITextModel | null => {
+      if (!monaco) return null;
+      const pathUri = monaco.Uri.file(createUriPath(tabId, file.path));
+      // create monaco model, if it does not exists yet
+      const model = monaco.editor.getModel(pathUri);
+      if (model) {
+        // if (model.modified) {
+        //   // TODO: ask the user how to proceed
+        //   return model;
+        // }
+        model.dispose();
+      }
+      return monaco.editor.createModel(file.value, FileLanguageAssociations[file.extension], pathUri);
+    },
+    [monaco]
+  );
 
-  async function getModel(
-    tabId: string,
-    providerId: string,
-    path: string,
-    forceReload: boolean
-  ): Promise<{ model: monaco.editor.ITextModel | null; file: FileItem | null; error: string }> {
-    let model: monaco.editor.ITextModel | null = getModelFromPath(tabId, path);
-    if (!model || forceReload) {
-      const provider = rosCtx.getProviderById(providerId, false);
-      if (!provider) {
-        return Promise.resolve({ model: null, file: null, error: "" });
-      }
-      const filePath = path.indexOf(":") === -1 ? path : path.split(":")[1];
-      const { file, error } = await provider.getFileContent(filePath);
-      if (!error) {
-        model = createModel(tabId, file);
-        if (!model) {
-          logCtx.error(
-            `Could not create model for included file: [${file.fileName}]`,
-            `Host: ${provider.host()}, root file: ${file.path}`,
-            "file model error"
-          );
+  const getModel = useCallback(
+    async (
+      tabId: string,
+      providerId: string,
+      path: string,
+      forceReload: boolean
+    ): Promise<{ model: monaco.editor.ITextModel | null; file: FileItem | null; error: string }> => {
+      let model: monaco.editor.ITextModel | null = getModelFromPath(tabId, path);
+      if (!model || forceReload) {
+        const provider = rosCtx.getProviderById(providerId, false);
+        if (!provider) {
+          return Promise.resolve({ model: null, file: null, error: "" });
         }
-        return Promise.resolve({ model: model, file, error });
+        const filePath = path.indexOf(":") === -1 ? path : path.split(":")[1];
+        const { file, error } = await provider.getFileContent(filePath);
+        if (!error) {
+          model = createModel(tabId, file);
+          if (!model) {
+            logCtx.error(
+              `Could not create model for included file: [${file.fileName}]`,
+              `Host: ${provider.host()}, root file: ${file.path}`,
+              "file model error"
+            );
+          }
+          return Promise.resolve({ model: model, file, error });
+        }
+        console.error(`Could not open included file: [${file.fileName}]: ${error}`);
       }
-      console.error(`Could not open included file: [${file.fileName}]: ${error}`);
-    }
-    return Promise.resolve({ model: model, file: null, error: "" });
-  }
+      return Promise.resolve({ model: model, file: null, error: "" });
+    },
+    [rosCtx]
+  );
 
   const attributesMemo = useMemo(
     () => ({
       monaco,
       modifiedFiles,
+      savedModelVersions,
       setModifiedFiles,
       getModifiedTabs,
       updateModifiedFiles,
@@ -427,19 +475,15 @@ export function MonacoProvider({ children }: IMonacoProvider): ReturnType<React.
       createUriPath,
       getModel,
       createModel,
+      saveFile,
+      isModifiedModel,
     }),
     [
       monaco,
+      rosCtx,
+      logCtx,
       modifiedFiles,
-      setModifiedFiles,
-      getModifiedTabs,
-      updateModifiedFiles,
-      clearModifiedTabs,
-      getModifiedFilesByTab,
-      saveModifiedFilesOfTabId,
-      createUriPath,
-      getModel,
-      createModel,
+      savedModelVersions,
     ]
   );
 

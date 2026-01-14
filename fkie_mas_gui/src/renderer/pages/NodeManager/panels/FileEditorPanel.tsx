@@ -70,11 +70,6 @@ type TActiveModel = {
   model: editor.ITextModel;
 };
 
-type TModelVersion = {
-  path: string;
-  version: number;
-};
-
 type TFileItem = {
   path: string;
   file: FileItem;
@@ -148,7 +143,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
   const [installPathsWarn, setInstallPathsWarn] = useState<string[]>([]);
   const [modifiedFiles, setModifiedFiles] = useState<string[]>([]);
-  const [savedModelVersions, setSavedModelVersions] = useState<TModelVersion[]>([]);
   const [includedFiles, setIncludedFiles] = useState<LaunchIncludedFile[]>([]);
   const [notificationDescription, setNotificationDescription] = useState("");
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
@@ -231,26 +225,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     [setMonacoDisposables]
   );
 
-  const isModified = useCallback(
-    (model: editor.ITextModel): boolean => {
-      const item: TModelVersion | undefined = savedModelVersions.find((item) => {
-        return item.path === model.uri.path;
-      });
-      if (item) {
-        return item.version !== model.getAlternativeVersionId();
-      }
-      return model.getAlternativeVersionId() > 1;
-    },
-    [savedModelVersions]
-  );
-
   // update modified files in this panel and context
-  const updateModifiedFiles = useCallback(() => {
+  function updateModifiedFiles(): void {
     if (!monaco) return;
     const newModifiedFiles = monaco.editor
       .getModels()
       .filter((model: editor.ITextModel) => {
-        const result = isModified(model) && ownUriPaths.includes(model.uri.path);
+        const result = monacoCtx.isModifiedModel(model) && ownUriPaths.includes(model.uri.path);
         return result;
       })
       .map((model) => {
@@ -258,7 +239,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       });
     setModifiedFiles(newModifiedFiles);
     monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }, [monaco, tabId, providerId, ownUriPaths, monacoCtx.updateModifiedFiles, isModified]);
+  }
 
   // update decorations for included files
   const updateIncludeDecorations = async (
@@ -369,7 +350,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       await updateIncludeDecorations(result.model, includedFiles);
       setActiveModel({
         path: result.model.uri.path,
-        modified: isModified(result.model),
+        modified: monacoCtx.isModifiedModel(result.model),
         model: result.model,
       });
       // update modified files for the user info in the info bar
@@ -495,37 +476,25 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   useEffect(() => {
     updateModifiedFiles();
-  }, [savedModelVersions]);
+  }, [monacoCtx.savedModelVersions]);
 
   const saveCurrentFile = useCallback(
     async (editorModel: editor.ITextModel): Promise<void> => {
-      const path = pathFromUri(editorModel.uri.path);
-      // TODO change encoding if the file is encoded as HEX
-      const fileToSave = new FileItem("", path, "", "", false, editorModel.getValue());
-      const providerObj = rosCtx.getProviderById(providerId, true);
-      if (providerObj) {
-        const saveResult = await providerObj.saveFileContent(fileToSave);
-        if (saveResult.bytesWritten > 0) {
+      const saveResult = await monacoCtx.saveFile(tabId, providerId, editorModel.uri.path);
+      if (saveResult.result) {
+        // update saved file to avoid reload question of the current editing file
+        if (!savedFiles.includes(editorModel.uri.path)) {
+          setSavedFiles([...savedFiles, editorModel.uri.path]);
+        }
+        // update state of external window
+        const providerObj = rosCtx.getProviderById(providerId, true);
+        if (providerObj) {
+          const path = pathFromUri(editorModel.uri.path);
           const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
           window.editorManager?.changed(id, path, false);
-          // update saved file to avoid reload of the current editing file
-          if (!savedFiles.includes(editorModel.uri.path)) {
-            setSavedFiles([...savedFiles, editorModel.uri.path]);
-          }
-          logCtx.success("Successfully saved file", `path: ${path}`, "saved");
-          setSavedModelVersions((prev) => [
-            ...prev.filter((item) => {
-              return item.path !== editorModel.uri.path;
-            }),
-            { path: editorModel.uri.path, version: editorModel.getAlternativeVersionId() } as TModelVersion,
-          ]);
-          setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
-          await getIncludedFiles();
-        } else {
-          logCtx.error(`Error while save file ${path}`, `${saveResult.error}`, "not saved");
         }
-      } else {
-        logCtx.error(`Provider ${providerId} not found`, `can not save file: ${path}`, "not saved");
+        setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
+        await getIncludedFiles();
       }
     },
     [providerId, savedFiles, rootFilePath, rosCtx.getProviderById]
@@ -591,11 +560,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
             window.editorManager?.changed(id, activeModel.path, true);
           }
+          updateIncludeDecorations(result.model, includedFiles);
         }
-        await updateIncludeDecorations(activeModel?.model, includedFiles);
       }
     },
-    [activeModel, setActiveModel, monacoCtx.getModel, updateModifiedFiles]
+    [activeModel, monacoCtx, rosCtx]
   );
 
   useEffect(() => {
@@ -754,6 +723,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       setNotificationDescription("The provider does not have configured any host.");
       return;
     }
+
     setProviderHost(provider.host());
     setProviderName(provider.name());
     setNotificationDescription("Getting file from provider...");
