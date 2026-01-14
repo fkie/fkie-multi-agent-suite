@@ -267,19 +267,24 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   ): Promise<void> => {
     if (!model) return;
     // filter files
+    const handled: string[] = [];
     const newLinks: languages.ILink[] = [];
     if (includedFilesList) {
       for (const f of includedFilesList) {
         const path = pathFromUri(model.uri.path);
         if (path === f.path && path !== f.inc_path) {
-          const matches = model.findMatches(f.raw_inc_path, false, false, false, null, true);
-          if (matches.length > 0) {
-            for (const match of matches) {
-              newLinks.push({
-                range: match.range,
-                url: `${model.uri.path.split(":")[0]}:${f.inc_path}`,
-              });
+          const handledId = `${f.path}#${f.inc_path}`;
+          if (!handled.includes(handledId)) {
+            const matches = model.findMatches(f.raw_inc_path, false, false, false, null, true);
+            if (matches.length > 0) {
+              for (const match of matches) {
+                newLinks.push({
+                  range: match.range,
+                  url: `${model.uri.path.split(":")[0]}:${f.inc_path}`,
+                });
+              }
             }
+            handled.push(handledId);
           }
         }
       }
@@ -342,7 +347,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         logCtx.error(`Could not get model for file: ${uriPath}`, "");
         return false;
       }
-
       if (result.file && result.model) {
         updateInstallPathsWarn(result.file, result.model.uri.path);
       }
