@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.0.3 - 16.01.2026
+
+Fixed wrong state of unsaved files
+Fixed multiple "follow link" in editor
+
 ## 5.0.2 - 22.12.2025
 
 Fixed update launch files
