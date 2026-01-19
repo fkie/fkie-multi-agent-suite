@@ -212,7 +212,7 @@ function get_package() {
     # Search for the file in the releases
     LATEST_VERSION=""
     while read -r ASSET_NAME FILE_URL DIGEST; do
-        if [[ "$ASSET_NAME" =~ ^${PACKAGE}.*_${ARCH}\.deb$ ]]; then
+        if [[ "$ASSET_NAME" =~ ^${PACKAGE}.*_${OS_CODENAME}_${ARCH}\.deb$ ]]; then
             VERSION=$(echo "$ASSET_NAME" | grep -oP '\d+\.\d+\.\d+')
             if [[ -n "$VERSION" ]]; then
                 if [[ ! -n "$LATEST_VERSION" ]] || dpkg --compare-versions $LATEST_VERSION lt $VERSION; then
@@ -253,7 +253,7 @@ function get_package() {
             DEBS_TO_INSTALL+=("$TMP_DIR/$DEB_FILE")
         fi
     else
-        echo -e "⚠️ \e[38;5;208m No .deb file for '$PACKAGE' (arch $ARCH) found.\e[0m"
+        echo -e "⚠️ \e[38;5;208m file for '$PACKAGE' ($OS_CODENAME, $ARCH) found.\e[0m"
         return 1
     fi
     return 0
