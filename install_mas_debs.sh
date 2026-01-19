@@ -212,7 +212,7 @@ function get_package() {
     # Search for the file in the releases
     LATEST_VERSION=""
     while read -r ASSET_NAME FILE_URL DIGEST; do
-        if [[ "$ASSET_NAME" =~ ^${PACKAGE}.*_${OS_CODENAME}_${ARCH}\.deb$ ]]; then
+        if [[ "$ASSET_NAME" =~ ^${PACKAGE}.*${OS_CODENAME}_${ARCH}\.deb$ ]]; then
             VERSION=$(echo "$ASSET_NAME" | grep -oP '\d+\.\d+\.\d+')
             if [[ -n "$VERSION" ]]; then
                 if [[ ! -n "$LATEST_VERSION" ]] || dpkg --compare-versions $LATEST_VERSION lt $VERSION; then
