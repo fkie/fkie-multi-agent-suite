@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.0.4 - 22.01.2026
+
+Fixed starting the entire capability group if its name contains spaces
+Fixed install script and include OS-CODENAME into search for debian files
+
 ## 5.0.3 - 16.01.2026
 
 Fixed wrong state of unsaved files
