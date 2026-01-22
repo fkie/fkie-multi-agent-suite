@@ -21,6 +21,8 @@ import NodeItem from "./NodeItem";
 import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
 // import { useTreeViewApiRef } from "@mui/x-tree-view";
 
+const ID_SEP="█"
+
 function compareTreeItems(a: NodeTreeItem, b: NodeTreeItem): number {
   // place system groups are at the end
   const aSystem = a.treePath.match(/({SYSTEM})|({SPAM})/);
@@ -154,13 +156,12 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         nodePath.split("/").reduce((r: NodeTree, name, idx, a) => {
           if (!r[name]) {
             r[name] = { nodeTree: [] };
-
             // Meaning of [name]:
             //    In case of a node: corresponds to the uniqueId
             //    In case of group: corresponds to group name
             if (nodeItemMap.has(name)) {
               // create a node
-              const guidStr = node.guid ? ` ${node.guid}` : "";
+              const guidStr = node.guid ? `${ID_SEP}${node.guid}` : "";
               const groupName = a.slice(0, -1).join("/");
               const treePath = `${groupName}#${nodeNameWithoutNamespace(node)}${guidStr}`;
               r.nodeTree.push({
@@ -263,8 +264,8 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             .filter((entry) => {
               // running nodes ends with id in their name, loaded from launch file not
               // we have to remove id if we compare running with not running nodes
-              const [entryName, entryId] = entry.key.split(" ");
-              const [itemName, itemId] = item.split(" ");
+              const [entryName, entryId] = entry.key.split(ID_SEP);
+              const [itemName, itemId] = item.split(ID_SEP);
               if (entryName === itemName) {
                 if (entryId && itemId) {
                   return entryId === itemId;
@@ -527,8 +528,8 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
                 if (selItemSplitted.provider === keyItemSplitted.provider) {
                   // running nodes ends with id in their name, loaded from launch file not
                   // we have to remove id if we compare running with not running nodes
-                  const [entryName, entryId] = keyItemSplitted.node_name.split(" ");
-                  const [itemName, itemId] = selItemSplitted.node_name.split(" ");
+                  const [entryName, entryId] = keyItemSplitted.node_name.split(ID_SEP);
+                  const [itemName, itemId] = selItemSplitted.node_name.split(ID_SEP);
                   if (entryName === itemName) {
                     if (entryId && itemId) {
                       return entryId === itemId;
