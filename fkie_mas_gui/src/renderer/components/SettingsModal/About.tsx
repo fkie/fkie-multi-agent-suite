@@ -172,7 +172,7 @@ export default function About(): JSX.Element {
               </Stack>
               <Typography variant="body1" color="green">
                 Or try to start the local TTYD.
-              </Typography>{" "}
+              </Typography>
             </Stack>
           </Stack>
         )}

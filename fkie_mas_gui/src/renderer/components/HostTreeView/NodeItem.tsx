@@ -519,7 +519,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
                   >
                     <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
                   </Tooltip>
-                )}{" "}
+                )}
               {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
                 <Tooltip title="Multiple Screens" placement="left">
                   <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />

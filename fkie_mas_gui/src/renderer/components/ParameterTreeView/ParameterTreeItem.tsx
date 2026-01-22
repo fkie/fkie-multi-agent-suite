@@ -387,7 +387,7 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
                   <Stack direction="row" sx={{ alignItems: "center", minHeight: "2em" }}>
                     <Typography variant="body2" sx={{ fontWeight: "inherit", userSelect: "none" }}>
                       {namespace}
-                    </Typography>{" "}
+                    </Typography>
                     <Typography
                       variant="body2"
                       sx={{ fontSize: "inherit", fontWeight: "bold", overflow: "hidden", textOverflow: "ellipsis" }}
