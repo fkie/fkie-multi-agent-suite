@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.0.5 - 05.02.2026
+
+Fixed behavior when collapsing JSON in the topic echo panel
+
 ## 5.0.4 - 22.01.2026
 
 Fixed starting the entire capability group if its name contains spaces
