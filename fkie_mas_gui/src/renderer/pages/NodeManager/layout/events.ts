@@ -41,6 +41,11 @@ export type TEventInfoState = {
   message: string;
 };
 
+export type TEventCollapsedState = {
+  isCollapsed: boolean;
+  key: string;
+};
+
 export function sendStateSuccess(message: string) {
   emitCustomEvent(EVENT_INFO_STATE, { level: InfoStateLevel.SUCCESS, message: `✅ ${message}` } as TInfoState);
 }

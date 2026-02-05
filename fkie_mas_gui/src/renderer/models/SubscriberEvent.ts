@@ -1,6 +1,13 @@
 /* eslint-disable camelcase */
 import { JSONObject } from "@/types";
 
+export interface TSubscriberEventExt extends SubscriberEvent {
+  key: string;
+  seq?: number;
+  timestamp: number;
+  receivedIndex: number;
+}
+
 /**
  * SubscriberEvent models a received ROS message and statistics for a topic.
  */

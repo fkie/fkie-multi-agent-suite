@@ -23,29 +23,21 @@ import {
 } from "@mui/material";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-import JsonView from "react18-json-view";
 import { v4 as uuid } from "uuid";
 
-import { CopyButton, Tag } from "@/renderer/components/UI";
+import { Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
-import { RosNode, RosQos, SubscriberEvent, SubscriberFilter } from "@/renderer/models";
-import { qosFromJson } from "@/renderer/models/RosQos";
+import { RosNode, RosQos, SubscriberFilter, TSubscriberEventExt } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "@/renderer/providers/eventTypes";
-import { findIn } from "@/renderer/utils";
-
-interface TSubscriberEventExt extends SubscriberEvent {
-  key: string;
-  seq?: number;
-  timestamp: number;
-  receivedIndex: number;
-}
+import { TEventCollapsedState } from "../layout/events";
+import MessageFrame from "./MessageFrame";
 
 interface TopicEchoPanelProps {
   showOptions: boolean;
@@ -67,12 +59,16 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
   const [topicName, setTopic] = useState(defaultTopic);
   const [topicType, setTopicType] = useState<string>("");
   const [content, setContent] = useState<TSubscriberEventExt>();
+  const [rootCollapsed, setRootCollapsed] = useState<boolean>(false);
   const [collapsedKeys, setCollapsedKeys] = useState<(string | number)[]>(["stamp", "covariance"]);
   const [history, setHistory] = useState<TSubscriberEventExt[]>([]);
   const [showStatistics, setShowStatistics] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(true);
   const [filterText, setFilterText] = useState("");
-  const [showWholeFilteredMessage, setShowWholeFilteredMessage] = useState(false);
+  const [showWholeFilteredMessage, setShowWholeFilteredMessage] = useLocalStorage<boolean>(
+    "TopicEcho:showWholeFilteredMessage",
+    false
+  );
   const [noData, setNoData] = useState(defaultNoData);
   const [noStr, setNoStr] = useState(false);
   const [noArr, setNoArr] = useState(false);
@@ -135,6 +131,23 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
       if (event === undefined) return;
       event.receivedIndex = -1;
       setEvent(event);
+    },
+    [topicName]
+  );
+
+  useCustomEventListener(
+    `collapse_state_${topicName}`,
+    (data: TEventCollapsedState) => {
+      if (data.key === "") {
+        setRootCollapsed(data.isCollapsed);
+      } else {
+        setCollapsedKeys((prev) => {
+          if (data.isCollapsed) {
+            return [...prev, data.key];
+          }
+          return prev.filter((item) => item !== data.key);
+        });
+      }
     },
     [topicName]
   );
@@ -229,115 +242,20 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     return `${size.toFixed(fixed)}B${per}`;
   }
 
-  function isObject(item: object | Array<object> | null): boolean {
-    return (item && typeof item === "object") || Array.isArray(item);
-  }
-
-  function filterJson(data: object | Array<object> | null, filter: string): object | Array<object> | null {
-    if (filter.length < 2) {
-      return data;
-    }
-    const result = {};
-    if (isObject(data)) {
-      for (const key in data) {
-        if (isObject(data[key])) {
-          const res = filterJson(data[key], filter);
-          if (res && Object.keys(res).length > 0) {
-            result[key] = res;
-            if (showWholeFilteredMessage) return data;
-          }
-        } else {
-          if (findIn(filter, [key, JSON.stringify(data[key])])) {
-            result[key] = data[key];
-            if (showWholeFilteredMessage) return data;
-          }
-        }
-      }
-    }
-    return result;
-  }
-
-  function topicsToJson(): JSX.Element[] {
+  const generateJsonTopics = useMemo(() => {
     return history.map((event) => {
       return (
-        <Stack key={`box-${event.key}`} direction="column">
-          <Divider sx={{ borderStyle: "dashed" }} textAlign="left" flexItem>
-            <Stack direction="row" spacing={1} alignItems="center">
-              {event.seq === undefined && (
-                <Typography fontStyle="italic" fontSize="0.8em" color="gray">
-                  {event.receivedIndex} --- {new Date(event.timestamp).toLocaleTimeString()}
-                </Typography>
-              )}
-              {event.seq !== undefined && (
-                <Typography fontStyle="italic" fontSize="0.8em" color="gray">
-                  {event.seq} --- {new Date(event.timestamp).toLocaleTimeString()}
-                </Typography>
-              )}
-              <Tooltip
-                title="Copy message with 'ros2 topic pub' command"
-                placement="bottom"
-                enterDelay={tooltipDelay}
-                enterNextDelay={tooltipDelay}
-                disableInteractive
-              >
-                <>
-                  <CopyButton
-                    value={`ROS_DOMAIN_ID=${currentProvider?.rosState.ros_domain_id || 0} ros2 topic pub -1 --keep-alive 3 ${currentQos ? qosFromJson(currentQos).toString() : ""} ${topicName} ${topicType} '${JSON.stringify(event)}'`}
-                    logText="ros2 pub string copied"
-                    fontSize="0.8em"
-                  />
-                </>
-              </Tooltip>
-            </Stack>
-          </Divider>
-          <Stack direction="row">
-            <JsonView
-              key={`${event.key}`}
-              src={filterJson(event?.data, filterText)}
-              dark={settingsCtx.get("useDarkMode") as boolean}
-              theme="a11y"
-              enableClipboard={false}
-              ignoreLargeArray={false}
-              collapseObjectsAfterLength={3}
-              displaySize={"collapsed"}
-              collapsed={(params: {
-                node: Record<string, unknown> | Array<unknown>; // Object or array
-                indexOrName: number | string | undefined;
-                depth: number;
-                size: number; // Object's size or array's length
-              }) => {
-                if (params.indexOrName === undefined) return false;
-                const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
-                return collapsedKeys.includes(idx);
-              }}
-              onCollapse={(params: {
-                isCollapsing: boolean;
-                node: Record<string, unknown> | Array<unknown>;
-                indexOrName: string | number | undefined;
-                depth: number;
-              }) => {
-                if (params.indexOrName !== undefined) {
-                  const idx = Number.isInteger(params.indexOrName) ? JSON.stringify(params.node) : params.indexOrName;
-                  if (!params.isCollapsing) {
-                    if (!collapsedKeys.includes(idx)) {
-                      setCollapsedKeys((prev) => [...prev, idx as string | number]);
-                    }
-                  } else {
-                    if (collapsedKeys.includes(idx)) {
-                      setCollapsedKeys((prev) => prev.filter((item) => item !== idx));
-                    }
-                  }
-                }
-              }}
-            />
-          </Stack>
-        </Stack>
+        <MessageFrame
+          key={event.key}
+          event={event}
+          domainId={currentProvider?.rosState.ros_domain_id || "0"}
+          qos={currentQos}
+          filter={filterText}
+          initRootCollapsed={rootCollapsed}
+          initCollapsed={collapsedKeys}
+        />
       );
     });
-  }
-
-  const generateJsonTopics = useMemo(() => {
-    return topicsToJson();
   }, [history, settingsCtx.changed, collapsedKeys, filterText, showWholeFilteredMessage]);
 
   const createStatistics = useMemo(() => {

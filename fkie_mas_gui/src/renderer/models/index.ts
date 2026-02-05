@@ -51,7 +51,7 @@ import LogEvent, { LoggingLevel } from "./LogEvent";
 import LoggerConfig, { LogLevelType } from "./LoggerConfig";
 import LogPathItem from "./LogPathItem";
 import Result from "./Result";
-import SubscriberEvent from "./SubscriberEvent";
+import SubscriberEvent, { TSubscriberEventExt } from "./SubscriberEvent";
 import SubscriberFilter from "./SubscriberFilter";
 import SubscriberNode from "./SubscriberNode";
 import SystemWarning from "./SystemWarning";
@@ -132,6 +132,7 @@ export {
     RosParameterValue,
     TLifecycleTransition,
     TRosMessageStruct,
-    TServiceNodeInfo
+    TServiceNodeInfo,
+    TSubscriberEventExt
   };
 
