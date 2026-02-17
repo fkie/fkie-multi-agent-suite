@@ -79,6 +79,9 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
   const [arrayItemsCount, setArrayItemsCount] = useLocalStorage<number>(`TopicEcho:arrayLimit:${defaultTopic}`, 15);
   const [pause, setPause] = useState<boolean>(false);
   const [event, setEvent] = useState<TSubscriberEventExt | undefined>();
+  const [_currentSubscriberId, setCurrentSubscriberId] = useState<number>(0);
+  const [_previousSubscriberId, setPreviousSubscriberId] = useState<number[]>([]);
+  const [multipleSubscriberId, setMultipleSubscriberId] = useState<boolean>(false);
   const [receivedIndex, setReceivedIndex] = useState(0);
   const [qosAnchorEl, setQosAnchorEl] = useState(null);
   const [currentQos, setCurrentQos] = useState<RosQos | undefined>(undefined);
@@ -122,6 +125,21 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     event.timestamp = Date.now();
     setReceivedIndex((prev) => prev + 1);
     setContent(event);
+    setCurrentSubscriberId((prevId) => {
+      if (event.subscriber_id !== prevId) {
+        if (prevId !== 0) {
+          setPreviousSubscriberId((prevIds) => {
+            if (prevIds.includes(event.subscriber_id)) {
+              setMultipleSubscriberId(true);
+            }
+            return [...prevIds.filter((a) => a !== prevId), prevId]
+          })
+        }
+        return event.subscriber_id;
+      }
+      setMultipleSubscriberId(false);
+      return prevId;
+    });
   }, [event, receivedIndex]);
 
   useCustomEventListener(
@@ -604,6 +622,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
           </Stack>
           <Stack>{showOptions && generateOptions}</Stack>
         </Paper>
+        {multipleSubscriberId && <Typography color="red">Multiple MAS-Subscriber detected!</Typography>}
         <Stack width="100%" height="100%" overflow="auto">
           {history && !noData && generateJsonTopics}
           {!currentProvider && (

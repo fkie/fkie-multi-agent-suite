@@ -51,6 +51,7 @@ class RosSubscriberLauncher:
     DEFAULT_WINDOWS_SIZE = 5000
 
     def __init__(self, test_env=False):
+        self.subscriber_id = int(time.time())
         self.parser = self._init_arg_parser()
         # change terminal name
         parsed_args, remaining_args = self.parser.parse_known_args()
@@ -343,6 +344,7 @@ class RosSubscriberLauncher:
         self._count_received += 1
         self._latched = False
         event = SubscriberEvent(self._topic, self._message_type)
+        event.subscriber_id = self.subscriber_id
         event.latched = self._latched
         json_msg_size = -1
         if not self._no_data:

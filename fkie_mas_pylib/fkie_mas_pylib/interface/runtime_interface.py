@@ -647,6 +647,7 @@ class SubscriberEvent:
         size: float = -1,
         size_min: float = -1,
         size_max: float = -1,
+        subscriber_id: int = 0,
     ) -> None:
         self.topic = topic
         self.message_type = message_type
@@ -663,6 +664,7 @@ class SubscriberEvent:
         self.size = size
         self.size_min = size_min
         self.size_max = size_max
+        self.subscriber_id = subscriber_id
 
 
 class DaemonVersion:

@@ -66,6 +66,8 @@ export default class SubscriberEvent {
 
   size_max: number;
 
+  subscriber_id: number;
+
   constructor(
     topic: string,
     message_type: string,
@@ -81,7 +83,8 @@ export default class SubscriberEvent {
     delay_max: number,
     size: number,
     size_min: number,
-    size_max: number
+    size_max: number,
+    subscriber_id: number
   ) {
     this.topic = topic;
     this.message_type = message_type;
@@ -98,5 +101,6 @@ export default class SubscriberEvent {
     this.size = size;
     this.size_min = size_min;
     this.size_max = size_max;
+    this.subscriber_id = subscriber_id;
   }
 }
