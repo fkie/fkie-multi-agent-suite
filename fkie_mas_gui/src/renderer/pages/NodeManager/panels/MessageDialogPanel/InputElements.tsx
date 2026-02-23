@@ -150,6 +150,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
       vis = pos !== -1 ? "" : "none";
     }
     setVisible(vis);
+    setUseNow(messageStruct.useNow || false);
   }, [filterText, messageStruct]);
 
   if (messageStruct === undefined || messageStruct === null) {
