@@ -69,12 +69,12 @@ export default function OverflowMenu(props: OverflowMenuProps): JSX.Element {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   function handleClick(event): void {
-    if (options.length > 1) {
-      setAnchorEl(event.currentTarget);
-      event.stopPropagation();
-    } else if (autoClick || options.length === 1) {
+    if (autoClick && options.length === 1) {
       options[0]?.onClick(event);
       handleClose(event);
+    } else {
+      setAnchorEl(event.currentTarget);
+      event.stopPropagation();
     }
   }
   function handleClose(event): void {

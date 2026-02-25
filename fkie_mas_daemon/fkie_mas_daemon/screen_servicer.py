@@ -50,7 +50,7 @@ class ScreenServicer:
         self._is_running = False
         if self._thread_notify is not None:
             self._thread_notify.cancel()
-    
+
     def _send_update_notification(self):
         self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
         self._thread_notify = None
@@ -125,29 +125,42 @@ class ScreenServicer:
         screens = screen.get_active_screens(name)
         if len(screens.items()) == 0:
             return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
+        error_msg = ""
         for session_name, node_name in screens.items():
             successCur = False
             pid_screen, session_name = screen.split_session_name(session_name)
             found_pid, found_name, parents2kill = process.get_child_pid(pid_screen)
             if found_pid > -1:
-                Log.info(
-                    f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig_obj.name}")
-                os.kill(found_pid, sig_obj)
-                # kill all parents, to handle the case if respawn script is used
-                if sig_obj == signal.SIGKILL:
+                try:
                     Log.info(
-                        f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig_obj.name}")
-                    for parent_pid in reversed(parents2kill):
-                        if hasattr(parent_pid, "pid"):
-                            os.kill(parent_pid.pid, sig_obj)
-                        else:
+                        f"{self.__class__.__name__}: Kill process '{found_name}' with process id '{found_pid}' using signal {sig_obj.name}")
+                    os.kill(found_pid, sig_obj)
+                    # kill all parents, to handle the case if respawn script is used
+                    if sig_obj == signal.SIGKILL:
+                        Log.info(
+                            f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig_obj.name}")
+                        parent_pid_list = []
+                        # get only parents until the screen
+                        for parent_pid in parents2kill:
+                            pid = parent_pid.pid if hasattr(parent_pid, "pid") else parent_pid
+                            if pid >= pid_screen:
+                                parent_pid_list.append(pid)
+                        parent_pid_list.sort(reverse=True)
+                        for parent_pid in parent_pid_list:
                             os.kill(parent_pid, sig_obj)
-                successCur = True
+                    successCur = True
+                except Exception:
+                    import traceback
+                    error_msg = traceback.format_exc()
             if not successCur:
-                Log.info(
-                    f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid_screen}' using signal {sig_obj.name}")
-                os.kill(pid_screen, sig_obj)
-                successCur = True
+                try:
+                    Log.info(
+                        f"{self.__class__.__name__}: Kill screen '{session_name}' with process id '{pid_screen}' using signal {sig_obj.name}")
+                    os.kill(pid_screen, sig_obj)
+                    successCur = True
+                except Exception as err:
+                    import traceback
+                    error_msg = f"Error while try to kill screen with session name '{session_name}': {traceback.format_exc()}"
             if successCur:
                 success = True
         if success and self._thread_notify is None:
@@ -155,7 +168,7 @@ class ScreenServicer:
             self._thread_notify.setDaemon(True)
             self._thread_notify.start()
 
-        return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
+        return json.dumps({'result': success, 'message': error_msg}, cls=SelfEncoder)
 
     def get_screen_list(self) -> str:
         Log.info(

@@ -26,7 +26,12 @@ import {
   RosNode,
   RosNodeStatus,
 } from "@/renderer/models";
-import { EVENT_FILTER_NODES, eventFilterNodes } from "@/renderer/pages/NodeManager/layout/events";
+import {
+  emitKillNodes,
+  emitShowScreens,
+  EVENT_FILTER_NODES,
+  eventFilterNodes,
+} from "@/renderer/pages/NodeManager/layout/events";
 import { TEventNodeComposable, TEventNodeLifecycle } from "@/renderer/providers/events";
 import { EVENT_NODE_COMPOSABLE, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
@@ -441,6 +446,48 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
               }}
             >
               {nodeIcon}
+              {(node.screens || []).length > 1 && (
+                <OverflowMenu
+                  icon={
+                    node.status === RosNodeStatus.RUNNING ? (
+                      <Tooltip title="Multiple Screens" disableInteractive>
+                        <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Ghost Screens" disableInteractive>
+                        <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+                      </Tooltip>
+                    )
+                  }
+                  options={[
+                    {
+                      name: "Show screens",
+                      key: "show-screens",
+                      onClick: async (): Promise<void> => {
+                        emitShowScreens({ nodes: [node] });
+                      },
+                    },
+                    {
+                      name: "Kill screens",
+                      key: "kill-screens",
+                      onClick: async (): Promise<void> => {
+                        emitKillNodes({ nodes: [node] });
+                      },
+                    },
+                  ]}
+                  id={`multiple-screens-menu-${node.id}`}
+                />
+              )}
+              {/* {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
+                <Tooltip title="Multiple Screens" placement="left">
+                  <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+                </Tooltip>
+              )}
+              {node.status !== RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
+                <Tooltip title="Ghost Screens" placement="left">
+                  <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+                </Tooltip>
+              )} */}
               <Stack direction="row" paddingLeft={0.5} sx={{ userSelect: "none" }} alignItems="center">
                 <Typography variant="body2" sx={{ fontSize: "inherit", userSelect: "none" }}>
                   {namespacePart}
@@ -520,19 +567,9 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
                     <AutoDeleteIcon color="warning" style={{ fontSize: "inherit" }} />
                   </Tooltip>
                 )}
-              {node.status === RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
-                <Tooltip title="Multiple Screens" placement="left">
-                  <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
-                </Tooltip>
-              )}
               {node.status === RosNodeStatus.RUNNING && (node.screens || []).length < 1 && (
                 <Tooltip title="No Screens" placement="left">
                   <DesktopAccessDisabledOutlinedIcon style={{ fontSize: "inherit" }} />
-                </Tooltip>
-              )}
-              {node.status !== RosNodeStatus.RUNNING && (node.screens || []).length > 1 && (
-                <Tooltip title="Ghost Screens" placement="left">
-                  <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
                 </Tooltip>
               )}
               {showLaunchFile &&

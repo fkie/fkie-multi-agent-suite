@@ -1,3 +1,4 @@
+import { RosNode } from "@/renderer/models";
 import { InfoStateLevel, TFileRange, TInfoState, TLaunchArg } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
 import LayoutTabConfig from "./LayoutTabConfig";
@@ -11,6 +12,8 @@ export const EVENT_FILTER_NODES = "EVENT_FILTER_NODES" as const;
 export const EVENT_FILTER_TOPICS = "EVENT_FILTER_TOPICS" as const;
 export const EVENT_FILTER_SERVICES = "EVENT_FILTER_SERVICES" as const;
 export const EVENT_INFO_STATE = "EVENT_INFO_STATE" as const;
+export const EVENT_KILL_NODES = "EVENT_KILL_NODES" as const;
+export const EVENT_SHOW_SCREENS = "EVENT_SHOW_SCREENS" as const;
 
 export type TEventId = {
   id: string;
@@ -45,6 +48,15 @@ export type TEventCollapsedState = {
   isCollapsed: boolean;
   key: string;
 };
+
+export type TEventKillNodes = {
+  nodes: RosNode[];
+};
+
+export type TEventShowScreens = {
+  nodes: RosNode[];
+};
+
 
 export function sendStateSuccess(message: string) {
   emitCustomEvent(EVENT_INFO_STATE, { level: InfoStateLevel.SUCCESS, message: `✅ ${message}` } as TInfoState);
@@ -115,4 +127,13 @@ export function eventFilterTopics(data: string): TFilterText {
 
 export function eventFilterServices(data: string): TFilterText {
   return { data };
+}
+
+export function emitKillNodes(event: TEventKillNodes) {
+  emitCustomEvent(EVENT_KILL_NODES, event);
+}
+
+
+export function emitShowScreens(event: TEventShowScreens) {
+  emitCustomEvent(EVENT_SHOW_SCREENS, event);
 }

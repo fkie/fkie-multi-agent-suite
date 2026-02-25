@@ -42,9 +42,13 @@ import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
 import {
   EVENT_FILTER_NODES,
+  EVENT_KILL_NODES,
   EVENT_OPEN_COMPONENT,
+  EVENT_SHOW_SCREENS,
   eventOpenComponent,
   TEventId,
+  TEventKillNodes,
+  TEventShowScreens,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType } from "@/renderer/providers";
 import { ConnectionState, EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
@@ -223,6 +227,21 @@ export default function HostTreeViewPanel(): JSX.Element {
     setFilterText(data.id);
   });
 
+  useCustomEventListener(EVENT_KILL_NODES, (data: TEventKillNodes) => {
+    updateQueueMain(
+      data.nodes.map((node) => {
+        return { node, action: "KILL" };
+      })
+    );
+  });
+
+  useCustomEventListener(EVENT_SHOW_SCREENS, (data: TEventShowScreens) => {
+    for (const node of data.nodes) {
+      for (const screen of node.screens || []) {
+        createSingleTerminalPanel(CmdType.SCREEN, node.providerId, node.name, screen, false, false);
+      }
+    }
+  });
   // Register Callbacks ----------------------------------------------------------------------------------
 
   /**
