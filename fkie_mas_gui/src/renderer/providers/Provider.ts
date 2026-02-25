@@ -255,7 +255,7 @@ export default class Provider implements IProvider {
     this.settings = settings;
     this.setSettingsCtx(settings);
     this.rosVersion = rosVersion;
-    this.hostnames = [host];
+    this.addHosts([host], true);
     this.id = `${host}-${generateUniqueId()}`;
     if (this.type === WebsocketConnection.type) {
       this.connection = new WebsocketConnection(
@@ -351,6 +351,69 @@ export default class Provider implements IProvider {
 
   public setLoggerCtx(logger: ILoggingContext): void {
     this.logger = logger;
+  }
+
+  public addHosts(newEntries: string[], clear: boolean = false): void {
+    if (clear) this.hostnames = [];
+    const resultMap = new Map<string, string>();
+    // key = normalized value (for deduplication)
+    // value = original casing (first occurrence wins)
+
+    const normalize = (value: string): string => {
+      // Hostnames are case-insensitive, IPs are not case-sensitive either
+      return value.trim().toLowerCase();
+    };
+
+    const isIPv4 = (value: string): boolean => {
+      const ipv4Regex = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+      return ipv4Regex.test(value);
+    };
+
+    const isIPv6 = (value: string): boolean => {
+      // Simplified but robust IPv6 validation
+      const ipv6Regex =
+        /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(::)|(([0-9a-fA-F]{1,4}:){1,7}:)|(:([0-9a-fA-F]{1,4}:){1,7})|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}))$/;
+      return ipv6Regex.test(value);
+    };
+
+    const isIP = (value: string): boolean => {
+      return isIPv4(value) || isIPv6(value);
+    };
+
+    const addEntry = (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+
+      const key = normalize(trimmed);
+      if (!resultMap.has(key)) {
+        resultMap.set(key, trimmed);
+      }
+    };
+
+    const processEntry = (entry: string) => {
+      const trimmed = entry.trim();
+      if (!trimmed) return;
+
+      // Always add original entry
+      addEntry(trimmed);
+
+      // If not IP → check if it contains domain
+      if (!isIP(trimmed)) {
+        const dotIndex = trimmed.indexOf(".");
+        if (dotIndex > 0) {
+          const shortName = trimmed.substring(0, dotIndex);
+          addEntry(shortName);
+        }
+      }
+    };
+
+    // First add existing entries (they win in case of duplicates)
+    this.hostnames.forEach(processEntry);
+
+    // Then add new ones
+    newEntries.forEach(processEntry);
+
+    this.hostnames = Array.from(resultMap.values());
   }
 
   /** Creates a command string to open screen or log in a terminal */
@@ -581,11 +644,11 @@ export default class Provider implements IProvider {
             // we add it to local stats
             // TODO add warning about unknown address to ProviderPanel
             if (p.host) {
-              this.hostnames.push(p.host);
+              this.addHosts([p.host]);
             }
           }
           // copy all new addresses to local hostnames
-          this.hostnames = [...new Set([...this.hostnames, ...p.hostnames])];
+          this.addHosts([...this.hostnames, ...p.hostnames], true);
         } else if (!ignoreNewHosts) {
           // add provider discovered by the contacted provider
           // add discovered provider
@@ -601,7 +664,7 @@ export default class Provider implements IProvider {
           oldRemoteProviders = oldRemoteProviders.filter((orp) => orp.url() !== np.url());
           np.rosState = p;
           np.discoveredBy = [this.id];
-          np.hostnames = p.hostnames;
+          np.addHosts(p.hostnames);
           this.remoteProviders.push(np);
         }
       }

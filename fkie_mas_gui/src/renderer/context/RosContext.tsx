@@ -71,7 +71,6 @@ export interface IRosProviderContext {
   updateLaunchList: (providerId: string) => void;
   reloadLaunchFile: (providerId: string, modifiedFile: string) => Promise<void>;
   getProviderById: (providerId: string, includeNotAvailable?: boolean) => Provider | undefined;
-  getProviderByHost: (hostName: string) => Provider | null;
   getLocalProvider: () => Provider[];
   registerSubscriber: (
     providerId: string,
@@ -110,7 +109,6 @@ export const DEFAULT = {
   reloadLaunchFile: (): Promise<void> => new Promise<void>(() => {}),
   updateLaunchList: (): void => {},
   getProviderById: (): Provider | undefined => undefined,
-  getProviderByHost: (): Provider | null => null,
   getLocalProvider: (): Provider[] => [],
   registerSubscriber: (): void => {},
   unregisterSubscriber: (): void => {},
@@ -235,26 +233,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       });
     },
     [providers]
-  );
-
-  /**
-   * Search and return a provider using its host name
-   */
-  const getProviderByHost = useCallback(
-    (hostName: string): Provider | null => {
-      if (initialized) {
-        const p = providers.find((provider) => {
-          return (
-            provider.isAvailable() && (provider.connection.host === hostName || provider.hostnames.includes(hostName))
-          );
-        });
-
-        if (p) return p;
-      }
-
-      return null;
-    },
-    [initialized, providers]
   );
 
   /**
@@ -643,15 +621,15 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         if (isLocal) {
           // update hostname to prevent add a local provider twice
           if (systemInfo?.osInfo?.hostname) {
-            provider.hostnames.push(systemInfo?.osInfo?.hostname);
+            provider.addHosts([systemInfo?.osInfo?.hostname]);
           }
           if (systemInfo?.networkInterfaces) {
             for (const item of systemInfo?.networkInterfaces || []) {
               if (item.ip4) {
-                provider.hostnames.push(item.ip4);
+                provider.addHosts([item.ip4]);
               }
               if (item.ip6) {
-                provider.hostnames.push(item.ip6);
+                provider.addHosts([item.ip6]);
               }
             }
           }
@@ -1378,7 +1356,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       reloadLaunchFile,
       updateLaunchList,
       getProviderById,
-      getProviderByHost,
       getLocalProvider,
       registerSubscriber,
       unregisterSubscriber,
