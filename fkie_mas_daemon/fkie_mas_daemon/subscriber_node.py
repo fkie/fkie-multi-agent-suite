@@ -115,6 +115,8 @@ class RosSubscriberLauncher:
         Log.info(f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
         self.wsClient.subscribe(
             f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
+        self.wsClient.subscribe("event", self._on_ws_event)
+        self._on_shutdown = False
 
     def __del__(self):
         self.stop()
@@ -125,13 +127,22 @@ class RosSubscriberLauncher:
                 self.wsClient.shutdown()
                 self.wsClient = None
 
-    def exit_gracefully(self, signum, frame):
+    def exit_gracefully(self, signum = -1, frame = None):
+        if self._on_shutdown:
+            return
+        self._on_shutdown = True
         print('shutdown rclpy')
-        self.sub_raw.destroy()
         self.stop()
         if rclpy.ok():
+            self.sub_raw.destroy()
             rclpy.shutdown()
         print('bye!')
+
+    def _on_ws_event(self, msg):
+        if msg.type == "subs" and msg.count == 0:
+            if msg.uri == f"ros.subscriber.event.{self._topic.replace('/', '_')}":
+                Log.info(f"No websocket subscriptions for 'ros.subscriber.event.{self._topic.replace('/', '_')}' -> exit!")
+                self.exit_gracefully()
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
 
