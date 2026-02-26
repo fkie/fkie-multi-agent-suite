@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.1.0 (26.02.2026)
+------------------
+* Stop subscription node if no listener are available on websocket
+* Fixed: kill screens for a node
+
 5.0.0 (05.12.2025)
 ------------------
 * Changed algorithm for updating ros state in daemon
