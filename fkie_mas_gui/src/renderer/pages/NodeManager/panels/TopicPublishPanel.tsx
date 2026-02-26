@@ -1,8 +1,12 @@
 import { StopCircleOutlined } from "@mui/icons-material";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import DeleteIcon from "@mui/icons-material/Delete";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditIcon from "@mui/icons-material/Edit";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
+import StarOutlineIcon from "@mui/icons-material/StarOutline";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
   Alert,
@@ -16,6 +20,7 @@ import {
   FormControl,
   FormLabel,
   IconButton,
+  Slider,
   Stack,
   TextField,
   ToggleButton,
@@ -52,6 +57,7 @@ interface TopicPublishPanelProps {
 export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.Element {
   const { topicName = undefined, topicType = undefined, providerId = undefined } = props;
   const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
+  const [maxHistoryLength, setMaxHistoryLength] = useState(5);
   const [historyLength, setHistoryLength] = useState(0);
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
@@ -73,6 +79,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const [provider, setProvider] = useState<Provider | null>(null);
   const [inputElements, setInputElements] = useState<React.ReactNode | null>(null);
   const [hasPublisher, setHasPublisher] = useState<boolean>(false);
+  const [historyEditMode, setHistoryEditMode] = useState<boolean>(false);
 
   const [startPublisherDescription, setStartPublisherDescription] = useState("");
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
@@ -428,6 +435,35 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       </Button>
     );
   }
+  // create edit mask for an element of the history array
+  function createHistoryEditItem(index: number): JSX.Element {
+    return (
+      <Stack direction="row" key={`history-edit-item-${index}`}>
+        <Button
+          key={`history-edit-star-${index}`}
+          onClick={(event) => {
+            fromHistory(index);
+            event.stopPropagation();
+          }}
+          endIcon={<StarOutlineIcon />}
+          size="small"
+        >
+          {index + 1}
+        </Button>
+        <TextField key={`history-edit-name-${index}`} variant="standard" size="small" defaultValue={index + 1} />
+        <Button
+          color="error"
+          key={`history-edit-delete-${index}`}
+          onClick={(event) => {
+            fromHistory(index);
+            event.stopPropagation();
+          }}
+          endIcon={<DeleteIcon />}
+          size="small"
+        ></Button>
+      </Stack>
+    );
+  }
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {
@@ -575,46 +611,64 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
               <MonitorHeartIcon sx={{ fontSize: "inherit" }} />
             </ToggleButton>
           </Tooltip>
-          {historyLength > 0 && (
-            <Stack direction="column" spacing={1} alignItems="left">
-              <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>Publish history</FormLabel>
-              <ButtonGroup sx={{ maxHeight: "24px" }}>
-                {historyLength > 0 && (
-                  <Tooltip title="reset values" enterDelay={500}>
-                    <Button
-                      color="success"
-                      onClick={(event) => {
-                        setMessageStruct(messageStructOrg);
-                        setPublishRate("1");
-                        setSubstituteKeywords(true);
-                        event.stopPropagation();
-                      }}
-                      startIcon={<StorageOutlinedIcon />}
-                      size="small"
-                    >
-                      x
-                    </Button>
-                  </Tooltip>
-                )}
-                {historyLength > 0 &&
-                  Array.from(Array(historyLength).keys()).map((index) => createHistoryButton(index))}
-                {historyLength > 0 && (
-                  <Tooltip title="remove oldest history entry" enterDelay={500}>
-                    <Button
-                      color="error"
-                      onClick={(event) => {
-                        clearHistory();
-                        event.stopPropagation();
-                      }}
-                      startIcon={<DeleteOutlineOutlinedIcon />}
-                      size="small"
-                    />
-                  </Tooltip>
-                )}
-              </ButtonGroup>
-            </Stack>
-          )}
         </Stack>
+        {historyLength > 0 && (
+          <Stack direction="column" spacing={1} alignItems="left">
+            {/* <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>Publish history</FormLabel> */}
+            <ButtonGroup sx={{ maxHeight: "24px" }}>
+              <Tooltip title="edit history" enterDelay={500}>
+                <Button
+                  color="success"
+                  onClick={(event) => {
+                    setMessageStruct(messageStructOrg);
+                    setPublishRate("1");
+                    setSubstituteKeywords(true);
+                    setHistoryEditMode((prev) => !prev);
+                    event.stopPropagation();
+                  }}
+                  // startIcon={<EditNoteIcon />}
+                  size="small"
+                >
+                  <EditNoteIcon />
+                </Button>
+              </Tooltip>
+              {Array.from(Array(historyLength).keys()).map((index) => createHistoryButton(index))}
+              <Tooltip title="remove oldest history entry" enterDelay={500}>
+                <Button
+                  color="error"
+                  onClick={(event) => {
+                    clearHistory();
+                    event.stopPropagation();
+                  }}
+                  // startIcon={}
+                  size="small"
+                >
+                  <DeleteForeverIcon />
+                </Button>
+              </Tooltip>
+            </ButtonGroup>
+            {historyLength > 0 && historyEditMode && (
+              <Stack direction="column" alignContent="start">
+                <Slider
+                  aria-label="Temperature"
+                  defaultValue={maxHistoryLength}
+                  valueLabelFormat={(index) => `max history length: ${index}`}
+                  valueLabelDisplay="auto"
+                  shiftStep={1}
+                  step={1}
+                  marks
+                  min={1}
+                  max={10}
+                  onChange={(_event: Event, newValue: number) => {
+                    setMaxHistoryLength(newValue);
+                  }}
+                  sx={{ maxWidth: "80%" }}
+                />
+                {Array.from(Array(historyLength).keys()).map((index) => createHistoryEditItem(index))}
+              </Stack>
+            )}
+          </Stack>
+        )}
         <Box>
           {startPublisherIsSubmitting ? (
             <Stack direction="row" spacing={1}>
