@@ -372,13 +372,13 @@ export class Terminal extends React.Component<Props, XtermState> {
     if (await this.provider.updateTimeDiff()) {
       if (await this.remoteProvider?.updateTimeDiff()) {
         let diff =  0;
-        let diffInfoStr = ` - current difference ${this.remoteProvider.timeDiff}ms`;
+        let diffInfoStr = ` - current difference ${this.remoteProvider.timeDiff.toFixed(0)}ms`;
         if (this.timeSyncIterations > 1) {
           if (Math.abs(this.remoteProvider.timeDiff) < 100) {
             return
           }
           diff = this.remoteProvider.timeDiff;
-          diffInfoStr = ` - add difference ${diff}ms`
+          diffInfoStr = ` - add difference ${diff.toFixed(0)}ms`
         }
         this.socket?.send(
           this.textEncoder.encode(
