@@ -59,6 +59,7 @@ interface Props {
   onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined;
   settingsCtx: ISettingsContext;
   provider?: Provider;
+  remoteProvider?: Provider;
 }
 
 type XtermState = {
@@ -114,6 +115,12 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private provider: Provider | undefined;
 
+  private remoteProvider: Provider | undefined;
+
+  private sudoRequested: boolean = false;
+
+  private timeSyncIterations: number = 0;
+
   constructor(props: Props) {
     super(props);
 
@@ -155,6 +162,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     // TODO Add setting for this parameter
     this.type = props.type;
     this.provider = props.provider;
+    this.remoteProvider = props.remoteProvider;
     this.settingsCtx = props.settingsCtx;
     this.fontSize = this.settingsCtx?.get("fontSizeTerminal") as number;
     this.onSocketOpen = this.onSocketOpen.bind(this);
@@ -355,12 +363,29 @@ export class Terminal extends React.Component<Props, XtermState> {
       }
     }
     if (this.type === CmdType.SET_TIME && this.provider) {
-      if (await this.provider.updateTimeDiff()) {
+      this.sendTimeSync();
+    }
+  }
+
+  private async sendTimeSync() {
+    if (!this.provider || !this.remoteProvider || this.timeSyncIterations > 5) return;
+    if (await this.provider.updateTimeDiff()) {
+      if (await this.remoteProvider?.updateTimeDiff()) {
+        let diff =  0;
+        let diffInfoStr = ` - current difference ${this.remoteProvider.timeDiff}ms`;
+        if (this.timeSyncIterations > 1) {
+          if (Math.abs(this.remoteProvider.timeDiff) < 100) {
+            return
+          }
+          diff = this.remoteProvider.timeDiff;
+          diffInfoStr = ` - add difference ${diff}ms`
+        }
         this.socket?.send(
-          textEncoder.encode(
-            `${CommandClient.INPUT}sudo /bin/date -s ${new Date(this.provider.timestamp).toISOString()}\n`
+          this.textEncoder.encode(
+            `${CommandClient.INPUT}sudo /bin/date -s ${new Date(this.provider.timestamp - diff).toISOString()} && echo "date set ok${diffInfoStr}"\n`
           )
         );
+        this.timeSyncIterations += 1;
       }
     }
   }
@@ -399,6 +424,17 @@ export class Terminal extends React.Component<Props, XtermState> {
       this.terminal?.focus();
       this.gotFocus = true;
     }
+    if (this.type === CmdType.SET_TIME && this.provider) {
+      const decodedData = textDecoder.decode(data);
+      if (decodedData.startsWith("sudo ")) {
+        this.sudoRequested = true;
+      } else if (this.sudoRequested) {
+        if (decodedData.startsWith("date set ok")) {
+          this.sudoRequested = false;
+          this.sendTimeSync();
+        }
+      }
+    }
     // search for all numbers of the format ':1234:' or ': 1234:'
     const { searchLineNumberAddon, searchLineNumberAddonOptions } = this;
     searchLineNumberAddon.findNext(/(?::+)(\d+)(?:$|:!\d)/.source, searchLineNumberAddonOptions);
@@ -414,7 +450,7 @@ export class Terminal extends React.Component<Props, XtermState> {
             <AlertTitle>TTYD Daemon on {this.props.wsUrl} is not available</AlertTitle>
             <Typography>
               If you want to check this terminal, please start the terminal manager daemon on the host using{" "}
-              <RocketLaunchIcon fontSize="inherit" /> in 'Hosts' panel or manually:
+              <RocketLaunchIcon fontSize="inherit" /> in &apos;Hosts&apos; panel or manually:
             </Typography>
             <Typography sx={{ ml: "1em" }}>ttyd --writable --port 8681 bash</Typography>
             <Typography sx={{ mt: "1em" }}>

@@ -199,6 +199,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
             type={type}
             tokenUrl={tokenUrl}
             provider={rosCtx.getProviderById(cmd)}
+            remoteProvider={rosCtx.getProviderById(providerId)}
             wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
             initialCommands={initialCommands}
             name={"bash"}

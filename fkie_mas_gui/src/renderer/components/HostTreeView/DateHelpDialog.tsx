@@ -17,7 +17,7 @@ export default function DateHelpDialog(props: DateHelpDialogProps): JSX.Element 
   const { open, onClose = (): void => {}, ...other } = props;
 
   const codeSnippet = `
-  USER  ALL=NOPASSWD: /bin/date
+  {YOUR USERNAME}  ALL=NOPASSWD: /bin/date
   `;
 
   return (

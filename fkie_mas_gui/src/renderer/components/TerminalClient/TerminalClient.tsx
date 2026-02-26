@@ -68,12 +68,13 @@ interface ITerminalClient {
   name: string;
   errorHighlighting: boolean;
   provider?: Provider;
+  remoteProvider?: Provider;
   onIncomingData?: (data: string) => undefined;
   onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined;
 }
 
 export default function TerminalClient(props: ITerminalClient): JSX.Element {
-  const { type, initialCommands, tokenUrl, wsUrl, name, errorHighlighting, provider, onIncomingData, onCtrlD } = props;
+  const { type, initialCommands, tokenUrl, remoteProvider, wsUrl, name, errorHighlighting, provider, onIncomingData, onCtrlD } = props;
   const settingsCtx = useContext(SettingsContext);
 
   termOptions.fontSize = settingsCtx.get("fontSizeTerminal") as number;
@@ -114,6 +115,7 @@ export default function TerminalClient(props: ITerminalClient): JSX.Element {
       onCtrlD={onCtrlD}
       settingsCtx={settingsCtx}
       provider={provider}
+      remoteProvider={remoteProvider}
     />
   );
 }
