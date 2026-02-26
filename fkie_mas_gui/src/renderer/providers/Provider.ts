@@ -1800,18 +1800,18 @@ export default class Provider implements IProvider {
   /**
    * Get count of websocket subscriptions for given ros topic
    */
-  public getCountTopicSubscriptions: (topicName: string) => Promise<Result> = async (
+  public getCountTopicSubscriptions: (topicName: string) => Promise<string[] | undefined> = async (
     topicName,
   ) => {
     const cbTopic = `${URI.ROS_SUBSCRIBER_FILTER_PREFIX}.${topicName.replaceAll("/", "_")}`;
     this.logger?.debug(`Provider: (${this.name()}) request count subscriptions for [${cbTopic}]`, "");
     const result = await this.makeCall("subs", [cbTopic], true).then((value: TResultData) => {
       if (value.result) {
-        const res = value.data as Result;
+        const res = value.data as string[];
         return res;
       }
       this.logger?.error(`Provider [${this.id}]: Error at getCountTopicSubscriptions()`, `${value.message}`);
-      return new Result(false, value.message as string);
+      return undefined;
     });
     return result;
   };

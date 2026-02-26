@@ -132,8 +132,8 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
             if (prevIds.includes(event.subscriber_id)) {
               setMultipleSubscriberId(true);
             }
-            return [...prevIds.filter((a) => a !== prevId), prevId]
-          })
+            return [...prevIds.filter((a) => a !== prevId), prevId];
+          });
         }
         return event.subscriber_id;
       }
@@ -231,14 +231,11 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
       rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg, qos);
       setSubscribed(true);
     }
-  }, [topicName, rosCtx.mapProviderRosNodes, rosCtx.registerSubscriber, pause, subscribed, setSubscribed]);
+  }, [topicName, rosCtx.mapProviderRosNodes, pause, subscribed]);
 
-  // initialize provider
   useEffect(() => {
-    if (pause) {
-      close();
-    }
-  }, [pause]);
+    updateSubscriberNodeState();
+  }, [topicName, rosCtx.mapProviderRosNodes]);
 
   useEffect(() => {
     return (): void => {
@@ -248,6 +245,15 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     };
     // no dependencies: execute return statement on close this panel
   }, []);
+
+  const updateSubscriberNodeState = useCallback(async () => {
+    const result = await currentProvider?.getCountTopicSubscriptions(topicName);
+    if ((result?.length || 0) > 0) {
+      setPause(false);
+    } else {
+      setPause(true);
+    }
+  }, [topicName, currentProvider, rosCtx.mapProviderRosNodes]);
 
   function normalizePrint(size: number | undefined, fixed: number = 2, per: string = ""): string {
     if (size === undefined) return "n/a";
@@ -502,7 +508,12 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
             <IconButton
               size="small"
               onClick={() => {
-                setPause(!pause);
+                setPause((prev) => {
+                  if (prev) {
+                    close();
+                  }
+                  return !prev;
+                });
               }}
             >
               {pause ? <PlayArrowIcon sx={{ fontSize: "inherit" }} /> : <StopIcon sx={{ fontSize: "inherit" }} />}
