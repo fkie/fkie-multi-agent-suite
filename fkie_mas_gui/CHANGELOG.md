@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.1.0 - 26.02.2026
+
+Stop subscription node if no listener are available on websocket
+Added event for subscriptions to websocket
+The warning for multiple screens has been moved to the beginning of the node name and a control context menu has been added.
+Added warning in Echo Panel when multiple MAS subscribers are detected
+Fixed duplicate host entries when daemon was started with a domain name.
+Fixed setting “use now” from history in the publish panel
+
 ## 5.0.5 - 05.02.2026
 
 Fixed behavior when collapsing JSON in the topic echo panel

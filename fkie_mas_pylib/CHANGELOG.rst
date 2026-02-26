@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.1.0 (26.02.2026)
+------------------
+* Added event for subscriptions to websocket
+
 5.0.0 (05.12.2025)
 ------------------
 * Added new types for lifecycle and composable nodes
