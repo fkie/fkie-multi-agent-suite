@@ -9,6 +9,8 @@
 
 import json
 import threading
+from typing import Callable
+from typing import List
 from types import SimpleNamespace
 import websockets
 import websockets.sync.server
@@ -27,10 +29,11 @@ class RemoteCallInfo:
 
 class WebSocketHandler:
 
-    def __init__(self, server, connection: websockets.sync.server.ServerConnection):
+    def __init__(self, server, connection: websockets.sync.server.ServerConnection, callback_on_sub: Callable[[str], None]):
         self._lock = threading.RLock()
         self.server = server
         self.connection = connection
+        self._callback_on_sub = callback_on_sub
         try:
             self.address = f"{self.connection.remote_address[0]}:{self.connection.remote_address[1]}"
         except:
@@ -49,6 +52,9 @@ class WebSocketHandler:
 
     def shutdown(self):
         self._shutdown = True
+
+    def subscriptions(self) -> List[str]:
+        return list(self._subscriptions)
 
     def spin(self):
         try:
@@ -89,30 +95,34 @@ class WebSocketHandler:
                         # handle rpc calls
                         if msg.uri == 'sub':
                             # create subscription
-                            Log.info(
-                                f"[{self.address}]: add subscription to '{msg.params[0]}'")
-                            with self._lock:
-                                self._subscriptions.add(msg.params[0])
+                            for uri in msg.params:
+                                Log.info(f"[{self.address}]: add subscription to '{uri}'")
+                                with self._lock:
+                                    self._subscriptions.add(uri)
+                                    self._callback_on_sub(uri)
                             reply = {"id": msg.id, "result": True}
                             self.queue.put(QueueItem(json.dumps(
                                 reply, cls=SelfAllEncoder), priority=0))
                         elif msg.uri == 'unsub':
                             # create subscription
-                            try:
-                                Log.info(
-                                    f"[{self.address}]: remove subscription to '{msg.params[0]}'")
-                                with self._lock:
-                                    self._subscriptions.remove(msg.params[0])
-                            except:
-                                pass
+                            for uri in msg.params:
+                                try:
+                                    Log.info(
+                                        f"[{self.address}]: remove subscription to '{uri}'")
+                                    with self._lock:
+                                        self._subscriptions.remove(uri)
+                                        self._callback_on_sub(uri)
+                                except:
+                                    pass
                             reply = {"id": msg.id, "result": True}
                             self.queue.put(QueueItem(json.dumps(
                                 reply, cls=SelfAllEncoder), priority=0))
                         elif msg.uri == 'reg':
                             # register a method
-                            self.server.register_rpc(msg.params[0], self)
-                            with self._lock:
-                                self._registrations.add(msg.params[0])
+                            for uri in msg.params:
+                                self.server.register_rpc(uri, self)
+                                with self._lock:
+                                    self._registrations.add(uri)
                             reply = {"id": msg.id, "result": True}
                             self.queue.put(QueueItem(json.dumps(
                                 reply, cls=SelfAllEncoder), priority=0))
@@ -142,11 +152,14 @@ class WebSocketHandler:
                     print(traceback.format_exc())
                     Log.warn(f"[{self.address}]: {error}")
         except websockets.ConnectionClosedError as close_error:
+            self._shutdown = True
             print(f"{self.address}: {close_error}")
         except Exception as error:
+            self._shutdown = True
             import traceback
             print(traceback.format_exc())
         finally:
+            self._shutdown = True
             Log.info(f"{self.address}: client removed")
             with self._lock:
                 for reg in self._registrations:
@@ -219,6 +232,8 @@ class WebSocketHandler:
                 try:
                     item = self.queue.get()
                     self.connection.send(item.data)
+                except websockets.exceptions.ConnectionClosedOK:
+                    pass
                 except Exception:
                     import traceback
                     Log.info(traceback.format_exc())

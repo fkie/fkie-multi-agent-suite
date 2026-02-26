@@ -12,6 +12,7 @@ import threading
 from types import SimpleNamespace
 from typing import Any
 from typing import Callable
+from typing import List
 from typing import Tuple
 from typing import Union
 import websockets
@@ -46,6 +47,7 @@ class WebSocketServer:
         self._server = None
         self.clients_count = 0
         self.port = -1
+        self.register("subs", self._get_subscriptions)
 
     def shutdown(self):
         self._shutdown = True
@@ -57,17 +59,27 @@ class WebSocketServer:
         with self._lock:
             return len(self._handler)
 
+    def _cb_subs_changed(self, uri: str):
+        with self._lock:
+            count = 0
+            for h in self._handler:
+                if uri in h.subscriptions():
+                    count += 1
+            self.publish("event", {"type": "subs", "uri": uri, "count": count})
+
     def ws_handler(self, websocket) -> None:
-        handler = WebSocketHandler(self, websocket)
+        handler = WebSocketHandler(self, websocket, self._cb_subs_changed)
         with self._lock:
             self._handler.add(handler)
         handler.spin()
         with self._lock:
             self._handler.remove(handler)
+        for sub in handler.subscriptions():
+            self._cb_subs_changed(sub)
         # TODO: remove all registered rpcs
 
     # blocking call
-    def spin(self, port: int=35430) -> None:
+    def spin(self, port: int = 35430) -> None:
         Log.info(
             f"Open Websocket on port {port}")
         try:
@@ -79,7 +91,7 @@ class WebSocketServer:
             import traceback
             print("Error while start websocket server: ", traceback.format_exc())
 
-    def start_threaded(self, port: int=35430) -> None:
+    def start_threaded(self, port: int = 35430) -> None:
         self._spin_thread = threading.Thread(
             target=self.spin, args=(port,), daemon=True)
         self._spin_thread.start()
@@ -127,3 +139,11 @@ class WebSocketServer:
             elif uri in self._remote_registrations:
                 return (self._remote_registrations[uri], False)
         return (None, False)
+
+    def _get_subscriptions(self, uri) -> List[str]:
+        with self._lock:
+            subs = []
+            for h in self._handler:
+                if uri in h.subscriptions():
+                    subs.append(h.address)
+            return subs

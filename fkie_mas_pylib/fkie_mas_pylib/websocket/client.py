@@ -156,7 +156,7 @@ class WebSocketClient:
             reply = f'{{"id": {id}, "error": "{error}"}}'
         self.queue.put(QueueItem(reply, priority=0))
 
-    def publish(self, uri: str, message: str, latched=False) -> None:
+    def publish(self, uri: str, message: Union[str, object], latched=False) -> None:
         # TODO: add resend_after_connect?
         latched_value = 'true' if latched else 'false'
         msg = message
