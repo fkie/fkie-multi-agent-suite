@@ -1,11 +1,11 @@
 import { StopCircleOutlined } from "@mui/icons-material";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import DeleteIcon from "@mui/icons-material/Delete";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EditIcon from "@mui/icons-material/Edit";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import StarIcon from "@mui/icons-material/Star";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
 import {
@@ -18,7 +18,6 @@ import {
   CircularProgress,
   Divider,
   FormControl,
-  FormLabel,
   IconButton,
   Slider,
   Stack,
@@ -33,6 +32,7 @@ import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { MsgHistoryContext, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
@@ -43,6 +43,7 @@ import { JSONObject } from "@/types";
 import InputElements from "./MessageDialogPanel/InputElements";
 
 type THistoryItem = {
+  id: number;
   rate: string;
   skw: boolean;
   msg: TRosMessageStruct;
@@ -56,12 +57,13 @@ interface TopicPublishPanelProps {
 
 export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.Element {
   const { topicName = undefined, topicType = undefined, providerId = undefined } = props;
-  const [history, setHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
-  const [maxHistoryLength, setMaxHistoryLength] = useState(5);
-  const [historyLength, setHistoryLength] = useState(0);
+  const [oldHistory, setOldHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
+  const historyCtx = useContext(MsgHistoryContext);
+  const [maxHistoryLength, setMaxHistoryLength] = useState(0);
+  const { historyByType, setMaxEntries, ensureLoaded } = useMsgHistory();
   const [substituteKeywords, setSubstituteKeywords] = useState(true);
   const [editTopicName, setEditTopicName] = useState<boolean>(false);
   const [editMessageType, setEditMessageType] = useState<boolean>(false);
@@ -85,6 +87,26 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
   const publishRateSelections = ["1", "once", "latched"];
 
+  // migrate old history
+  useEffect(() => {
+    if (!oldHistory) return;
+    const historyList = oldHistory[currentMessageType];
+    if (!historyList) return;
+    for (const item of historyList) {
+      historyCtx?.addEntry({
+        messageType: currentMessageType,
+        name: "",
+        favorite: false,
+        rate: item.rate,
+        skw: item.skw,
+        data: item.msg,
+        createdAt: Date.now(),
+      });
+    }
+    delete oldHistory[currentMessageType];
+    setOldHistory(oldHistory);
+  }, [oldHistory]);
+
   useEffect(() => {
     if (currentProviderId) {
       const provider = rosCtx.getProviderById(currentProviderId, true);
@@ -97,10 +119,27 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   }, [currentProviderId]);
 
   useEffect(() => {
+    if (!historyCtx) return;
+    setMaxHistoryLength(historyCtx.maxEntries);
+  }, [historyCtx]);
+
+  useEffect(() => {
+    if (historyByType[currentMessageType]?.length === 0) setHistoryEditMode(false);
+  }, [historyByType[currentMessageType]]);
+
+  useEffect(() => {
     if (!provider) return;
     updateTopicNameOptions();
     getAvailableMessageTypes();
   }, [provider]);
+
+  useEffect(() => {
+    setMaxEntries(maxHistoryLength);
+  }, [maxHistoryLength]);
+
+  useEffect(() => {
+    ensureLoaded(currentMessageType);
+  }, [currentMessageType]);
 
   // Make a request to provider and get known message types
   const getAvailableMessageTypes = useCallback(async (): Promise<void> => {
@@ -117,53 +156,29 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   // get item history after the history was loaded
   const fromHistory = useCallback(
-    (index: number) => {
-      const historyInStruct = history[currentMessageType];
-      if (historyInStruct) {
-        const historyItem = index && index < historyInStruct.length ? historyInStruct[index] : historyInStruct[0];
-        setPublishRate(historyItem.rate);
-        setSubstituteKeywords(historyItem.skw);
-        setMessageStruct(JSON.parse(JSON.stringify(historyItem.msg)));
-      }
+    (entry: TMsgHistoryEntry) => {
+      const { rate, skw, data } = entry;
+      setPublishRate(rate);
+      setSubstituteKeywords(skw);
+      setMessageStruct(structuredClone(data));
     },
-    [history, currentMessageType, setPublishRate, setSubstituteKeywords, setMessageStruct]
+    [setPublishRate, setSubstituteKeywords, setMessageStruct]
   );
 
-  // get item history after the history was loaded
-  const updateHistory = useCallback(() => {
+  // add new item to the history
+  const updateHistory = useCallback(async () => {
     if (!messageStruct) return;
-    let historyInStruct = history[currentMessageType];
-    let hasType = true;
-    if (!historyInStruct) {
-      hasType = false;
-      historyInStruct = [];
-    }
-    historyInStruct.unshift({
+
+    await historyCtx?.addEntry({
+      messageType: currentMessageType,
+      name: "",
+      favorite: false,
       rate: publishRate,
       skw: substituteKeywords,
-      msg: messageStruct,
-    } as THistoryItem);
-    if (historyInStruct.length > 5) {
-      historyInStruct.pop();
-    }
-    if (historyInStruct.length > 0) {
-      history[currentMessageType] = historyInStruct;
-    } else if (hasType) {
-      delete history[currentMessageType];
-    }
-    setHistory(history);
-  }, [history, messageStruct, setHistory, publishRate]);
-
-  // get item history after the history was loaded
-  const clearHistory = useCallback(() => {
-    if (!messageStruct) return;
-    const historyInStruct = history[currentMessageType];
-    if (historyInStruct && historyInStruct.length > 0) {
-      historyInStruct.pop();
-      setHistory(history);
-      setHistoryLength(historyInStruct.length);
-    }
-  }, [messageStruct, history]);
+      data: messageStruct,
+      createdAt: Date.now(),
+    });
+  }, [messageStruct, publishRate, substituteKeywords, currentMessageType, historyCtx]);
 
   // create string from message struct and copy it to clipboard
   const onCopyToClipboard = useCallback((): void => {
@@ -275,19 +290,6 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   }
 
   useEffect(() => {
-    if (editMessageType) return;
-    if (!currentMessageType || currentMessageType === "unknown") return;
-    if (history) {
-      const historyInStruct = history[currentMessageType];
-      if (historyInStruct) {
-        setHistoryLength(historyInStruct.length);
-      } else {
-        setHistoryLength(0);
-      }
-    }
-  }, [history, currentMessageType, editMessageType]);
-
-  useEffect(() => {
     if (editTopicName) return;
     updateMessageTypeFromTopic();
   }, [currentTopicName, editTopicName]);
@@ -361,14 +363,10 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
     // store struct to history if new message
     const messageStr = rosMessageStructToString(messageStruct, false, false);
-    const historyInStruct = history[currentMessageType];
-    if (messageStr !== "{}" && (!historyInStruct || historyInStruct?.length === 0)) {
-      updateHistory();
-    } else if (historyInStruct) {
-      if (
-        historyInStruct.length === 0 ||
-        messageStr !== rosMessageStructToString(historyInStruct[0].msg, false, false)
-      ) {
+    if (messageStr !== "{}") {
+      const historyList = historyByType[currentMessageType] ?? [];
+      const exists = historyList.some((item) => rosMessageStructToString(item.data, false, false) === messageStr);
+      if (!exists) {
         updateHistory();
       }
     }
@@ -420,47 +418,61 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   }, [hasPublisher]);
 
   // create input mask for an element of the array
-  function createHistoryButton(index: number): JSX.Element {
+  function createHistoryButton(entry: TMsgHistoryEntry): JSX.Element {
     return (
-      <Button
-        key={`history-button-${index}`}
-        onClick={(event) => {
-          fromHistory(index);
-          event.stopPropagation();
-        }}
-        startIcon={<StorageOutlinedIcon />}
-        size="small"
-      >
-        {index + 1}
-      </Button>
+      <Tooltip title={`${entry.name}`} placement="bottom" disableInteractive>
+        <Button
+          key={`history-button-${entry.id}`}
+          onClick={(event) => {
+            fromHistory(entry);
+            event.stopPropagation();
+          }}
+          startIcon={<StorageOutlinedIcon />}
+          size="small"
+        >
+          {entry.id}
+        </Button>
+      </Tooltip>
     );
   }
   // create edit mask for an element of the history array
-  function createHistoryEditItem(index: number): JSX.Element {
+  function createHistoryEditItem(entry: TMsgHistoryEntry): JSX.Element {
     return (
-      <Stack direction="row" key={`history-edit-item-${index}`}>
-        <Button
-          key={`history-edit-star-${index}`}
+      <Stack direction="row" key={`history-edit-item-${entry.id}`} spacing="0.5em">
+        <Tooltip title="favorite entries are not automatically deleted" placement="bottom" disableInteractive>
+          <IconButton
+            key={`history-edit-star-${entry.id}`}
+            onClick={(event) => {
+              historyCtx?.updateEntryMeta(currentMessageType, entry.id, { favorite: !entry.favorite });
+              event.stopPropagation();
+            }}
+            size="small"
+          >
+            {entry.favorite ? <StarIcon sx={{ color: "yellow" }} /> : <StarOutlineIcon />}
+          </IconButton>
+        </Tooltip>
+        <TextField
+          key={`history-edit-name-${entry.id}`}
+          variant="standard"
+          size="small"
+          defaultValue={entry.name || entry.id}
+          onBlur={(event) => {
+            if (event.target.value && event.target.value !== entry.name) {
+              historyCtx?.updateEntryMeta(currentMessageType, entry.id, { name: event.target.value });
+            }
+          }}
+        />
+        <IconButton
+          color="error"
+          key={`history-edit-delete-${entry.id}`}
           onClick={(event) => {
-            fromHistory(index);
+            historyCtx?.deleteEntry(currentMessageType, entry.id);
             event.stopPropagation();
           }}
-          endIcon={<StarOutlineIcon />}
           size="small"
         >
-          {index + 1}
-        </Button>
-        <TextField key={`history-edit-name-${index}`} variant="standard" size="small" defaultValue={index + 1} />
-        <Button
-          color="error"
-          key={`history-edit-delete-${index}`}
-          onClick={(event) => {
-            fromHistory(index);
-            event.stopPropagation();
-          }}
-          endIcon={<DeleteIcon />}
-          size="small"
-        ></Button>
+          <RemoveCircleOutlineIcon />
+        </IconButton>
       </Stack>
     );
   }
@@ -568,107 +580,117 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
           </FormControl>
         </Stack>
         <Stack direction="row" spacing={1} display="flex" alignItems="center">
-          <Autocomplete
-            id={`publish-rate-${topicName}`}
-            handleHomeEndKeys={false}
-            freeSolo
-            options={publishRateSelections}
-            size="small"
-            sx={{ width: 150 }}
-            renderInput={(params) => <TextField {...params} label="Publish rate" />}
-            defaultValue={publishRateSelections[0]}
-            inputValue={publishRate || ""}
-            onInputChange={(_event, newValue) => {
-              setPublishRate(newValue);
-            }}
-            onChange={(_event, newValue) => {
-              setPublishRate(newValue ? newValue : "1");
-            }}
-            onWheel={(event) => {
-              // scroll through the options using mouse wheel
-              let newIndex = -1;
-              publishRateSelections.forEach((value, index) => {
-                if (value === (event.target as HTMLInputElement).value) {
-                  if (event.deltaY > 0) {
-                    newIndex = index + 1;
-                  } else {
-                    newIndex = index - 1;
-                  }
-                }
-              });
-              if (newIndex < 0) newIndex = publishRateSelections.length - 1;
-              else if (newIndex > publishRateSelections.length - 1) newIndex = 0;
-              setPublishRate(publishRateSelections[newIndex]);
-            }}
-          />
-          <Tooltip title="use sim time" placement="bottom" disableInteractive>
-            <ToggleButton
+          {!historyEditMode && (
+            <Autocomplete
+              id={`publish-rate-${topicName}`}
+              handleHomeEndKeys={false}
+              freeSolo
+              options={publishRateSelections}
               size="small"
-              value="use-sim-time"
-              selected={useSimTime}
-              onChange={() => setUseSimTime((prev) => !prev)}
-            >
-              <MonitorHeartIcon sx={{ fontSize: "inherit" }} />
-            </ToggleButton>
-          </Tooltip>
+              sx={{ width: 150 }}
+              renderInput={(params) => <TextField {...params} label="Publish rate" />}
+              defaultValue={publishRateSelections[0]}
+              inputValue={publishRate || ""}
+              onInputChange={(_event, newValue) => {
+                setPublishRate(newValue);
+              }}
+              onChange={(_event, newValue) => {
+                setPublishRate(newValue ? newValue : "1");
+              }}
+              onWheel={(event) => {
+                // scroll through the options using mouse wheel
+                let newIndex = -1;
+                publishRateSelections.forEach((value, index) => {
+                  if (value === (event.target as HTMLInputElement).value) {
+                    if (event.deltaY > 0) {
+                      newIndex = index + 1;
+                    } else {
+                      newIndex = index - 1;
+                    }
+                  }
+                });
+                if (newIndex < 0) newIndex = publishRateSelections.length - 1;
+                else if (newIndex > publishRateSelections.length - 1) newIndex = 0;
+                setPublishRate(publishRateSelections[newIndex]);
+              }}
+            />
+          )}
+          {!historyEditMode && (
+            <Tooltip title="use sim time" placement="bottom" disableInteractive>
+              <ToggleButton
+                size="small"
+                value="use-sim-time"
+                selected={useSimTime}
+                onChange={() => setUseSimTime((prev) => !prev)}
+              >
+                <MonitorHeartIcon sx={{ fontSize: "inherit" }} />
+              </ToggleButton>
+            </Tooltip>
+          )}
+          {historyByType[currentMessageType]?.length > 0 && (
+            <Stack direction="column" spacing={1} alignItems="left">
+              {/* <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>Publish history</FormLabel> */}
+              <ButtonGroup sx={{ maxHeight: "24px" }}>
+                <Tooltip title="edit history" enterDelay={500}>
+                  <Button
+                    color="success"
+                    onClick={(event) => {
+                      setMessageStruct(messageStructOrg);
+                      setPublishRate("1");
+                      setSubstituteKeywords(true);
+                      setHistoryEditMode((prev) => !prev);
+                      event.stopPropagation();
+                    }}
+                    // startIcon={<EditNoteIcon />}
+                    size="small"
+                  >
+                    <EditNoteIcon />
+                  </Button>
+                </Tooltip>
+                {historyByType[currentMessageType]?.map((entry) => createHistoryButton(entry))}
+              </ButtonGroup>
+              {historyEditMode && (
+                <Stack direction="column" alignContent="start">
+                  <Stack direction="row" alignContent="start">
+                    <Slider
+                      aria-label="Temperature"
+                      defaultValue={maxHistoryLength}
+                      valueLabelFormat={(index) => `max history length: ${index}`}
+                      valueLabelDisplay="auto"
+                      shiftStep={1}
+                      step={1}
+                      marks
+                      min={1}
+                      max={10}
+                      onChange={(_event: Event, newValue: number) => {
+                        setMaxHistoryLength(newValue);
+                      }}
+                      sx={{ maxWidth: "80%", marginRight: "1.5em" }}
+                    />
+                    <Tooltip title="Remove all non-favorite entries" enterDelay={500}>
+                      <IconButton
+                        color="error"
+                        onClick={(event) => {
+                          for (const entry of historyByType[currentMessageType] ?? []) {
+                            if (!entry.favorite) {
+                              historyCtx?.deleteEntry(currentMessageType, entry.id);
+                            }
+                          }
+                          event.stopPropagation();
+                        }}
+                        size="small"
+                      >
+                        <DeleteForeverIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                  {historyByType[currentMessageType]?.map((entry) => createHistoryEditItem(entry))}
+                </Stack>
+              )}
+            </Stack>
+          )}
         </Stack>
-        {historyLength > 0 && (
-          <Stack direction="column" spacing={1} alignItems="left">
-            {/* <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>Publish history</FormLabel> */}
-            <ButtonGroup sx={{ maxHeight: "24px" }}>
-              <Tooltip title="edit history" enterDelay={500}>
-                <Button
-                  color="success"
-                  onClick={(event) => {
-                    setMessageStruct(messageStructOrg);
-                    setPublishRate("1");
-                    setSubstituteKeywords(true);
-                    setHistoryEditMode((prev) => !prev);
-                    event.stopPropagation();
-                  }}
-                  // startIcon={<EditNoteIcon />}
-                  size="small"
-                >
-                  <EditNoteIcon />
-                </Button>
-              </Tooltip>
-              {Array.from(Array(historyLength).keys()).map((index) => createHistoryButton(index))}
-              <Tooltip title="remove oldest history entry" enterDelay={500}>
-                <Button
-                  color="error"
-                  onClick={(event) => {
-                    clearHistory();
-                    event.stopPropagation();
-                  }}
-                  // startIcon={}
-                  size="small"
-                >
-                  <DeleteForeverIcon />
-                </Button>
-              </Tooltip>
-            </ButtonGroup>
-            {historyLength > 0 && historyEditMode && (
-              <Stack direction="column" alignContent="start">
-                <Slider
-                  aria-label="Temperature"
-                  defaultValue={maxHistoryLength}
-                  valueLabelFormat={(index) => `max history length: ${index}`}
-                  valueLabelDisplay="auto"
-                  shiftStep={1}
-                  step={1}
-                  marks
-                  min={1}
-                  max={10}
-                  onChange={(_event: Event, newValue: number) => {
-                    setMaxHistoryLength(newValue);
-                  }}
-                  sx={{ maxWidth: "80%" }}
-                />
-                {Array.from(Array(historyLength).keys()).map((index) => createHistoryEditItem(index))}
-              </Stack>
-            )}
-          </Stack>
-        )}
+
         <Box>
           {startPublisherIsSubmitting ? (
             <Stack direction="row" spacing={1}>

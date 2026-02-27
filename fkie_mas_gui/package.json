@@ -61,6 +61,7 @@
     "express-rate-limit": "^8.1.0",
     "flexlayout-react": "^0.8.17",
     "hostile": "^1.4.0",
+    "idb": "^8.0.3",
     "json5": "^2.2.3",
     "jtest": "^0.0.1",
     "monaco-editor": "^0.52.2",
