@@ -32,7 +32,7 @@ import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { MsgHistoryContext, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
+import { DB_MAX_MSGS, MsgHistoryContext, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
 import { RosContext } from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
@@ -64,6 +64,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const historyCtx = useContext(MsgHistoryContext);
   const [maxHistoryLength, setMaxHistoryLength] = useState(0);
   const { historyByType, setMaxEntries, ensureLoaded } = useMsgHistory();
+  const [history, setHistory] = useState<TMsgHistoryEntry[]>([]);
   const [substituteKeywords, setSubstituteKeywords] = useState(true);
   const [editTopicName, setEditTopicName] = useState<boolean>(false);
   const [editMessageType, setEditMessageType] = useState<boolean>(false);
@@ -125,6 +126,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   useEffect(() => {
     if (historyByType[currentMessageType]?.length === 0) setHistoryEditMode(false);
+    setHistory(historyByType[currentMessageType] || []);
   }, [historyByType[currentMessageType]]);
 
   useEffect(() => {
@@ -364,8 +366,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
     // store struct to history if new message
     const messageStr = rosMessageStructToString(messageStruct, false, false);
     if (messageStr !== "{}") {
-      const historyList = historyByType[currentMessageType] ?? [];
-      const exists = historyList.some((item) => rosMessageStructToString(item.data, false, false) === messageStr);
+      const exists = history.some((item) => rosMessageStructToString(item.data, false, false) === messageStr);
       if (!exists) {
         updateHistory();
       }
@@ -420,9 +421,8 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   // create input mask for an element of the array
   function createHistoryButton(entry: TMsgHistoryEntry): JSX.Element {
     return (
-      <Tooltip title={`${entry.name}`} placement="bottom" disableInteractive>
+      <Tooltip key={`history-button-${entry.id}`} title={`${entry.name}`} placement="bottom" disableInteractive>
         <Button
-          key={`history-button-${entry.id}`}
           onClick={(event) => {
             fromHistory(entry);
             event.stopPropagation();
@@ -438,7 +438,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   // create edit mask for an element of the history array
   function createHistoryEditItem(entry: TMsgHistoryEntry): JSX.Element {
     return (
-      <Stack direction="row" key={`history-edit-item-${entry.id}`} spacing="0.5em">
+      <Stack key={`history-edit-item-${entry.id}`} direction="row" spacing="0.5em">
         <Tooltip title="favorite entries are not automatically deleted" placement="bottom" disableInteractive>
           <IconButton
             key={`history-edit-star-${entry.id}`}
@@ -627,7 +627,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
               </ToggleButton>
             </Tooltip>
           )}
-          {historyByType[currentMessageType]?.length > 0 && (
+          {history.length > 0 && (
             <Stack direction="column" spacing={1} alignItems="left">
               {/* <FormLabel sx={{ fontSize: "0.8em", lineHeight: "1em" }}>Publish history</FormLabel> */}
               <ButtonGroup sx={{ maxHeight: "24px" }}>
@@ -647,21 +647,21 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
                     <EditNoteIcon />
                   </Button>
                 </Tooltip>
-                {historyByType[currentMessageType]?.map((entry) => createHistoryButton(entry))}
+                {history.map((entry) => createHistoryButton(entry))}
               </ButtonGroup>
               {historyEditMode && (
                 <Stack direction="column" alignContent="start">
                   <Stack direction="row" alignContent="start">
                     <Slider
                       aria-label="Temperature"
-                      defaultValue={maxHistoryLength}
+                      value={maxHistoryLength}
                       valueLabelFormat={(index) => `max history length: ${index}`}
                       valueLabelDisplay="auto"
                       shiftStep={1}
                       step={1}
                       marks
                       min={1}
-                      max={10}
+                      max={DB_MAX_MSGS}
                       onChange={(_event: Event, newValue: number) => {
                         setMaxHistoryLength(newValue);
                       }}
@@ -671,7 +671,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
                       <IconButton
                         color="error"
                         onClick={(event) => {
-                          for (const entry of historyByType[currentMessageType] ?? []) {
+                          for (const entry of history) {
                             if (!entry.favorite) {
                               historyCtx?.deleteEntry(currentMessageType, entry.id);
                             }
@@ -684,7 +684,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
                       </IconButton>
                     </Tooltip>
                   </Stack>
-                  {historyByType[currentMessageType]?.map((entry) => createHistoryEditItem(entry))}
+                  {history.map((entry) => createHistoryEditItem(entry))}
                 </Stack>
               )}
             </Stack>

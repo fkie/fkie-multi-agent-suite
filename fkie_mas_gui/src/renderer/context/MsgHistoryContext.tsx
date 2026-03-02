@@ -39,6 +39,7 @@ interface MsgHistoryContextType {
 const DB_NAME = "MsgHistoryDB";
 const STORE_NAME = "history";
 const DEFAULT_MAX = 5;
+export const DB_MAX_MSGS = 10; // we store always 10 entries
 
 async function initDB(): Promise<IDBPDatabase<MsgHistoryDB>> {
   return openDB<MsgHistoryDB>(DB_NAME, 1, {
@@ -66,6 +67,10 @@ export const MsgHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     initDB().then(setDb);
   }, []);
 
+  useEffect(() => {
+    updateAfterMaxEntries()
+  }, [maxEntries]);
+
   /* ================= Internal Loader ======================= */
 
   const loadFromDB = useCallback(
@@ -89,15 +94,14 @@ export const MsgHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
         return b.id - a.id;
       });
-
       setHistoryByType((prev) => ({
         ...prev,
-        [messageType]: result,
+        [messageType]: result.slice(0, maxEntries),
       }));
 
       loadedTypes.current.add(messageType);
     },
-    [db]
+    [db, maxEntries]
   );
 
   /* ================= Lazy Hydration ======================== */
@@ -147,7 +151,7 @@ export const MsgHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return a.id - b.id; // remove oldest first
     });
 
-    while (all.length > maxEntries) {
+    while (all.length > DB_MAX_MSGS) {
       const toDelete = all.shift();
       if (toDelete) await store.delete([toDelete.messageType, toDelete.id]);
     }
@@ -192,46 +196,22 @@ export const MsgHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   /* ===================== Global Max ======================== */
 
   const setMaxEntriesGlobal = async (max: number) => {
-    if (!db) return;
-    if (maxEntries === max || max === 0) return;
+    if (max === 0 || maxEntries === max) return;
 
     setMaxEntriesState(max);
 
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-
-    const allEntries: TMsgHistoryEntry[] = [];
-    let cursor = await store.openCursor();
-
-    while (cursor) {
-      allEntries.push(cursor.value);
-      cursor = await cursor.continue();
+    // nur UI neu laden
+    for (const type of loadedTypes.current) {
+      await loadFromDB(type);
     }
-
-    // Group by messageType
-    const byType: Record<string, TMsgHistoryEntry[]> = {};
-    for (const entry of allEntries) {
-      if (!byType[entry.messageType]) byType[entry.messageType] = [];
-      byType[entry.messageType].push(entry);
-    }
-
-    // Enforce limit per type
-    for (const [_messageType, list] of Object.entries(byType)) {
-      list.sort((a, b) => {
-        if (a.favorite !== b.favorite) return a.favorite ? 1 : -1;
-        return a.id - b.id; // remove oldest first
-      });
-      while (list.length > max) {
-        const toDelete = list.shift();
-        if (toDelete) await store.delete([toDelete.messageType, toDelete.id]);
-      }
-    }
-
-    await tx.done;
-
-    // Reload hydrated types
-    for (const type of loadedTypes.current) await loadFromDB(type);
   };
+
+  const updateAfterMaxEntries = useCallback(async () => {
+    // nur UI neu laden
+    for (const type of loadedTypes.current) {
+      await loadFromDB(type);
+    }
+  }, [maxEntries]);
 
   return (
     <MsgHistoryContext.Provider
