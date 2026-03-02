@@ -1800,9 +1800,7 @@ export default class Provider implements IProvider {
   /**
    * Get count of websocket subscriptions for given ros topic
    */
-  public getCountTopicSubscriptions: (topicName: string) => Promise<string[] | undefined> = async (
-    topicName,
-  ) => {
+  public getCountTopicSubscriptions: (topicName: string) => Promise<string[] | undefined> = async (topicName) => {
     const cbTopic = `${URI.ROS_SUBSCRIBER_FILTER_PREFIX}.${topicName.replaceAll("/", "_")}`;
     this.logger?.debug(`Provider: (${this.name()}) request count subscriptions for [${cbTopic}]`, "");
     const result = await this.makeCall("subs", [cbTopic], true).then((value: TResultData) => {
@@ -2494,12 +2492,13 @@ export default class Provider implements IProvider {
    */
 
   public getLifecycleForNode(id: string): LifecycleState | undefined {
-    for (const lc of this.lifecycle) {
-      if (lc.id === id) {
-        return lc;
-      }
+    // valid only for running nodes
+    const status = this.rosNodes.find((node) => node.id === id)?.status ?? RosNodeStatus.UNKNOWN;
+    if (![RosNodeStatus.RUNNING, RosNodeStatus.NOT_MONITORED].includes(status)) {
+      return undefined;
     }
-    return undefined;
+
+    return this.lifecycle.find((lc) => lc.id === id);
   }
 
   public getLifecycle: () => Promise<LifecycleState[]> = async () => {
