@@ -382,11 +382,18 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     [rosCtx.nodeMap]
   );
 
-  function allChildrenSelected(groupName: string, children: string[]): boolean {
-    // get all nodes of the group and check if they are all in children
-    const childrenIds = keyNodeList.filter((node) => node.key.startsWith(`${groupName}`)).map((node) => node.key);
-    const notInAllIds = childrenIds.filter((childId) => children.indexOf(childId) === -1);
-    return notInAllIds.length === 1 && notInAllIds[0] === groupName;
+  function allChildrenSelected(groupName: string, selected: Set<string>): boolean {
+    for (const node of keyNodeList) {
+      if (!node.key.startsWith(groupName)) continue;
+
+      // Ignore the group itself
+      if (node.key === groupName) continue;
+
+      if (!selected.has(node.key)) {
+        return false; // early exit
+      }
+    }
+    return true;
   }
 
   /**
@@ -394,52 +401,67 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    */
   const getParentAndChildrenIds = useCallback(
     (parentIds: string[]): string[] => {
-      let allIds = [...parentIds];
-      let updatedGroup = false;
-      // get all children IDs
+      const selected = new Set<string>();
+      const groups = new Set<string>();
+
+      // 1️⃣ Initial selection
       for (const id of parentIds) {
-        const parsedId = id.split("#");
-        // a group (with children) must have 1 substring
-        if (parsedId.length === 1) {
-          // get the children IDs
-          const childrenIds = keyNodeList.filter((node) => node.key.startsWith(id)).map((node) => node.key);
-          if (childrenIds) {
-            allIds = [...childrenIds];
+        // If it's a node → add directly
+        if (id.includes("#")) {
+          selected.add(id);
+          continue;
+        }
+
+        // It's a group
+        groups.add(id);
+        selected.add(id);
+
+        // Add all children of the group
+        for (const node of keyNodeList) {
+          if (node.key.startsWith(id)) {
+            selected.add(node.key);
           }
         }
       }
-      // get all parent IDs with all children selected
-      for (const id of allIds) {
-        const parsedId = id.split("#");
-        // a group (with children) must have 1 substring
-        if (parsedId.length === 1) {
-          if (parsedId[0].indexOf("/") > -1) {
-            const parentGroup = parsedId[0].slice(0, parsedId[0].lastIndexOf("/"));
-            // add parent group to the list of IDs if it is not already there and has all its children selected
-            if (allChildrenSelected(parentGroup, allIds)) {
-              allIds.push(parentGroup);
-              updatedGroup = true;
-            }
-          }
-        } else {
-          // we have a node, get the group name and check if it is in allIds
-          // or if all nodes of the group are in the allIds, select it too.
-          const groupName = parsedId[0];
-          if (allIds.indexOf(groupName) === -1) {
-            // add if all children are in allIds
-            if (allChildrenSelected(groupName, allIds)) {
-              allIds.push(groupName);
-              updatedGroup = true;
-            }
+
+      // 2️⃣ Ensure group is selected if all its nodes are selected
+      for (const id of selected) {
+        if (!id.includes("#")) continue;
+
+        const hashIndex = id.indexOf("#");
+        const group = id.slice(0, hashIndex);
+
+        if (!selected.has(group) && allChildrenSelected(group, selected)) {
+          groups.add(group);
+          selected.add(group);
+        }
+      }
+
+      // 3️⃣ Propagate upwards directly (no while-loop)
+      for (const group of Array.from(groups)) {
+        let current = group;
+
+        while (true) {
+          const lastSlash = current.lastIndexOf("/");
+          if (lastSlash === -1) break;
+
+          const parentGroup = current.slice(0, lastSlash);
+
+          if (
+            parentGroup.indexOf("/") > -1 &&
+            !selected.has(parentGroup) &&
+            allChildrenSelected(parentGroup, selected)
+          ) {
+            groups.add(parentGroup);
+            selected.add(parentGroup);
+            current = parentGroup; // continue upwards
+          } else {
+            break;
           }
         }
       }
-      if (updatedGroup) {
-        // if a new group was added we have to check if parent group has all children selected.
-        allIds = getParentAndChildrenIds(allIds);
-      }
-      // remove multiple copies of a selected item
-      return [...new Set(allIds)];
+
+      return Array.from(selected);
     },
     [keyNodeList]
   );
@@ -742,131 +764,6 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     ]
   );
 
-  /**
-   * Memoize the generation of the tree to improve render performance
-   * The idea is to prevent rerendering when scrolling/focusing the component
-   */
-  // const generateTree = useMemo(() => {
-  //   const newKeyNodeList: { key: string; idGlobal: string }[] = [];
-  //   const tree = (
-  //     <Box
-  //       width="100%"
-  //       height="100%"
-  //       overflow="auto"
-  //       onClick={() => {
-  //         // deselect topics
-  //         setSelectedItems([]);
-  //       }}
-  //     >
-  //       {(!rosCtx.providers || rosCtx.providers.length === 0) && (
-  //         <Alert severity="info">
-  //           <AlertTitle>No providers available</AlertTitle>
-  //           Please connect to a ROS provider
-  //         </Alert>
-  //       )}
-  //       <SimpleTreeView
-  //         onClick={(event) => {
-  //           // enable deselection
-  //           event.stopPropagation();
-  //         }}
-  //         // apiRef={apiRef}
-  //         aria-label="node list"
-  //         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-  //         multiSelect
-  //         expandedItems={expanded}
-  //         // sx={{ height: '100%' }}
-  //         selectedItems={selectedItems}
-  //         onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
-  //           handleToggle(event, itemIds)
-  //         }
-  //         onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) =>
-  //           handleSelect(event, itemIds)
-  //         }
-  //         expansionTrigger={"iconContainer"}
-  //         // selectionPropagation={{ parents: true, descendants: true }}
-  //       >
-  //         {providerNodeTree?.sort(compareTreeProvider).map((item) => {
-  //           let providerIsAvailable = false;
-  //           let p = rosCtx.getProviderById(item.providerId as string, true);
-  //           if (p?.isAvailable()) {
-  //             providerIsAvailable = true;
-  //           }
-  //           if (!p) {
-  //             // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
-  //             // We create a new "not connected" provider.
-  //             if (item.providerId) {
-  //               p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
-  //               p.id = item.providerId;
-  //             } else {
-  //               return "";
-  //             }
-  //           }
-  //           // loop through available hosts
-  //           return (
-  //             <HostItem
-  //               key={p.id}
-  //               provider={p}
-  //               stopNodes={(idGlobalNodes: string[]) => {
-  //                 stopNodes(idGlobalNodes);
-  //               }}
-  //               onDoubleClick={(event: React.MouseEvent, id: string) => {
-  //                 handleDoubleClick(event, id);
-  //               }}
-  //             >
-  //               {/* Show launch files if host is available (have children) */}
-  //               {providerIsAvailable && (
-  //                 <LaunchFileList
-  //                   onMouseOver={(event: React.MouseEvent) => {
-  //                     event.stopPropagation();
-  //                   }}
-  //                   providerId={p.id}
-  //                   launchContentList={p.launchFiles}
-  //                   selectNodesFromLaunch={(providerId: string, launch: LaunchContent) =>
-  //                     selectNodesFromLaunch(providerId, launch)
-  //                   }
-  //                   onRemoveLaunch={(providerId: string, path: string, masteruri: string) =>
-  //                     onRemoveLaunch(providerId, path, masteruri)
-  //                   }
-  //                   onReloadLaunch={(providerId: string, path: string, masteruri: string) =>
-  //                     onReloadLaunch(providerId, path, masteruri)
-  //                   }
-  //                 />
-  //               )}
-
-  //               {item.children.sort(compareTreeItems).map((sortItem) => {
-  //                 return buildHostTreeViewItem(item.providerId as string, sortItem, newKeyNodeList);
-  //               })}
-  //             </HostItem>
-  //           );
-  //         })}
-  //       </SimpleTreeView>
-  //     </Box>
-  //   );
-  //   setKeyNodeList(newKeyNodeList);
-  //   return tree;
-  // }, [
-  //   expanded,
-  //   providerNodeTree,
-  //   selectedItems,
-  //   rosCtx,
-  //   settingsCtx.changed,
-  //   rosCtx.nodeMap,
-  //   // handleToggle, <= causes too many re-renders
-  //   // handleSelect, <= causes too many re-renders
-  //   // getMasterSyncNode,     <= causes too many re-renders
-  //   // handleDoubleClick,     <= causes too many re-renders
-  //   // getProviderTags,       <= causes too many re-renders
-  //   // selectNodesFromLaunch, <= causes too many re-renders
-  //   // onRemoveLaunch,        <= causes too many re-renders
-  //   // onReloadLaunch,        <= causes too many re-renders
-  //   // toggleMasterSync,      <= causes too many re-renders
-  //   // createSingleTerminalCmdPanel,  <= causes too many re-renders
-  //   // buildHostTreeViewItem, <= causes too many re-renders
-  //   // setKeyNodeList,        <= causes too many re-renders
-  // ]);
-
-  // const newKeyNodeList: { key: string; idGlobal: string }[] = [];
-  // setKeyNodeList(newKeyNodeList);
   return (
     <Box
       width="100%"
