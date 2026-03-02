@@ -1,7 +1,9 @@
 <launch>
   <arg name="capability_group" default="3 xml"/>
-  <node name="rviz2" pkg="rviz2" exec="rviz2">
+  <node name="rviz2" pkg="rviz2" exec="rviz2" namespace="test/sub/xyz">
     <param name="capability_group" value="$(var capability_group)"/>
   </node>
-
+  <node name="rviz3" pkg="rviz2" exec="rviz2" namespace="test/sub/xyz/abc">
+    <param name="capability_group" value="$(var capability_group)"/>
+  </node>
 </launch>
