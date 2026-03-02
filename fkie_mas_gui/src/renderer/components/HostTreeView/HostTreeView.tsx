@@ -21,7 +21,7 @@ import NodeItem from "./NodeItem";
 import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
 // import { useTreeViewApiRef } from "@mui/x-tree-view";
 
-const ID_SEP="█"
+const ID_SEP = "█";
 
 function compareTreeItems(a: NodeTreeItem, b: NodeTreeItem): number {
   // place system groups are at the end
@@ -106,111 +106,114 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     setOpenScreenByDefault(settingsCtx.get("openScreenByDefault") as string);
   }, [settingsCtx, settingsCtx.changed]);
 
-  const createTreeFromNodes: (nodes: RosNode[]) => void = useCallback((nodes) => {
-    const namespaceSystemNodes: string = settingsCtx.get("namespaceSystemNodes") as string;
-    const expandedGroups: string[] = [];
-    const nodeItemMap = new Map();
-    const newKeyNodeList: KeyTreeItem[] = [];
-    // generate node tree structure based on node list
-    // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
-    // ...and keep a list of the tree nodes
-    const nodeTree: NodeTreeItem[] = [];
-    const level: NodeTree = { nodeTree };
-    for (const node of nodes) {
-      let remoteLocationId = "";
-      if (!node.isLocal) {
-        // adds a new provider, which has no mas daemon and discovery
-        remoteLocationId = idFromDDSLocations(Array.isArray(node.location) ? node.location : [node.location]);
-        if (!remoteLocationId) {
-          remoteLocationId = node.providerId;
-        }
-      }
-      let nodePath = node.isLocal && node.providerId ? node.providerId : remoteLocationId;
-      const isSpamNode = spamNodesRegExp && node.name.match(spamNodesRegExp);
-      if (node.system_node && namespaceSystemNodes && !isSpamNode) {
-        // for system nodes, e.g.: /{SYSTEM}/ns
-        nodePath += namespaceSystemNodes;
-        if (node.namespace !== "/") {
-          nodePath += node.namespace;
-        }
-      } else {
-        // for nodes, e.g.: /robot_ns/{CAP_GROUP}/sub_ns
-        let groupNamespace = "";
-        let groupName = "";
-        let nodeRestNamespace = node.namespace !== "/" ? node.namespace : "";
-        if (node.capabilityGroup.namespace && node.namespace.startsWith(node.capabilityGroup.namespace)) {
-          groupNamespace = `${node.capabilityGroup.namespace}`;
-          nodeRestNamespace = node.namespace.replace(groupNamespace, "");
-        }
-        if (node.capabilityGroup.name) {
-          groupName = `/${node.capabilityGroup.name}`;
-        }
-        if (isSpamNode) {
-          groupName = "/{SPAM}";
-        }
-        nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;
-      }
-      nodePath += `/${node.idGlobal}`;
-      if (!nodeItemMap.has(node.idGlobal)) {
-        nodeItemMap.set(node.idGlobal, node);
-        nodePath.split("/").reduce((r: NodeTree, name, idx, a) => {
-          if (!r[name]) {
-            r[name] = { nodeTree: [] };
-            // Meaning of [name]:
-            //    In case of a node: corresponds to the uniqueId
-            //    In case of group: corresponds to group name
-            if (nodeItemMap.has(name)) {
-              // create a node
-              const guidStr = node.guid ? `${ID_SEP}${node.guid}` : "";
-              const groupName = a.slice(0, -1).join("/");
-              const treePath = `${groupName}#${nodeNameWithoutNamespace(node)}${guidStr}`;
-              r.nodeTree.push({
-                treePath,
-                children: r[name].nodeTree,
-                node,
-                name: nodeNameWithoutNamespace(node),
-                providerId: undefined,
-                providerName: undefined,
-              });
-              newKeyNodeList.push({
-                key: treePath,
-                idGlobal: node.idGlobal,
-              });
-            } else {
-              // create a (sub)group
-              const treePath = name ? a.slice(0, idx + 1).join("/") : "";
-              r.nodeTree.push({
-                treePath,
-                children: r[name].nodeTree,
-                node: null,
-                providerId: idx === 0 ? remoteLocationId || node.providerId : undefined,
-                providerName: idx === 0 ? remoteLocationId || node.providerName : undefined,
-                name: idx === 0 ? node.providerName || "" : a.slice(idx, idx + 1).join("/"), // top level is the provider
-              });
-              expandedGroups.push(treePath);
-              newKeyNodeList.push({
-                key: treePath,
-                idGlobal: undefined,
-              });
-            }
+  const createTreeFromNodes: (nodes: RosNode[]) => void = useCallback(
+    (nodes) => {
+      const namespaceSystemNodes: string = settingsCtx.get("namespaceSystemNodes") as string;
+      const expandedGroups: string[] = [];
+      const nodeItemMap = new Map();
+      const newKeyNodeList: KeyTreeItem[] = [];
+      // generate node tree structure based on node list
+      // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
+      // ...and keep a list of the tree nodes
+      const nodeTree: NodeTreeItem[] = [];
+      const level: NodeTree = { nodeTree };
+      for (const node of nodes) {
+        let remoteLocationId = "";
+        if (!node.isLocal) {
+          // adds a new provider, which has no mas daemon and discovery
+          remoteLocationId = idFromDDSLocations(Array.isArray(node.location) ? node.location : [node.location]);
+          if (!remoteLocationId) {
+            remoteLocationId = node.providerId;
           }
-          return r[name];
-        }, level);
+        }
+        let nodePath = node.isLocal && node.providerId ? node.providerId : remoteLocationId;
+        const isSpamNode = spamNodesRegExp && node.name.match(spamNodesRegExp);
+        if (node.system_node && namespaceSystemNodes && !isSpamNode) {
+          // for system nodes, e.g.: /{SYSTEM}/ns
+          nodePath += namespaceSystemNodes;
+          if (node.namespace !== "/") {
+            nodePath += node.namespace;
+          }
+        } else {
+          // for nodes, e.g.: /robot_ns/{CAP_GROUP}/sub_ns
+          let groupNamespace = "";
+          let groupName = "";
+          let nodeRestNamespace = node.namespace !== "/" ? node.namespace : "";
+          if (node.capabilityGroup.namespace && node.namespace.startsWith(node.capabilityGroup.namespace)) {
+            groupNamespace = `${node.capabilityGroup.namespace}`;
+            nodeRestNamespace = node.namespace.replace(groupNamespace, "");
+          }
+          if (node.capabilityGroup.name) {
+            groupName = `/${node.capabilityGroup.name}`;
+          }
+          if (isSpamNode) {
+            groupName = "/{SPAM}";
+          }
+          nodePath += `${groupNamespace}${groupName}${nodeRestNamespace}`;
+        }
+        nodePath += `/${node.idGlobal}`;
+        if (!nodeItemMap.has(node.idGlobal)) {
+          nodeItemMap.set(node.idGlobal, node);
+          nodePath.split("/").reduce((r: NodeTree, name, idx, a) => {
+            if (!r[name]) {
+              r[name] = { nodeTree: [] };
+              // Meaning of [name]:
+              //    In case of a node: corresponds to the uniqueId
+              //    In case of group: corresponds to group name
+              if (nodeItemMap.has(name)) {
+                // create a node
+                const guidStr = node.guid ? `${ID_SEP}${node.guid}` : "";
+                const groupName = a.slice(0, -1).join("/");
+                const treePath = `${groupName}#${nodeNameWithoutNamespace(node)}${guidStr}`;
+                r.nodeTree.push({
+                  treePath,
+                  children: r[name].nodeTree,
+                  node,
+                  name: nodeNameWithoutNamespace(node),
+                  providerId: undefined,
+                  providerName: undefined,
+                });
+                newKeyNodeList.push({
+                  key: treePath,
+                  idGlobal: node.idGlobal,
+                });
+              } else {
+                // create a (sub)group
+                const treePath = name ? a.slice(0, idx + 1).join("/") : "";
+                r.nodeTree.push({
+                  treePath,
+                  children: r[name].nodeTree,
+                  node: null,
+                  providerId: idx === 0 ? remoteLocationId || node.providerId : undefined,
+                  providerName: idx === 0 ? remoteLocationId || node.providerName : undefined,
+                  name: idx === 0 ? node.providerName || "" : a.slice(idx, idx + 1).join("/"), // top level is the provider
+                });
+                expandedGroups.push(treePath);
+                newKeyNodeList.push({
+                  key: treePath,
+                  idGlobal: undefined,
+                });
+              }
+            }
+            return r[name];
+          }, level);
+        }
       }
-    }
-    setKeyNodeList(newKeyNodeList);
-    setProviderNodeTree((prevTree) => {
-      if (prevTree.length === 0) {
-        // use either the expanded state or the key of the node tree (expand the first layer)
-        // only at first load
-        setExpanded(nodeTree?.map((item) => item.providerId as string));
+      setKeyNodeList(newKeyNodeList);
+      setProviderNodeTree((prevTree) => {
+        if (prevTree.length === 0) {
+          // use either the expanded state or the key of the node tree (expand the first layer)
+          // only at first load
+          setExpanded(nodeTree?.map((item) => item.providerId as string));
+        }
+        return nodeTree;
+      });
+      if (isFiltered) {
+        setExpanded(expandedGroups);
       }
-      return nodeTree;
-    });
-    if (isFiltered) {
-      setExpanded(expandedGroups);
-    }
-  }, [spamNodesRegExp]);
+    },
+    [spamNodesRegExp]
+  );
 
   useEffect(() => {
     createTreeFromNodes(visibleNodes);
@@ -270,12 +273,12 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
                 if (entryId && itemId) {
                   return entryId === itemId;
                 }
-                return true;
+                return !!entry.idGlobal;
               }
               return false;
             })
             .map((entry) => {
-              return entry.idGlobal ? entry.idGlobal : "";
+              return entry.idGlobal as string;
             }),
         ];
       }
@@ -391,7 +394,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    */
   const getParentAndChildrenIds = useCallback(
     (parentIds: string[]): string[] => {
-      let allIds = parentIds;
+      let allIds = [...parentIds];
       let updatedGroup = false;
       // get all children IDs
       for (const id of parentIds) {
@@ -401,7 +404,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           // get the children IDs
           const childrenIds = keyNodeList.filter((node) => node.key.startsWith(id)).map((node) => node.key);
           if (childrenIds) {
-            allIds = [...allIds, ...childrenIds];
+            allIds = [...childrenIds];
           }
         }
       }
