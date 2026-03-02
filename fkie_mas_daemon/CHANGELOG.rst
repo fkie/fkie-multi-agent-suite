@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.1.1 (02.03.2026)
+------------------
+* Changed test launch file
+
 5.1.0 (26.02.2026)
 ------------------
 * Stop subscription node if no listener are available on websocket

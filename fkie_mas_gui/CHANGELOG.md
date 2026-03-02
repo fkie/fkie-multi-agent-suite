@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.1.1 - 02.03.2026
+
+Added warning if logger options of a node are not available
+Fixed group selection in node tree
+Fixed showing lifecycle for groups whit non-running nodes
+History entries are not deleted when the length of the history is reduced.
+Added history editor for published message
+Adding history editor for published messages
+Checks in the echo panel whether a subscriber is still running
+Improved info while set date
+Improved set time by iterating and added time difference
+
 ## 5.1.0 - 26.02.2026
 
 Stop subscription node if no listener are available on websocket
