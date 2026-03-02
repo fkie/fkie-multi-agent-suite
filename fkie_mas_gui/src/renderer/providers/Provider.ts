@@ -2028,7 +2028,7 @@ export default class Provider implements IProvider {
   /**
    * Return a list with loggers for given node
    */
-  public getNodeLoggers: (node: string, loggerNames: string[]) => Promise<LoggerConfig[]> = async (
+  public getNodeLoggers: (node: string, loggerNames: string[]) => Promise<TResultData> = async (
     node,
     loggerNames = []
   ) => {
@@ -2038,12 +2038,12 @@ export default class Provider implements IProvider {
           // handle the result of type: {result: bool, message: str}
           if (!Array.isArray(value.data) && !value.result) {
             this.logger?.error(`Provider [${this.id}]: Error at getNodeLoggers(): ${value.message}`, "");
-            return [];
+            return value;
           }
-          return value.data as LoggerConfig[];
+          return value;
         }
         this.logger?.warn(`Provider [${this.id}]: Error at getNodeLoggers()`, `${value.message}`);
-        return [];
+        return value;
       }
     );
     return Promise.resolve(result);

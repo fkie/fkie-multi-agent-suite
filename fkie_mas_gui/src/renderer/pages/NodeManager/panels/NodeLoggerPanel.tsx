@@ -40,6 +40,7 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
   const [currentNode] = useState(node);
   const [isRequesting, setIsRequesting] = useState(false);
   const [addable] = useState<boolean>(node.id.indexOf("-") > 0);
+  const [error, setError] = useState<string>("");
   const [loggers, setLoggers] = useState<LoggerConfig[]>([]);
   const [loggersFiltered, setLoggersFiltered] = useState<LoggerConfig[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
@@ -73,12 +74,18 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
         const provider = rosCtx.getProviderById(rosNode.providerId);
         if (provider) {
           setIsRequesting(true);
-          ownLoggers = await provider.getNodeLoggers(rosNode.name, []);
-          if (ownLoggers?.length > 0) {
-            // fix case: c++ nodes in ROS1 returns log level in lower case
-            ownLoggers = ownLoggers?.map((item) => {
-              return { name: item.name, level: item.level.toLocaleUpperCase() } as LoggerConfig;
-            });
+          const result = await provider.getNodeLoggers(rosNode.name, []);
+          if (result.result) {
+            setError("");
+            ownLoggers = result.data as LoggerConfig[];
+            if (ownLoggers?.length > 0) {
+              // fix case: c++ nodes in ROS1 returns log level in lower case
+              ownLoggers = ownLoggers?.map((item) => {
+                return { name: item.name, level: item.level.toLocaleUpperCase() } as LoggerConfig;
+              });
+            }
+          } else {
+            setError(result.message);
           }
           setIsRequesting(false);
         }
@@ -273,6 +280,12 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
           // fullWidth={true}
         />
       </Stack>
+      {error && (
+        <Stack direction="column">
+          <Typography color="error">{error}</Typography>
+          <Typography color="info">Have you enabled enable_logger_service in the options of your ROS node?</Typography>
+        </Stack>
+      )}
       <TableContainer>
         <Table aria-label="logger table">
           <TableBody>
