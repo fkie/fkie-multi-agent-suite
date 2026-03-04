@@ -930,21 +930,22 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
 
-  // useEffect(() => {
-  //   refreshAllProvider(false);
-  // }, [rosCtx.providers]);
-
   useEffect(() => {
     // apply filter to nodes if search text was changed by user or nodes are updated by provider
     onSearch(filterText);
   }, [filterText, providerNodes]);
 
-  // useEffect(() => {
-  //   // remove provider from our list if provider was removed in rosCtx
-  //   setProviderNodes((prev) => [
-  //     ...prev.filter((item) => rosCtx.providers.filter((prov) => prov.id === item.providerId).length > 0),
-  //   ]);
-  // }, [rosCtx.mapProviderRosNodes]);
+  useEffect(() => {
+    /**
+     * Synchronizes providerNodes with the current provider list.
+     *
+     * Removes all nodes whose providerId is no longer present in
+     * rosCtx.providers. This prevents orphaned nodes from remaining
+     * in state when providers are removed or replaced.
+     */
+    const providerIds = rosCtx.providers.map((p) => p.id);
+    setProviderNodes((oldValues) => oldValues.filter((item) => providerIds.includes(item.providerId)));
+  }, [rosCtx.providers]);
 
   useEffect(() => {
     if (nodesToStart) {
