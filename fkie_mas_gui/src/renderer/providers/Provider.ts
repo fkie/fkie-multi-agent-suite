@@ -1524,6 +1524,31 @@ export default class Provider implements IProvider {
     return { namespace: ns, name: `{${splits.slice(splits.length - 1)}}` };
   };
 
+  public getAssociatedNodes(startNode: RosNode, depth = 0, visited = new Set<string>()): RosNode[] {
+    if (depth > 10) return [];
+
+    const associations: string[] =
+      startNode.launchInfo.size === 1
+        ? (startNode.launchInfo.values().next().value?.associations ?? [])
+        : (startNode.launchInfo.get(startNode.launchPath)?.associations ?? []);
+
+    const result: RosNode[] = [];
+
+    for (const asName of associations) {
+      // Nodes can be with or without leading slash
+      const asNodes = this.rosNodes.filter((n) => n.name === asName || n.name === `/${asName}`);
+      for (const asNode of asNodes) {
+        if (visited.has(asNode.name)) continue;
+        visited.add(asNode.name);
+
+        result.push(asNode);
+        result.push(...this.getAssociatedNodes(asNode, depth + 1, visited));
+      }
+    }
+
+    return result;
+  }
+
   /**
    * Get the list of nodes loaded in launch files. update launch files into provider object
    */

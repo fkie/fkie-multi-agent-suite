@@ -616,6 +616,23 @@ class LaunchServicer(LoggingEventHandler):
                     import traceback
                     print(traceback.format_exc())
                 reply_lc.nodes.append(item)
+                # search for associations
+                for p in item.parameters:
+                    if p.name == "mas/associations":
+                        associations = p.value
+                    else:
+                        # versuche beide möglichen Pfade
+                        associations = (
+                            p.value.get("/**", {})
+                                .get("ros__parameters", {})
+                                .get("mas/associations")
+                            or
+                            p.value.get(item.node_name, {})
+                                .get("ros__parameters", {})
+                                .get("mas/associations")
+                        )
+                    if associations:
+                        reply_lc.associations.append(LaunchAssociations(item.node_name, associations))
             reply_lc.warnings = lc.load_exceptions
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)

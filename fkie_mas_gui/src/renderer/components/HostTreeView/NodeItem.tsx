@@ -5,6 +5,7 @@ import DvrIcon from "@mui/icons-material/Dvr";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import NewReleasesTwoToneIcon from "@mui/icons-material/NewReleasesTwoTone";
+import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import ReportIcon from "@mui/icons-material/Report";
 import ScheduleSendIcon from "@mui/icons-material/ScheduleSend";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
@@ -78,6 +79,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   const [nodeIcon, setNodeIcon] = useState(<CircleIcon style={{ marginRight: 0.5, width: 20, color: red[550] }} />);
   const [timerPeriod, setTimerPeriod] = useState<number[]>([]);
   const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
+  const [associations, setAssociations] = useState<string[]>([]);
 
   useEffect(() => {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
@@ -395,7 +397,18 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
         } as TTag);
       }
     }
+
+    // create association count
+    const associatedNodeNames = getAssociatedNodeNames(node);
+    setAssociations(associatedNodeNames);
   }, [node]);
+
+  /** Returns all associated node names recursively (max depth 10), excluding the start node */
+  function getAssociatedNodeNames(startNode: RosNode): string[] {
+    const provider = rosCtx.getProviderById(startNode.providerId);
+    if (!provider) return [];
+    return provider.getAssociatedNodes(startNode).map((node) => node.name)
+  }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
@@ -513,6 +526,26 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
               </Stack>
             </Stack>
             <Stack direction="row" display="flex" alignItems="center" justifyItems="center" paddingLeft={0.0}>
+              {associations.length > 0 && (
+                <Tooltip
+                  title={
+                    <>
+                      <Typography variant="body2">Associations [{associations.length}]:</Typography>
+                      {associations.map((association) => {
+                        return (
+                          <Typography key={`association-${association}`} variant="body2">
+                            {" "}
+                            - {association}
+                          </Typography>
+                        );
+                      })}
+                    </>
+                  }
+                  disableInteractive
+                >
+                  <PlaylistPlayIcon>{associations}</PlaylistPlayIcon>
+                </Tooltip>
+              )}
               {composableTag && fromTag(composableTag)}
               {sameIdTag && fromTag(sameIdTag)}
               {node.tags.map((tag: TTag) => (

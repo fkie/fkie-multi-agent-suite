@@ -256,8 +256,8 @@ export function getTagProposals(
     createProposal("remap", `${open}remap from="\${1:FROM}" to="\${2:TO}" /${close}`, "Add a new remap statement"),
     createProposal("GDB Launch Prefix", 'launch-prefix="gdb -ex run -ex bt -batch --args"', "GDB Launch Prefix"),
     createProposal(
-      "nm/associations",
-      `${open}param name="nm/associations" value="\${1:NODES}" /${close}`,
+      "mas/associations",
+      `${open}param name="mas/associations" value="\${1:[NODES]}" /${close}`,
       "Associated ROS-Nodes are started before the node itself and stopped after the node"
     ),
     createProposal(
