@@ -810,7 +810,7 @@ class LaunchServicer(LoggingEventHandler):
             for n in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
                 associations_param = roslib.names.ns_join(
-                    node_fullname, "nm/associations"
+                    node_fullname, "mas/associations"
                 )
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
@@ -820,9 +820,9 @@ class LaunchServicer(LoggingEventHandler):
                         values.append(roslib.names.ns_join(
                             item.namespace, split))
                     associations[node_fullname] = values
-                # DEPRECATED 'associations'
+                # DEPRECATED 'nm/associations'
                 associations_param = roslib.names.ns_join(
-                    node_fullname, "associations")
+                    node_fullname, "nm/associations")
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r"[;,\s]\s*", line)

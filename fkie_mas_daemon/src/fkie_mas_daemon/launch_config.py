@@ -181,16 +181,16 @@ class LaunchConfig(object):
             for n in roscfg.nodes:
                 node_fullname = names.ns_join(n.namespace, n.name)
                 associations_param = names.ns_join(
-                    node_fullname, 'associations')
+                    node_fullname, 'nm/associations')
                 if associations_param in roscfg.params:
                     ds = DiagnosticStatus()
                     ds.level = DiagnosticStatus.WARN
                     ds.name = node_fullname
                     ds.message = 'Deprecated parameter detected'
-                    ds.values.append(KeyValue('deprecated', 'associations'))
-                    ds.values.append(KeyValue('new', 'nm/associations'))
+                    ds.values.append(KeyValue('deprecated', 'nm/associations'))
+                    ds.values.append(KeyValue('new', 'mas/associations'))
                     Log.warn(
-                        "'associations' is deprecated, use 'nm/associations'! found for node: %s in %s" % (node_fullname, self.filename))
+                        "'nm/associations' is deprecated, use 'mas/associations'! found for node: %s in %s" % (node_fullname, self.filename))
                     diag_dep.status.append(ds)
             if self._monitor_servicer is not None:
                 # set diagnostics
