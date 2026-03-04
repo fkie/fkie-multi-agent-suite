@@ -64,12 +64,12 @@ type TProviderNodes = {
   nodes: RosNode[];
 };
 
-type TQueueAction = {
+interface TQueueAction {
   action: string;
   node?: RosNode;
   service?: string;
   masteruri?: string;
-};
+}
 
 type TMenuOptionsParam = {
   name: string;
@@ -94,6 +94,15 @@ type TMenuOptionsScreen = {
   callback?: () => void;
 };
 
+const queueActionMeta = {
+  STOP: { successText: "stopped" },
+  START: { successText: "started" },
+  KILL: { successText: "killed" },
+  UNREGISTER: { successText: "unregistered" },
+  CLEAR_LOG: { successText: "logs cleared" },
+  DYNAMIC_RECONFIGURE: { successText: "dynamic reconfigure started" },
+};
+
 export default function HostTreeViewPanel(): JSX.Element {
   // context objects
   const rosCtx = useContext(RosContext);
@@ -114,16 +123,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [visibleNodes, setVisibleNodes] = useState<RosNode[]>([]);
   const [nodesToStart, setNodesToStart] = useState<RosNode[]>();
   const [progressQueueMain, setProgressQueueMain] = useState<number>(0);
-  const {
-    update: updateQueueMain,
-    clear: clearQueueMain,
-    get: getQueueMain,
-    queue: queueItemsQueueMain,
-    currentIndex: indexQueueMain,
-    success: successQueueMain,
-    failed: failedQueueMain,
-    addStatus: addStatusQueueMain,
-  } = useQueue<TQueueAction>(setProgressQueueMain);
+  const queue = useQueue<TQueueAction>(setProgressQueueMain);
 
   // variables with show dialog actions
   const [rosCleanPurge, setRosCleanPurge] = useState(false);
@@ -228,7 +228,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   });
 
   useCustomEventListener(EVENT_KILL_NODES, (data: TEventKillNodes) => {
-    updateQueueMain(
+    queue.update(
       data.nodes.map((node) => {
         return { node, action: "KILL" };
       })
@@ -408,53 +408,37 @@ export default function HostTreeViewPanel(): JSX.Element {
   }
 
   async function startNodeQueued(node: RosNode | undefined): Promise<void> {
-    // let node = getQueueMain();
-    if (node !== undefined) {
-      const provider = rosCtx.getProviderById(node.providerId);
-      logCtx.debug(`start: ${node.name}`, "");
-      if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain("START", node.name, false, `Provider ${node.providerName} not available`);
-      } else {
-        // store result to inform the user after queue is finished
-        const resultStartNode = await provider.startNode(node);
-        if (!resultStartNode.success) {
-          addStatusQueueMain("START", node.name, false, `${resultStartNode.details}`);
-        } else {
-          addStatusQueueMain("START", node.name, true, resultStartNode.details || "started");
-        }
-      }
+    if (!node) return;
+
+    const provider = rosCtx.getProviderById(node.providerId);
+    logCtx.debug(`start: ${node.name}`);
+
+    if (!provider || !provider.isAvailable()) {
+      queue.addStatus("START", node.name, false, `Provider ${node.providerName} not available`);
+      return;
+    }
+
+    try {
+      const result = await provider.startNode(node);
+      const success = result.success ?? false;
+      const details = result.details || (success ? "started" : "failed");
+      queue.addStatus("START", node.name, success, details);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      queue.addStatus("START", node.name, false, `Error starting node: ${message}`);
     }
   }
 
-  function updateWithAssociations(nodes: RosNode[], depth?: number): RosNode[] {
-    const _depth = depth || 0;
-    if (_depth > 10) return [...nodes];
+  function updateWithAssociations(nodes: RosNode[]): RosNode[] {
     const newNodeList: RosNode[] = [];
+
     for (const node of nodes) {
-      if (node.launchInfo.size > 0) {
-        const associations: string[] =
-          node.launchInfo.size === 1
-            ? node.launchInfo.values().next().value?.associations || []
-            : node.launchInfo.get(node.launchPath)?.associations || [];
-        if (associations) {
-          const provider = rosCtx.getProviderById(node.providerId);
-          if (provider) {
-            for (const asNodeName of associations) {
-              const asNodes = provider.rosNodes.filter((n) => n.name === asNodeName);
-              const asNodesRec = updateWithAssociations(asNodes, _depth + 1);
-              for (const asNode of asNodesRec) {
-                if (!newNodeList.find((n) => n.name === asNode.name)) {
-                  newNodeList.push(asNode);
-                }
-              }
-            }
-          }
-        }
-      }
-      if (!newNodeList.find((n) => n.name === node.name)) {
-        newNodeList.push(node);
-      }
+      const provider = rosCtx.getProviderById(node.providerId);
+      if (!provider) continue;
+      newNodeList.push(...provider.getAssociatedNodes(node));
+      newNodeList.push(node);
     }
+
     return newNodeList;
   }
 
@@ -471,8 +455,8 @@ export default function HostTreeViewPanel(): JSX.Element {
         nodeNm &&
         (nodeNm.status !== RosNodeStatus.RUNNING ||
           (ignoreRunState && nodes2start.filter((item) => item.id === nodeNm.id).length > 0)) &&
-        queueItemsQueueMain &&
-        queueItemsQueueMain.find((elem) => {
+        queue.queue &&
+        queue.queue.find((elem) => {
           return elem.action === "START" && elem.node?.name === nodeNm.name;
         }) === undefined
       ) {
@@ -511,7 +495,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
         skippedNodes.set(node.name, "already running");
       } else if (
-        queueItemsQueueMain?.find((elem) => {
+        queue.queue?.find((elem) => {
           return elem.action === "START" && elem.node?.name === node.name;
         })
       ) {
@@ -573,13 +557,13 @@ export default function HostTreeViewPanel(): JSX.Element {
       logCtx.debug(`stop: ${node.name}`, "");
       const provider = rosCtx.getProviderById(node.providerId);
       if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain("STOP", node.name, false, `Provider ${node.providerName} not available`);
+        queue.addStatus("STOP", node.name, false, `Provider ${node.providerName} not available`);
       } else {
         if (node.status === RosNodeStatus.RUNNING) {
           // stop node and store result for message
           const resultStopNode = await provider.stopNode(node.id);
           if (!resultStopNode.result) {
-            if (queueItemsQueueMain.length <= 1) {
+            if (queue.queue.length <= 1) {
               const getProcessResult = await provider.findNodeProcess(node.name);
               if (getProcessResult.processes.length > 0) {
                 setKillProcessQuestion(
@@ -596,31 +580,31 @@ export default function HostTreeViewPanel(): JSX.Element {
                 );
               }
             }
-            addStatusQueueMain("STOP", node.name, false, resultStopNode.message);
+            queue.addStatus("STOP", node.name, false, resultStopNode.message);
           } else {
-            addStatusQueueMain("STOP", node.name, true, "stopped");
+            queue.addStatus("STOP", node.name, true, "stopped");
           }
         } else if ((node.screens || []).length > 0) {
           // terminate screen and store result for message
           const resultTermNode = await provider.screenKillNode(node.id, "SIGTERM");
           if (!resultTermNode.result) {
-            addStatusQueueMain("STOP", node.name, false, resultTermNode.message);
+            queue.addStatus("STOP", node.name, false, resultTermNode.message);
           } else {
-            addStatusQueueMain("STOP", node.name, true, "sent SIGTERM to executable");
+            queue.addStatus("STOP", node.name, true, "sent SIGTERM to executable");
           }
         } else {
-          addStatusQueueMain("STOP", node.name, false, "no screen to stop");
+          queue.addStatus("STOP", node.name, false, "no screen to stop");
         }
       }
     } else {
-      addStatusQueueMain("STOP", "undefined", false, "invalid node");
+      queue.addStatus("STOP", "undefined", false, "invalid node");
     }
 
     return Promise.resolve();
   }
 
   /**
-   * Stop nodes given in the arguments
+   * Stops the given nodes.
    */
   function stopNodes(
     nodes: RosNode[],
@@ -628,66 +612,79 @@ export default function HostTreeViewPanel(): JSX.Element {
     restart?: boolean,
     ignoreTimer: boolean = false
   ): void {
-    const nodes2stop: RosNode[] = [];
-    const skippedNodes: Map<string, string> = new Map();
+    const skipped: Record<string, string> = {};
     const nodeList = updateWithAssociations(nodes);
-    for (const node of nodeList) {
-      // we stop system nodes only when they are individually selected
-      if (node.system_node && nodeList.length > 1) {
-        // skip system nodes
-        skippedNodes.set(node.name, "system node");
-      } else if (onlyWithLaunch && node.launchInfo.size === 0) {
-        skippedNodes.set(node.name, "stop only with launch files");
-      } else if (
-        queueItemsQueueMain?.find((elem) => {
-          return elem.action === "STOP" && elem.node?.name === node.name;
-        })
-      ) {
-        skippedNodes.set(node.name, "already in queue");
-      } else if (node.status === RosNodeStatus.RUNNING || (node.screens || []).length > 0) {
-        // const isRunning = node.status === RosNodeStatus.RUNNING;
-        // const isRunning = true;
-        // if (!skip) {
-        nodes2stop.push(node);
-      } else {
-        skippedNodes.set(node.name, "not running");
-      }
-    }
-    if (skippedNodes.size > 0) {
-      logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
-    }
-    updateQueueMain(
-      nodes2stop.map((node) => {
-        return { node, action: "STOP" };
-      })
+
+    // Precompute STOP items already in queue (O(1) lookup)
+    const stopQueuedNames = new Set(
+      (queue.queue ?? []).filter((q) => q.action === "STOP" && q.node?.name).map((q) => q.node?.name)
     );
-    let maxKillTime = -1;
-    // add kill on stop commands
-    for (const node of nodes2stop) {
-      if (node.pid) {
-        for (const launchInfo of node.launchInfo.values()) {
-          if (launchInfo.sigkill_timeout) {
-            if (maxKillTime < launchInfo.sigkill_timeout) {
-              maxKillTime = launchInfo.sigkill_timeout;
-            }
-          }
-        }
-        if (maxKillTime > -1) {
-          setTimeout(() => {
-            updateQueueMain([{ node, action: "KILL" }]);
-          }, maxKillTime);
+
+    const nodesToStop: RosNode[] = [];
+
+    for (const node of nodeList) {
+      if (node.system_node && nodeList.length > 1) {
+        skipped[node.name] = "system node";
+        continue;
+      }
+
+      if (onlyWithLaunch && node.launchInfo.size === 0) {
+        skipped[node.name] = "stop only with launch files";
+        continue;
+      }
+
+      if (stopQueuedNames.has(node.name)) {
+        skipped[node.name] = "already in queue";
+        continue;
+      }
+
+      const isRunning = node.status === RosNodeStatus.RUNNING || (node.screens?.length ?? 0) > 0;
+
+      if (!isRunning) {
+        skipped[node.name] = "not running";
+        continue;
+      }
+
+      nodesToStop.push(node);
+    }
+
+    if (Object.keys(skipped).length > 0) {
+      logCtx.debug(`Skipped ${Object.keys(skipped).length} nodes`, JSON.stringify(skipped));
+    }
+
+    if (!nodesToStop.length) return;
+
+    // Enqueue STOP
+    queue.update(nodesToStop.map((node) => ({ node, action: "STOP" })));
+
+    // Determine global max kill timeout (instead of per-node timer bug)
+    let maxKillTime = 0;
+    const nodesKillTimeout: RosNode[] = [];
+    for (const node of nodesToStop) {
+      if (!node.pid) continue;
+
+      for (const launchInfo of node.launchInfo.values()) {
+        if (launchInfo.sigkill_timeout) {
+          nodesKillTimeout.push(node);
+          maxKillTime = Math.max(maxKillTime, launchInfo.sigkill_timeout);
         }
       }
     }
+
+    // Add KILL step once after max timeout
+    if (maxKillTime > 0) {
+      setTimeout(() => {
+        queue.update(nodesKillTimeout.map((node) => ({ node, action: "KILL" })));
+      }, maxKillTime);
+    }
+
+    // Restart logic
     if (restart) {
-      if (maxKillTime > -1) {
-        // wait until all timers are expired before start nodes if kill timer was used while stop nodes
-        setTimeout(() => {
-          startNodesWithLaunchCheck(nodeList, true, {}, ignoreTimer);
-        }, maxKillTime + 500);
-      } else {
+      const restartDelay = maxKillTime > 0 ? maxKillTime + 500 : 0;
+
+      setTimeout(() => {
         startNodesWithLaunchCheck(nodeList, true, {}, ignoreTimer);
-      }
+      }, restartDelay);
     }
   }
 
@@ -729,7 +726,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       // we kill system nodes only when they are individually selected
       if (node.system_node && navCtx.selectedNodes.length > 1) return;
       if (
-        queueItemsQueueMain?.find((elem) => {
+        queue.queue?.find((elem) => {
           return elem.action === "KILL" && elem.node?.name === node.name;
         })
       ) {
@@ -738,7 +735,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         nodes2kill.push(node);
       }
     });
-    updateQueueMain(
+    queue.update(
       nodes2kill.map((node) => {
         return { node, action: "KILL" };
       })
@@ -747,21 +744,24 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /** Kill node in the queue and trigger the next one. */
   async function killNodeQueued(node: RosNode | undefined): Promise<void> {
-    if (node !== undefined) {
-      const provider = rosCtx.getProviderById(node.providerId);
-      if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain("KILL", node.name, false, `Provider ${node.providerName} not available`);
-      } else {
-        // store result for message
-        const resultKillNode = await provider.screenKillNode(node.name);
-        if (!resultKillNode.result) {
-          addStatusQueueMain("KILL", node.name, false, resultKillNode.message);
-        } else {
-          addStatusQueueMain("KILL", node.name, true, "killed");
-        }
-      }
+    if (!node) return;
+
+    const provider = rosCtx.getProviderById(node.providerId);
+
+    if (!provider || !provider.isAvailable()) {
+      queue.addStatus("KILL", node.name, false, `Provider ${node.providerName} not available`);
+      return;
     }
-    return Promise.resolve();
+
+    try {
+      const result = await provider.screenKillNode(node.name);
+      const success = result.result ?? false;
+      const message = result.message || (success ? "killed" : "failed");
+      queue.addStatus("KILL", node.name, success, message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      queue.addStatus("KILL", node.name, false, `Error killing node: ${message}`);
+    }
   }
 
   /**
@@ -775,7 +775,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       // not supported for ROS2
       if (!node.masteruri) return;
       if (
-        queueItemsQueueMain?.find((elem) => {
+        queue.queue?.find((elem) => {
           return elem.action === "UNREGISTER" && elem.node?.name === node.name;
         })
       ) {
@@ -784,7 +784,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         nodes2unregister.push(node);
       }
     });
-    updateQueueMain(
+    queue.update(
       nodes2unregister.map((node) => {
         return { node, action: "UNREGISTER" };
       })
@@ -793,21 +793,24 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /** Unregister node in the queue and trigger the next one. */
   async function unregisterNodeQueued(node: RosNode | undefined): Promise<void> {
-    if (node) {
-      const provider = rosCtx.getProviderById(node.providerId);
-      if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain("UNREGISTER", node.name, false, `Provider ${node.providerName} not available`);
-      } else {
-        // store result for message
-        const resultUnregisterNode = await provider.unregisterNode(node.id);
-        if (!resultUnregisterNode.result) {
-          addStatusQueueMain("UNREGISTER", node.name, false, resultUnregisterNode.message);
-        } else {
-          addStatusQueueMain("UNREGISTER", node.name, true, "unregistered");
-        }
-      }
+    if (!node) return;
+
+    const provider = rosCtx.getProviderById(node.providerId);
+
+    if (!provider || !provider.isAvailable()) {
+      queue.addStatus("UNREGISTER", node.name, false, `Provider ${node.providerName} not available`);
+      return;
     }
-    return Promise.resolve();
+
+    try {
+      const result = await provider.unregisterNode(node.id);
+      const success = result.result ?? false;
+      const message = result.message || (success ? "unregistered" : "failed");
+      queue.addStatus("UNREGISTER", node.name, success, message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      queue.addStatus("UNREGISTER", node.name, false, `Error unregistering node: ${message}`);
+    }
   }
 
   /**
@@ -815,13 +818,13 @@ export default function HostTreeViewPanel(): JSX.Element {
    */
   function startDynamicReconfigure(service: string, masteruri: string): void {
     if (
-      queueItemsQueueMain?.find((elem) => {
+      queue.queue?.find((elem) => {
         return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
       })
     ) {
       // TODO: skippedNodes.set(service, 'already in queue');
     } else {
-      updateQueueMain([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
+      queue.update([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
     }
   }
 
@@ -831,9 +834,9 @@ export default function HostTreeViewPanel(): JSX.Element {
       // store result for message
       const result = await rosCtx.startDynamicReconfigureClient(service, masteruri || "");
       if (!result.result) {
-        addStatusQueueMain("DYNAMIC_RECONFIGURE", service, false, result.message);
+        queue.addStatus("DYNAMIC_RECONFIGURE", service, false, result.message);
       } else {
-        addStatusQueueMain("DYNAMIC_RECONFIGURE", service, true, "dynamic reconfigure started");
+        queue.addStatus("DYNAMIC_RECONFIGURE", service, true, "dynamic reconfigure started");
       }
     }
     return Promise.resolve();
@@ -843,30 +846,35 @@ export default function HostTreeViewPanel(): JSX.Element {
    * Remove log files from ROS nodes using [rosclean purge] for a given provider
    */
   async function clearProviderLogs(providers: string[]): Promise<void> {
-    // purge logs from host
-    if (providers) {
-      Promise.all(
-        providers.map(async (providerId: string) => {
+    if (!providers || providers.length === 0) return;
+
+    try {
+      await Promise.all(
+        providers.map(async (providerId) => {
           const provider = rosCtx.getProviderById(providerId);
           if (!provider || !provider.isAvailable()) return;
 
-          const result: Result = await provider.rosCleanPurge();
+          try {
+            const result: Result = await provider.rosCleanPurge();
 
-          if (result.result && result.message.indexOf("Purging ROS node logs") === -1) {
-            // should not happen, probably error
-            logCtx.error("Could not delete logs", result.message, "logs not deleted");
-          } else if (result.result) {
-            logCtx.success("Logs removed successfully", result.message, "logs removed");
-          } else {
-            logCtx.error("Could not delete logs", result.message, "logs not deleted");
+            if (!result.result) {
+              logCtx.error("Could not delete logs", result.message, "logs not deleted");
+            } else if (!result.message.includes("Purging ROS node logs")) {
+              logCtx.error("Unexpected result during log purge", result.message, "logs not deleted");
+            } else {
+              logCtx.success("Logs removed successfully", result.message, "logs removed");
+            }
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logCtx.error(`Error purging logs for provider ${providerId}`, message, "logs not deleted");
           }
         })
-      ).catch((error) => {
-        logCtx.error("Could not clear logs for providers", error, "could not clear logs");
-      });
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logCtx.error("Could not clear logs for providers", message, "could not clear logs");
     }
   }
-
   /**
    * Delete log file of given nodes.
    */
@@ -876,7 +884,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       // we unregister system nodes only when they are individually selected
       if (node.system_node && nodes.length > 1) return;
       if (
-        queueItemsQueueMain?.find((elem) => {
+        queue.queue?.find((elem) => {
           return elem.action === "CLEAR_LOG" && elem.node?.name === node.name;
         })
       ) {
@@ -885,7 +893,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         nodes2clear.push(node);
       }
     });
-    updateQueueMain(
+    queue.update(
       nodes2clear.map((node) => {
         return { node, action: "CLEAR_LOG" };
       })
@@ -894,28 +902,40 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /** Delete log file for node in the queue and trigger the next one. */
   async function clearNodeLogQueued(node: RosNode | undefined): Promise<void> {
-    if (node !== undefined) {
-      const provider = rosCtx.getProviderById(node.providerId);
-      if (!provider || !provider.isAvailable()) {
-        addStatusQueueMain("CLEAR_LOG", node.name, false, `Provider ${node.providerName} not available`);
-      } else {
-        const result: TResultClearPath[] = await provider.clearLogPaths([node.name]);
-        if (result.length === 0) {
-          logCtx.error(
-            `Could not delete log files for node: [${node.name}]`,
-            JSON.stringify(result),
-            "logs not deleted"
-          );
-          addStatusQueueMain("CLEAR_LOG", node.name, false, JSON.stringify(result));
-        } else if (!result[0].result) {
-          logCtx.error(`Could not delete log files for node: [${node.name}]`, result[0].message, "logs not deleted");
-          addStatusQueueMain("CLEAR_LOG", node.name, false, result[0].message);
-        } else {
-          addStatusQueueMain("CLEAR_LOG", node.name, true, `Removed log files for node: [${node.name}]`);
-        }
-      }
+    if (!node) return;
+
+    const provider = rosCtx.getProviderById(node.providerId);
+
+    if (!provider || !provider.isAvailable()) {
+      queue.addStatus("CLEAR_LOG", node.name, false, `Provider ${node.providerName} not available`);
+      return;
     }
-    return Promise.resolve();
+
+    try {
+      const results: TResultClearPath[] = await provider.clearLogPaths([node.name]);
+
+      if (results.length === 0) {
+        const msg = "No log deletion result returned";
+        logCtx.error(
+          `Could not delete log files for node: [${node.name}]`,
+          JSON.stringify(results),
+          "logs not deleted"
+        );
+        queue.addStatus("CLEAR_LOG", node.name, false, msg);
+        return;
+      }
+
+      const firstResult = results[0];
+      if (!firstResult.result) {
+        logCtx.error(`Could not delete log files for node: [${node.name}]`, firstResult.message, "logs not deleted");
+        queue.addStatus("CLEAR_LOG", node.name, false, firstResult.message);
+      } else {
+        queue.addStatus("CLEAR_LOG", node.name, true, `Removed log files for node: [${node.name}]`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      queue.addStatus("CLEAR_LOG", node.name, false, `Error clearing logs: ${message}`);
+    }
   }
 
   function refreshAllProvider(forceRefresh: boolean): void {
@@ -948,86 +968,71 @@ export default function HostTreeViewPanel(): JSX.Element {
   }, [rosCtx.providers]);
 
   useEffect(() => {
-    if (nodesToStart) {
-      // put all selected nodes to the start queue
-      updateQueueMain(
-        nodesToStart.map((node) => {
-          return { node, action: "START" };
-        })
-      );
-      setNodesToStart(undefined);
-    }
+    if (!nodesToStart) return;
+
+    // Enqueue all selected nodes with START action
+    queue.update(nodesToStart.map((node) => ({ node, action: "START" })));
+
+    setNodesToStart(undefined);
   }, [nodesToStart]);
 
+  const queueActionHandlers: Record<string, (item: TQueueAction) => Promise<void>> = {
+    START: (item) => startNodeQueued(item.node),
+    STOP: (item) => stopNodeQueued(item.node),
+    UNREGISTER: (item) => unregisterNodeQueued(item.node),
+    KILL: (item) => killNodeQueued(item.node),
+    CLEAR_LOG: (item) => clearNodeLogQueued(item.node),
+    DYNAMIC_RECONFIGURE: (item) => dynamicReconfigureQueued(item.service, item.masteruri),
+  };
+
   async function performQueueMain(index: number): Promise<void> {
-    if (index < 0) return Promise.resolve();
-    // get current item from queue.
-    // The index will be increased after the task was executed (by the callback).
-    const queueItem = getQueueMain();
+    if (index < 0) return;
+
+    const queueItem = queue.get();
+
     if (queueItem) {
-      if (queueItem.action === "START") {
-        await startNodeQueued(queueItem.node);
-      } else if (queueItem.action === "STOP") {
-        await stopNodeQueued(queueItem.node);
-      } else if (queueItem.action === "UNREGISTER") {
-        await unregisterNodeQueued(queueItem.node);
-      } else if (queueItem.action === "KILL") {
-        await killNodeQueued(queueItem.node);
-      } else if (queueItem.action === "CLEAR_LOG") {
-        await clearNodeLogQueued(queueItem.node);
-      } else if (queueItem.action === "DYNAMIC_RECONFIGURE") {
-        await dynamicReconfigureQueued(queueItem.service, queueItem.masteruri);
+      const handler = queueActionHandlers[queueItem.action];
+
+      if (handler) {
+        await handler(queueItem);
       } else {
-        console.log(`unknown item in the queue: ${JSON.stringify(queueItem)}`);
+        console.warn(`Unknown queue action: ${JSON.stringify(queueItem)}`);
       }
-    } else {
-      // queue is finished, print failed results
-      for (const action of ["STOP", "START", "KILL", "UNREGISTER", "CLEAR_LOG", "DYNAMIC_RECONFIGURE"]) {
-        const failed = failedQueueMain(action);
-        if (failed.length > 0) {
-          const infoDict = {};
-          for (const item of failed) {
-            infoDict[item.itemName] = item.message;
-          }
-          logCtx.warn(
-            `Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`,
-            JSON.stringify(infoDict),
-            `Failed to ${action.toLocaleLowerCase()} ${failed.length} nodes`
-          );
-        }
-      }
-      // queue is finished, print success results
-      for (const action of [
-        ["STOP", "stopped"],
-        ["START", "started"],
-        ["KILL", "killed"],
-        ["UNREGISTER", "unregistered"],
-        ["CLEAR_LOG", "logs cleared"],
-        ["DYNAMIC_RECONFIGURE", "dynamic reconfigure started"],
-      ]) {
-        const success = successQueueMain(action[0]);
-        if (success.length > 0) {
-          const infoDict = {};
-          for (const item of success) {
-            infoDict[item.itemName] = item.message;
-          }
-          logCtx.success(
-            `${success.length} nodes ${action[1]}`,
-            JSON.stringify(infoDict),
-            `${success.length} nodes ${action[1]}`
-          );
-        }
-      }
-      // clear queue and results
-      clearQueueMain();
-      return Promise.resolve();
+      return;
     }
+
+    // ---- Queue finished ----
+    for (const action of Object.keys(queueActionMeta)) {
+      const failed = queue.failed(action);
+      if (failed.length > 0) {
+        const infoDict = Object.fromEntries(failed.map((item) => [item.itemName, item.message]));
+
+        logCtx.warn(
+          `Failed to ${action.toLowerCase()} ${failed.length} nodes`,
+          JSON.stringify(infoDict),
+          `Failed to ${action.toLowerCase()} ${failed.length} nodes`
+        );
+      }
+
+      const success = queue.success(action);
+      if (success.length > 0) {
+        const infoDict = Object.fromEntries(success.map((item) => [item.itemName, item.message]));
+
+        logCtx.success(
+          `${success.length} nodes ${queueActionMeta[action].successText}`,
+          JSON.stringify(infoDict),
+          `${success.length} nodes ${queueActionMeta[action].successText}`
+        );
+      }
+    }
+
+    queue.clear();
   }
 
   // update queue
   useEffect(() => {
-    performQueueMain(indexQueueMain);
-  }, [indexQueueMain]);
+    performQueueMain(queue.currentIndex);
+  }, [queue.currentIndex]);
 
   const createButtonBox = useMemo(() => {
     const selectedNodes = getSelectedNodes();
@@ -1549,7 +1554,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       sx={{ backgroundColor: backgroundColor }}
     >
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
-        {indexQueueMain < 0 && (
+        {queue.currentIndex < 0 && (
           <Stack direction="row" spacing={0.5} alignItems="center">
             {buttonLocation === BUTTON_LOCATIONS.LEFT && (
               <Tooltip
@@ -1598,16 +1603,16 @@ export default function HostTreeViewPanel(): JSX.Element {
             )}
           </Stack>
         )}
-        {indexQueueMain >= 0 && (
+        {queue.currentIndex >= 0 && (
           <Paper elevation={2}>
             <Stack alignItems="center" justifyItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
               <LinearProgress sx={{ width: "100%" }} variant="determinate" value={progressQueueMain} />
               <FormLabel>
-                {indexQueueMain}/{queueItemsQueueMain.length}
+                {queue.currentIndex}/{queue.queue.length}
               </FormLabel>
               <IconButton
                 onClick={() => {
-                  clearQueueMain();
+                  queue.clear();
                 }}
                 size="small"
               >
