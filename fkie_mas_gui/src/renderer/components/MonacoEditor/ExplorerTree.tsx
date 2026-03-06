@@ -5,6 +5,7 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { RosContext } from "@/renderer/context/RosContext";
 import { LaunchArgument, LaunchIncludedFile } from "@/renderer/models";
+import { createUriPath } from "@/renderer/monaco/utils";
 import { Provider } from "@/renderer/providers";
 import { TLaunchArg } from "@/types";
 import FileTreeItem from "./FileTreeItem";
@@ -48,15 +49,13 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
   const [includeRoot, setIncludeRoot] = useState<TLaunchIncludeItem>();
   const [expandedExplorerResults, setExpandedExplorerResults] = useState<string[]>([]);
 
-  const createUriPath = useCallback((path: string): string => `/${tabId}:${path}`, [tabId]);
-
   useEffect(() => {
     const provider: Provider | undefined = rosCtx.getProviderById(providerId, true);
     if (!provider) return;
     const providerHost = provider.host();
     if (!providerHost) return;
     const rootItem: TLaunchIncludeItem = {
-      uriPath: createUriPath(rootFilePath),
+      uriPath: createUriPath(providerId, rootFilePath),
       children: [],
       file: {
         inc_path: rootFilePath,
@@ -70,7 +69,7 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
     for (const file of includedFiles) {
       const incItem: TLaunchIncludeItem = {
         children: [],
-        uriPath: createUriPath(file.inc_path),
+        uriPath: createUriPath(providerId, file.inc_path),
         file: file,
       };
       let curDepth = currentFile.file.rec_depth || 0;
@@ -96,7 +95,6 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
   /** Create from SimpleTreeView from given root item */
   const includeFilesToTree = useCallback(
     (item: TLaunchIncludeItem, lineNumber: number, parentItems: string[] = []): JSX.Element => {
-      // eslint-disable-next-line react/jsx-no-useless-fragment
       if (!item) return <></>;
       const id = `${lineNumber}-${item.file.inc_path}-${item.file.line_number}`;
       const pathList: string[] = [...parentItems, id];

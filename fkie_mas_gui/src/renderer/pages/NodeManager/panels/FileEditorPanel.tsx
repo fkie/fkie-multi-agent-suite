@@ -25,24 +25,15 @@ import SplitPane, { Pane, SashContent } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 
 import ExplorerTree from "@/renderer/components/MonacoEditor/ExplorerTree";
-import { createPythonLaunchProposals } from "@/renderer/components/MonacoEditor/PythonLaunchProposals";
 import SearchTree from "@/renderer/components/MonacoEditor/SearchTree";
-import {
-  createDocumentSymbols,
-  createXMLDependencyProposals,
-} from "@/renderer/components/MonacoEditor/XmlLaunchProposals";
-import {
-  createDocumentSymbolsR2,
-  createXMLDependencyProposalsR2,
-} from "@/renderer/components/MonacoEditor/XmlLaunchProposalsR2";
 import { OverflowMenu } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { MonacoContext, TModelResult } from "@/renderer/context/MonacoContext";
 import RosContext from "@/renderer/context/RosContext";
 import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import {
   FileItem,
   LaunchIncludedFile,
@@ -51,6 +42,17 @@ import {
   getFileAbb,
   getFileName,
 } from "@/renderer/models";
+import { createPythonLaunchProposals } from "@/renderer/monaco/setup/languages/PythonLaunchProposals";
+import {
+  createDocumentSymbols,
+  createXMLDependencyProposals,
+} from "@/renderer/monaco/setup/languages/XmlLaunchProposals";
+import {
+  createDocumentSymbolsR2,
+  createXMLDependencyProposalsR2,
+} from "@/renderer/monaco/setup/languages/XmlLaunchProposalsR2";
+import { TModelResult } from "@/renderer/monaco/types";
+import { createEditorTabId, createUriPath, fileFromUriPath, isUriPath } from "@/renderer/monaco/utils";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_EDITOR_SELECT_RANGE,
@@ -63,12 +65,6 @@ import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
-
-type TActiveModel = {
-  path: string;
-  modified: boolean;
-  model: editor.ITextModel;
-};
 
 type TFileItem = {
   path: string;
@@ -95,7 +91,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const settingsCtx = useContext(SettingsContext);
   const logCtx = useContext(LoggingContext);
   const rosCtx = useContext(RosContext);
-  const monacoCtx = useContext(MonacoContext);
+  const monacoCtx = useMonacoContext();
 
   // ----- size handling
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
@@ -125,7 +121,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [providerName, setProviderName] = useState<string>("");
   const [providerHost, setProviderHost] = useState<string>("");
   const [packageName, setPackageName] = useState<string>("");
-  const [activeModel, setActiveModel] = useState<TActiveModel>();
+  const [activeModel, setActiveModel] = useState<editor.ITextModel | undefined>();
+  const [activeModelDirty, setActiveModelDirty] = useState<boolean>(false);
   const [currentFile, setCurrentFile] = useState({ name: "", requesting: false, path: "" });
   const [openFiles, setOpenFiles] = useState<TFileItem[]>([]);
   const [ownUriPaths, setOwnUriPaths] = useState<string[]>([]);
@@ -158,6 +155,34 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }, [settingsCtx.changed]);
 
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
+
+  const handleDirtyChange = useCallback(
+    (model: editor.ITextModel, dirty: boolean) => {
+      setActiveModelDirty((prev) => (activeModel === model ? dirty : prev));
+      if (monacoCtx.modelRegistry()?.getByTab(tabId).has(model)) {
+        setModifiedFiles((prev) => {
+          if (dirty) {
+            // add model path
+            return prev.includes(model.uri.path) ? prev : [...prev, model.uri.path];
+          }
+          // remove model path
+          return prev.filter((m) => m !== model.uri.path);
+        });
+      }
+    },
+    [tabId, activeModel, monacoCtx]
+  );
+
+  useEffect(() => {
+    const dirtyManager = monacoCtx.dirtyManager?.();
+    if (!dirtyManager) return;
+
+    dirtyManager.onDirtyChange(tabId, handleDirtyChange);
+
+    return () => {
+      dirtyManager.removeDirtyListener(tabId);
+    };
+  }, [tabId, handleDirtyChange, monacoCtx]);
 
   useEffect(() => {
     if (selectionRange) {
@@ -225,22 +250,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     [setMonacoDisposables]
   );
 
-  // update modified files in this panel and context
-  function updateModifiedFiles(): void {
-    if (!monaco) return;
-    const newModifiedFiles = monaco.editor
-      .getModels()
-      .filter((model: editor.ITextModel) => {
-        const result = monacoCtx.isModifiedModel(model) && ownUriPaths.includes(model.uri.path);
-        return result;
-      })
-      .map((model) => {
-        return model.uri.path;
-      });
-    setModifiedFiles(newModifiedFiles);
-    monacoCtx.updateModifiedFiles(tabId, providerId, newModifiedFiles);
-  }
-
   // update decorations for included files
   const updateIncludeDecorations = async (
     model: editor.ITextModel | null,
@@ -252,7 +261,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     const newLinks: languages.ILink[] = [];
     if (includedFilesList) {
       for (const f of includedFilesList) {
-        const path = pathFromUri(model.uri.path);
+        const path = fileFromUriPath(model.uri.path);
         if (path === f.path && path !== f.inc_path) {
           const handledId = `${f.path}#${f.inc_path}`;
           if (!handled.includes(handledId)) {
@@ -261,7 +270,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               for (const match of matches) {
                 newLinks.push({
                   range: match.range,
-                  url: `${model.uri.path.split(":")[0]}:${f.inc_path}`,
+                  url: `${createUriPath(providerId, f.inc_path)}`,
                 });
               }
             }
@@ -281,19 +290,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   }
 
-  const pathFromUri = (uriPath: string): string => {
-    const pathSplits = uriPath.split(":");
-    if (pathSplits && pathSplits.length > 1) {
-      return pathSplits[1];
-    }
-    return uriPath;
-  };
-
   useEffect(() => {
     // update parent files
-    const pathSplits = activeModel?.model.uri.path.split(":");
-    if (pathSplits && pathSplits.length > 1) {
-      const path = pathSplits[1];
+    const path = fileFromUriPath(activeModel?.uri.path || "");
+    if (path) {
       const parentPaths = includedFiles.filter((item) => {
         if (path === item.inc_path) {
           return true;
@@ -348,13 +348,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         }
       }
       await updateIncludeDecorations(result.model, includedFiles);
-      setActiveModel({
-        path: result.model.uri.path,
-        modified: monacoCtx.isModifiedModel(result.model),
-        model: result.model,
-      });
-      // update modified files for the user info in the info bar
-      updateModifiedFiles();
+      setActiveModel(result.model);
+      setActiveModelDirty(monacoCtx.isModifiedModel(result.model));
 
       // set package name
       const modelPackageName = ownUriToPackageDict[result.model.uri.path];
@@ -385,7 +380,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       providerHost,
       monacoCtx.getModel,
       setActiveModel,
-      updateModifiedFiles,
+      setActiveModelDirty,
       historyIndex,
       setHistoryModels,
       setHistoryIndex,
@@ -433,7 +428,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       // ignore event from other provider
       return;
     }
-    const changedUri: string = monacoCtx.createUriPath(tabId, data.path.srcPath);
+    const changedUri: string = createUriPath(providerId, data.path.srcPath);
     if (ownUriPaths.includes(changedUri)) {
       // ignore if we saved the file
       if (savedFiles.includes(changedUri)) {
@@ -442,6 +437,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return;
       }
       if (!editorRef.current) return;
+
       const provider = rosCtx.getProviderById(providerId, true);
       if (provider) {
         const currentModel = editorRef.current.getModel();
@@ -474,13 +470,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   });
 
-  useEffect(() => {
-    updateModifiedFiles();
-  }, [monacoCtx.savedModelVersions]);
-
   const saveCurrentFile = useCallback(
     async (editorModel: editor.ITextModel): Promise<void> => {
-      const saveResult = await monacoCtx.saveFile(tabId, providerId, editorModel.uri.path);
+      const saveResult = await monacoCtx.saveFile(editorModel);
       if (saveResult.result) {
         // update saved file to avoid reload question of the current editing file
         if (!savedFiles.includes(editorModel.uri.path)) {
@@ -489,12 +481,16 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         // update state of external window
         const providerObj = rosCtx.getProviderById(providerId, true);
         if (providerObj) {
-          const path = pathFromUri(editorModel.uri.path);
-          const id = `editor-${providerObj.connection.host}-${providerObj.connection.port}-${rootFilePath}`;
+          const path = fileFromUriPath(editorModel.uri.path);
+          const id = createEditorTabId(rootFilePath, providerObj.id);
           window.editorManager?.changed(id, path, false);
         }
-        setActiveModel({ path: editorModel.uri.path, modified: false, model: editorModel });
+        setActiveModel(editorModel);
+        setActiveModelDirty(monacoCtx.isModifiedModel(editorModel));
         await getIncludedFiles();
+      } else {
+        setNotificationDescription(`Could not save file: ${saveResult.message}`);
+        logCtx.error("Could not save file", saveResult.message, "save failed");
       }
     },
     [providerId, savedFiles, rootFilePath, rosCtx.getProviderById]
@@ -539,32 +535,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   const handleEditorChange = useCallback(
     async (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> => {
-      // update activeModel modified flag only once
-      cleanUpXmlComment(event.changes, activeModel?.model);
       if (activeModel) {
-        if (!activeModel.modified) {
-          setCurrentFile({ name: getFileName(activeModel.path), requesting: true, path: activeModel.path });
-          setNotificationDescription("Getting file from provider...");
-          const result: TModelResult = await monacoCtx.getModel(tabId, providerId, activeModel.path, false);
-          setCurrentFile({ name: getFileName(activeModel.path), requesting: false, path: activeModel.path });
-          setNotificationDescription("");
-          if (result.model) {
-            setActiveModel({ path: result.model.uri.path, modified: true, model: result.model });
-          }
-          if (result.file && result.model) {
-            updateInstallPathsWarn(result.file, result.model.uri.path);
-          }
-          updateModifiedFiles();
-          const provider = rosCtx.getProviderById(providerId, true);
-          if (provider) {
-            const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
-            window.editorManager?.changed(id, activeModel.path, true);
-          }
-          updateIncludeDecorations(result.model, includedFiles);
-        }
+        cleanUpXmlComment(event.changes, activeModel);
+        updateIncludeDecorations(activeModel, includedFiles);
       }
     },
-    [activeModel, monacoCtx, rosCtx]
+    [activeModel, includedFiles]
   );
 
   useEffect(() => {
@@ -600,11 +576,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     if (editorRef.current) {
       updateIncludeDecorations(editorRef.current.getModel(), includedFiles);
     }
-    const uriPath = monacoCtx.createUriPath(tabId, rootFilePath);
+    const uriPath = createUriPath(providerId, rootFilePath);
     const newOwnUris = [uriPath];
     ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
     for (const file of includedFiles) {
-      const incUriPath = monacoCtx.createUriPath(tabId, file.inc_path);
+      const incUriPath = createUriPath(providerId, file.inc_path);
       newOwnUris.push(incUriPath);
       ownUriToPackageDict[incUriPath] = provider.getPackageName(file.inc_path);
     }
@@ -654,13 +630,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         setOwnUriPaths([]);
         // remove undefined models
         for (const model of monaco.editor.getModels()) {
-          if (model.getValue().length === 0 && model.uri.path.indexOf(":") === -1) {
+          if (model.getValue().length === 0 && !isUriPath(model.uri.path)) {
             model.dispose();
           }
         }
       }
       // remove modified files from context
-      monacoCtx.updateModifiedFiles(tabId, "", []);
+      monacoCtx.closeTabs([tabId]);
     };
   }, []);
 
@@ -731,6 +707,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     async function getFileAndIncludesAsync(provider: Provider): Promise<void> {
       setCurrentFile({ name: getFileName(currentFilePath), requesting: true, path: currentFilePath });
       const result: TModelResult = await monacoCtx.getModel(tabId, providerId, currentFilePath, false);
+      if (!result.model && !result.file) {
+        setNotificationDescription(result.error || `Could not get file: [${currentFilePath}]`);
+        return;
+      }
       setCurrentFile({ name: getFileName(currentFilePath), requesting: false, path: currentFilePath });
       if (!result.model && result.file) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
@@ -810,7 +790,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     addMonacoDisposable(
       monaco.editor.registerLinkOpener({
         open(resource: Uri): boolean | Promise<boolean> {
-          emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, pathFromUri(resource.path), null));
+          emitCustomEvent(
+            EVENT_EDITOR_SELECT_RANGE,
+            eventEditorSelectRange(tabId, fileFromUriPath(resource.path), null)
+          );
           return true;
         },
       })
@@ -975,7 +958,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         if (escapePressCount === 1) {
           const provider = rosCtx.getProviderById(providerId);
           if (provider) {
-            const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootFilePath}`;
+            const id = createEditorTabId(rootFilePath, provider.id);
             emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
           }
         }
@@ -1081,7 +1064,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                       providerId={providerId}
                       rootFilePath={rootFilePath}
                       includedFiles={includedFiles}
-                      selectedUriPath={activeModel?.path ? activeModel?.path : ""}
+                      selectedUriPath={activeModel?.uri.path ? activeModel?.uri.path : ""}
                       launchArgs={currentLaunchArgs}
                       modifiedUriPaths={modifiedFiles}
                     />
@@ -1147,7 +1130,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               <span>
                 <IconButton
                   edge="end"
-                  disabled={!activeModel?.modified}
+                  disabled={!activeModelDirty}
                   aria-label="Save File"
                   onClick={() => {
                     const model = editorRef.current?.getModel();
@@ -1217,8 +1200,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                 edge="end"
                 aria-label="Reload file"
                 onClick={async () => {
-                  if (activeModel?.path) {
-                    const path = activeModel?.path;
+                  if (activeModel?.uri.path) {
+                    const path = activeModel?.uri.path;
                     const result = await setEditorModel(path, selectionRange, currentLaunchArgs, true);
                     if (result) {
                       logCtx.success(`File reloaded [${getFileName(path)}]`, "", `${getFileName(path)} reloaded`);
@@ -1231,10 +1214,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             </Tooltip>
             <Stack direction="row" width="100%" spacing={0.4} alignItems="center">
               {currentFile.requesting && <CircularProgress size="0.8em" />}
-              <Tooltip title={activeModel?.path?.split(":")[1]} disableInteractive>
+              <Tooltip title={fileFromUriPath(activeModel?.uri.path || "")} disableInteractive>
                 <div>
                   <NativeSelect
-                    value={pathFromUri(currentFile.path)}
+                    value={fileFromUriPath(currentFile.path)}
                     inputProps={{
                       name: "current file",
                       id: "uncontrolled-native",
@@ -1248,7 +1231,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
                       (fileName) => {
                         return (
                           <option key={fileName} value={fileName}>
-                            {modifiedFiles.map((uriPath) => pathFromUri(uriPath)).includes(fileName) ? "*" : ""}
+                            {modifiedFiles.map((uriPath) => fileFromUriPath(uriPath)).includes(fileName) ? "*" : ""}
                             {getFileName(fileName)}
                           </option>
                         );
@@ -1260,7 +1243,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
               <Stack direction="row" spacing={0.2}>
                 {modifiedFiles
-                  .filter((path) => path !== activeModel?.path)
+                  .filter((path) => path !== activeModel?.uri.path)
                   .map((path) => {
                     return (
                       <Tooltip
@@ -1312,15 +1295,15 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               {notificationDescription}
             </Alert>
           )}
-          {activeModel && isReadOnly(activeModel.path) ? (
+          {activeModel && isReadOnly(activeModel.uri.path) ? (
             <Alert ref={alertRef as ForwardedRef<HTMLDivElement>} severity="info" style={{ minWidth: 0 }}>
-              {`no write permissions for ${pathFromUri(activeModel.path)}`}
+              {`no write permissions for ${fileFromUriPath(activeModel.uri.path)}`}
             </Alert>
           ) : (
-            activeModel?.path &&
-            installPathsWarn.includes(activeModel?.path) && (
+            activeModel?.uri.path &&
+            installPathsWarn.includes(activeModel?.uri.path) && (
               <Alert ref={alertRef as ForwardedRef<HTMLDivElement>} severity="warning" style={{ minWidth: 0 }}>
-                {`${pathFromUri(activeModel?.path)} is located in 'install' path. The changes could be lost after rebuilding packages. You can build your packages with '--symlink-install' to edit your launch files in your sources.`}
+                {`${fileFromUriPath(activeModel?.uri.path)} is located in 'install' path. The changes could be lost after rebuilding packages. You can build your packages with '--symlink-install' to edit your launch files in your sources.`}
               </Alert>
             )
           )}
@@ -1336,7 +1319,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             options={{
               // to check the all possible options check this - https://github.com/microsoft/monacoRef.current-editor/blob/a5298e1/website/typedoc/monacoRef.current.d.ts#L3017
               // TODO: make global config for this parameters
-              readOnly: activeModel?.model ? isReadOnly(activeModel.model.uri.path) : false,
+              readOnly: activeModel ? isReadOnly(activeModel.uri.path) : false,
               colorDecorators: true,
               mouseWheelZoom: true,
               scrollBeyondLastLine: false,

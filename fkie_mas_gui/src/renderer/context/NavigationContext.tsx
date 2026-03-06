@@ -12,6 +12,7 @@ import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel
 import { xor } from "@/renderer/utils/index";
 import { TFileRange, TLaunchArg } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
+import { createEditorTabId } from "../monaco/utils";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
@@ -100,7 +101,10 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
   const [selectedProviders, _setSelectedProviders] = useState<string[]>(DEFAULT.selectedProviders);
   const [layoutModel, setLayoutModel] = useState<Model | null>(null);
 
-  const setSelectedProviders: (providers: string[], forceUpdate?: boolean) => void = (providers, forceUpdate = false) => {
+  const setSelectedProviders: (providers: string[], forceUpdate?: boolean) => void = (
+    providers,
+    forceUpdate = false
+  ) => {
     if (forceUpdate || JSON.stringify(selectedProviders) !== JSON.stringify(providers)) {
       _setSelectedProviders(providers);
     }
@@ -134,7 +138,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
   ): Promise<void> {
     const provider = rosCtx.getProviderById(providerId);
     if (provider) {
-      const id = `editor-${provider.connection.host}-${provider.connection.port}-${rootLaunch}`;
+      const id = createEditorTabId(rootLaunch, provider.id);
       // open in external window depending on setting and key modifier and if no tab already existing
       const openExternal: boolean =
         xor(settingsCtx.get("editorOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
@@ -212,10 +216,18 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             terminalCmd.cmd
           );
           if (!result?.result) {
-            logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${result?.message}`, "publisher not started");
+            logCtx.error(
+              `Can't start publisher in external terminal for ${topicName}`,
+              `${result?.message}`,
+              "publisher not started"
+            );
           }
         } catch (error) {
-          logCtx.error(`Can't start publisher in external terminal for ${topicName}`, `${error}`, "publisher not started");
+          logCtx.error(
+            `Can't start publisher in external terminal for ${topicName}`,
+            `${error}`,
+            "publisher not started"
+          );
         }
         return;
       }
@@ -274,7 +286,11 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             terminalCmd.cmd
           );
           if (!result?.result) {
-            logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${result?.message}`, "subscriber not started");
+            logCtx.error(
+              `Can't open subscriber in external terminal for ${topic}`,
+              `${result?.message}`,
+              "subscriber not started"
+            );
           }
         } catch (error) {
           logCtx.error(`Can't open subscriber in external terminal for ${topic}`, `${error}`, "subscriber not started");
@@ -361,7 +377,11 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             terminalCmd.cmd
           );
           if (!result?.result) {
-            logCtx.error(`Can't open external terminal on ${provider.host()}`, `${result?.message}`, "no external terminal");
+            logCtx.error(
+              `Can't open external terminal on ${provider.host()}`,
+              `${result?.message}`,
+              "no external terminal"
+            );
           }
         } catch (error) {
           logCtx.error(`Can't open external terminal on ${provider.host()}`, `${error}`, "no external terminal");

@@ -1,10 +1,12 @@
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
+import { SaveResult } from "@/renderer/monaco/types";
 import { TFileRange, TLaunchArg } from "@/types";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import * as monaco from "monaco-editor";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { LoggingContext } from "../../context/LoggingContext";
-import { ModifiedTabsInfo, MonacoContext } from "../../context/MonacoContext";
 import { RosContext } from "../../context/RosContext";
 import { SettingsContext } from "../../context/SettingsContext";
 import { getBaseName, getFileName } from "../../models";
@@ -23,11 +25,11 @@ type TLaunchInfo = {
 
 export default function EditorApp(): JSX.Element {
   const logCtx = useContext(LoggingContext);
-  const monacoCtx = useContext(MonacoContext);
+  const monacoCtx = useMonacoContext();
   const rosCtx = useContext(RosContext);
   const settingsCtx = useContext(SettingsContext);
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
-  const [modifiedEditorTabs, setModifiedEditorTabs] = useState<ModifiedTabsInfo[]>([]);
+  const [dirtyModels, setDirtyModels] = useState<monaco.editor.ITextModel[]>([]);
 
   async function initProvider(): Promise<void> {
     rosCtx.setShowSnackbarReloadLaunchNotification(false);
@@ -85,8 +87,8 @@ export default function EditorApp(): JSX.Element {
 
   useCustomEventListener(EVENT_CLOSE_COMPONENT, (data: { id: string }) => {
     const mTab = monacoCtx.getModifiedFilesByTab(data.id);
-    if (mTab) {
-      setModifiedEditorTabs([mTab]);
+    if (mTab.length > 0) {
+      setDirtyModels(mTab);
       return;
     }
     window.editorManager?.close(data.id);
@@ -103,6 +105,29 @@ export default function EditorApp(): JSX.Element {
     };
   }, []);
 
+  const saveAllDirty = useCallback(async () => {
+    // save all files
+    const results: SaveResult[] = await Promise.all(dirtyModels.map((model) => monacoCtx.saveFile(model)));
+
+    const allTabs = new Set<string>();
+    const failedTabs = new Set<string>();
+
+    for (const { tabIds = [], result } of results) {
+      for (const tabId of tabIds) {
+        allTabs.add(tabId);
+        if (!result) {
+          failedTabs.add(tabId);
+        }
+      }
+    }
+    // close editor if no errors
+    if (launchInfo && failedTabs.size === 0) {
+      window.editorManager?.close(launchInfo.id);
+    }
+
+    setDirtyModels([]);
+  }, [dirtyModels, launchInfo, monacoCtx.saveFile]);
+
   return (
     <Stack width="100%" height="100vh">
       {launchInfo && (
@@ -115,10 +140,10 @@ export default function EditorApp(): JSX.Element {
           launchArgs={launchInfo.launchArgs}
         />
       )}
-      {launchInfo && modifiedEditorTabs.length > 0 && (
+      {launchInfo && dirtyModels.length > 0 && (
         <Dialog
-          open={modifiedEditorTabs.length > 0}
-          onClose={() => setModifiedEditorTabs([])}
+          open={dirtyModels.length > 0}
+          onClose={() => setDirtyModels([])}
           fullWidth
           maxWidth="sm"
           PaperComponent={DraggablePaper}
@@ -129,21 +154,26 @@ export default function EditorApp(): JSX.Element {
           </DialogTitle>
 
           <DialogContent aria-label="list">
-            {modifiedEditorTabs.map((tab) => {
-              return (
-                <DialogContentText key={tab.tabId} id="alert-dialog-description">
-                  {`There are ${tab.uriPaths.length} unsaved files in "${getBaseName(tab.tabId)}" editor.`}
-                </DialogContentText>
-              );
-            })}
+            {monacoCtx
+              .modelRegistry()
+              ?.getTabsByModels(dirtyModels)
+              .map((tabId) => {
+                const models = monacoCtx.modelRegistry()?.getByTab(tabId);
+                return (
+                  <DialogContentText key={tabId} id="alert-dialog-description">
+                    {`There are ${models?.size} unsaved files in "${getBaseName(tabId)}" tab.`}
+                  </DialogContentText>
+                );
+              })}
           </DialogContent>
 
           <DialogActions>
             <Button
               color="warning"
               onClick={() => {
-                monacoCtx.clearModifiedTabs(modifiedEditorTabs);
-                setModifiedEditorTabs([]);
+                const tabIds = monacoCtx.modelRegistry()?.getTabsByModels(dirtyModels);
+                monacoCtx.closeTabs(tabIds);
+                setDirtyModels([]);
                 window.editorManager?.close(launchInfo.id);
               }}
             >
@@ -152,7 +182,7 @@ export default function EditorApp(): JSX.Element {
             <Button
               color="primary"
               onClick={() => {
-                setModifiedEditorTabs([]);
+                setDirtyModels([]);
               }}
             >
               Cancel
@@ -162,26 +192,7 @@ export default function EditorApp(): JSX.Element {
               autoFocus
               color="primary"
               onClick={async () => {
-                // save all files
-                const result = await Promise.all(
-                  modifiedEditorTabs.map(async (tab) => {
-                    const tabResult = await monacoCtx.saveModifiedFilesOfTabId(tab.tabId);
-                    return tabResult;
-                  })
-                );
-                // TODO inform about error on failed save
-                let failed = false;
-                for (const item of result) {
-                  if (item[0].result) {
-                    // OK
-                  } else {
-                    failed = true;
-                  }
-                }
-                if (!failed) {
-                  window.editorManager?.close(launchInfo.id);
-                }
-                setModifiedEditorTabs([]);
+                saveAllDirty();
               }}
             >
               Save all

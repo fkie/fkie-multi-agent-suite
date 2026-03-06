@@ -1332,6 +1332,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   // Effect to initialize RosContext
   useEffect(() => {
     init();
+    console.log(`RosCtx init`);
   }, []);
 
   const attributesMemo = useMemo(

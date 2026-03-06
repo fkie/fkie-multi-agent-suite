@@ -5,10 +5,10 @@ import { Box, CircularProgress, IconButton, Stack, Tooltip, Typography } from "@
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { editor } from "monaco-editor/esm/vs/editor/editor.api";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import { MonacoContext } from "@/renderer/context/MonacoContext";
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { getFileName } from "@/renderer/models";
 import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
@@ -24,13 +24,12 @@ interface SearchTreeProps {
 export default function SearchTree(props: SearchTreeProps): JSX.Element {
   const { tabId, providerId, searchTerm = "", ownUriPaths = [] } = props;
 
-  const monacoCtx = useContext(MonacoContext);
+  const monacoCtx = useMonacoContext();
   const [expandedSearchResults, setExpandedSearchResults] = useState<string[]>([]);
   const [globalSearchTree, setGlobalSearchTree] = useState({});
   const [searchResults, setSearchResults] = useState<TSearchResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(ownUriPaths.length);
   const [currentSearchText, setCurrentSearchText] = useState("");
-  const [currentIncludedText, setCurrentIncludedText] = useState(new Set(""));
   const [progress, setProgress] = useState(0);
 
   /**
@@ -46,7 +45,7 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
         for (const match of matches || []) {
           const lineNumber = match.range.startLineNumber;
           const text = result.model?.getLineContent(match.range.startLineNumber);
-          if (text && !currentIncludedText.has(text)) {
+          if (text) {
             setSearchResults(
               (prev) =>
                 [
@@ -59,7 +58,6 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
                   } as TSearchResult,
                 ] as TSearchResult[]
             );
-            currentIncludedText.add(text);
           }
         }
         setCurrentIndex((prev) => prev + 1);
@@ -75,7 +73,6 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
       return;
     }
     if (searchText.length < 3) return;
-    setCurrentIncludedText(new Set(""));
     setProgress(0);
     setCurrentIndex(0);
   }, 500);
@@ -180,8 +177,8 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
               {entries.map((entry) => {
                 return (
                   <SearchResultTreeItem
-                    key={`${fileName}-${entry.lineNumber}`}
-                    itemId={`${fileName}-${entry.lineNumber}`}
+                    key={`${fileName}-${entry.lineNumber}-${entry.range}`}
+                    itemId={`${fileName}-${entry.lineNumber}-${entry.range}`}
                     lineNumber={entry.lineNumber}
                     lineText={entry.text}
                     onClick={() => {

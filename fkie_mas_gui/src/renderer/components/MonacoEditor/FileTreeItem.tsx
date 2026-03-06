@@ -17,7 +17,7 @@ import LoggingContext from "@/renderer/context/LoggingContext";
 import { getFileExtension, getFileName } from "@/renderer/models";
 import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import { TLaunchArg } from "@/types";
-import fileIconStyles from "./FileIconStyles";
+import fileIconStyles from "../../monaco/setup/FileIconStyles";
 import { TLaunchIncludeItem } from "./types";
 
 const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({

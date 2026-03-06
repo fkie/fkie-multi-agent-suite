@@ -10,6 +10,7 @@ import { LoggingProvider } from "./context/LoggingContext";
 import { NavigationProvider } from "./context/NavigationContext";
 import { RosProviderReact } from "./context/RosContext";
 import { SettingsContext } from "./context/SettingsContext";
+import { setupEditorWindowBridge } from "./monaco/EditorEventBridge";
 import { darkThemeDef, lightThemeDef } from "./themes";
 
 export default function ProviderStack({ children }: { children: React.ReactNode }): JSX.Element {
@@ -51,6 +52,7 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Anything in here is fired on component mount.
     window.addEventListener("error", handleWindowError);
+    setupEditorWindowBridge();
     return (): void => {
       // Anything in here is fired on component unmount.
       window.removeEventListener("error", handleWindowError);

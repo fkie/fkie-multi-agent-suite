@@ -162,3 +162,16 @@ export function tsStr(date: Date): string {
   const ms = String(date.getMilliseconds()).padStart(3, "0"); // Millisekunden (00-999)
   return `${hours}:${minutes}:${seconds}.${ms}`;
 }
+
+export function errorToMessage(error: Error | string | unknown, onUnknown: string = "unknown error"): string {
+  // TS-konforme Typisierung des Fehlers
+  let message: string;
+  if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === "string") {
+    message = error;
+  } else {
+    message = onUnknown;
+  }
+  return message;
+}
