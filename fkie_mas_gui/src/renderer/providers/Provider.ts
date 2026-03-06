@@ -43,7 +43,7 @@ import {
   SystemWarningGroup,
   URI,
 } from "../models";
-import { delay, generateUniqueId } from "../utils";
+import { delay } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";
 import ConnectionState from "./ConnectionState";
@@ -256,7 +256,6 @@ export default class Provider implements IProvider {
     this.setSettingsCtx(settings);
     this.rosVersion = rosVersion;
     this.addHosts([host], true);
-    this.id = `${host}-${generateUniqueId()}`;
     if (this.type === WebsocketConnection.type) {
       this.connection = new WebsocketConnection(
         host,
@@ -269,6 +268,7 @@ export default class Provider implements IProvider {
         logger
       );
     }
+    this.id = `${this.connection.host}:${this.connection.port}`;
   }
 
   public getCallbacks: () => TConCallback[] = () => {
