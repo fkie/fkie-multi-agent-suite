@@ -4,9 +4,9 @@ import DataObjectIcon from "@mui/icons-material/DataObject";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Filter1Icon from "@mui/icons-material/Filter1";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
-import StopIcon from "@mui/icons-material/Stop";
 import {
   Alert,
   Button,
@@ -178,13 +178,13 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
   }, [noData, noArr, noStr, hz, windowSize, arrayItemsCount]);
 
-  function close(): void {
+  const close = useCallback(() => {
     if (rosCtx) {
       setSubscribed(false);
       logCtx.debug(`unregister subscriber to topic ${topicName}`);
       rosCtx.unregisterSubscriber(selectedProvider, topicName);
     }
-  }
+  }, [rosCtx]);
 
   useEffect(() => {
     if (subscribed || pause) return;
@@ -233,9 +233,9 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     }
   }, [topicName, rosCtx.mapProviderRosNodes, pause, subscribed]);
 
-  useEffect(() => {
-    updateSubscriberNodeState();
-  }, [topicName, rosCtx.mapProviderRosNodes]);
+  // useEffect(() => {
+  //   updateSubscriberNodeState();
+  // }, [rosCtx.mapProviderRosNodes]);
 
   useEffect(() => {
     return (): void => {
@@ -509,14 +509,14 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
               size="small"
               onClick={() => {
                 setPause((prev) => {
-                  if (prev) {
+                  if (!prev) {
                     close();
                   }
                   return !prev;
                 });
               }}
             >
-              {pause ? <PlayArrowIcon sx={{ fontSize: "inherit" }} /> : <StopIcon sx={{ fontSize: "inherit" }} />}
+              {pause ? <PlayArrowIcon sx={{ fontSize: "inherit" }} /> : <PauseIcon sx={{ fontSize: "inherit" }} />}
             </IconButton>
           </Tooltip>
           <Tooltip
