@@ -35,7 +35,7 @@ export const Ros2XmlLanguage: languages.IMonarchLanguage = {
   qualified_executable_attrs: /if|unless|cmd|cwd|name|ros_args|args|namespace|launch-prefix|output|shell/,
   qualified_node_attrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
   qualified_node_container_attrs: /if|unless|pkg|exec|name|args|respawn|required|namespace|output|cwd|launch-prefix/,
-  qualified_param_attrs: /if|unless|name|value|type|sep|from/,
+  qualified_param_attrs: /if|unless|name|value|type|sep|from|allow_substs/,
   qualified_extra_arg_attrs: /if|unless|name|value/,
   qualified_remap_attrs: /if|unless|from|to/,
   qualified_env_attrs: /if|unless|name|value/,

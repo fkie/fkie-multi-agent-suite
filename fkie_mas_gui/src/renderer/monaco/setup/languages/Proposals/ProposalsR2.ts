@@ -223,6 +223,11 @@ export function getTagProposals(
       "Add a new ROS parameter with value separator"
     ),
     createProposal(
+      "param yaml",
+      `${open}param name="\${1:${getParamName("NAME")}}" from="$(find-pkg-share \${2:PACKAGE})/file.yaml" allow_substs="True" /${close}`,
+      "Add a new ROS parameter with value separator"
+    ),
+    createProposal(
       "arg value",
       `${open}arg name="\${1:NAME}" value="\${2:VALUE}" /${close}`,
       "Add a new ROS argument with value"
