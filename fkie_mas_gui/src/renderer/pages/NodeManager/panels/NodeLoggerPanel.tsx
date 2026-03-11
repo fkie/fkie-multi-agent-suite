@@ -16,13 +16,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LoggerConfig, LogLevelType, RosNode } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
@@ -34,8 +34,8 @@ interface NodeLoggerPanelProps {
 export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Element {
   const { node } = props;
 
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [filterText, setFilterText] = useState("");
   const [currentNode] = useState(node);
   const [isRequesting, setIsRequesting] = useState(false);

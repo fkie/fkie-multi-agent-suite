@@ -2,10 +2,9 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Alert, AlertTitle, Box, Chip, ListItem, ListItemButton, ListItemText, Stack, Typography } from "@mui/material";
 import { SimpleTreeView, TreeItem } from "@mui/x-tree-view";
-import { useContext } from "react";
 import { VariableSizeList } from "react-window";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LaunchContent, LaunchNodeInfo } from "@/renderer/models";
 
 type TComposableNodes = {
@@ -20,7 +19,7 @@ interface LaunchFilePanelProps {
 export default function LaunchFilePanel(props: LaunchFilePanelProps): JSX.Element {
   const { launchContent } = props;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const nodes: LaunchNodeInfo[] = launchContent.nodes?.filter((e) => !e.composable_container) || [];
   const composableNodes: TComposableNodes[] = (launchContent.nodes || [])
     .filter((e: LaunchNodeInfo) => e.composable_container && e.composable_container !== e.node_name)

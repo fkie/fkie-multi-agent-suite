@@ -12,9 +12,9 @@ import { colorFromHostname, getDiagnosticStyle } from "@/renderer/components/UI/
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import Tag from "@/renderer/components/UI/Tag";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import {
   LifecycleState,
   RosNode,
@@ -45,8 +45,8 @@ function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): numb
 }
 
 export default function DetailsPanel(): JSX.Element {
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const navCtx = useContext(NavigationContext);
 
   const [indexOfSelected, setIndexOfSelected] = useState<number>(0);

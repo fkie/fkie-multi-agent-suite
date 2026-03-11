@@ -1,8 +1,8 @@
 import HistoryIcon from "@mui/icons-material/History";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import SettingsContext from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { colorFromHostname } from "../UI";
 import StyledRootTreeItem from "./StyledRootTreeItem";
 
@@ -17,7 +17,7 @@ interface HistoryGroupItemProps {
 export default function HistoryGroupItem(props: HistoryGroupItemProps): JSX.Element {
   const { itemId, providerName, onClick = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
   useEffect(() => {

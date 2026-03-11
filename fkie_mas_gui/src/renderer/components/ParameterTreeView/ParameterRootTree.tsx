@@ -8,7 +8,7 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
-import SettingsContext from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { TParamListResult } from "@/renderer/providers/Provider";
@@ -47,7 +47,7 @@ export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.El
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   const [itemId] = useState<string>(rosNode ? rosNode.idGlobal : provider.id);
   const [rosParameters, setRosParameters] = useState<RosParameter[]>();
@@ -95,7 +95,11 @@ export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.El
     if (!provider.isAvailable()) return;
     // check if provider supports [getNodeParameters]
     if (!provider.getNodeParameters) {
-      logCtx.error(`Provider ${provider.name()} does not support [getNodeParameters] method`, DEFAULT_BUG_TEXT, "not supported getNodeParameters");
+      logCtx.error(
+        `Provider ${provider.name()} does not support [getNodeParameters] method`,
+        DEFAULT_BUG_TEXT,
+        "not supported getNodeParameters"
+      );
       return;
     }
     setRequestError("");

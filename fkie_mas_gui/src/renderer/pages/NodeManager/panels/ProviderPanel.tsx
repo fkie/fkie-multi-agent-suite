@@ -9,8 +9,9 @@ import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_OPEN_CONNECT } from "../layout/events";
@@ -18,8 +19,8 @@ import ProviderPanelRow from "./ProviderPanelRow";
 
 export default function ProviderPanel(): JSX.Element {
   const logCtx = useContext(LoggingContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [openConnect, setOpenConnect] = useState(false);
   const [noSourcedROS, setNoSourcedROS] = useState(false);
   const [noRosVersion, setNoRosVersion] = useState(false);

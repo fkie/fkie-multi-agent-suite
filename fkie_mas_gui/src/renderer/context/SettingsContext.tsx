@@ -41,30 +41,6 @@ export const BUTTON_LOCATIONS = { LEFT: "LEFT", RIGHT: "RIGHT" };
 
 export const LAUNCH_FILE_EXTENSIONS = [".launch", "launch.xml", "launch.py", "launch.yaml", "launch.yml"];
 
-export const DEFAULT_SETTINGS = {
-  MIN_VERSION_DAEMON: "5.1.1",
-  fgColor: "#1a73e8",
-  bgColor: "#fafafa",
-  fgColorForDarkMode: "#B8E7FB",
-  bgColorForDarkMod: "#424242",
-
-  changed: 0,
-  updatedArgs: 0,
-  get: (): JSONValue | undefined => {
-    return undefined;
-  },
-  getDefault: (): JSONValue | undefined => {
-    return undefined;
-  },
-  set: (): void => {},
-  getParamList: (): { name: string; param: ISettingsParam }[] => {
-    return [];
-  },
-  getArgument: () => {
-    return "";
-  },
-};
-
 export interface ISettingsParam {
   label?: string;
   default: JSONValue;
@@ -90,8 +66,8 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description: "",
     cb: (get: (attribute: string) => JSONValue | undefined, set: (attribute: string, value: JSONValue) => void) => {
       const newValue = get("useDarkMode");
-      set("color", newValue ? DEFAULT_SETTINGS.fgColorForDarkMode : DEFAULT_SETTINGS.fgColor);
-      set("backgroundColor", newValue ? DEFAULT_SETTINGS.bgColorForDarkMod : DEFAULT_SETTINGS.bgColor);
+      set("color", newValue ? "#B8E7FB" : "#1a73e8");
+      set("backgroundColor", newValue ? "#424242" : "#fafafa");
     },
     group: "Appearance",
   },
@@ -399,10 +375,10 @@ interface ISettingProvider {
   children: React.ReactNode;
 }
 
-export const SettingsContext = createContext<ISettingsContext>(DEFAULT_SETTINGS);
+export const SettingsContext = createContext<ISettingsContext | null>(null);
 
 export function SettingsProvider({ children }: ISettingProvider): ReturnType<React.FC<ISettingProvider>> {
-  const { MIN_VERSION_DAEMON } = DEFAULT_SETTINGS;
+  const MIN_VERSION_DAEMON = "5.1.1";
   const [changed, forceUpdate] = useReducer((x) => x + 1, 0);
   const [updatedArgs, forceUpdateArgs] = useReducer((x) => x + 1, 0);
   const [config, setConfig] = useLocalStorage<JSONObject>("SettingsContext:config", {});

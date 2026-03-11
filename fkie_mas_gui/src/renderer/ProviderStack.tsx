@@ -3,18 +3,19 @@ import { createTheme, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import "flexlayout-react/style/gray.css";
 import { SnackbarProvider } from "notistack";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
+
 import { ElectronProvider } from "./context/ElectronContext";
 import { LoggingProvider } from "./context/LoggingContext";
 import { NavigationProvider } from "./context/NavigationContext";
 import { RosProviderReact } from "./context/RosContext";
-import { SettingsContext } from "./context/SettingsContext";
+import { useSettingsContext } from "./hooks/useSettingsContext";
 import { setupEditorWindowBridge } from "./monaco/EditorEventBridge";
 import { darkThemeDef, lightThemeDef } from "./themes";
 
 export default function ProviderStack({ children }: { children: React.ReactNode }): JSX.Element {
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [lightTheme, setLightTheme] = useState(createTheme(lightThemeDef));
   const [darkTheme, setDarkTheme] = useState(createTheme(darkThemeDef));
 

@@ -1,15 +1,15 @@
 import SettingsIcon from "@mui/icons-material/Settings";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { EVENT_OPEN_SETTINGS, SETTING } from "@/renderer/pages/NodeManager/layout/events";
 import DraggablePaper from "../UI/DraggablePaper";
 import GuiPanel from "./GuiPanel";
 
 export default function SettingsModal(): JSX.Element {
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [open, setOpen] = useState(false);
   function handleOpen(): void {
     setOpen(true);

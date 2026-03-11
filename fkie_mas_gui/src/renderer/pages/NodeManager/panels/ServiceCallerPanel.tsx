@@ -22,9 +22,9 @@ import JsonView from "react18-json-view";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import LoggingContext from "@/renderer/context/LoggingContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LaunchCallService, rosMessageStructToString, TRosMessageStruct } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import InputElements from "./MessageDialogPanel/InputElements";
@@ -39,10 +39,10 @@ export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.
   const { serviceName, serviceType, providerId } = props;
 
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [history, setHistory] = useLocalStorage("ServiceStruct:history", {});
   const [historyLength, setHistoryLength] = useState(0);
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceStruct, setServiceStruct] = useState<TRosMessageStruct>();
   const [serviceStructOrg, setServiceStructOrg] = useState<TRosMessageStruct>();

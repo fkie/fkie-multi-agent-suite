@@ -1,9 +1,9 @@
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, red } from "@mui/material/colors";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import SettingsContext from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { colorFromHostname } from "../UI";
 import CopyButton from "../UI/CopyButton";
 import StyledRootTreeItem from "./StyledRootTreeItem";
@@ -34,7 +34,7 @@ export default function PackageTreeItem(props: PackageTreeItemProps): JSX.Elemen
   const iconColor: string = exists ? blue[700] : red[700];
   const enableCopy: boolean = false;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
   useEffect(() => {

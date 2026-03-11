@@ -1,11 +1,11 @@
 import { Alert, AlertTitle, Box } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import TerminalClient from "@/renderer/components/TerminalClient/TerminalClient";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import CmdType from "@/renderer/providers/CmdType";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
@@ -22,8 +22,8 @@ interface SingleTerminalPanelProps {
 export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JSX.Element {
   const { id, type, providerId = "", nodeName = "", screen = "", cmd = "" } = props;
 
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [initialCommands, setInitialCommands] = useState<string[]>([]);
   const [providerName, setProviderName] = useState("");
   const [currentHost, setCurrentHost] = useState<string>();

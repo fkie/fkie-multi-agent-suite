@@ -42,15 +42,16 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
+import { useSettingsContext } from "../hooks/useSettingsContext";
 import { LoggingContext } from "./LoggingContext";
-import { LAUNCH_FILE_EXTENSIONS, SettingsContext, getDefaultPortFromRos } from "./SettingsContext";
+import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
 export type TLocalNode = {
   providerId: string;
   node: string;
 };
 
-export interface IRosProviderContext {
+export interface IRosContext {
   initialized: boolean;
   rosInfo: TRosInfo | null;
   systemInfo: TSystemInfo | null;
@@ -88,38 +89,6 @@ export interface IRosProviderContext {
   setShowSnackbarBinaryChangedNotification: (show: boolean) => void;
 }
 
-export const DEFAULT = {
-  initialized: false,
-  rosInfo: null,
-  systemInfo: null,
-  providers: [],
-  mapProviderRosNodes: new Map(), // Map<providerId: string, nodes: RosNode[]>
-  nodeMap: new Map(),
-  localNodes: [],
-  connectToProvider: (): Promise<boolean> => new Promise<boolean>(() => {}),
-  startProvider: (): Promise<boolean> => new Promise<boolean>(() => {}),
-  startConfig: (): Promise<boolean> => new Promise<boolean>(() => {}),
-  startMasterSync: (): void => {},
-  startDynamicReconfigureClient: (): Promise<TResult> => new Promise<TResult>(() => {}),
-  removeProvider: (): void => {},
-  getProviderName: (): string => "",
-  refreshProviderList: (): void => {},
-  closeProviders: (): void => {},
-  updateNodeList: (): void => {},
-  reloadLaunchFile: (): Promise<void> => new Promise<void>(() => {}),
-  updateLaunchList: (): void => {},
-  getProviderById: (): Provider | undefined => undefined,
-  getLocalProvider: (): Provider[] => [],
-  registerSubscriber: (): void => {},
-  unregisterSubscriber: (): void => {},
-  updateFilterRosTopic: (): void => {},
-  isLocalHost: (): boolean => false,
-  addProvider: (): void => {},
-  updateLocalNodes: (): void => {},
-  setShowSnackbarReloadLaunchNotification: () => {},
-  setShowSnackbarBinaryChangedNotification: () => {},
-};
-
 type TLoadLaunchResult = {
   success: boolean;
   error: string;
@@ -130,15 +99,15 @@ interface IRosProviderComponent {
   children: React.ReactNode;
 }
 
-export const RosContext = createContext<IRosProviderContext>(DEFAULT);
+export const RosContext = createContext<IRosContext | null>(null);
 
 export function RosProviderReact(props: IRosProviderComponent): ReturnType<React.FC<IRosProviderComponent>> {
   const { children } = props;
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
 
-  const [initialized, setInitialized] = useState(DEFAULT.initialized);
+  const [initialized, setInitialized] = useState(false);
   const [rosInfo, setRosInfo] = useState<TRosInfo | null>(null);
   const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
@@ -147,7 +116,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [showSnackbarReloadLaunchNotification, setShowSnackbarReloadLaunchNotification] = useState<boolean>(true);
   const [showSnackbarBinaryChangedNotification, setShowSnackbarBinaryChangedNotification] = useState<boolean>(true);
 
-  const [mapProviderRosNodes, setMapProviderRosNodes] = useState(DEFAULT.mapProviderRosNodes);
+  const [mapProviderRosNodes, setMapProviderRosNodes] = useState(new Map<string, RosNode[]>());
   // nodeMap: Map<string, RosNode>
   const [nodeMap, setNodeMap] = useState(new Map());
 
@@ -1332,7 +1301,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   // Effect to initialize RosContext
   useEffect(() => {
     init();
-    console.log(`RosCtx init`);
   }, []);
 
   const attributesMemo = useMemo(
@@ -1368,7 +1336,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setShowSnackbarBinaryChangedNotification,
     }),
 
-    [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes]
+    [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes, nodeMap, localNodes]
   );
 
   return <RosContext.Provider value={attributesMemo}>{children}</RosContext.Provider>;

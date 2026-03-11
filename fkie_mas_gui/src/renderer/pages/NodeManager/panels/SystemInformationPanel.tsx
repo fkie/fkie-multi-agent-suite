@@ -8,9 +8,9 @@ import CopyButton from "@/renderer/components/UI/CopyButton";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import Tag from "@/renderer/components/UI/Tag";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { SystemWarning } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EVENT_PROVIDER_WARNINGS } from "@/renderer/providers/eventTypes";
@@ -27,8 +27,8 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
   const { providerId = "" } = props;
 
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
 
   const [showProviderDetails, setShowProviderDetails] = useLocalStorage("DetailsPanel:showProviderDetails", true);
   const [systemInfoContent, setSystemInfoContent] = useState<TSystemInfo | null>(null);

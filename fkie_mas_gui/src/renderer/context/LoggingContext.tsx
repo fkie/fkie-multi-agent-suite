@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useEffect, useMemo, useState } from "react";
 
 import { LogEvent, LoggingLevel } from "@/renderer/models";
 import {
@@ -8,7 +8,7 @@ import {
   sendStateWarn,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { JSONObject, TResult } from "@/types";
-import { SettingsContext } from "./SettingsContext";
+import { useSettingsContext } from "../hooks/useSettingsContext";
 
 export interface ILoggingContext {
   logs: LogEvent[];
@@ -45,7 +45,7 @@ export const DEFAULT_BUG_TEXT = "A bug occurred, please consider report it as an
 export const LoggingContext = createContext<ILoggingContext>(DEFAULT_LOGGING);
 
 export function LoggingProvider({ children }: ILoggingProvider): ReturnType<React.FC<ILoggingProvider>> {
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [countErrors, setCountErrors] = useState<number>(0);
   const [debugByUri, setDebugByUri] = useState<string[]>(settingsCtx.get("debugByUri") as string[]);

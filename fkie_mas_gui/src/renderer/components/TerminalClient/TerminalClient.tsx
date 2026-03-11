@@ -6,9 +6,8 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
 import { ITerminalOptions, ITheme } from "@xterm/xterm";
-import { useContext } from "react";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { CmdType } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import { ClientOptions, Terminal } from "./Terminal";
@@ -74,8 +73,19 @@ interface ITerminalClient {
 }
 
 export default function TerminalClient(props: ITerminalClient): JSX.Element {
-  const { type, initialCommands, tokenUrl, remoteProvider, wsUrl, name, errorHighlighting, provider, onIncomingData, onCtrlD } = props;
-  const settingsCtx = useContext(SettingsContext);
+  const {
+    type,
+    initialCommands,
+    tokenUrl,
+    remoteProvider,
+    wsUrl,
+    name,
+    errorHighlighting,
+    provider,
+    onIncomingData,
+    onCtrlD,
+  } = props;
+  const settingsCtx = useSettingsContext();
 
   termOptions.fontSize = settingsCtx.get("fontSizeTerminal") as number;
   termOptions.theme = {

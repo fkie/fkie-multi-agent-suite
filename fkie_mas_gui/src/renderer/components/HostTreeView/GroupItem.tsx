@@ -6,9 +6,10 @@ import { blue, green, grey, red, yellow } from "@mui/material/colors";
 import { treeItemClasses, TreeItemSlotProps } from "@mui/x-tree-view/TreeItem";
 import { UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view/useTreeItem";
 import { UseTreeItemIconContainerSlotOwnProps } from "@mui/x-tree-view/useTreeItem/useTreeItem.types";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import RosContext, { IRosProviderContext } from "@/renderer/context/RosContext";
+import { IRosContext } from "@/renderer/context/RosContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
 import { EventNodeDiagnostic } from "@/renderer/providers/events";
@@ -37,10 +38,7 @@ const GroupLifecycleStatus = {
   NO_ONE: 10,
 };
 
-const getGroupLifecycleStatus: (treeItems: NodeTreeItem[], rosCtx: IRosProviderContext) => number = (
-  treeItems,
-  rosCtx
-) => {
+const getGroupLifecycleStatus: (treeItems: NodeTreeItem[], rosCtx: IRosContext) => number = (treeItems, rosCtx) => {
   let groupStatus = GroupLifecycleStatus.NO_ONE;
   for (const treeItem of treeItems) {
     if (treeItem.children && treeItem.children.length > 0) {
@@ -216,7 +214,7 @@ interface GroupIconProps {
 
 export function GroupIcon(props: GroupIconProps): JSX.Element {
   const { treeItems, groupName, isDarkMode = false } = props;
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems, rosCtx));
   const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
   const [groupStatusLocal, setGroupStatusLocal] = useState<number>(getGroupStatusLocal(treeItems));

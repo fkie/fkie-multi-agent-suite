@@ -17,8 +17,9 @@ import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { Provider } from "@/renderer/providers";
@@ -52,8 +53,8 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [topics, setTopics] = useState<TopicExtendedInfo[]>([]); // [topicInfo: TopicExtendedInfo]
   const [filteredTopics, setFilteredTopics] = useState<TopicExtendedInfo[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm);

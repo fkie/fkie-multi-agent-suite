@@ -14,9 +14,9 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
-import SettingsContext from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { TRosMessageStruct } from "@/renderer/models";
 import { blue } from "@mui/material/colors";
 import BoolInput from "./BoolInput";
@@ -87,7 +87,7 @@ interface InputElementsProps {
 export default function InputElements(props: InputElementsProps): JSX.Element {
   const { messageStruct, parentName = "undefined", filterText = "", expanded = true, showRoot = true } = props;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [arrayCount, setArrayCount] = useState<number>(0);
   const [idSuffix] = useState<string>(`${parentName}-${messageStruct.name}`);
   const [expandedElement, setExpanded] = useState<boolean>(

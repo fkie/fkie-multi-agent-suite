@@ -1,19 +1,20 @@
-import LoggingContext from "@/renderer/context/LoggingContext";
-import NavigationContext from "@/renderer/context/NavigationContext";
-import RosContext from "@/renderer/context/RosContext";
-import SettingsContext from "@/renderer/context/SettingsContext";
-import { RosService, RosTopicId, ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
-import ServiceCallerPanel from "@/renderer/pages/NodeManager/panels/ServiceCallerPanel";
-import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
-import { generateUniqueId, removeDDSuid } from "@/renderer/utils";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Button, IconButton, Stack, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+
+import LoggingContext from "@/renderer/context/LoggingContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { RosService, RosTopicId, ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
+import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import ServiceCallerPanel from "@/renderer/pages/NodeManager/panels/ServiceCallerPanel";
+import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
+import { generateUniqueId, removeDDSuid } from "@/renderer/utils";
 import { colorFromHostname, CopyButton } from "../UI";
 
 type ServiceDetailsItemsProps = {
@@ -27,8 +28,8 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
 
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [serviceInfo, setServiceInfo] = useState<ServiceExtendedInfo | undefined>();
   const [showInfo, setShowInfo] = useState<boolean>(false);
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);

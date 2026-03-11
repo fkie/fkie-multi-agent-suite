@@ -34,8 +34,8 @@ import semver from "semver";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode } from "@/renderer/models";
 import { CmdType, ConnectionState, Provider } from "@/renderer/providers";
 import {
@@ -53,9 +53,9 @@ interface ProviderPanelRowProps {
 export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Element {
   const { provider } = props;
   const auCtx = useContext(AutoUpdateContext);
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const navCtx = useContext(NavigationContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [providersActivity, setProvidersActivity] = useState(false);
   const [updated, forceUpdate] = useReducer((x) => x + 1, 0);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);

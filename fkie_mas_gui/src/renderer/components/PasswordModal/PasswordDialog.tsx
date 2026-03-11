@@ -1,8 +1,8 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { ConnectConfig } from "ssh2";
 
-import RosContext from "@/renderer/context/RosContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import { ConnectionState } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
@@ -17,7 +17,7 @@ interface PasswordDialogProps {
 export default function PasswordDialog(props: PasswordDialogProps): JSX.Element {
   const { provider, connectConfig, launchConfig, onClose = (): void => {} } = props;
 
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const [username, setUsername] = useState(connectConfig.username);
   const [password, setPassword] = useState("");
   const [open, setOpen] = useState(true);

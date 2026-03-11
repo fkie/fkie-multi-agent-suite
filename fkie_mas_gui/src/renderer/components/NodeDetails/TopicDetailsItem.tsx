@@ -1,14 +1,3 @@
-import LoggingContext from "@/renderer/context/LoggingContext";
-import NavigationContext from "@/renderer/context/NavigationContext";
-import RosContext from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
-import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
-import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
-import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
-import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
-import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
-import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
-import { removeDDSuid } from "@/renderer/utils";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
@@ -17,6 +6,18 @@ import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+
+import LoggingContext from "@/renderer/context/LoggingContext";
+import NavigationContext from "@/renderer/context/NavigationContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
+import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
+import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
+import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
+import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
+import { removeDDSuid } from "@/renderer/utils";
 import { colorFromHostname, CopyButton } from "../UI";
 
 type TopicDetailsItemsProps = {
@@ -31,8 +32,8 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
 
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [topicInfo, setTopicInfo] = useState<TopicExtendedInfo | undefined>(undefined);
   const [showInfo, setShowInfo] = useState<boolean>(false);
   const [hasIncompatibleQos, setHasIncompatibleQos] = useState<boolean>(false);

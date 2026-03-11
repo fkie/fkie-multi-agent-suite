@@ -2,10 +2,10 @@ import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Card, CardActions, Collapse, IconButton, Paper, Stack, Typography } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
-import React, { forwardRef, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { levelColorsWbg } from "./Colors";
 
 interface LoggingDetailsComponentProps {
@@ -17,7 +17,7 @@ interface LoggingDetailsComponentProps {
 }
 
 const LoggingDetailsComponent = forwardRef<HTMLDivElement, LoggingDetailsComponentProps>((props, ref) => {
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const { id, message, details, variant, onDetailsClick } = props;
 
   const { closeSnackbar } = useSnackbar();

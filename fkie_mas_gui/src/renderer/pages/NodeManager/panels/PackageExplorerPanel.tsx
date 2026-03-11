@@ -26,9 +26,10 @@ import { Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { BUTTON_LOCATIONS, LAUNCH_FILE_EXTENSIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileExtension, getFileName, PathItem, RosPackage } from "@/renderer/models";
 import { ConnectionState } from "@/renderer/providers";
 import { EventProviderState } from "@/renderer/providers/events";
@@ -75,8 +76,8 @@ export class ProviderPackage {
 export default function PackageExplorerPanel(): JSX.Element {
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
 
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<PathItem | undefined>(undefined);

@@ -1,7 +1,7 @@
 import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 
 interface SetNTPDateDialogProps {
   open: boolean;
@@ -12,7 +12,7 @@ interface SetNTPDateDialogProps {
 export default function SetNTPDateDialog(props: SetNTPDateDialogProps): JSX.Element {
   const { open, defaultCmd, onClose = (): void => {} } = props;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [value, setValue] = useState<string>(defaultCmd);
   const [timerServer, setTimerServer] = useState<string[]>(settingsCtx.get("ntpServer") as string[]);
   const [timerServerValue, setTimerServerValue] = useState(timerServer?.length > 0 ? timerServer[0] : "");
@@ -38,12 +38,7 @@ export default function SetNTPDateDialog(props: SetNTPDateDialogProps): JSX.Elem
   }
 
   return (
-    <Dialog
-      sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }}
-      maxWidth="xs"
-      open={open}
-      keepMounted
-    >
+    <Dialog sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }} maxWidth="xs" open={open} keepMounted>
       <DialogTitle className="draggable-dialog-title" id="draggable-dialog-title">
         Update system time
       </DialogTitle>

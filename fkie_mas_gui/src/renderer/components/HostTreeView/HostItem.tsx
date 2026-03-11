@@ -27,8 +27,8 @@ import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
@@ -52,9 +52,9 @@ interface HostItemProps {
 
 export default function HostItem(props: HostItemProps): JSX.Element {
   const { provider, stopNodes = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
 
   const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help"];

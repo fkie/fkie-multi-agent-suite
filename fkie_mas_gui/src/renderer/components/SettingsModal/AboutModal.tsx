@@ -1,13 +1,13 @@
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
-import { useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import DraggablePaper from "../UI/DraggablePaper";
 import About from "./About";
 
 export default function AboutModal(): JSX.Element {
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [open, setOpen] = useState(false);
   function handleOpen(): void {
     setOpen(true);

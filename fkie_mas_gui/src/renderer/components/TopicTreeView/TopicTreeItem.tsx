@@ -6,7 +6,7 @@ import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
@@ -28,7 +28,7 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
 
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");
   // state variables to show/hide extended info

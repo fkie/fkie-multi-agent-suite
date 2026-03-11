@@ -1,9 +1,9 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { RosContext } from "@/renderer/context/RosContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { LaunchArgument, LaunchIncludedFile } from "@/renderer/models";
 import { createUriPath } from "@/renderer/monaco/utils";
 import { Provider } from "@/renderer/providers";
@@ -45,7 +45,7 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
     launchArgs = [],
     modifiedUriPaths = [],
   } = props;
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const [includeRoot, setIncludeRoot] = useState<TLaunchIncludeItem>();
   const [expandedExplorerResults, setExpandedExplorerResults] = useState<string[]>([]);
 

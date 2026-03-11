@@ -35,9 +35,10 @@ import MapSelectionModal, { MapSelectionItem } from "@/renderer/components/Selec
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import useQueue from "@/renderer/hooks/useQueue";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
 import {
@@ -105,8 +106,8 @@ const queueActionMeta = {
 
 export default function HostTreeViewPanel(): JSX.Element {
   // context objects
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
 

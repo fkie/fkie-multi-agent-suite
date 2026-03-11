@@ -5,11 +5,11 @@ import semver from "semver";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { JSONObject, TAutoUpdateManager } from "@/types";
 import packageJson from "../../../package.json";
+import { useRosContext } from "../hooks/useRosContext";
+import { useSettingsContext } from "../hooks/useSettingsContext";
 import { CmdType } from "../providers";
 import { LoggingContext } from "./LoggingContext";
 import NavigationContext from "./NavigationContext";
-import RosContext from "./RosContext";
-import { SettingsContext } from "./SettingsContext";
 
 export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
@@ -64,8 +64,8 @@ export function AutoUpdateProvider({
 }: IAutoUpdateProviderComponent): ReturnType<React.FC<IAutoUpdateProviderComponent>> {
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const minDelayBetweenAutoChecks = 86400; // one day in seconds
   const [autoUpdateManager, setAutoUpdateManager] = useState<TAutoUpdateManager | null>(null);
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);

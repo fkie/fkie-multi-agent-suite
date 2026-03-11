@@ -6,13 +6,14 @@ import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/materi
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { RosContext } from "@/renderer/context/RosContext";
-import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ServiceExtendedInfo } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
@@ -39,8 +40,8 @@ export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
   const { initialSearchTerm = "" } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [services, setServices] = useState<ServiceExtendedInfo[]>([]);
   const [filteredServices, setFilteredServices] = useState<ServiceExtendedInfo[]>([]);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);

@@ -1,9 +1,10 @@
 import { TFileRange } from "@/types/FileRange";
 import { Monaco } from "@monaco-editor/react";
-import { languages } from "monaco-editor/esm/vs/editor/editor.api";
+import { languages } from "monaco-editor";
+import { resolveValue } from "../../utils";
 import { TTagAttributeProposals } from "./TTagAttributeProposals";
 
-export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTagAttributeProposals[] {
+export async function getTagAttributeProposals(monaco: Monaco, range: TFileRange): Promise<TTagAttributeProposals[]> {
   function createProposal(label: string, insertText: string, documentation: string): languages.CompletionItem {
     return {
       label: label,
@@ -163,16 +164,11 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
   ];
 }
 
-export function getTagProposals(
+export async function getTagProposals(
   monaco: Monaco,
   range: TFileRange,
-  clipText: string,
   lineContent: string
-): languages.CompletionItem[] {
-  function getParamName(defaultValue: string | undefined): string | undefined {
-    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
-    return text || defaultValue;
-  }
+): Promise<languages.CompletionItem[]> {
 
   function createProposal(label: string, insertText: string, documentation: string): languages.CompletionItem {
     return {
@@ -214,17 +210,17 @@ export function getTagProposals(
     ),
     createProposal(
       "param",
-      `${open}param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" /${close}`,
+      `${open}param name="\${1:${await resolveValue("NAME")}}" value="\${2:VALUE}" /${close}`,
       "Add a new ROS parameter"
     ),
     createProposal(
       "param sep",
-      `${open}param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" value-sep="\${3:SEPARATOR}" /${close}`,
+      `${open}param name="\${1:${await resolveValue("NAME")}}" value="\${2:VALUE}" value-sep="\${3:SEPARATOR}" /${close}`,
       "Add a new ROS parameter with value separator"
     ),
     createProposal(
       "param yaml",
-      `${open}param name="\${1:${getParamName("NAME")}}" from="$(find-pkg-share \${2:PACKAGE})/file.yaml" allow_substs="True" /${close}`,
+      `${open}param from="$(find-pkg-share \${2:PACKAGE})/file.yaml" allow_substs="True" /${close}`,
       "Add a new ROS parameter with value separator"
     ),
     createProposal(
@@ -267,7 +263,7 @@ export function getTagProposals(
     ),
     createProposal(
       "mas/kill_on_stop",
-      `${open}param name="mas/kill_on_stop" value="300" /${close}`,
+      `${open}param name="mas/kill_on_stop" value="\${1:300}" /${close}`,
       "Kill the node after defined time in milliseconds"
     ),
     createProposal("timer", `${open}timer period="\${1:5}">\n   \n</timer${close}`, ""),

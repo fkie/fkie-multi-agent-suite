@@ -7,8 +7,9 @@ import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { DEFAULT_BUG_TEXT, LoggingContext } from "@/renderer/context/LoggingContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { BUTTON_LOCATIONS, SettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderRosNodes } from "@/renderer/providers/events";
@@ -28,9 +29,9 @@ interface ParameterPanelProps {
 
 export default function ParameterPanel(props: ParameterPanelProps): JSX.Element {
   const { nodes, providers } = props;
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   const [rootData, setRootData] = useState<TRootData[]>([]);
   const [forceReload, setForceReload] = useReducer((x) => x + 1, 0);

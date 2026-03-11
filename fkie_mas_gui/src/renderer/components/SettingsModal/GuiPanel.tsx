@@ -22,9 +22,10 @@ import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 
-import { ISettingsParam, SettingsContext } from "@/renderer/context/SettingsContext";
+import { ISettingsParam } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { JSONValue } from "@/types";
 import SearchBar from "../UI/SearchBar";
 
@@ -75,7 +76,7 @@ export interface IGroupEntry {
 }
 
 export default function GuiPanel(): JSX.Element {
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [grouped, setGrouped] = useState<IGroupEntry[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [filter, setFilter] = useState("");

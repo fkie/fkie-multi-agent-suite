@@ -1,5 +1,3 @@
-/* eslint-disable no-template-curly-in-string */
-
 import { Monaco } from "@monaco-editor/react";
 import { editor, languages } from "monaco-editor/esm/vs/editor/editor.api";
 
@@ -7,17 +5,17 @@ import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
 import { getTagAttributeProposals, getTagProposals } from "./Proposals/Proposals";
 
-function createXMLDependencyProposals(
-  monaco: Monaco,
+async function createXMLDependencyProposals(
+  monaco: Monaco | null,
   range: TFileRange,
   lineContent: string,
-  clipText: string,
   packages: RosPackage[]
-): languages.CompletionItem[] {
+): Promise<languages.CompletionItem[]> {
+  if (!monaco) return [];
   // List of suggestions
   return [
-    ...createAttributeSuggestionsFromTag(monaco, range, lineContent),
-    ...getTagProposals(monaco, range, clipText, lineContent),
+    ...(await createAttributeSuggestionsFromTag(monaco, range, lineContent)),
+    ...(await getTagProposals(monaco, range, lineContent)),
     ...createPackageList(packages, monaco, range),
   ];
 }
@@ -35,17 +33,17 @@ function createPackageList(packages: RosPackage[], monaco: Monaco, range: TFileR
   return result ? result : [];
 }
 
-function createAttributeSuggestionsFromTag(
+async function createAttributeSuggestionsFromTag(
   monaco: Monaco,
   range: TFileRange,
   lineContent: string
-): languages.CompletionItem[] {
+): Promise<languages.CompletionItem[]> {
   const tags = ["launch", "node", "machine", "remap", "env", "param", "rosparam", "group", "test", "arg", "include"];
 
   for (const tag in tags) {
     // if a tag is found, add its attributes as suggestions
     if (lineContent.includes(`<${tags[tag]}`))
-      return getTagAttributeProposals(monaco, range).find((item) => item.tag === tags[tag])?.proposals || [];
+      return (await getTagAttributeProposals(monaco, range)).find((item) => item.tag === tags[tag])?.proposals || [];
   }
   // otherwise return nothing
   return [];

@@ -1,10 +1,10 @@
 import { Divider, Stack, Tooltip, Typography } from "@mui/material";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import JsonView from "react18-json-view";
 
 import { CopyButton } from "@/renderer/components/UI";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosQos, TSubscriberEventExt } from "@/renderer/models";
 import { qosFromJson } from "@/renderer/models/RosQos";
 import { findIn } from "@/renderer/utils";
@@ -29,7 +29,7 @@ export default function MessageFrame(props: MessageFrameProps): JSX.Element {
     initRootCollapsed = false,
     initCollapsed = ["stamp", "covariance"],
   } = props;
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   const isCtrlPressed = useRef(false);
   const [rootIsCollapsed, setRootIsCollapsed] = useState(initRootCollapsed);

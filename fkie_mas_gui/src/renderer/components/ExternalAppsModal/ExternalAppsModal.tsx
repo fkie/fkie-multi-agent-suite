@@ -1,5 +1,3 @@
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import { generateUniqueId } from "@/renderer/utils";
 import AppsIcon from "@mui/icons-material/Apps";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -22,7 +20,10 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useState } from "react";
+
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import DraggablePaper from "../UI/DraggablePaper";
 import SelectDomainIdModal from "./SelectDomainIdModal";
 
@@ -84,8 +85,8 @@ const applicationRows = [
 ];
 
 export default function ExternalAppsModal(): JSX.Element {
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
 
   const [open, setOpen] = useState(false);
   const [showSelectDialog, setShowSelectDialog] = useState<{ command: string; domainIds: string[] } | undefined>();
@@ -126,15 +127,18 @@ export default function ExternalAppsModal(): JSX.Element {
     [rosCtx.providers, rosCtx.rosInfo, window.commandExecutor]
   );
 
-  const runAppWid = useCallback(async (command: string, domain_id: string) => {
-    let rmwImplementation = "";
-    if (rosCtx.rosInfo?.rmwImplementation) {
-      // set RMW_IMPLEMENTATION only if the variable is valid for the gui
-      rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
-    }
-    window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
-    setShowSelectDialog(undefined);
-  }, [rosCtx]);
+  const runAppWid = useCallback(
+    async (command: string, domain_id: string) => {
+      let rmwImplementation = "";
+      if (rosCtx.rosInfo?.rmwImplementation) {
+        // set RMW_IMPLEMENTATION only if the variable is valid for the gui
+        rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
+      }
+      window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
+      setShowSelectDialog(undefined);
+    },
+    [rosCtx]
+  );
 
   return (
     <Stack padding={0}>

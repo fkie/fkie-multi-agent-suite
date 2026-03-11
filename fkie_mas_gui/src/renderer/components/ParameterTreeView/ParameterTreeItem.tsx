@@ -15,8 +15,8 @@ import {
 import React, { useContext, useEffect, useMemo, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import RosContext from "@/renderer/context/RosContext";
-import SettingsContext from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosParameter, RosParameterRange, RosParameterValue } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { treeItemClasses } from "@mui/x-tree-view";
@@ -45,9 +45,9 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
     return val;
   }
 
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);
   const [value, setValue] = useState(fixStringArray(paramInfo.value));
@@ -126,7 +126,11 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
     const result = await provider.setParameter(parameter.name, parameter.type, `${parameter.value}`, parameter.node);
 
     if (result.result) {
-      logCtx.success("Parameter updated successfully", `Parameter: ${parameter.name}, value: ${parameter.value}`, "parameter updated");
+      logCtx.success(
+        "Parameter updated successfully",
+        `Parameter: ${parameter.name}, value: ${parameter.value}`,
+        "parameter updated"
+      );
       if (result.value) {
         updateValue(result.value);
         parameter.value = result.value;

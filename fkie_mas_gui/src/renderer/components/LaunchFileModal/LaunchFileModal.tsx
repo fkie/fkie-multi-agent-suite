@@ -18,8 +18,8 @@ import {
 import { HTMLAttributes, useCallback, useContext, useEffect, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { RosContext } from "@/renderer/context/RosContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "@/renderer/models";
 import DraggablePaper from "../UI/DraggablePaper";
 import Tag from "../UI/Tag";
@@ -43,7 +43,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
     onLaunchCallback = (): void => {},
   } = props;
 
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
   const [open, setOpen] = useState(false);
   const [selectedLaunch, setSelectedLaunch] = useState<LaunchLoadReply | null>(null);

@@ -12,6 +12,8 @@ import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel
 import { xor } from "@/renderer/utils/index";
 import { TFileRange, TLaunchArg } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
+import { useRosContext } from "../hooks/useRosContext";
+import { useSettingsContext } from "../hooks/useSettingsContext";
 import { createEditorTabId } from "../monaco/utils";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
@@ -19,8 +21,6 @@ import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
 import TopicPublishPanel from "../pages/NodeManager/panels/TopicPublishPanel";
 import { CmdType } from "../providers";
 import LoggingContext from "./LoggingContext";
-import RosContext from "./RosContext";
-import { SettingsContext } from "./SettingsContext";
 
 export interface INavigationContext {
   selectedNodes: string[];
@@ -93,8 +93,8 @@ export const NavigationContext = createContext<INavigationContext>(DEFAULT);
 
 export function NavigationProvider({ children }: INavigationProvider): ReturnType<React.FC<INavigationProvider>> {
   const logCtx = useContext(LoggingContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
 
   const [selectedNodes, _setSelectedNodes] = useState<string[]>(DEFAULT.selectedNodes);
   const [nodesHistory, setNodesHistory] = useState<string[][]>([]);

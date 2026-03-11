@@ -13,9 +13,9 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { OverridableStringUnion } from "@mui/types";
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { colorFromHostname } from "./Colors";
 
 const StyledBadge = styled(Badge)((/*{ theme }*/) => ({
@@ -64,7 +64,7 @@ export default function OverflowMenu(props: OverflowMenuProps): JSX.Element {
     sx = { padding: 0, margin: 0 },
   } = props;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -103,20 +103,22 @@ export default function OverflowMenu(props: OverflowMenuProps): JSX.Element {
       onClick={(event) => event.stopPropagation()}
     >
       <Tooltip title={tooltip || ""} disableInteractive>
-        <IconButton
-          aria-label={`${id}-icon`}
-          id={`${id}-icon`}
-          size={size}
-          sx={sx}
-          aria-controls={open ? "long-menu" : undefined}
-          aria-expanded={open ? "true" : undefined}
-          aria-haspopup="true"
-          disabled={disabled}
-          onClick={handleClick}
-          // onMouseDown={handleClick}
-        >
-          {icon}
-        </IconButton>
+        <span>
+          <IconButton
+            aria-label={`${id}-icon`}
+            id={`${id}-icon`}
+            size={size}
+            sx={sx}
+            aria-controls={open ? "long-menu" : undefined}
+            aria-expanded={open ? "true" : undefined}
+            aria-haspopup="true"
+            disabled={disabled}
+            onClick={handleClick}
+            // onMouseDown={handleClick}
+          >
+            {icon}
+          </IconButton>
+        </span>
       </Tooltip>
       <Menu
         id={`${id}-menu`}

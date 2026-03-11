@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useState } from "react";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { treeItemClasses } from "@mui/x-tree-view";
 import { colorFromHostname } from "../UI/Colors";
@@ -33,7 +33,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
   // ...other
   const logCtx = useContext(LoggingContext);
   const navCtx = useContext(NavigationContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");
   // state variables to show/hide extended info

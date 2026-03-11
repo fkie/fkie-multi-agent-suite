@@ -673,7 +673,7 @@ class LaunchConfig(object):
                         open_brackets -= 1
                         if open_brackets < 0:
                             end_position = idx
-                            raw_text = content[match.start():idx]
+                            raw_text = content[match.start():idx+1]
                             break
         return line_number, end_position, raw_text
 

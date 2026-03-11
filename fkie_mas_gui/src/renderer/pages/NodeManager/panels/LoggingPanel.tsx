@@ -18,8 +18,8 @@ import { TableVirtuoso } from "react-virtuoso";
 import { levelColors } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LogEvent, LoggingLevel } from "@/renderer/models";
 import "./TableResizable.css";
 
@@ -55,7 +55,7 @@ function exportLogs(logs: LogEvent[]): void {
 
 export default function LoggingPanel(): JSX.Element {
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const [logLevel, setLogLevel] = useLocalStorage<LoggingLevel>("LoggingPanel:level", LoggingLevel.INFO);
   const [showDetails, setShowDetails] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

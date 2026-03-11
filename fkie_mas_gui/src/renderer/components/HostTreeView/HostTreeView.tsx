@@ -6,8 +6,8 @@ import { emitCustomEvent } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName, LaunchContent, LaunchFile, RosNode } from "@/renderer/models";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
@@ -71,9 +71,9 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   } = props;
   // const apiRef = useTreeViewApiRef();
   const navCtx = useContext(NavigationContext);
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   // providerNodeTree: list of {providerId: string, nodeTree: object}
   const [providerNodeTree, setProviderNodeTree] = useState<NodeTreeItem[]>([]);

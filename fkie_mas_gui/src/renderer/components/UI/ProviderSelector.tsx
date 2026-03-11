@@ -1,7 +1,7 @@
 import { MenuItem, Select } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { RosContext } from "@/renderer/context/RosContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 
 interface ProviderSelectorProps {
   defaultProvider: string;
@@ -10,7 +10,7 @@ interface ProviderSelectorProps {
 
 export default function ProviderSelector(props: ProviderSelectorProps): JSX.Element {
   const { defaultProvider = "", setSelectedProvider = (): void => {} } = props;
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const [currentProvider, setCurrentProvider] = useState<string>(defaultProvider);
   const [providerNames, setProviderNames] = useState<{ name: string; id: string }[]>(
     defaultProvider ? [{ name: rosCtx.getProviderName(defaultProvider), id: defaultProvider }] : []

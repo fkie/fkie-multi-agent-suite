@@ -5,11 +5,12 @@ import { Box, CircularProgress, IconButton, Stack, Tooltip, Typography } from "@
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { editor } from "monaco-editor/esm/vs/editor/editor.api";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
-import { getFileName } from "@/renderer/models";
+import { getFileName, LaunchIncludedFile } from "@/renderer/models";
+import { createUriPath } from "@/renderer/monaco/utils";
 import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
 import { TSearchResult } from "./types";
@@ -17,20 +18,46 @@ import { TSearchResult } from "./types";
 interface SearchTreeProps {
   tabId: string;
   providerId: string;
-  ownUriPaths: string[];
+  rootFilePath: string;
+  includedFiles?: LaunchIncludedFile[];
   searchTerm: string;
 }
 
 export default function SearchTree(props: SearchTreeProps): JSX.Element {
-  const { tabId, providerId, searchTerm = "", ownUriPaths = [] } = props;
+  const { tabId, providerId, rootFilePath, includedFiles, searchTerm = "" } = props;
 
   const monacoCtx = useMonacoContext();
   const [expandedSearchResults, setExpandedSearchResults] = useState<string[]>([]);
-  const [globalSearchTree, setGlobalSearchTree] = useState({});
   const [searchResults, setSearchResults] = useState<TSearchResult[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(ownUriPaths.length);
+  const [currentIndex, setCurrentIndex] = useState((includedFiles?.length || 0) + 1);
   const [currentSearchText, setCurrentSearchText] = useState("");
   const [progress, setProgress] = useState(0);
+  // files to load and search
+  const ownUriPaths = useMemo(() => {
+    const resultSet = new Set<string>();
+    resultSet.add(rootFilePath);
+    for (const f of includedFiles || []) {
+      resultSet.add(createUriPath(providerId, f.inc_path));
+    }
+    return Array.from(resultSet);
+  }, [providerId, rootFilePath, includedFiles]);
+
+  // create global search tree if search results are changed
+  const globalSearchTree = useMemo(() => {
+    const tree: Record<string, TSearchResult[]> = {};
+
+    for (const item of searchResults) {
+      if (!tree[item.file]) {
+        tree[item.file] = [];
+      }
+      tree[item.file].push(item);
+    }
+    return tree;
+  }, [searchResults]);
+
+  useEffect(() => {
+    setExpandedSearchResults(Object.keys(globalSearchTree));
+  }, [globalSearchTree]);
 
   /**
    * Search through all available models a given text, and return all coincidences
@@ -39,29 +66,24 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
     if (currentIndex < ownUriPaths.length) {
       // search only in own models
       const uriPath = ownUriPaths[currentIndex];
-      const result = await monacoCtx.getModel(tabId, providerId, uriPath, false);
-      if (result.model) {
-        const matches: editor.FindMatch[] = result.model.findMatches(searchText, true, isRegex, false, null, false);
-        for (const match of matches || []) {
-          const lineNumber = match.range.startLineNumber;
-          const text = result.model?.getLineContent(match.range.startLineNumber);
-          if (text) {
-            setSearchResults(
-              (prev) =>
-                [
-                  ...prev,
-                  {
-                    file: result.model ? result.model.uri.path : "",
-                    text,
-                    lineNumber,
-                    range: match.range,
-                  } as TSearchResult,
-                ] as TSearchResult[]
-            );
-          }
+      const result = await monacoCtx.getModel(tabId, uriPath, false);
+      if (!result.model) return;
+      const matches: editor.FindMatch[] = result.model.findMatches(searchText, true, isRegex, false, null, false);
+      const newResults: TSearchResult[] = [];
+      for (const match of matches || []) {
+        const lineNumber = match.range.startLineNumber;
+        const text = result.model?.getLineContent(match.range.startLineNumber);
+        if (text) {
+          newResults.push({
+            file: result.model.uri.path,
+            text,
+            lineNumber,
+            range: match.range,
+          });
         }
-        setCurrentIndex((prev) => prev + 1);
       }
+      setSearchResults((prev) => [...prev, ...newResults]);
+      setCurrentIndex((prev) => prev + 1);
     }
   }
 
@@ -85,26 +107,8 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
   }, [currentIndex]);
 
   useEffect(() => {
-    const newSearchTree = {};
-    for (const item of searchResults) {
-      const entry = newSearchTree[item.file];
-      if (!entry) {
-        newSearchTree[item.file] = [item];
-      } else {
-        newSearchTree[item.file].push(item);
-      }
-    }
-    setGlobalSearchTree(newSearchTree);
-    setExpandedSearchResults(Object.keys(newSearchTree));
-  }, [searchResults]);
-
-  useEffect(() => {
     debouncedFindAllMatches(searchTerm);
   }, [searchTerm]);
-
-  function selectSearchResult(entry: TSearchResult): void {
-    emitCustomEvent(EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange(tabId, entry.file, entry.range));
-  }
 
   return (
     <Stack spacing="0.5em">
@@ -182,7 +186,10 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
                     lineNumber={entry.lineNumber}
                     lineText={entry.text}
                     onClick={() => {
-                      selectSearchResult(entry);
+                      emitCustomEvent(
+                        EVENT_EDITOR_SELECT_RANGE,
+                        eventEditorSelectRange(tabId, entry.file, entry.range)
+                      );
                     }}
                   />
                 );

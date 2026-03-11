@@ -1,9 +1,10 @@
 import { TFileRange } from "@/types/FileRange";
 import { Monaco } from "@monaco-editor/react";
 import { languages } from "monaco-editor/esm/vs/editor/editor.api";
+import { resolveValue } from "../../utils";
 import { TTagAttributeProposals } from "./TTagAttributeProposals";
 
-export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTagAttributeProposals[] {
+export async function getTagAttributeProposals(monaco: Monaco, range: TFileRange): Promise<TTagAttributeProposals[]> {
   function createProposal(label: string, insertText: string, documentation: string): languages.CompletionItem {
     return {
       label: label,
@@ -246,17 +247,11 @@ export function getTagAttributeProposals(monaco: Monaco, range: TFileRange): TTa
   ];
 }
 
-export function getTagProposals(
+export async function getTagProposals(
   monaco: Monaco,
   range: TFileRange,
-  clipText: string,
   lineContent: string
-): languages.CompletionItem[] {
-  function getParamName(defaultValue: string | undefined): string | undefined {
-    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
-    return text || defaultValue;
-  }
-
+): Promise<languages.CompletionItem[]> {
   function createProposal(label: string, insertText: string, documentation: string): languages.CompletionItem {
     return {
       label: label,
@@ -292,7 +287,7 @@ export function getTagProposals(
     createProposal("env", `${open}env name="\${1:NAME}" value="\${2:VALUE}" /${close}`, "Machine the ROS Node runs on"),
     createProposal(
       "param",
-      `${open}param name="\${1:${getParamName("NAME")}}" value="\${2:VALUE}" /${close}`,
+      `${open}param name="\${1:${await resolveValue("NAME")}}" value="\${2:VALUE}" /${close}`,
       "Add a new ROS parameter"
     ),
     createProposal(

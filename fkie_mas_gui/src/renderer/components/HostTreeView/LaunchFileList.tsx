@@ -15,7 +15,7 @@ import { useCallback, useContext } from "react";
 
 import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
 import MuiMarkdown from "mui-markdown";
 
@@ -49,7 +49,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
   } = props;
 
   const navCtx = useContext(NavigationContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
   const logCtx = useContext(LoggingContext);
 
   /**

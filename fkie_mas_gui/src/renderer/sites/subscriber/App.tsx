@@ -1,8 +1,9 @@
 import { Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LoggingContext } from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
 import { getFileName } from "../../models";
 import TopicEchoPanel from "../../pages/NodeManager/panels/TopicEchoPanel";
 import SubscriberProvider from "../../providers/SubscriberProvider";
@@ -17,8 +18,8 @@ interface ISubscriberInfo {
 
 export default function SubscriberApp(): JSX.Element {
   const logCtx = useContext(LoggingContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [subInfo, setSubInfo] = useState<ISubscriberInfo | null>(null);
   const [stopRequested, setStopRequested] = useState<string>("");
 

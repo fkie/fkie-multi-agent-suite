@@ -1,8 +1,9 @@
 import { Stack } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
+
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LoggingContext } from "../../context/LoggingContext";
-import { RosContext } from "../../context/RosContext";
-import { SettingsContext } from "../../context/SettingsContext";
 import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
 import { CmdType, cmdTypeFromString } from "../../providers";
 import TerminalProvider from "../../providers/TerminalProvider";
@@ -18,8 +19,8 @@ interface ITerminalInfo {
 
 export default function TerminalApp(): JSX.Element {
   const logCtx = useContext(LoggingContext);
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [paramInfo, setParamInfo] = useState<ITerminalInfo | null>(null);
 
   async function initProvider(): Promise<void> {

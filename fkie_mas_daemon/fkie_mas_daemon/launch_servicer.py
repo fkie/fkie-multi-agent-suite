@@ -622,15 +622,19 @@ class LaunchServicer(LoggingEventHandler):
                         associations = p.value
                     else:
                         # versuche beide möglichen Pfade
-                        associations = (
-                            p.value.get("/**", {})
-                                .get("ros__parameters", {})
-                                .get("mas/associations")
-                            or
-                            p.value.get(item.node_name, {})
-                                .get("ros__parameters", {})
-                                .get("mas/associations")
-                        )
+                        try:
+                            associations = (
+                                p.value.get("/**", {})
+                                    .get("ros__parameters", {})
+                                    .get("mas/associations")
+                                or
+                                p.value.get(item.node_name, {})
+                                    .get("ros__parameters", {})
+                                    .get("mas/associations")
+                            )
+                        except:
+                            import traceback
+                            print(traceback.format_exc())
                     if associations:
                         reply_lc.associations.append(LaunchAssociations(item.node_name, associations))
             reply_lc.warnings = lc.load_exceptions

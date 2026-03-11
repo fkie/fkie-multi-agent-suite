@@ -7,9 +7,9 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { useCallback, useContext } from "react";
+import React, { useCallback } from "react";
 
-import SettingsContext from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { colorFromHostname } from "../UI";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -38,7 +38,7 @@ export default function ParameterGroupTreeItem(props: ParameterGroupTreeItemProp
     ...children
   } = props;
 
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {

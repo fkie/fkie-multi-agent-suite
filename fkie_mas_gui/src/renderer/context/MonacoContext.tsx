@@ -2,8 +2,9 @@ import * as MonacoReact from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor/esm/vs/editor/editor.api";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+
 import LoggingContext from "../context/LoggingContext";
-import RosContext from "../context/RosContext";
+import { useRosContext } from "../hooks/useRosContext";
 import { FileItem, FileLanguageAssociations } from "../models";
 import { initMonacoRuntime } from "../monaco/setup/configureMonaco";
 import { SaveResult, TModelResult } from "../monaco/types";
@@ -23,13 +24,16 @@ export interface IMonacoContext {
   monaco: MonacoReact.Monaco | null;
   dirtyManager: () => MonacoDirtyManager | undefined;
   modelRegistry: () => ModelRegistry | undefined;
-  getModel: (tabId: string, providerId: string, path: string, forceReload?: boolean) => Promise<TModelResult>;
+  getModel: (tabId: string, path: string, forceReload?: boolean) => Promise<TModelResult>;
+  getModels: (tabId: string) => Set<editor.ITextModel>;
   createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
   saveFile: (model: editor.ITextModel) => Promise<SaveResult>;
   saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
   closeTabs: (tabIds?: string[]) => void;
   getModifiedFilesByTab: (tabId: string) => editor.ITextModel[];
   isModifiedModel: (model: editor.ITextModel) => boolean;
+  isReadOnly: (model: editor.ITextModel) => boolean;
+  isInstallPath: (model: editor.ITextModel) => boolean;
 }
 
 export const MonacoContext = createContext<IMonacoContext | null>(null);
@@ -37,10 +41,12 @@ export const MonacoContext = createContext<IMonacoContext | null>(null);
 // -------------------- MonacoProvider --------------------
 export function MonacoProvider({ children }: { children: React.ReactNode }) {
   const monacoInstance = MonacoReact.useMonaco();
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
   const rosCtxRef = useRef(rosCtx);
   const logCtxRef = useRef(logCtx);
+
+  const files = new Map<string, FileItem>();
 
   // -------------------- Services --------------------
   const workspaceRef = useRef<MonacoWorkspace | null>(null);
@@ -164,21 +170,21 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return newModel;
   }, []);
 
-  const openFile = useCallback(async (tabId: string, path: string) => {
+  const openFile = useCallback(async (providerId: string, path: string) => {
     if (!workspaceRef.current) {
       return { file: null, error: "Monaco not initialized yet" };
-    }
-    const providerId = providerIdFromTabId(tabId);
-    if (!providerId) {
-      return { file: null, error: `Invalid tabId ${tabId}: no provider id found` };
     }
     return workspaceRef.current.opener.open(providerId, path);
   }, []);
 
   const getModel = useCallback(
-    async (tabId: string, providerId: string, path: string, forceReload = false): Promise<TModelResult> => {
+    async (tabId: string, path: string, forceReload = false): Promise<TModelResult> => {
       if (!workspaceRef.current) {
         return { model: null, file: null, error: "Monaco not initialized yet" };
+      }
+      const providerId = providerIdFromTabId(tabId);
+      if (!providerId) {
+        return { model: null, file: null, error: `Invalid tabId ${tabId}: no provider id found` };
       }
       const uriPath = createUriPath(providerId, path);
       // 1. Check if model already exists
@@ -187,11 +193,13 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       // 2. If no model or forceReload, load file from provider
       if (!model || forceReload) {
         const filePath = fileFromUriPath(path);
-        const { file, error } = await openFile(tabId, filePath).catch((error) => {
+        const { file, error } = await openFile(providerId, filePath).catch((error) => {
           return { model: null, file: null, error: error?.message ?? "Unknown error while opening file" };
         });
 
         if (!error && file) {
+          // remove dirty flag for current model
+          if (model) workspaceRef.current?.dirty.markSaved(model);
           model = workspaceRef.current.models.create(
             tabId,
             uriPath,
@@ -204,7 +212,9 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
               `Host: ${providerId}, root file: ${file.path}`,
               "file model error"
             );
+            files.delete(uriPath);
           }
+          files.set(uriPath, file);
           return { model, file, error: null };
         }
 
@@ -217,6 +227,21 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     [logCtx, openFile]
   );
 
+  const getModels: (tabId: string) => Set<editor.ITextModel> = (tabId) => {
+    return workspaceRef.current?.models.getByTab(tabId) || new Set();
+  };
+
+  const isReadOnly: (model: editor.ITextModel) => boolean = (model) => {
+    return files.get(model.uri.path)?.readonly || false;
+  };
+
+  const isInstallPath: (model: editor.ITextModel) => boolean = (model) => {
+    const file = files.get(model.uri.path);
+    if (!file) return false;
+    const filePath = file.realpath && file.realpath.length > 0 ? file.realpath : file.path;
+    return filePath.search("/install/") !== -1;
+  };
+
   // -------------------- Context Value --------------------
   const contextValue: IMonacoContext = useMemo(
     () => ({
@@ -224,12 +249,15 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       dirtyManager,
       modelRegistry,
       getModel,
+      getModels,
       createModel,
       saveFile,
       saveModifiedFilesOfTabId,
       closeTabs,
       getModifiedFilesByTab,
       isModifiedModel,
+      isReadOnly,
+      isInstallPath,
     }),
     [
       monacoInstance,

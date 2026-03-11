@@ -49,9 +49,10 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext, getDefaultPortFromRos } from "@/renderer/context/SettingsContext";
+import { getDefaultPortFromRos } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import ProviderLaunchConfiguration from "@/renderer/models/ProviderLaunchConfiguration";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
@@ -150,8 +151,8 @@ interface ConnectToProviderModalProps {
 
 export default function ConnectToProviderModal(props: ConnectToProviderModalProps): JSX.Element {
   const { startOnOpen = false, joinOnOpen = false, onCloseDialog = (): void => {} } = props;
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const logCtx = useContext(LoggingContext);
   const hostArg: string | undefined = settingsCtx.getArgument("host") as string | undefined;
   const defaultHost: string[] = hostArg ? hostArg?.split(",") : ["localhost"];

@@ -3,33 +3,29 @@ import { languages } from "monaco-editor/esm/vs/editor/editor.api";
 
 import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
+import { resolveValue } from "../utils";
 
 // Method,Function,Constructor,Field,Variable,Class,Struct,Interface,Module,Property,Event,Operator,Unit,Value,Constant,Enum,EnumMember,Keyword,Text,Color,File,Reference,Customcolor,Folder,TypeParameter,User,Issue,Snippet
 
-export function createPythonLaunchProposals(
-  monaco: Monaco,
+export async function createPythonLaunchProposals(
+  monaco: Monaco | null,
   range: TFileRange,
-  clipText: string,
   text: string,
   packages: RosPackage[]
-): languages.CompletionItem[] {
+): Promise<languages.CompletionItem[]> {
   // returning a static list of proposals, valid for ROS launch and XML  files
+  if (!monaco) return [];
 
   // List of suggestions
   return [
     ...createFunctionList(text, monaco, range),
-    ...createRosList(clipText, monaco, range),
+    ...(await createRosList(monaco, range)),
     ...createPackageList(packages, monaco, range),
     ...createWordList(text, monaco, range),
   ];
 }
 
-function createRosList(clipText: string, monaco: Monaco, range: TFileRange): languages.CompletionItem[] {
-  function getClip(defaultValue: string | undefined): string | undefined {
-    const text = clipText?.replace(/(\r\n.*|\n.*|\r.*)/gm, "");
-    return text || defaultValue;
-  }
-
+async function createRosList(monaco: Monaco, range: TFileRange): Promise<languages.CompletionItem[]> {
   return [
     {
       label: "Node",
@@ -44,7 +40,7 @@ function createRosList(clipText: string, monaco: Monaco, range: TFileRange): lan
       label: "DeclareLaunchArgument",
       kind: monaco.languages.CompletionItemKind.Snippet,
       documentation: "Add a new ROS DeclareLaunchArgument",
-      insertText: `declare_\${1:${getClip("NAME")}} = DeclareLaunchArgument('\${2:${getClip("NAME")}}', default_value='\${3:VALUE}', description='')`,
+      insertText: `declare_\${1:${await resolveValue("NAME")}} = DeclareLaunchArgument('\${2:${await resolveValue("NAME")}}', default_value='\${3:VALUE}', description='')`,
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range,
     },

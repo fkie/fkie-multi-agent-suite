@@ -1,6 +1,6 @@
 import * as MonacoReact from "@monaco-editor/react";
 
-import { IRosProviderContext } from "@/renderer/context/RosContext";
+import { IRosContext } from "@/renderer/context/RosContext";
 import { FileOpenService } from "./FileOpenService";
 import { FileSaveService } from "./FileSaveService";
 import { MasFileProvider } from "./MasFileProvider";
@@ -15,7 +15,7 @@ export class MonacoWorkspace {
 
   constructor(
     monaco: MonacoReact.Monaco,
-    private rosCtxRef: React.MutableRefObject<IRosProviderContext>,
+    private rosCtxRef: React.MutableRefObject<IRosContext>,
   ) {
     const fs = new MasFileProvider(this.rosCtxRef);
 

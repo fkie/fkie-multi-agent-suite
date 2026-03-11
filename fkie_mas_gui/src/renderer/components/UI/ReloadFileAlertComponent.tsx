@@ -14,10 +14,10 @@ import {
   Typography,
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
-import { forwardRef, useContext, useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { PATH_EVENT_TYPE } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
@@ -38,7 +38,7 @@ const ReloadFileAlertComponent = forwardRef<HTMLDivElement, ReloadFileComponentP
   function ReloadFileAlertComponent(props, ref) {
     const { id, message, provider, modifiedFile, modification, launchFile, onReload, onReloaded } = props;
 
-    const settingsCtx = useContext(SettingsContext);
+    const settingsCtx = useSettingsContext();
     const { closeSnackbar } = useSnackbar();
     const [expanded, setExpanded] = useState(false);
     const [rememberChange, setRememberChange] = useState(false);

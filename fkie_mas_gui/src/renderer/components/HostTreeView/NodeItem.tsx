@@ -12,11 +12,11 @@ import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInpu
 import WarningIcon from "@mui/icons-material/Warning";
 import { Badge, Box, IconButton, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileIcon } from "react-file-icon";
 
-import RosContext from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import {
   DiagnosticLevel,
   getFileExtension,
@@ -65,8 +65,8 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     ...other
   } = props;
 
-  const rosCtx = useContext(RosContext);
-  const settingsCtx = useContext(SettingsContext);
+  const rosCtx = useRosContext();
+  const settingsCtx = useSettingsContext();
   const [labelText, setLabelText] = useState(nodeNameWithoutNamespace(node));
   const [lifecycle, setLifecycle] = useState<LifecycleState | undefined>();
   const [composableTag, setComposableTag] = useState<TTag | undefined>();
@@ -407,7 +407,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   function getAssociatedNodeNames(startNode: RosNode): string[] {
     const provider = rosCtx.getProviderById(startNode.providerId);
     if (!provider) return [];
-    return provider.getAssociatedNodes(startNode).map((node) => node.name)
+    return provider.getAssociatedNodes(startNode).map((node) => node.name);
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>

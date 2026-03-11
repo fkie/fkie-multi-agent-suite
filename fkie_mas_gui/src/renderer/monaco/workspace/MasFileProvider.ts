@@ -1,8 +1,8 @@
-import { IRosProviderContext } from "@/renderer/context/RosContext";
+import { IRosContext } from "@/renderer/context/RosContext";
 import { FileItem } from "@/renderer/models";
 
 export class MasFileProvider {
-  constructor(private rosCtxRef: React.MutableRefObject<IRosProviderContext>) {}
+  constructor(private rosCtxRef: React.MutableRefObject<IRosContext>) {}
 
   async readFile(providerId: string, path: string) {
     const provider = this.rosCtxRef.current.getProviderById(providerId, false);

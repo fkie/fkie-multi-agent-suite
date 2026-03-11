@@ -29,9 +29,9 @@ import { Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
-import { RosContext } from "@/renderer/context/RosContext";
-import { SettingsContext } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosQos, SubscriberFilter, TSubscriberEventExt } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
@@ -49,9 +49,9 @@ interface TopicEchoPanelProps {
 export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element {
   const { showOptions = true, defaultProvider = "", defaultTopic = "", defaultNoData = false } = props;
 
-  const rosCtx = useContext(RosContext);
+  const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
-  const settingsCtx = useContext(SettingsContext);
+  const settingsCtx = useSettingsContext();
 
   const [selectedProvider] = useState(defaultProvider);
   const [currentProvider, setCurrentProvider] = useState<Provider>();
@@ -246,14 +246,14 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     // no dependencies: execute return statement on close this panel
   }, []);
 
-  const updateSubscriberNodeState = useCallback(async () => {
-    const result = await currentProvider?.getCountTopicSubscriptions(topicName);
-    if ((result?.length || 0) > 0) {
-      setPause(false);
-    } else {
-      setPause(true);
-    }
-  }, [topicName, currentProvider, rosCtx.mapProviderRosNodes]);
+  // const updateSubscriberNodeState = useCallback(async () => {
+  //   const result = await currentProvider?.getCountTopicSubscriptions(topicName);
+  //   if ((result?.length || 0) > 0) {
+  //     setPause(false);
+  //   } else {
+  //     setPause(true);
+  //   }
+  // }, [topicName, currentProvider, rosCtx.mapProviderRosNodes]);
 
   function normalizePrint(size: number | undefined, fixed: number = 2, per: string = ""): string {
     if (size === undefined) return "n/a";
