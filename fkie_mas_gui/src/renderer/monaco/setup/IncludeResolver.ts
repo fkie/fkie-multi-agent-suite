@@ -2,11 +2,12 @@ import { LaunchIncludedFile } from "@/renderer/models";
 import { Position } from "monaco-editor";
 
 export type ResolveType = { path: string; realpath: string };
+export type ResolverCacheEntry = { start: Position; end: Position; match: IncludeMatch };
 
 export type IncludeMatch = { value: string; offset: number; resolved: string; realpath: string };
 
 export type IncludeResolver = {
-  cache: Map<string, { start: Position; end: Position; match: IncludeMatch }[]>;
+  cache: Map<string, ResolverCacheEntry[]>;
   resolve: (currentFile: string, rawPath: string) => ResolveType | undefined;
 };
 
@@ -18,7 +19,7 @@ export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): Incl
   }
 
   return {
-    cache: new Map<string, { start: Position; end: Position; match: IncludeMatch }[]>(),
+    cache: new Map<string, ResolverCacheEntry[]>(),
     resolve(currentFile, rawPath) {
       return map.get(`${currentFile}|${rawPath}`);
     },

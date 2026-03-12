@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef } fr
 import LoggingContext from "../context/LoggingContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { FileItem, FileLanguageAssociations } from "../models";
-import { initMonacoRuntime } from "../monaco/setup/configureMonaco";
+import { IncludeResolver } from "../monaco/setup";
 import { SaveResult, TModelResult } from "../monaco/types";
 import {
   createUriPath,
@@ -34,6 +34,8 @@ export interface IMonacoContext {
   isModifiedModel: (model: editor.ITextModel) => boolean;
   isReadOnly: (model: editor.ITextModel) => boolean;
   isInstallPath: (model: editor.ITextModel) => boolean;
+  setResolver: (editorId: string, resolver: IncludeResolver) => void;
+  getResolver: (tabId: string) => IncludeResolver | undefined;
 }
 
 export const MonacoContext = createContext<IMonacoContext | null>(null);
@@ -47,6 +49,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   const logCtxRef = useRef(logCtx);
 
   const files = new Map<string, FileItem>();
+  const resolvers = new Map<string, IncludeResolver>();
 
   // -------------------- Services --------------------
   const workspaceRef = useRef<MonacoWorkspace | null>(null);
@@ -55,7 +58,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     if (!monacoInstance) return;
 
     if (!workspaceRef.current) {
-      initMonacoRuntime(monacoInstance);
+      // this is initialized at NodeManager
+      // initMonacoRuntime(useMonacoContext(), rosCtx);
       workspaceRef.current = new MonacoWorkspace(monacoInstance, rosCtxRef);
     }
   }, [monacoInstance]);
@@ -76,15 +80,19 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return workspaceRef.current?.models;
   }, []);
 
-  const closeTabs = useCallback((tabIds?: string[]): void => {
-    if (tabIds === undefined) {
-      workspaceRef.current?.models.closeAllModels();
-      return;
-    }
-    for (const tabId of tabIds || []) {
-      workspaceRef.current?.models.closeModelsByTabId(tabId);
-    }
-  }, []);
+  const closeTabs = useCallback(
+    (tabIds?: string[]): void => {
+      if (tabIds === undefined) {
+        workspaceRef.current?.models.closeAllModels();
+        return;
+      }
+      for (const tabId of tabIds || []) {
+        workspaceRef.current?.models.closeModelsByTabId(tabId);
+        resolvers.delete(tabId);
+      }
+    },
+    [resolvers]
+  );
 
   const getModifiedFilesByTab = useCallback((tabId: string) => {
     if (!workspaceRef.current) {
@@ -226,7 +234,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       // 3. Model exists and no reload needed
       return { model, file: null, error: null };
     },
-    [logCtx, openFile]
+    [logCtx, openFile, files]
   );
 
   const getModels: (tabId: string) => Set<editor.ITextModel> = (tabId) => {
@@ -244,6 +252,20 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return filePath.search("/install/") !== -1;
   };
 
+  const setResolver: (tabId: string, resolver: IncludeResolver) => void = useCallback(
+    (tabId, resolver) => {
+      resolvers.set(tabId, resolver);
+    },
+    [resolvers]
+  );
+
+  const getResolver: (tabId: string) => IncludeResolver | undefined = useCallback(
+    (tabId) => {
+      return resolvers.get(tabId);
+    },
+    [resolvers]
+  );
+
   // -------------------- Context Value --------------------
   const contextValue: IMonacoContext = useMemo(
     () => ({
@@ -260,6 +282,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       isModifiedModel,
       isReadOnly,
       isInstallPath,
+      setResolver,
+      getResolver,
     }),
     [
       monacoInstance,
@@ -272,6 +296,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       closeTabs,
       getModifiedFilesByTab,
       isModifiedModel,
+      setResolver,
+      getResolver,
     ]
   );
 

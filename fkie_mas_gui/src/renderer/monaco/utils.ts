@@ -50,6 +50,11 @@ export function providerIdFromTabId(tabId: string): string | undefined {
   return sepIndex === -1 ? undefined : tabId.slice(sepIndex + 1);
 }
 
+export function pathFromTabId(tabId: string): string | undefined {
+  const sepIndex = tabId.indexOf(PROVIDER_SEP);
+  return sepIndex === -1 ? undefined : tabId.slice(0, sepIndex);
+}
+
 export function isUriPath(path: string): boolean {
   const editorIndex = path.indexOf(EDITOR_PATH_SEP);
 

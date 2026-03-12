@@ -1,16 +1,9 @@
-import { IMonacoContext } from "@/renderer/context/MonacoContext";
-import { RosPackage } from "@/renderer/models";
-import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import * as MonacoReact from "@monaco-editor/react";
-import { editor, IDisposable, languages, Uri } from "monaco-editor";
+import { editor, IDisposable, Uri } from "monaco-editor";
 import { emitCustomEvent } from "react-custom-events";
-import { createUriPath, fileFromUriPath, providerIdFromTabId, providerIdFromUriPath } from "../utils";
-import { extractIncludes, IncludeResolver } from "./IncludeResolver";
-import { createPythonLaunchProposals } from "./languages/PythonLaunchProposals";
-import { createDocumentSymbols, createXMLDependencyProposals } from "./languages/XmlLaunchProposals";
-import { createDocumentSymbolsR2, createXMLDependencyProposalsR2 } from "./languages/XmlLaunchProposalsR2";
 
-export const SUPPORTED_FILES = ["ros2xml", "ros1xml", "launch", "python", "yaml"];
+import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
+import { fileFromUriPath } from "../utils";
 
 export function configureContextMenu(
   m: MonacoReact.Monaco,
@@ -68,12 +61,7 @@ export function configureContextMenu(
   return newDisposables;
 }
 
-export function configureMonacoEditor(
-  m: MonacoReact.Monaco,
-  editorId: string,
-  isRos2: boolean = true,
-  packages: RosPackage[] = []
-): IDisposable[] {
+export function configureMonacoEditor(m: MonacoReact.Monaco, editorId: string): IDisposable[] {
   if (!m) return [];
   const newDisposables: IDisposable[] = [];
 
@@ -89,169 +77,5 @@ export function configureMonacoEditor(
     })
   );
 
-  // personalize launch file objects
-  for (const e of SUPPORTED_FILES) {
-    // Add Completion provider for XML and launch files
-    newDisposables.push(
-      m.languages.registerCompletionItemProvider(e, {
-        provideCompletionItems: async (model, position) => {
-          const word = model.getWordUntilPosition(position);
-          const range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-          };
-
-          const lineContent = model.getLineContent(position.lineNumber);
-
-          switch (e) {
-            case "python":
-              return {
-                suggestions: await createPythonLaunchProposals(m, range, model.getValue(), packages),
-              };
-            case "ros1xml":
-              return {
-                suggestions: await createXMLDependencyProposals(m, range, lineContent, packages),
-              };
-            case "ros2xml":
-              return {
-                suggestions: await createXMLDependencyProposalsR2(m, range, lineContent, packages),
-              };
-            default:
-              return {
-                suggestions: [],
-              };
-          }
-        },
-      })
-    );
-
-    // Add symbols XML and launch files
-    if (e !== "python") {
-      newDisposables.push(
-        m.languages.registerDocumentSymbolProvider(e, {
-          displayName: "ROS Symbols",
-          provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
-            return isRos2 ? createDocumentSymbolsR2(model) : createDocumentSymbols(model);
-          },
-        })
-      );
-    }
-  }
-  return newDisposables;
-}
-
-export function registerLaunchLinkProvider(m: MonacoReact.Monaco, resolver: IncludeResolver, providerId: string) {
-  const newDisposables: IDisposable[] = [];
-
-  for (const e of SUPPORTED_FILES) {
-    newDisposables.push(
-      m.languages.registerLinkProvider(e, {
-        provideLinks(model) {
-          const text = model.getValue();
-          const currentFile = fileFromUriPath(model.uri.path);
-          const links: languages.ILink[] = [];
-          for (const match of extractIncludes(text, e, resolver, currentFile)) {
-            const start = model.getPositionAt(match.offset);
-            const end = model.getPositionAt(match.offset + match.value.length);
-
-            const cache = resolver.cache.get(currentFile);
-            if (cache) {
-              cache.push({ start, end, match });
-            } else {
-              resolver.cache.set(currentFile, [{ start, end, match }]);
-            }
-
-            if (providerId) {
-              links.push({
-                range: {
-                  startLineNumber: start.lineNumber,
-                  startColumn: start.column,
-                  endLineNumber: end.lineNumber,
-                  endColumn: end.column,
-                },
-                url: createUriPath(providerId, match.resolved),
-              });
-            }
-          }
-
-          return { links };
-        },
-      })
-    );
-  }
-  return newDisposables;
-}
-
-export function registerLaunchDefinitionProvider(
-  monacoCtx: IMonacoContext,
-  resolver: IncludeResolver,
-  editorId: string
-) {
-  if (!monacoCtx.monaco) return [];
-  const newDisposables: IDisposable[] = [];
-
-  for (const e of SUPPORTED_FILES) {
-    newDisposables.push(
-      monacoCtx.monaco.languages.registerDefinitionProvider(e, {
-        async provideDefinition(model, position) {
-          if (!monacoCtx.monaco) return;
-          const currentFile = fileFromUriPath(model.uri.path);
-          const poseCache = resolver.cache.get(currentFile);
-          for (const cached of poseCache || []) {
-            if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
-              if (position.column >= cached.start.column && position.column <= cached.end.column) {
-                const providerId = providerIdFromTabId(editorId);
-                if (!providerId) return;
-
-                const uri = createUriPath(providerId, cached.match.resolved);
-                const m = await monacoCtx.getModel(editorId, cached.match.resolved);
-                if (!m) return;
-                return {
-                  uri: monacoCtx.monaco.Uri.file(uri),
-                  range: new monacoCtx.monaco.Range(1, 1, 1, 1),
-                };
-              }
-            }
-          }
-          return;
-        },
-      })
-    );
-  }
-  return newDisposables;
-}
-
-export function registerLaunchHoverProvider(m: MonacoReact.Monaco, resolver: IncludeResolver) {
-  const newDisposables: IDisposable[] = [];
-
-  for (const e of SUPPORTED_FILES) {
-    newDisposables.push(
-      m.languages.registerHoverProvider(e, {
-        provideHover(model, position) {
-          const currentFile = fileFromUriPath(model.uri.path);
-          const poseCache = resolver.cache.get(currentFile);
-          for (const cached of poseCache || []) {
-            if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
-              if (position.column >= cached.start.column && position.column <= cached.end.column) {
-                const result = {
-                  contents: [
-                    { value: `**${providerIdFromUriPath(model.uri.path)}**` },
-                    { value: `Resolved: \`${cached.match.resolved}\`` },
-                  ],
-                };
-                if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
-                  result.contents.push({ value: `Realpath: \`${cached.match.realpath}\`` });
-                }
-                return result;
-              }
-            }
-          }
-          return { contents: [] };
-        },
-      })
-    );
-  }
   return newDisposables;
 }

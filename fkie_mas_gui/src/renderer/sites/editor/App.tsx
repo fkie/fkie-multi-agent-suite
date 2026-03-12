@@ -1,11 +1,12 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import * as monaco from "monaco-editor";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { initMonacoRuntime } from "@/renderer/monaco/setup";
 import { SaveResult } from "@/renderer/monaco/types";
 import { TFileRange, TLaunchArg } from "@/types";
 import DraggablePaper from "../../components/UI/DraggablePaper";
@@ -31,6 +32,24 @@ export default function EditorApp(): JSX.Element {
   const settingsCtx = useSettingsContext();
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [dirtyModels, setDirtyModels] = useState<monaco.editor.ITextModel[]>([]);
+
+  // ----- MONACO SETUP -----
+  const rosCtxRef = useRef(rosCtx);
+  const monacoCtxRef = useRef(monacoCtx);
+
+  useEffect(() => {
+    rosCtxRef.current = rosCtx;
+  }, [rosCtx]);
+
+  useEffect(() => {
+    monacoCtxRef.current = monacoCtx;
+  }, [monacoCtx]);
+
+  useEffect(() => {
+    initMonacoRuntime(monacoCtxRef, rosCtxRef);
+  }, [monacoCtxRef.current, rosCtxRef.current]);
+
+  // ----- END: MONACO SETUP -----
 
   async function initProvider(): Promise<void> {
     rosCtx.setShowSnackbarReloadLaunchNotification(false);

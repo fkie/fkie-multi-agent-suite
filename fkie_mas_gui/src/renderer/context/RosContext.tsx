@@ -71,7 +71,7 @@ export interface IRosContext {
   updateNodeList: (providerId: string) => void;
   updateLaunchList: (providerId: string) => void;
   reloadLaunchFile: (providerId: string, modifiedFile: string) => Promise<void>;
-  getProviderById: (providerId: string, includeNotAvailable?: boolean) => Provider | undefined;
+  getProviderById: (providerId: string | undefined, includeNotAvailable?: boolean) => Provider | undefined;
   getLocalProvider: () => Provider[];
   registerSubscriber: (
     providerId: string,
@@ -196,7 +196,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   /** Search and return a provider using its id */
   const getProviderById = useCallback(
-    (providerId: string, includeNotAvailable: boolean = true) => {
+    (providerId: string | undefined, includeNotAvailable: boolean = true) => {
+      if (!providerId) return undefined;
       return providers.find((provider) => {
         return (provider.isAvailable() || includeNotAvailable) && provider.id === providerId;
       });

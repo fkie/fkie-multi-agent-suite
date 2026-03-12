@@ -1,15 +1,27 @@
 import * as MonacoReact from "@monaco-editor/react";
-import { IDisposable } from "monaco-editor";
+import { editor, IDisposable, languages } from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
+import { IMonacoContext } from "@/renderer/context/MonacoContext";
+import { IRosContext } from "@/renderer/context/RosContext";
+import { getFileName, RosPackage } from "@/renderer/models";
+import { createUriPath, fileFromUriPath, pathFromTabId, providerIdFromTabId, providerIdFromUriPath } from "../utils";
+import { extractIncludes, ResolverCacheEntry } from "./IncludeResolver";
 import { PythonLanguage } from "./languages/PythonLaunchHighlighter";
+import { createPythonLaunchProposals } from "./languages/PythonLaunchProposals";
 import XmlBeautify from "./languages/XmlBeautify";
 import { Ros1XmlLanguage } from "./languages/XmlLaunchHighlighter";
 import { Ros2XmlLanguage } from "./languages/XmlLaunchHighlighterR2";
+import { createDocumentSymbols, createXMLDependencyProposals } from "./languages/XmlLaunchProposals";
+import { createDocumentSymbolsR2, createXMLDependencyProposalsR2 } from "./languages/XmlLaunchProposalsR2";
+
+export const SUPPORTED_FILES = ["ros2xml", "ros1xml", "launch", "python", "yaml"];
+
+export type PackagesMap = Map<string, RosPackage[]>;
 
 type RuntimeState = {
   initialized: boolean;
@@ -85,8 +97,13 @@ function initThemes(m: MonacoReact.Monaco): void {
   });
 }
 
-function initLanguages(m: MonacoReact.Monaco): void {
+function initLanguages(
+  monacoCtxRef: React.MutableRefObject<IMonacoContext>,
+  rosCtxRef: React.MutableRefObject<IRosContext>
+): void {
   // JS/TS aggressive sync
+  const m = monacoCtxRef.current.monaco;
+  if (!m) return;
   m.languages.typescript.javascriptDefaults.setEagerModelSync(true);
   m.languages.typescript.typescriptDefaults.setEagerModelSync(true);
 
@@ -153,17 +170,212 @@ function initLanguages(m: MonacoReact.Monaco): void {
   // python
   m.languages.register({ id: "python" });
   m.languages.setMonarchTokensProvider("python", PythonLanguage);
+
+  // Add symbols XML and launch files
+  m.languages.registerDocumentSymbolProvider("ros2xml", {
+    displayName: "ROS Symbols",
+    provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
+      return createDocumentSymbolsR2(model);
+    },
+  });
+  m.languages.registerDocumentSymbolProvider("ros1xml", {
+    displayName: "ROS Symbols",
+    provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
+      return createDocumentSymbols(model);
+    },
+  });
+
+  // add proposals
+  for (const e of SUPPORTED_FILES) {
+    // Add Completion provider for XML and launch files
+    m.languages.registerCompletionItemProvider(e, {
+      provideCompletionItems: async (model, position) => {
+        const word = model.getWordUntilPosition(position);
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn,
+        };
+
+        const lineContent = model.getLineContent(position.lineNumber);
+        const providerId = providerIdFromUriPath(model.uri.path);
+        const provider = rosCtxRef.current.getProviderById(providerId);
+        let packages: RosPackage[] = [];
+        if (provider) {
+          packages = provider.packages;
+        }
+
+        switch (e) {
+          case "python":
+            return {
+              suggestions: await createPythonLaunchProposals(m, range, model.getValue(), packages),
+            };
+          case "ros1xml":
+            return {
+              suggestions: await createXMLDependencyProposals(m, range, lineContent, packages),
+            };
+          case "ros2xml":
+            return {
+              suggestions: await createXMLDependencyProposalsR2(m, range, lineContent, packages),
+            };
+          default:
+            return {
+              suggestions: [],
+            };
+        }
+      },
+    });
+  }
 }
 
-export function initMonacoRuntime(monaco: MonacoReact.Monaco): void {
-  if (runtimeState.initialized) return;
+export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
+  const monacoCtx = monacoCtxRef.current;
+  if (!monacoCtx.monaco) return [];
+  const newDisposables: IDisposable[] = [];
 
-  configureWorkers(monaco);
+  for (const e of SUPPORTED_FILES) {
+    newDisposables.push(
+      monacoCtx.monaco.languages.registerLinkProvider(e, {
+        provideLinks(model) {
+          if (!monacoCtxRef.current) return;
+          const text = model.getValue();
+          const currentFile = fileFromUriPath(model.uri.path);
+          const links: languages.ILink[] = [];
+          const editorIds = monacoCtxRef.current.modelRegistry()?.getTabsByModels([model]);
+          const providerId = providerIdFromUriPath(model.uri.path);
+          for (const editorId of editorIds || []) {
+            const resolver = monacoCtxRef.current.getResolver(editorId);
+            if (!resolver) {
+              console.log(`no resolver for ${editorId}`);
+              continue;
+            }
+            const cache: ResolverCacheEntry[] = [];
+            for (const match of extractIncludes(text, e, resolver, currentFile)) {
+              const start = model.getPositionAt(match.offset);
+              const end = model.getPositionAt(match.offset + match.value.length);
+              cache.push({ start, end, match });
+
+              if (providerId) {
+                links.push({
+                  range: {
+                    startLineNumber: start.lineNumber,
+                    startColumn: start.column,
+                    endLineNumber: end.lineNumber,
+                    endColumn: end.column,
+                  },
+                  url: createUriPath(providerId, match.resolved),
+                });
+              }
+            }
+            resolver.cache.set(currentFile, cache);
+          }
+
+          return { links };
+        },
+      })
+    );
+  }
+  return newDisposables;
+}
+
+export function registerLaunchHoverProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
+  const monacoCtx = monacoCtxRef.current;
+  if (!monacoCtx.monaco) return [];
+
+  const newDisposables: IDisposable[] = [];
+
+  for (const e of SUPPORTED_FILES) {
+    newDisposables.push(
+      monacoCtx.monaco.languages.registerHoverProvider(e, {
+        provideHover(model, position) {
+          if (!monacoCtxRef.current) return;
+          const currentFile = fileFromUriPath(model.uri.path);
+          const editorIds = monacoCtxRef.current.modelRegistry()?.getTabsByModels([model]);
+          const result = {
+            contents: [{ value: `**${providerIdFromUriPath(model.uri.path)}**` }],
+          };
+          let countResolved = 0;
+          for (const editorId of editorIds || []) {
+            const path = pathFromTabId(editorId);
+            if (path) result.contents.push({ value: `from **\`${getFileName(path)}\`**` });
+            const poseCache = monacoCtxRef.current.getResolver(editorId)?.cache.get(currentFile);
+            for (const cached of poseCache || []) {
+              if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
+                if (position.column >= cached.start.column && position.column <= cached.end.column) {
+                  result.contents.push({ value: `- Resolved: \`${cached.match.resolved}\`` });
+                  countResolved += 1;
+                  if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
+                    result.contents.push({ value: `- Realpath: \`${cached.match.realpath}\`` });
+                  }
+                }
+              }
+            }
+          }
+          return countResolved ? result : { contents: [] };
+        },
+      })
+    );
+  }
+  return newDisposables;
+}
+
+export function registerLaunchDefinitionProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
+  const monacoCtx = monacoCtxRef.current;
+  if (!monacoCtx.monaco) return [];
+  const newDisposables: IDisposable[] = [];
+
+  for (const e of SUPPORTED_FILES) {
+    newDisposables.push(
+      monacoCtx.monaco.languages.registerDefinitionProvider(e, {
+        async provideDefinition(model, position) {
+          const monacoCtx = monacoCtxRef.current;
+          if (!monacoCtx?.monaco) return;
+          const currentFile = fileFromUriPath(model.uri.path);
+          const editorIds = monacoCtx.modelRegistry()?.getTabsByModels([model]);
+          for (const editorId of editorIds || []) {
+            const poseCache = monacoCtx.getResolver(editorId)?.cache.get(currentFile);
+            for (const cached of poseCache || []) {
+              if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
+                if (position.column >= cached.start.column && position.column <= cached.end.column) {
+                  const providerId = providerIdFromTabId(editorId);
+                  if (!providerId) return;
+
+                  const uri = createUriPath(providerId, cached.match.resolved);
+                  const m = await monacoCtx.getModel(editorId, cached.match.resolved);
+                  if (!m) return;
+                  return {
+                    uri: monacoCtx.monaco.Uri.file(uri),
+                    range: new monacoCtx.monaco.Range(1, 1, 1, 1),
+                  };
+                }
+              }
+            }
+          }
+          return;
+        },
+      })
+    );
+  }
+  return newDisposables;
+}
+
+export function initMonacoRuntime(
+  monacoCtxRef: React.MutableRefObject<IMonacoContext>,
+  rosCtxRef: React.MutableRefObject<IRosContext>
+): void {
+  if (runtimeState.initialized) return;
+  if (!monacoCtxRef.current.monaco) return;
+
+  configureWorkers(monacoCtxRef.current.monaco);
 
   // await MonacoReact.loader.init(); // stellt sicher, dass monaco geladen ist
 
-  initThemes(monaco);
-  initLanguages(monaco);
+  initThemes(monacoCtxRef.current.monaco);
+  initLanguages(monacoCtxRef, rosCtxRef);
+  registerLaunchLinkProvider(monacoCtxRef);
+  registerLaunchHoverProvider(monacoCtxRef);
+  registerLaunchDefinitionProvider(monacoCtxRef);
 
   runtimeState.initialized = true;
 }

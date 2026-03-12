@@ -43,7 +43,6 @@ import {
   TabNode,
   TabSetNode,
 } from "flexlayout-react";
-import * as monaco from "monaco-editor";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
@@ -82,6 +81,7 @@ import { getInfoStateColor } from "@/renderer/components/UI/Colors";
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { initMonacoRuntime } from "@/renderer/monaco/setup";
 import { SaveResult } from "@/renderer/monaco/types";
 import { isEditorTabId } from "@/renderer/monaco/utils";
 import { TInfoState } from "@/types";
@@ -100,6 +100,7 @@ type TPanelId = {
 
 interface ITabAttributesExt extends ITabAttributes {
   panelGroup: string;
+  // initMonacoRuntime(monacoCtx, rosCtx);
 }
 
 export default function NodeManager(): JSX.Element {
@@ -126,6 +127,24 @@ export default function NodeManager(): JSX.Element {
   const [enablePopout, setEnablePopout] = useState<boolean>(
     !window.commandExecutor && window.location.href.indexOf(":6275") === -1
   );
+
+  // ----- MONACO SETUP -----
+  const rosCtxRef = useRef(rosCtx);
+  const monacoCtxRef = useRef(monacoCtx);
+
+  useEffect(() => {
+    rosCtxRef.current = rosCtx;
+  }, [rosCtx]);
+
+  useEffect(() => {
+    monacoCtxRef.current = monacoCtx;
+  }, [monacoCtx]);
+
+  useEffect(() => {
+    initMonacoRuntime(monacoCtxRef, rosCtxRef);
+  }, [monacoCtxRef.current, rosCtxRef.current]);
+
+  // ----- END: MONACO SETUP -----
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);

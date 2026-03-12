@@ -16,7 +16,7 @@ import { useIncludedFiles } from "@/renderer/hooks/useIncludedFiles";
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { RosPackage, getFileName } from "@/renderer/models";
+import { getFileName } from "@/renderer/models";
 import { cleanUpXmlComment } from "@/renderer/monaco/setup";
 import { TModelResult } from "@/renderer/monaco/types";
 import { createEditorTabId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
@@ -371,19 +371,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     getFileAndIncludesAsync();
   }
 
-  function configureEditor(): void {
-    let packages: RosPackage[] = [];
-    const provider = rosCtx.getProviderById(providerId, true);
-    if (provider?.packages) {
-      packages = provider.packages;
-    }
-    mEditor.setupMonacoEditor(provider?.rosVersion === "2", packages);
-  }
-
   // initialization of provider definitions
   useEffect(() => {
     if (!editorRef.current || !monacoCtx.monaco) return;
-    configureEditor();
+    mEditor.setupMonacoEditor();
     loadFiles();
   }, [editorRef.current]);
 

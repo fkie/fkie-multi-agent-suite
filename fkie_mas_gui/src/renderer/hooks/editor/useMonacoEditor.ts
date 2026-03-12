@@ -1,14 +1,8 @@
 import { editor, IDisposable } from "monaco-editor";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { LaunchIncludedFile, RosPackage } from "@/renderer/models";
-import {
-  configureContextMenu,
-  configureMonacoEditor,
-  registerLaunchDefinitionProvider,
-  registerLaunchHoverProvider,
-  registerLaunchLinkProvider,
-} from "@/renderer/monaco/setup/configureMonacoEditor";
+import { LaunchIncludedFile } from "@/renderer/models";
+import { configureContextMenu, configureMonacoEditor } from "@/renderer/monaco/setup/configureMonacoEditor";
 import { createIncludeResolver } from "@/renderer/monaco/setup/IncludeResolver";
 import { providerIdFromTabId } from "../../monaco/utils";
 import { useMonacoContext } from "../useMonacoContext";
@@ -36,7 +30,6 @@ export function useMonacoEditor({
 
   const monacoDisposables = useRef<IDisposable[]>([]);
   const contextDisposables = useRef<IDisposable[]>([]);
-  const linkDisposables = useRef<IDisposable[]>([]);
 
   // ---------------------------
   // setup context menu
@@ -56,18 +49,15 @@ export function useMonacoEditor({
   // setup monaco editor
   // ---------------------------
 
-  const setupMonacoEditor = useCallback(
-    (isRos2 = true, packages: RosPackage[] = []) => {
-      if (!monacoCtx.monaco) return;
+  const setupMonacoEditor = useCallback(() => {
+    if (!monacoCtx.monaco) return;
 
-      for (const d of monacoDisposables.current) {
-        d.dispose();
-      }
+    for (const d of monacoDisposables.current) {
+      d.dispose();
+    }
 
-      monacoDisposables.current = configureMonacoEditor(monacoCtx.monaco, editorId, isRos2, packages);
-    },
-    [editorId, monacoCtx.monaco]
-  );
+    monacoDisposables.current = configureMonacoEditor(monacoCtx.monaco, editorId);
+  }, [editorId, monacoCtx.monaco]);
 
   // ---------------------------
   // set current model
@@ -153,16 +143,9 @@ export function useMonacoEditor({
     const providerId = providerIdFromTabId(editorId);
     if (!providerId) return;
 
-    for (const d of linkDisposables.current) {
-      d.dispose();
-    }
     const resolver = createIncludeResolver(includedFiles);
 
-    linkDisposables.current = [
-      ...registerLaunchLinkProvider(monacoCtx.monaco, resolver, providerId),
-      ...registerLaunchDefinitionProvider(monacoCtx, resolver, editorId),
-      ...registerLaunchHoverProvider(monacoCtx.monaco, resolver),
-    ];
+    monacoCtx.setResolver(editorId, resolver);
   }, [activeModel, includedFiles]);
 
   // ---------------------------
@@ -176,13 +159,9 @@ export function useMonacoEditor({
     for (const d of contextDisposables.current) {
       d.dispose();
     }
-    for (const d of linkDisposables.current) {
-      d.dispose();
-    }
 
     monacoDisposables.current = [];
     contextDisposables.current = [];
-    linkDisposables.current = [];
   }, []);
 
   return {
