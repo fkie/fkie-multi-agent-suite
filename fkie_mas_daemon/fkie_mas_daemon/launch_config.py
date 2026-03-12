@@ -185,7 +185,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.respawn_delay = self._get_respawn_delay()
         if isinstance(self._launch_description, launch.actions.IncludeLaunchDescription):
             # we use only real path paths!
-            self.file_name = os.path.realpath(self._launch_description._get_launch_file())
+            self.file_name = self._launch_description._get_launch_file()
+            self.file_name_realpath = os.path.realpath(self.file_name)
             self.launch_name = getattr(self._launch_context.locals, 'launch_file_path', None)
             # add launch arguments used to load the included file
             if self._launch_description.launch_arguments:
@@ -199,7 +200,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self.file_name = self.launch_name
         self.composable_container: str = composable_container
         self._parameters_tmp = self._get_parameter_arguments()
-        self.param_file_content = {} # used to detect changes in referenced yaml files
+        self.param_file_content = {}  # used to detect changes in referenced yaml files
         self.parameters = []
         for p in self._parameters_tmp:
             if isinstance(p, tuple) and p[0].startswith("/"):
@@ -745,15 +746,17 @@ class LaunchConfig(object):
                         inc_file_name = perform_to_string(
                             self.context, entity.launch_description_source.location)
                         used_path = inc_file_name
+                        used_realpath = used_path
                         if os.path.exists(inc_file_name):
                             inc_file_exists = True
                             file_size = os.path.getsize(inc_file_name)
-                            used_path = os.path.realpath(inc_file_name)
+                            used_realpath = os.path.realpath(inc_file_name)
                         include_line_number, position_in_file, raw_text = self.find_definition(
                             file_content, 'include', position_in_file)
                         launch_inc_file = LaunchIncludedFile(path=current_file,
                                                              line_number=include_line_number,
                                                              inc_path=used_path,
+                                                             inc_realpath=used_realpath,
                                                              exists=inc_file_exists,
                                                              raw_inc_path=raw_text,
                                                              rec_depth=depth+1,
@@ -786,7 +789,7 @@ class LaunchConfig(object):
                     if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
                         for cn in entity._ComposableNodeContainer__composable_node_descriptions:
                             c_node = LaunchNodeWrapper(cn, current_launch_description, self.context,
-                                                     composable_container=node.unique_name, environment=environment, position_in_file=position_in_file)
+                                                       composable_container=node.unique_name, environment=environment, position_in_file=position_in_file)
                             c_node.timer_period = timer_period
                             self._nodes.append(c_node)
                 except (SubstitutionFailure, PackageNotFoundError) as err:
@@ -849,9 +852,10 @@ class LaunchConfig(object):
                     inc_file_exists = False
                     file_size = -1
                     used_path = entity.launch_description_source.location
+                    used_realpath = used_path
                     if os.path.exists(entity.launch_description_source.location):
                         inc_file_exists = True
-                        used_path = os.path.realpath(used_path)
+                        used_realpath = os.path.realpath(used_path)
                         file_size = os.path.getsize(used_path)
                     include_line_number, position_in_file, raw_text = self.find_definition(
                         file_content, 'include', position_in_file)
@@ -870,6 +874,7 @@ class LaunchConfig(object):
                     launch_inc_file = LaunchIncludedFile(path=current_file,
                                                          line_number=include_line_number,
                                                          inc_path=used_path,
+                                                         inc_realpath=used_realpath,
                                                          exists=inc_file_exists,
                                                          raw_inc_path=raw_text,
                                                          rec_depth=depth+1,
@@ -1048,10 +1053,10 @@ class LaunchConfig(object):
             if argument_action.default_value is not None:
                 default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
             arg = LaunchArgument(name=argument_action.name,
-                                    value=value if value is not None else default_value,
-                                    default_value=default_value,
-                                    description=argument_action.description,
-                                    choices=argument_action.choices)
+                                 value=value if value is not None else default_value,
+                                 default_value=default_value,
+                                 description=argument_action.description,
+                                 choices=argument_action.choices)
             result.append(arg)
         return result
 

@@ -764,13 +764,14 @@ class LaunchServicer(LoggingEventHandler):
                 if cfg_included_files:
                     # use resolved launch arguments from loaded configuration
                     # remove if used: case if the same launch files was loaded multiple times with different arguments
-                    if cfg_included_files[0].inc_path == os.path.realpath(inc_file.inc_path) and cfg_included_files[0].path == os.path.realpath(inc_file.path_or_str):
+                    if cfg_included_files[0].inc_path == inc_file.inc_path and cfg_included_files[0].path == inc_file.path_or_str:
                         args = cfg_included_files[0].args
                         default_inc_args = cfg_included_files[0].args
                         del cfg_included_files[0]
                 lincf = LaunchIncludedFile(path=inc_file.path_or_str,
                                            line_number=inc_file.line_number,
-                                           inc_path=os.path.realpath(inc_file.inc_path),
+                                           inc_path=inc_file.inc_path,
+                                           inc_realpath=os.path.realpath(inc_file.inc_path),
                                            exists=inc_file.exists,
                                            raw_inc_path=inc_file.raw_inc_path,
                                            rec_depth=inc_file.rec_depth,

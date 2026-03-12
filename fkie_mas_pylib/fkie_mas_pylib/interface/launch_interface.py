@@ -213,6 +213,7 @@ class LaunchNodeInfo:
                  on_exit: List[Any] = None,
                  required: bool = False,
                  file_name: str = None,
+                 file_name_realpath: str = None,
                  file_range: Dict[str, Number] = {"startLineNumber": 0,
                                                   "endLineNumber": 0,
                                                   "startColumn": 0,
@@ -245,6 +246,7 @@ class LaunchNodeInfo:
         self.on_exit = on_exit
         self.required = required
         self.file_name = file_name
+        self.file_name_realpath = file_name_realpath
         self.file_range = file_range
         self.launch_context_arg = launch_context_arg
         self.launch_name = launch_name
@@ -411,6 +413,7 @@ class LaunchIncludedFile:
     def __init__(self, path: str,
                  line_number: int,
                  inc_path: str,
+                 inc_realpath: str,
                  exists: bool,
                  raw_inc_path: str,
                  rec_depth: int,
@@ -435,6 +438,7 @@ class LaunchIncludedFile:
         self.path = path
         self.line_number = line_number
         self.inc_path = inc_path
+        self.inc_realpath = inc_realpath
         self.exists = exists
         self.raw_inc_path = raw_inc_path
         self.rec_depth = rec_depth

@@ -417,7 +417,7 @@ def find_included_files(string: str,
                     if os.path.isdir(fname):
                         fname = ''
                     exists = os.path.isfile(fname)
-                    fname = os.path.realpath(fname)
+                    fname = fname
                     if fname:
                         publish = not unique or (
                             unique and fname not in my_unique_files)
