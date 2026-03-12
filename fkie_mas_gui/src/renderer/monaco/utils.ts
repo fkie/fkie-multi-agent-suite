@@ -1,6 +1,6 @@
-const EDITOR_PATH_SEP = "█";
+const EDITOR_PATH_SEP = "⏵";
 const PROVIDER_SEP = "@";
-const TAB_ID_PREFIX = "/tabId-";
+const TAB_ID_PREFIX = "/tabId⏶";
 
 export function isEditorTabId(tabId: string,): boolean {
   return tabId.startsWith(TAB_ID_PREFIX);
