@@ -235,12 +235,16 @@ export function registerLaunchHoverProvider(m: MonacoReact.Monaco, resolver: Inc
           for (const cached of poseCache || []) {
             if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
               if (position.column >= cached.start.column && position.column <= cached.end.column) {
-                return {
+                const result = {
                   contents: [
                     { value: `**${providerIdFromUriPath(model.uri.path)}**` },
                     { value: `Resolved: \`${cached.match.resolved}\`` },
                   ],
                 };
+                if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
+                  result.contents.push({ value: `Realpath: \`${cached.match.realpath}\`` });
+                }
+                return result;
               }
             }
           }

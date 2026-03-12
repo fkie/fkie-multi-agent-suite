@@ -111,6 +111,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   useEffect(() => {
     return (): void => {
+      editorRef.current?.setModel(null);
       mEditor.dispose();
       // dispose all own models
       monacoCtx.closeTabs([tabId]);
@@ -255,8 +256,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           window.editorManager?.changed(id, path, false);
         }
         mEditor.setCurrentModel(editorModel);
-        // setActiveModel(editorModel);
-        // setActiveModelDirty(monacoCtx.isModifiedModel(editorModel));
         const resultFetchIncludes = await fetchIncludedFiles();
         if (!resultFetchIncludes.result) {
           setNotificationDescription(resultFetchIncludes.error);

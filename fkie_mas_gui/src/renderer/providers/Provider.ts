@@ -1620,6 +1620,7 @@ export default class Provider implements IProvider {
                 lf.path,
                 lf.line_number,
                 lf.inc_path,
+                lf.inc_realpath || "",
                 lf.exists,
                 lf.raw_inc_path,
                 lf.rec_depth,

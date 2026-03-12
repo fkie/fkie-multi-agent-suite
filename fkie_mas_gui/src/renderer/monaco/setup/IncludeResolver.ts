@@ -1,18 +1,20 @@
 import { LaunchIncludedFile } from "@/renderer/models";
 import { Position } from "monaco-editor";
 
-export type IncludeMatch = { value: string; offset: number; resolved: string };
+export type ResolveType = { path: string; realpath: string };
+
+export type IncludeMatch = { value: string; offset: number; resolved: string; realpath: string };
 
 export type IncludeResolver = {
   cache: Map<string, { start: Position; end: Position; match: IncludeMatch }[]>;
-  resolve: (currentFile: string, rawPath: string) => string | undefined;
+  resolve: (currentFile: string, rawPath: string) => ResolveType | undefined;
 };
 
 export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): IncludeResolver {
-  const map = new Map<string, string>();
+  const map = new Map<string, ResolveType>();
 
   for (const f of includedFiles) {
-    map.set(`${f.path}|${f.raw_inc_path}`, f.inc_path);
+    map.set(`${f.path}|${f.raw_inc_path}`, { path: f.inc_path, realpath: f.inc_realpath });
   }
 
   return {
@@ -78,7 +80,7 @@ export function extractIncludes(
     if (!resolved) continue;
 
     const offset = match.index + match[0].indexOf(value);
-    matches.push({ value, offset, resolved });
+    matches.push({ value, offset, resolved: resolved.path, realpath: resolved.realpath });
   }
 
   return matches;
@@ -106,7 +108,7 @@ function extractPythonInclude(text: string, start: number): string | undefined {
   return undefined;
 }
 
-export function extractPythonIncludeFiles(block: string, blockOffset: number, resolved: string): IncludeMatch[] {
+export function extractPythonIncludeFiles(block: string, blockOffset: number, resolved: ResolveType): IncludeMatch[] {
   const matches: IncludeMatch[] = [];
 
   // Kommentare ignorieren
@@ -120,7 +122,7 @@ export function extractPythonIncludeFiles(block: string, blockOffset: number, re
   for (const match of cleanBlock.matchAll(FILE_STRING_REGEX)) {
     if (!match[1]) continue;
     const offset = blockOffset + cleanBlock.indexOf(match[0]);
-    matches.push({ value: match[1], offset, resolved });
+    matches.push({ value: match[1], offset, resolved: resolved.path, realpath: resolved.realpath });
   }
 
   return matches;

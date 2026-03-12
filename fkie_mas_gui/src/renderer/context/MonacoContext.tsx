@@ -220,6 +220,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
 
         return { model: null, file: null, error: error || "Failed to load file" };
       }
+      // Ensure that the model is also entered in the registry for the tab
+      workspaceRef.current.models.updateRegistry(tabId, model);
 
       // 3. Model exists and no reload needed
       return { model, file: null, error: null };

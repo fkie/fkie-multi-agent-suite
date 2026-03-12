@@ -92,7 +92,15 @@ export function useMonacoEditor({
           editorInstance.restoreViewState(viewState);
         }
 
-        setActiveModelDirty(monacoCtx.isModifiedModel(model));
+        const dirty = monacoCtx.isModifiedModel(model);
+        setActiveModelDirty(dirty);
+        setModifiedFiles((prev) => {
+          if (dirty) {
+            if (prev.includes(model.uri.path)) return prev;
+            return [...prev, model.uri.path];
+          }
+          return prev.filter((m) => m !== model.uri.path);
+        });
       }
 
       setActiveModel(model);
@@ -134,7 +142,7 @@ export function useMonacoEditor({
     return () => {
       dirtyManager.removeDirtyListener(editorId);
     };
-  }, [editorId, handleDirtyChange, monacoCtx]);
+  }, [editorId, monacoCtx]);
 
   // ---------------------------
   // link provider (updated on changes of included files)

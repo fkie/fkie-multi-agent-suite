@@ -26,6 +26,11 @@ export default class LaunchIncludedFile {
   inc_path: string;
 
   /**
+   * Resolved real path.
+   */
+  inc_realpath: string;
+
+  /**
    * True if resolved path exists.
    */
   exists: boolean;
@@ -63,6 +68,7 @@ export default class LaunchIncludedFile {
     path: string,
     line_number: number,
     inc_path: string,
+    inc_realpath: string,
     exists: boolean,
     raw_inc_path: string,
     rec_depth: number,
@@ -75,6 +81,7 @@ export default class LaunchIncludedFile {
     this.path = path;
     this.line_number = line_number;
     this.inc_path = inc_path;
+    this.inc_realpath = inc_realpath;
     this.exists = exists;
     this.raw_inc_path = raw_inc_path;
     this.rec_depth = rec_depth;

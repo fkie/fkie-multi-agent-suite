@@ -56,7 +56,7 @@ import { ElectronContext } from "@/renderer/context/ElectronContext";
 import { LoggingContext } from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
-import { getBaseName } from "@/renderer/models";
+import { getBaseName, getFileName } from "@/renderer/models";
 import { CmdType, Provider } from "@/renderer/providers";
 import { EventProviderAuthRequest } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
@@ -115,7 +115,7 @@ export default function NodeManager(): JSX.Element {
   const layoutRef = useRef(null);
   const [layoutComponents] = useState({});
   const [addToLayout, setAddToLayout] = useState<ITabAttributesExt[]>([]);
-  const [dirtyModels, setDirtyModels] = useState<monaco.editor.ITextModel[]>([]);
+  const [dirtyTabs, setDirtyTabs] = useState<string[]>([]);
   const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [tabFullName, setTabFullName] = useState<boolean>(settingsCtx.get("tabFullName") as boolean);
@@ -150,21 +150,6 @@ export default function NodeManager(): JSX.Element {
       setCurrentInfoState(undefined);
     }
   }, [infoStates, infoStateTimer]);
-
-  useEffect(() => {
-    const beforeunload = (e: BeforeUnloadEvent) => {
-      const dirtyModels = monacoCtx.dirtyManager()?.getDirtyModels();
-      if ((dirtyModels?.length || 0) > 0) {
-        e.preventDefault();
-        setDirtyModels(monacoCtx.dirtyManager()?.getDirtyModels() || []);
-      }
-    };
-
-    window.addEventListener("beforeunload", beforeunload);
-    return () => {
-      window.removeEventListener("beforeunload", beforeunload);
-    };
-  }, []);
 
   useCustomEventListener(
     EVENT_INFO_STATE,
@@ -260,7 +245,7 @@ export default function NodeManager(): JSX.Element {
         const editorTab = model.getNodeById(tabId);
         if (editorTab) {
           model.doAction(Actions.selectTab(editorTab.getId()));
-          setDirtyModels(mTab);
+          setDirtyTabs([tabId]);
           return;
         }
       } else {
@@ -887,15 +872,11 @@ export default function NodeManager(): JSX.Element {
       if (rosCtx.providers.length <= 0) {
         electronCtx.shutdownManager?.quitGui();
       }
-      setDirtyModels(monacoCtx.dirtyManager()?.getDirtyModels() || []);
+      const dirtyModels = monacoCtx.dirtyManager()?.getDirtyModels();
+      if (!dirtyModels) return;
+      setDirtyTabs(monacoCtx.modelRegistry()?.getTabsByModels(dirtyModels) || []);
     }
-  }, [
-    electronCtx.shutdownManager,
-    electronCtx.terminateSubprocesses,
-    isInstallUpdateRequested,
-    monacoCtx,
-    rosCtx.providers.length,
-  ]);
+  }, [electronCtx.shutdownManager, electronCtx.terminateSubprocesses, monacoCtx, rosCtx.providers.length]);
 
   const shutdownProviders = useCallback(
     async (providers: Provider[]) => {
@@ -929,6 +910,8 @@ export default function NodeManager(): JSX.Element {
 
   const saveAllDirty = useCallback(async () => {
     // Save all modified files
+    const tabModels = monacoCtx.modelRegistry()?.getByTabs(dirtyTabs) || [];
+    const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(tabModels)) || [];
     const results: SaveResult[] = await Promise.all(dirtyModels.map((model) => monacoCtx.saveFile(model)));
 
     const allTabs = new Set<string>();
@@ -956,8 +939,8 @@ export default function NodeManager(): JSX.Element {
       electronCtx.cancelCloseApp();
     }
 
-    setDirtyModels([]);
-  }, [dirtyModels, monacoCtx.saveFile, model.doAction, electronCtx.cancelCloseApp]);
+    setDirtyTabs([]);
+  }, [dirtyTabs, monacoCtx.saveFile, model.doAction, electronCtx.cancelCloseApp]);
 
   return (
     <Stack
@@ -1001,7 +984,7 @@ export default function NodeManager(): JSX.Element {
           }
         }}
       />
-      {electronCtx.terminateSubprocesses && dirtyModels.length === 0 && rosCtx.providers.length > 0 && (
+      {electronCtx.terminateSubprocesses && dirtyTabs.length === 0 && rosCtx.providers.length > 0 && (
         // check for unsaved files before quit gui
         <ProviderSelectionModal
           title="Select providers to shut down"
@@ -1016,15 +999,15 @@ export default function NodeManager(): JSX.Element {
           onToggle={() => electronCtx.cancelCloseTimer()}
         />
       )}
-      {dirtyModels.length > 0 && (
+      {dirtyTabs.length > 0 && (
         <Dialog
-          open={dirtyModels.length > 0}
+          open={dirtyTabs.length > 0}
           onClose={() => {
-            setDirtyModels([]);
+            setDirtyTabs([]);
             electronCtx.cancelCloseApp();
           }}
           onAbort={() => {
-            setDirtyModels([]);
+            setDirtyTabs([]);
             electronCtx.cancelCloseApp();
           }}
           onFocus={() => {
@@ -1041,29 +1024,27 @@ export default function NodeManager(): JSX.Element {
           </DialogTitle>
 
           <DialogContent aria-label="list">
-            {monacoCtx
-              .modelRegistry()
-              ?.getTabsByModels(dirtyModels)
-              .map((tabId) => {
-                const models = monacoCtx.modelRegistry()?.getByTab(tabId);
-                return (
-                  <DialogContentText key={tabId} id="alert-dialog-description">
-                    {`There are ${models?.size} unsaved files in "${getBaseName(tabId)}" tab.`}
-                  </DialogContentText>
-                );
-              })}
+            {dirtyTabs.map((tabId) => {
+              const tabModels = monacoCtx.modelRegistry()?.getByTabs(dirtyTabs) || [];
+              const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(tabModels)) || [];
+              const files = dirtyModels.map((m) => getFileName(m.uri.path));
+              return (
+                <DialogContentText key={tabId} id="alert-dialog-description">
+                  {`Modified files in "${getBaseName(tabId)}" tab: ${files}`}
+                </DialogContentText>
+              );
+            })}
           </DialogContent>
 
           <DialogActions>
             <Button
               color="warning"
               onClick={() => {
-                const tabIds = monacoCtx.modelRegistry()?.getTabsByModels(dirtyModels);
+                const tabIds = dirtyTabs;
                 for (const tabId of tabIds || []) {
-                  console.log(`DELTE TAB: ${tabId}`);
                   model.doAction(Actions.deleteTab(tabId));
                 }
-                setDirtyModels([]);
+                setDirtyTabs([]);
               }}
             >
               Don&apos;t save
@@ -1071,7 +1052,7 @@ export default function NodeManager(): JSX.Element {
             <Button
               color="primary"
               onClick={() => {
-                setDirtyModels([]);
+                setDirtyTabs([]);
                 electronCtx.cancelCloseApp();
               }}
             >

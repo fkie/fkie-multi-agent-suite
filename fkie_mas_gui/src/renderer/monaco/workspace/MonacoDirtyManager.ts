@@ -115,6 +115,10 @@ export class MonacoDirtyManager {
     return this.dirtyModels.has(model);
   }
 
+  reduceToDirty(models: monaco.editor.ITextModel[]) {
+    return models.filter((m) => this.isDirty(m));
+  }
+
   getDirtyModels(): monaco.editor.ITextModel[] {
     return Array.from(this.dirtyModels);
   }
