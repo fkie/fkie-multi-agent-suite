@@ -67,7 +67,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     panelRef,
     toolbarRef,
     alertRef,
-    panelSize,
     fontSize,
 
     sideBarWidth,
@@ -443,7 +442,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             modifiedUriPaths={mEditor.modifiedFiles}
             sideBarWidth={sideBarWidth}
             keyboardEvent={keyboardEvent}
-            panelSize={panelSize}
+            panelRef={panelRef}
             onStateChange={onStateChange}
           />
         </Pane>
