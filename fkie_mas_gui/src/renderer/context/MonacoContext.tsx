@@ -10,9 +10,9 @@ import { IncludeResolver } from "../monaco/setup";
 import { SaveResult, TModelResult } from "../monaco/types";
 import {
   createUriPath,
-  createUriPathFromTab,
+  createUriPathFromEditorId,
   fileFromUriPath,
-  providerIdFromTabId,
+  providerIdFromEditorId,
   providerIdFromUriPath,
 } from "../monaco/utils";
 import { ModelRegistry } from "../monaco/workspace/ModelRegistry";
@@ -24,18 +24,18 @@ export interface IMonacoContext {
   monaco: MonacoReact.Monaco | null;
   dirtyManager: () => MonacoDirtyManager | undefined;
   modelRegistry: () => ModelRegistry | undefined;
-  getModel: (tabId: string, path: string, forceReload?: boolean) => Promise<TModelResult>;
-  getModels: (tabId: string) => Set<editor.ITextModel>;
-  createModel: (tabId: string, file: FileItem) => editor.ITextModel | null;
+  getModel: (editorId: string, path: string, forceReload?: boolean) => Promise<TModelResult>;
+  getModels: (editorId: string) => Set<editor.ITextModel>;
+  createModel: (editorId: string, file: FileItem) => editor.ITextModel | null;
   saveFile: (model: editor.ITextModel) => Promise<SaveResult>;
-  saveModifiedFilesOfTabId: (tabId: string) => Promise<SaveResult[]>;
-  closeTabs: (tabIds?: string[]) => void;
-  getModifiedFilesByTab: (tabId: string) => editor.ITextModel[];
+  saveModifiedFilesOfEditorId: (editorId: string) => Promise<SaveResult[]>;
+  closeEditors: (editorIds?: string[]) => void;
+  getModifiedFilesByEditor: (editorId: string) => editor.ITextModel[];
   isModifiedModel: (model: editor.ITextModel) => boolean;
   isReadOnly: (model: editor.ITextModel) => boolean;
   isInstallPath: (model: editor.ITextModel) => boolean;
   setResolver: (editorId: string, resolver: IncludeResolver) => void;
-  getResolver: (tabId: string) => IncludeResolver | undefined;
+  getResolver: (editorId: string) => IncludeResolver | undefined;
 }
 
 export const MonacoContext = createContext<IMonacoContext | null>(null);
@@ -80,28 +80,28 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return workspaceRef.current?.models;
   }, []);
 
-  const closeTabs = useCallback(
-    (tabIds?: string[]): void => {
-      if (tabIds === undefined) {
+  const closeEditors = useCallback(
+    (editorIds?: string[]): void => {
+      if (editorIds === undefined) {
         workspaceRef.current?.models.closeAllModels();
         return;
       }
-      for (const tabId of tabIds || []) {
-        workspaceRef.current?.models.closeModelsByTabId(tabId);
-        resolvers.delete(tabId);
+      for (const editorId of editorIds || []) {
+        workspaceRef.current?.models.closeModelsByEditorId(editorId);
+        resolvers.delete(editorId);
       }
     },
     [resolvers]
   );
 
-  const getModifiedFilesByTab = useCallback((tabId: string) => {
+  const getModifiedFilesByEditor = useCallback((editorId: string) => {
     if (!workspaceRef.current) {
       return [];
     }
     const dirtyModels: editor.ITextModel[] = workspaceRef.current.dirty.getDirtyModels();
-    const tabModels = workspaceRef.current.models.getByTab(tabId);
+    const editorModels = workspaceRef.current.models.getByEditor(editorId);
 
-    return dirtyModels.filter((m) => tabModels.has(m));
+    return dirtyModels.filter((m) => editorModels.has(m));
   }, []);
 
   const saveFile = useCallback(async (model: editor.ITextModel): Promise<SaveResult> => {
@@ -111,30 +111,30 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       return { uriPath, result: false, message: "Monaco not initialized yet" };
     }
 
-    const tabIds: string[] = workspaceRef.current.models.getTabsByModels([model]);
+    const editorIds: string[] = workspaceRef.current.models.getEditorsByModels([model]);
 
     const providerId = providerIdFromUriPath(uriPath);
     if (!providerId) {
-      return { tabIds, uriPath, result: false, message: `Invalid uri path ${uriPath}: no provider id found` };
+      return { editorIds, uriPath, result: false, message: `Invalid uri path ${uriPath}: no provider id found` };
     }
 
     try {
       // workspaceRef.current.saver.save sollte bereits korrekt typisiert sein:
       const result: { result: boolean; message: string } = await workspaceRef.current.saver.save(model, providerId);
 
-      return { tabIds, uriPath, result: result.result, message: result.message };
+      return { editorIds, uriPath, result: result.result, message: result.message };
     } catch (error) {
-      return { tabIds, uriPath, result: false, message: errorToMessage(error, `Unknown error during save: ${error}`) };
+      return { editorIds, uriPath, result: false, message: errorToMessage(error, `Unknown error during save: ${error}`) };
     }
   }, []);
 
-  const saveModifiedFilesOfTabId = useCallback(
-    async (tabId: string): Promise<SaveResult[]> => {
+  const saveModifiedFilesOfEditorId = useCallback(
+    async (editorId: string): Promise<SaveResult[]> => {
       if (!workspaceRef.current) {
         return [{ uriPath: "", result: false, message: "Monaco not initialized yet" }];
       }
 
-      const modelsToSave = getModifiedFilesByTab(tabId);
+      const modelsToSave = getModifiedFilesByEditor(editorId);
       if (modelsToSave.length === 0) return [];
       const result = await Promise.allSettled(modelsToSave.map((model) => saveFile(model)));
       return result.map((r, i) =>
@@ -143,7 +143,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
           : { uriPath: modelsToSave[i].uri.path, result: false, message: r.reason?.toString() }
       );
     },
-    [saveFile, getModifiedFilesByTab]
+    [saveFile, getModifiedFilesByEditor]
   );
 
   const isModifiedModel = useCallback((model: editor.ITextModel): boolean => {
@@ -155,11 +155,11 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
    * Create a new monaco model from a given file
    * @param file - Original file
    */
-  const createModel = useCallback((tabId: string, file: FileItem): monaco.editor.ITextModel | null => {
+  const createModel = useCallback((editorId: string, file: FileItem): monaco.editor.ITextModel | null => {
     if (!workspaceRef.current) {
       return null;
     }
-    const uriPath = createUriPathFromTab(tabId, file.path);
+    const uriPath = createUriPathFromEditorId(editorId, file.path);
     const model = workspaceRef.current.models.get(uriPath);
     // create monaco model, if it does not exists yet
     if (model) {
@@ -170,7 +170,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       model.dispose();
     }
     const newModel = workspaceRef.current.models.create(
-      tabId,
+      editorId,
       uriPath,
       file.value,
       FileLanguageAssociations[file.extension] ?? "plaintext"
@@ -186,13 +186,13 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const getModel = useCallback(
-    async (tabId: string, path: string, forceReload = false): Promise<TModelResult> => {
+    async (editorId: string, path: string, forceReload = false): Promise<TModelResult> => {
       if (!workspaceRef.current) {
         return { model: null, file: null, error: "Monaco not initialized yet" };
       }
-      const providerId = providerIdFromTabId(tabId);
+      const providerId = providerIdFromEditorId(editorId);
       if (!providerId) {
-        return { model: null, file: null, error: `Invalid tabId ${tabId}: no provider id found` };
+        return { model: null, file: null, error: `Invalid editorId ${editorId}: no provider id found` };
       }
       const uriPath = createUriPath(providerId, path);
       // 1. Check if model already exists
@@ -209,7 +209,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
           // remove dirty flag for current model
           if (model) workspaceRef.current?.dirty.markSaved(model);
           model = workspaceRef.current.models.create(
-            tabId,
+            editorId,
             uriPath,
             file.value,
             FileLanguageAssociations[file.extension] ?? "plaintext"
@@ -228,8 +228,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
 
         return { model: null, file: null, error: error || "Failed to load file" };
       }
-      // Ensure that the model is also entered in the registry for the tab
-      workspaceRef.current.models.updateRegistry(tabId, model);
+      // Ensure that the model is also entered in the registry for the editor
+      workspaceRef.current.models.updateRegistry(editorId, model);
 
       // 3. Model exists and no reload needed
       return { model, file: null, error: null };
@@ -237,8 +237,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     [logCtx, openFile, files]
   );
 
-  const getModels: (tabId: string) => Set<editor.ITextModel> = (tabId) => {
-    return workspaceRef.current?.models.getByTab(tabId) || new Set();
+  const getModels: (editorId: string) => Set<editor.ITextModel> = (editorId) => {
+    return workspaceRef.current?.models.getByEditor(editorId) || new Set();
   };
 
   const isReadOnly: (model: editor.ITextModel) => boolean = (model) => {
@@ -252,16 +252,16 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return filePath.search("/install/") !== -1;
   };
 
-  const setResolver: (tabId: string, resolver: IncludeResolver) => void = useCallback(
-    (tabId, resolver) => {
-      resolvers.set(tabId, resolver);
+  const setResolver: (editorId: string, resolver: IncludeResolver) => void = useCallback(
+    (editorId, resolver) => {
+      resolvers.set(editorId, resolver);
     },
     [resolvers]
   );
 
-  const getResolver: (tabId: string) => IncludeResolver | undefined = useCallback(
-    (tabId) => {
-      return resolvers.get(tabId);
+  const getResolver: (editorId: string) => IncludeResolver | undefined = useCallback(
+    (editorId) => {
+      return resolvers.get(editorId);
     },
     [resolvers]
   );
@@ -276,9 +276,9 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       getModels,
       createModel,
       saveFile,
-      saveModifiedFilesOfTabId,
-      closeTabs,
-      getModifiedFilesByTab,
+      saveModifiedFilesOfEditorId,
+      closeEditors,
+      getModifiedFilesByEditor,
       isModifiedModel,
       isReadOnly,
       isInstallPath,
@@ -292,9 +292,9 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       getModel,
       createModel,
       saveFile,
-      saveModifiedFilesOfTabId,
-      closeTabs,
-      getModifiedFilesByTab,
+      saveModifiedFilesOfEditorId,
+      closeEditors,
+      getModifiedFilesByEditor,
       isModifiedModel,
       setResolver,
       getResolver,

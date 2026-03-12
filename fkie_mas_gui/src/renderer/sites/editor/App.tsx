@@ -106,7 +106,7 @@ export default function EditorApp(): JSX.Element {
   }
 
   useCustomEventListener(EVENT_CLOSE_COMPONENT, (data: { id: string }) => {
-    const mTab = monacoCtx.getModifiedFilesByTab(data.id);
+    const mTab = monacoCtx.getModifiedFilesByEditor(data.id);
     if (mTab.length > 0) {
       setDirtyModels(mTab);
       return;
@@ -132,11 +132,11 @@ export default function EditorApp(): JSX.Element {
     const allTabs = new Set<string>();
     const failedTabs = new Set<string>();
 
-    for (const { tabIds = [], result } of results) {
-      for (const tabId of tabIds) {
-        allTabs.add(tabId);
+    for (const { editorIds = [], result } of results) {
+      for (const editorId of editorIds) {
+        allTabs.add(editorId);
         if (!result) {
-          failedTabs.add(tabId);
+          failedTabs.add(editorId);
         }
       }
     }
@@ -152,7 +152,7 @@ export default function EditorApp(): JSX.Element {
     <Stack width="100%" height="100vh">
       {launchInfo && (
         <FileEditorPanel
-          tabId={launchInfo.id}
+          editorId={launchInfo.id}
           providerId={launchInfo.provider.id}
           rootFilePath={launchInfo.rootLaunch}
           currentFilePath={launchInfo.launch}
@@ -176,12 +176,12 @@ export default function EditorApp(): JSX.Element {
           <DialogContent aria-label="list">
             {monacoCtx
               .modelRegistry()
-              ?.getTabsByModels(dirtyModels)
-              .map((tabId) => {
-                const models = monacoCtx.modelRegistry()?.getByTab(tabId);
+              ?.getEditorsByModels(dirtyModels)
+              .map((editorId) => {
+                const models = monacoCtx.modelRegistry()?.getByEditor(editorId);
                 return (
-                  <DialogContentText key={tabId} id="alert-dialog-description">
-                    {`There are ${models?.size} unsaved files in "${getBaseName(tabId)}" tab.`}
+                  <DialogContentText key={editorId} id="alert-dialog-description">
+                    {`There are ${models?.size} unsaved files in "${getBaseName(editorId)}" tab.`}
                   </DialogContentText>
                 );
               })}
@@ -191,8 +191,8 @@ export default function EditorApp(): JSX.Element {
             <Button
               color="warning"
               onClick={() => {
-                const tabIds = monacoCtx.modelRegistry()?.getTabsByModels(dirtyModels);
-                monacoCtx.closeTabs(tabIds);
+                const editorIds = monacoCtx.modelRegistry()?.getEditorsByModels(dirtyModels);
+                monacoCtx.closeEditors(editorIds);
                 setDirtyModels([]);
                 window.editorManager?.close(launchInfo.id);
               }}

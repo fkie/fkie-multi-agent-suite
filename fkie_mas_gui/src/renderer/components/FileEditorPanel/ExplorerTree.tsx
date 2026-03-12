@@ -26,7 +26,7 @@ export function equalLaunchArgs(launchArgs: TLaunchArg[], argList: LaunchArgumen
 }
 
 interface ExplorerTreeProps {
-  tabId: string;
+  editorId: string;
   providerId: string;
   rootFilePath: string;
   includedFiles: LaunchIncludedFile[];
@@ -37,7 +37,7 @@ interface ExplorerTreeProps {
 
 export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
   const {
-    tabId,
+    editorId,
     providerId,
     rootFilePath,
     includedFiles,
@@ -109,7 +109,7 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
       return (
         <FileTreeItem
           key={id}
-          tabId={tabId}
+          editorId={editorId}
           itemId={id}
           item={item}
           modified={modifiedUriPaths.includes(item.uriPath)}
@@ -121,7 +121,7 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
         </FileTreeItem>
       );
     },
-    [modifiedUriPaths, tabId, rootFilePath, launchArgs, selectedUriPath]
+    [modifiedUriPaths, editorId, rootFilePath, launchArgs, selectedUriPath]
   );
 
   return (

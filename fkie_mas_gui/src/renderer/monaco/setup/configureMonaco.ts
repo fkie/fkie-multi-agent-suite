@@ -9,7 +9,7 @@ import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 import { IMonacoContext } from "@/renderer/context/MonacoContext";
 import { IRosContext } from "@/renderer/context/RosContext";
 import { getFileName, RosPackage } from "@/renderer/models";
-import { createUriPath, fileFromUriPath, pathFromTabId, providerIdFromTabId, providerIdFromUriPath } from "../utils";
+import { createUriPath, fileFromUriPath, pathFromEditorId, providerIdFromEditorId, providerIdFromUriPath } from "../utils";
 import { extractIncludes, ResolverCacheEntry } from "./IncludeResolver";
 import { PythonLanguage } from "./languages/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "./languages/PythonLaunchProposals";
@@ -242,7 +242,7 @@ export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<
           const text = model.getValue();
           const currentFile = fileFromUriPath(model.uri.path);
           const links: languages.ILink[] = [];
-          const editorIds = monacoCtxRef.current.modelRegistry()?.getTabsByModels([model]);
+          const editorIds = monacoCtxRef.current.modelRegistry()?.getEditorsByModels([model]);
           const providerId = providerIdFromUriPath(model.uri.path);
           for (const editorId of editorIds || []) {
             const resolver = monacoCtxRef.current.getResolver(editorId);
@@ -291,13 +291,13 @@ export function registerLaunchHoverProvider(monacoCtxRef: React.MutableRefObject
         provideHover(model, position) {
           if (!monacoCtxRef.current) return;
           const currentFile = fileFromUriPath(model.uri.path);
-          const editorIds = monacoCtxRef.current.modelRegistry()?.getTabsByModels([model]);
+          const editorIds = monacoCtxRef.current.modelRegistry()?.getEditorsByModels([model]);
           const result = {
             contents: [{ value: `**${providerIdFromUriPath(model.uri.path)}**` }],
           };
           let countResolved = 0;
           for (const editorId of editorIds || []) {
-            const path = pathFromTabId(editorId);
+            const path = pathFromEditorId(editorId);
             if (path) result.contents.push({ value: `from **\`${getFileName(path)}\`**` });
             const poseCache = monacoCtxRef.current.getResolver(editorId)?.cache.get(currentFile);
             for (const cached of poseCache || []) {
@@ -332,13 +332,13 @@ export function registerLaunchDefinitionProvider(monacoCtxRef: React.MutableRefO
           const monacoCtx = monacoCtxRef.current;
           if (!monacoCtx?.monaco) return;
           const currentFile = fileFromUriPath(model.uri.path);
-          const editorIds = monacoCtx.modelRegistry()?.getTabsByModels([model]);
+          const editorIds = monacoCtx.modelRegistry()?.getEditorsByModels([model]);
           for (const editorId of editorIds || []) {
             const poseCache = monacoCtx.getResolver(editorId)?.cache.get(currentFile);
             for (const cached of poseCache || []) {
               if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
                 if (position.column >= cached.start.column && position.column <= cached.end.column) {
-                  const providerId = providerIdFromTabId(editorId);
+                  const providerId = providerIdFromEditorId(editorId);
                   if (!providerId) return;
 
                   const uri = createUriPath(providerId, cached.match.resolved);

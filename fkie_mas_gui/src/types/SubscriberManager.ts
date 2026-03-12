@@ -5,7 +5,7 @@ export const SubscriberManagerEvents = {
   onClose: "subscriber:onClose",
 };
 
-export type SubscriberCloseCallback = (tabId: string) => void;
+export type SubscriberCloseCallback = (editorId: string) => void;
 
 export type TSubscriberManager = {
   open: (

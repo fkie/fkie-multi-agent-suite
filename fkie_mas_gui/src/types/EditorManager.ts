@@ -12,13 +12,13 @@ export const EditorManagerEvents = {
 };
 
 export type FileRangeCallback = (
-  tabId: string,
+  editorId: string,
   filePath: string,
   fileRange: TFileRange | null,
   launchArgs: TLaunchArg[]
 ) => void;
 
-export type EditorCloseCallback = (tabId: string) => void;
+export type EditorCloseCallback = (editorId: string) => void;
 
 export type TEditorManager = {
   open: (

@@ -33,7 +33,7 @@ export type TEventOpenComponent = {
 };
 
 export type TEventEditorSelectRange = {
-  tabId: string;
+  editorId: string;
   filePath: string;
   fileRange: TFileRange | null;
   launchArgs?: TLaunchArg[];
@@ -109,12 +109,12 @@ export function eventCloseComponent(id: string): TEventId {
 }
 
 export function eventEditorSelectRange(
-  tabId: string,
+  editorId: string,
   filePath: string,
   fileRange: TFileRange | null,
   launchArgs?: TLaunchArg[]
 ): TEventEditorSelectRange {
-  return { tabId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] };
+  return { editorId, filePath, fileRange, launchArgs: launchArgs ? launchArgs : [] };
 }
 
 export function eventFilterNodes(id: string): TEventId {

@@ -5,7 +5,7 @@ export const TerminalManagerEvents = {
   onClose: "terminal:onClose",
 };
 
-export type TerminalCloseCallback = (tabId: string) => void;
+export type TerminalCloseCallback = (editorId: string) => void;
 
 export type TTerminalManager = {
   open: (

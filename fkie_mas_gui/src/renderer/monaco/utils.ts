@@ -1,23 +1,23 @@
 const EDITOR_PATH_SEP = "⏵";
 const PROVIDER_SEP = "@";
-const TAB_ID_PREFIX = "/tabId⏶";
+const EDITOR_ID_PREFIX = "/editorId⏶";
 
-export function isEditorTabId(tabId: string,): boolean {
-  return tabId.startsWith(TAB_ID_PREFIX);
+export function isEditorEditorId(editorId: string,): boolean {
+  return editorId.startsWith(EDITOR_ID_PREFIX);
 }
 
-export function createEditorTabId(rootPath: string, providerId: string): string {
-  return `${TAB_ID_PREFIX}${rootPath}${PROVIDER_SEP}${providerId}`;
+export function createEditorEditorId(rootPath: string, providerId: string): string {
+  return `${EDITOR_ID_PREFIX}${rootPath}${PROVIDER_SEP}${providerId}`;
 }
 
-export function createUriPathFromTab(tabId: string, path: string): string {
+export function createUriPathFromEditorId(editorId: string, path: string): string {
   if (!path) return "";
 
   if (path.includes(EDITOR_PATH_SEP)) {
     return path;
   }
 
-  const providerId = providerIdFromTabId(tabId);
+  const providerId = providerIdFromEditorId(editorId);
   return `/${providerId}${EDITOR_PATH_SEP}${path}`;
 }
 
@@ -45,14 +45,14 @@ export function providerIdFromUriPath(uriPath: string): string | undefined {
   return providerId || undefined;
 }
 
-export function providerIdFromTabId(tabId: string): string | undefined {
-  const sepIndex = tabId.indexOf(PROVIDER_SEP);
-  return sepIndex === -1 ? undefined : tabId.slice(sepIndex + 1);
+export function providerIdFromEditorId(editorId: string): string | undefined {
+  const sepIndex = editorId.indexOf(PROVIDER_SEP);
+  return sepIndex === -1 ? undefined : editorId.slice(sepIndex + 1);
 }
 
-export function pathFromTabId(tabId: string): string | undefined {
-  const sepIndex = tabId.indexOf(PROVIDER_SEP);
-  return sepIndex === -1 ? undefined : tabId.slice(0, sepIndex);
+export function pathFromEditorId(editorId: string): string | undefined {
+  const sepIndex = editorId.indexOf(PROVIDER_SEP);
+  return sepIndex === -1 ? undefined : editorId.slice(0, sepIndex);
 }
 
 export function isUriPath(path: string): boolean {

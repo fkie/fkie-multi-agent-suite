@@ -19,7 +19,7 @@ import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName } from "@/renderer/models";
 import { cleanUpXmlComment } from "@/renderer/monaco/setup";
 import { TModelResult } from "@/renderer/monaco/types";
-import { createEditorTabId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
+import { createEditorEditorId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
 import {
   EVENT_CLOSE_COMPONENT,
   EVENT_EDITOR_SELECT_RANGE,
@@ -32,7 +32,7 @@ import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
 
 interface FileEditorPanelProps {
-  tabId: string;
+  editorId: string;
   providerId: string;
   rootFilePath: string;
   currentFilePath: string;
@@ -41,7 +41,7 @@ interface FileEditorPanelProps {
 }
 
 export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Element {
-  const { tabId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
+  const { editorId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
   const settingsCtx = useSettingsContext();
   const logCtx = useContext(LoggingContext);
   const rosCtx = useRosContext();
@@ -84,7 +84,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   const { includedFiles, fetchIncludedFiles, clearIncludedFiles } = useIncludedFiles(providerId, rootFilePath);
   const mEditor = useMonacoEditor({
-    editorId: tabId,
+    editorId: editorId,
     editorRef: editorRef,
     includedFiles: includedFiles,
     saveModel: (model) => {
@@ -100,7 +100,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   useEditorKeyboard(() => {
     const provider = rosCtx.getProviderById(providerId);
     if (provider) {
-      const id = createEditorTabId(rootFilePath, provider.id);
+      const id = createEditorEditorId(rootFilePath, provider.id);
       emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
     }
   });
@@ -114,7 +114,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       editorRef.current?.setModel(null);
       mEditor.dispose();
       // dispose all own models
-      monacoCtx.closeTabs([tabId]);
+      monacoCtx.closeEditors([editorId]);
     };
   }, []);
 
@@ -156,7 +156,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       if (!uriPath) return false;
       setNotificationDescription("Getting file from provider...");
       // If model does not exist, try to fetch it
-      const result: TModelResult = await monacoCtx.getModel(tabId, uriPath, forceReload);
+      const result: TModelResult = await monacoCtx.getModel(editorId, uriPath, forceReload);
       setNotificationDescription("");
       setCurrentFileState({ name: getFileName(uriPath), requesting: false, path: uriPath });
 
@@ -197,7 +197,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   /** select node definition on event. */
   useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data: TEventEditorSelectRange) => {
-    if (data.tabId === tabId) {
+    if (data.editorId === editorId) {
       setEditorModel(data.filePath, data.fileRange, data.launchArgs);
     }
   });
@@ -227,7 +227,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           setNotificationDescription(`Could not open file: [${result.file.fileName}]: ${result.error}`);
           return;
         }
-        const model = monacoCtx.createModel(tabId, result.file);
+        const model = monacoCtx.createModel(editorId, result.file);
         if (!model) {
           console.error(`Could not create model for: [${result.file.fileName}]`);
           setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
@@ -252,7 +252,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         const providerObj = rosCtx.getProviderById(providerId, true);
         if (providerObj) {
           const path = fileFromUriPath(editorModel.uri.path);
-          const id = createEditorTabId(rootFilePath, providerObj.id);
+          const id = createEditorEditorId(rootFilePath, providerObj.id);
           window.editorManager?.changed(id, path, false);
         }
         mEditor.setCurrentModel(editorModel);
@@ -339,7 +339,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // get file content from provider and create monaco model
     async function getFileAndIncludesAsync(): Promise<void> {
       setCurrentFileState({ name: getFileName(currentFilePath), requesting: true, path: currentFilePath });
-      const result: TModelResult = await monacoCtx.getModel(tabId, currentFilePath, false);
+      const result: TModelResult = await monacoCtx.getModel(editorId, currentFilePath, false);
       if (!result.model && !result.file) {
         setNotificationDescription(result.error || `Could not get file: [${currentFilePath}]`);
         return;
@@ -434,7 +434,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       >
         <Pane minSize={sideBarMinSize} style={{ backgroundColor: backgroundColor }}>
           <EditorSidebar
-            tabId={tabId}
+            editorId={editorId}
             providerId={providerId}
             rootFilePath={rootFilePath}
             includedFiles={includedFiles}

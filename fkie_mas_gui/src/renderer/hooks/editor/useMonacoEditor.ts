@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LaunchIncludedFile } from "@/renderer/models";
 import { configureContextMenu, configureMonacoEditor } from "@/renderer/monaco/setup/configureMonacoEditor";
 import { createIncludeResolver } from "@/renderer/monaco/setup/IncludeResolver";
-import { providerIdFromTabId } from "../../monaco/utils";
+import { providerIdFromEditorId } from "../../monaco/utils";
 import { useMonacoContext } from "../useMonacoContext";
 
 type UseMonacoEditorOptions = {
@@ -109,7 +109,7 @@ export function useMonacoEditor({
         setActiveModelDirty(dirty);
       }
 
-      const registry = monacoCtx.modelRegistry()?.getByTab(editorId);
+      const registry = monacoCtx.modelRegistry()?.getByEditor(editorId);
       if (!registry?.has(model)) return;
 
       setModifiedFiles((prev) => {
@@ -140,7 +140,7 @@ export function useMonacoEditor({
 
   useEffect(() => {
     if (!monacoCtx.monaco) return;
-    const providerId = providerIdFromTabId(editorId);
+    const providerId = providerIdFromEditorId(editorId);
     if (!providerId) return;
 
     const resolver = createIncludeResolver(includedFiles);

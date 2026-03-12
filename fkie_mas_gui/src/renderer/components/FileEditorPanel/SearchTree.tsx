@@ -16,7 +16,7 @@ import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
 import { TSearchResult } from "./types";
 
 interface SearchTreeProps {
-  tabId: string;
+  editorId: string;
   providerId: string;
   rootFilePath: string;
   includedFiles?: LaunchIncludedFile[];
@@ -24,7 +24,7 @@ interface SearchTreeProps {
 }
 
 export default function SearchTree(props: SearchTreeProps): JSX.Element {
-  const { tabId, providerId, rootFilePath, includedFiles, searchTerm = "" } = props;
+  const { editorId, providerId, rootFilePath, includedFiles, searchTerm = "" } = props;
 
   const monacoCtx = useMonacoContext();
   const [expandedSearchResults, setExpandedSearchResults] = useState<string[]>([]);
@@ -66,7 +66,7 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
     if (currentIndex < ownUriPaths.length) {
       // search only in own models
       const uriPath = ownUriPaths[currentIndex];
-      const result = await monacoCtx.getModel(tabId, uriPath, false);
+      const result = await monacoCtx.getModel(editorId, uriPath, false);
       if (!result.model) return;
       const matches: editor.FindMatch[] = result.model.findMatches(searchText, true, isRegex, false, null, false);
       const newResults: TSearchResult[] = [];
@@ -188,7 +188,7 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
                     onClick={() => {
                       emitCustomEvent(
                         EVENT_EDITOR_SELECT_RANGE,
-                        eventEditorSelectRange(tabId, entry.file, entry.range)
+                        eventEditorSelectRange(editorId, entry.file, entry.range)
                       );
                     }}
                   />

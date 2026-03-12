@@ -7,7 +7,7 @@ export type SaveResult = {
   uriPath: string;
   result: boolean;
   message: string;
-  tabIds?: string[];
+  editorIds?: string[];
 };
 
 export type TModelResult = {
@@ -17,7 +17,7 @@ export type TModelResult = {
 };
 
 export type ModifiedTabsInfo = {
-  tabId: string;
+  editorId: string;
   uriPaths: string[];
 };
 

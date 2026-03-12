@@ -83,7 +83,7 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { initMonacoRuntime } from "@/renderer/monaco/setup";
 import { SaveResult } from "@/renderer/monaco/types";
-import { isEditorTabId } from "@/renderer/monaco/utils";
+import { isEditorEditorId } from "@/renderer/monaco/utils";
 import { TInfoState } from "@/types";
 import PackageExplorerPanel from "./panels/PackageExplorerPanel";
 import ParameterPanel from "./panels/ParameterPanel";
@@ -184,14 +184,14 @@ export default function NodeManager(): JSX.Element {
     []
   );
 
-  function hasTab(layout, tabId): boolean {
+  function hasTab(layout, editorId): boolean {
     if (!layout.children) return false;
     const tabs = layout.children.filter((item) => {
-      if (item.type === "tab" && item.id === tabId) {
+      if (item.type === "tab" && item.id === editorId) {
         return true;
       }
       if (item.children) {
-        return hasTab(item, tabId);
+        return hasTab(item, editorId);
       }
       return false;
     });
@@ -256,23 +256,23 @@ export default function NodeManager(): JSX.Element {
   }, [settingsCtx.changed, layoutJson]);
 
   /** Hide bottom panel on close of last terminal */
-  function deleteTab(tabId: string): void {
+  function deleteTab(editorId: string): void {
     // check if it is an editor with modified files
-    if (isEditorTabId(tabId)) {
-      const mTab = monacoCtx.getModifiedFilesByTab(tabId);
+    if (isEditorEditorId(editorId)) {
+      const mTab = monacoCtx.getModifiedFilesByEditor(editorId);
       if (mTab.length > 0) {
-        const editorTab = model.getNodeById(tabId);
+        const editorTab = model.getNodeById(editorId);
         if (editorTab) {
           model.doAction(Actions.selectTab(editorTab.getId()));
-          setDirtyTabs([tabId]);
+          setDirtyTabs([editorId]);
           return;
         }
       } else {
-        model.doAction(Actions.deleteTab(tabId));
+        model.doAction(Actions.deleteTab(editorId));
       }
     }
     // handle tabs in bottom border
-    const nodeBId = model.getNodeById(tabId);
+    const nodeBId = model.getNodeById(editorId);
     if (
       nodeBId &&
       nodeBId.getParent()?.getType() === "border" &&
@@ -283,11 +283,11 @@ export default function NodeManager(): JSX.Element {
         nodeBId.getParent()?.getChildren().length === 2 &&
         (nodeBId.getParent() as BorderNode)?.getSelectedNode()?.isVisible();
       if (shouldSelectNewTab) {
-        model.doAction(Actions.selectTab(tabId));
+        model.doAction(Actions.selectTab(editorId));
       }
     } else {
       // select nodes tab it is in the same set as closed tab
-      const nodeBId = model.getNodeById(tabId);
+      const nodeBId = model.getNodeById(editorId);
       if (nodeBId) {
         nodeBId
           .getParent()
@@ -299,7 +299,7 @@ export default function NodeManager(): JSX.Element {
           });
       }
     }
-    model.doAction(Actions.deleteTab(tabId));
+    model.doAction(Actions.deleteTab(editorId));
   }
 
   useCustomEventListener(
@@ -445,15 +445,15 @@ export default function NodeManager(): JSX.Element {
             .includes(true);
 
           if (shouldSelectNewTab) {
-            const tabId: string | undefined = model
+            const editorId: string | undefined = model
               .getBorderSet()
               .getBorders()
               .find((b) => b.getLocation() === panelId.location)
               ?.getChildren()
               .slice(-1)[0] // Get last children === new tab
               .getId();
-            if (tabId) {
-              model.doAction(Actions.selectTab(tabId));
+            if (editorId) {
+              model.doAction(Actions.selectTab(editorId));
             }
           }
         }
@@ -893,7 +893,7 @@ export default function NodeManager(): JSX.Element {
       }
       const dirtyModels = monacoCtx.dirtyManager()?.getDirtyModels();
       if (!dirtyModels) return;
-      setDirtyTabs(monacoCtx.modelRegistry()?.getTabsByModels(dirtyModels) || []);
+      setDirtyTabs(monacoCtx.modelRegistry()?.getEditorsByModels(dirtyModels) || []);
     }
   }, [electronCtx.shutdownManager, electronCtx.terminateSubprocesses, monacoCtx, rosCtx.providers.length]);
 
@@ -929,27 +929,27 @@ export default function NodeManager(): JSX.Element {
 
   const saveAllDirty = useCallback(async () => {
     // Save all modified files
-    const tabModels = monacoCtx.modelRegistry()?.getByTabs(dirtyTabs) || [];
-    const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(tabModels)) || [];
+    const editorModels = monacoCtx.modelRegistry()?.getByEditorIds(dirtyTabs) || [];
+    const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(editorModels)) || [];
     const results: SaveResult[] = await Promise.all(dirtyModels.map((model) => monacoCtx.saveFile(model)));
 
     const allTabs = new Set<string>();
     const failedTabs = new Set<string>();
 
     // Collect all tabs and track which ones failed to save
-    for (const { tabIds = [], result } of results) {
-      for (const tabId of tabIds) {
-        allTabs.add(tabId);
+    for (const { editorIds = [], result } of results) {
+      for (const editorId of editorIds) {
+        allTabs.add(editorId);
         if (!result) {
-          failedTabs.add(tabId);
+          failedTabs.add(editorId);
         }
       }
     }
 
     // Close tabs that were successfully saved
-    for (const tabId of allTabs) {
-      if (!failedTabs.has(tabId)) {
-        model.doAction(Actions.deleteTab(tabId));
+    for (const editorId of allTabs) {
+      if (!failedTabs.has(editorId)) {
+        model.doAction(Actions.deleteTab(editorId));
       }
     }
 
@@ -1043,13 +1043,13 @@ export default function NodeManager(): JSX.Element {
           </DialogTitle>
 
           <DialogContent aria-label="list">
-            {dirtyTabs.map((tabId) => {
-              const tabModels = monacoCtx.modelRegistry()?.getByTabs(dirtyTabs) || [];
-              const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(tabModels)) || [];
+            {dirtyTabs.map((editorId) => {
+              const editorModels = monacoCtx.modelRegistry()?.getByEditorIds(dirtyTabs) || [];
+              const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(editorModels)) || [];
               const files = dirtyModels.map((m) => getFileName(m.uri.path));
               return (
-                <DialogContentText key={tabId} id="alert-dialog-description">
-                  {`Modified files in "${getBaseName(tabId)}" tab: ${files}`}
+                <DialogContentText key={editorId} id="alert-dialog-description">
+                  {`Modified files in "${getBaseName(editorId)}" tab: ${files}`}
                 </DialogContentText>
               );
             })}
@@ -1059,9 +1059,9 @@ export default function NodeManager(): JSX.Element {
             <Button
               color="warning"
               onClick={() => {
-                const tabIds = dirtyTabs;
-                for (const tabId of tabIds || []) {
-                  model.doAction(Actions.deleteTab(tabId));
+                const editorIds = dirtyTabs;
+                for (const editorId of editorIds || []) {
+                  model.doAction(Actions.deleteTab(editorId));
                 }
                 setDirtyTabs([]);
               }}

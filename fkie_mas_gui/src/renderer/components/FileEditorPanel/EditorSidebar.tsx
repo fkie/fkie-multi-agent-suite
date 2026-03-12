@@ -13,7 +13,7 @@ import ExplorerTree from "./ExplorerTree";
 import SearchTree from "./SearchTree";
 
 interface EditorSidebarProps {
-  tabId: string;
+  editorId: string;
   providerId: string;
   rootFilePath: string;
   includedFiles: LaunchIncludedFile[];
@@ -31,7 +31,7 @@ interface EditorSidebarProps {
  */
 export function EditorSidebar(props: EditorSidebarProps) {
   const {
-    tabId,
+    editorId,
     providerId,
     rootFilePath,
     includedFiles,
@@ -145,7 +145,7 @@ export function EditorSidebar(props: EditorSidebarProps) {
               width={sideBarWidth}
             >
               <ExplorerTree
-                tabId={tabId}
+                editorId={editorId}
                 providerId={providerId}
                 rootFilePath={rootFilePath}
                 includedFiles={includedFiles}
@@ -187,7 +187,7 @@ export function EditorSidebar(props: EditorSidebarProps) {
             overflow="auto"
           >
             <SearchTree
-              tabId={tabId}
+              editorId={editorId}
               providerId={providerId}
               rootFilePath={rootFilePath}
               includedFiles={includedFiles}

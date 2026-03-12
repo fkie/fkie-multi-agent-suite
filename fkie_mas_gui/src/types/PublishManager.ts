@@ -5,7 +5,7 @@ export const PublishManagerEvents = {
   onClose: "publisher:onClose",
 };
 
-export type PublishCloseCallback = (tabId: string) => void;
+export type PublishCloseCallback = (editorId: string) => void;
 
 export type TPublishManager = {
   start: (id: string, host: string, port: number, topicName: string, topicType: string) => Promise<string | null>;

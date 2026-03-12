@@ -3,11 +3,11 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
 import {
-  TreeItem,
-  treeItemClasses,
-  TreeItemSlotProps,
-  UseTreeItemContentSlotOwnProps,
-  UseTreeItemIconContainerSlotOwnProps,
+    TreeItem,
+    treeItemClasses,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { useContext } from "react";
 import { emitCustomEvent } from "react-custom-events";
@@ -61,7 +61,7 @@ const FileTreeItemRoot = styled(TreeItem)(({ theme }) => ({
 }));
 
 interface FileTreeItemProps {
-  tabId: string;
+  editorId: string;
   itemId: string;
   item: TLaunchIncludeItem;
   selected: boolean;
@@ -70,7 +70,7 @@ interface FileTreeItemProps {
 }
 
 export default function FileTreeItem(props: FileTreeItemProps): JSX.Element {
-  const { tabId, itemId, item, selected, modified, ...children } = props;
+  const { editorId, itemId, item, selected, modified, ...children } = props;
   const logCtx = useContext(LoggingContext);
   const fileExtension = getFileExtension(item.file.inc_path as string);
 
@@ -145,7 +145,7 @@ export default function FileTreeItem(props: FileTreeItemProps): JSX.Element {
                   emitCustomEvent(
                     EVENT_EDITOR_SELECT_RANGE,
                     eventEditorSelectRange(
-                      tabId,
+                      editorId,
                       item.file.inc_path,
                       null,
                       item.file.args as TLaunchArg[]
@@ -179,7 +179,7 @@ export default function FileTreeItem(props: FileTreeItemProps): JSX.Element {
                     emitCustomEvent(
                       EVENT_EDITOR_SELECT_RANGE,
                       eventEditorSelectRange(
-                        tabId,
+                        editorId,
                         item.file.path,
                         {
                           startLineNumber: item.file.line_number,

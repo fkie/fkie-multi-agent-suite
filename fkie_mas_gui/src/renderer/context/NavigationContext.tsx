@@ -3,10 +3,10 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 
 import { getBaseName } from "@/renderer/models";
 import {
-  EVENT_EDITOR_SELECT_RANGE,
-  EVENT_OPEN_COMPONENT,
-  eventEditorSelectRange,
-  eventOpenComponent,
+    EVENT_EDITOR_SELECT_RANGE,
+    EVENT_OPEN_COMPONENT,
+    eventEditorSelectRange,
+    eventOpenComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel";
 import { xor } from "@/renderer/utils/index";
@@ -14,7 +14,7 @@ import { TFileRange, TLaunchArg } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
 import { useRosContext } from "../hooks/useRosContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
-import { createEditorTabId } from "../monaco/utils";
+import { createEditorEditorId } from "../monaco/utils";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
@@ -138,7 +138,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
   ): Promise<void> {
     const provider = rosCtx.getProviderById(providerId);
     if (provider) {
-      const id = createEditorTabId(rootLaunch, provider.id);
+      const id = createEditorEditorId(rootLaunch, provider.id);
       // open in external window depending on setting and key modifier and if no tab already existing
       const openExternal: boolean =
         xor(settingsCtx.get("editorOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
@@ -167,7 +167,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
             id,
             getBaseName(rootLaunch),
             <FileEditorPanel
-              tabId={id}
+              editorId={id}
               providerId={providerId}
               currentFilePath={path}
               rootFilePath={rootLaunch}
