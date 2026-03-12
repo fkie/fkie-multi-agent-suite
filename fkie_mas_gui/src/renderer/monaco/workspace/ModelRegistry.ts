@@ -63,7 +63,6 @@ export class ModelRegistry {
   }
 
   closeModelsByTabId(tabId: string) {
-    this.removeFromUriIndex(this.uriIndex, tabId);
     const models = this.tabIndex.get(tabId);
     if (!models) return;
 
@@ -78,6 +77,7 @@ export class ModelRegistry {
       }
     }
     this.tabIndex.delete(tabId);
+    this.removeFromUriIndex(this.uriIndex, tabId);
   }
 
   /**

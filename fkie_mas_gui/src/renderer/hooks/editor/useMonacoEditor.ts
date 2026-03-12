@@ -161,7 +161,7 @@ export function useMonacoEditor({
   // dispose
   // ---------------------------
 
-  const disposeMonaco = useCallback(() => {
+  const dispose = useCallback(() => {
     for (const d of monacoDisposables.current) {
       d.dispose();
     }
@@ -186,9 +186,9 @@ export function useMonacoEditor({
 
     monacoViewStates: monacoViewStates.current,
 
-    disposeMonaco,
-
     setupMonacoEditor,
     setupContextMenu,
+
+    dispose,
   };
 }

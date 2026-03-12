@@ -61,6 +61,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [historyModel, setHistoryModel] = useState<THistoryModel | undefined>();
   const [eventButton, setEventButton] = useState<number>(-1);
   const [keyboardEvent, setKeyboardEvent] = useState<React.KeyboardEvent | undefined>();
+  const [savedFiles, setSavedFiles] = useState<string[]>([]);
 
   const {
     panelRef,
@@ -108,40 +109,38 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
 
-  const [savedFiles, setSavedFiles] = useState<string[]>([]);
+  useEffect(() => {
+    return (): void => {
+      mEditor.dispose();
+      // dispose all own models
+      monacoCtx.closeTabs([tabId]);
+    };
+  }, []);
 
   useEffect(() => {
-    if (selectionRange) {
-      if (editorRef.current) {
-        editorRef.current.revealRangeInCenter({
-          startLineNumber: selectionRange.startLineNumber,
-          endLineNumber: selectionRange.endLineNumber,
-          startColumn: selectionRange.startColumn,
-          endColumn: selectionRange.endColumn,
-        });
+    const editor = editorRef.current;
+    if (!selectionRange || !editor) return;
 
-        editorRef.current.setPosition({
-          lineNumber: selectionRange.startLineNumber,
-          column: selectionRange.startColumn,
-        });
+    const { startLineNumber, endLineNumber, startColumn, endColumn } = selectionRange;
 
-        let endLineNumber = selectionRange.endLineNumber;
-        if (
-          selectionRange.startColumn === selectionRange.endColumn &&
-          selectionRange.startLineNumber === selectionRange.endLineNumber
-        ) {
-          endLineNumber += 1;
-        }
-        editorRef.current.setSelection({
-          startLineNumber: selectionRange.startLineNumber,
-          endLineNumber: endLineNumber,
-          startColumn: selectionRange.startColumn,
-          endColumn: selectionRange.endColumn,
-        });
+    const isSingleCursor = startLineNumber === endLineNumber && startColumn === endColumn;
 
-        editorRef.current.focus();
-      }
-    }
+    const adjustedEndLineNumber = isSingleCursor ? endLineNumber + 1 : endLineNumber;
+
+    editor.revealRangeInCenter(selectionRange);
+    editor.setPosition({
+      lineNumber: startLineNumber,
+      column: startColumn,
+    });
+
+    editor.setSelection({
+      startLineNumber,
+      endLineNumber: adjustedEndLineNumber,
+      startColumn,
+      endColumn,
+    });
+
+    editor.focus();
   }, [selectionRange]);
 
   // set the current model to the editor based on [uriPath], and update its decorations
@@ -171,7 +170,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       const modelPackageName = ownUriToPackageDict[result.model.uri.path];
       setPackageName(modelPackageName || "");
 
-      // set range is available
+      // set range if available
       if (range) {
         setSelectionRange(range);
       }
@@ -283,15 +282,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   }, [sideBarWidth]);
 
-  const handleEditorChange = useCallback(
-    async (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> => {
-      if (mEditor.activeModel) {
-        cleanUpXmlComment(event.changes, mEditor.activeModel);
-      }
-    },
-    [mEditor.activeModel, includedFiles]
-  );
-
   useEffect(() => {
     // update package names for own files
     const provider = rosCtx.getProviderById(providerId, true);
@@ -304,22 +294,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       ownUriToPackageDict[incUriPath] = provider.getPackageName(file.inc_path);
     }
   }, [includedFiles, rootFilePath, editorRef.current]);
-
-  useEffect(() => {
-    return (): void => {
-      mEditor.disposeMonaco();
-      if (monacoCtx.monaco) {
-        // remove undefined models
-        // for (const model of monacoCtx.monaco.editor.getModels()) {
-        //   if (model.getValue().length === 0 && !isUriPath(model.uri.path)) {
-        //     model.dispose();
-        //   }
-        // }
-      }
-      // dispose all own models
-      monacoCtx.closeTabs([tabId]);
-    };
-  }, []);
 
   function onKeyDown(event: React.KeyboardEvent): void {
     setKeyboardEvent(event);
@@ -418,6 +392,15 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     editorRef.current = editor;
     mEditor.setupContextMenu();
   }
+
+  const handleEditorChange = useCallback(
+    async (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> => {
+      if (mEditor.activeModel) {
+        cleanUpXmlComment(event.changes, mEditor.activeModel);
+      }
+    },
+    [mEditor.activeModel]
+  );
 
   const onStateChange = useCallback(
     (collapsed: boolean) => {
