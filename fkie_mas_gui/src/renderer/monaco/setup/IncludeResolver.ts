@@ -9,21 +9,97 @@ export type IncludeMatch = { value: string; offset: number; resolved: string; re
 export type IncludeResolver = {
   cache: Map<string, ResolverCacheEntry[]>;
   resolve: (currentFile: string, rawPath: string) => ResolveType | undefined;
+  update: (includedFiles: LaunchIncludedFile[]) => void;
 };
 
-export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): IncludeResolver {
-  const map = new Map<string, ResolveType>();
+// Type alias for the nested map: currentFile -> rawPath -> resolved include info
+type ResolveMap = Map<string, Map<string, ResolveType>>;
 
-  for (const f of includedFiles) {
-    map.set(`${f.path}|${f.raw_inc_path}`, { path: f.inc_path, realpath: f.inc_realpath });
+export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): IncludeResolver {
+  // Nested map for resolving includes
+  const map: ResolveMap = new Map();
+  const cache = new Map<string, ResolverCacheEntry[]>();
+
+  /**
+   * Helper to set a resolved include in the nested map
+   * @param file - The current file path
+   * @param raw - The raw include path from that file
+   * @param value - The resolved include information
+   */
+  function set(file: string, raw: string, value: ResolveType) {
+    let inner = map.get(file);
+    if (!inner) {
+      // Initialize inner map if it doesn't exist
+      inner = new Map();
+      map.set(file, inner);
+    }
+    inner.set(raw, value);
   }
 
-  return {
-    cache: new Map<string, ResolverCacheEntry[]>(),
-    resolve(currentFile, rawPath) {
-      return map.get(`${currentFile}|${rawPath}`);
-    },
-  };
+  // Initialize the map with the provided included files
+  for (const f of includedFiles) {
+    set(f.path, f.raw_inc_path, {
+      path: f.inc_path,
+      realpath: f.inc_realpath,
+    });
+  }
+
+  /**
+   * Resolve a raw include path from a given file
+   * @param currentFile - The file doing the include
+   * @param rawPath - The raw include path
+   * @returns ResolveType or undefined if not found
+   */
+  function resolve(currentFile: string, rawPath: string) {
+    return map.get(currentFile)?.get(rawPath);
+  }
+
+  /**
+   * Update the resolver with a new set of included files
+   * Adds new entries, updates existing ones, and removes stale entries
+   */
+  function update(includedFiles: LaunchIncludedFile[]) {
+    // Track valid rawPaths for each current file
+    const next = new Map<string, Set<string>>();
+
+    // Add or update entries in the map
+    for (const f of includedFiles) {
+      set(f.path, f.raw_inc_path, {
+        path: f.inc_path,
+        realpath: f.inc_realpath,
+      });
+
+      // Record which raw paths should remain
+      let s = next.get(f.path);
+      if (!s) {
+        s = new Set();
+        next.set(f.path, s);
+      }
+      s.add(f.raw_inc_path);
+    }
+
+    // Remove stale entries from the map and cache
+    for (const [file, inner] of map) {
+      const valid = next.get(file);
+
+      // Delete raw paths that are no longer present
+      for (const raw of inner.keys()) {
+        if (!valid?.has(raw)) {
+          inner.delete(raw);
+          // Remove corresponding cache entries
+          cache.delete(file);
+        }
+      }
+
+      // Remove outer map entry if empty
+      if (inner.size === 0) {
+        map.delete(file);
+      }
+    }
+  }
+
+  // Return the resolver object
+  return { cache, resolve, update };
 }
 
 /**

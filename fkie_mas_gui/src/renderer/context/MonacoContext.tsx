@@ -1,13 +1,13 @@
 import * as MonacoReact from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import { editor } from "monaco-editor/esm/vs/editor/editor.api";
+import { editor } from "monaco-editor";
 import { createContext, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useRefContext } from "../hooks/useRefContext";
 import { useRosContext } from "../hooks/useRosContext";
-import { FileItem, FileLanguageAssociations } from "../models";
-import { IncludeResolver } from "../monaco/setup";
+import { FileItem, FileLanguageAssociations, LaunchIncludedFile } from "../models";
+import { createIncludeResolver, IncludeResolver } from "../monaco/setup";
 import { SaveResult, TModelResult } from "../monaco/types";
 import {
   createUriPath,
@@ -35,7 +35,7 @@ export interface IMonacoContext {
   isModifiedModel: (model: editor.ITextModel) => boolean;
   isReadOnly: (model: editor.ITextModel) => boolean;
   isInstallPath: (model: editor.ITextModel) => boolean;
-  setResolver: (editorId: string, resolver: IncludeResolver) => void;
+  updateResolver: (editorId: string, includedFiles: LaunchIncludedFile[]) => void;
   getResolver: (editorId: string) => IncludeResolver | undefined;
 }
 
@@ -244,8 +244,14 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return filePath.search("/install/") !== -1;
   };
 
-  const setResolver: (editorId: string, resolver: IncludeResolver) => void = (editorId, resolver) => {
-    resolvers.current.set(editorId, resolver);
+  const updateResolver: (editorId: string, includedFiles: LaunchIncludedFile[]) => void = (editorId, includedFiles) => {
+    let resolver = resolvers.current.get(editorId);
+    if (!resolver) {
+      resolver = createIncludeResolver(includedFiles);
+      resolvers.current.set(editorId, resolver);
+      return;
+    }
+    resolver.update(includedFiles);
   };
 
   const getResolver: (editorId: string) => IncludeResolver | undefined = (editorId) => {
@@ -268,7 +274,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       isModifiedModel,
       isReadOnly,
       isInstallPath,
-      setResolver,
+      updateResolver,
       getResolver,
     }),
     [

@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LaunchIncludedFile } from "@/renderer/models";
 import { configureContextMenu, configureMonacoEditor } from "@/renderer/monaco/setup/configureMonacoEditor";
-import { createIncludeResolver } from "@/renderer/monaco/setup/IncludeResolver";
 import { providerIdFromEditorId } from "../../monaco/utils";
 import { useMonacoContext } from "../useMonacoContext";
 
@@ -143,9 +142,7 @@ export function useMonacoEditor({
     const providerId = providerIdFromEditorId(editorId);
     if (!providerId) return;
 
-    const resolver = createIncludeResolver(includedFiles);
-
-    monacoCtx.setResolver(editorId, resolver);
+    monacoCtx.updateResolver(editorId, includedFiles);
   }, [monacoCtx, editorId, includedFiles]);
 
   // ---------------------------

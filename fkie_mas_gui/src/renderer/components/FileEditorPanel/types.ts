@@ -1,4 +1,4 @@
-import { Range } from "monaco-editor/esm/vs/editor/editor.api";
+import { Range } from "monaco-editor";
 
 import { LaunchIncludedFile } from "@/renderer/models";
 

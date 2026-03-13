@@ -1,5 +1,5 @@
 import * as monaco from "monaco-editor";
-import { editor } from "monaco-editor/esm/vs/editor/editor.api";
+import { editor } from "monaco-editor";
 
 import { FileItem } from "../models";
 

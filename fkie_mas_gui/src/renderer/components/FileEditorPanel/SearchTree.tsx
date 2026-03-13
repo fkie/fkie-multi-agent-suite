@@ -4,7 +4,7 @@ import StopIcon from "@mui/icons-material/Stop";
 import { Box, CircularProgress, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { editor } from "monaco-editor/esm/vs/editor/editor.api";
+import { editor } from "monaco-editor";
 import { useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 

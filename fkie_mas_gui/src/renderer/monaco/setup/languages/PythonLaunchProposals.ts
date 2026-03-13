@@ -1,5 +1,5 @@
 import { Monaco } from "@monaco-editor/react";
-import { languages } from "monaco-editor/esm/vs/editor/editor.api";
+import { languages } from "monaco-editor";
 
 import { RosPackage } from "@/renderer/models";
 import { TFileRange } from "@/types";
