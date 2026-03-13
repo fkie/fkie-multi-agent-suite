@@ -50,7 +50,7 @@ import ExternalAppsModal from "@/renderer/components/ExternalAppsModal/ExternalA
 import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
 import ProviderSelectionModal from "@/renderer/components/SelectionModal/ProviderSelectionModal";
 import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
-import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
+import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { ElectronContext } from "@/renderer/context/ElectronContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { getBaseName, getFileName } from "@/renderer/models";
@@ -102,7 +102,7 @@ interface ITabAttributesExt extends ITabAttributes {
 }
 
 export default function NodeManager(): JSX.Element {
-  const auCtx = useContext(AutoUpdateContext);
+  const auCtx = useAutoUpdateContext();
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();

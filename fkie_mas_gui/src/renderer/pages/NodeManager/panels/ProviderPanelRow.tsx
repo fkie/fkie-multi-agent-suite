@@ -27,12 +27,12 @@ import {
   EventProviderState,
   EventProviderWarnings,
 } from "@/renderer/providers/events";
-import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import semver from "semver";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
-import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
+import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -52,7 +52,7 @@ interface ProviderPanelRowProps {
 
 export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Element {
   const { provider } = props;
-  const auCtx = useContext(AutoUpdateContext);
+  const auCtx = useAutoUpdateContext();
   const rosCtx = useRosContext();
   const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();

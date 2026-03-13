@@ -4,9 +4,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
 import { MuiMarkdown } from "mui-markdown";
 import PropTypes from "prop-types";
-import { useContext, useState } from "react";
+import { useState } from "react";
 
-import { AutoUpdateContext } from "@/renderer//context/AutoUpdateContext";
+import { useAutoUpdateContext } from "@/renderer//context/AutoUpdateContext";
 import licenses from "@/renderer/deps-licenses.json";
 import packageJson from "../../../../package.json";
 import CopyButton from "../UI/CopyButton";
@@ -28,7 +28,7 @@ LinearProgressWithLabel.propTypes = {
 };
 
 export default function About(): JSX.Element {
-  const auCtx = useContext(AutoUpdateContext);
+  const auCtx = useAutoUpdateContext();
   const [openErrorTooltip, setOpenErrorTooltip] = useState(!!auCtx.updateError);
 
   const updateCli = auCtx.getUpdateCli(true, true);
