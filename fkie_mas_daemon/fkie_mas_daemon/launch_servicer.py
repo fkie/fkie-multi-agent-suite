@@ -247,7 +247,7 @@ class LaunchServicer(LoggingEventHandler):
         try:
             self._add_file_to_observe(launch_config.filename)
             added.append(launch_config.filename)
-            request = LaunchIncludedFilesRequest(launch_config.filename)
+            request = LaunchIncludedFilesRequest(launch_config.filename, args=launch_config.launch_arguments)
             for inc_description in self.get_included_files(request, result_as_json=False):
                 try:
                     self._add_file_to_observe(inc_description.inc_path)
@@ -729,9 +729,8 @@ class LaunchServicer(LoggingEventHandler):
     def get_included_files(self, request_json: LaunchIncludedFilesRequest, *, result_as_json=True) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
         request = request_json
-        path = request.path
         Log.info(
-            f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{path}]")
+            f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}")
         result = []
         cfg_included_files = []
         try:

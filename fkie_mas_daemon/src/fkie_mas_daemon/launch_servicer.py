@@ -933,9 +933,8 @@ class LaunchServicer(LoggingEventHandler):
     ) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
         request = request_json
-        path = request.path
         Log.debug(
-            "Request to [ros.launch.get_included_files]: Path [%s]" % str(path))
+            f"Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}")
         result = []
         try:
             search_in_ext = SEARCH_IN_EXT

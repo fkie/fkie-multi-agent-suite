@@ -375,18 +375,18 @@ def find_included_files(string: str,
                 match = comment_pattern.search(content, match.start())
     # use dirname if given filename if valid
     if filename is not None:
-       pwd = os.path.dirname(filename)
-       if '://' in pwd:
-           pwd = re.sub(r"^.*://[^/]*", "", pwd)
+        pwd = os.path.dirname(filename)
+        if '://' in pwd:
+            pwd = re.sub(r"^.*://[^/]*", "", pwd)
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
     if (string.endswith('.launch') or string.find('.launch.') > 0):
-        _replaced, content_resolved, resolve_args_intern = _replace_internal_args(
-            content, resolve_args=resolve_args, path=string)
+        # _replaced, content_resolved, resolve_args_intern = _replace_internal_args(
+        #     content, resolve_args=resolve_args, path=string)
         # intern args use only internal
         inc_files_forward_args = __get_include_args(
-            content_resolved, resolve_args)
+            content, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
         my_unique_files = list()
@@ -407,9 +407,11 @@ def find_included_files(string: str,
                     resolve_args_all.update(forward_args)
                     try:
                         # try to resolve path
-                        fname = replace_arg(fname, resolve_args_all)
-                        fname = replace_arg(fname, resolve_args_intern)
-                        if fname.find('$(arg ') == -1:
+                        _replaced, fname, _resolve_args_intern_n = _replace_internal_args(
+                            fname, resolve_args_all, filename)
+                        _replaced, fname, _resolve_args_intern_n = _replace_internal_args(
+                            fname, resolve_args_intern, filename)
+                        if fname.find('$(var ') == -1 and fname.find('$(arg ') == -1:
                             # do not try to resolve if not all args are replaced
                             fname = interpret_path(fname, pwd)
                     except Exception as err:
@@ -417,7 +419,6 @@ def find_included_files(string: str,
                     if os.path.isdir(fname):
                         fname = ''
                     exists = os.path.isfile(fname)
-                    fname = fname
                     if fname:
                         publish = not unique or (
                             unique and fname not in my_unique_files)
