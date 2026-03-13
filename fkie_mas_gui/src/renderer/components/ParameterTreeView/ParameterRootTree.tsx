@@ -5,9 +5,10 @@ import Label from "@mui/icons-material/Label";
 import { Box, Stack } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import LoggingContext, { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
+import { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
@@ -46,7 +47,7 @@ export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.El
   } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
 
   const [itemId] = useState<string>(rosNode ? rosNode.idGlobal : provider.id);

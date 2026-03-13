@@ -2,13 +2,12 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal/ConnectToProviderModal";
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -18,7 +17,6 @@ import { EVENT_OPEN_CONNECT } from "../layout/events";
 import ProviderPanelRow from "./ProviderPanelRow";
 
 export default function ProviderPanel(): JSX.Element {
-  const logCtx = useContext(LoggingContext);
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [openConnect, setOpenConnect] = useState(false);

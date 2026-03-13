@@ -131,14 +131,14 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     description:
       "Standard ROS version used to start remote daemon and discovery nodes. Only if automatic detection has failed.",
   },
-  guiLogLevel: {
-    label: "Log Level",
-    type: "string[]",
-    default: ["INFO", "SUCCESS", "WARN", "ERROR"],
-    options: LOG_LEVEL_LIST,
-    description: "Messages that are displayed on the console. This has no effect on the output in the ‘Logging’ tab.",
-    group: "Logging",
-  },
+  // guiLogLevel: {
+  //   label: "Log Level",
+  //   type: "string[]",
+  //   default: ["INFO", "SUCCESS", "WARN", "ERROR"],
+  //   options: LOG_LEVEL_LIST,
+  //   description: "Messages that are displayed on the console. This has no effect on the output in the ‘Logging’ tab.",
+  //   group: "Logging",
+  // },
   debugByUri: {
     label: "Interface URIs",
     type: "string[]",

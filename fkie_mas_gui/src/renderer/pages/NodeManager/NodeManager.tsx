@@ -52,7 +52,6 @@ import ProviderSelectionModal from "@/renderer/components/SelectionModal/Provide
 import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
 import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { ElectronContext } from "@/renderer/context/ElectronContext";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { getBaseName, getFileName } from "@/renderer/models";
@@ -78,6 +77,7 @@ import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
 // import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
 import { getInfoStateColor } from "@/renderer/components/UI/Colors";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -105,7 +105,7 @@ export default function NodeManager(): JSX.Element {
   const auCtx = useContext(AutoUpdateContext);
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const monacoInitCtx = useMonacoInitContext();
   const monacoCtx = monacoInitCtx.monacoCtx;
   const navCtx = useContext(NavigationContext);

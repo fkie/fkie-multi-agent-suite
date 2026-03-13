@@ -25,8 +25,8 @@ import {
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosNodeStatus } from "@/renderer/models";
@@ -55,7 +55,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const settingsCtx = useSettingsContext();
   const navCtx = useContext(NavigationContext);
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
 
   const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help"];
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

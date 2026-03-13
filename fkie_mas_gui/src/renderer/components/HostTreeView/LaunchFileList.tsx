@@ -13,8 +13,8 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import { useCallback, useContext } from "react";
 
-import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
 import MuiMarkdown from "mui-markdown";
@@ -50,7 +50,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
 
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useSettingsContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
 
   /**
    * Create and open a new panel with a [FileEditorPanel] for a given file path and host

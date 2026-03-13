@@ -1,15 +1,15 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import * as monaco from "monaco-editor";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { SaveResult } from "@/renderer/monaco/types";
 import { TFileRange, TLaunchArg } from "@/types";
 import DraggablePaper from "../../components/UI/DraggablePaper";
-import { LoggingContext } from "../../context/LoggingContext";
 import { getBaseName, getFileName } from "../../models";
 import { EVENT_CLOSE_COMPONENT } from "../../pages/NodeManager/layout/events";
 import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
@@ -25,7 +25,7 @@ type TLaunchInfo = {
 };
 
 export default function EditorApp(): JSX.Element {
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const monacoInitCtx = useMonacoInitContext();
   const monacoCtx = monacoInitCtx.monacoCtx;
   const rosCtx = useRosContext();

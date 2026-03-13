@@ -2,12 +2,13 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import TypeSpecimenIcon from "@mui/icons-material/TypeSpecimen";
 import { Alert, AlertTitle, Box, IconButton, Stack, ToggleButton, Tooltip } from "@mui/material";
-import { useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 
 import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { DEFAULT_BUG_TEXT, LoggingContext } from "@/renderer/context/LoggingContext";
+import { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
@@ -30,7 +31,7 @@ interface ParameterPanelProps {
 export default function ParameterPanel(props: ParameterPanelProps): JSX.Element {
   const { nodes, providers } = props;
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
 
   const [rootData, setRootData] = useState<TRootData[]>([]);

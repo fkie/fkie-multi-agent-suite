@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
 
 import { LogEvent, LoggingLevel } from "@/renderer/models";
 import {
@@ -44,88 +44,101 @@ export const DEFAULT_BUG_TEXT = "A bug occurred, please consider report it as an
 
 export const LoggingContext = createContext<ILoggingContext>(DEFAULT_LOGGING);
 
-export function LoggingProvider({ children }: ILoggingProvider): ReturnType<React.FC<ILoggingProvider>> {
+export function LoggingProvider({ children }: ILoggingProvider) {
   const settingsCtx = useSettingsContext();
+
   const [logs, setLogs] = useState<LogEvent[]>([]);
-  const [countErrors, setCountErrors] = useState<number>(0);
-  const [debugByUri, setDebugByUri] = useState<string[]>(settingsCtx.get("debugByUri") as string[]);
-  const [currentLogLevel, setCurrentLogLevel] = useState<string[]>(settingsCtx.get("guiLogLevel") as string[]);
-  const [printToConsole, setPrintToConsole] = useState<boolean>(settingsCtx.get("logPrintToConsole") as boolean);
+  const [countErrors, setCountErrors] = useState(0);
+
+  const [debugByUri, setDebugByUri] = useState<string[]>([]);
+  const [printToConsole, setPrintToConsole] = useState(false);
 
   useEffect(() => {
-    setDebugByUri([...(settingsCtx.get("debugByUri") as string[])]);
-    setCurrentLogLevel([...(settingsCtx.get("guiLogLevel") as string[])]);
+    setDebugByUri(settingsCtx.get("debugByUri") as string[]);
     setPrintToConsole(settingsCtx.get("logPrintToConsole") as boolean);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
-  function createLog(level: LoggingLevel, description: string, details: string): void {
-    // add new log event
-    setLogs((prevLogs) => [new LogEvent(level, description, details), ...prevLogs]);
-    if (printToConsole) {
-      if (level === LoggingLevel.ERROR) {
-        console.error(level, description, details);
-        setCountErrors(countErrors + 1);
-      } else if (level === LoggingLevel.WARN) console.warn(level, description, details);
-      else if (level === LoggingLevel.DEBUG) console.debug(level, description, details);
-      else console.info(level, description, details);
-    }
-    // check settings logger level
-    if (Array.isArray(currentLogLevel) && !currentLogLevel.includes(level)) return;
-  }
+  const createLog = useCallback(
+    (level: LoggingLevel, description: string, details: string) => {
+      setLogs((prev) => [new LogEvent(level, description, details), ...prev].slice(0, 500));
 
-  function debug(description: string, details: string = ""): void {
-    createLog(LoggingLevel.DEBUG, description, details);
-  }
+      if (!printToConsole) return;
 
-  function info(description: string, details: string = "", stateInfo?: string): void {
-    createLog(LoggingLevel.INFO, description, details);
-    if (stateInfo) sendStateInfo(stateInfo);
-  }
+      switch (level) {
+        case LoggingLevel.ERROR:
+          console.error(level, description, details);
+          setCountErrors((prev) => prev + 1);
+          break;
+        case LoggingLevel.WARN:
+          console.warn(level, description, details);
+          break;
+        case LoggingLevel.DEBUG:
+          console.debug(level, description, details);
+          break;
+        default:
+          console.info(level, description, details);
+      }
+    },
+    [printToConsole]
+  );
 
-  function success(description: string, details: string = "", stateInfo?: string): void {
-    createLog(LoggingLevel.SUCCESS, description, details);
-    if (stateInfo) sendStateSuccess(stateInfo);
-  }
+  const debug = useCallback(
+    (description: string, details = "") => createLog(LoggingLevel.DEBUG, description, details),
+    [createLog]
+  );
 
-  function warn(description: string, details: string = "", stateInfo?: string): void {
-    createLog(LoggingLevel.WARN, description, details);
-    if (stateInfo) sendStateWarn(stateInfo);
-  }
+  const info = useCallback(
+    (description: string, details = "", stateInfo?: string) => {
+      createLog(LoggingLevel.INFO, description, details);
+      if (stateInfo) sendStateInfo(stateInfo);
+    },
+    [createLog]
+  );
 
-  function error(description: string, details: string = "", stateInfo?: string): void {
-    createLog(LoggingLevel.ERROR, description, details);
-    if (stateInfo) sendStateError(stateInfo);
-  }
+  const success = useCallback(
+    (description: string, details = "", stateInfo?: string) => {
+      createLog(LoggingLevel.SUCCESS, description, details);
+      if (stateInfo) sendStateSuccess(stateInfo);
+    },
+    [createLog]
+  );
 
-  function clearLogs(): void {
-    setLogs(() => []);
-  }
+  const warn = useCallback(
+    (description: string, details = "", stateInfo?: string) => {
+      createLog(LoggingLevel.WARN, description, details);
+      if (stateInfo) sendStateWarn(stateInfo);
+    },
+    [createLog]
+  );
 
-  function debugInterface(
-    uri: string,
-    msg: TResult | JSONObject | string,
-    details?: string,
-    providerName?: string
-  ): void {
-    // check settings to debug by uri
+  const error = useCallback(
+    (description: string, details = "", stateInfo?: string) => {
+      createLog(LoggingLevel.ERROR, description, details);
+      if (stateInfo) sendStateError(stateInfo);
+    },
+    [createLog]
+  );
 
-    let parsedMsg: TResult | JSONObject | string = {};
-    try {
-      if (msg && typeof msg === "string" && msg.length > 0) parsedMsg = JSON.parse(msg);
-      else parsedMsg = msg;
-    } catch (errorParse: unknown) {
-      warn(`ws://${providerName}?${uri}: error while read debug message`, JSON.stringify(errorParse));
-      parsedMsg = msg;
-    }
+  const clearLogs = useCallback(() => setLogs([]), []);
 
-    const detailsStr = details ? `: ${details}` : "";
+  const debugInterface = useCallback(
+    (uri: string, msg: TResult | JSONObject | string, details?: string, providerName?: string) => {
+      if (!debugByUri.includes(uri)) return;
 
-    if (Array.isArray(debugByUri) && debugByUri.includes(uri)) {
-      debug(`ws://${providerName}?${uri}${detailsStr}`, JSON.stringify(parsedMsg));
-    }
-  }
+      let parsed: unknown = msg;
 
-  const attributesMemo = useMemo(
+      try {
+        if (typeof msg === "string") parsed = JSON.parse(msg);
+      } catch {
+        parsed = msg;
+      }
+
+      debug(`ws://${providerName}?${uri}${details ? ` : ${details}` : ""}`, JSON.stringify(parsed));
+    },
+    [debugByUri, debug]
+  );
+
+  const value = useMemo(
     () => ({
       logs,
       countErrors,
@@ -137,10 +150,10 @@ export function LoggingProvider({ children }: ILoggingProvider): ReturnType<Reac
       clearLogs,
       debugInterface,
     }),
-    [logs, countErrors]
+    [logs, countErrors, debug, info, success, warn, error, clearLogs, debugInterface]
   );
 
-  return <LoggingContext.Provider value={attributesMemo}>{children}</LoggingContext.Provider>;
+  return <LoggingContext.Provider value={value}>{children}</LoggingContext.Provider>;
 }
 
 export default LoggingContext;

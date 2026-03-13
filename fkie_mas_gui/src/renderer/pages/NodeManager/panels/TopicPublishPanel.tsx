@@ -31,9 +31,9 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { DB_MAX_MSGS, MsgHistoryContext, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LaunchPublishMessage, rosMessageStructToString, RosQos, TRosMessageStruct } from "@/renderer/models";
@@ -58,7 +58,7 @@ interface TopicPublishPanelProps {
 export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.Element {
   const { topicName = undefined, topicType = undefined, providerId = undefined } = props;
   const [oldHistory, setOldHistory] = useLocalStorage<{ [msg: string]: THistoryItem[] }>("MessageStruct:history", {});
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const historyCtx = useContext(MsgHistoryContext);

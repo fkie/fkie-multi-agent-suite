@@ -1,5 +1,5 @@
 import { SnackbarKey, useSnackbar } from "notistack";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
@@ -42,8 +42,8 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
+import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
-import { LoggingContext } from "./LoggingContext";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
 export type TLocalNode = {
@@ -104,7 +104,7 @@ export const RosContext = createContext<IRosContext | null>(null);
 
 export function RosProviderReact(props: IRosProviderComponent): ReturnType<React.FC<IRosProviderComponent>> {
   const { children } = props;
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
 

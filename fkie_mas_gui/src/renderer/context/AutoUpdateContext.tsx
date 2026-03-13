@@ -5,10 +5,10 @@ import semver from "semver";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { JSONObject, TAutoUpdateManager } from "@/types";
 import packageJson from "../../../package.json";
+import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
 import { CmdType } from "../providers";
-import { LoggingContext } from "./LoggingContext";
 import NavigationContext from "./NavigationContext";
 
 export interface IAutoUpdateContext {
@@ -62,7 +62,7 @@ export const AutoUpdateContext = createContext<IAutoUpdateContext>(DEFAULT);
 export function AutoUpdateProvider({
   children,
 }: IAutoUpdateProviderComponent): ReturnType<React.FC<IAutoUpdateProviderComponent>> {
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const navCtx = useContext(NavigationContext);
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();

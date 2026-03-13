@@ -1,9 +1,9 @@
 import * as MonacoReact from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor/esm/vs/editor/editor.api";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef } from "react";
 
-import LoggingContext from "../context/LoggingContext";
+import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { FileItem, FileLanguageAssociations } from "../models";
 import { IncludeResolver } from "../monaco/setup";
@@ -44,7 +44,7 @@ export const MonacoContext = createContext<IMonacoContext | null>(null);
 export function MonacoProvider({ children }: { children: React.ReactNode }) {
   const monacoInstance = MonacoReact.useMonaco();
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const rosCtxRef = useRef(rosCtx);
   const logCtxRef = useRef(logCtx);
 

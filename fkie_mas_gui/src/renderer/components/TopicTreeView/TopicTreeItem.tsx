@@ -4,8 +4,8 @@ import { treeItemClasses } from "@mui/x-tree-view";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { NavigationContext } from "@/renderer/context/NavigationContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
@@ -26,7 +26,7 @@ interface TopicTreeItemProps {
 export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
   const { itemId, rootPath, topicInfo, selectedItem } = props;
 
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useSettingsContext();
   const [name, setName] = useState<string>("");

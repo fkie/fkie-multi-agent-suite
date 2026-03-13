@@ -45,12 +45,12 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary from "@mui/material/AccordionSummary";
 import { grey } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { getDefaultPortFromRos } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import ProviderLaunchConfiguration from "@/renderer/models/ProviderLaunchConfiguration";
@@ -153,7 +153,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
   const { startOnOpen = false, joinOnOpen = false, onCloseDialog = (): void => {} } = props;
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const hostArg: string | undefined = settingsCtx.getArgument("host") as string | undefined;
   const defaultHost: string[] = hostArg ? hostArg?.split(",") : ["localhost"];
 

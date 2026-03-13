@@ -15,9 +15,9 @@ import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTr
 import TopicTreeItem from "@/renderer/components/TopicTreeView/TopicTreeItem";
 import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
@@ -51,7 +51,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
   const { initialSearchTerm = "" } = props;
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const navCtx = useContext(NavigationContext);
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();

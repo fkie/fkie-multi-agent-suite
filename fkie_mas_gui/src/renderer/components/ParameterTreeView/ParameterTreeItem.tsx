@@ -12,9 +12,9 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosParameter, RosParameterRange, RosParameterValue } from "@/renderer/models";
@@ -46,7 +46,7 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
   }
 
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
   const [parameterType, setParameterType] = useState<string>(paramInfo.type);
   const [changed, setChanged] = useState<boolean>(false);

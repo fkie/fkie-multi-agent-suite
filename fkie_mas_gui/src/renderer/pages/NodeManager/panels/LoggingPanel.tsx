@@ -12,13 +12,13 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { TableVirtuoso } from "react-virtuoso";
 
 import { levelColors } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LogEvent, LoggingLevel } from "@/renderer/models";
 import "./TableResizable.css";
@@ -54,7 +54,7 @@ function exportLogs(logs: LogEvent[]): void {
 }
 
 export default function LoggingPanel(): JSX.Element {
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
   const [logLevel, setLogLevel] = useLocalStorage<LoggingLevel>("LoggingPanel:level", LoggingLevel.INFO);
   const [showDetails, setShowDetails] = useState(true);

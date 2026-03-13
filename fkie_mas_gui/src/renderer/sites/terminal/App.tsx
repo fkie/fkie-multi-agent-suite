@@ -1,9 +1,9 @@
 import { Stack } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { LoggingContext } from "../../context/LoggingContext";
 import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
 import { CmdType, cmdTypeFromString } from "../../providers";
 import TerminalProvider from "../../providers/TerminalProvider";
@@ -18,7 +18,7 @@ interface ITerminalInfo {
 }
 
 export default function TerminalApp(): JSX.Element {
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [paramInfo, setParamInfo] = useState<ITerminalInfo | null>(null);

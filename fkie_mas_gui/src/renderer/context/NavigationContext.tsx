@@ -1,17 +1,18 @@
 import { Model } from "flexlayout-react";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useMemo, useState } from "react";
 
 import { getBaseName } from "@/renderer/models";
 import {
-    EVENT_EDITOR_SELECT_RANGE,
-    EVENT_OPEN_COMPONENT,
-    eventEditorSelectRange,
-    eventOpenComponent,
+  EVENT_EDITOR_SELECT_RANGE,
+  EVENT_OPEN_COMPONENT,
+  eventEditorSelectRange,
+  eventOpenComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel";
 import { xor } from "@/renderer/utils/index";
 import { TFileRange, TLaunchArg } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
+import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
 import { createEditorEditorId } from "../monaco/utils";
@@ -20,7 +21,6 @@ import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
 import TopicPublishPanel from "../pages/NodeManager/panels/TopicPublishPanel";
 import { CmdType } from "../providers";
-import LoggingContext from "./LoggingContext";
 
 export interface INavigationContext {
   selectedNodes: string[];
@@ -92,7 +92,7 @@ interface INavigationProvider {
 export const NavigationContext = createContext<INavigationContext>(DEFAULT);
 
 export function NavigationProvider({ children }: INavigationProvider): ReturnType<React.FC<INavigationProvider>> {
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
 

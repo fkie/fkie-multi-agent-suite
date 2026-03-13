@@ -1,9 +1,9 @@
 import { Stack } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { LoggingContext } from "../../context/LoggingContext";
 import { getFileName } from "../../models";
 import TopicPublishPanel from "../../pages/NodeManager/panels/TopicPublishPanel";
 import PublisherProvider from "../../providers/PublisherProvider";
@@ -16,7 +16,7 @@ interface IPublisherInfo {
 }
 
 export default function PublisherApp(): JSX.Element {
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [pubInfo, setPubInfo] = useState<IPublisherInfo | null>(null);

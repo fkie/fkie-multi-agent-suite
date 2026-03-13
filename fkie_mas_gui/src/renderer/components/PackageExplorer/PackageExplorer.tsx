@@ -5,10 +5,10 @@ import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip }
 import { useCallback, useContext, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
 import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileExtension, getFileName, PathItem, RosPackage } from "@/renderer/models";
@@ -41,7 +41,7 @@ interface PackageExplorerProps {
 export default function PackageExplorer(props: PackageExplorerProps): JSX.Element {
   const { packageList = [], selectedProvider = "", reloadPackage = 0 } = props;
 
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const navCtx = useContext(NavigationContext);
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();

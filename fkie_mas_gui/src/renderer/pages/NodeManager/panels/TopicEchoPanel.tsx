@@ -21,15 +21,15 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { v4 as uuid } from "uuid";
 
 import { Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosQos, SubscriberFilter, TSubscriberEventExt } from "@/renderer/models";
@@ -50,7 +50,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
   const { showOptions = true, defaultProvider = "", defaultTopic = "", defaultNoData = false } = props;
 
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
 
   const [selectedProvider] = useState(defaultProvider);

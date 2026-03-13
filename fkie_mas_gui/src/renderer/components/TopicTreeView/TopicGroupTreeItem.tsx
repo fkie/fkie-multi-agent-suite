@@ -6,9 +6,9 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { useContext } from "react";
+import React from "react";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import StyledTreeItem from "./StyledTreeItem";
 
 interface TopicGroupTreeItemProps {
@@ -23,7 +23,7 @@ interface TopicGroupTreeItemProps {
 export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.Element {
   const { itemId, rootPath, groupName, countChildren, hasIncompatibleQos, ...children } = props;
 
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
 
   // avoid selection if collapse icon was clicked
   let toggled = false;

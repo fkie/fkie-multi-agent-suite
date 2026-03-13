@@ -7,8 +7,8 @@ import { alpha } from "@mui/material/styles";
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
-import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
@@ -30,7 +30,7 @@ type TopicDetailsItemsProps = {
 export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Element {
   const { providerId, topicId, showConnections = true, nodeName = "" } = props;
 
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const navCtx = useContext(NavigationContext);
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();

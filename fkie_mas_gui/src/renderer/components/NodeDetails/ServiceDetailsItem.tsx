@@ -5,8 +5,8 @@ import { alpha } from "@mui/material/styles";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
-import LoggingContext from "@/renderer/context/LoggingContext";
 import NavigationContext from "@/renderer/context/NavigationContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosService, RosTopicId, ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
@@ -26,7 +26,7 @@ type ServiceDetailsItemsProps = {
 export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX.Element {
   const { providerId, serviceId, nodeName = "" } = props;
 
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const navCtx = useContext(NavigationContext);
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();

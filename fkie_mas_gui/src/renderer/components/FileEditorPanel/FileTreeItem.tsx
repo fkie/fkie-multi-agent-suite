@@ -3,17 +3,17 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
 import {
-    TreeItem,
-    treeItemClasses,
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  TreeItem,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { useContext } from "react";
+import React from "react";
 import { emitCustomEvent } from "react-custom-events";
 import { FileIcon } from "react-file-icon";
 
-import LoggingContext from "@/renderer/context/LoggingContext";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { getFileExtension, getFileName } from "@/renderer/models";
 import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import { TLaunchArg } from "@/types";
@@ -71,7 +71,7 @@ interface FileTreeItemProps {
 
 export default function FileTreeItem(props: FileTreeItemProps): JSX.Element {
   const { editorId, itemId, item, selected, modified, ...children } = props;
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const fileExtension = getFileExtension(item.file.inc_path as string);
 
   function getLabelSx(): object {

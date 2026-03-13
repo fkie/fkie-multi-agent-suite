@@ -15,10 +15,10 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { HTMLAttributes, useCallback, useContext, useEffect, useState } from "react";
+import { HTMLAttributes, useCallback, useEffect, useState } from "react";
 
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "@/renderer/models";
 import DraggablePaper from "../UI/DraggablePaper";
@@ -44,7 +44,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
   } = props;
 
   const rosCtx = useRosContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const [open, setOpen] = useState(false);
   const [selectedLaunch, setSelectedLaunch] = useState<LaunchLoadReply | null>(null);
   const [messageLaunchLoaded, setMessageLaunchLoaded] = useState("");

@@ -16,13 +16,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import LoggingContext from "@/renderer/context/LoggingContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LaunchCallService, rosMessageStructToString, TRosMessageStruct } from "@/renderer/models";
@@ -38,7 +38,7 @@ interface ServiceCallerPanelProps {
 export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.Element {
   const { serviceName, serviceType, providerId } = props;
 
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
   const [history, setHistory] = useLocalStorage("ServiceStruct:history", {});
   const [historyLength, setHistoryLength] = useState(0);

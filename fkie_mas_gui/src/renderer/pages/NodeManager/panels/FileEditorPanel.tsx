@@ -3,16 +3,16 @@ import * as Monaco from "@monaco-editor/react";
 import { Stack } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { editor } from "monaco-editor";
-import { ForwardedRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { ForwardedRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
 import "split-pane-react/esm/themes/default.css";
 
 import { AlertsBar, EditorSidebar, EditorToolbar, THistoryModel } from "@/renderer/components/FileEditorPanel";
-import { LoggingContext } from "@/renderer/context/LoggingContext";
 import { useEditorKeyboard } from "@/renderer/hooks/editor/useEditorKeyboard";
 import { useEditorLayout } from "@/renderer/hooks/editor/useEditorLayout";
 import { useIncludedFiles } from "@/renderer/hooks/useIncludedFiles";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -43,7 +43,7 @@ interface FileEditorPanelProps {
 export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Element {
   const { editorId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
   const settingsCtx = useSettingsContext();
-  const logCtx = useContext(LoggingContext);
+  const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const monacoCtx = useMonacoContext();
 
