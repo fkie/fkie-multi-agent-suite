@@ -618,24 +618,22 @@ class LaunchServicer(LoggingEventHandler):
                 reply_lc.nodes.append(item)
                 # search for associations
                 for p in item.parameters:
+                    associations = None
                     if p.name == "mas/associations":
                         associations = p.value
-                    else:
-                        # versuche beide möglichen Pfade
-                        try:
+                    elif isinstance(p.value, dict):
+                        associations = (
+                            p.value.get("/**", {})
+                            .get("ros__parameters", {})
+                            .get("mas/associations")
+                        )
+                        if associations is None:
                             associations = (
-                                p.value.get("/**", {})
-                                    .get("ros__parameters", {})
-                                    .get("mas/associations")
-                                or
                                 p.value.get(item.node_name, {})
-                                    .get("ros__parameters", {})
-                                    .get("mas/associations")
+                                .get("ros__parameters", {})
+                                .get("mas/associations")
                             )
-                        except:
-                            import traceback
-                            print(traceback.format_exc())
-                    if associations:
+                    if associations is not None:
                         reply_lc.associations.append(LaunchAssociations(item.node_name, associations))
             reply_lc.warnings = lc.load_exceptions
             reply.append(reply_lc)

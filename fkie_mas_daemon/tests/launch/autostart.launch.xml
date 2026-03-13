@@ -8,6 +8,7 @@
     <unset_env name="NAME" />
     <node name="rviz" pkg="rviz2" exec="rviz2">
       <param name="capability_group" value="gui" />
+      <param name="mas/associations" value="[rviz2]" />
       <param from="$(find-pkg-share fkie_mas_daemon)/$(var sub)/launch/params.yaml"/>
       <param name="use_sim_time" value="$(var sim)" />
     </node>

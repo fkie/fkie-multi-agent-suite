@@ -265,19 +265,19 @@ class LaunchContent:
    '''
 
     def __init__(self, path: str, *,
-                 args: List[LaunchArgument] = [],
+                 args: List[LaunchArgument] = None,
                  masteruri: str = '',
                  host: str = '',
-                 nodes: List[str] = [],
-                 parameters: List[RosParameter] = [],
-                 associations: List[LaunchAssociations] = []) -> None:
+                 nodes: List[str] = None,
+                 parameters: List[RosParameter] = None,
+                 associations: List[LaunchAssociations] = None) -> None:
         self.path = path
-        self.args = args
+        self.args = args or []
         self.masteruri = masteruri
         self.host = host
-        self.nodes = nodes
-        self.parameters = parameters
-        self.associations = associations
+        self.nodes = nodes or []
+        self.parameters = parameters or []
+        self.associations = associations or []
         self.warnings: List[str] = []
 
     def __str__(self):
