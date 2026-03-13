@@ -338,6 +338,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // get file content from provider and create monaco model
     async function getFileAndIncludesAsync(): Promise<void> {
       setCurrentFileState({ name: getFileName(currentFilePath), requesting: true, path: currentFilePath });
+      const resultFetchIncludes = await fetchIncludedFiles();
+      if (!resultFetchIncludes.result) {
+        setNotificationDescription(resultFetchIncludes.error);
+        return;
+      }
       const result: TModelResult = await monacoCtx.getModel(editorId, currentFilePath, false);
       if (!result.model && !result.file) {
         setNotificationDescription(result.error || `Could not get file: [${currentFilePath}]`);
@@ -359,12 +364,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         clearIncludedFiles();
         setNotificationDescription("");
         return;
-      }
-      const resultFetchIncludes = await fetchIncludedFiles();
-      if (!resultFetchIncludes.result) {
-        setNotificationDescription(resultFetchIncludes.error);
-      } else {
-        setNotificationDescription("");
       }
     }
     getFileAndIncludesAsync();

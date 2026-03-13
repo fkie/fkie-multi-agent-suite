@@ -9,7 +9,13 @@ import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 import { IMonacoContext } from "@/renderer/context/MonacoContext";
 import { IRosContext } from "@/renderer/context/RosContext";
 import { getFileName, RosPackage } from "@/renderer/models";
-import { createUriPath, fileFromUriPath, pathFromEditorId, providerIdFromEditorId, providerIdFromUriPath } from "../utils";
+import {
+  createUriPath,
+  fileFromUriPath,
+  pathFromEditorId,
+  providerIdFromEditorId,
+  providerIdFromUriPath,
+} from "../utils";
 import { extractIncludes, ResolverCacheEntry } from "./IncludeResolver";
 import { PythonLanguage } from "./languages/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "./languages/PythonLaunchProposals";
@@ -231,7 +237,8 @@ function initLanguages(
 
 export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
   const monacoCtx = monacoCtxRef.current;
-  if (!monacoCtx.monaco) return [];
+  if (!monacoCtx.monaco) return;
+
   const newDisposables: IDisposable[] = [];
 
   for (const e of SUPPORTED_FILES) {
