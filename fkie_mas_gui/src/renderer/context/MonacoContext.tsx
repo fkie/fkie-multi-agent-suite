@@ -3,8 +3,8 @@ import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor";
 import { createContext, useCallback, useEffect, useMemo, useRef } from "react";
 
+import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "../hooks/useLoggingContext";
-import { useRefContext } from "../hooks/useRefContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { FileItem, FileLanguageAssociations, LaunchIncludedFile } from "../models";
 import { createIncludeResolver, IncludeResolver } from "../monaco/setup";
@@ -46,7 +46,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   const monacoInstance = MonacoReact.useMonaco();
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();
-  const rosCtxRef = useRefContext(rosCtx);
+  const rosCtxRef = useAlwaysCurrentRef(rosCtx);
 
   const files = useRef(new Map<string, FileItem>());
   const resolvers = useRef(new Map<string, IncludeResolver>());

@@ -42,10 +42,14 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
+import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "../hooks/useLoggingContext";
-import { useRefContext } from "../hooks/useRefContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
+
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
 
 export type TLocalNode = {
   providerId: string;
@@ -59,7 +63,7 @@ export interface IRosContext {
   providers: Provider[];
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
-  localNodes: TLocalNode[]; // track local nodes of each provider
+  localNodes: TLocalNode[];
   createProvider(host: string, rosVersion: string, port?: number, networkId?: number, useSSL?: boolean): Provider;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
@@ -97,9 +101,19 @@ type TLoadLaunchResult = {
   reply?: LaunchLoadReply | null;
 };
 
+/** Result of a single service start attempt (daemon / discovery / sync / terminal). */
+type TServiceStartResult = {
+  started: boolean;
+  authRequested: boolean;
+};
+
 interface IRosProviderComponent {
   children: React.ReactNode;
 }
+
+// ─────────────────────────────────────────────
+// Context
+// ─────────────────────────────────────────────
 
 export const RosContext = createContext<IRosContext | null>(null);
 
@@ -109,6 +123,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const settingsCtx = useSettingsContext();
   const { enqueueSnackbar } = useSnackbar();
 
+  // ── State ──────────────────────────────────
   const [initialized, setInitialized] = useState(false);
   const [rosInfo, setRosInfo] = useState<TRosInfo | null>(null);
   const [systemInfo, setSystemInfo] = useState<TSystemInfo | null>(null);
@@ -117,203 +132,179 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [localNodes, setLocalNodes] = useState<TLocalNode[]>([]);
   const [showSnackbarReloadLaunchNotification, setShowSnackbarReloadLaunchNotification] = useState<boolean>(true);
   const [showSnackbarBinaryChangedNotification, setShowSnackbarBinaryChangedNotification] = useState<boolean>(true);
-
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(new Map<string, RosNode[]>());
-  // nodeMap: Map<string, RosNode>
-  const [nodeMap, setNodeMap] = useState(new Map());
+  const [nodeMap, setNodeMap] = useState(new Map<string, RosNode>());
 
-  const logCtxRef = useRefContext(logCtx);
-  const settingsCtxRef = useRefContext(settingsCtx);
+  // ── Stable refs (avoids stale-closure bugs in callbacks / event handlers) ──
+  const logCtxRef = useAlwaysCurrentRef(logCtx);
+  const settingsCtxRef = useAlwaysCurrentRef(settingsCtx);
+  const providersRef = useAlwaysCurrentRef<Provider[]>(providers);
+  const systemInfoRef = useAlwaysCurrentRef<TSystemInfo | null>(systemInfo);
+  const showReloadRef = useAlwaysCurrentRef(showSnackbarReloadLaunchNotification);
+  const showBinaryRef = useAlwaysCurrentRef(showSnackbarBinaryChangedNotification);
+  const mapProviderRosNodesRef = useAlwaysCurrentRef(mapProviderRosNodes);
+  const nodeMapRef = useAlwaysCurrentRef(nodeMap);
 
-  // wrapper function to set settings and logger for each provider
-  function createProvider(
-    host: string,
-    rosVersion: string,
-    port: number = 0,
-    networkId: number = 0,
-    useSSL: boolean = false
-  ): Provider {
-    return new Provider(logCtxRef, settingsCtxRef, host, rosVersion, port, networkId, useSSL);
-  }
+  // ─────────────────────────────────────────────
+  // Provider helpers
+  // ─────────────────────────────────────────────
 
-  /** Remove all disconnected provider and their discovered provider. */
-  function clearProviders(): void {
-    const idsSavedProviders: string[] = [];
-    // get ids of providers which are stored local and are connected
-    for (const prov of providers) {
-      if (prov.isCreatedByUser() && prov.connectionState === ConnectionState.STATES.CONNECTED) {
-        idsSavedProviders.push(prov.id);
-      }
-    }
-
-    // remove all discovered provider with no parent provider
-    // and not stored
-    setProviders((oldProviders) =>
-      oldProviders.filter((prov) => {
-        if (
-          prov.isCreatedByUser() ||
-          prov.cleanDiscoverer(idsSavedProviders).length > 0 ||
-          prov.connectionState === ConnectionState.STATES.CONNECTED
-        ) {
-          return true;
-        }
-        // close the connection and remove provider
-        prov.close();
-        return false;
-      })
-    );
-  }
-
-  /** Returns true if given host is one of local IPv4 addresses and local host names.  */
-  function isLocalHost(host: string): boolean {
-    if (host === "localhost" || host === systemInfo?.osInfo?.hostname) {
-      return true;
-    }
-    const localIps: string[] = [];
-    for (const ni of systemInfo?.networkInterfaces || []) {
-      if (host === ni.ip4) {
-        localIps.push(ni.ip4);
-      }
-    }
-    return localIps.length > 0;
-  }
-
-  function addProvider(provider: Provider): void {
-    if (!getProviderById(provider.id)) {
-      setProviders((prev) => [...prev, provider]);
-    }
-  }
-
-  const updateLocalNodes = useCallback(
-    (providerId: string, nodes: string[]): void => {
-      setLocalNodes((prev) => [
-        ...prev.filter((localNode) => {
-          return localNode.providerId !== providerId;
-        }),
-        ...nodes.map((node) => {
-          return { providerId, node };
-        }),
-      ]);
+  /** Create a configured Provider instance. */
+  const createProvider = useCallback(
+    (host: string, rosVersion: string, port = 0, networkId = 0, useSSL = false): Provider => {
+      return new Provider(logCtxRef, settingsCtxRef, host, rosVersion, port, networkId, useSSL);
     },
-    [setLocalNodes]
+    [logCtxRef, settingsCtxRef]
   );
 
-  /** Search and return a provider using its id */
+  /** Returns true if the given host resolves to the local machine. */
+  const isLocalHost = useCallback((host: string): boolean => {
+    const info = systemInfoRef.current;
+    if (host === "localhost" || host === info?.osInfo?.hostname) return true;
+    return (info?.networkInterfaces ?? []).some((ni) => ni.ip4 === host);
+  }, []);
+
+  /** Return a provider by id. By default also returns unavailable providers. */
   const getProviderById = useCallback(
-    (providerId: string | undefined, includeNotAvailable: boolean = true) => {
+    (providerId: string | undefined, includeNotAvailable = true): Provider | undefined => {
       if (!providerId) return undefined;
-      return providers.find((provider) => {
-        return (provider.isAvailable() || includeNotAvailable) && provider.id === providerId;
-      });
+      return providersRef.current.find((p) => (p.isAvailable() || includeNotAvailable) && p.id === providerId);
     },
-    [providers]
+    []
   );
 
   /**
-   * Search and return a provider using known hosts and port
+   * Find a provider by hostnames + optional port.
+   * If none is found and `defaultValue` is provided, enqueue it for addition.
    */
   const getProviderByHosts = useCallback(
-    (hosts: string[], port: number = 0, defaultValue: Provider | null = null): Provider | null => {
-      const p = providers.find((provider) => {
-        let result = true;
-        if (port !== 0 && provider.connection.port !== 0) {
-          result = provider.connection.port === port;
-        }
-        if (!result) return null;
-        // join hostnames without duplicates
-        result =
-          hosts.filter((value) => {
-            return provider.hostnames?.includes(value);
-          }).length > 0;
-        return result;
+    (hosts: string[], port = 0, defaultValue: Provider | null = null): Provider | null => {
+      const found = providersRef.current.find((p) => {
+        if (port !== 0 && p.connection.port !== 0 && p.connection.port !== port) return false;
+        return hosts.some((h) => p.hostnames?.includes(h));
       });
-      if (p) {
-        return p;
-      }
+      if (found) return found;
       if (defaultValue !== null) {
-        // add provider
-        setProvidersAddQueue((oldValues) => [...oldValues, defaultValue]);
+        setProvidersAddQueue((prev) => [...prev, defaultValue]);
       }
       return defaultValue;
     },
-    [providers]
+    []
   );
 
-  /**
-   * Search and return a provider it they are local
-   */
+  /** Return all providers that are on localhost. */
   const getLocalProvider = useCallback((): Provider[] => {
-    const p = providers.filter((provider) => {
-      return provider.isLocalHost;
-    });
-    return p;
-  }, [providers]);
+    return providersRef.current.filter((p) => p.isLocalHost);
+  }, []);
 
-  /**
-   * Trigger updateLaunchContent() of the provider.
-   */
-  async function removeProvider(providerId: string): Promise<void> {
-    logCtx.debug(`Remove provider ${providerId}`, "");
+  /** Return the display name of a provider. */
+  const getProviderName = useCallback((providerId: string): string => {
+    return providersRef.current.find((p) => p.id === providerId)?.name() ?? "";
+  }, []);
+
+  /** Add a provider if not already registered. */
+  const addProvider = useCallback(
+    (provider: Provider): void => {
+      if (!getProviderById(provider.id)) {
+        setProviders((prev) => [...prev, provider]);
+      }
+    },
+    [getProviderById]
+  );
+
+  /** Remove all disconnected providers that were not created by the user. */
+  const clearProviders = useCallback((): void => {
+    const connectedUserIds = providersRef.current
+      .filter((p) => p.isCreatedByUser() && p.connectionState === ConnectionState.STATES.CONNECTED)
+      .map((p) => p.id);
+
     setProviders((prev) =>
-      prev.filter((prov) => {
-        if (prov.id === providerId) {
-          prov.close();
-          return false;
+      prev.filter((p) => {
+        if (
+          p.isCreatedByUser() ||
+          p.cleanDiscoverer(connectedUserIds).length > 0 ||
+          p.connectionState === ConnectionState.STATES.CONNECTED
+        ) {
+          return true;
         }
-        return true;
+        p.close();
+        return false;
       })
     );
-  }
+  }, []);
 
-  /**
-   * Trigger updateRosNodes() of the provider.
-   */
+  /** Close the connection to all registered providers. */
+  const closeProviders = useCallback((): void => {
+    for (const p of providersRef.current) {
+      p.close();
+    }
+  }, []);
+
+  /** Remove a provider by id and close its connection. */
+  const removeProvider = useCallback(
+    (providerId: string): void => {
+      logCtx.debug(`Remove provider ${providerId}`, "");
+      setProviders((prev) =>
+        prev.filter((p) => {
+          if (p.id === providerId) {
+            p.close();
+            return false;
+          }
+          return true;
+        })
+      );
+    },
+    [logCtx]
+  );
+
+  /** Update the local-node list for a given provider. */
+  const updateLocalNodes = useCallback((providerId: string, nodes: string[]): void => {
+    setLocalNodes((prev) => [
+      ...prev.filter((ln) => ln.providerId !== providerId),
+      ...nodes.map((node) => ({ providerId, node })),
+    ]);
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // Node / launch update helpers
+  // ─────────────────────────────────────────────
+
+  /** Trigger a full node-list refresh for a provider. */
   const updateNodeList = useCallback(
     async (providerId: string, force?: boolean): Promise<void> => {
       logCtx.debug(`Triggering update of ROS nodes from ${providerId}`, "");
       const provider = getProviderById(providerId);
-      if (provider) {
-        await provider.updateRosNodes({}, force);
-        await provider.updateLaunchContent();
-        await provider.updateScreens();
-        await provider.updateTimeDiff();
-        await provider.updateDiagnostics(null);
-        await provider.getLifecycle();
-        await provider.getComposable();
-        await provider.updateRosServices();
-        await provider.updateRosTopics();
-      }
+      if (!provider) return;
+      await provider.updateRosNodes({}, force);
+      await provider.updateLaunchContent();
+      await provider.updateScreens();
+      await provider.updateTimeDiff();
+      await provider.updateDiagnostics(null);
+      await provider.getLifecycle();
+      await provider.getComposable();
+      await provider.updateRosServices();
+      await provider.updateRosTopics();
     },
     [getProviderById, logCtx]
   );
 
-  /**
-   * Trigger updateLaunchContent() of the provider.
-   */
+  /** Trigger a launch-file list refresh for a provider. */
   const updateLaunchList = useCallback(
     async (providerId: string): Promise<void> => {
       logCtx.debug(`Triggering update of ROS launch files from ${providerId}`, "");
       const provider = getProviderById(providerId);
-      await provider?.updateLaunchContent();
-      await provider?.mergeNodeStates();
+      if (!provider) return;
+      await provider.updateLaunchContent();
+      await provider.mergeNodeStates();
     },
     [getProviderById, logCtx]
   );
 
-  /**
-   * Close the connection to all registered providers
-   * Useful when new providers wants to be registered
-   * as it prevents re-registration of URIs
-   */
-  const closeProviders = useCallback((): void => {
-    for (const prov of providers) {
-      prov.close();
-    }
-  }, [providers]);
+  // ─────────────────────────────────────────────
+  // Launch helpers
+  // ─────────────────────────────────────────────
 
-  /**
-   * Launch a file [filePath] on a given [provider], using arguments [args]
-   */
+  /** Load (or reload) a launch file on the given provider. */
   const launchFile = useCallback(
     async (
       provider: Provider,
@@ -322,39 +313,23 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       reload = false
     ): Promise<TLoadLaunchResult> => {
       if (!filePath) return { success: false, error: "Invalid file path" };
-      if (!provider || !provider.isAvailable()) return { success: false, error: "Invalid/unavailable provider" };
-
-      /*
-       * ros_package -
-       * launch - Launch file in the package path.
-       * path - if set, this will be used instead of package/launch
-       * @param {LaunchArgument[]} args - Arguments to load the launch file.
-       * @param {boolean} force_first_file - If True, use first file if more than one was found in the package.
-       * @param {boolean} request_args - If True, the launch file will not be loaded, only launch arguments are requested.
-       * masteruri - Starts nodes of this file with specified ROS_MASTER_URI.
-       * host - Start nodes of this file on specified host.
-       * */
-      const rosPackage = ""; // ROS package name.
-      const launch = ""; // Launch file in the package path.
-      const path = filePath;
-      const forceFirstFile = true;
-      const requestArgs = false;
+      if (!provider?.isAvailable()) return { success: false, error: "Invalid/unavailable provider" };
 
       const request = new LaunchLoadRequest(
-        rosPackage,
-        launch,
-        path,
+        "",
+        "",
+        filePath,
         args,
-        forceFirstFile,
-        requestArgs,
-        `${provider.rosState.masteruri ? provider.rosState.masteruri : ""}`,
+        true,
+        false,
+        provider.rosState.masteruri ?? "",
         provider.connection.host
       );
 
       logCtx.debug(`launch launch file: ${JSON.stringify(request)}`);
-      const resultLaunchLoadFile = await provider.launchLoadFile(request, reload);
+      const reply = await provider.launchLoadFile(request, reload);
 
-      if (!resultLaunchLoadFile) {
+      if (!reply) {
         return {
           success: false,
           error: "Invalid response for [launchLoadFile], check DAEMON screen output",
@@ -362,687 +337,552 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         };
       }
 
-      if (resultLaunchLoadFile.status.code === "OK") {
-        // trigger node's update (will force a reload using useEffect hook)
-        logCtx.debug("load launch file was successful, update launch list..");
-        // updateNodeList(provider.id);
-        // updateLaunchList(provider.name());
-        return { success: true, error: resultLaunchLoadFile.status.msg || "", reply: resultLaunchLoadFile };
+      switch (reply.status.code) {
+        case "OK":
+          logCtx.debug("load launch file was successful, update launch list..");
+          return { success: true, error: reply.status.msg ?? "", reply };
+        case "PARAMS_REQUIRED":
+          return { success: false, error: "Please fill all arguments", reply };
+        case "ERROR":
+          return { success: false, error: `Reported error: ${reply.status.msg}`, reply };
+        default:
+          return { success: false, error: `Could not load file: ${reply.status.msg}`, reply };
       }
-
-      if (resultLaunchLoadFile.status.code === "PARAMS_REQUIRED") {
-        return {
-          success: false,
-          error: "Please fill all arguments",
-          reply: resultLaunchLoadFile,
-        };
-      }
-
-      if (resultLaunchLoadFile.status.code === "ERROR") {
-        return {
-          success: false,
-          error: `Reported error: ${resultLaunchLoadFile.status.msg}`,
-          reply: resultLaunchLoadFile,
-        };
-      }
-
-      return {
-        success: false,
-        error: `Could not load file: ${resultLaunchLoadFile.status.msg}`,
-        reply: resultLaunchLoadFile,
-      };
     },
-    [
-      updateNodeList,
-      // updateLaunchList
-    ]
+    [logCtx]
   );
 
-  function createRestartNodesAlertComponent(
-    key: SnackbarKey | undefined,
-    message: string,
-    provider: Provider,
-    changedNodes: string[],
-    modifiedFile: string
-  ): JSX.Element {
-    console.log(`unused modifiedFile: ${modifiedFile}`);
-    return (
-      <RestartNodesAlertComponent
-        id={key}
-        message={message}
-        provider={provider}
-        nodeList={changedNodes}
-        onReload={(_providerId, nodeList) => {
-          // restart is handled by hostTreeViewPanel using queue
-          const nodes = provider.rosNodes.filter((rosNode) => nodeList.includes(rosNode.name));
-          // TODO: use modifiedFile e.g. node.launchPath = modifiedFile;
-          emitCustomEvent(EVENT_PROVIDER_RESTART_NODES, new EventProviderRestartNodes(provider, nodes));
-        }}
-      />
-    );
-  }
+  /** Reload a launch file: unload then re-load with the last known arguments. */
+  const reloadLaunchFile = useCallback(
+    async (providerId: string, modifiedFile: string): Promise<void> => {
+      if (!LAUNCH_FILE_EXTENSIONS.some((ext) => modifiedFile.includes(ext))) return;
 
-  /**
-   * Reload launch files: First unload file and then load it again with last arguments provided
-   */
-  async function reloadLaunchFile(providerId: string, modifiedFile: string): Promise<void> {
-    // If valid launch file extension
-    if (LAUNCH_FILE_EXTENSIONS.find((fe) => modifiedFile.indexOf(fe) !== -1)) {
-      const provider = getProviderById(providerId) as Provider;
+      const provider = getProviderById(providerId);
       if (!provider) return;
 
-      // Launch file again using last arguments
-
-      // get args from launch file saved on provider object
-      let args: LaunchArgument[] = [];
-      if (provider.launchFiles) {
-        const filteredLaunchFile = provider.launchFiles.find((lf) => lf.path === modifiedFile);
-        if (filteredLaunchFile) {
-          args = filteredLaunchFile.args || [];
-        }
-      }
+      const filteredLaunchFile = provider.launchFiles?.find((lf) => lf.path === modifiedFile);
+      const args: LaunchArgument[] = filteredLaunchFile?.args ?? [];
 
       const result = await launchFile(provider, modifiedFile, args, true);
-      if (result?.success) {
+
+      if (result.success) {
         logCtx.success(
           `Launch file [${getFileName(modifiedFile)}] reloaded`,
           `File: ${modifiedFile}`,
           `${getFileName(modifiedFile)} reloaded`
         );
-
-        // check if nodes have to be restarted
         if (result.reply?.changed_nodes && result.reply.changed_nodes.length > 0) {
-          // ask use if nodes should be restarted
           emitCustomEvent(
             EVENT_PROVIDER_NODE_BINARY_MODIFIED,
             new EventProviderNodeBinaryModified(provider, result.reply.changed_nodes)
           );
           enqueueSnackbar("Configuration changed!", {
             persist: true,
-            anchorOrigin: {
-              vertical: "top",
-              horizontal: "right",
-            },
+            anchorOrigin: { vertical: "top", horizontal: "right" },
             preventDuplicate: true,
             content: (key, message) =>
               createRestartNodesAlertComponent(
                 key,
                 `${message}`,
                 provider,
-                result.reply?.changed_nodes ? result.reply.changed_nodes : [],
+                result.reply?.changed_nodes ?? [],
                 modifiedFile
               ),
           });
         }
-      }
-      if (result && !result.success) {
+      } else {
         logCtx.error(
           `Launch file error: ${result.error}`,
           `Provider: ${provider.name()} File: ${modifiedFile}`,
           "not reloaded"
         );
       }
-    }
-  }
+    },
+    [getProviderById, launchFile, logCtx, enqueueSnackbar]
+  );
 
-  /** Connects to the given provider and add it to the list. */
-  async function connectToProvider(prov: Provider): Promise<boolean> {
-    // check / add the provider
-    const provider = getProviderByHosts(prov.hostnames, prov.connection.port, prov) as Provider;
+  // ─────────────────────────────────────────────
+  // Subscriber helpers
+  // ─────────────────────────────────────────────
 
-    if (provider.connection.connected()) {
-      provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
-      return true;
-    }
-    const hintMsg =
-      "Is the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.";
-    try {
-      if (provider.isAvailable()) {
-        provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
-        // already connected
-        await provider.getDaemonVersion();
+  const registerSubscriber = useCallback(
+    async (
+      providerId: string,
+      topic: string,
+      messageType: string,
+      filter: SubscriberFilter,
+      qos: RosQos | undefined
+    ): Promise<void> => {
+      const provider = getProviderById(providerId);
+      if (!provider) {
+        logCtx.error(
+          `Can not start subscriber for: ${topic}`,
+          `Provider not found: ${providerId}`,
+          "subscriber not started"
+        );
+        return;
+      }
+      const sNode = new SubscriberNode(topic, messageType);
+      sNode.qos = qos;
+      if (filter !== undefined) sNode.filter = filter;
+      await provider.startSubscriber(sNode);
+    },
+    [getProviderById, logCtx]
+  );
+
+  const unregisterSubscriber = useCallback(
+    async (providerId: string, topic: string): Promise<void> => {
+      const provider = getProviderById(providerId);
+      if (!provider) {
+        logCtx.error(
+          `Can not stop subscriber for: ${topic}`,
+          `Provider not found: ${providerId}`,
+          "subscriber not unregistered"
+        );
+        return;
+      }
+      const result = await provider.stopSubscriber(topic);
+      if (result) {
+        logCtx.debug(`Stopped subscriber node for '${topic}' on '${provider.name()}'`, "");
+      } else {
+        logCtx.error(
+          `Can not stop subscriber node for: ${topic} on '${provider.name()}'`,
+          `${result}`,
+          "subscriber not stopped"
+        );
+      }
+    },
+    [getProviderById, logCtx]
+  );
+
+  const updateFilterRosTopic = useCallback(
+    async (provider: Provider, topicName: string, msg: SubscriberFilter): Promise<void> => {
+      if (!provider.isAvailable()) return;
+      await provider.updateFilterRosTopic(topicName, msg);
+    },
+    []
+  );
+
+  // ─────────────────────────────────────────────
+  // Connection helpers
+  // ─────────────────────────────────────────────
+
+  /** Connect to a provider (adds it to the list if not already registered). */
+  const connectToProvider = useCallback(
+    async (prov: Provider): Promise<boolean> => {
+      const provider = getProviderByHosts(prov.hostnames, prov.connection.port, prov) as Provider;
+
+      if (provider.connection.connected()) {
         provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
         return true;
       }
-    } catch (error: unknown) {
-      logCtx.debug(
-        `Could not initialize provider [${provider.name()}] (${
-          provider.type
-        }) in [ws://${provider.connection.host}:${provider.connection.port}]`,
-        `Error: ${JSON.stringify(error)}\n${hintMsg}`
-      );
-      provider.setConnectionState(ConnectionState.STATES.ERRORED, JSON.stringify(error));
-      return false;
-    }
-    provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
-    provider.isLocalHost = isLocalHost(provider.connection.host);
-    try {
-      if (await provider.init()) {
-        return true;
-      }
-      const error = `Could not initialize provider [${provider.name()}] (${
-        provider.type
-      }) in [ws://${provider.connection.host}:${provider.connection.port}]`;
-      // const details = `Initialization failed, please check your provider configuration; autostart: ${launchCfg?.autostart}`;
-      logCtx.error(error, hintMsg, "connection failed");
-      provider.errorDetails = `${error}`;
-      provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
-    } catch (error: unknown) {
-      logCtx.debug(
-        `Could not initialize provider [${provider.name()}] (${
-          provider.type
-        }) in [ws://${provider.connection.host}:${provider.connection.port}]`,
-        `Error: ${JSON.stringify(error)}\n${hintMsg}`
-      );
-      provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
-    }
-    return false;
-  }
-  /**
-   * Forces an update on the provider list for all connected provider.
-   */
-  const refreshProviderList = (): void => {
-    // remove discoverd provider
-    setProviders((prev) =>
-      prev.filter((prov) => {
-        if (prov.isCreatedByUser()) {
-          try {
-            prov.updateProviderList();
-            prov.getDaemonVersion().catch((err) => {
-              logCtx.debug(`refreshProvider ${prov.name()} failed`, JSON.stringify(err));
-              connectToProvider(prov);
-            });
-          } catch (error: unknown) {
-            // ignore errors while refresh
-            logCtx.debug("refreshProviderList failed", JSON.stringify(error));
-          }
+
+      const hintMsg =
+        "Is the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.";
+
+      // Already available – just refresh the daemon version.
+      if (provider.isAvailable()) {
+        try {
+          provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
+          await provider.getDaemonVersion();
+          provider.setConnectionState(ConnectionState.STATES.CONNECTED, "");
           return true;
+        } catch (error: unknown) {
+          logCtx.debug(
+            `Could not initialize provider [${provider.name()}] (${provider.type}) in [ws://${provider.connection.host}:${provider.connection.port}]`,
+            `Error: ${JSON.stringify(error)}\n${hintMsg}`
+          );
+          provider.setConnectionState(ConnectionState.STATES.ERRORED, JSON.stringify(error));
+          return false;
         }
-        prov.close();
-        return false;
+      }
+
+      // Full init.
+      provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
+      provider.isLocalHost = isLocalHost(provider.connection.host);
+      try {
+        if (await provider.init()) return true;
+        const error = `Could not initialize provider [${provider.name()}] (${provider.type}) in [ws://${provider.connection.host}:${provider.connection.port}]`;
+        logCtx.error(error, hintMsg, "connection failed");
+        provider.errorDetails = error;
+        provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, error);
+      } catch (error: unknown) {
+        logCtx.debug(
+          `Could not initialize provider [${provider.name()}] (${provider.type}) in [ws://${provider.connection.host}:${provider.connection.port}]`,
+          `Error: ${JSON.stringify(error)}\n${hintMsg}`
+        );
+        provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
+      }
+      return false;
+    },
+    [getProviderByHosts, isLocalHost, logCtx]
+  );
+
+  /** Refresh all user-created providers; reconnect any that have become unreachable. */
+  const refreshProviderList = useCallback((): void => {
+    setProviders((prev) =>
+      prev.filter((p) => {
+        if (!p.isCreatedByUser()) {
+          p.close();
+          return false;
+        }
+        try {
+          p.updateProviderList();
+          p.getDaemonVersion().catch((err) => {
+            logCtx.debug(`refreshProvider ${p.name()} failed`, JSON.stringify(err));
+            connectToProvider(p);
+          });
+        } catch (error: unknown) {
+          logCtx.debug("refreshProviderList failed", JSON.stringify(error));
+        }
+        return true;
       })
     );
-  };
+  }, [connectToProvider, logCtx]);
 
-  async function startConfig(
-    config: ProviderLaunchConfiguration,
-    connectConfig: ConnectConfig | null = null
-  ): Promise<boolean> {
-    if (!window.commandExecutor) return false;
+  // ─────────────────────────────────────────────
+  // Service start helper (shared by startConfig)
+  // ─────────────────────────────────────────────
 
-    let allStarted = true;
-    try {
-      const isLocal = isLocalHost(config.host);
-      const credential = isLocal ? null : connectConfig ? connectConfig : { host: config.host };
-
-      const port = config.port
-        ? config.port
-        : getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri.uri, config.networkId);
-      // check and add provider if new
-      let provider = getProviderByHosts([config.host], port, null) as Provider;
-      if (!provider) {
-        provider = new Provider(
-          logCtxRef,
-          settingsCtxRef,
-          config.host,
-          config.rosVersion,
-          port,
-          config.networkId,
-          config.useSSL
+  /**
+   * Execute a single service start command (daemon, discovery, sync, terminal).
+   * Returns whether the service started successfully and whether an auth request was emitted.
+   */
+  const startService = useCallback(
+    async (
+      credential: ConnectConfig | null,
+      cmdResult: { result: boolean; message: string },
+      provider: Provider,
+      config: ProviderLaunchConfiguration,
+      serviceLabel: string
+    ): Promise<TServiceStartResult> => {
+      if (!cmdResult.result) {
+        logCtx.error(
+          `Failed to create ${serviceLabel} start command: ${cmdResult.message}`,
+          JSON.stringify(config),
+          `${config.host} ${serviceLabel} not started`
         );
-        provider.isLocalHost = isLocal;
-        provider.startConfiguration = config;
-        if (isLocal) {
-          // update hostname to prevent add a local provider twice
-          if (systemInfo?.osInfo?.hostname) {
-            provider.addHosts([systemInfo?.osInfo?.hostname]);
-          }
-          if (systemInfo?.networkInterfaces) {
-            for (const item of systemInfo?.networkInterfaces || []) {
-              if (item.ip4) {
-                provider.addHosts([item.ip4]);
-              }
-              if (item.ip6) {
-                provider.addHosts([item.ip6]);
-              }
+        return { started: false, authRequested: false };
+      }
+
+      const result = await window.commandExecutor?.exec(credential, cmdResult.message);
+      if (!result) return { started: true, authRequested: false };
+
+      if (!result.result) {
+        if (result.connectConfig) {
+          logCtx.error("Request password", JSON.stringify(result.connectConfig), "password request");
+          emitCustomEvent(
+            EVENT_PROVIDER_AUTH_REQUEST,
+            new EventProviderAuthRequest(provider, config, result.connectConfig)
+          );
+          return { started: false, authRequested: true };
+        }
+        logCtx.error(
+          `Error while starting ${serviceLabel} on host '${config.host}'`,
+          result.message,
+          `${config.host} ${serviceLabel} not started`
+        );
+        provider.setConnectionState(ConnectionState.STATES.ERRORED, result.message);
+        return { started: false, authRequested: false };
+      }
+
+      logCtx.success(
+        `${serviceLabel} on host '${config.host}' started successfully`,
+        "",
+        `${config.host} ${serviceLabel} started`
+      );
+      return { started: true, authRequested: false };
+    },
+    [logCtx]
+  );
+
+  // ─────────────────────────────────────────────
+  // startConfig
+  // ─────────────────────────────────────────────
+
+  const startConfig = useCallback(
+    async (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null = null): Promise<boolean> => {
+      if (!window.commandExecutor) return false;
+
+      let allStarted = true;
+      try {
+        const isLocal = isLocalHost(config.host);
+        const credential: ConnectConfig | null = isLocal ? null : (connectConfig ?? { host: config.host });
+
+        const port =
+          config.port ||
+          getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri.uri, config.networkId);
+
+        // ── Resolve / create provider ─────────────
+        let provider = getProviderByHosts([config.host], port, null) as Provider | null;
+        if (!provider) {
+          provider = new Provider(
+            logCtxRef,
+            settingsCtxRef,
+            config.host,
+            config.rosVersion,
+            port,
+            config.networkId,
+            config.useSSL
+          );
+          provider.isLocalHost = isLocal;
+          provider.startConfiguration = config;
+          if (isLocal) {
+            const info = systemInfoRef.current;
+            if (info?.osInfo?.hostname) provider.addHosts([info.osInfo.hostname]);
+            for (const iface of info?.networkInterfaces ?? []) {
+              if (iface.ip4) provider.addHosts([iface.ip4]);
+              if (iface.ip6) provider.addHosts([iface.ip6]);
             }
           }
+          setProvidersAddQueue((prev) => [...prev, provider as Provider]);
         }
-        // add provider using add queue
-        setProvidersAddQueue((oldValues) => [...oldValues, provider]);
-        // return false;
-      }
 
-      if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable || config.sync.enable)) {
-        // use default configuration if no one is configured to start
-        config.daemon.enable = true;
-        config.discovery.enable = true;
-        config.terminal.enable = true;
-      }
+        // Default to daemon + discovery + terminal if nothing is enabled.
+        if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable || config.sync.enable)) {
+          config.daemon.enable = true;
+          config.discovery.enable = true;
+          config.terminal.enable = true;
+        }
 
-      if (config.daemon.enable || config.discovery.enable) {
-        provider.setConnectionState(ConnectionState.STATES.STARTING, "");
-      }
-      // Find running system nodes
-      const systemNodes = provider.rosNodes.filter((n) => n.system_node);
-      if (config.force.stop && systemNodes?.length > 0) {
-        // stop all requested system nodes, daemon as last node
-        const nodesToStop: RosNode[] = [];
-        let syncNode: RosNode | undefined;
-        let daemonNode: RosNode | undefined;
-        let discoveryNode: RosNode | undefined;
-        if (config.sync.enable) {
-          syncNode = systemNodes.find((n) => n.id.includes("mas_sync") || n.id.includes("master_sync"));
+        if (config.daemon.enable || config.discovery.enable) {
+          provider.setConnectionState(ConnectionState.STATES.STARTING, "");
         }
-        if (config.daemon.enable) {
-          daemonNode = systemNodes.find((n) => n.id.includes("mas/_daemon") || n.id.includes("node_manager_daemon"));
-        }
-        if (config.discovery.enable) {
-          discoveryNode = systemNodes.find((n) => n.id.includes("mas/_discovery") || n.id.includes("master_discovery"));
-        }
-        // we have to stop in right order to be able to use stop_node() method of the provider
-        if (config.rosVersion === "1") {
-          if (syncNode) nodesToStop.push(syncNode);
-          if (daemonNode) nodesToStop.push(daemonNode);
-          if (discoveryNode) nodesToStop.push(discoveryNode);
-        } else {
-          if (discoveryNode) nodesToStop.push(discoveryNode);
-          if (daemonNode) nodesToStop.push(daemonNode);
-        }
-        await Promise.all(
-          nodesToStop.map(async (node) => {
-            if (node) {
+
+        // ── Stop running system nodes if requested ─
+        const systemNodes = provider.rosNodes.filter((n) => n.system_node);
+        if (config.force.stop && systemNodes.length > 0) {
+          const pick = (key: string) => systemNodes.find((n) => n.id.includes(key));
+          const nodesToStop: RosNode[] = [];
+
+          if (config.rosVersion === "1") {
+            if (config.sync.enable) {
+              const n = pick("mas_sync") ?? pick("master_sync");
+              if (n) nodesToStop.push(n);
+            }
+            if (config.daemon.enable) {
+              const n = pick("mas/_daemon") ?? pick("node_manager_daemon");
+              if (n) nodesToStop.push(n);
+            }
+            if (config.discovery.enable) {
+              const n = pick("mas/_discovery") ?? pick("master_discovery");
+              if (n) nodesToStop.push(n);
+            }
+          } else {
+            if (config.discovery.enable) {
+              const n = pick("mas/_discovery") ?? pick("master_discovery");
+              if (n) nodesToStop.push(n);
+            }
+            if (config.daemon.enable) {
+              const n = pick("mas/_daemon") ?? pick("node_manager_daemon");
+              if (n) nodesToStop.push(n);
+            }
+          }
+
+          await Promise.all(
+            nodesToStop.map(async (node) => {
               logCtx.info(`Stopping running ${node.name} on host '${config.host}'`, "");
-              await provider.stopNode(node.id);
-            }
-          })
-        );
-        // wait a little bit until the ros node is unregistered
-        // await delay(1000);
-        config.force.stop = false;
-      }
-      // Start Daemon
-      if (config.daemon.enable) {
-        logCtx.debug(`Starting daemon on host '${config.host}'`, "");
-        const cmd = config.daemonStartCmd();
-        if (cmd.result) {
-          const resultStartDaemon = await window.commandExecutor?.exec(credential, cmd.message);
-          if (resultStartDaemon) {
-            if (!resultStartDaemon.result) {
-              if (resultStartDaemon.connectConfig) {
-                logCtx.error(
-                  "Request password",
-                  `${JSON.stringify(resultStartDaemon.connectConfig)}`,
-                  "password request"
-                );
-                emitCustomEvent(
-                  EVENT_PROVIDER_AUTH_REQUEST,
-                  new EventProviderAuthRequest(provider, config, resultStartDaemon.connectConfig)
-                );
-                allStarted = false;
-                return false;
-              }
-              logCtx.error(
-                `Error while start daemon on host '${config.host}'`,
-                resultStartDaemon.message,
-                `${config.host} daemon not started`
-              );
-              provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDaemon.message);
-              allStarted = false;
-            }
-            logCtx.success(`daemon on host '${config.host}' started successfully`, "", `${config.host} daemon started`);
+              await provider?.stopNode(node.id);
+            })
+          );
+          config.force.stop = false;
+        }
+
+        // ── Start services ─────────────────────────
+        if (config.daemon.enable) {
+          const sr = await startService(credential, config.daemonStartCmd(), provider, config, "daemon");
+          if (sr.authRequested) return false;
+          if (!sr.started) allStarted = false;
+        }
+
+        if (config.discovery.enable) {
+          const sr = await startService(credential, config.masterDiscoveryStartCmd(), provider, config, "discovery");
+          if (sr.authRequested) return false;
+          if (!sr.started) allStarted = false;
+        }
+
+        if (config.sync.enable) {
+          const sr = await startService(credential, config.masterSyncStartCmd(), provider, config, "sync");
+          if (sr.authRequested) return false;
+          if (!sr.started) allStarted = false;
+        }
+
+        if (config.terminal.enable) {
+          const sr = await startService(credential, config.terminalStartCmd(), provider, config, "terminal");
+          if (sr.authRequested) return false;
+          if (!sr.started) allStarted = false;
+        }
+
+        // Connect after giving services time to start.
+        setTimeout(() => connectToProvider(provider as Provider), 2000);
+      } catch (error) {
+        logCtx.error(`Error starting host: ${config.host}`, `${error}`, `${config.host} start failed`);
+        allStarted = false;
+        const p = getProviderByHosts([config.host], config.port, null);
+        if (p) {
+          if (`${error}`.includes("Missing SSH credentials")) {
+            p.setConnectionState(ConnectionState.STATES.AUTHZ, "start aborted");
+          } else {
+            p.setConnectionState(ConnectionState.STATES.UNREACHABLE, `Error starting host: ${config.host}: ${error}`);
           }
         } else {
-          logCtx.error(
-            `Failed to create daemon start command: ${cmd.message}`,
-            JSON.stringify(config),
-            `${config.host} daemon not started`
-          );
+          console.warn(`provider for host ${config.host}:${config.port} not found`);
         }
       }
-      // Start Discovery
-      if (config.discovery.enable) {
-        logCtx.debug(`Starting discovery on host '${config.host}'`, "");
-        const cmd = config.masterDiscoveryStartCmd();
-        if (cmd.result) {
-          const resultStartDiscovery = await window.commandExecutor?.exec(credential, cmd.message);
-          if (resultStartDiscovery) {
-            if (!resultStartDiscovery.result) {
-              if (resultStartDiscovery.connectConfig) {
-                logCtx.error(
-                  "Request password",
-                  `${JSON.stringify(resultStartDiscovery.connectConfig)}`,
-                  "password request"
-                );
-                emitCustomEvent(
-                  EVENT_PROVIDER_AUTH_REQUEST,
-                  new EventProviderAuthRequest(provider, config, resultStartDiscovery.connectConfig)
-                );
-                allStarted = false;
-                return false;
-              }
-              logCtx.error(
-                `Error while start discovery on host '${config.host}'`,
-                resultStartDiscovery.message,
-                `${config.host} discovery not started`
-              );
-              provider.setConnectionState(ConnectionState.STATES.ERRORED, resultStartDiscovery.message);
-              allStarted = false;
-            }
-            logCtx.success(
-              `discovery on host '${config.host}' started successfully`,
-              "",
-              `${config.host} discovery started`
-            );
-          }
-        } else {
-          logCtx.error(
-            `Failed to create discovery start command: ${cmd.message}`,
-            JSON.stringify(config),
-            `${config.host} discovery not started`
-          );
-        }
+      return allStarted;
+    },
+    [connectToProvider, getProviderByHosts, isLocalHost, logCtx, logCtxRef, settingsCtxRef, startService]
+  );
+
+  // ─────────────────────────────────────────────
+  // startProvider / startMasterSync / startDynamicReconfigureClient
+  // ─────────────────────────────────────────────
+
+  const startProvider = useCallback(
+    async (provider: Provider, forceStartWithDefault = true): Promise<boolean> => {
+      provider.setConnectionState(ConnectionState.STATES.STARTING, "");
+      if (provider.startConfiguration) {
+        return startConfig(provider.startConfiguration, null);
       }
+      if (!forceStartWithDefault) return false;
 
-      // Restart Sync
-      if (config.sync.enable) {
-        logCtx.debug(`Starting master-sync on host '${config.host}'`, "");
-        const cmd = config.masterSyncStartCmd();
-        if (cmd.result) {
-          const resultStartSync = await window.commandExecutor?.exec(credential, cmd.message);
-          if (resultStartSync) {
-            if (!resultStartSync.result) {
-              if (resultStartSync.connectConfig) {
-                logCtx.error(
-                  "Request password",
-                  `${JSON.stringify(resultStartSync.connectConfig)}`,
-                  "password request"
-                );
-                emitCustomEvent(
-                  EVENT_PROVIDER_AUTH_REQUEST,
-                  new EventProviderAuthRequest(provider, config, resultStartSync.connectConfig)
-                );
-                allStarted = false;
-                return false;
-              }
-              logCtx.error(
-                `Error while start sync on host '${config.host}'`,
-                resultStartSync.message,
-                `${config.host} sync not started`
-              );
-              allStarted = false;
-            } else {
-              logCtx.success(`Sync on host '${config.host}' started successfully`, "", `${config.host} sync started`);
-            }
-          }
-        } else {
-          logCtx.error(
-            `Failed to create sync start command: ${cmd.message}`,
-            JSON.stringify(config),
-            `${config.host} sync not started`
-          );
-        }
-      }
-
-      // Start terminal manager
-      if (config.terminal.enable) {
-        logCtx.debug(`Starting Terminal-Manager on host '${config.host}'`, "");
-
-        const cmd = config.terminalStartCmd();
-        if (cmd.result) {
-          const resultStartTerminal = await window.commandExecutor?.exec(credential, cmd.message);
-          if (resultStartTerminal) {
-            if (!resultStartTerminal.result) {
-              if (resultStartTerminal.connectConfig) {
-                logCtx.error(
-                  "Request password",
-                  `${JSON.stringify(resultStartTerminal.connectConfig)}`,
-                  "password request"
-                );
-                emitCustomEvent(
-                  EVENT_PROVIDER_AUTH_REQUEST,
-                  new EventProviderAuthRequest(provider, config, resultStartTerminal.connectConfig)
-                );
-                allStarted = false;
-                return false;
-              }
-              logCtx.error(
-                `Error while start terminal on host '${config.host}'`,
-                resultStartTerminal.message,
-                `${config.host} ttyd not started`
-              );
-              allStarted = false;
-            } else {
-              logCtx.success(`ttyd on host '${config.host}' started successfully`, "", `${config.host} ttyd started`);
-            }
-          }
-        } else {
-          logCtx.error(
-            `Failed to create terminal start command: ${cmd.message}`,
-            JSON.stringify(config),
-            `${config.host} ttyd not started`
-          );
-        }
-      }
-
-      // wait a little longer to make sure the processes are fully started
-      setTimeout(() => {
-        // logCtx.success(`Provider on host '${config.host}' started successfully`, "");
-        connectToProvider(provider);
-      }, 2000);
-    } catch (error) {
-      logCtx.error(`Error starting host: ${config.host}`, `${error}`, `${config.host} start failed`);
-      allStarted = false;
-      const provider = getProviderByHosts([config.host], config.port, null);
-      if (provider !== null) {
-        if (`${error}`.includes("Missing SSH credentials")) {
-          // add state (no SSH credentials) to provider
-          provider.setConnectionState(ConnectionState.STATES.AUTHZ, "start aborted");
-        } else {
-          provider.setConnectionState(
-            ConnectionState.STATES.UNREACHABLE,
-            `Error starting host: ${config.host}: ${error}`
-          );
-        }
-      } else {
-        console.warn(`provider for host ${config.host}:${config.port} not found`);
-      }
-    }
-    return allStarted;
-  }
-
-  async function startProvider(provider: Provider, forceStartWithDefault: boolean = true): Promise<boolean> {
-    provider.setConnectionState(ConnectionState.STATES.STARTING, "");
-    const cfg = provider.startConfiguration;
-    if (cfg) {
-      const result = await startConfig(cfg, null);
-      return result;
-    }
-    if (forceStartWithDefault) {
-      // use default configuration to start the provider
       const defaultCfg = new ProviderLaunchConfiguration(
         provider.host(),
         provider.rosVersion,
         provider.connection?.port
       );
       const domainId = provider.rosState?.ros_domain_id;
-      if (domainId !== undefined) {
-        defaultCfg.networkId = Number.parseInt(domainId);
-      }
+      if (domainId !== undefined) defaultCfg.networkId = Number.parseInt(domainId);
       defaultCfg.daemon.enable = true;
       defaultCfg.discovery.enable = true;
       defaultCfg.terminal.enable = true;
       defaultCfg.autoConnect = true;
       defaultCfg.autostart = false;
-      const result = await startConfig(defaultCfg, null);
-      return result;
-    }
-    return false;
-  }
+      return startConfig(defaultCfg, null);
+    },
+    [startConfig]
+  );
 
-  async function startMasterSync(host: string, rosVersion: string, masteruri?: string): Promise<boolean> {
-    if (!window.commandExecutor) return false;
-    const isLocal = isLocalHost(host);
-    const credential = isLocal ? null : { host: host };
-    if (!isLocal && !credential) {
-      logCtx.error(`'Missing SSH credentials to starting master-sync on host '${host}'`, "");
-      return false;
-    }
-    logCtx.debug(`Starting master-sync on host '${host}'`, "");
-    // check and add provider if new
-    const provider = getProviderByHosts([host]) as Provider;
+  const startMasterSync = useCallback(
+    async (host: string, rosVersion: string, masteruri?: string): Promise<boolean> => {
+      if (!window.commandExecutor) return false;
+      const isLocal = isLocalHost(host);
+      const credential = isLocal ? null : { host };
+      if (!isLocal && !credential) {
+        logCtx.error(`Missing SSH credentials to start master-sync on host '${host}'`, "");
+        return false;
+      }
+      logCtx.debug(`Starting master-sync on host '${host}'`, "");
+      const provider = getProviderByHosts([host]) as Provider;
 
-    const launchCfg = new ProviderLaunchConfiguration(host, rosVersion);
-    launchCfg.daemon.enable = false;
-    launchCfg.discovery.enable = false;
-    launchCfg.sync.enable = true;
-    launchCfg.sync.doNotSync = [];
-    launchCfg.sync.syncTopics = [];
-    launchCfg.terminal.enable = false;
-    launchCfg.force.start = true;
-    launchCfg.force.stop = true;
-    if (masteruri) {
-      launchCfg.ros1MasterUri = { enable: true, uri: masteruri };
-    }
-    const cmd = launchCfg.masterSyncStartCmd();
-    if (cmd.result) {
-      const resultStartSync = await window.commandExecutor?.exec(credential, cmd.message);
-      if (resultStartSync) {
-        if (!resultStartSync.result) {
-          if (resultStartSync.connectConfig) {
-            logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`);
-            emitCustomEvent(
-              EVENT_PROVIDER_AUTH_REQUEST,
-              new EventProviderAuthRequest(provider, launchCfg, resultStartSync.connectConfig)
-            );
-            return false;
-          }
-          logCtx.error(`Failed to start sync on host '${launchCfg.host}'`, resultStartSync.message);
+      const launchCfg = new ProviderLaunchConfiguration(host, rosVersion);
+      launchCfg.daemon.enable = false;
+      launchCfg.discovery.enable = false;
+      launchCfg.sync.enable = true;
+      launchCfg.sync.doNotSync = [];
+      launchCfg.sync.syncTopics = [];
+      launchCfg.terminal.enable = false;
+      launchCfg.force.start = true;
+      launchCfg.force.stop = true;
+      if (masteruri) launchCfg.ros1MasterUri = { enable: true, uri: masteruri };
+
+      const cmd = launchCfg.masterSyncStartCmd();
+      if (!cmd.result) return false;
+
+      const result = await window.commandExecutor?.exec(credential, cmd.message);
+      if (!result) return true;
+
+      if (!result.result) {
+        if (result.connectConfig) {
+          logCtx.error("Request password", JSON.stringify(result.connectConfig));
+          emitCustomEvent(
+            EVENT_PROVIDER_AUTH_REQUEST,
+            new EventProviderAuthRequest(provider, launchCfg, result.connectConfig)
+          );
           return false;
         }
+        logCtx.error(`Failed to start sync on host '${launchCfg.host}'`, result.message);
+        return false;
       }
-    }
-    return true;
-  }
+      return true;
+    },
+    [getProviderByHosts, isLocalHost, logCtx]
+  );
 
-  async function startDynamicReconfigureClient(nodeName: string, masteruri: string): Promise<TResult> {
-    if (!window.commandExecutor)
-      return Promise.resolve({ result: false, message: "dynamic reconfigure not available in Browser" });
-    logCtx.debug(`Starting Dynamic Reconfigure GUI for '${nodeName}'`, "");
-    if (!masteruri) {
-      const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${nodeName}`;
-      logCtx.error(msg, "");
-      return Promise.resolve({ result: false, message: msg });
-    }
-    const config = new ProviderLaunchConfiguration("localhost", "1");
-    config.ros1MasterUri = { enable: true, uri: masteruri };
-    const cmd = config.dynamicReconfigureClientCmd(nodeName, masteruri);
-    if (cmd.result) {
-      const resultStartSync = await window.commandExecutor?.exec(null, cmd.message);
-      if (resultStartSync) {
-        if (!resultStartSync.result) {
-          if (resultStartSync.connectConfig) {
-            logCtx.error("Request password", `${JSON.stringify(resultStartSync.connectConfig)}`);
-            emitCustomEvent(
-              EVENT_PROVIDER_AUTH_REQUEST,
-              new EventProviderAuthRequest(
-                getProviderByHosts(["localhost"]) as Provider,
-                config,
-                resultStartSync.connectConfig
-              )
-            );
-            return Promise.resolve({ result: false, message: "password requested" });
-          }
-          logCtx.error(`Failed to start dynamic reconfigure node on host '${config.host}'`, resultStartSync.message);
-          return Promise.resolve({
-            result: false,
-            message: `Failed to start dynamic reconfigure node on host '${config.host}'`,
-          });
+  const startDynamicReconfigureClient = useCallback(
+    async (nodeName: string, masteruri: string): Promise<TResult> => {
+      if (!window.commandExecutor) return { result: false, message: "dynamic reconfigure not available in Browser" };
+
+      logCtx.debug(`Starting Dynamic Reconfigure GUI for '${nodeName}'`, "");
+      if (!masteruri) {
+        const msg = `Start dynamic reconfigure failed: unknown ROS_MASTER_URI for node ${nodeName}`;
+        logCtx.error(msg, "");
+        return { result: false, message: msg };
+      }
+
+      const config = new ProviderLaunchConfiguration("localhost", "1");
+      config.ros1MasterUri = { enable: true, uri: masteruri };
+      const cmd = config.dynamicReconfigureClientCmd(nodeName, masteruri);
+      if (!cmd.result) return { result: false, message: cmd.message };
+
+      const result = await window.commandExecutor?.exec(null, cmd.message);
+      if (!result) return { result: false, message: "no result from executor" };
+
+      if (!result.result) {
+        if (result.connectConfig) {
+          logCtx.error("Request password", JSON.stringify(result.connectConfig));
+          emitCustomEvent(
+            EVENT_PROVIDER_AUTH_REQUEST,
+            new EventProviderAuthRequest(getProviderByHosts(["localhost"]) as Provider, config, result.connectConfig)
+          );
+          return { result: false, message: "password requested" };
         }
-        return Promise.resolve({ result: true, message: "" });
+        logCtx.error(`Failed to start dynamic reconfigure node on host '${config.host}'`, result.message);
+        return { result: false, message: `Failed to start dynamic reconfigure node on host '${config.host}'` };
       }
-    }
-    return Promise.resolve({ result: false, message: cmd.message });
-  }
+      return { result: true, message: "" };
+    },
+    [getProviderByHosts, logCtx]
+  );
 
-  function getProviderName(providerId: string): string {
-    const name = providers.filter((item) => item.id === providerId)[0]?.name();
-    return name || "";
-  }
+  // ─────────────────────────────────────────────
+  // UI alert components (stable refs via useCallback)
+  // ─────────────────────────────────────────────
 
-  /**
-   * Register subscriptions for URI callbacks for a given provider
-   */
-  async function registerSubscriber(
-    providerId: string,
-    topic: string,
-    messageType: string,
-    filter: SubscriberFilter,
-    qos: RosQos | undefined
-  ): Promise<void> {
-    const provider = getProviderById(providerId) as Provider;
-    if (!provider) {
-      logCtx.error(
-        `Can not start subscriber for: ${topic}`,
-        `Provider not found: ${providerId}`,
-        "subscriber not started"
-      );
-      return;
-    }
+  const createRestartNodesAlertComponent = useCallback(
+    (
+      key: SnackbarKey | undefined,
+      message: string,
+      provider: Provider,
+      changedNodes: string[],
+      modifiedFile: string
+    ): JSX.Element => (
+      <RestartNodesAlertComponent
+        id={key}
+        message={message}
+        provider={provider}
+        nodeList={changedNodes}
+        onReload={(_providerId, nodeList) => {
+          const nodes = provider.rosNodes.filter((n) => nodeList.includes(n.name));
+          // TODO: use modifiedFile, e.g. node.launchPath = modifiedFile
+          void modifiedFile;
+          emitCustomEvent(EVENT_PROVIDER_RESTART_NODES, new EventProviderRestartNodes(provider, nodes));
+        }}
+      />
+    ),
+    []
+  );
 
-    // start ros node with given subscriber
-    const sNode = new SubscriberNode(topic, messageType);
-    sNode.qos = qos;
-    if (filter !== undefined) {
-      sNode.filter = filter;
-    }
-    await provider.startSubscriber(sNode);
-  }
-
-  async function unregisterSubscriber(providerId: string, topic: string): Promise<void> {
-    const provider = getProviderById(providerId) as Provider;
-    if (!provider) {
-      logCtx.error(
-        `Can not stop subscriber for: ${topic}`,
-        `Provider not found: ${providerId}`,
-        "subscriber not unregistered"
-      );
-      return;
-    }
-
-    // stop ros node for given topic
-    const result = await provider.stopSubscriber(topic);
-    if (result) {
-      logCtx.debug(`Stopped subscriber node for '${topic} on '${provider.name()}'`, "");
-    } else {
-      logCtx.error(
-        `Can not stop subscriber node for: ${topic} on '${provider.name()}`,
-        `${result}`,
-        "subscriber not stopped"
-      );
-    }
-  }
-
-  /**
-   * Update the filter for given topic
-   */
-  async function updateFilterRosTopic(provider: Provider, topicName: string, msg: SubscriberFilter): Promise<void> {
-    if (!provider.isAvailable()) {
-      return;
-    }
-    await provider.updateFilterRosTopic(topicName, msg);
-  }
-
-  function createReloadFileAlertComponent(
-    key: SnackbarKey | undefined,
-    message: string,
-    provider: Provider,
-    modifiedFile: string,
-    modification: PATH_EVENT_TYPE,
-    launchFilePath: string,
-    onReload: (providerId: string, modifiedFile: string) => Promise<void>
-  ): JSX.Element {
-    return (
+  const createReloadFileAlertComponent = useCallback(
+    (
+      key: SnackbarKey | undefined,
+      message: string,
+      provider: Provider,
+      modifiedFile: string,
+      modification: PATH_EVENT_TYPE,
+      launchFilePath: string,
+      onReload: (providerId: string, modifiedFile: string) => Promise<void>
+    ): JSX.Element => (
       <ReloadFileAlertComponent
         id={key}
         message={message}
@@ -1059,106 +899,87 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           );
         }}
       />
-    );
-  }
-
-  // initialize ROS and system Info
-  async function init(): Promise<void> {
-    setInitialized(() => false);
-
-    // get local ROS Info
-    if (window.rosInfo?.getInfo) {
-      const rinfo = await window.rosInfo.getInfo();
-      setRosInfo(rinfo);
-    }
-    // get local System Info
-    if (window.systemInfo?.getInfo) {
-      setSystemInfo(await window.systemInfo.getInfo());
-    }
-    setInitialized(true);
-  }
-
-  useCustomEventListener(
-    EVENT_PROVIDER_DISCOVERED,
-    (data: EventProviderDiscovered) => {
-      // trigger add new provider
-      logCtx.debug(
-        `trigger add new provider: ${data.provider.rosState.name}`,
-        `RosState details: ${JSON.stringify(data.provider.rosState)}`
-      );
-      setProvidersAddQueue((oldValue) => [...oldValue, data.provider]);
-    },
-    [setProvidersAddQueue]
+    ),
+    [logCtx]
   );
 
+  // ─────────────────────────────────────────────
+  // Initialisation
+  // ─────────────────────────────────────────────
+
+  const init = useCallback(async (): Promise<void> => {
+    setInitialized(false);
+    if (window.rosInfo?.getInfo) setRosInfo(await window.rosInfo.getInfo());
+    if (window.systemInfo?.getInfo) setSystemInfo(await window.systemInfo.getInfo());
+    setInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  // ─────────────────────────────────────────────
+  // Event listeners
+  // ─────────────────────────────────────────────
+
+  useCustomEventListener(EVENT_PROVIDER_DISCOVERED, (data: EventProviderDiscovered) => {
+    logCtx.debug(
+      `trigger add new provider: ${data.provider.rosState.name}`,
+      `RosState details: ${JSON.stringify(data.provider.rosState)}`
+    );
+    setProvidersAddQueue((prev) => [...prev, data.provider]);
+  });
+
   useCustomEventListener(EVENT_PROVIDER_REMOVED, (data: EventProviderRemoved) => {
-    // trigger remove provider
     logCtx.debug(
       `trigger provider removed: ${data.provider.rosState.name}`,
       `RosState details: ${JSON.stringify(data.provider.rosState)}`
     );
-
     setProviders((prev) =>
-      prev.filter((prov) => {
+      prev.filter((p) => {
         if (
-          prov.isCreatedByUser() || // by user connected provider cannot be removed by event
-          (data.provider.connection.port !== prov.connection.port &&
-            data.provider.connection.host !== prov.connection.host)
+          p.isCreatedByUser() ||
+          (data.provider.connection.port !== p.connection.port && data.provider.connection.host !== p.connection.host)
         ) {
           return true;
         }
-        // close connection and remove provider from list
-        prov.close();
+        p.close();
         return false;
       })
     );
   });
 
-  /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, (data: EventProviderPathEvent) => {
-    if (
-      (data.path.affected === undefined || data.path.affected.length === 0) &&
-      data.provider.className === "Provider"
-    ) {
-      // no affected launch files => it is a binary
+    // Binary changed (no affected launch files).
+    if ((!data.path.affected || data.path.affected.length === 0) && data.provider.className === "Provider") {
       const nodes: string[] = [];
       for (const launch of data.provider.launchFiles) {
-        for (const node of launch.nodes || []) {
-          if (node.executable) {
-            if (data.path.srcPath.endsWith(node.executable)) {
-              if (node.node_name) {
-                nodes.push(node.node_name);
-              }
-            }
+        for (const node of launch.nodes ?? []) {
+          if (node.executable && data.path.srcPath.endsWith(node.executable) && node.node_name) {
+            nodes.push(node.node_name);
           }
         }
       }
-      if (showSnackbarBinaryChangedNotification && nodes.length > 0) {
+      if (showBinaryRef.current && nodes.length > 0) {
         emitCustomEvent(EVENT_PROVIDER_NODE_BINARY_MODIFIED, new EventProviderNodeBinaryModified(data.provider, nodes));
-        // ask use if nodes should be restarted
         enqueueSnackbar("Binary changed!", {
           persist: true,
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
+          anchorOrigin: { vertical: "top", horizontal: "right" },
           preventDuplicate: true,
           content: (key, message) =>
             createRestartNodesAlertComponent(key, `${message}`, data.provider, nodes, data.path.srcPath),
         });
       }
     }
-    if (showSnackbarReloadLaunchNotification) {
-      for (const arg of data.path.affected || []) {
+    // Affected launch files – ask to reload.
+    if (showReloadRef.current) {
+      for (const arg of data.path.affected ?? []) {
         enqueueSnackbar(`Do you want to reload file [${getFileName(arg)}]`, {
           persist: true,
-          anchorOrigin: {
-            vertical: "top",
-            horizontal: "right",
-          },
+          anchorOrigin: { vertical: "top", horizontal: "right" },
           preventDuplicate: true,
-          content: (key, message) => {
-            return createReloadFileAlertComponent(
+          content: (key, message) =>
+            createReloadFileAlertComponent(
               key,
               `${message}`,
               data.provider,
@@ -1166,8 +987,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               data.path.eventType,
               arg,
               reloadLaunchFile
-            );
-          },
+            ),
         });
       }
     }
@@ -1176,50 +996,41 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data: EventProviderRosNodes) => {
-      // logCtx.info(`ROS nodes for ${data.provider.name()} updated`, "", `ROS nodes for ${data.provider.name()} updated`)
-      // add nodes to map
-      const newMap = new Map();
-      const newNodeMap = new Map();
-      // remove provider not in the providers list anymore
-      const availableProviderKeys = providers.map((prov) => {
-        return prov.id;
-      });
-      // remove not listed provider
-      const providersRemoved: string[] = [];
-      mapProviderRosNodes.forEach((nodes, provId) => {
-        if (availableProviderKeys.includes(provId)) {
+      const currentProviders = providersRef.current;
+      const availableIds = new Set(currentProviders.map((p) => p.id));
+      const currentMap = mapProviderRosNodesRef.current;
+      const currentNodeMap = nodeMapRef.current;
+
+      const newMap = new Map<string, RosNode[]>();
+      const newNodeMap = new Map<string, RosNode>();
+      const removedIds = new Set<string>();
+
+      // Carry over existing entries; drop providers no longer in the list.
+      currentMap.forEach((nodes, provId) => {
+        if (availableIds.has(provId)) {
           newMap.set(provId, nodes);
         } else {
-          providersRemoved.push(provId);
-        }
-      });
-      nodeMap.forEach((node, id) => {
-        if (!id.startsWith(data.provider.id)) {
-          let removed = false;
-          if (providersRemoved.length > 0) {
-            // remove not used nodes fom nodeMap
-            for (const provId of providersRemoved) {
-              if (id.startsWith(provId)) {
-                removed = true;
-              }
-            }
-          }
-          if (!removed) {
-            newNodeMap.set(id, node);
-          }
+          removedIds.add(provId);
         }
       });
 
+      // Carry over existing node entries; skip the current provider and removed ones.
+      currentNodeMap.forEach((node, id) => {
+        if (!id.startsWith(data.provider.id) && ![...removedIds].some((rid) => id.startsWith(rid))) {
+          newNodeMap.set(id, node);
+        }
+      });
+
+      // Insert updated nodes for this provider.
       newMap.set(data.provider.id, data.nodes);
       for (const node of data.nodes) {
         newNodeMap.set(node.idGlobal, node);
       }
-      setNodeMap(newNodeMap);
-      // logCtx.debug(`ros nodes updated for ${data.provider.id}: ${JSON.stringify(data.nodes)}`, "");
 
+      setNodeMap(newNodeMap);
       setMapProviderRosNodes(newMap);
     },
-    [providers, mapProviderRosNodes, setMapProviderRosNodes]
+    [providers]
   );
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
@@ -1228,22 +1039,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       `trigger connection state ${provider.id}: new: ${newState}, old: ${oldState}, ${JSON.stringify(details)}`
     );
     switch (newState) {
-      case ConnectionState.STATES.CONNECTING:
-        // this state is set by provider itself while connect
-        break;
-      case ConnectionState.STATES.STARTING:
-        // this state is set by this context while it starts nodes
-        break;
-      case ConnectionState.STATES.SERVER_CONNECTED:
-        break;
-      case ConnectionState.STATES.SUBSCRIPTIONS_REGISTERED:
-        break;
       case ConnectionState.STATES.CONNECTED:
-        // trigger updates on state change
         clearProviders();
         break;
       case ConnectionState.STATES.CLOSED:
-        mapProviderRosNodes.set(provider.id, []);
+        mapProviderRosNodesRef.current.set(provider.id, []);
         clearProviders();
         break;
       case ConnectionState.STATES.AUTHZ:
@@ -1262,53 +1062,55 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     logCtx.debugInterface(URI.ROS_PROVIDER_WARNINGS, JSON.stringify(data.warnings), "", data.provider.id);
   });
 
+  // ─────────────────────────────────────────────
+  // Effects
+  // ─────────────────────────────────────────────
+
+  /** Auto-connect newly added providers that have no configuration yet. */
   useEffect(() => {
-    for (const provider of providers) {
-      if (provider.connectionState === ConnectionState.STATES.UNKNOWN) {
-        // we have no configuration => it is a discovered provider => trigger connect to the new provider
-        connectToProvider(provider);
+    for (const p of providers) {
+      if (p.connectionState === ConnectionState.STATES.UNKNOWN) {
+        connectToProvider(p);
       }
     }
-  }, [providers]);
+  }, [providers, connectToProvider]);
 
-  /** A provider was enqueued. If it is a new one, add it to providers lists. */
+  /** Process the provider add queue one entry at a time. */
   useEffect(() => {
-    if (providersAddQueue.length > 0) {
-      const prov = providersAddQueue.pop();
-      if (prov) {
-        let hostnames = prov.hostnames;
-        if (!hostnames) {
-          hostnames = prov?.host() ? [prov?.host()] : [];
+    if (providersAddQueue.length === 0) return;
+
+    // Immutably dequeue the last entry.
+    setProvidersAddQueue((prev) => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      const prov = next.pop();
+      if (!prov) return prev;
+
+      const hostnames = prov.hostnames?.length ? prov.hostnames : prov.host() ? [prov.host()] : [];
+      const existing = getProviderByHosts(hostnames, prov.connection.port, null);
+
+      if (existing === null) {
+        setProviders((old) => {
+          const updated = [...old, prov];
+          updated.sort((a, b) => -b.name().localeCompare(a.name()));
+          return updated;
+        });
+      } else {
+        if (existing.isDiscovered() && prov.isDiscovered()) {
+          existing.addDiscoverer(prov.discoveredBy?.at(0));
         }
-        const provider = getProviderByHosts(hostnames, prov.connection.port, null);
-        if (provider === null) {
-          if (prov) {
-            setProviders((oldValue) => {
-              // create new sorted list
-              const newProviders = [...oldValue, prov];
-              newProviders.sort((a, b) => -b.name().localeCompare(a.name()));
-              return newProviders;
-            });
-          }
-        } else {
-          // provider already registered, try to connect
-          if (provider.isDiscovered() && prov.isDiscovered()) {
-            // update discovered list
-            provider.addDiscoverer(prov.discoveredBy?.at(0));
-          }
-          connectToProvider(provider);
-        }
+        connectToProvider(existing);
       }
-      setProvidersAddQueue([...providersAddQueue]);
-    }
-  }, [providersAddQueue]);
 
-  // Effect to initialize RosContext
-  useEffect(() => {
-    init();
-  }, []);
+      return next;
+    });
+  }, [providersAddQueue, connectToProvider, getProviderByHosts]);
 
-  const attributesMemo = useMemo(
+  // ─────────────────────────────────────────────
+  // Memoised context value
+  // ─────────────────────────────────────────────
+
+  const attributesMemo = useMemo<IRosContext>(
     () => ({
       initialized,
       rosInfo,
@@ -1341,8 +1143,36 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setShowSnackbarReloadLaunchNotification,
       setShowSnackbarBinaryChangedNotification,
     }),
-
-    [initialized, rosInfo, systemInfo, providers, mapProviderRosNodes, nodeMap, localNodes]
+    [
+      initialized,
+      rosInfo,
+      systemInfo,
+      providers,
+      mapProviderRosNodes,
+      nodeMap,
+      localNodes,
+      createProvider,
+      connectToProvider,
+      startProvider,
+      startConfig,
+      startMasterSync,
+      startDynamicReconfigureClient,
+      removeProvider,
+      getProviderName,
+      refreshProviderList,
+      closeProviders,
+      updateNodeList,
+      reloadLaunchFile,
+      updateLaunchList,
+      getProviderById,
+      getLocalProvider,
+      registerSubscriber,
+      unregisterSubscriber,
+      updateFilterRosTopic,
+      isLocalHost,
+      addProvider,
+      updateLocalNodes,
+    ]
   );
 
   return <RosContext.Provider value={attributesMemo}>{children}</RosContext.Provider>;

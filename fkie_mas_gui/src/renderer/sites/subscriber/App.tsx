@@ -1,8 +1,8 @@
 import { Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 
+import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-import { useRefContext } from "@/renderer/hooks/useRefContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName } from "../../models";
@@ -21,8 +21,8 @@ export default function SubscriberApp(): JSX.Element {
   const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
-  const logCtxRef = useRefContext(logCtx);
-  const settingsCtxRef = useRefContext(settingsCtx);
+  const logCtxRef = useAlwaysCurrentRef(logCtx);
+  const settingsCtxRef = useAlwaysCurrentRef(settingsCtx);
   const [subInfo, setSubInfo] = useState<ISubscriberInfo | null>(null);
   const [stopRequested, setStopRequested] = useState<string>("");
 
