@@ -1,4 +1,4 @@
-import { LaunchIncludedFile, LaunchIncludedFilesRequest } from "@/renderer/models";
+import { LaunchArgument, LaunchIncludedFile, LaunchIncludedFilesRequest } from "@/renderer/models";
 import { useState } from "react";
 
 import { useRosContext } from "./useRosContext";
@@ -13,10 +13,13 @@ export function useIncludedFiles(providerId: string, rootFilePath: string) {
       return { result: false, error: `Provider with id ${providerId} not available` };
     }
 
+    const launch = provider.launchFiles.find((l) => l.path === rootFilePath);
     const request = new LaunchIncludedFilesRequest();
     request.path = rootFilePath;
     request.unique = false;
     request.recursive = true;
+    request.args =
+      launch?.args?.map((t) => new LaunchArgument(t.name, t.value, t.default_value, t.description, t.choices)) || [];
 
     const includedFilesLocal = await provider.launchGetIncludedFiles(request);
 

@@ -57,7 +57,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
    */
   const createFileEditorPanel = useCallback(
     async (provId: string, launchContent: LaunchContent, external: boolean): Promise<void> => {
-      navCtx.openEditor(provId, launchContent.path, launchContent.path, null, [], external);
+      navCtx.openEditor(provId, launchContent.path, launchContent.path, null, launchContent.args || [], external);
     },
     [navCtx]
   );

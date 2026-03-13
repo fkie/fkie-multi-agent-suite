@@ -141,9 +141,9 @@ export function extractIncludes(
       // file="..." / textfile="..." / binfile="..."
       String.raw`(?:file|textfile|binfile)\s*=\s*"([^"]+)"`,
       // $(find pkg)/path , $(find-pkg-share pkg)/path , $(dirname)/path
-      String.raw`(\$\((?:find|find-pkg-share|dirname) [^)]+\)/[^"\s>]+)`,
+      String.raw`(\$\((?:find|find-pkg-share|dirname) [^)]+\)[^"]*)`,
       // pkg://pkg/path or package://pkg/path
-      String.raw`((?:pkg|package):\/\/[^"\s>]+)`,
+      String.raw`((?:pkg|package):\/\/[^"]*)`,
     ].join("|"),
     "g"
   );
