@@ -146,7 +146,7 @@ export function useMonacoEditor({
     const resolver = createIncludeResolver(includedFiles);
 
     monacoCtx.setResolver(editorId, resolver);
-  }, [activeModel, editorId, includedFiles]);
+  }, [monacoCtx, editorId, includedFiles]);
 
   // ---------------------------
   // dispose

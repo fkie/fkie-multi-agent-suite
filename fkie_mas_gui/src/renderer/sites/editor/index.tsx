@@ -4,6 +4,7 @@ import "react-app-polyfill/stable";
 // imports
 import ProviderStack from "@/renderer/ProviderStack";
 import { MonacoProvider } from "@/renderer/context/MonacoContext";
+import { MonacoInitProvider } from "@/renderer/context/MonacoInitContext";
 import { SettingsProvider } from "@/renderer/context/SettingsContext";
 import { createRoot } from "react-dom/client";
 import EditorApp from "./App";
@@ -15,7 +16,9 @@ if (container) {
     <SettingsProvider>
       <ProviderStack>
         <MonacoProvider>
-          <EditorApp />
+          <MonacoInitProvider>
+            <EditorApp />
+          </MonacoInitProvider>
         </MonacoProvider>
       </ProviderStack>
     </SettingsProvider>

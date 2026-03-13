@@ -48,8 +48,8 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   const rosCtxRef = useRef(rosCtx);
   const logCtxRef = useRef(logCtx);
 
-  const files = new Map<string, FileItem>();
-  const resolvers = new Map<string, IncludeResolver>();
+  const files = useRef(new Map<string, FileItem>());
+  const resolvers = useRef(new Map<string, IncludeResolver>());
 
   // -------------------- Services --------------------
   const workspaceRef = useRef<MonacoWorkspace | null>(null);
@@ -58,8 +58,6 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     if (!monacoInstance) return;
 
     if (!workspaceRef.current) {
-      // this is initialized at NodeManager
-      // initMonacoRuntime(useMonacoContext(), rosCtx);
       workspaceRef.current = new MonacoWorkspace(monacoInstance, rosCtxRef);
     }
   }, [monacoInstance]);
@@ -80,19 +78,16 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return workspaceRef.current?.models;
   }, []);
 
-  const closeEditors = useCallback(
-    (editorIds?: string[]): void => {
-      if (editorIds === undefined) {
-        workspaceRef.current?.models.closeAllModels();
-        return;
-      }
-      for (const editorId of editorIds || []) {
-        workspaceRef.current?.models.closeModelsByEditorId(editorId);
-        resolvers.delete(editorId);
-      }
-    },
-    [resolvers]
-  );
+  const closeEditors = useCallback((editorIds?: string[]): void => {
+    if (editorIds === undefined) {
+      workspaceRef.current?.models.closeAllModels();
+      return;
+    }
+    for (const editorId of editorIds || []) {
+      workspaceRef.current?.models.closeModelsByEditorId(editorId);
+      resolvers.current.delete(editorId);
+    }
+  }, []);
 
   const getModifiedFilesByEditor = useCallback((editorId: string) => {
     if (!workspaceRef.current) {
@@ -124,7 +119,12 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
 
       return { editorIds, uriPath, result: result.result, message: result.message };
     } catch (error) {
-      return { editorIds, uriPath, result: false, message: errorToMessage(error, `Unknown error during save: ${error}`) };
+      return {
+        editorIds,
+        uriPath,
+        result: false,
+        message: errorToMessage(error, `Unknown error during save: ${error}`),
+      };
     }
   }, []);
 
@@ -220,9 +220,9 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
               `Host: ${providerId}, root file: ${file.path}`,
               "file model error"
             );
-            files.delete(uriPath);
+            files.current.delete(uriPath);
           }
-          files.set(uriPath, file);
+          files.current.set(uriPath, file);
           return { model, file, error: null };
         }
 
@@ -234,7 +234,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       // 3. Model exists and no reload needed
       return { model, file: null, error: null };
     },
-    [logCtx, openFile, files]
+    [logCtx, openFile]
   );
 
   const getModels: (editorId: string) => Set<editor.ITextModel> = (editorId) => {
@@ -242,29 +242,23 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isReadOnly: (model: editor.ITextModel) => boolean = (model) => {
-    return files.get(model.uri.path)?.readonly || false;
+    return files.current.get(model.uri.path)?.readonly || false;
   };
 
   const isInstallPath: (model: editor.ITextModel) => boolean = (model) => {
-    const file = files.get(model.uri.path);
+    const file = files.current.get(model.uri.path);
     if (!file) return false;
     const filePath = file.realpath && file.realpath.length > 0 ? file.realpath : file.path;
     return filePath.search("/install/") !== -1;
   };
 
-  const setResolver: (editorId: string, resolver: IncludeResolver) => void = useCallback(
-    (editorId, resolver) => {
-      resolvers.set(editorId, resolver);
-    },
-    [resolvers]
-  );
+  const setResolver: (editorId: string, resolver: IncludeResolver) => void = (editorId, resolver) => {
+    resolvers.current.set(editorId, resolver);
+  };
 
-  const getResolver: (editorId: string) => IncludeResolver | undefined = useCallback(
-    (editorId) => {
-      return resolvers.get(editorId);
-    },
-    [resolvers]
-  );
+  const getResolver: (editorId: string) => IncludeResolver | undefined = (editorId) => {
+    return resolvers.current.get(editorId);
+  };
 
   // -------------------- Context Value --------------------
   const contextValue: IMonacoContext = useMemo(
@@ -296,8 +290,6 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       closeEditors,
       getModifiedFilesByEditor,
       isModifiedModel,
-      setResolver,
-      getResolver,
     ]
   );
 

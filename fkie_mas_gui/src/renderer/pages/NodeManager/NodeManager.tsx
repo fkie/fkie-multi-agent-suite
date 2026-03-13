@@ -78,10 +78,9 @@ import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
 // import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
 import { getInfoStateColor } from "@/renderer/components/UI/Colors";
-import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
+import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { initMonacoRuntime } from "@/renderer/monaco/setup";
 import { SaveResult } from "@/renderer/monaco/types";
 import { isEditorEditorId } from "@/renderer/monaco/utils";
 import { TInfoState } from "@/types";
@@ -100,7 +99,6 @@ type TPanelId = {
 
 interface ITabAttributesExt extends ITabAttributes {
   panelGroup: string;
-  // initMonacoRuntime(monacoCtx, rosCtx);
 }
 
 export default function NodeManager(): JSX.Element {
@@ -108,7 +106,8 @@ export default function NodeManager(): JSX.Element {
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useRosContext();
   const logCtx = useContext(LoggingContext);
-  const monacoCtx = useMonacoContext();
+  const monacoInitCtx = useMonacoInitContext();
+  const monacoCtx = monacoInitCtx.monacoCtx;
   const navCtx = useContext(NavigationContext);
   const settingsCtx = useSettingsContext();
   const [layoutJson, setLayoutJson] = useLocalStorage<IJsonModel>("layout", DEFAULT_LAYOUT);
@@ -127,24 +126,6 @@ export default function NodeManager(): JSX.Element {
   const [enablePopout, setEnablePopout] = useState<boolean>(
     !window.commandExecutor && window.location.href.indexOf(":6275") === -1
   );
-
-  // ----- MONACO SETUP -----
-  const rosCtxRef = useRef(rosCtx);
-  const monacoCtxRef = useRef(monacoCtx);
-
-  useEffect(() => {
-    rosCtxRef.current = rosCtx;
-  }, [rosCtx]);
-
-  useEffect(() => {
-    monacoCtxRef.current = monacoCtx;
-  }, [monacoCtx]);
-
-  useEffect(() => {
-    initMonacoRuntime(monacoCtxRef, rosCtxRef);
-  }, [monacoCtxRef.current, rosCtxRef.current]);
-
-  // ----- END: MONACO SETUP -----
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);

@@ -104,140 +104,160 @@ function initThemes(m: MonacoReact.Monaco): void {
 }
 
 function initLanguages(
-  monacoCtxRef: React.MutableRefObject<IMonacoContext>,
+  monacoCtxRef: React.MutableRefObject<IMonacoContext | null>,
   rosCtxRef: React.MutableRefObject<IRosContext>
-): void {
+): IDisposable[] {
   // JS/TS aggressive sync
+  if (!monacoCtxRef.current) return [];
   const m = monacoCtxRef.current.monaco;
-  if (!m) return;
+  if (!m) return [];
+  const newDisposables: IDisposable[] = [];
   m.languages.typescript.javascriptDefaults.setEagerModelSync(true);
   m.languages.typescript.typescriptDefaults.setEagerModelSync(true);
 
   // ros2xml
   m.languages.register({ id: "ros2xml" });
-  m.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage);
-  m.languages.setLanguageConfiguration("ros2xml", {
-    comments: { blockComment: ["<!--", "-->"] },
-    autoClosingPairs: [
-      { open: "<", close: ">" },
-      { open: '"', close: '"' },
-      { open: "'", close: "'" },
-    ],
-    brackets: [["<", ">"]],
-    onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
-  });
-  m.languages.registerDocumentFormattingEditProvider("ros2xml", {
-    provideDocumentFormattingEdits(model) {
-      return [
-        {
-          range: model.getFullModelRange(),
-          text: formatXml(model.getValue()),
-        },
-      ];
-    },
-  });
-  m.languages.registerHoverProvider("ros2xml", {
-    provideHover(model, position) {
-      const wordInfo = model.getWordAtPosition(position);
-      if (!wordInfo) return null;
-      if (wordInfo.word === "false" || wordInfo.word === "true") {
-        return {
-          range: new m.Range(position.lineNumber, wordInfo.startColumn, position.lineNumber, wordInfo.endColumn),
-          contents: [{ value: "Use uppercase True/False, otherwise some eval statements may fail." }],
-        };
-      }
-      return null;
-    },
-  });
+  newDisposables.push(m.languages.setMonarchTokensProvider("ros2xml", Ros2XmlLanguage));
+  newDisposables.push(
+    m.languages.setLanguageConfiguration("ros2xml", {
+      comments: { blockComment: ["<!--", "-->"] },
+      autoClosingPairs: [
+        { open: "<", close: ">" },
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+      ],
+      brackets: [["<", ">"]],
+      onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
+    })
+  );
+  newDisposables.push(
+    m.languages.registerDocumentFormattingEditProvider("ros2xml", {
+      provideDocumentFormattingEdits(model) {
+        return [
+          {
+            range: model.getFullModelRange(),
+            text: formatXml(model.getValue()),
+          },
+        ];
+      },
+    })
+  );
+  newDisposables.push(
+    m.languages.registerHoverProvider("ros2xml", {
+      provideHover(model, position) {
+        const wordInfo = model.getWordAtPosition(position);
+        if (!wordInfo) return null;
+        if (wordInfo.word === "false" || wordInfo.word === "true") {
+          return {
+            range: new m.Range(position.lineNumber, wordInfo.startColumn, position.lineNumber, wordInfo.endColumn),
+            contents: [{ value: "Use uppercase True/False, otherwise some eval statements may fail." }],
+          };
+        }
+        return null;
+      },
+    })
+  );
 
   // ros1xml
   m.languages.register({ id: "ros1xml" });
-  m.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage);
-  m.languages.setLanguageConfiguration("ros1xml", {
-    comments: { blockComment: ["<!--", "-->"] },
-    autoClosingPairs: [
-      { open: "<", close: ">" },
-      { open: '"', close: '"' },
-    ],
-    brackets: [["<", ">"]],
-    onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
-  });
-  m.languages.registerDocumentFormattingEditProvider("ros1xml", {
-    provideDocumentFormattingEdits(model) {
-      return [
-        {
-          range: model.getFullModelRange(),
-          text: formatXml(model.getValue()),
-        },
-      ];
-    },
-  });
+  newDisposables.push(m.languages.setMonarchTokensProvider("ros1xml", Ros1XmlLanguage));
+  newDisposables.push(
+    m.languages.setLanguageConfiguration("ros1xml", {
+      comments: { blockComment: ["<!--", "-->"] },
+      autoClosingPairs: [
+        { open: "<", close: ">" },
+        { open: '"', close: '"' },
+      ],
+      brackets: [["<", ">"]],
+      onEnterRules: [{ beforeText: />/, afterText: /<\//, action: { indentAction: 2 } }],
+    })
+  );
+  newDisposables.push(
+    m.languages.registerDocumentFormattingEditProvider("ros1xml", {
+      provideDocumentFormattingEdits(model) {
+        return [
+          {
+            range: model.getFullModelRange(),
+            text: formatXml(model.getValue()),
+          },
+        ];
+      },
+    })
+  );
 
   // python
   m.languages.register({ id: "python" });
-  m.languages.setMonarchTokensProvider("python", PythonLanguage);
+  newDisposables.push(m.languages.setMonarchTokensProvider("python", PythonLanguage));
 
   // Add symbols XML and launch files
-  m.languages.registerDocumentSymbolProvider("ros2xml", {
-    displayName: "ROS Symbols",
-    provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
-      return createDocumentSymbolsR2(model);
-    },
-  });
-  m.languages.registerDocumentSymbolProvider("ros1xml", {
-    displayName: "ROS Symbols",
-    provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
-      return createDocumentSymbols(model);
-    },
-  });
+  newDisposables.push(
+    m.languages.registerDocumentSymbolProvider("ros2xml", {
+      displayName: "ROS Symbols",
+      provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
+        return createDocumentSymbolsR2(model);
+      },
+    })
+  );
+  newDisposables.push(
+    m.languages.registerDocumentSymbolProvider("ros1xml", {
+      displayName: "ROS Symbols",
+      provideDocumentSymbols: (model: editor.ITextModel /*, token: CancellationToken */) => {
+        return createDocumentSymbols(model);
+      },
+    })
+  );
 
   // add proposals
   for (const e of SUPPORTED_FILES) {
     // Add Completion provider for XML and launch files
-    m.languages.registerCompletionItemProvider(e, {
-      provideCompletionItems: async (model, position) => {
-        const word = model.getWordUntilPosition(position);
-        const range = {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: word.startColumn,
-          endColumn: word.endColumn,
-        };
+    newDisposables.push(
+      m.languages.registerCompletionItemProvider(e, {
+        provideCompletionItems: async (model, position) => {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
 
-        const lineContent = model.getLineContent(position.lineNumber);
-        const providerId = providerIdFromUriPath(model.uri.path);
-        const provider = rosCtxRef.current.getProviderById(providerId);
-        let packages: RosPackage[] = [];
-        if (provider) {
-          packages = provider.packages;
-        }
+          const lineContent = model.getLineContent(position.lineNumber);
+          const providerId = providerIdFromUriPath(model.uri.path);
+          const provider = rosCtxRef.current.getProviderById(providerId);
+          let packages: RosPackage[] = [];
+          if (provider) {
+            packages = provider.packages;
+          }
 
-        switch (e) {
-          case "python":
-            return {
-              suggestions: await createPythonLaunchProposals(m, range, model.getValue(), packages),
-            };
-          case "ros1xml":
-            return {
-              suggestions: await createXMLDependencyProposals(m, range, lineContent, packages),
-            };
-          case "ros2xml":
-            return {
-              suggestions: await createXMLDependencyProposalsR2(m, range, lineContent, packages),
-            };
-          default:
-            return {
-              suggestions: [],
-            };
-        }
-      },
-    });
+          switch (e) {
+            case "python":
+              return {
+                suggestions: await createPythonLaunchProposals(m, range, model.getValue(), packages),
+              };
+            case "ros1xml":
+              return {
+                suggestions: await createXMLDependencyProposals(m, range, lineContent, packages),
+              };
+            case "ros2xml":
+              return {
+                suggestions: await createXMLDependencyProposalsR2(m, range, lineContent, packages),
+              };
+            default:
+              return {
+                suggestions: [],
+              };
+          }
+        },
+      })
+    );
   }
+  return newDisposables;
 }
 
-export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
+export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext | null>): IDisposable[] {
   const monacoCtx = monacoCtxRef.current;
-  if (!monacoCtx.monaco) return;
+  if (!monacoCtx) return [];
+  if (!monacoCtx.monaco) return [];
 
   const newDisposables: IDisposable[] = [];
 
@@ -257,6 +277,7 @@ export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<
               console.log(`no resolver for ${editorId}`);
               continue;
             }
+            // TODO: Should the cache be created when the resolver is created?
             const cache: ResolverCacheEntry[] = [];
             for (const match of extractIncludes(text, e, resolver, currentFile)) {
               const start = model.getPositionAt(match.offset);
@@ -286,8 +307,11 @@ export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<
   return newDisposables;
 }
 
-export function registerLaunchHoverProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
+export function registerLaunchHoverProvider(
+  monacoCtxRef: React.MutableRefObject<IMonacoContext | null>
+): IDisposable[] {
   const monacoCtx = monacoCtxRef.current;
+  if (!monacoCtx) return [];
   if (!monacoCtx.monaco) return [];
 
   const newDisposables: IDisposable[] = [];
@@ -327,8 +351,11 @@ export function registerLaunchHoverProvider(monacoCtxRef: React.MutableRefObject
   return newDisposables;
 }
 
-export function registerLaunchDefinitionProvider(monacoCtxRef: React.MutableRefObject<IMonacoContext>) {
+export function registerLaunchDefinitionProvider(
+  monacoCtxRef: React.MutableRefObject<IMonacoContext | null>
+): IDisposable[] {
   const monacoCtx = monacoCtxRef.current;
+  if (!monacoCtx) return [];
   if (!monacoCtx.monaco) return [];
   const newDisposables: IDisposable[] = [];
 
@@ -368,10 +395,11 @@ export function registerLaunchDefinitionProvider(monacoCtxRef: React.MutableRefO
 }
 
 export function initMonacoRuntime(
-  monacoCtxRef: React.MutableRefObject<IMonacoContext>,
+  monacoCtxRef: React.MutableRefObject<IMonacoContext | null>,
   rosCtxRef: React.MutableRefObject<IRosContext>
 ): void {
   if (runtimeState.initialized) return;
+  if (!monacoCtxRef.current) return;
   if (!monacoCtxRef.current.monaco) return;
 
   configureWorkers(monacoCtxRef.current.monaco);
@@ -379,10 +407,10 @@ export function initMonacoRuntime(
   // await MonacoReact.loader.init(); // stellt sicher, dass monaco geladen ist
 
   initThemes(monacoCtxRef.current.monaco);
-  initLanguages(monacoCtxRef, rosCtxRef);
-  registerLaunchLinkProvider(monacoCtxRef);
-  registerLaunchHoverProvider(monacoCtxRef);
-  registerLaunchDefinitionProvider(monacoCtxRef);
+  runtimeState.disposables.push(...initLanguages(monacoCtxRef, rosCtxRef));
+  runtimeState.disposables.push(...registerLaunchLinkProvider(monacoCtxRef));
+  runtimeState.disposables.push(...registerLaunchHoverProvider(monacoCtxRef));
+  runtimeState.disposables.push(...registerLaunchDefinitionProvider(monacoCtxRef));
 
   runtimeState.initialized = true;
 }
