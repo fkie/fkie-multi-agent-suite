@@ -4,11 +4,11 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Button, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
-import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
@@ -31,7 +31,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
   const { providerId, topicId, showConnections = true, nodeName = "" } = props;
 
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [topicInfo, setTopicInfo] = useState<TopicExtendedInfo | undefined>(undefined);

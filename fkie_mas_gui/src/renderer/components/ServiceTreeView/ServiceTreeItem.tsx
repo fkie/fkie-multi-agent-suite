@@ -1,8 +1,8 @@
 import { Box, Menu, MenuItem, Stack, Typography } from "@mui/material";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { treeItemClasses } from "@mui/x-tree-view";
@@ -32,7 +32,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
   // selectedItem = "",
   // ...other
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");

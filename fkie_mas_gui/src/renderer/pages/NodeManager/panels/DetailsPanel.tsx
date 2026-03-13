@@ -2,7 +2,7 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Alert, AlertTitle, Box, Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
 
@@ -11,8 +11,8 @@ import { default as TopicDetailsItem } from "@/renderer/components/NodeDetails/T
 import { colorFromHostname, getDiagnosticStyle } from "@/renderer/components/UI/Colors";
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import Tag from "@/renderer/components/UI/Tag";
-import { NavigationContext } from "@/renderer/context/NavigationContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import {
@@ -47,7 +47,7 @@ function compareTopics(a: RosTopicId | RosTopic, b: RosTopicId | RosTopic): numb
 export default function DetailsPanel(): JSX.Element {
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
 
   const [indexOfSelected, setIndexOfSelected] = useState<number>(0);
   const [nodeShow, setNodeShow] = useState<RosNode | undefined>(undefined);

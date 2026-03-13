@@ -1,15 +1,15 @@
 import { ProgressInfo, UpdateInfo } from "electron-updater";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import semver from "semver";
 
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { JSONObject, TAutoUpdateManager } from "@/types";
 import packageJson from "../../../package.json";
 import { useLoggingContext } from "../hooks/useLoggingContext";
+import { useNavigationContext } from "../hooks/useNavigationContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
 import { CmdType } from "../providers";
-import NavigationContext from "./NavigationContext";
 
 export interface IAutoUpdateContext {
   autoUpdateManager: TAutoUpdateManager | null;
@@ -63,7 +63,7 @@ export function AutoUpdateProvider({
   children,
 }: IAutoUpdateProviderComponent): ReturnType<React.FC<IAutoUpdateProviderComponent>> {
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const minDelayBetweenAutoChecks = 86400; // one day in seconds

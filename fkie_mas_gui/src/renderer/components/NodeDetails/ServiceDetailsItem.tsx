@@ -2,11 +2,11 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Button, IconButton, Stack, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosService, RosTopicId, ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
@@ -27,7 +27,7 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
   const { providerId, serviceId, nodeName = "" } = props;
 
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [serviceInfo, setServiceInfo] = useState<ServiceExtendedInfo | undefined>();

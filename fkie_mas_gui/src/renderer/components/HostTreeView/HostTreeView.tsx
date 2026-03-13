@@ -1,11 +1,11 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName, LaunchContent, LaunchFile, RosNode } from "@/renderer/models";
@@ -70,7 +70,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     showLoggers = (): void => {},
   } = props;
   // const apiRef = useTreeViewApiRef();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();

@@ -2,13 +2,13 @@ import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import InputIcon from "@mui/icons-material/Input";
 import { Autocomplete, Box, ButtonGroup, IconButton, Stack, TextField, Tooltip } from "@mui/material";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileExtension, getFileName, PathItem, RosPackage } from "@/renderer/models";
@@ -42,7 +42,7 @@ export default function PackageExplorer(props: PackageExplorerProps): JSX.Elemen
   const { packageList = [], selectedProvider = "", reloadPackage = 0 } = props;
 
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);

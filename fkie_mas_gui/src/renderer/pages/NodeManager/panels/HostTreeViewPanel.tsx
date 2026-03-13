@@ -25,7 +25,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
@@ -33,9 +33,9 @@ import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import ListSelectionModal from "@/renderer/components/SelectionModal/ListSelectionModal";
 import MapSelectionModal, { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import useQueue from "@/renderer/hooks/useQueue";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -109,7 +109,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
 
   // state variables
   const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState<boolean>(

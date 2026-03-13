@@ -11,10 +11,10 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
-import { useCallback, useContext } from "react";
+import { useCallback } from "react";
 
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
 import MuiMarkdown from "mui-markdown";
@@ -48,7 +48,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
     onMouseOver = (): void => {},
   } = props;
 
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
   const logCtx = useLoggingContext();
 

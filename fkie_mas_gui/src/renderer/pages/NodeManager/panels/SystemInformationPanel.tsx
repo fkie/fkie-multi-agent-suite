@@ -1,14 +1,14 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Button, Stack, Typography } from "@mui/material";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
 import { colorFromHostname } from "@/renderer/components/UI";
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import Tag from "@/renderer/components/UI/Tag";
-import NavigationContext from "@/renderer/context/NavigationContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { SystemWarning } from "@/renderer/models";
@@ -26,7 +26,7 @@ interface SystemInformationPanelProps {
 export default function SystemInformationPanel(props: SystemInformationPanelProps): JSX.Element {
   const { providerId = "" } = props;
 
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
 

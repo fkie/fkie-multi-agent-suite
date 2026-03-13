@@ -6,7 +6,7 @@ export function useLoggingContext(): ILoggingContext {
   const context = useContext(LoggingContext);
 
   if (!context) {
-    throw new Error("useLoggingContext must be used inside RosProvider");
+    throw new Error("useLoggingContext must be used inside LoggingProvider");
   }
 
   return context;

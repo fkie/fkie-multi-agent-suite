@@ -33,7 +33,7 @@ import semver from "semver";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
-import NavigationContext from "@/renderer/context/NavigationContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode } from "@/renderer/models";
@@ -54,7 +54,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
   const { provider } = props;
   const auCtx = useContext(AutoUpdateContext);
   const rosCtx = useRosContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
   const [providersActivity, setProvidersActivity] = useState(false);
   const [updated, forceUpdate] = useReducer((x) => x + 1, 0);

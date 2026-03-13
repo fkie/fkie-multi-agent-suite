@@ -1,11 +1,11 @@
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { treeItemClasses } from "@mui/x-tree-view";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
-import { NavigationContext } from "@/renderer/context/NavigationContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
@@ -27,7 +27,7 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
   const { itemId, rootPath, topicInfo, selectedItem } = props;
 
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");

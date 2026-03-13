@@ -52,7 +52,6 @@ import ProviderSelectionModal from "@/renderer/components/SelectionModal/Provide
 import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
 import { AutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { ElectronContext } from "@/renderer/context/ElectronContext";
-import NavigationContext from "@/renderer/context/NavigationContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { getBaseName, getFileName } from "@/renderer/models";
 import { CmdType, Provider } from "@/renderer/providers";
@@ -79,6 +78,7 @@ import LoggingPanel from "./panels/LoggingPanel";
 import { getInfoStateColor } from "@/renderer/components/UI/Colors";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { SaveResult } from "@/renderer/monaco/types";
@@ -108,7 +108,7 @@ export default function NodeManager(): JSX.Element {
   const logCtx = useLoggingContext();
   const monacoInitCtx = useMonacoInitContext();
   const monacoCtx = monacoInitCtx.monacoCtx;
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
   const [layoutJson, setLayoutJson] = useLocalStorage<IJsonModel>("layout", DEFAULT_LAYOUT);
   const [model, setModel] = useState<Model>(Model.fromJson(layoutJson));

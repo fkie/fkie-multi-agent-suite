@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
-import React, { HTMLAttributes, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { HTMLAttributes, useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import LaunchFileModal from "@/renderer/components/LaunchFileModal/LaunchFileModal";
@@ -24,10 +24,10 @@ import TreeDirectory from "@/renderer/components/PackageExplorer/TreeDirectory";
 import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "@/renderer/components/PackageExplorer/types";
 import { Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { BUTTON_LOCATIONS, LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileExtension, getFileName, PathItem, RosPackage } from "@/renderer/models";
@@ -75,7 +75,7 @@ export class ProviderPackage {
 
 export default function PackageExplorerPanel(): JSX.Element {
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
 

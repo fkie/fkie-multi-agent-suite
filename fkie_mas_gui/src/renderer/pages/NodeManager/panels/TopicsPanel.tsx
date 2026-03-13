@@ -8,16 +8,16 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
 import TopicTreeItem from "@/renderer/components/TopicTreeView/TopicTreeItem";
 import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import NavigationContext from "@/renderer/context/NavigationContext";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode, RosTopic, TopicExtendedInfo } from "@/renderer/models";
@@ -52,7 +52,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
 
   const EXPAND_ON_SEARCH_MIN_CHARS = 2;
   const logCtx = useLoggingContext();
-  const navCtx = useContext(NavigationContext);
+  const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [topics, setTopics] = useState<TopicExtendedInfo[]>([]); // [topicInfo: TopicExtendedInfo]
