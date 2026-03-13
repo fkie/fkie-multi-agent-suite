@@ -40,11 +40,12 @@ export default class EditorProvider extends Provider {
 
   public updateDaemonInit: () => void = async () => {
     this.getDaemonVersion()
-      .then((dv) => {
+      .then(async (dv) => {
         if (this.isAvailable()) {
           this.daemonVersion = dv;
           this.setConnectionState(ConnectionState.STATES.CONNECTED, "");
-          this.updateProviderList();
+          await this.updateProviderList();
+          await this.updateLaunchContent();
           return true;
         }
         return false;
