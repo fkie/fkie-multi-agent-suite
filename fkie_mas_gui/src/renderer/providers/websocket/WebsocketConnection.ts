@@ -31,8 +31,6 @@ export default class WebsocketConnection extends ProviderConnection {
   /**
    * External logger
    */
-  logger: ILoggingContext | null;
-
   private subscriptions: ISubscriptions;
 
   private queue: IQueue;
@@ -44,20 +42,19 @@ export default class WebsocketConnection extends ProviderConnection {
   private onOpen: () => void = () => {};
 
   constructor(
+    private logCtxRef: React.MutableRefObject<ILoggingContext>,
     host: string,
     rosVersion: string,
     port: number = 0,
     networkId: number = 0,
     useSSL: boolean = false,
     onClose: (reason: string, details: string) => void = () => {},
-    onOpen: () => void = () => {},
-    logger: ILoggingContext | null = null
+    onOpen: () => void = () => {}
   ) {
     super();
     this.subscriptions = {};
     this.queue = {};
     this.rpcId = 0;
-    this.logger = logger;
     const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion, "", networkId);
     this.uri = `ws://${host}:${providerPort}`;
 
@@ -66,6 +63,10 @@ export default class WebsocketConnection extends ProviderConnection {
     this.useSSL = useSSL;
     this.onClose = onClose;
     this.onOpen = onOpen;
+  }
+
+  private log(): ILoggingContext {
+    return this.logCtxRef.current;
   }
 
   generateRequestId: () => number = () => {
@@ -77,16 +78,16 @@ export default class WebsocketConnection extends ProviderConnection {
     if (this.websocket !== null) return Promise.resolve(true);
     this.websocket = new WebSocket(this.uri);
     this.websocket.addEventListener("open", () => {
-      this.logger?.success(`websocket connected to ${this.websocket?.url}`, "", "connected");
+      this.log().success(`websocket connected to ${this.websocket?.url}`, "", "connected");
       this.onOpen();
     });
     this.websocket.addEventListener("close", (event: CloseEvent) => {
-      this.logger?.info(`websocket disconnected from ${this.uri}`, "", "disconnected");
+      this.log().info(`websocket disconnected from ${this.uri}`, "", "disconnected");
       this.websocket = null;
       this.onClose(event.reason, `${event.code}`);
     });
     this.websocket.addEventListener("error", (event) => {
-      this.logger?.error(
+      this.log().error(
         `error on connect to ${this.websocket?.url}`,
         `event.type: ${JSON.stringify(event.type)}\nIs the daemon running?\nIs the hostname being resolved to the correct IP address?\nPlease check the details in the console by pressing F12.`
       );
@@ -222,7 +223,7 @@ export default class WebsocketConnection extends ProviderConnection {
   closeSubscriptions: () => Promise<void> = async () => {
     Object.keys(this.subscriptions).every(async (key) => {
       await this.call("unsub", [key]).catch((error) => {
-        this.logger?.warn(`failed unregister ${key}`, `${error}`);
+        this.log().warn(`failed unregister ${key}`, `${error}`);
       });
     });
     this.subscriptions = {};
@@ -283,7 +284,7 @@ export default class WebsocketConnection extends ProviderConnection {
         }
       }
     } catch (error) {
-      this.logger?.warn(`[${this.uri}] error while handle received message: ${error}`, `${JSON.stringify(msg)}`);
+      this.log().warn(`[${this.uri}] error while handle received message: ${error}`, `${JSON.stringify(msg)}`);
     }
   };
 }

@@ -1,5 +1,5 @@
 import { SnackbarKey, useSnackbar } from "notistack";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
@@ -59,6 +59,7 @@ export interface IRosContext {
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
   localNodes: TLocalNode[]; // track local nodes of each provider
+  createProvider(host: string, rosVersion: string, port?: number, networkId?: number, useSSL?: boolean): Provider;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
@@ -120,17 +121,27 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   // nodeMap: Map<string, RosNode>
   const [nodeMap, setNodeMap] = useState(new Map());
 
-  useEffect(() => {
-    for (const provider of providers) {
-      provider.setSettingsCtx(settingsCtx);
-    }
-  }, [settingsCtx, providers]);
+  const logCtxRef = useRef(logCtx);
+  const settingsCtxRef = useRef(settingsCtx);
 
   useEffect(() => {
-    for (const provider of providers) {
-      provider.setLoggerCtx(logCtx);
-    }
-  }, [logCtx, providers]);
+    settingsCtxRef.current = settingsCtx;
+  }, [settingsCtx]);
+
+  useEffect(() => {
+    logCtxRef.current = logCtx;
+  }, [logCtx]);
+
+  // wrapper function to set settings and logger for each provider
+  function createProvider(
+    host: string,
+    rosVersion: string,
+    port: number = 0,
+    networkId: number = 0,
+    useSSL: boolean = false
+  ): Provider {
+    return new Provider(logCtxRef, settingsCtxRef, host, rosVersion, port, networkId, useSSL);
+  }
 
   /** Remove all disconnected provider and their discovered provider. */
   function clearProviders(): void {
@@ -578,13 +589,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       let provider = getProviderByHosts([config.host], port, null) as Provider;
       if (!provider) {
         provider = new Provider(
-          settingsCtx,
+          logCtxRef,
+          settingsCtxRef,
           config.host,
           config.rosVersion,
           port,
           config.networkId,
-          config.useSSL,
-          logCtx
+          config.useSSL
         );
         provider.isLocalHost = isLocal;
         provider.startConfiguration = config;
@@ -1313,6 +1324,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       mapProviderRosNodes,
       nodeMap,
       localNodes,
+      createProvider,
       connectToProvider,
       startProvider,
       startConfig,

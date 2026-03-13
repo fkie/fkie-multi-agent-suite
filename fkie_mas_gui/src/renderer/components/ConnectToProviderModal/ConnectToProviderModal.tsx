@@ -537,15 +537,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
           host = new URL(window.location.href).hostname;
         }
         console.log(`connecting to ${host}:${port}`);
-        const newProvider = new Provider(
-          settingsCtx,
-          host,
-          startParameter.rosVersion,
-          port,
-          undefined,
-          undefined,
-          logCtx
-        );
+        const newProvider = rosCtx.createProvider(host, startParameter.rosVersion, port, undefined, undefined);
         const launchCfg = createLaunchConfigFor(host);
         newProvider.startConfiguration = launchCfg;
         await rosCtx.connectToProvider(newProvider);

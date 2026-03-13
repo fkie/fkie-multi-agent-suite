@@ -807,7 +807,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             // no provider was found: no provider found: we have a remote node and the provider daemon is not started there.
             // We create a new "not connected" provider.
             if (item.providerId) {
-              p = new Provider(settingsCtx, item.providerId, rosCtx.rosInfo?.version || "2");
+              p = rosCtx.createProvider(item.providerId, rosCtx.rosInfo?.version || "2");
               p.id = item.providerId;
             } else {
               return "";

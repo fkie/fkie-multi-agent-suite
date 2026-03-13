@@ -84,14 +84,12 @@ export default function ProviderPanel(): JSX.Element {
               }
             }
             if (domainId >= 0) {
-              const newProvider = new Provider(
-                settingsCtx,
+              const newProvider = rosCtx.createProvider(
                 "localhost",
                 rosCtx.rosInfo.version,
                 undefined,
                 domainId,
-                undefined,
-                logCtx
+                undefined
               );
               await rosCtx.connectToProvider(newProvider);
               return;
