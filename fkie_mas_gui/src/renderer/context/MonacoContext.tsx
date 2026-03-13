@@ -4,6 +4,7 @@ import { editor } from "monaco-editor/esm/vs/editor/editor.api";
 import { createContext, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useLoggingContext } from "../hooks/useLoggingContext";
+import { useRefContext } from "../hooks/useRefContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { FileItem, FileLanguageAssociations } from "../models";
 import { IncludeResolver } from "../monaco/setup";
@@ -45,8 +46,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   const monacoInstance = MonacoReact.useMonaco();
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();
-  const rosCtxRef = useRef(rosCtx);
-  const logCtxRef = useRef(logCtx);
+  const rosCtxRef = useRefContext(rosCtx);
 
   const files = useRef(new Map<string, FileItem>());
   const resolvers = useRef(new Map<string, IncludeResolver>());
@@ -61,14 +61,6 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
       workspaceRef.current = new MonacoWorkspace(monacoInstance, rosCtxRef);
     }
   }, [monacoInstance]);
-
-  useEffect(() => {
-    rosCtxRef.current = rosCtx;
-  }, [rosCtx]);
-
-  useEffect(() => {
-    logCtxRef.current = logCtx;
-  }, [logCtx]);
 
   const dirtyManager = useCallback(() => {
     return workspaceRef.current?.dirty;

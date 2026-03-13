@@ -11,21 +11,19 @@ export default class TerminalProvider extends Provider {
   /**
    * constructor that initializes a new instance of a provider object.
    *
-   * @param settings - External settings
    * @param host - IP address or hostname of a remote server on remote host.
    * @param rosVersion - ROS version as string of {'1', '2'}
    * @param port - Port of a remote server on remote host. If zero, it depends on the ros version.
-   * @param logger - External logger
    */
   constructor(
-    settings: ISettingsContext,
+    logCtxRef: React.MutableRefObject<ILoggingContext>,
+    settingsCtxRef: React.MutableRefObject<ISettingsContext>,
     host: string,
     rosVersion: string,
     port: number = 0,
-    useSSL: boolean = false,
-    logger: ILoggingContext | null = null
+    useSSL: boolean = false
   ) {
-    super(settings, host, rosVersion, port, 0, useSSL, logger);
+    super(logCtxRef, settingsCtxRef, host, rosVersion, port, 0, useSSL);
     this.className = "TerminalProvider";
   }
 

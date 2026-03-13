@@ -5,6 +5,7 @@ import { useCustomEventListener } from "react-custom-events";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
+import { useRefContext } from "@/renderer/hooks/useRefContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { SaveResult } from "@/renderer/monaco/types";
@@ -30,6 +31,8 @@ export default function EditorApp(): JSX.Element {
   const monacoCtx = monacoInitCtx.monacoCtx;
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
+  const logCtxRef = useRefContext(logCtx);
+  const settingsCtxRef = useRefContext(settingsCtx);
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [dirtyModels, setDirtyModels] = useState<monaco.editor.ITextModel[]>([]);
 
@@ -71,7 +74,7 @@ export default function EditorApp(): JSX.Element {
       return;
     }
     document.title = `Editor - ${getFileName(rootLaunch)}`;
-    const prov = new EditorProvider(settingsCtx, host, "", Number.parseInt(port), false, logCtx);
+    const prov = new EditorProvider(logCtxRef, settingsCtxRef, host, "", Number.parseInt(port), false);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
       setLaunchInfo({

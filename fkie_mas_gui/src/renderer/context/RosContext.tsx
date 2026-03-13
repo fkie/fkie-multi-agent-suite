@@ -1,5 +1,5 @@
 import { SnackbarKey, useSnackbar } from "notistack";
-import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
@@ -43,6 +43,7 @@ import {
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
 import { useLoggingContext } from "../hooks/useLoggingContext";
+import { useRefContext } from "../hooks/useRefContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
@@ -121,16 +122,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   // nodeMap: Map<string, RosNode>
   const [nodeMap, setNodeMap] = useState(new Map());
 
-  const logCtxRef = useRef(logCtx);
-  const settingsCtxRef = useRef(settingsCtx);
-
-  useEffect(() => {
-    settingsCtxRef.current = settingsCtx;
-  }, [settingsCtx]);
-
-  useEffect(() => {
-    logCtxRef.current = logCtx;
-  }, [logCtx]);
+  const logCtxRef = useRefContext(logCtx);
+  const settingsCtxRef = useRefContext(settingsCtx);
 
   // wrapper function to set settings and logger for each provider
   function createProvider(

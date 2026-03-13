@@ -272,7 +272,7 @@ export default class Provider implements IProvider {
     this.id = `${this.connection.host}:${this.connection.port}`;
   }
 
-  private log(): ILoggingContext {
+  protected log(): ILoggingContext {
     return this.logCtxRef.current;
   }
 

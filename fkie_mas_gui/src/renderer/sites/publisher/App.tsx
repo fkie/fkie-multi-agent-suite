@@ -2,6 +2,7 @@ import { Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useRefContext } from "@/renderer/hooks/useRefContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName } from "../../models";
@@ -19,6 +20,8 @@ export default function PublisherApp(): JSX.Element {
   const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
+  const logCtxRef = useRefContext(logCtx);
+  const settingsCtxRef = useRefContext(settingsCtx);
   const [pubInfo, setPubInfo] = useState<IPublisherInfo | null>(null);
   const [stopRequested, setStopRequested] = useState<string>("");
 
@@ -48,7 +51,7 @@ export default function PublisherApp(): JSX.Element {
       return;
     }
     document.title = `Publish - ${getFileName(topic)}`;
-    const prov = new PublisherProvider(settingsCtx, host, "", Number.parseInt(port), false, logCtx);
+    const prov = new PublisherProvider(logCtxRef, settingsCtxRef, host, "", Number.parseInt(port), false);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
       setPubInfo({

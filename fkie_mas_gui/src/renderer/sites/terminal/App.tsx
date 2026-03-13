@@ -2,6 +2,7 @@ import { Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useRefContext } from "@/renderer/hooks/useRefContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import SingleTerminalPanel from "../../pages/NodeManager/panels/SingleTerminalPanel";
@@ -21,6 +22,8 @@ export default function TerminalApp(): JSX.Element {
   const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
+  const logCtxRef = useRefContext(logCtx);
+  const settingsCtxRef = useRefContext(settingsCtx);
   const [paramInfo, setParamInfo] = useState<ITerminalInfo | null>(null);
 
   async function initProvider(): Promise<void> {
@@ -44,7 +47,7 @@ export default function TerminalApp(): JSX.Element {
     }
     const nodeName = node ? node : "bash";
     document.title = `${info} - ${nodeName}`;
-    const prov = new TerminalProvider(settingsCtx, host, "", Number.parseInt(port), false, logCtx);
+    const prov = new TerminalProvider(logCtxRef, settingsCtxRef, host, "", Number.parseInt(port), false);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
       setParamInfo({

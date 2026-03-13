@@ -1,6 +1,7 @@
-import { createContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useEffect, useMemo } from "react";
 
 import { useMonacoContext } from "../hooks/useMonacoContext";
+import { useRefContext } from "../hooks/useRefContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { disposeMonacoRuntime, initMonacoRuntime } from "../monaco/setup";
 import { IMonacoContext } from "./MonacoContext";
@@ -17,16 +18,8 @@ export function MonacoInitProvider({ children }: { children: React.ReactNode }) 
   const monacoCtx = useMonacoContext();
   const rosCtx = useRosContext();
 
-  const rosCtxRef = useRef<IRosContext>(rosCtx);
-  const monacoCtxRef = useRef<IMonacoContext>(monacoCtx);
-
-  useEffect(() => {
-    rosCtxRef.current = rosCtx;
-  }, [rosCtx]);
-
-  useEffect(() => {
-    monacoCtxRef.current = monacoCtx;
-  }, [monacoCtx]);
+  const rosCtxRef = useRefContext<IRosContext>(rosCtx);
+  const monacoCtxRef = useRefContext<IMonacoContext>(monacoCtx);
 
   useEffect(() => {
     initMonacoRuntime(monacoCtxRef, rosCtxRef);
