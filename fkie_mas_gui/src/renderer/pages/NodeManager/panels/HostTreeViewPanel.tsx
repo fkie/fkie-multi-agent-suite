@@ -146,7 +146,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     setButtonLocation(settingsCtx.get("buttonLocation") as string);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   /**
    * Get list of nodes from a list of node.idGlobal

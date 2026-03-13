@@ -62,7 +62,7 @@ export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     setButtonLocation(settingsCtx.get("buttonLocation") as string);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   function genKey(items: string[]): string {
     return `${items.join("#")}`;

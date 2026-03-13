@@ -76,7 +76,7 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     setButtonLocation(settingsCtx.get("buttonLocation") as string);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   function getAvailableProviders(): TProviderDescription[] {
     return rosCtx.providers.map((item: Provider) => {

@@ -46,7 +46,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   const getHostStyle = useCallback(
     function getHostStyle(providerName: string): object {

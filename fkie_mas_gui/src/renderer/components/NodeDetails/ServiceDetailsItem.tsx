@@ -37,7 +37,7 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   function onServiceCallClick(service: ServiceExtendedInfo): void {
     emitCustomEvent(

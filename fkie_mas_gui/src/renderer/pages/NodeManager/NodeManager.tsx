@@ -138,7 +138,7 @@ export default function NodeManager(): JSX.Element {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setTabFullName(settingsCtx.get("tabFullName") as boolean);
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
-  }, [settingsCtx.changed, settingsCtx]);
+  }, [settingsCtx.changed]);
 
   // enable/disable popout depending on environment
   useEffect(() => {
@@ -248,7 +248,7 @@ export default function NodeManager(): JSX.Element {
       settingsCtx.set("resetLayout", false);
       logCtx.success("Layout reset!", "", "layout reset");
     }
-  }, [settingsCtx.changed, layoutJson, hasTab, logCtx, settingsCtx, setLayoutJson]);
+  }, [settingsCtx.changed, layoutJson, hasTab, logCtx, setLayoutJson]);
 
   /** Hide bottom panel when last terminal is closed and handle editor tabs with unsaved changes */
   const deleteTab = useCallback(

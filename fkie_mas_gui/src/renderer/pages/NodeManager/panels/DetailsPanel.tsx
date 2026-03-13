@@ -73,7 +73,7 @@ export default function DetailsPanel(): JSX.Element {
   useEffect(() => {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   useEffect(() => {
     const idToShow = navCtx.selectedNodes[indexOfSelected];

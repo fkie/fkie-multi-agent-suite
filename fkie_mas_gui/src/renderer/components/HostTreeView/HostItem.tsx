@@ -67,7 +67,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setTimeDiffThreshold(settingsCtx.get("timeDiffThreshold") as number);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   async function updateTime(local = true): Promise<void> {
     if (provider) {

@@ -84,7 +84,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   useEffect(() => {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
     setShowLaunchFile(settingsCtx.get("showLaunchFileIndicatorForNodes") as boolean);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   function getColorFromLifecycle(state: string, isDarkMode = false): string {
     switch (state) {
@@ -404,11 +404,14 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   }, [node]);
 
   /** Returns all associated node names recursively (max depth 10), excluding the start node */
-  function getAssociatedNodeNames(startNode: RosNode): string[] {
-    const provider = rosCtx.getProviderById(startNode.providerId);
-    if (!provider) return [];
-    return provider.getAssociatedNodes(startNode).map((node) => node.name);
-  }
+  const getAssociatedNodeNames: (startNode: RosNode) => string[] = useCallback(
+    (startNode) => {
+      const provider = rosCtx.getProviderById(startNode.providerId);
+      if (!provider) return [];
+      return provider.getAssociatedNodes(startNode).map((node) => node.name);
+    },
+    [rosCtx]
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {

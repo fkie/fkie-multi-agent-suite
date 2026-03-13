@@ -19,7 +19,6 @@ import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
 import NodeItem from "./NodeItem";
 import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
-// import { useTreeViewApiRef } from "@mui/x-tree-view";
 
 const ID_SEP = "█";
 
@@ -84,6 +83,9 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     settingsCtx.get("avoidGroupWithOneItem") as string
   );
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [namespaceSystemNodes, setNamespaceSystemNodes] = useState<string>(
+    settingsCtx.get("namespaceSystemNodes") as string
+  );
   const [openScreenByDefault, setOpenScreenByDefault] = useState<string>(
     settingsCtx.get("openScreenByDefault") as string
   );
@@ -104,11 +106,11 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
     setSpamNodesRegExp(getSpamNodesRegExp());
     setOpenScreenByDefault(settingsCtx.get("openScreenByDefault") as string);
-  }, [settingsCtx, settingsCtx.changed]);
+    setNamespaceSystemNodes(settingsCtx.get("namespaceSystemNodes") as string);
+  }, [settingsCtx.changed]);
 
   const createTreeFromNodes: (nodes: RosNode[]) => void = useCallback(
     (nodes) => {
-      const namespaceSystemNodes: string = settingsCtx.get("namespaceSystemNodes") as string;
       const expandedGroups: string[] = [];
       const nodeItemMap = new Map();
       const newKeyNodeList: KeyTreeItem[] = [];
@@ -212,7 +214,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         setExpanded(expandedGroups);
       }
     },
-    [spamNodesRegExp]
+    [spamNodesRegExp, isFiltered, namespaceSystemNodes]
   );
 
   useEffect(() => {
@@ -379,22 +381,25 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         showLoggers(nodeIds);
       }
     },
-    [rosCtx.nodeMap]
+    [showLoggers, getNodeIdsFromTreeIds]
   );
 
-  function allChildrenSelected(groupName: string, selected: Set<string>): boolean {
-    for (const node of keyNodeList) {
-      if (!node.key.startsWith(groupName)) continue;
+  const allChildrenSelected: (groupName: string, selected: Set<string>) => boolean = useCallback(
+    (groupName, selected) => {
+      for (const node of keyNodeList) {
+        if (!node.key.startsWith(groupName)) continue;
 
-      // Ignore the group itself
-      if (node.key === groupName) continue;
+        // Ignore the group itself
+        if (node.key === groupName) continue;
 
-      if (!selected.has(node.key)) {
-        return false; // early exit
+        if (!selected.has(node.key)) {
+          return false; // early exit
+        }
       }
-    }
-    return true;
-  }
+      return true;
+    },
+    [keyNodeList]
+  );
 
   /**
    * Function to get all the IDs belonging to a list of parent IDs
@@ -463,7 +468,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
 
       return Array.from(selected);
     },
-    [keyNodeList]
+    [keyNodeList, allChildrenSelected]
   );
 
   /**
@@ -515,7 +520,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       // inform details panel tab about selected nodes by user
       emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
     },
-    [keyNodeList]
+    [getParentAndChildrenIds]
   );
 
   function keyToNodeName(key: string): { isValidNode: boolean; provider: string; node_name: string } {
@@ -574,7 +579,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         })
       ),
     ]);
-  }, [keyNodeList, rosCtx.mapProviderRosNodes]);
+  }, [keyNodeList, getParentAndChildrenIds]);
 
   /**
    * synchronize selected items and available nodes (important in ROS2)
@@ -653,7 +658,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         );
       }
     },
-    [logCtx, rosCtx.providers]
+    [logCtx, rosCtx]
   );
 
   /**
@@ -694,7 +699,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         .map((kNode) => kNode.key);
       setSelectedItems(getParentAndChildrenIds(newSelItems));
     },
-    [keyNodeList, rosCtx.mapProviderRosNodes]
+    [keyNodeList, rosCtx.mapProviderRosNodes, getParentAndChildrenIds]
   );
 
   /**
@@ -753,14 +758,11 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     [
       // do not include keyNodeList
       avoidGroupWithOneItem,
-      visibleNodes,
-      expanded,
-      providerNodeTree,
-      selectedItems,
-      rosCtx,
-      settingsCtx.changed,
-      rosCtx.nodeMap,
-      // NodesCount,
+      isDarkMode,
+      handleDoubleClick,
+      handleDoubleClickOnNode,
+      handleMiddleClickOnNode,
+      handleClickOnLoggers,
     ]
   );
 

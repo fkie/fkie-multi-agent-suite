@@ -44,7 +44,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   function onEchoClick(topic: TopicExtendedInfo, external: boolean = false, openInTerminal: boolean = false): void {
     navCtx.openSubscriber(providerId || "", topic.name, true, false, external, openInTerminal);

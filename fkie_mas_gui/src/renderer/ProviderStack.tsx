@@ -48,7 +48,7 @@ export default function ProviderStack({ children }: { children: React.ReactNode 
       setDarkTheme(createTheme(darkThemeDef));
       setLightTheme(createTheme(lightThemeDef));
     }
-  }, [settingsCtx, settingsCtx.changed]);
+  }, [settingsCtx.changed]);
 
   useEffect(() => {
     // Anything in here is fired on component mount.

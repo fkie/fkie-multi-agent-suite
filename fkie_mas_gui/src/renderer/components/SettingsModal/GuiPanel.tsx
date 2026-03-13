@@ -114,7 +114,7 @@ export default function GuiPanel(): JSX.Element {
 
   useEffect(() => {
     createGroups();
-  }, [settingsCtx, settingsCtx.changed, filter]);
+  }, [settingsCtx.changed, filter]);
 
   const generateContent = useMemo(() => {
     return (
