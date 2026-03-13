@@ -26,12 +26,12 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
 import SearchBar from "@/renderer/components/UI/SearchBar";
-import { DB_MAX_MSGS, MsgHistoryContext, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
+import { DB_MAX_MSGS, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -61,7 +61,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
-  const historyCtx = useContext(MsgHistoryContext);
+  const historyCtx = useMsgHistory();
   const [maxHistoryLength, setMaxHistoryLength] = useState(0);
   const { historyByType, setMaxEntries, ensureLoaded } = useMsgHistory();
   const [history, setHistory] = useState<TMsgHistoryEntry[]>([]);
