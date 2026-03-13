@@ -234,7 +234,7 @@ export default class Provider implements IProvider {
     paramNamespaceSystemNodes: "{SYSTEM}",
     paramCapabilityGroup: "",
     paramLogCommand: "",
-    changed: 0,
+    changed: -1,
   };
 
   /**
@@ -486,6 +486,7 @@ export default class Provider implements IProvider {
       default:
         break;
     }
+    this.log().debug(`terminal command: ${JSON.stringify(result)}`);
     return Promise.resolve(result);
   };
 
@@ -2269,7 +2270,10 @@ export default class Provider implements IProvider {
   /**
    * Callback when any launch file or ROS nodes changes  in provider
    */
-  public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => void = async (msg, forceRefresh = false) => {
+  public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => Promise<void> = async (
+    msg,
+    forceRefresh = false
+  ) => {
     this.log().debug(`Trigger update ros nodes for ${this.id}`, "");
     const msgObj = msg as unknown as { path: string; action: string; requester: string };
     if (msgObj?.path) {
@@ -2397,7 +2401,7 @@ export default class Provider implements IProvider {
     this.unlockRequest("updateRosNodes");
   };
 
-  public updateRosServices: () => void = async () => {
+  public updateRosServices: () => Promise<void> = async () => {
     this.log().debug(`Trigger update ros services for ${this.id}`, "");
     if (await this.lockRequest("updateRosServices")) {
       return;
@@ -2434,7 +2438,7 @@ export default class Provider implements IProvider {
     return Promise.resolve(result);
   };
 
-  public updateRosTopics: () => void = async () => {
+  public updateRosTopics: () => Promise<void> = async () => {
     this.log().debug(`Trigger update ros topics for ${this.id}`, "");
     if (await this.lockRequest("updateRosTopics")) {
       return;

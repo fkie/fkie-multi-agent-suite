@@ -359,6 +359,7 @@ export function NavigationProvider({ children }: INavigationProvider): ReturnTyp
     externalKeyModifier: boolean,
     forceOpenTerminal: boolean
   ): Promise<void> {
+    logCtx.debug(`Start terminal ${type}@${providerId} for ${node}`);
     const provider = rosCtx.getProviderById(providerId);
     if (provider) {
       const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${screen ? screen : node}`;
