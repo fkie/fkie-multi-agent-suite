@@ -7,6 +7,7 @@ import { ForwardedRef } from "react";
 interface Props {
   refEl: ForwardedRef<HTMLDivElement>;
   message?: string;
+  messageSeverity?: "success" | "info" | "warning" | "error";
   activeModel?: editor.ITextModel | null;
   onClose: () => void;
 }
@@ -14,14 +15,14 @@ interface Props {
 /**
  * Editor alert bar
  */
-export function AlertsBar({ refEl, message, activeModel, onClose }: Props) {
+export function AlertsBar({ refEl, message, messageSeverity = "warning", activeModel, onClose }: Props) {
   const monacoCtx = useMonacoContext();
 
   return (
     <Stack ref={refEl} direction="column">
       {message && (
         <Alert
-          severity="warning"
+          severity={messageSeverity}
           style={{ minWidth: 0 }}
           onClose={() => {
             onClose();

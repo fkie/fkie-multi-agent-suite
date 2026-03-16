@@ -30,7 +30,7 @@ interface EditorToolbarProps {
   historyModel: THistoryModel | undefined;
   includedFiles: LaunchIncludedFile[];
   modifiedFiles: string[];
-  eventButton: number;
+  eventButton?: React.MouseEvent<HTMLDivElement, MouseEvent>;
   setEditorModel: (
     uriPath: string,
     range?: TFileRange | null,
@@ -105,9 +105,9 @@ export function EditorToolbar(props: EditorToolbarProps): JSX.Element {
   }, [historyModel]);
 
   useEffect(() => {
-    if (eventButton === 3) {
+    if (eventButton?.button === 3) {
       openPrevModel();
-    } else if (eventButton === 4) {
+    } else if (eventButton?.button === 4) {
       openNextModel();
     }
   }, [eventButton]);

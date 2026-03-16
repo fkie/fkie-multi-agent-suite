@@ -31,6 +31,11 @@ import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
 
+type TAlertNotification = {
+  message?: string;
+  messageSeverity?: "success" | "info" | "warning" | "error";
+};
+
 interface FileEditorPanelProps {
   editorId: string;
   providerId: string;
@@ -56,10 +61,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   const [selectionRange, setSelectionRange] = useState<TFileRange>();
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
-  const [notificationDescription, setNotificationDescription] = useState("");
+  const [notificationDescription, setNotificationDescription] = useState<TAlertNotification | undefined>();
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [historyModel, setHistoryModel] = useState<THistoryModel | undefined>();
-  const [eventButton, setEventButton] = useState<number>(-1);
+  const [eventButton, setEventButton] = useState<React.MouseEvent<HTMLDivElement, MouseEvent> | undefined>(undefined);
   const [keyboardEvent, setKeyboardEvent] = useState<React.KeyboardEvent | undefined>();
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
 
@@ -153,10 +158,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       appendToHistory: boolean = true
     ): Promise<boolean> => {
       if (!uriPath) return false;
-      setNotificationDescription("Getting file from provider...");
+      setNotificationDescription({ message: "Getting file from provider...", messageSeverity: "info" });
       // If model does not exist, try to fetch it
       const result: TModelResult = await monacoCtx.getModel(editorId, uriPath, forceReload);
-      setNotificationDescription("");
+      setNotificationDescription(undefined);
       setCurrentFileState({ name: getFileName(uriPath), requesting: false, path: uriPath });
 
       // get model from path if exists
@@ -223,13 +228,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         const result = await provider.getFileContent(data.path.srcPath);
         if (result.error) {
           console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-          setNotificationDescription(`Could not open file: [${result.file.fileName}]: ${result.error}`);
+          setNotificationDescription({ message: `Could not open file: [${result.file.fileName}]: ${result.error}`, messageSeverity: "warning" });
           return;
         }
         const model = monacoCtx.createModel(editorId, result.file);
         if (!model) {
           console.error(`Could not create model for: [${result.file.fileName}]`);
-          setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
+          setNotificationDescription({ message: `Could not create model for: [${result.file.fileName}]`, messageSeverity: "warning" });
           return;
         }
         if (currentModelUri === model.uri.path) {
@@ -257,13 +262,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         mEditor.setCurrentModel(editorModel);
         const resultFetchIncludes = await fetchIncludedFiles();
         if (!resultFetchIncludes.result) {
-          setNotificationDescription(resultFetchIncludes.error);
+          setNotificationDescription({ message: resultFetchIncludes.error, messageSeverity: "warning" });
         } else {
-          setNotificationDescription("");
+          setNotificationDescription(undefined);
         }
       } else {
         setSavedFiles((prev) => prev.filter((f) => f === editorModel.uri.path));
-        setNotificationDescription(`Could not save file: ${saveResult.message}`);
+        setNotificationDescription({ message: `Could not save file: ${saveResult.message}`, messageSeverity: "warning" });
         logCtx.error("Could not save file", saveResult.message, "save failed");
       }
     },
@@ -310,48 +315,48 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
     if (!monacoCtx.monaco) {
       // monaco is not yet available
-      setNotificationDescription("monaco is not yet available");
+      setNotificationDescription({ message: "monaco is not yet available", messageSeverity: "error" });
       return;
     }
     if (!currentFilePath || currentFilePath.length === 0) {
-      setNotificationDescription("[currentFilePath] Invalid file path");
+      setNotificationDescription({ message: "[currentFilePath] Invalid file path", messageSeverity: "warning" });
       return;
     }
     if (!rootFilePath || rootFilePath.length === 0) {
-      setNotificationDescription("[rootFilePath] Invalid file path");
+      setNotificationDescription({ message: "[rootFilePath] Invalid file path", messageSeverity: "warning" });
       return;
     }
     // search host based on selected provider
     const provider = rosCtx.getProviderById(providerId);
     if (!provider) {
-      setNotificationDescription(`Provider with id ${providerId} not available`);
+      setNotificationDescription({ message: `Provider with id ${providerId} not available`, messageSeverity: "warning" });
       return;
     }
     if (provider && !provider.host()) {
       logCtx.error("The provider does not have configured any host.", "Please check your provider configuration");
-      setNotificationDescription("The provider does not have configured any host.");
+      setNotificationDescription({ message: "The provider does not have configured any host.", messageSeverity: "warning" });
       return;
     }
 
     setProviderName(provider.name());
-    setNotificationDescription("Getting file from provider...");
+    setNotificationDescription({ message: "Getting file from provider...", messageSeverity: "info" });
     // get file content from provider and create monaco model
     async function getFileAndIncludesAsync(): Promise<void> {
       setCurrentFileState({ name: getFileName(currentFilePath), requesting: true, path: currentFilePath });
       const resultFetchIncludes = await fetchIncludedFiles();
       if (!resultFetchIncludes.result) {
-        setNotificationDescription(resultFetchIncludes.error);
+        setNotificationDescription({ message: resultFetchIncludes.error, messageSeverity: "warning" });
         return;
       }
       const result: TModelResult = await monacoCtx.getModel(editorId, currentFilePath, false);
       if (!result.model && !result.file) {
-        setNotificationDescription(result.error || `Could not get file: [${currentFilePath}]`);
+        setNotificationDescription({ message: result.error || `Could not get file: [${currentFilePath}]`, messageSeverity: "warning" });
         return;
       }
       setCurrentFileState({ name: getFileName(currentFilePath), requesting: false, path: currentFilePath });
       if (!result.model && result.file) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
-        setNotificationDescription(`Could not create model for: [${result.file.fileName}]`);
+        setNotificationDescription({ message: `Could not create model for: [${result.file.fileName}]`, messageSeverity: "warning" });
         return;
       }
       if (result.model) {
@@ -362,7 +367,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       if (result.file && !["launch", "xml", "xacro", "py"].includes(result.file.extension)) {
         console.log(`wrong extension: ${result.file.extension} of ${result.file}`);
         clearIncludedFiles();
-        setNotificationDescription("");
+        setNotificationDescription(undefined);
         return;
       }
     }
@@ -408,7 +413,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       width="100%"
       onKeyDown={(event) => onKeyDown(event)}
       onMouseDown={(event) => {
-        setEventButton(event.button);
+        setEventButton(event);
       }}
       ref={panelRef as ForwardedRef<HTMLDivElement>}
       overflow="auto"
@@ -472,9 +477,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
           />
           <AlertsBar
             refEl={alertRef as ForwardedRef<HTMLDivElement>}
-            message={notificationDescription}
+            message={notificationDescription?.message}
+            messageSeverity={notificationDescription?.messageSeverity}
             activeModel={mEditor.activeModel}
-            onClose={() => setNotificationDescription("")}
+            onClose={() => setNotificationDescription(undefined)}
           />
           <Monaco.Editor
             key="editor"
