@@ -2,6 +2,13 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.2.0 (16.03.2026)
+------------------
+* Fixed resolve internal vars while load xml launch files
+* Include and real path are now two different attributes of the launch include file.
+* Added handling for mas/associations parameter
+* Removed deprecated 'associations' parameter
+
 5.1.1 (02.03.2026)
 ------------------
 * Changed test launch file

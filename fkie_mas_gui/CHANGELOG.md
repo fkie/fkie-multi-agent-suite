@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.2.0 - 16.03.2026
+
+Fixed resolve internal vars while load xml launch files
+Fixed resolve links on first open editor
+Fixed duplicate entries when completing in the editor
+Fixed display of the same file in different tabs
+Include and real path are now two different attributes of the launch include file.
+Revised the Monaco editor
+Added allow_substs attribute to proposals and highlighter
+Replaced stop by pause button in echo dialog
+Reorganization of the management of the Monaco models
+Improved queue handling for node actions
+Added handling for mas/associations parameter
+Removed deprecated 'associations' parameter
+Fixed the display of orphaned nodes from remote providers
+
 ## 5.1.1 - 02.03.2026
 
 Added warning if logger options of a node are not available

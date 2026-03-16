@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.2.0 (16.03.2026)
+------------------
+* Include and real path are now two different attributes of the launch include file.
+
 5.1.0 (26.02.2026)
 ------------------
 * Added event for subscriptions to websocket
