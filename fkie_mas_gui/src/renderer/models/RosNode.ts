@@ -176,7 +176,7 @@ export default class RosNode {
     status = RosNodeStatus.UNKNOWN,
     pid = -1,
     masteruri = "",
-    location = "unknown",
+    location: string | string[] = "unknown",
     system_node = false,
     subscribers = [],
     publishers = [],

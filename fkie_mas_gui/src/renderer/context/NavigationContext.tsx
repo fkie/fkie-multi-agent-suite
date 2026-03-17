@@ -297,7 +297,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
           topic,
           <TopicEchoPanel
             showOptions={showOptions}
-            defaultProvider={providerId}
+            provider={provider}
             defaultTopic={topic}
             defaultNoData={defaultNoData}
           />,
@@ -376,7 +376,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         eventOpenComponent(
           id,
           node || `${type}_${provider.connection.host}`,
-          <SingleTerminalPanel id={id} type={type} providerId={providerId} nodeName={node} screen={screen} cmd={cmd} />,
+          <SingleTerminalPanel id={id} type={type} provider={provider} nodeName={node} screen={screen} cmd={cmd} />,
           true,
           LAYOUT_TAB_SETS.BORDER_BOTTOM,
           new LayoutTabConfig(true, type, null, null, null, {

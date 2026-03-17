@@ -4,7 +4,7 @@ import DataObjectIcon from "@mui/icons-material/DataObject";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Filter1Icon from "@mui/icons-material/Filter1";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import PauseIcon from '@mui/icons-material/Pause';
+import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import {
@@ -41,19 +41,19 @@ import MessageFrame from "./MessageFrame";
 
 interface TopicEchoPanelProps {
   showOptions: boolean;
-  defaultProvider: string;
+  provider: Provider;
   defaultTopic: string;
   defaultNoData: boolean;
 }
 
 export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element {
-  const { showOptions = true, defaultProvider = "", defaultTopic = "", defaultNoData = false } = props;
+  const { showOptions, provider, defaultTopic = "", defaultNoData = false } = props;
 
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
 
-  const [selectedProvider] = useState(defaultProvider);
+  const [selectedProvider] = useState(provider.id);
   const [currentProvider, setCurrentProvider] = useState<Provider>();
   const [subscribed, setSubscribed] = useState(false);
   const [topicName, setTopic] = useState(defaultTopic);
@@ -172,24 +172,22 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
 
   // initialize provider
   useEffect(() => {
-    const provider = rosCtx.getProviderById(selectedProvider);
     if (!provider) return;
     const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount);
     rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
-  }, [noData, noArr, noStr, hz, windowSize, arrayItemsCount]);
+  }, [provider, noData, noArr, noStr, hz, windowSize, arrayItemsCount]);
 
   const close = useCallback(() => {
     if (rosCtx) {
       setSubscribed(false);
       logCtx.debug(`unregister subscriber to topic ${topicName}`);
-      rosCtx.unregisterSubscriber(selectedProvider, topicName);
+      rosCtx.unregisterSubscriber(provider, topicName);
     }
-  }, [rosCtx]);
+  }, [provider, rosCtx]);
 
   useEffect(() => {
     if (subscribed || pause) return;
     // get current provider
-    const provider = rosCtx.getProviderById(selectedProvider);
     if (!provider) return;
     setCurrentProvider(provider);
 
@@ -228,10 +226,10 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     if (msgType) {
       logCtx.debug(`register subscriber to topic ${topicName}`);
       const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount);
-      rosCtx.registerSubscriber(selectedProvider, topicName, msgType, filterMsg, qos);
+      rosCtx.registerSubscriber(provider, topicName, msgType, filterMsg, qos);
       setSubscribed(true);
     }
-  }, [topicName, rosCtx.mapProviderRosNodes, pause, subscribed]);
+  }, [provider, topicName, rosCtx.mapProviderRosNodes, pause, subscribed]);
 
   // useEffect(() => {
   //   updateSubscriberNodeState();
@@ -637,9 +635,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
         <Stack width="100%" height="100%" overflow="auto">
           {history && !noData && generateJsonTopics}
           {!currentProvider && (
-            <Alert severity="info" style={{ minWidth: 0, marginTop: 10 }}>
-              <Alert severity="info">Wait until the provider is initialized: [${selectedProvider}]</Alert>
-            </Alert>
+            <Alert severity="info">Wait until the provider is initialized: [{selectedProvider}]</Alert>
           )}
         </Stack>
       </Stack>

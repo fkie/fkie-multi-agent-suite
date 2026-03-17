@@ -13,14 +13,14 @@ import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
 interface SingleTerminalPanelProps {
   id: string;
   type: CmdType;
-  providerId: string;
+  provider: Provider;
   nodeName?: string;
   screen?: string;
   cmd?: string;
 }
 
 export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JSX.Element {
-  const { id, type, providerId = "", nodeName = "", screen = "", cmd = "" } = props;
+  const { id, type, provider, nodeName = "", screen = "", cmd = "" } = props;
 
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
@@ -29,7 +29,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   const [currentHost, setCurrentHost] = useState<string>();
   const [ttydPort, setTtydPort] = useState<number>(8681);
   const [lastScreenUsed, setLastScreenUsed] = useState("");
-  const [tokenUrl, setTokenUrl] = useState(providerId);
+  const [tokenUrl, setTokenUrl] = useState(provider.id);
   const [errorHighlighting, setErrorHighlighting] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
 
@@ -41,8 +41,6 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   const initializeTerminal = useCallback(
     async (newScreen = "") => {
       // get current provider
-      const provider: Provider | undefined = rosCtx.getProviderById(providerId);
-
       if (!provider) {
         setCurrentHost(undefined);
         return;
@@ -51,7 +49,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
       setCurrentHost(provider.host());
       let tkUrl = `${nodeName.replaceAll("/", "")}`;
       if (!tkUrl) {
-        tkUrl = providerId;
+        tkUrl = provider.id;
       }
       setTokenUrl(tkUrl);
       const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd);
@@ -68,7 +66,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   const updateScreenName = useCallback(() => {
     // node changed, update the screen for the current node
     if (nodeName && type === CmdType.SCREEN) {
-      const nodes = rosCtx.mapProviderRosNodes.get(providerId);
+      const nodes = rosCtx.mapProviderRosNodes.get(provider.id);
       const screens: string[] = [];
       if (nodes) {
         for (const n of nodes) {
@@ -92,10 +90,10 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         }
       }
     }
-  }, [initializeTerminal, lastScreenUsed, nodeName, providerId, rosCtx.mapProviderRosNodes, screen, type]);
+  }, [initializeTerminal, lastScreenUsed, nodeName, provider, rosCtx.mapProviderRosNodes, screen, type]);
 
   const updateTTYDPort = useCallback(() => {
-    const ttydNodes = rosCtx.mapProviderRosNodes.get(providerId)?.filter((n) => {
+    const ttydNodes = rosCtx.mapProviderRosNodes.get(provider.id)?.filter((n) => {
       return n.name.startsWith("/ttyd-");
     });
     if (ttydNodes && ttydNodes?.length > 0) {
@@ -104,7 +102,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         setTtydPort(Number.parseInt(splits[1]));
       }
     }
-  }, [providerId, rosCtx.mapProviderRosNodes]);
+  }, [provider, rosCtx.mapProviderRosNodes]);
 
   // load commands initially
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -146,7 +144,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
           </Alert>
         )}
 
-        {!currentHost && <Alert severity="info">Wait until the provider is initialized: [${providerId}]</Alert>}
+        {!currentHost && <Alert severity="info">Wait until the provider is initialized: [{provider.id}]</Alert>}
 
         {currentHost && nodeName && initialCommands.length > 0 && type !== CmdType.CMD && (
           <TerminalClient
@@ -199,7 +197,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
             type={type}
             tokenUrl={tokenUrl}
             provider={rosCtx.getProviderById(cmd)}
-            remoteProvider={rosCtx.getProviderById(providerId)}
+            remoteProvider={rosCtx.getProviderById(provider.id)}
             wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
             initialCommands={initialCommands}
             name={"bash"}
@@ -212,7 +210,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         )}
       </Box>
     );
-  }, [cmd, currentHost, id, initialCommands, nodeName, providerId, tokenUrl, type, ttydPort, errorHighlighting]);
+  }, [cmd, currentHost, id, initialCommands, nodeName, provider, tokenUrl, type, ttydPort, errorHighlighting]);
 
   return createTerminalView;
 }

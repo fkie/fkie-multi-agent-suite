@@ -106,7 +106,7 @@ export default function SubscriberApp(): JSX.Element {
       {subInfo && rosCtx.mapProviderRosNodes.size > 0 && (
         <TopicEchoPanel
           showOptions
-          defaultProvider={subInfo.provider.id}
+          provider={subInfo.provider}
           defaultTopic={subInfo.topic}
           defaultNoData={subInfo.noData}
         />

@@ -581,8 +581,11 @@ export default class Provider implements IProvider {
   };
 
   public addDiscoverer: (discoverer: string | undefined) => void = (discoverer) => {
-    if (discoverer && this.discoveredBy?.indexOf(discoverer) === -1) {
-      this.discoveredBy.push(discoverer);
+    if (discoverer) {
+      if (!this.discoveredBy) this.discoveredBy = [];
+      if (this.discoveredBy.indexOf(discoverer) === -1) {
+        this.discoveredBy.push(discoverer);
+      }
     }
   };
 
@@ -850,7 +853,7 @@ export default class Provider implements IProvider {
       pid: number;
       process_ids: number[];
       masteruri: string;
-      location: string;
+      location: string | string[];
       is_local: boolean;
       publishers: RosTopicId[];
       subscribers: RosTopicId[];
@@ -1691,7 +1694,7 @@ export default class Provider implements IProvider {
         return value.data as TResult;
       }
       this.log().error(`Provider [${this.id}]: Error at publishMessage()`, `${value.message}`);
-      return { result: result.result, message: result.message };
+      return { result: value.result, message: value.message };
     });
     return Promise.resolve(result);
   };
@@ -2299,21 +2302,23 @@ export default class Provider implements IProvider {
         // Otherwise, the node is displayed under Not connected host.
         if (
           (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
-          (n.location instanceof String && n.location === "remote") ||
+          (n.location === "remote") ||
           !n.isLocal
         ) {
           ignored = true;
-          ignored =
-            this.remoteProviders.filter((prov) => {
-              for (const nodeLocation of n.location) {
-                for (const provName of prov.hostnames) {
-                  if (nodeLocation.includes(provName)) {
-                    return true;
+          if (Array.isArray(n.location)) {
+            ignored =
+              this.remoteProviders.filter((prov) => {
+                for (const nodeLocation of n.location) {
+                  for (const provName of prov.hostnames) {
+                    if (nodeLocation.includes(provName)) {
+                      return true;
+                    }
                   }
                 }
-              }
-              return false;
-            }).length > 0;
+                return false;
+              }).length > 0;
+          }
         }
 
         // update the list with same GUIDs
@@ -2433,7 +2438,7 @@ export default class Provider implements IProvider {
         return value.data as TResult;
       }
       this.log().debug(`Provider [${this.id}]: Error at killProcess()`, `${value.message}`);
-      return { result: result.result, message: result.message };
+      return { result: value.result, message: value.message };
     });
     return Promise.resolve(result);
   };
@@ -2729,7 +2734,7 @@ export default class Provider implements IProvider {
             ""
           );
           await delay(this.delayCallAttempts);
-          return callRequest(_uri, _args, currentAttempt + 1, timeout);
+          return callRequest(_uri, _args, currentAttempt + 1, _timeout);
         }
       };
       this.log().debugInterface(uri, args as unknown as JSONObject, "request", this.id);

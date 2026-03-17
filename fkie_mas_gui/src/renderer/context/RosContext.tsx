@@ -80,13 +80,13 @@ export interface IRosContext {
   getProviderById: (providerId: string | undefined, includeNotAvailable?: boolean) => Provider | undefined;
   getLocalProvider: () => Provider[];
   registerSubscriber: (
-    providerId: string,
+    provider: Provider,
     topic: string,
     messageType: string,
     filter: SubscriberFilter,
     qos: RosQos | undefined
   ) => void;
-  unregisterSubscriber: (providerId: string, topic: string) => void;
+  unregisterSubscriber: (provider: Provider, topic: string) => void;
   updateFilterRosTopic: (provider: Provider, topicName: string, msg: SubscriberFilter) => void;
   isLocalHost: (host: string) => boolean;
   addProvider: (provider: Provider) => void;
@@ -158,11 +158,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   );
 
   /** Returns true if the given host resolves to the local machine. */
-  const isLocalHost = useCallback((host: string): boolean => {
-    const info = systemInfoRef.current;
-    if (host === "localhost" || host === info?.osInfo?.hostname) return true;
-    return (info?.networkInterfaces ?? []).some((ni) => ni.ip4 === host);
-  }, []);
+  const isLocalHost = useCallback(
+    (host: string): boolean => {
+      const info = systemInfoRef.current;
+      if (host === "localhost" || host === info?.osInfo?.hostname) return true;
+      return (info?.networkInterfaces ?? []).some((ni) => ni.ip4 === host);
+    },
+    [systemInfoRef]
+  );
 
   /** Return a provider by id. By default also returns unavailable providers. */
   const getProviderById = useCallback(
@@ -170,7 +173,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (!providerId) return undefined;
       return providersRef.current.find((p) => (p.isAvailable() || includeNotAvailable) && p.id === providerId);
     },
-    []
+    [providersRef]
   );
 
   /**
@@ -189,18 +192,21 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       return defaultValue;
     },
-    []
+    [providersRef]
   );
 
   /** Return all providers that are on localhost. */
   const getLocalProvider = useCallback((): Provider[] => {
     return providersRef.current.filter((p) => p.isLocalHost);
-  }, []);
+  }, [providersRef]);
 
   /** Return the display name of a provider. */
-  const getProviderName = useCallback((providerId: string): string => {
-    return providersRef.current.find((p) => p.id === providerId)?.name() ?? "";
-  }, []);
+  const getProviderName = useCallback(
+    (providerId: string): string => {
+      return providersRef.current.find((p) => p.id === providerId)?.name() ?? "";
+    },
+    [providersRef]
+  );
 
   /** Add a provider if not already registered. */
   const addProvider = useCallback(
@@ -231,14 +237,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return false;
       })
     );
-  }, []);
+  }, [providersRef]);
 
   /** Close the connection to all registered providers. */
   const closeProviders = useCallback((): void => {
     for (const p of providersRef.current) {
       p.close();
     }
-  }, []);
+  }, [providersRef]);
 
   /** Remove a provider by id and close its connection. */
   const removeProvider = useCallback(
@@ -407,19 +413,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   const registerSubscriber = useCallback(
     async (
-      providerId: string,
+      provider: Provider,
       topic: string,
       messageType: string,
       filter: SubscriberFilter,
       qos: RosQos | undefined
     ): Promise<void> => {
-      const provider = getProviderById(providerId);
       if (!provider) {
-        logCtx.error(
-          `Can not start subscriber for: ${topic}`,
-          `Provider not found: ${providerId}`,
-          "subscriber not started"
-        );
+        logCtx.error(`Can not start subscriber for: ${topic}`, "Provider not found", "subscriber not started");
         return;
       }
       const sNode = new SubscriberNode(topic, messageType);
@@ -427,18 +428,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (filter !== undefined) sNode.filter = filter;
       await provider.startSubscriber(sNode);
     },
-    [getProviderById, logCtx]
+    [logCtx]
   );
 
   const unregisterSubscriber = useCallback(
-    async (providerId: string, topic: string): Promise<void> => {
-      const provider = getProviderById(providerId);
+    async (provider: Provider, topic: string): Promise<void> => {
       if (!provider) {
-        logCtx.error(
-          `Can not stop subscriber for: ${topic}`,
-          `Provider not found: ${providerId}`,
-          "subscriber not unregistered"
-        );
+        logCtx.error(`Can not stop subscriber for: ${topic}`, "Provider not found", "subscriber not unregistered");
         return;
       }
       const result = await provider.stopSubscriber(topic);
@@ -452,7 +448,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         );
       }
     },
-    [getProviderById, logCtx]
+    [logCtx]
   );
 
   const updateFilterRosTopic = useCallback(
@@ -731,7 +727,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       return allStarted;
     },
-    [connectToProvider, getProviderByHosts, isLocalHost, logCtx, logCtxRef, settingsCtxRef, startService]
+    [connectToProvider, getProviderByHosts, isLocalHost, logCtx, logCtxRef, settingsCtxRef, startService, systemInfoRef]
   );
 
   // ─────────────────────────────────────────────

@@ -81,7 +81,7 @@ export default function TerminalApp(): JSX.Element {
         <SingleTerminalPanel
           id={paramInfo.id}
           type={paramInfo.info}
-          providerId={paramInfo.provider.id}
+          provider={paramInfo.provider}
           nodeName={paramInfo.node}
           screen={paramInfo.screen}
           cmd={paramInfo.cmd}
