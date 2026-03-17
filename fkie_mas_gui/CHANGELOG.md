@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.1 - 17.03.2026
+
+Fixed open terminal and subscriber in external windows
+
 ## 5.2.0 - 16.03.2026
 
 Fixed resolve internal vars while load xml launch files
