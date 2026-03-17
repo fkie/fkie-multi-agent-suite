@@ -189,7 +189,7 @@ export default function About(): JSX.Element {
               without mas gui:
             </Typography>
             <Stack ml="1em" direction="row" alignItems="center">
-              <CopyButton value={updateCli} />
+              <CopyButton value={updateCliRobot} />
               <Typography variant="body1" color="grey">
                 {updateCliRobot}
               </Typography>
