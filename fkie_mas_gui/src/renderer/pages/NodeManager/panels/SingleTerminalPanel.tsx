@@ -60,7 +60,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         setLastScreenUsed(terminalCmd.screen);
       }
     },
-    [cmd, nodeName, providerId, rosCtx, type]
+    [cmd, nodeName, rosCtx, type]
   );
 
   const updateScreenName = useCallback(() => {
