@@ -310,7 +310,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
                         eventOpenComponent(
                           id,
                           `${provider?.name()}`,
-                          <SingleTerminalPanel id={id} type={CmdType.CMD} providerId={provider.id} cmd={value} />,
+                          <SingleTerminalPanel id={id} type={CmdType.CMD} provider={provider} cmd={value} />,
                           true,
                           LAYOUT_TAB_SETS.BORDER_BOTTOM
                         )
