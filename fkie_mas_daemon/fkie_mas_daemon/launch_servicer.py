@@ -727,8 +727,13 @@ class LaunchServicer(LoggingEventHandler):
     def get_included_files(self, request_json: LaunchIncludedFilesRequest, *, result_as_json=True) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
         request = request_json
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}")
+        try:
+            Log.info(
+                f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{request.path}], args: {', '.join(f'{a.name}: {a.value}' for a in request.args)}")
+        except:
+            Log.info(
+                f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}")
+
         result = []
         cfg_included_files = []
         try:

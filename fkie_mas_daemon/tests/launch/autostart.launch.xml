@@ -22,6 +22,7 @@
     <set_env name="MAS_CAPABILITY_GROUP" value="includes" />
     <include file="$(find-pkg-share fkie_mas_daemon)/test/launch/included.launch.xml">
       <arg name="sim" value="$(var sim)" />
+      <arg name="sub" value="$(var sub)" />
     </include>
   </group>
 </launch>

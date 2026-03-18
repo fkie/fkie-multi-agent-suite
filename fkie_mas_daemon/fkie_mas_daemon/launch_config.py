@@ -23,6 +23,7 @@ import shlex
 import sys
 import threading
 import time
+from collections import defaultdict
 
 from ament_index_python.packages import PackageNotFoundError
 import launch
@@ -996,52 +997,86 @@ class LaunchConfig(object):
     @classmethod
     def get_launch_arguments(cls, context: LaunchContext, filename: str, *, provided_args: Union[List, None]) -> List[LaunchArgument]:
         '''
-        :return: a list with args being used in the roslaunch file.
+        Returns only top-level launch arguments, but collects all possible default values recursively
+        from entire launch tree (includes, groups, nested LaunchDescriptions).
         '''
-        declared_launch_arguments: List[
-            Tuple[launch.actions.DeclareLaunchArgument, List[launch.actions.IncludeLaunchDescription]]] = []
-        # based on LaunchDescription.get_launch_arguments()
+        def get_entities(entity):
+            """Helper: Extract entities from any entity type."""
+            try:
+                if hasattr(entity, 'entities'):
+                    return entity.entities
+                elif hasattr(entity, 'get_sub_entities'):
+                    return entity.get_sub_entities()
+                elif hasattr(entity, 'describe_sub_entities'):
+                    return entity.describe_sub_entities()
+                elif hasattr(entity, 'get_sub_entities'):
+                    return entity.get_sub_entities()
+            except:
+                pass
+            return []
 
-        def process_entities(entities, *, _conditional_inclusion=False, nested_ild_actions=None):
-            next_nested_ild_actions = nested_ild_actions
+        def collect_all_defaults(entities, defaults_map: defaultdict):
+            """Recursively collect ALL DeclareLaunchArgument defaults from entire launch tree."""
             for entity in entities:
+                # Direct DeclareLaunchArgument
                 if isinstance(entity, launch.actions.DeclareLaunchArgument):
-                    # Avoid duplicate entries with the same name.
-                    if entity.name in (e.name for e, _ in declared_launch_arguments):
-                        continue
-                    # Stuff this contextual information into the class for
-                    # potential use in command-line descriptions or errors.
-                    entity._conditionally_included = _conditional_inclusion
-                    entity._conditionally_included |= entity.condition is not None
-                    declared_launch_arguments.append((entity, nested_ild_actions))
-                if hasattr(launch.actions, "ResetLaunchConfigurations") and isinstance(entity, launch.actions.ResetLaunchConfigurations):
-                    # Launch arguments after this cannot be set directly by top level arguments
-                    return declared_launch_arguments
-                elif next_nested_ild_actions is not None:
-                    next_nested_ild_actions = nested_ild_actions
-                    if isinstance(entity, launch.actions.IncludeLaunchDescription):
-                        next_nested_ild_actions.append(entity)
-                    process_entities(
-                        entity.describe_sub_entities(),
-                        _conditional_inclusion=False,
-                        nested_ild_actions=next_nested_ild_actions)
-                    for conditional_sub_entity in entity.describe_conditional_sub_entities():
-                        process_entities(
-                            conditional_sub_entity[1],
-                            _conditional_inclusion=True,
-                            nested_ild_actions=next_nested_ild_actions)
-            return declared_launch_arguments
+                    if entity.default_value:
+                        try:
+                            resolved = launch.utilities.perform_substitutions(context, entity.default_value)
+                            if resolved not in defaults_map[entity.name]:
+                                defaults_map[entity.name].append(resolved)
+                        except:
+                            pass
+
+                # IncludeLaunchDescription
+                elif isinstance(entity, launch.actions.IncludeLaunchDescription):
+                    sub_entities = entity.describe_sub_entities()
+                    collect_all_defaults(sub_entities, defaults_map)
+                    for _, cond_entities in entity.describe_conditional_sub_entities():
+                        collect_all_defaults(cond_entities, defaults_map)
+
+                # GroupAction
+                elif isinstance(entity, launch.actions.GroupAction):
+                    sub_entities = get_entities(entity)
+                    collect_all_defaults(sub_entities, defaults_map)
+
+                # LaunchDescription (NESTED!)
+                elif isinstance(entity, launch.LaunchDescription):
+                    collect_all_defaults(entity.entities, defaults_map)
+
+                # OpaqueFunction
+                elif isinstance(entity, launch.actions.OpaqueFunction):
+                    try:
+                        result = entity.execute(context)
+                        if isinstance(result, list):
+                            for sub_result in result:
+                                collect_all_defaults([sub_result], defaults_map)
+                        else:
+                            collect_all_defaults([result], defaults_map)
+                    except:
+                        pass
+
+                # Generic recursion for other containers
+                else:
+                    sub_entities = get_entities(entity)
+                    collect_all_defaults(sub_entities, defaults_map)
 
         launch_description = get_launch_description_from_any_launch_file(filename)
 
-        launch_arguments: List[launch.actions.DeclareLaunchArgument] = []
-        if provided_args is None:
-            launch_arguments = [item[0] for item in process_entities(launch_description.entities)]
-        else:
-            # use recursive method of ROS to get all default values
-            launch_arguments = launch_description.get_launch_arguments()
+        # Phase 1: ONLY top-level DeclareLaunchArgument (direct from launch_description.entities)
+        top_level_actions = []
+        for entity in launch_description.entities:
+            if isinstance(entity, launch.actions.DeclareLaunchArgument):
+                if entity.name not in [e.name for e in top_level_actions]:
+                    top_level_actions.append(entity)
+
+        # Phase 2: FULL recursion - collect ALL defaults from entire tree
+        all_defaults_map = defaultdict(list)
+        collect_all_defaults(launch_description.entities, all_defaults_map)
+
+        # Build result
         result = []
-        for argument_action in launch_arguments:
+        for argument_action in top_level_actions:
             value = None
             if provided_args is not None:
                 for provided_arg in provided_args:
@@ -1050,14 +1085,26 @@ class LaunchConfig(object):
                         break
 
             default_value = None
-            if argument_action.default_value is not None:
+            if argument_action.default_value:
                 default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
-            arg = LaunchArgument(name=argument_action.name,
-                                 value=value if value is not None else default_value,
-                                 default_value=default_value,
-                                 description=argument_action.description,
-                                 choices=argument_action.choices)
+
+            # Extend choices with ALL found defaults
+            all_choices = list(all_defaults_map[argument_action.name])
+            existing_choices = argument_action.choices or []
+            choices = list(existing_choices)
+            for default_val in all_choices:
+                if default_val not in choices:
+                    choices.append(default_val)
+
+            arg = LaunchArgument(
+                name=argument_action.name,
+                value=value if value is not None else default_value,
+                default_value=default_value,
+                description=argument_action.description,
+                choices=choices
+            )
             result.append(arg)
+
         return result
 
     def get_node(self, name: str) -> Union[LaunchNodeWrapper, None]:

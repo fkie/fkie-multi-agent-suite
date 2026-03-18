@@ -260,67 +260,71 @@ class RosStateServicer:
 
     def _check_discovery_node(self):
         while not self._on_shutdown:
-            if self.topic_state_publisher_count:
-                # check if we have a discovery node
-                if nmd.ros_node.count_publishers(self.topic_name_state) == 0 and nmd.ros_node.count_publishers(self.topic_name_participants) == 0:
-                    self.topic_state_publisher_count = 0
-                    self.publish_discovery_state()
-                    with self._lock_check:
-                        self._ts_state_updated = time.time()
-            # If a change was detected by discovery node we received _on_msg_state().
-            # Therefor the self._ts_state_updated was updated.
-            # But we delay the check for changes by
-            update_ros_state = False
-            with self._lock_check:
-                if self._ts_state_updated > self._ts_state_notified:
-                    if time.time() - self._ts_state_notified > self._check_delay:
-                        update_ros_state = True
-            send_notification = False
-            # send only if websocket clients are connected
-            if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
-                send_notification = True
+            try:
+                if self.topic_state_publisher_count:
+                    # check if we have a discovery node
+                    if nmd.ros_node.count_publishers(self.topic_name_state) == 0 and nmd.ros_node.count_publishers(self.topic_name_participants) == 0:
+                        self.topic_state_publisher_count = 0
+                        self.publish_discovery_state()
+                        with self._lock_check:
+                            self._ts_state_updated = time.time()
+                # If a change was detected by discovery node we received _on_msg_state().
+                # Therefor the self._ts_state_updated was updated.
+                # But we delay the check for changes by
+                update_ros_state = False
+                with self._lock_check:
+                    if self._ts_state_updated > self._ts_state_notified:
+                        if time.time() - self._ts_state_notified > self._check_delay:
+                            update_ros_state = True
+                send_notification = False
+                # send only if websocket clients are connected
+                if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
+                    send_notification = True
 
-            if send_notification:
-                try:
-                    # trigger screen servicer to update
-                    nmd.launcher.server.screen_servicer.system_change()
-                    # trigger the update of the ros state
-                    # The updates are received by callback defined in the __init__()
-                    self._state_jsonify.update_state(self._force_refresh)
-                    with self._ros_node_list_mutex:
-                        self._force_refresh = False
-                except Exception:
-                    import traceback
-                    msg = traceback.format_exc()
-                    Log.warn(msg)
-                    warnings_group: SystemWarningGroup = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
-                    warnings_group.append(SystemWarning(msg=msg))
-                    self.monitor_servicer.update_warning_groups([warnings_group])
+                if send_notification:
+                    try:
+                        # trigger screen servicer to update
+                        nmd.launcher.server.screen_servicer.system_change()
+                        # trigger the update of the ros state
+                        # The updates are received by callback defined in the __init__()
+                        self._state_jsonify.update_state(self._force_refresh)
+                        with self._ros_node_list_mutex:
+                            self._force_refresh = False
+                    except Exception:
+                        import traceback
+                        msg = traceback.format_exc()
+                        Log.warn(msg)
+                        warnings_group: SystemWarningGroup = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
+                        warnings_group.append(SystemWarning(msg=msg))
+                        self.monitor_servicer.update_warning_groups([warnings_group])
 
-            # check time jumps
-            now = time.time()
-            if now < self._timestamp:
-                time_jump_msg = "Time jump into past detected! Restart all ROS nodes, includes MAS nodes, please!"
-                Log.warn(time_jump_msg)
-                w_time_jump = SystemWarningGroup(SystemWarningGroup.ID_TIME_JUMP)
-                w_time_jump.append(SystemWarning(msg='Timejump into past detected!',
-                                   hint='Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!'))
-                self.monitor_servicer.update_warning_groups([w_time_jump])
-            else:
-                self._timestamp = now
-            # check for timeouted provider
-            with self._lock_check:
-                removed_uris = []
-                for uri, ts in self._endpoints_ts.items():
-                    if now - ts > self._endpoint_timeout_sec:
-                        Log.info(f"{self.__class__.__name__}: remove outdated daemon {uri}, not seen for {now - ts} sec")
-                        if uri in self._endpoints:
-                            del self._endpoints[uri]
-                        removed_uris.append(uri)
-                for uri in removed_uris:
-                    del self._endpoints_ts[uri]
-                if len(removed_uris) > 0:
-                    self._publish_masters()
+                # check time jumps
+                now = time.time()
+                if now < self._timestamp:
+                    time_jump_msg = "Time jump into past detected! Restart all ROS nodes, includes MAS nodes, please!"
+                    Log.warn(time_jump_msg)
+                    w_time_jump = SystemWarningGroup(SystemWarningGroup.ID_TIME_JUMP)
+                    w_time_jump.append(SystemWarning(msg='Timejump into past detected!',
+                                                     hint='Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!'))
+                    self.monitor_servicer.update_warning_groups([w_time_jump])
+                else:
+                    self._timestamp = now
+                # check for timeouted provider
+                with self._lock_check:
+                    removed_uris = []
+                    for uri, ts in self._endpoints_ts.items():
+                        if now - ts > self._endpoint_timeout_sec:
+                            Log.info(f"{self.__class__.__name__}: remove outdated daemon {uri}, not seen for {now - ts} sec")
+                            if uri in self._endpoints:
+                                del self._endpoints[uri]
+                            removed_uris.append(uri)
+                    for uri in removed_uris:
+                        del self._endpoints_ts[uri]
+                    if len(removed_uris) > 0:
+                        self._publish_masters()
+            except:
+                import traceback
+                print(traceback.format_exc())
             time.sleep(self._check_delay)
 
     def stop(self):

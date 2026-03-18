@@ -83,6 +83,7 @@ def _replace_opt_env(content: str) -> Dict[str, str]:
                 result = result.replace(f"$(env {env_name})", env_value)
     return result
 
+
 def _find_include_tuple(content: str) -> Dict[str, str]:
     '''
     Searches in the content string for package include patterns.
@@ -172,7 +173,7 @@ def replace_paths(text: str, pwd: str = '.') -> str:
     return result
 
 
-def get_internal_args(content: str, path: str = '', only_default: bool = False) -> Dict[str, str]:
+def get_internal_args(content: str, path: str = '', resolve_args: Dict[str, str] = {}, only_default: bool = False) -> Dict[str, str]:
     '''
     Load the content with xml parser, search for arg-nodes.
     :return: a dictionary with detected arguments
@@ -201,45 +202,13 @@ def get_internal_args(content: str, path: str = '', only_default: bool = False) 
                             if only_default and arg_attr.localName == 'value':
                                 add_arg = False
                     if aname and add_arg:
-                        resolve_args_intern[aname] = aval
+                        resolve_args_intern[aname] = replace_arg(aval, resolve_args)
     except Exception as err:
         import traceback
         Log.debug(
             f"error while get_internal_args for {path}: {traceback.format_exc()}")
 
     return resolve_args_intern
-
-
-def _replace_internal_args(content: str, resolve_args: Dict[str, str] = {}, path: str = '') -> Union[bool, str, Dict[str, str]]:
-    '''
-    Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
-    :return: True if something was replaced, new content and detected arguments
-    :rtype: (bool, str, {str: str})
-    '''
-    new_content = content
-    replaced = False
-    resolve_args_intern = {}
-    try:
-        if sys.version_info < (3, 0):
-            new_content = new_content.decode('utf-8')
-        for arg_key, args_val in resolve_args.items():
-            replaced = True
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
-            new_content = new_content.replace('$(var %s)' % arg_key, args_val)
-        resolve_args_intern = get_internal_args(content)
-        for arg_key, args_val in resolve_args_intern.items():
-            new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
-            new_content = new_content.replace('$(var %s)' % arg_key, args_val)
-            replaced = True
-    except Exception as err:
-        print(f"error in _replace_internal_args for {path}: {err}")
-        import traceback
-        Log.debug(
-            f"error in _replace_internal_args for {path}: {traceback.format_exc()}")
-    if new_content != content:
-        replaced, new_content, resolve_args_intern_n = _replace_internal_args(new_content, resolve_args, path)
-        resolve_args_intern.update(resolve_args_intern_n)
-    return replaced, new_content, resolve_args_intern
 
 
 def get_arg_names(content: str) -> List[str]:
@@ -257,32 +226,38 @@ def get_arg_names(content: str) -> List[str]:
 def replace_arg(content: str, resolve_args: Dict[str, str]) -> str:
     # test for if statement
     result = content
-    re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
-    for arg in re_if.findall(content):
-        if arg in resolve_args:
-            result = result.replace('$(arg %s)' % arg, resolve_args[arg])
-    if content.startswith('$(eval'):
-        # resolve args in eval statement
-        re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
-        for arg in re_if.findall(content):
-            if arg in resolve_args:
-                result = result.replace("arg('%s')" %
-                                        arg, f"'{resolve_args[arg]}'")
-        re_items = '|'.join(
-            [f"({item})" for item in list(resolve_args.keys())])
-        re_if = re.compile(re_items)
-        for matches in re_if.findall(content):
-            for arg in matches:
-                if arg:
-                    if arg in resolve_args:
-                        result = result.replace(
-                            "%s" % arg, f"\'{resolve_args[arg]}\'")
-        result = result.replace('$(eval', '').rstrip(')')
-        result = 'true' if eval(result) else 'false'
+    for name, value in resolve_args.items():
+        result = result.replace(f'$(arg {name})', value)
+        result = result.replace(f'$(var {name})', value)
+    if (content != result):
+        return replace_arg(result, resolve_args)
     return result
+    # re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
+    # for arg in re_if.findall(content):
+    #     if arg in resolve_args:
+    #         result = result.replace('$(arg %s)' % arg, resolve_args[arg])
+    # if content.startswith('$(eval'):
+    #     # resolve args in eval statement
+    #     re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
+    #     for arg in re_if.findall(content):
+    #         if arg in resolve_args:
+    #             result = result.replace("arg('%s')" %
+    #                                     arg, f"'{resolve_args[arg]}'")
+    #     re_items = '|'.join(
+    #         [f"({item})" for item in list(resolve_args.keys())])
+    #     re_if = re.compile(re_items)
+    #     for matches in re_if.findall(content):
+    #         for arg in matches:
+    #             if arg:
+    #                 if arg in resolve_args:
+    #                     result = result.replace(
+    #                         "%s" % arg, f"\'{resolve_args[arg]}\'")
+    #     result = result.replace('$(eval', '').rstrip(')')
+    #     result = 'true' if eval(result) else 'false'
+    # return result
 
 
-def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
+def __get_internal_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
     included_files = []
     try:
         xml_nodes = minidom.parseString(
@@ -306,7 +281,7 @@ def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
                             if arg_attr.localName == 'name':
                                 aname = arg_attr.value
                             elif arg_attr.localName in ['value', 'default']:
-                                aval = arg_attr.value
+                                aval = replace_arg(arg_attr.value, resolve_args)
                             elif arg_attr.localName == 'if':
                                 val = replace_arg(arg_attr.value, resolve_args)
                                 skip = val in ['false', '0']
@@ -319,8 +294,8 @@ def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
                 if filename:
                     included_files.append((filename, resolved_inc_args))
     except Exception as err:
-        print(f"__get_include_args reports: {err}")
-        Log.debug(f"__get_include_args reports: {err}")
+        print(f"__get_internal_include_args reports: {err}")
+        Log.debug(f"__get_internal_include_args reports: {err}")
     return included_files
 
 
@@ -380,12 +355,12 @@ def find_included_files(string: str,
             pwd = re.sub(r"^.*://[^/]*", "", pwd)
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
-    resolve_args_intern = {}
+    internal_args = {}
     if (string.endswith('.launch') or string.find('.launch.') > 0):
-        # _replaced, content_resolved, resolve_args_intern = _replace_internal_args(
-        #     content, resolve_args=resolve_args, path=string)
         # intern args use only internal
-        inc_files_forward_args = __get_include_args(
+        internal_args = get_internal_args(content, filename, resolve_args, True)
+        # determine args wich are forwarded
+        inc_files_forward_args = __get_internal_include_args(
             content, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
@@ -407,10 +382,8 @@ def find_included_files(string: str,
                     resolve_args_all.update(forward_args)
                     try:
                         # try to resolve path
-                        _replaced, fname, _resolve_args_intern_n = _replace_internal_args(
-                            fname, resolve_args_all, filename)
-                        _replaced, fname, _resolve_args_intern_n = _replace_internal_args(
-                            fname, resolve_args_intern, filename)
+                        fname = replace_arg(fname, resolve_args_all)
+                        fname = replace_arg(fname, internal_args)
                         if fname.find('$(var ') == -1 and fname.find('$(arg ') == -1:
                             # do not try to resolve if not all args are replaced
                             fname = interpret_path(fname, pwd)
