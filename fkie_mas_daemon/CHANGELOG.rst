@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.2.1 (18.03.2026)
+------------------
+* fixed searching for included files in yaml
+* fixed determine the arguments of included xml files
+
 5.2.0 (16.03.2026)
 ------------------
 * Fixed resolve internal vars while load xml launch files

@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.2.2 - 18.03.2026
+
+Fixed searching for included files in yaml
+Fixed determine the arguments of included xml files
+Fixed copy install link
+
 ## 5.2.1 - 17.03.2026
 
 Fixed open terminal and subscriber in external windows
