@@ -139,9 +139,9 @@ export function extractIncludes(
   const PATH_REGEX = new RegExp(
     [
       // file="..." / textfile="..." / binfile="..."
-      String.raw`(?:file|textfile|binfile)\s*=\s*"([^"]+)"`,
+      String.raw`(?:file|textfile|binfile)\s*=\s*"([^\n"]+)"`,
       // $(find pkg)/path , $(find-pkg-share pkg)/path , $(dirname)/path
-      String.raw`(\$\((?:find|find-pkg-share|dirname) [^)]+\)[^"]*)`,
+      String.raw`(\$\((?:find|find-pkg-share|dirname) [^)]+\)[^\n"]*)`,
       // pkg://pkg/path or package://pkg/path
       String.raw`((?:pkg|package):\/\/[^"]*)`,
     ].join("|"),

@@ -348,6 +348,15 @@ def find_included_files(string: str,
                 content = content[:match.start()] + '\n' * \
                     count_nl + content[match.end():]
                 match = comment_pattern.search(content, match.start())
+            # HACK: if we found the include pattern in YAML file....
+            comment_pattern = re.compile(r"\s*(#.*?[^\n\t\"]*)", re.DOTALL)
+            match = comment_pattern.search(content)
+            while match is not None:
+                tt = content[match.start():match.end()]
+                count_nl = content[match.start():match.end()].count('\n')
+                content = content[:match.start()] + '\n' * \
+                    count_nl + content[match.end():]
+                match = comment_pattern.search(content, match.start())
     # use dirname if given filename if valid
     if filename is not None:
         pwd = os.path.dirname(filename)
