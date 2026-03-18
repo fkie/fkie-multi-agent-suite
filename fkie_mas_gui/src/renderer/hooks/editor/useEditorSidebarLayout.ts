@@ -43,7 +43,9 @@ export function useEditorSidebarLayout(props: UseEditorSidebarProps) {
 
   const setExplorerBarHeight: (size: number) => void = (size) => {
     if (size !== explorerBarHeight && size >= explorerBarMinSize) {
-      setSavedExplorerBarHight(size);
+      if (enableExplorer && enableGlobalSearch) {
+        setSavedExplorerBarHight(size);
+      }
     }
     _setExplorerBarHeight(size);
   };
