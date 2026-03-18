@@ -2270,9 +2270,7 @@ export default class Provider implements IProvider {
     this.discovery = msgObj.status;
   };
 
-  public handleLaunchChange: (msg: JSONObject) => Promise<void> = async (
-    msg,
-  ) => {
+  public handleLaunchChange: (msg: JSONObject) => Promise<void> = async (msg) => {
     const msgObj = msg as unknown as { path: string; action: string; requester: string };
     if (msgObj?.path) {
       emitCustomEvent(
@@ -2280,7 +2278,7 @@ export default class Provider implements IProvider {
         new EventProviderLaunchLoaded(this, msgObj.path, msgObj.requester || "")
       );
       this.log().debug(`Trigger update ros nodes for ${this.id} after "${msgObj?.action}"`, "");
-      this.updateRosNodes(msg, false);
+      await this.updateLaunchContent();
     }
   };
 
