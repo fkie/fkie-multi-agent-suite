@@ -30,6 +30,12 @@ export function useMonacoEditor({
   const monacoDisposables = useRef<IDisposable[]>([]);
   const contextDisposables = useRef<IDisposable[]>([]);
 
+  const activeModelRef = useRef<editor.ITextModel | null>(null);
+
+  useEffect(() => {
+    activeModelRef.current = activeModel;
+  }, [activeModel]);
+
   // ---------------------------
   // setup context menu
   // ---------------------------
@@ -91,7 +97,6 @@ export function useMonacoEditor({
           return prev.filter((m) => m !== model.uri.path);
         });
       }
-
       setActiveModel(model);
       editorInstance.focus();
     },
@@ -104,7 +109,7 @@ export function useMonacoEditor({
 
   const handleDirtyChange = useCallback(
     (model: editor.ITextModel, dirty: boolean) => {
-      if (activeModel === model) {
+      if (activeModelRef.current?.uri.path === model?.uri.path) {
         setActiveModelDirty(dirty);
       }
 
@@ -119,13 +124,12 @@ export function useMonacoEditor({
         return prev.filter((m) => m !== model.uri.path);
       });
     },
-    [activeModel, editorId, monacoCtx]
+    [editorId, monacoCtx]
   );
 
   useEffect(() => {
-    const dirtyManager = monacoCtx.dirtyManager?.();
+    const dirtyManager = monacoCtx.dirtyManager();
     if (!dirtyManager) return;
-
     dirtyManager.onDirtyChange(editorId, handleDirtyChange);
 
     return () => {
