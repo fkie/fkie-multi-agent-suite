@@ -35,11 +35,11 @@ export class ModelRegistry {
 
   create(editorId: string, uri: string, content: string, language: string): editor.ITextModel {
     let model = this.get(uri);
-
-    if (!model) {
-      model = this.monaco.editor.createModel(content, language, this.monaco.Uri.file(uri));
-      this.models.set(uri, model);
+    if (model) {
+      model.dispose();
     }
+    model = this.monaco.editor.createModel(content, language, this.monaco.Uri.file(uri));
+    this.models.set(uri, model);
     this.updateRegistry(editorId, model);
 
     return model;

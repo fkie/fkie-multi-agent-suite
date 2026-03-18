@@ -155,10 +155,9 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     const model = workspaceRef.current.models.get(uriPath);
     // create monaco model, if it does not exists yet
     if (model) {
-      // if (model.modified) {
-      //   // TODO: ask the user how to proceed
-      //   return model;
-      // }
+      if (workspaceRef.current?.dirty.isDirty(model)) {
+        return model;
+      }
       model.dispose();
     }
     const newModel = workspaceRef.current.models.create(

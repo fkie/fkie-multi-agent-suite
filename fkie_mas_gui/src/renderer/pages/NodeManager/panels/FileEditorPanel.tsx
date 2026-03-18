@@ -192,7 +192,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const reloadCurrentFile = useCallback(async () => {
     if (mEditor.activeModel?.uri.path) {
       const path = mEditor.activeModel?.uri.path;
-      const result = await setEditorModel(path, selectionRange, currentLaunchArgs, true);
+      const result = await setEditorModel(path, selectionRange, currentLaunchArgs, true, false);
       if (result) {
         logCtx.success(`File reloaded [${getFileName(path)}]`, "", `${getFileName(path)} reloaded`);
       }
@@ -228,13 +228,26 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         const result = await provider.getFileContent(data.path.srcPath);
         if (result.error) {
           console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-          setNotificationDescription({ message: `Could not open file: [${result.file.fileName}]: ${result.error}`, messageSeverity: "warning" });
+          setNotificationDescription({
+            message: `Could not open file: [${result.file.fileName}]: ${result.error}`,
+            messageSeverity: "warning",
+          });
           return;
         }
         const model = monacoCtx.createModel(editorId, result.file);
         if (!model) {
           console.error(`Could not create model for: [${result.file.fileName}]`);
-          setNotificationDescription({ message: `Could not create model for: [${result.file.fileName}]`, messageSeverity: "warning" });
+          setNotificationDescription({
+            message: `Could not create model for: [${result.file.fileName}]`,
+            messageSeverity: "warning",
+          });
+          return;
+        }
+        if (monacoCtx.dirtyManager()?.isDirty(model)) {
+          setNotificationDescription({
+            message: `${result.file.fileName} was changed on remote host! Save your file or reload manually!`,
+            messageSeverity: "warning",
+          });
           return;
         }
         if (currentModelUri === model.uri.path) {
@@ -268,7 +281,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         }
       } else {
         setSavedFiles((prev) => prev.filter((f) => f === editorModel.uri.path));
-        setNotificationDescription({ message: `Could not save file: ${saveResult.message}`, messageSeverity: "warning" });
+        setNotificationDescription({
+          message: `Could not save file: ${saveResult.message}`,
+          messageSeverity: "warning",
+        });
         logCtx.error("Could not save file", saveResult.message, "save failed");
       }
     },
@@ -329,12 +345,18 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // search host based on selected provider
     const provider = rosCtx.getProviderById(providerId);
     if (!provider) {
-      setNotificationDescription({ message: `Provider with id ${providerId} not available`, messageSeverity: "warning" });
+      setNotificationDescription({
+        message: `Provider with id ${providerId} not available`,
+        messageSeverity: "warning",
+      });
       return;
     }
     if (provider && !provider.host()) {
       logCtx.error("The provider does not have configured any host.", "Please check your provider configuration");
-      setNotificationDescription({ message: "The provider does not have configured any host.", messageSeverity: "warning" });
+      setNotificationDescription({
+        message: "The provider does not have configured any host.",
+        messageSeverity: "warning",
+      });
       return;
     }
 
@@ -350,13 +372,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
       const result: TModelResult = await monacoCtx.getModel(editorId, currentFilePath, false);
       if (!result.model && !result.file) {
-        setNotificationDescription({ message: result.error || `Could not get file: [${currentFilePath}]`, messageSeverity: "warning" });
+        setNotificationDescription({
+          message: result.error || `Could not get file: [${currentFilePath}]`,
+          messageSeverity: "warning",
+        });
         return;
       }
       setCurrentFileState({ name: getFileName(currentFilePath), requesting: false, path: currentFilePath });
       if (!result.model && result.file) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
-        setNotificationDescription({ message: `Could not create model for: [${result.file.fileName}]`, messageSeverity: "warning" });
+        setNotificationDescription({
+          message: `Could not create model for: [${result.file.fileName}]`,
+          messageSeverity: "warning",
+        });
         return;
       }
       if (result.model) {
