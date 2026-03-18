@@ -264,6 +264,7 @@ export default function NodeManager(): JSX.Element {
             return;
           }
         } else {
+          model.doAction(Actions.selectTab(LAYOUT_TABS.NODES));
           model.doAction(Actions.deleteTab(editorId));
         }
       }
