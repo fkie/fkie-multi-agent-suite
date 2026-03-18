@@ -293,7 +293,7 @@ export default class Provider implements IProvider {
       { uri: URI.ROS_PROVIDER_LIST, callback: this.providerUpdated },
       { uri: URI.ROS_DAEMON_READY, callback: this.callbackDaemonReady },
       { uri: URI.ROS_DISCOVERY_READY, callback: this.callbackDiscoveryReady },
-      { uri: URI.ROS_LAUNCH_CHANGED, callback: this.updateLaunchContent },
+      { uri: URI.ROS_LAUNCH_CHANGED, callback: this.handleLaunchChange },
       { uri: URI.ROS_NODES_CHANGED, callback: this.updateRosNodes },
       { uri: URI.ROS_SERVICES_CHANGED, callback: this.callbackServicesChanged },
       { uri: URI.ROS_TOPICS_CHANGED, callback: this.callbackTopicsChanged },
@@ -2270,21 +2270,28 @@ export default class Provider implements IProvider {
     this.discovery = msgObj.status;
   };
 
-  /**
-   * Callback when any launch file or ROS nodes changes  in provider
-   */
-  public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => Promise<void> = async (
+  public handleLaunchChange: (msg: JSONObject) => Promise<void> = async (
     msg,
-    forceRefresh = false
   ) => {
-    this.log().debug(`Trigger update ros nodes for ${this.id}`, "");
     const msgObj = msg as unknown as { path: string; action: string; requester: string };
     if (msgObj?.path) {
       emitCustomEvent(
         EVENT_PROVIDER_LAUNCH_LOADED,
         new EventProviderLaunchLoaded(this, msgObj.path, msgObj.requester || "")
       );
+      this.log().debug(`Trigger update ros nodes for ${this.id} after "${msgObj?.action}"`, "");
+      this.updateRosNodes(msg, false);
     }
+  };
+
+  /**
+   * Callback when any launch file or ROS nodes changes  in provider
+   */
+  public updateRosNodes: (msg: JSONObject, forceRefresh?: boolean) => Promise<void> = async (
+    _msg,
+    forceRefresh = false
+  ) => {
+    this.log().debug(`Trigger update ros nodes for ${this.id}`, "");
     if (await this.lockRequest("updateRosNodes")) {
       return;
     }
@@ -2302,7 +2309,7 @@ export default class Provider implements IProvider {
         // Otherwise, the node is displayed under Not connected host.
         if (
           (this.rosState.masteruri && n.masteruri !== this.rosState.masteruri) ||
-          (n.location === "remote") ||
+          n.location === "remote" ||
           !n.isLocal
         ) {
           ignored = true;
