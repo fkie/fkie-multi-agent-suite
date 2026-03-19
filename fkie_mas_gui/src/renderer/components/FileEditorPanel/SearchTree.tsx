@@ -12,19 +12,20 @@ import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { getFileName, LaunchIncludedFile } from "@/renderer/models";
 import { createUriPath } from "@/renderer/monaco/utils";
 import { EVENT_EDITOR_SELECT_RANGE, eventEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
+import { Provider } from "@/renderer/providers";
 import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
 import { TSearchResult } from "./types";
 
 interface SearchTreeProps {
   editorId: string;
-  providerId: string;
+  provider: Provider;
   rootFilePath: string;
   includedFiles?: LaunchIncludedFile[];
   searchTerm: string;
 }
 
 export default function SearchTree(props: SearchTreeProps): JSX.Element {
-  const { editorId, providerId, rootFilePath, includedFiles, searchTerm = "" } = props;
+  const { editorId, provider, rootFilePath, includedFiles, searchTerm = "" } = props;
 
   const monacoCtx = useMonacoContext();
   const [expandedSearchResults, setExpandedSearchResults] = useState<string[]>([]);
@@ -37,10 +38,10 @@ export default function SearchTree(props: SearchTreeProps): JSX.Element {
     const resultSet = new Set<string>();
     resultSet.add(rootFilePath);
     for (const f of includedFiles || []) {
-      resultSet.add(createUriPath(providerId, f.inc_path));
+      resultSet.add(createUriPath(provider.id, f.inc_path));
     }
     return Array.from(resultSet);
-  }, [providerId, rootFilePath, includedFiles]);
+  }, [provider, rootFilePath, includedFiles]);
 
   // create global search tree if search results are changed
   const globalSearchTree = useMemo(() => {

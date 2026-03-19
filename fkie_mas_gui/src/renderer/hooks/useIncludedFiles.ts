@@ -1,16 +1,14 @@
 import { LaunchArgument, LaunchIncludedFile, LaunchIncludedFilesRequest } from "@/renderer/models";
 import { useState } from "react";
 
-import { useRosContext } from "./useRosContext";
+import { Provider } from "../providers";
 
-export function useIncludedFiles(providerId: string, rootFilePath: string) {
-  const rosCtx = useRosContext();
+export function useIncludedFiles(provider: Provider, rootFilePath: string) {
   const [includedFiles, setIncludedFiles] = useState<LaunchIncludedFile[]>([]);
 
   async function fetchIncludedFiles(): Promise<{ result: boolean; error: string }> {
-    const provider = rosCtx.getProviderById(providerId);
     if (!provider) {
-      return { result: false, error: `Provider with id ${providerId} not available` };
+      return { result: false, error: "useIncludedFiles: Provider not available" };
     }
 
     const launch = provider.launchFiles.find((l) => l.path === rootFilePath);
@@ -24,7 +22,7 @@ export function useIncludedFiles(providerId: string, rootFilePath: string) {
     const includedFilesLocal = await provider.launchGetIncludedFiles(request);
 
     if (!includedFilesLocal)
-      return { result: false, error: `error while get included launch files from ${providerId}` };
+      return { result: false, error: `error while get included launch files from ${provider.id}` };
     // // filter unique file names (in case multiple imports)
     // const uniqueIncludedFiles = [rootFilePath];
     // for (const f of includedFilesLocal) {

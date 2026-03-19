@@ -27,7 +27,7 @@ export function equalLaunchArgs(launchArgs: TLaunchArg[], argList: LaunchArgumen
 
 interface ExplorerTreeProps {
   editorId: string;
-  providerId: string;
+  provider: Provider;
   rootFilePath: string;
   includedFiles: LaunchIncludedFile[];
   selectedUriPath: string;
@@ -38,7 +38,7 @@ interface ExplorerTreeProps {
 export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
   const {
     editorId,
-    providerId,
+    provider,
     rootFilePath,
     includedFiles,
     selectedUriPath = "",
@@ -50,12 +50,11 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
   const [expandedExplorerResults, setExpandedExplorerResults] = useState<string[]>([]);
 
   useEffect(() => {
-    const provider: Provider | undefined = rosCtx.getProviderById(providerId, true);
     if (!provider) return;
     const providerHost = provider.host();
     if (!providerHost) return;
     const rootItem: TLaunchIncludeItem = {
-      uriPath: createUriPath(providerId, rootFilePath),
+      uriPath: createUriPath(provider.id, rootFilePath),
       children: [],
       file: {
         inc_path: rootFilePath,
@@ -69,7 +68,7 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
     for (const file of includedFiles) {
       const incItem: TLaunchIncludeItem = {
         children: [],
-        uriPath: createUriPath(providerId, file.inc_path),
+        uriPath: createUriPath(provider.id, file.inc_path),
         file: file,
       };
       let curDepth = currentFile.file.rec_depth || 0;
@@ -90,7 +89,7 @@ export default function ExplorerTree(props: ExplorerTreeProps): JSX.Element {
       }
     }
     setIncludeRoot(rootItem);
-  }, [includedFiles, providerId, rootFilePath, rosCtx]);
+  }, [includedFiles, provider, rootFilePath, rosCtx]);
 
   /** Create from SimpleTreeView from given root item */
   const includeFilesToTree = useCallback(

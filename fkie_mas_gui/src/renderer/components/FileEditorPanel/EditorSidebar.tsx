@@ -6,6 +6,7 @@ import SplitPane, { Pane, SashContent } from "split-pane-react";
 
 import { useEditorSidebarLayout } from "@/renderer/hooks/editor/useEditorSidebarLayout";
 import { LaunchIncludedFile } from "@/renderer/models";
+import { Provider } from "@/renderer/providers";
 import { TLaunchArg } from "@/types";
 import { SearchBar } from "../UI";
 import ExplorerTree from "./ExplorerTree";
@@ -13,7 +14,7 @@ import SearchTree from "./SearchTree";
 
 interface EditorSidebarProps {
   editorId: string;
-  providerId: string;
+  provider: Provider;
   rootFilePath: string;
   includedFiles: LaunchIncludedFile[];
   selectedUriPath: string;
@@ -31,7 +32,7 @@ interface EditorSidebarProps {
 export function EditorSidebar(props: EditorSidebarProps) {
   const {
     editorId,
-    providerId,
+    provider,
     rootFilePath,
     includedFiles,
     selectedUriPath = "",
@@ -118,7 +119,7 @@ export function EditorSidebar(props: EditorSidebarProps) {
             >
               <ExplorerTree
                 editorId={editorId}
-                providerId={providerId}
+                provider={provider}
                 rootFilePath={rootFilePath}
                 includedFiles={includedFiles}
                 selectedUriPath={selectedUriPath}
@@ -156,7 +157,7 @@ export function EditorSidebar(props: EditorSidebarProps) {
           <Stack direction="column" height={globalSearchHeight} overflow="auto">
             <SearchTree
               editorId={editorId}
-              providerId={providerId}
+              provider={provider}
               rootFilePath={rootFilePath}
               includedFiles={includedFiles}
               searchTerm={globalSearchTerm}

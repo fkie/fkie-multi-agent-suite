@@ -14,7 +14,6 @@ import { useEditorLayout } from "@/renderer/hooks/editor/useEditorLayout";
 import { useIncludedFiles } from "@/renderer/hooks/useIncludedFiles";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
-import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName } from "@/renderer/models";
 import { cleanUpXmlComment } from "@/renderer/monaco/setup";
@@ -26,6 +25,7 @@ import {
   TEventEditorSelectRange,
   eventCloseComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
+import { Provider } from "@/renderer/providers";
 import { EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
@@ -38,7 +38,7 @@ type TAlertNotification = {
 
 interface FileEditorPanelProps {
   editorId: string;
-  providerId: string;
+  provider: Provider;
   rootFilePath: string;
   currentFilePath: string;
   fileRange: TFileRange | null;
@@ -46,10 +46,9 @@ interface FileEditorPanelProps {
 }
 
 export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Element {
-  const { editorId, providerId, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
+  const { editorId, provider, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
   const settingsCtx = useSettingsContext();
   const logCtx = useLoggingContext();
-  const rosCtx = useRosContext();
   const monacoCtx = useMonacoContext();
 
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
@@ -57,7 +56,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [providerName, setProviderName] = useState<string>("");
   const [packageName, setPackageName] = useState<string>("");
   const [currentFileState, setCurrentFileState] = useState({ name: "", requesting: false, path: "" });
-  const [ownUriToPackageDict] = useState({});
 
   const [selectionRange, setSelectionRange] = useState<TFileRange>();
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
@@ -86,7 +84,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     setSavedSideBarUserWidth,
   } = useEditorLayout();
 
-  const { includedFiles, fetchIncludedFiles, clearIncludedFiles } = useIncludedFiles(providerId, rootFilePath);
+  const { includedFiles, fetchIncludedFiles, clearIncludedFiles } = useIncludedFiles(provider, rootFilePath);
   const mEditor = useMonacoEditor({
     editorId: editorId,
     editorRef: editorRef,
@@ -97,16 +95,16 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   });
 
   const ownUriPaths: Set<string> = useMemo(() => {
-    const result = new Set([rootFilePath, ...(includedFiles?.map((f) => createUriPath(providerId, f.inc_path)) || [])]);
+    const result = new Set([
+      rootFilePath,
+      ...(includedFiles?.map((f) => createUriPath(provider.id, f.inc_path)) || []),
+    ]);
     return result;
-  }, [providerId, rootFilePath, includedFiles]);
+  }, [provider, rootFilePath, includedFiles]);
 
   useEditorKeyboard(() => {
-    const provider = rosCtx.getProviderById(providerId);
-    if (provider) {
-      const id = createEditorEditorId(rootFilePath, provider.id);
-      emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
-    }
+    const id = createEditorEditorId(rootFilePath, provider.id);
+    emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
   });
 
   useEffect(() => {
@@ -172,8 +170,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       mEditor.setCurrentModel(result.model);
 
       // set package name
-      const modelPackageName = ownUriToPackageDict[result.model.uri.path];
-      setPackageName(modelPackageName || "");
+      updatePackageName(result.model.uri.path);
 
       // set range if available
       if (range) {
@@ -186,7 +183,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
       return true;
     },
-    [mEditor, providerId, ownUriToPackageDict, monacoCtx.getModel]
+    [mEditor, monacoCtx.getModel]
   );
 
   const reloadCurrentFile = useCallback(async () => {
@@ -208,11 +205,11 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, async (data: EventProviderPathEvent) => {
-    if (data.provider.id !== providerId) {
+    if (data.provider.id !== provider.id) {
       // ignore event from other provider
       return;
     }
-    const changedUri: string = createUriPath(providerId, data.path.srcPath);
+    const changedUri: string = createUriPath(provider.id, data.path.srcPath);
     if (ownUriPaths.has(changedUri)) {
       // ignore if we saved the file
       if (savedFiles.includes(changedUri)) {
@@ -222,37 +219,34 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
       if (!editorRef.current) return;
 
-      const provider = rosCtx.getProviderById(providerId, true);
-      if (provider) {
-        const currentModelUri = editorRef.current.getModel()?.uri.path;
-        const result = await provider.getFileContent(data.path.srcPath);
-        if (result.error) {
-          console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-          setNotificationDescription({
-            message: `Could not open file: [${result.file.fileName}]: ${result.error}`,
-            messageSeverity: "warning",
-          });
-          return;
-        }
-        const model = monacoCtx.createModel(editorId, result.file);
-        if (!model) {
-          console.error(`Could not create model for: [${result.file.fileName}]`);
-          setNotificationDescription({
-            message: `Could not create model for: [${result.file.fileName}]`,
-            messageSeverity: "warning",
-          });
-          return;
-        }
-        if (monacoCtx.dirtyManager()?.isDirty(model)) {
-          setNotificationDescription({
-            message: `${result.file.fileName} was changed on remote host! Save your file or reload manually!`,
-            messageSeverity: "warning",
-          });
-          return;
-        }
-        if (currentModelUri === model.uri.path) {
-          mEditor.setCurrentModel(model);
-        }
+      const currentModelUri = editorRef.current.getModel()?.uri.path;
+      const result = await provider.getFileContent(data.path.srcPath);
+      if (result.error) {
+        console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
+        setNotificationDescription({
+          message: `Could not open file: [${result.file.fileName}]: ${result.error}`,
+          messageSeverity: "warning",
+        });
+        return;
+      }
+      const model = monacoCtx.createModel(editorId, result.file);
+      if (!model) {
+        console.error(`Could not create model for: [${result.file.fileName}]`);
+        setNotificationDescription({
+          message: `Could not create model for: [${result.file.fileName}]`,
+          messageSeverity: "warning",
+        });
+        return;
+      }
+      if (monacoCtx.dirtyManager()?.isDirty(model)) {
+        setNotificationDescription({
+          message: `${result.file.fileName} was changed on remote host! Save your file or reload manually!`,
+          messageSeverity: "warning",
+        });
+        return;
+      }
+      if (currentModelUri === model.uri.path) {
+        mEditor.setCurrentModel(model);
       }
     }
   });
@@ -266,12 +260,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       const saveResult = await monacoCtx.saveFile(editorModel);
       if (saveResult.result) {
         // update state of external window
-        const providerObj = rosCtx.getProviderById(providerId, true);
-        if (providerObj) {
-          const path = fileFromUriPath(editorModel.uri.path);
-          const id = createEditorEditorId(rootFilePath, providerObj.id);
-          window.editorManager?.changed(id, path, false);
-        }
+        const path = fileFromUriPath(editorModel.uri.path);
+        const id = createEditorEditorId(rootFilePath, provider.id);
+        window.editorManager?.changed(id, path, false);
+        // update model state
         mEditor.setCurrentModel(editorModel);
         const resultFetchIncludes = await fetchIncludedFiles();
         if (!resultFetchIncludes.result) {
@@ -288,7 +280,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         logCtx.error("Could not save file", saveResult.message, "save failed");
       }
     },
-    [providerId, savedFiles, rootFilePath, rosCtx.getProviderById]
+    [savedFiles, rootFilePath]
   );
 
   const debouncedWidthUpdate = useDebounceCallback((newWidth) => {
@@ -301,18 +293,21 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   }, [sideBarWidth]);
 
-  useEffect(() => {
-    // update package names for own files
-    const provider = rosCtx.getProviderById(providerId, true);
-    if (!provider) return;
-
-    const uriPath = createUriPath(providerId, rootFilePath);
-    ownUriToPackageDict[uriPath] = provider.getPackageName(rootFilePath);
-    for (const file of includedFiles) {
-      const incUriPath = createUriPath(providerId, file.inc_path);
-      ownUriToPackageDict[incUriPath] = provider.getPackageName(file.inc_path);
-    }
-  }, [includedFiles, rootFilePath, editorRef.current]);
+  const updatePackageName: (uriPath: string, forcePackageReload?: boolean) => void = useCallback(
+    async (uriPath, forcePackageReload = false) => {
+      if (forcePackageReload) {
+        await provider.getPackageList(false);
+      }
+      const filePath = fileFromUriPath(uriPath);
+      const packageName = provider.getPackageName(filePath);
+      if (!packageName && !forcePackageReload) {
+        updatePackageName(uriPath, true);
+        return;
+      }
+      setPackageName(packageName || "");
+    },
+    [provider, mEditor]
+  );
 
   function onKeyDown(event: React.KeyboardEvent): void {
     setKeyboardEvent(event);
@@ -343,10 +338,9 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       return;
     }
     // search host based on selected provider
-    const provider = rosCtx.getProviderById(providerId);
     if (!provider) {
       setNotificationDescription({
-        message: `Provider with id ${providerId} not available`,
+        message: "Provider not available",
         messageSeverity: "warning",
       });
       return;
@@ -466,7 +460,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         <Pane minSize={sideBarMinSize} style={{ backgroundColor: backgroundColor }}>
           <EditorSidebar
             editorId={editorId}
-            providerId={providerId}
+            provider={provider}
             rootFilePath={rootFilePath}
             includedFiles={includedFiles}
             selectedUriPath={mEditor.activeModel?.uri.path ? mEditor.activeModel?.uri.path : ""}

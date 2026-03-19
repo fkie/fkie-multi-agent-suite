@@ -162,7 +162,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
           getBaseName(rootLaunch),
           <FileEditorPanel
             editorId={id}
-            providerId={providerId}
+            provider={provider}
             currentFilePath={path}
             rootFilePath={rootLaunch}
             fileRange={fileRange}

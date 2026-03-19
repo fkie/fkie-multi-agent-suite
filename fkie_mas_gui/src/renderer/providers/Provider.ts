@@ -1032,14 +1032,17 @@ export default class Provider implements IProvider {
   };
 
   /** Tries to determine the package name for given path */
-  public getPackageName: (path: string) => string = (path) => {
-    if (this.packages) {
-      const packages = this.packages.filter((rosPackage) => {
-        return path.startsWith(rosPackage.path.endsWith("/") ? rosPackage.path : `${rosPackage.path}/`);
-      });
-      return packages.length > 0 ? `${packages[0]?.name}` : "";
+  public getPackageName = (path: string): string => {
+    if (!this.packages?.length) {
+      return "";
     }
-    return "";
+
+    const pkg = this.packages.find((rosPackage) => {
+      const basePath = rosPackage.path.endsWith("/") ? rosPackage.path : `${rosPackage.path}/`;
+      return path.startsWith(basePath);
+    });
+
+    return pkg?.name ?? "";
   };
 
   /**

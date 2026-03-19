@@ -138,7 +138,7 @@ export default function EditorApp(): JSX.Element {
       {launchInfo && (
         <FileEditorPanel
           editorId={launchInfo.id}
-          providerId={launchInfo.provider.id}
+          provider={launchInfo.provider}
           rootFilePath={launchInfo.rootLaunch}
           currentFilePath={launchInfo.launch}
           fileRange={launchInfo.fileRange}
