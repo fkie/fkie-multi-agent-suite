@@ -13,8 +13,8 @@ import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType, Provider } from "@/renderer/providers";
 import { generateUniqueId, idFromDDSLocations, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
-import { Alert, AlertTitle, Box } from "@mui/material";
-import GroupItem, { GroupIcon, NodesCount } from "./GroupItem";
+import { Alert, AlertTitle, Box, Stack } from "@mui/material";
+import GroupItem, { GroupIcon, MultiScreenIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";
 import NodeItem from "./NodeItem";
@@ -743,7 +743,12 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           key={itemId}
           itemId={itemId}
           groupName={`${namespacePart}${name}`}
-          icon={<GroupIcon treeItems={children} isDarkMode={isDarkMode} groupName={name} />}
+          icon={
+            <Stack direction="row" alignItems="center">
+              <GroupIcon treeItems={children} isDarkMode={isDarkMode} groupName={name} />{" "}
+              <MultiScreenIcon treeItems={children} />
+            </Stack>
+          }
           countChildren={NodesCount(children)}
           onDoubleClick={(event: React.MouseEvent, id: string) => {
             handleDoubleClick(event, id);

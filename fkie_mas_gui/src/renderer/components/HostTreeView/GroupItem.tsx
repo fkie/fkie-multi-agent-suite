@@ -1,5 +1,6 @@
 import CircleIcon from "@mui/icons-material/Circle";
 import { default as ContrastIcon } from "@mui/icons-material/Contrast";
+import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import ReportIcon from "@mui/icons-material/Report";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, red, yellow } from "@mui/material/colors";
@@ -176,6 +177,23 @@ function getGroupIconColor(treeItems: NodeTreeItem[], isDarkMode: boolean = fals
   }
 }
 
+function getGroupMultipleScreen(treeItems: NodeTreeItem[]): string[] {
+  const nodeWithMultipleScreens: string[] = [];
+  for (const nodeItem of treeItems) {
+    const node = nodeItem.node;
+    if (!node) {
+      if (nodeItem.children) {
+        nodeWithMultipleScreens.push(...getGroupMultipleScreen(nodeItem.children));
+      }
+      continue;
+    }
+    if ((node.screens || []).length > 1) {
+      nodeWithMultipleScreens.push(node.name);
+    }
+  }
+  return nodeWithMultipleScreens;
+}
+
 function getColorFromLifecycle(state: number, isDarkMode: boolean = false): string {
   switch (state) {
     case GroupLifecycleStatus.NOT_CONFIGURED:
@@ -337,6 +355,28 @@ export function GroupIcon(props: GroupIconProps): JSX.Element {
   return createIcon;
 }
 
+interface MultiScreenIconProps {
+  treeItems: NodeTreeItem[];
+}
+
+export function MultiScreenIcon(props: MultiScreenIconProps): JSX.Element {
+  const { treeItems } = props;
+  const [nodesWithMultipleScreens, setNodesWithMultipleScreens] = useState(getGroupMultipleScreen(treeItems));
+
+  useEffect(() => {
+    setNodesWithMultipleScreens(getGroupMultipleScreen(treeItems));
+  }, [treeItems]);
+
+  if (nodesWithMultipleScreens.length > 0) {
+    return (
+      <Tooltip title={`${nodesWithMultipleScreens.length} nodes with multiple Screens`} disableInteractive>
+        <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
+      </Tooltip>
+    );
+  }
+  return <></>;
+}
+
 /** Returns count of nodes for given group */
 export function NodesCount(children: NodeTreeItem[]): number {
   let result = 0;
@@ -437,6 +477,7 @@ export default function GroupItem(props: GroupItemProps): JSX.Element {
       label={
         <Box display="flex" alignItems="center" paddingLeft={0.0}>
           {icon}
+
           <Stack direction="row" paddingLeft={0.5} flexGrow={1} sx={{ userSelect: "none" }}>
             {groupName}
           </Stack>
