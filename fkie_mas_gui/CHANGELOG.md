@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.2.3 - 19.03.2026
+
+Fixed update package name in the editor
+Improved open external window
+Select the “Nodes” tab when closing the editor tab
+Do not automatically delete your own changes if the file has been saved remotely
+Fixed close reload ask bar if file was reloaded by different gui
+Fixed enable save button on editor changes
+
 ## 5.2.2 - 18.03.2026
 
 Fixed searching for included files in yaml
