@@ -2313,7 +2313,7 @@ export default class Provider implements IProvider {
           n.location === "remote" ||
           !n.isLocal
         ) {
-          ignored = true;
+          ignored = n.location !== "unknown";
           if (Array.isArray(n.location)) {
             ignored =
               this.remoteProviders.filter((prov) => {
@@ -2328,7 +2328,6 @@ export default class Provider implements IProvider {
               }).length > 0;
           }
         }
-
         // update the list with same GUIDs
         if (n.guid) {
           const sameIdEntry = sameIdDict[n.guid];
