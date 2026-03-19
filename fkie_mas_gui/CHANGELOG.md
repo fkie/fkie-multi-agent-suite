@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.2.5 - 19.03.2026
+
+Apply the multi-screen icon to the group
+
 ## 5.2.4 - 19.03.2026
 
 Fixed show extended info on select topic
