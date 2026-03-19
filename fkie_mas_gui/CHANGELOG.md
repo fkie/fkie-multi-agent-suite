@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.2.4 - 19.03.2026
+
+Fixed show extended info on select topic
+Use virtuoso to view topics
+Fixed filter remote nodes
+Removed isMaximized from window statekeeper
+
 ## 5.2.3 - 19.03.2026
 
 Fixed update package name in the editor
