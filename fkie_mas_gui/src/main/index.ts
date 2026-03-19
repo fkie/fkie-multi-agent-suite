@@ -197,7 +197,6 @@ const createWindow = async (): Promise<void> => {
       if (process.env.START_MINIMIZED) {
         mainWindow.minimize();
       } else {
-        if (mainWindowStateKeeper.isMaximized) mainWindow.maximize();
         mainWindow.show();
       }
     }

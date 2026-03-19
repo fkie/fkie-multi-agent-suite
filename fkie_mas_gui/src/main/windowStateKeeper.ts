@@ -7,7 +7,6 @@ export type TWindowState = {
   y: number | undefined;
   width: number;
   height: number;
-  isMaximized?: boolean;
 };
 
 export interface TWindowStateRun extends TWindowState {
@@ -39,7 +38,6 @@ export default async function windowStateKeeper(windowName: string): Promise<TWi
     if (bounds.x !== 0) {
       windowState = bounds;
     }
-    windowState.isMaximized = window.isMaximized();
     await settings.set(`windowState.${windowName}`, windowState as JSONValue);
   }
 
@@ -59,7 +57,6 @@ export default async function windowStateKeeper(windowName: string): Promise<TWi
     y: windowState.y,
     width: windowState.width,
     height: windowState.height,
-    isMaximized: windowState.isMaximized,
     track,
   };
 }
