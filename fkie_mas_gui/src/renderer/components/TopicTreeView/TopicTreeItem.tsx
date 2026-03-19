@@ -21,7 +21,7 @@ interface TopicTreeItemProps {
   rootPath: string;
   topicInfo: TopicExtendedInfo;
   selectedItem: string | null;
-  selected: boolean; // vom Parent ignorieren wir und verwenden eigene Logik
+  selected: boolean; // ignore prop from parent, we use our own selection logic
   depth: number;
   onSelect: () => void;
 }
@@ -52,7 +52,7 @@ export default function TopicTreeItem({
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
   }, [settingsCtx.changed]);
 
-  // Original-Logik: Auswahl / Extended Info via selectedItem steuern
+  // Original logic: control selection / extended info via selectedItem
   useEffect(() => {
     if (selectedItem !== itemId) {
       if (selectedLocal) {
@@ -61,14 +61,14 @@ export default function TopicTreeItem({
       }
     } else {
       if (selectedLocal) {
-        // bereits selektiert -> extended info toggeln
+        // already selected -> toggle extended info
         setShowExtendedInfo((prev) => !prev);
       } else {
-        // erste Selektion -> nur Selected setzen
+        // first selection -> only set selected
         setSelectedLocal(true);
       }
     }
-  }, [selectedItem, itemId, selectedLocal]);
+  }, [selectedItem, itemId]);
 
   // parse topic name, namespace, incompatible qos
   useEffect(() => {
@@ -92,6 +92,7 @@ export default function TopicTreeItem({
 
   const getHostStyle = useCallback(
     (providerName: string): object => {
+      // If host coloring is enabled and providerName is set, add a colored left border for the host
       if (providerName && colorizeHosts) {
         return {
           flexGrow: 1,
@@ -101,6 +102,7 @@ export default function TopicTreeItem({
           borderLeftWidth: "0.6em",
         };
       }
+      // default layout if no coloring
       return { flexGrow: 1, alignItems: "center", paddingLeft: 0 };
     },
     [colorizeHosts]
@@ -132,7 +134,9 @@ export default function TopicTreeItem({
     ): JSX.Element => {
       const values: { [key: string]: { nodeId: string; type: string }[] } = {};
 
+      // collect QoS values from publishers
       for (const pub of topicInfo.publishers) addQosValue(pub.info.qos?.[qosKey], pub.info.node_id, "pub", values);
+      // collect QoS values from subscribers
       for (const sub of topicInfo.subscribers) addQosValue(sub.info.qos?.[qosKey], sub.info.node_id, "sub", values);
 
       let index = 0;
@@ -190,6 +194,7 @@ export default function TopicTreeItem({
 
   const handleDoubleClickCopy = useCallback(
     (e: React.MouseEvent, value: string, label: string) => {
+      // copy on double click
       if (e.detail === 2) {
         navigator.clipboard.writeText(value);
         logCtx.success(`${value} copied!`, "", `${label} copied`);
@@ -201,7 +206,7 @@ export default function TopicTreeItem({
 
   const handleRowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Original-Logik: erster Klick nur Auswahl, zweiter Klick toggelt extendedInfo
+    // Original logic: first click only selects, second click toggles extendedInfo
     if (ignoreNextClick) {
       setIgnoreNextClick(false);
     } else {
@@ -222,12 +227,11 @@ export default function TopicTreeItem({
         borderRadius: 0,
         bgcolor: isSelected ? "var(--color-select-bg)" : "transparent",
         color: "text.secondary",
-
       }}
       onClick={handleRowClick}
       onContextMenu={handleContextMenu}
     >
-      {/* Linien-Spalte: eine Box pro depth */}
+      {/* Line column: one box per depth level */}
       {lineKeys.map((key) => (
         <Box
           key={key}
@@ -239,9 +243,9 @@ export default function TopicTreeItem({
         />
       ))}
 
-      {/* Inhaltsspaltte (Header + Extended Info + Kontextmenü) */}
+      {/* Content column (header + extended info + context menu) */}
       <Box sx={{ flexGrow: 1, py: 0.2, pr: 1 }}>
-        {/* Kopfzeile wie zuvor */}
+        {/* Header row */}
         <Box
           sx={{
             ml: 0.7,
@@ -305,14 +309,10 @@ export default function TopicTreeItem({
           </Stack>
         </Box>
 
-        {/* Extended info – bleibt sichtbar, bis Topic wieder geklickt wird */}
+        {/* Extended info – remains visible until topic is clicked again */}
         {showExtendedInfo && topicInfo && (
           <Stack paddingLeft={3}>
-            {/* Rest deiner Extended-Info wie gehabt */}
-            {/* Publisher / Subscriber / QoS etc. */}
-            {/* ... unverändert aus deiner Version übernehmen ... */}
-            {/* (wegen Platz hier nicht alles erneut ausgeschrieben) */}
-            {/* du kannst hier 1:1 deinen bestehenden Extended-Info-Block einsetzen */}
+            {/* Publisher / Subscriber / QoS details */}
             <Typography fontWeight="bold" fontSize="small">
               Publisher [{topicInfo.publishers.length}]:
             </Typography>
@@ -389,7 +389,7 @@ export default function TopicTreeItem({
           </Stack>
         )}
 
-        {/* Context-Menü bleibt unverändert */}
+        {/* Context menu */}
         <Menu
           open={contextMenu != null}
           onClose={handleCloseMenu}
