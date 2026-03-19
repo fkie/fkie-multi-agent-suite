@@ -161,7 +161,6 @@ export default class EditorManager implements TEditorManager {
       if (process.env.START_MINIMIZED) {
         editorWindow.minimize();
       } else {
-        if (editorWindowStateKeeper.isMaximized) editorWindow.maximize();
         editorWindow.show();
       }
     });

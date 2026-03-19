@@ -100,7 +100,6 @@ export default class SubscriberManager implements TSubscriberManager {
       if (process.env.START_MINIMIZED) {
         window.minimize();
       } else {
-        if (editorWindowStateKeeper.isMaximized) window.maximize();
         window.show();
       }
     });

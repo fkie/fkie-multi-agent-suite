@@ -98,7 +98,6 @@ export default class PublishManager implements TPublishManager {
       if (process.env.START_MINIMIZED) {
         window.minimize();
       } else {
-        if (pubWindowStateKeeper.isMaximized) window.maximize();
         window.show();
       }
     });

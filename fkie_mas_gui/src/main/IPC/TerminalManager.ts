@@ -112,7 +112,6 @@ export default class TerminalManager implements TTerminalManager {
       if (process.env.START_MINIMIZED) {
         window.minimize();
       } else {
-        if (editorWindowStateKeeper.isMaximized) window.maximize();
         window.show();
       }
     });
