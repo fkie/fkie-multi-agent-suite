@@ -1,15 +1,12 @@
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import {
-  treeItemClasses,
-  TreeItemSlotProps,
-  UseTreeItemContentSlotOwnProps,
-  UseTreeItemIconContainerSlotOwnProps,
-} from "@mui/x-tree-view";
+import { grey } from "@mui/material/colors";
+import { alpha } from "@mui/material/styles";
 import React from "react";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-import StyledTreeItem from "./StyledTreeItem";
 
 interface TopicGroupTreeItemProps {
   itemId: string;
@@ -17,49 +14,94 @@ interface TopicGroupTreeItemProps {
   groupName: string;
   countChildren: number;
   hasIncompatibleQos: boolean;
-  children: React.ReactNode;
+  expanded: boolean;
+  selected: boolean;
+  depth: number;
+  onToggle: () => void;
+  onSelect: () => void;
 }
 
-export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.Element {
-  const { itemId, rootPath, groupName, countChildren, hasIncompatibleQos, ...children } = props;
-
+export default function TopicGroupTreeItem({
+  itemId,
+  rootPath,
+  groupName,
+  countChildren,
+  hasIncompatibleQos,
+  expanded,
+  selected,
+  depth,
+  onToggle,
+  onSelect,
+}: TopicGroupTreeItemProps): JSX.Element {
   const logCtx = useLoggingContext();
 
-  // avoid selection if collapse icon was clicked
-  let toggled = false;
-  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
-    event.defaultMuiPrevented = toggled;
-    toggled = false;
+  const handleRowClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onToggle();
+    onSelect();
   };
 
-  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
-
-  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
-    toggled = true;
+  const handleIconClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onToggle();
   };
+
+  const lineKeys = Array.from({ length: depth }, (_, i) => `${itemId}-line-${i}`);
 
   return (
-    <StyledTreeItem
-      itemId={itemId}
-      slotProps={
-        {
-          label: { onClick: handleLabelClick },
-          content: { onClick: handleContentClick },
-          iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItemSlotProps
-      }
+    <Box
+      onClick={handleRowClick}
       sx={{
-        [`& .${treeItemClasses.content}`]: {
-          paddingLeft: "8px",
-        },
+        display: "flex",
+        alignItems: "stretch",
+        cursor: "pointer",
+        borderRadius: 0,
+        bgcolor: selected ? "var(--color-select-bg)" : "transparent",
+        color: "text.secondary",
       }}
-      label={
-        <Stack direction="column">
+    >
+      {/* eine schmale Spalte mit gestrichelter Linie pro depth */}
+      {lineKeys.map((key) => (
+        <Box
+          key={key}
+          sx={{
+            ml: 0.9,
+            width: "0.9em",
+            borderLeft: `1px dashed ${alpha(grey[600], 0.4)}`,
+          }}
+        />
+      ))}
+
+      {/* eigentlicher Inhalt der Row */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexGrow: 1,
+          py: 0.3,
+          pr: 1,
+        }}
+      >
+        {/* Icon-Container (Expand/Collapse) */}
+        <Box
+          onClick={handleIconClick}
+          sx={{
+            width: "1em",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mr: 0,
+            ml: 0,
+          }}
+        >
+          {expanded ? <ArrowDropDownIcon fontSize="inherit" /> : <ArrowRightIcon fontSize="inherit" />}
+        </Box>
+
+        <Stack direction="column" sx={{ flexGrow: 1 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              // p: 0.3,
               pr: 0,
             }}
           >
@@ -72,8 +114,9 @@ export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.
                 sx={{ fontWeight: "inherit", userSelect: "none" }}
                 onClick={(e) => {
                   if (e.detail === 2) {
-                    navigator.clipboard.writeText(`${rootPath}${groupName}`);
-                    logCtx.success(`${rootPath}${groupName} copied!`, "", "topic group copied");
+                    const value = `${rootPath}${groupName}`;
+                    navigator.clipboard.writeText(value);
+                    logCtx.success(`${value} copied!`, "", "topic group copied");
                     e.stopPropagation();
                   }
                 }}
@@ -85,21 +128,9 @@ export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.
                   <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
                 </Tooltip>
               )}
-              {/* {topicInfo && topicInfo.subscribers.filter((sub) => sub.incompatible_qos?.length > 0).length > 0 && (
-                <Tooltip title={`There are subscribers with incompatible QoS`} placement="right" disableInteractive>
-                  <LinkOffIcon style={{ fontWeight: "inherit", color: "red" }} />
-                </Tooltip>
-              )} */}
             </Stack>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                alignItems: "center",
-              }}
-            >
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               {countChildren > 0 && (
-                // <Tag text={countChildren} color="default" copyButton={false}></Tag>
                 <Typography variant="caption" color="inherit" padding={0.2}>
                   [{countChildren}]
                 </Typography>
@@ -107,8 +138,7 @@ export default function TopicGroupTreeItem(props: TopicGroupTreeItemProps): JSX.
             </Stack>
           </Box>
         </Stack>
-      }
-      {...children}
-    />
+      </Box>
+    </Box>
   );
 }

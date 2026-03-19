@@ -1,7 +1,8 @@
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import { Box, Chip, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
-import { treeItemClasses } from "@mui/x-tree-view";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { grey } from "@mui/material/colors";
+import { alpha } from "@mui/material/styles";
+import { useCallback, useEffect, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -14,72 +15,66 @@ import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { removeDDSuid } from "@/renderer/utils/index";
 import { colorFromHostname } from "../UI/Colors";
-import StyledTreeItem from "./StyledTreeItem";
 
 interface TopicTreeItemProps {
   itemId: string;
   rootPath: string;
   topicInfo: TopicExtendedInfo;
   selectedItem: string | null;
+  selected: boolean; // vom Parent ignorieren wir und verwenden eigene Logik
+  depth: number;
+  onSelect: () => void;
 }
 
-export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
-  const { itemId, rootPath, topicInfo, selectedItem } = props;
-
+export default function TopicTreeItem({
+  itemId,
+  rootPath,
+  topicInfo,
+  selectedItem,
+  depth,
+  onSelect,
+}: TopicTreeItemProps): JSX.Element {
   const logCtx = useLoggingContext();
   const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
-  const [name, setName] = useState<string>("");
-  const [namespace, setNamespace] = useState<string>("");
-  // state variables to show/hide extended info
+
+  const [name, setName] = useState("");
+  const [namespace, setNamespace] = useState("");
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
-  const [selected, setSelected] = useState(false);
+  const [selectedLocal, setSelectedLocal] = useState(false);
   const [incompatibleQos, setIncompatibleQos] = useState<IncompatibleQos[]>([]);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // update colorize setting when context value changes
   useEffect(() => {
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
   }, [settingsCtx.changed]);
 
-  const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
-      if (providerName && colorizeHosts) {
-        return {
-          flexGrow: 1,
-          alignItems: "center",
-          borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
-          borderLeftWidth: "0.6em",
-        };
-      }
-      return { flexGrow: 1, alignItems: "center", paddingLeft: 0 };
-    },
-    [settingsCtx.changed]
-  );
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // Original-Logik: Auswahl / Extended Info via selectedItem steuern
   useEffect(() => {
-    // update state variables to show/hide extended info
     if (selectedItem !== itemId) {
-      if (selected) {
-        setSelected(false);
+      if (selectedLocal) {
+        setSelectedLocal(false);
         setIgnoreNextClick(true);
       }
     } else {
-      if (selected) {
-        setShowExtendedInfo(!showExtendedInfo);
+      if (selectedLocal) {
+        // bereits selektiert -> extended info toggeln
+        setShowExtendedInfo((prev) => !prev);
+      } else {
+        // erste Selektion -> nur Selected setzen
+        setSelectedLocal(true);
       }
-      setSelected(true);
     }
-  }, [selectedItem /** selected, itemId, showExtendedInfo */]);
+  }, [selectedItem, itemId, selectedLocal]);
 
+  // parse topic name, namespace, incompatible qos
   useEffect(() => {
     const nameParts = topicInfo.name.split("/");
     setName(`${nameParts.pop()}`);
-    setNamespace(rootPath ? `${rootPath}/` : rootPath ? "" : "");
+    setNamespace(rootPath ? `${rootPath}/` : "");
     const inQos: IncompatibleQos[] = [];
 
     const subscribersWithInCQos = topicInfo?.subscribers.filter(
@@ -94,6 +89,22 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
     }
     setIncompatibleQos(inQos);
   }, [topicInfo, rootPath]);
+
+  const getHostStyle = useCallback(
+    (providerName: string): object => {
+      if (providerName && colorizeHosts) {
+        return {
+          flexGrow: 1,
+          alignItems: "center",
+          borderLeftStyle: "solid",
+          borderLeftColor: colorFromHostname(providerName),
+          borderLeftWidth: "0.6em",
+        };
+      }
+      return { flexGrow: 1, alignItems: "center", paddingLeft: 0 };
+    },
+    [colorizeHosts]
+  );
 
   function addQosValue(
     value: string | number | undefined,
@@ -113,339 +124,298 @@ export default function TopicTreeItem(props: TopicTreeItemProps): JSX.Element {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  const createReliabilityItem = useMemo((): JSX.Element => {
-    const values: { [key: string]: { nodeId: string; type: string }[] } = {};
+  const createQosItem = useCallback(
+    (
+      label: string,
+      qosKey: "reliability" | "durability" | "liveliness",
+      converter: (v: number) => string
+    ): JSX.Element => {
+      const values: { [key: string]: { nodeId: string; type: string }[] } = {};
 
-    for (const pub of topicInfo.publishers) {
-      addQosValue(pub.info.qos?.reliability, pub.info.node_id, "pub", values);
-    }
-    for (const sub of topicInfo.subscribers) {
-      addQosValue(sub.info.qos?.reliability, sub.info.node_id, "sub", values);
-    }
-    let index = 0;
-    return (
-      <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
-        <Typography variant="caption" color="inherit">
-          Reliability:
-        </Typography>
-        {Object.entries(values).map(([key, value]) => {
-          index += 1;
-          return (
-            <Stack key={`qos-reliability-${key}`} direction="row" spacing={"0.2em"}>
-              {index > 1 && (
+      for (const pub of topicInfo.publishers) addQosValue(pub.info.qos?.[qosKey], pub.info.node_id, "pub", values);
+      for (const sub of topicInfo.subscribers) addQosValue(sub.info.qos?.[qosKey], sub.info.node_id, "sub", values);
+
+      let index = 0;
+      return (
+        <Stack direction="row" spacing="0.5em" paddingLeft="1em">
+          <Typography variant="caption" color="inherit">
+            {label}:
+          </Typography>
+          {Object.entries(values).map(([key, value]) => {
+            index += 1;
+            return (
+              <Stack key={`${qosKey}-${key}`} direction="row" spacing="0.2em">
+                {index > 1 && (
+                  <Typography variant="body2" color="inherit">
+                    +
+                  </Typography>
+                )}
                 <Typography variant="body2" color="inherit">
-                  +
+                  {converter(Number.parseInt(key))}
                 </Typography>
-              )}
-              <Typography variant="body2" color="inherit">
-                {reliabilityToString(Number.parseInt(key))}
-              </Typography>
-              {index > 1 && (
-                <Typography variant="body2" color="inherit">
-                  {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
-                </Typography>
-              )}
-            </Stack>
-          );
-        })}
-      </Stack>
-    );
-  }, [topicInfo]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  const createDurabilityItem = useMemo((): JSX.Element => {
-    const values: { [key: string]: { nodeId: string; type: string }[] } = {};
-
-    for (const pub of topicInfo.publishers) {
-      addQosValue(pub.info.qos?.durability, pub.info.node_id, "pub", values);
-    }
-    for (const sub of topicInfo.subscribers) {
-      addQosValue(sub.info.qos?.durability, sub.info.node_id, "sub", values);
-    }
-    let index = 0;
-    return (
-      <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
-        <Typography variant="caption" color="inherit">
-          Durability:
-        </Typography>
-        {Object.entries(values).map(([key, value]) => {
-          index += 1;
-          return (
-            <Stack key={`qos-durability-${key}`} direction="row" spacing={"0.2em"}>
-              <Typography variant="body2" color="inherit">
-                {durabilityToString(Number.parseInt(key))}
-              </Typography>
-              {index > 1 && (
-                <Typography variant="body2" color="inherit">
-                  {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
-                </Typography>
-              )}
-            </Stack>
-          );
-        })}
-      </Stack>
-    );
-  }, [topicInfo]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  const createLivelinessItem = useMemo((): JSX.Element => {
-    const values: { [key: string]: { nodeId: string; type: string }[] } = {};
-
-    for (const pub of topicInfo.publishers) {
-      addQosValue(pub.info.qos?.liveliness, pub.info.node_id, "pub", values);
-    }
-    for (const sub of topicInfo.subscribers) {
-      addQosValue(sub.info.qos?.liveliness, sub.info.node_id, "sub", values);
-    }
-    let index = 0;
-    return (
-      <Stack direction="row" spacing={"0.5em"} paddingLeft={"1em"}>
-        <Typography variant="caption" color="inherit">
-          Liveliness:
-        </Typography>
-        {Object.entries(values).map(([key, value]) => {
-          index += 1;
-          return (
-            <Stack key={`qos-liveliness-${key}`} direction="row" spacing={"0.2em"}>
-              <Typography variant="body2" color="inherit">
-                {livelinessToString(Number.parseInt(key))}
-              </Typography>
-              {index > 1 && (
-                <Typography variant="body2" color="inherit">
-                  {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
-                </Typography>
-              )}
-            </Stack>
-          );
-        })}
-      </Stack>
-    );
-  }, [topicInfo]);
-
-  return (
-    <StyledTreeItem
-      itemId={itemId}
-      sx={{
-        [`& .${treeItemClasses.content}`]: {
-          paddingLeft: 0,
-        },
-      }}
-      label={
-        <Stack
-          direction="column"
-          onContextMenu={(event) => {
-            event.preventDefault();
-            setContextMenu(
-              contextMenu === null
-                ? {
-                    mouseX: event.clientX + 2,
-                    mouseY: event.clientY - 6,
-                  }
-                : null
-            );
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              // p: 0.3,
-              pr: 0,
-            }}
-            onClick={() => {
-              if (ignoreNextClick) {
-                setIgnoreNextClick(false);
-              } else {
-                setShowExtendedInfo(!showExtendedInfo);
-              }
-            }}
-          >
-            <Stack spacing={1} direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
-              <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
-                <Typography
-                  variant="body2"
-                  sx={{ fontSize: "inherit", userSelect: "none" }}
-                  onClick={(e) => {
-                    if (e.detail === 2) {
-                      navigator.clipboard.writeText(topicInfo.name);
-                      logCtx.success(`${topicInfo.name} copied!`, "", "topic name copied");
-                      e.stopPropagation();
-                    }
-                  }}
-                >
-                  {namespace}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}
-                  onClick={(e) => {
-                    if (e.detail === 2) {
-                      navigator.clipboard.writeText(topicInfo.name);
-                      logCtx.success(`${topicInfo.name} copied!`, "", "topic name copied");
-                      e.stopPropagation();
-                    }
-                  }}
-                >
-                  {name}
-                </Typography>
-                {incompatibleQos.length > 0 && (
-                  <Tooltip title={"There are subscribers with incompatible QoS"} placement="right" disableInteractive>
-                    <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
-                  </Tooltip>
+                {index > 1 && (
+                  <Typography variant="body2" color="inherit">
+                    {JSON.stringify(value.map((item) => removeDDSuid(item.nodeId)))}
+                  </Typography>
                 )}
               </Stack>
-              {/* {requestData && <CircularProgress size="1em" />} */}
-            </Stack>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                alignItems: "center",
-              }}
-            >
-              {topicInfo.msgType && (
-                <Typography
-                  variant="caption"
-                  color="inherit"
-                  padding={0.2}
-                  onClick={(e) => {
-                    if (e.detail === 2) {
-                      navigator.clipboard.writeText(topicInfo.msgType);
-                      logCtx.success(`${topicInfo.msgType} copied!`, "", "topic type copied");
-                      e.stopPropagation();
-                    }
-                  }}
-                >
-                  {topicInfo.msgType}
-                </Typography>
-              )}
-              {topicInfo && (
-                <Stack direction="row" spacing={1}>
-                  <Chip
-                    size="small"
-                    title="publishers"
-                    // showZero={true}
-                    color={topicInfo.publishers.length > 0 ? "default" : "warning"}
-                    label={topicInfo.publishers.length}
-                  />
+            );
+          })}
+        </Stack>
+      );
+    },
+    [topicInfo]
+  );
 
-                  <Chip
-                    size="small"
-                    title="subscribers"
-                    // showZero={true}
-                    color={topicInfo.subscribers.length > 0 ? "default" : "warning"}
-                    label={topicInfo.subscribers.length}
-                  />
-                </Stack>
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setContextMenu(
+        contextMenu === null
+          ? {
+              mouseX: event.clientX + 2,
+              mouseY: event.clientY - 6,
+            }
+          : null
+      );
+    },
+    [contextMenu]
+  );
+
+  const handleCloseMenu = useCallback((event) => {
+    setContextMenu(null);
+    event.stopPropagation();
+  }, []);
+
+  const handleDoubleClickCopy = useCallback(
+    (e: React.MouseEvent, value: string, label: string) => {
+      if (e.detail === 2) {
+        navigator.clipboard.writeText(value);
+        logCtx.success(`${value} copied!`, "", `${label} copied`);
+        e.stopPropagation();
+      }
+    },
+    [logCtx]
+  );
+
+  const handleRowClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Original-Logik: erster Klick nur Auswahl, zweiter Klick toggelt extendedInfo
+    if (ignoreNextClick) {
+      setIgnoreNextClick(false);
+    } else {
+      setShowExtendedInfo((prev) => !prev);
+    }
+    onSelect();
+  };
+
+  const isSelected = selectedItem === itemId;
+  const lineKeys = Array.from({ length: depth }, (_, i) => `${itemId}-line-${i}`);
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "stretch",
+        cursor: "pointer",
+        borderRadius: 0,
+        bgcolor: isSelected ? "var(--color-select-bg)" : "transparent",
+        color: "text.secondary",
+
+      }}
+      onClick={handleRowClick}
+      onContextMenu={handleContextMenu}
+    >
+      {/* Linien-Spalte: eine Box pro depth */}
+      {lineKeys.map((key) => (
+        <Box
+          key={key}
+          sx={{
+            ml: 0.9,
+            width: "0.9em",
+            borderLeft: `1px dashed ${alpha(grey[600], 0.4)}`,
+          }}
+        />
+      ))}
+
+      {/* Inhaltsspaltte (Header + Extended Info + Kontextmenü) */}
+      <Box sx={{ flexGrow: 1, py: 0.2, pr: 1 }}>
+        {/* Kopfzeile wie zuvor */}
+        <Box
+          sx={{
+            ml: 0.7,
+            display: "flex",
+            alignItems: "center",
+            py: 0.2,
+            pr: 0,
+          }}
+          onClick={handleRowClick}
+        >
+          <Stack spacing={1} direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+            <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: "inherit", userSelect: "none" }}
+                onClick={(e) => handleDoubleClickCopy(e, topicInfo.name, "topic name")}
+              >
+                {namespace}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: "inherit", fontWeight: "bold", userSelect: "none" }}
+                onClick={(e) => handleDoubleClickCopy(e, topicInfo.name, "topic name")}
+              >
+                {name}
+              </Typography>
+              {incompatibleQos.length > 0 && (
+                <Tooltip title="There are subscribers with incompatible QoS" placement="right" disableInteractive>
+                  <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} sx={{ paddingLeft: "0.1em" }} />
+                </Tooltip>
               )}
             </Stack>
-          </Box>
-          {showExtendedInfo && topicInfo && (
-            <Stack paddingLeft={3}>
-              <Typography fontWeight="bold" fontSize="small">
-                Publisher [{topicInfo.publishers.length}]:
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            {topicInfo.msgType && (
+              <Typography
+                variant="caption"
+                color="inherit"
+                padding={0.2}
+                onClick={(e) => handleDoubleClickCopy(e, topicInfo.msgType, "topic type")}
+              >
+                {topicInfo.msgType}
               </Typography>
-              {topicInfo.publishers.map((item: EndpointExtendedInfo) => {
-                const pubNodeName = removeDDSuid(item.info.node_id);
-                return (
-                  <Stack
-                    key={`${item.providerId}-${item.info.node_id}`}
-                    paddingLeft={3}
-                    direction="row"
-                    sx={getHostStyle(item.providerName)}
+            )}
+            {topicInfo && (
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  size="small"
+                  title="publishers"
+                  color={topicInfo.publishers.length > 0 ? "default" : "warning"}
+                  label={topicInfo.publishers.length}
+                />
+                <Chip
+                  size="small"
+                  title="subscribers"
+                  color={topicInfo.subscribers.length > 0 ? "default" : "warning"}
+                  label={topicInfo.subscribers.length}
+                />
+              </Stack>
+            )}
+          </Stack>
+        </Box>
+
+        {/* Extended info – bleibt sichtbar, bis Topic wieder geklickt wird */}
+        {showExtendedInfo && topicInfo && (
+          <Stack paddingLeft={3}>
+            {/* Rest deiner Extended-Info wie gehabt */}
+            {/* Publisher / Subscriber / QoS etc. */}
+            {/* ... unverändert aus deiner Version übernehmen ... */}
+            {/* (wegen Platz hier nicht alles erneut ausgeschrieben) */}
+            {/* du kannst hier 1:1 deinen bestehenden Extended-Info-Block einsetzen */}
+            <Typography fontWeight="bold" fontSize="small">
+              Publisher [{topicInfo.publishers.length}]:
+            </Typography>
+            {topicInfo.publishers.map((item: EndpointExtendedInfo) => {
+              const pubNodeName = removeDDSuid(item.info.node_id);
+              return (
+                <Stack
+                  key={`${item.providerId}-${item.info.node_id}`}
+                  paddingLeft={3}
+                  direction="row"
+                  sx={getHostStyle(item.providerName)}
+                >
+                  <Typography
+                    fontSize="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
+                      navCtx.setSelectedProviders([]);
+                      navCtx.setSelectedNodes([id], false);
+                      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
+                    }}
                   >
-                    <Typography
-                      fontSize="small"
-                      onClick={() => {
-                        const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                        navCtx.setSelectedNodes([id], false);
-                        // inform details panel tab about selected nodes by user
-                        emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
-                      }}
-                    >
-                      {pubNodeName}
-                    </Typography>
-                    {/* <CopyButton value={pubNodeName} fontSize="0.7em" /> */}
-                  </Stack>
-                );
-              })}
-              <Typography fontWeight="bold" fontSize="small">
-                Subscriber [{topicInfo.subscribers.length}]:
-              </Typography>
-              {topicInfo.subscribers.map((item: EndpointExtendedInfo) => {
-                const subNodeName = removeDDSuid(item.info.node_id);
-                return (
-                  <Stack
-                    key={`${item.providerId}-${item.info.node_id}`}
-                    paddingLeft={3}
-                    spacing={1}
-                    direction="row"
-                    justifyItems="center"
-                    alignItems="center"
-                    sx={getHostStyle(item.providerName)}
+                    {pubNodeName}
+                  </Typography>
+                </Stack>
+              );
+            })}
+            <Typography fontWeight="bold" fontSize="small">
+              Subscriber [{topicInfo.subscribers.length}]:
+            </Typography>
+            {topicInfo.subscribers.map((item: EndpointExtendedInfo) => {
+              const subNodeName = removeDDSuid(item.info.node_id);
+              return (
+                <Stack
+                  key={`${item.providerId}-${item.info.node_id}`}
+                  paddingLeft={3}
+                  direction="row"
+                  sx={getHostStyle(item.providerName)}
+                >
+                  <Typography
+                    fontSize="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
+                      navCtx.setSelectedProviders([]);
+                      navCtx.setSelectedNodes([id], false);
+                      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
+                    }}
                   >
-                    <Typography
-                      fontSize="small"
-                      onClick={() => {
-                        const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                        navCtx.setSelectedNodes([id], false);
-                        // inform details panel tab about selected nodes by user
-                        emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
-                      }}
+                    {subNodeName}
+                  </Typography>
+                  {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
+                    <Tooltip
+                      title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
+                      placement="right"
+                      disableInteractive
                     >
-                      {subNodeName}
-                    </Typography>
-                    {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
-                      <Tooltip
-                        title={`Incompatible QoS: ${JSON.stringify(item.info.incompatible_qos)}`}
-                        placement="right"
-                        disableInteractive
-                      >
-                        <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
-                      </Tooltip>
-                    )}
-                    {/* <CopyButton value={subNodeName} fontSize="0.7em" /> */}
-                  </Stack>
-                );
-              })}
-              {topicInfo?.hasQos && (
+                      <LinkOffIcon style={{ fontSize: "inherit", color: "red" }} />
+                    </Tooltip>
+                  )}
+                </Stack>
+              );
+            })}
+            {topicInfo?.hasQos && (
+              <>
                 <Typography fontWeight="bold" fontSize="small">
                   Qos profiles:
                 </Typography>
-              )}
-              {topicInfo?.hasQos && createReliabilityItem}
-              {topicInfo?.hasQos && createDurabilityItem}
-              {topicInfo?.hasQos && createLivelinessItem}
-            </Stack>
-          )}
-          <Menu
-            open={contextMenu != null}
-            onClose={() => setContextMenu(null)}
-            anchorReference="anchorPosition"
-            anchorPosition={contextMenu != null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
+                {createQosItem("Reliability", "reliability", reliabilityToString)}
+                {createQosItem("Durability", "durability", durabilityToString)}
+                {createQosItem("Liveliness", "liveliness", livelinessToString)}
+              </>
+            )}
+          </Stack>
+        )}
+
+        {/* Context-Menü bleibt unverändert */}
+        <Menu
+          open={contextMenu != null}
+          onClose={handleCloseMenu}
+          anchorReference="anchorPosition"
+          anchorPosition={contextMenu != null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined}
+        >
+          <MenuItem
+            sx={{ fontSize: "0.8em" }}
+            onClick={async (event) => {
+              navigator.clipboard.writeText(topicInfo.name);
+              handleCloseMenu(event);
+            }}
           >
-            <MenuItem
-              sx={{ fontSize: "0.8em" }}
-              onClick={async () => {
-                navigator.clipboard.writeText(topicInfo.name);
-                setContextMenu(null);
-              }}
-            >
-              Copy topic name
-            </MenuItem>
-            <MenuItem
-              sx={{ fontSize: "0.8em" }}
-              onClick={async () => {
-                navigator.clipboard.writeText(topicInfo.msgType);
-                setContextMenu(null);
-              }}
-            >
-              Copy message type
-            </MenuItem>
-          </Menu>
-        </Stack>
-      }
-    />
+            Copy topic name
+          </MenuItem>
+          <MenuItem
+            sx={{ fontSize: "0.8em" }}
+            onClick={async (event) => {
+              navigator.clipboard.writeText(topicInfo.msgType || "");
+              handleCloseMenu(event);
+            }}
+          >
+            Copy message type
+          </MenuItem>
+        </Menu>
+      </Box>
+    </Box>
   );
 }
