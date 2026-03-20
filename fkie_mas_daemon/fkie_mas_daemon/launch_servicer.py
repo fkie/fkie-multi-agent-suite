@@ -768,7 +768,7 @@ class LaunchServicer(LoggingEventHandler):
                     # remove if used: case if the same launch files was loaded multiple times with different arguments
                     if cfg_included_files[0].inc_path == inc_file.inc_path and cfg_included_files[0].path == inc_file.path_or_str:
                         args = cfg_included_files[0].args
-                        default_inc_args = cfg_included_files[0].args
+                        default_inc_args = cfg_included_files[0].default_inc_args
                         del cfg_included_files[0]
                 lincf = LaunchIncludedFile(path=inc_file.path_or_str,
                                            line_number=inc_file.line_number,

@@ -743,7 +743,18 @@ class LaunchConfig(object):
                         # perform search
                         inc_file_exists = False
                         file_size = -1
-                        entity.execute(self.context)
+                        cfg_actions = entity.execute(self.context)
+                        inc_launch_arguments = []
+                        if cfg_actions is not None:
+                            for cac in cfg_actions:
+                                if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
+                                    cac.execute(self.context)
+                                    arg_name = perform_substitutions(self.context, cac.name)
+                                    arg_value = perform_substitutions(self.context, cac.value)
+                                    if PRINT_DEBUG_LOAD:
+                                        print(
+                                            f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
+                                    inc_launch_arguments.append(LaunchArgument(name=arg_name, value=arg_value))
                         inc_file_name = perform_to_string(
                             self.context, entity.launch_description_source.location)
                         used_path = inc_file_name
@@ -762,7 +773,7 @@ class LaunchConfig(object):
                                                              raw_inc_path=raw_text,
                                                              rec_depth=depth+1,
                                                              args=[],
-                                                             default_inc_args=[],
+                                                             default_inc_args=inc_launch_arguments,
                                                              size=file_size,
                                                              conditional_excluded=True)
                         self._included_files.append(launch_inc_file)
@@ -832,16 +843,19 @@ class LaunchConfig(object):
                 # if cfg_actions is not None:
                 #     for cac in cfg_actions:
                 #         print("  ***debug launch loading action: ", indent, '->', type(cac), cac)
-                if launch_file_obj:
-                    if PRINT_DEBUG_LOAD:
-                        print(f"  ***debug launch loading: {indent} add declared argument: {entity.name}")
-                    la = LaunchArgument(name=perform_to_string(self.context, entity.name),
-                                        value="",
-                                        default_value=perform_to_string(self.context, entity.default_value),
-                                        description=perform_to_string(self.context, entity.description),
-                                        choices=entity.choices)
-                    launch_file_obj.default_inc_args.append(la)
-                    entity.execute(self.context)
+                # if launch_file_obj:
+                #     print(f"current file: {current_file}")
+                #     if PRINT_DEBUG_LOAD:
+                #         print(f"  ***debug launch loading: {indent} add declared argument: {entity.name}")
+                #     la = LaunchArgument(name=perform_to_string(self.context, entity.name),
+                #                         value="",
+                #                         default_value=perform_to_string(self.context, entity.default_value),
+                #                         description=perform_to_string(self.context, entity.description),
+                #                         choices=entity.choices)
+                #     print(f"la {la.name}: {la.default_value} {current_file}")
+                #     launch_file_obj.default_inc_args.append(la)
+                #     entity.execute(self.context)
+                pass
             elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                 # launch.actions.declare_launch_argument.DeclareLaunchArgument
                 self.context._push_launch_configurations()
@@ -860,18 +874,18 @@ class LaunchConfig(object):
                         file_size = os.path.getsize(used_path)
                     include_line_number, position_in_file, raw_text = self.find_definition(
                         file_content, 'include', position_in_file)
-                    inc_launch_arguments = []
-                    if cfg_actions is not None:
-                        for cac in cfg_actions:
-                            if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
-                                cac.execute(self.context)
-                                arg_name = perform_substitutions(self.context, cac.name)
-                                arg_value = perform_substitutions(self.context, cac.value)
-                                if PRINT_DEBUG_LOAD:
-                                    print(
-                                        f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
-                                inc_launch_arguments.append(LaunchArgument(name=arg_name, value=arg_value))
-                    inc_launch_arguments_def = []
+                    # inc_launch_arguments = []
+                    # if cfg_actions is not None:
+                    #     for cac in cfg_actions:
+                    #         if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
+                    #             cac.execute(self.context)
+                    #             arg_name = perform_substitutions(self.context, cac.name)
+                    #             arg_value = perform_substitutions(self.context, cac.value)
+                    #             if PRINT_DEBUG_LOAD:
+                    #                 print(
+                    #                     f"  ***debug launch loading: {indent}  add launch config: {arg_name}: {arg_value}")
+                    #             inc_launch_arguments.append(LaunchArgument(name=arg_name, value=arg_value))
+                    # inc_launch_arguments_def = []
                     launch_inc_file = LaunchIncludedFile(path=current_file,
                                                          line_number=include_line_number,
                                                          inc_path=used_path,
@@ -879,8 +893,8 @@ class LaunchConfig(object):
                                                          exists=inc_file_exists,
                                                          raw_inc_path=raw_text,
                                                          rec_depth=depth+1,
-                                                         args=inc_launch_arguments,
-                                                         default_inc_args=inc_launch_arguments_def,
+                                                         args=[],
+                                                         default_inc_args=[],
                                                          size=file_size
                                                          )
                     self._included_files.append(launch_inc_file)
@@ -930,6 +944,7 @@ class LaunchConfig(object):
             elif hasattr(entity, 'execute'):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
+                    print(f"  ***debug launch loading: {indent} LaunchDescription: {entity}: {dir(entity)}")
                 try:
 
                     # entity._perform_substitutions(self.context)
@@ -951,6 +966,27 @@ class LaunchConfig(object):
                     self.load_exceptions.append(err_msg)
                     print(err_msg)
             elif isinstance(entity, launch.launch_description.LaunchDescription):
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} LaunchDescription: {entity}: {dir(entity)}")
+                    print(f"  current file: {current_file}")
+                last_included_file = self._included_files[-1]
+                if last_included_file and last_included_file.inc_path == current_file:
+                    launch_args = []
+                    for arg_name, arg_value in current_launch_description.launch_arguments:
+                        la = LaunchArgument(perform_to_string(self.context, arg_name),
+                                            perform_to_string(self.context, arg_value))
+                        if PRINT_DEBUG_LOAD:
+                            print(f"    add launch arg: {la.name}: {la.value}")
+                        launch_args.append(la)
+                    default_args = []
+                    for arg in entity.get_launch_arguments():
+                        da = LaunchArgument(perform_to_string(self.context, arg.name),
+                                            perform_to_string(self.context, arg.default_value))
+                        if PRINT_DEBUG_LOAD:
+                            print(f"    add default arg: {da.name}: {da.value}")
+                        default_args.append(da)
+                    last_included_file.args = launch_args
+                    last_included_file.default_inc_args = default_args
                 self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
                 if current_file:
