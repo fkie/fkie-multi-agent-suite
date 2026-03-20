@@ -1,14 +1,17 @@
 import { LaunchIncludedFile } from "@/renderer/models";
+import { TLaunchArg } from "@/types";
 import { Position } from "monaco-editor";
 
 export type ResolveType = { path: string; realpath: string };
 export type ResolverCacheEntry = { start: Position; end: Position; match: IncludeMatch };
+export type ResolverIncludeArgs = { args: TLaunchArg[]; defaults: TLaunchArg[]; from: string };
 
 export type IncludeMatch = { value: string; offset: number; resolved: string; realpath: string };
 
 export type IncludeResolver = {
   cache: Map<string, ResolverCacheEntry[]>;
   resolve: (currentFile: string, rawPath: string) => ResolveType | undefined;
+  getArgs: (currentFile: string) => ResolverIncludeArgs | undefined;
   update: (includedFiles: LaunchIncludedFile[]) => void;
 };
 
@@ -18,6 +21,7 @@ type ResolveMap = Map<string, Map<string, ResolveType>>;
 export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): IncludeResolver {
   // Nested map for resolving includes
   const map: ResolveMap = new Map();
+  const mapIncludeArgs: Map<string, ResolverIncludeArgs> = new Map();
   const cache = new Map<string, ResolverCacheEntry[]>();
 
   /**
@@ -42,6 +46,7 @@ export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): Incl
       path: f.inc_path,
       realpath: f.inc_realpath,
     });
+    mapIncludeArgs.set(f.inc_path, { args: f.args || [], defaults: f.default_inc_args || [], from: f.path });
   }
 
   /**
@@ -76,6 +81,9 @@ export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): Incl
         next.set(f.path, s);
       }
       s.add(f.raw_inc_path);
+
+      // update include args
+      mapIncludeArgs.set(f.inc_path, { args: f.args || [], defaults: f.default_inc_args || [], from: f.path });
     }
 
     // Remove stale entries from the map and cache
@@ -98,8 +106,12 @@ export function createIncludeResolver(includedFiles: LaunchIncludedFile[]): Incl
     }
   }
 
+  function getArgs(currentFile: string) {
+    return mapIncludeArgs.get(currentFile);
+  }
+
   // Return the resolver object
-  return { cache, resolve, update };
+  return { cache, resolve, update, getArgs };
 }
 
 /**

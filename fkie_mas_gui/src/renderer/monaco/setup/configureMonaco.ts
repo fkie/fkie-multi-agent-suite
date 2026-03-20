@@ -1,5 +1,5 @@
 import * as MonacoReact from "@monaco-editor/react";
-import { editor, IDisposable, languages } from "monaco-editor";
+import { editor, IDisposable, IMarkdownString, languages, Position } from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
@@ -307,6 +307,30 @@ export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<
   return newDisposables;
 }
 
+function getVarAtPosition(model: editor.ITextModel, position: Position): string | undefined {
+  const lineContent = model.getLineContent(position.lineNumber);
+
+  // Beispiel: $(var meineVar)
+  const regex = /\$\(\s*var\s+([^)]+?)\s*\)/g;
+  let match: RegExpExecArray | null = regex.exec(lineContent);
+
+  while (match !== null) {
+    const fullMatch = match[0];
+    const varName = match[1];
+
+    const startColumn = match.index + 1; // Monaco-Spalten sind 1-basiert
+    const endColumn = startColumn + fullMatch.length; // exklusive oder inklusive ist hier egal,
+    // solange du konsistent prüfst
+
+    if (position.column >= startColumn && position.column <= endColumn) {
+      return varName.trim();
+    }
+    match = regex.exec(lineContent);
+  }
+
+  return undefined;
+}
+
 export function registerLaunchHoverProvider(
   monacoCtxRef: React.MutableRefObject<IMonacoContext | null>
 ): IDisposable[] {
@@ -324,22 +348,51 @@ export function registerLaunchHoverProvider(
           const currentFile = fileFromUriPath(model.uri.path);
           const editorIds = monacoCtxRef.current.modelRegistry()?.getEditorsByModels([model]);
           const result = {
-            contents: [{ value: `**${providerIdFromUriPath(model.uri.path)}**` }],
+            contents: [] as IMarkdownString[],
           };
           let countResolved = 0;
+
           for (const editorId of editorIds || []) {
-            const path = pathFromEditorId(editorId);
-            if (path) result.contents.push({ value: `from **\`${getFileName(path)}\`**` });
-            const poseCache = monacoCtxRef.current.getResolver(editorId)?.cache.get(currentFile);
+            const resolver = monacoCtxRef.current.getResolver(editorId);
+            if (!resolver) continue;
+            const poseCache = resolver.cache.get(currentFile);
             for (const cached of poseCache || []) {
               if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
                 if (position.column >= cached.start.column && position.column <= cached.end.column) {
+                  if (result.contents.length === 0) {
+                    result.contents.push({ value: `**${providerIdFromUriPath(model.uri.path)}**` });
+                  }
                   result.contents.push({ value: `- Resolved: \`${cached.match.resolved}\`` });
                   countResolved += 1;
                   if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
                     result.contents.push({ value: `- Realpath: \`${cached.match.realpath}\`` });
                   }
                 }
+              }
+            }
+
+            // 2. Wenn wir auf $(var meineVar) stehen, Args via Resolver holen
+            if (resolver) {
+              const hoveredVar = getVarAtPosition(model, position);
+              if (!hoveredVar) continue;
+              const argVar = resolver.getArgs(currentFile);
+              if (!argVar) continue;
+              let arg = argVar.args.find((a) => a.name === hoveredVar);
+              if (arg) {
+                result.contents.push({
+                  value: `\`${hoveredVar}\` = \`${String(arg.value ?? "")}\` (**\`${getFileName(argVar.from)}\`**)`,
+                });
+                countResolved += 1;
+                continue;
+              }
+              if (!arg) {
+                arg = argVar.defaults.find((a) => a.name === hoveredVar);
+              }
+              if (arg) {
+                result.contents.push({
+                  value: `\`${hoveredVar}\` = \`${String(arg.value ?? "")}\` (**default**)`,
+                });
+                countResolved += 1;
               }
             }
           }
