@@ -1,6 +1,7 @@
 import { TagColors, colorFromHostname, getDiagnosticStyle, levelColors, levelColorsWbg } from "./Colors";
 import CopyButton from "./CopyButton";
 import DraggablePaper from "./DraggablePaper";
+import ErrorAlertComponent from "./ErrorAlertComponent";
 import OverflowMenu from "./OverflowMenu";
 import ReloadFileAlertComponent from "./ReloadFileAlertComponent";
 import RestartNodesAlertComponent from "./RestartNodesAlertComponent";
@@ -10,6 +11,7 @@ import Tag from "./Tag";
 export {
   CopyButton,
   DraggablePaper,
+  ErrorAlertComponent,
   OverflowMenu,
   ReloadFileAlertComponent,
   RestartNodesAlertComponent,
@@ -19,5 +21,6 @@ export {
   colorFromHostname,
   getDiagnosticStyle,
   levelColors,
-  levelColorsWbg,
+  levelColorsWbg
 };
+

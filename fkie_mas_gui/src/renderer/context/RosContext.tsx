@@ -3,7 +3,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from 
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
-import { ReloadFileAlertComponent, RestartNodesAlertComponent } from "@/renderer/components/UI";
+import { ErrorAlertComponent, ReloadFileAlertComponent, RestartNodesAlertComponent } from "@/renderer/components/UI";
 import {
   LaunchArgument,
   LaunchLoadReply,
@@ -350,8 +350,25 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         case "PARAMS_REQUIRED":
           return { success: false, error: "Please fill all arguments", reply };
         case "ERROR":
+          enqueueSnackbar(`Could not load file: ${reply.status.msg}`, {
+            persist: true,
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+            preventDuplicate: true,
+            content: (key, message) => (
+              <ErrorAlertComponent id={key} message={message} details={`${reply.status.msg}`} />
+            ),
+          });
           return { success: false, error: `Reported error: ${reply.status.msg}`, reply };
         default:
+          enqueueSnackbar(`Could not load file: ${reply.status.msg}`, {
+            persist: true,
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+            preventDuplicate: true,
+            content: (key, message) => (
+              <ErrorAlertComponent id={key} message={message} details={`${reply.status.msg}`} />
+            ),
+          });
+
           return { success: false, error: `Could not load file: ${reply.status.msg}`, reply };
       }
     },

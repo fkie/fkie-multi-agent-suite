@@ -21,6 +21,8 @@ import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "@/renderer/models";
+import { enqueueSnackbar } from "notistack";
+import { ErrorAlertComponent } from "../UI";
 import DraggablePaper from "../UI/DraggablePaper";
 import Tag from "../UI/Tag";
 
@@ -269,6 +271,14 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
         setMessageLaunchLoaded("Please fill all arguments");
       } else {
         setMessageLaunchLoaded(`Could not load file: ${resultLaunchLoadFile.status.msg}`);
+        enqueueSnackbar(`Could not load file: ${path}`, {
+          persist: true,
+          anchorOrigin: { vertical: "top", horizontal: "right" },
+          preventDuplicate: true,
+          content: (key, message) => (
+            <ErrorAlertComponent id={key} message={message} details={`${resultLaunchLoadFile.status.msg}`} />
+          ),
+        });
         logCtx.error(
           `Could not load file: "${path}"`,
           `Error message: ${resultLaunchLoadFile.status.msg}`,
