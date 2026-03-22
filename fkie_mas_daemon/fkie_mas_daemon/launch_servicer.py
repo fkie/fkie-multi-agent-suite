@@ -423,9 +423,6 @@ class LaunchServicer(LoggingEventHandler):
                 launchfile, context=launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
             Log.debug(f"{self.__class__.__name__}: daemonuri: {daemonuri}")
             self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
-            # notify GUI about changes
-            self.websocket.publish('ros.launch.changed', {'path': launchfile,
-                                   'action': 'loaded', 'requester': requester})
             observer_warnings = list(set(self._add_launch_to_observer(launch_config)))
             result.status.msg = '\n'.join(observer_warnings)
             if len(launch_config.load_exceptions) > 0:
@@ -445,13 +442,18 @@ class LaunchServicer(LoggingEventHandler):
             result.status.msg = err_details
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.status.code = 'OK'
-        return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        try:
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        finally:
+            # inform other subscribers about reloaded launch file
+            self.websocket.publish('ros.launch.changed', {'path': launchfile,
+                                   'action': 'loaded', 'requester': requester})
 
     def reload_launch(self, request_json: LaunchLoadRequest, *, requester: str = "") -> LaunchLoadReply:
         '''
         Reloads launch file by interface request
         '''
-        Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.reload]")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.launch.reload]")
         result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
 
         # Covert input dictionary into a proper python object
@@ -540,8 +542,6 @@ class LaunchServicer(LoggingEventHandler):
                     if not re.search(r"\d{3,6}_\d{10,}", n):
                         result.changed_nodes.append(n)                # notify GUI about changes
                 old_launch.unload()
-                self.websocket.publish('ros.launch.changed', {
-                                       'path': request.path, 'action': 'reloaded', 'requester': requester})
                 self._add_launch_to_observer(launch_config)
                 if len(launch_config.load_exceptions) > 0:
                     result.status.msg = launch_config.load_exceptions[0]
@@ -559,7 +559,13 @@ class LaunchServicer(LoggingEventHandler):
         else:
             result.status.code = 'FILE_NOT_FOUND'
             return json.dumps(result, cls=SelfEncoder)
-        return json.dumps(result, cls=SelfEncoder)
+        try:
+            return json.dumps(result, cls=SelfEncoder)
+        finally:
+            # inform other subscribers about reloaded launch file
+            self.websocket.publish('ros.launch.changed', {
+                                   'path': request.path, 'action': 'reloaded', 'requester': requester})
+
 
     def unload_launch(self, request_json: LaunchFile, *, requester: str = "") -> LaunchLoadReply:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.unload]")
@@ -568,7 +574,7 @@ class LaunchServicer(LoggingEventHandler):
         request = request_json
 
         Log.debug(
-            f"{self.__class__.__name__}: UnloadLaunch request:\n {request}")
+            f"{self.__class__.__name__}: Unload Launch request:\n {request}")
         result = LaunchLoadReply(paths=[], changed_nodes=[], args=[])
 
         result.paths.append(request.path)
@@ -580,9 +586,6 @@ class LaunchServicer(LoggingEventHandler):
                 self._remove_launch_from_observer(self._loaded_files[cfgid])
                 del self._loaded_files[cfgid]
                 result.status.code = 'OK'
-                # notify GUI about changes
-                self.websocket.publish('ros.launch.changed', {
-                    'path': request.path, 'action': 'unloaded', 'requester': requester})
             else:
                 result.status.code = 'FILE_NOT_FOUND'
                 result.status.msg = f"{request.path} not found"
@@ -592,7 +595,12 @@ class LaunchServicer(LoggingEventHandler):
             Log.warn("Unloading launch file: %s", err_details)
             result.status.code = 'ERROR'
             result.status.msg = err_details
-        return json.dumps(result, cls=SelfEncoder)
+        try:
+            return json.dumps(result, cls=SelfEncoder)
+        finally:
+            # inform other subscribers about reloaded launch file
+            self.websocket.publish('ros.launch.changed', {
+                'path': request.path, 'action': 'unloaded', 'requester': requester})
 
     def get_list(self) -> List[LaunchContent]:
         Log.debug(
