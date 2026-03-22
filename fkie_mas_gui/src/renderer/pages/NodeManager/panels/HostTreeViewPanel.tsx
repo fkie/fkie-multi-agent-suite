@@ -14,6 +14,7 @@ import TerminalIcon from "@mui/icons-material/Terminal";
 import TuneIcon from "@mui/icons-material/Tune";
 import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 import {
+  Alert,
   Box,
   ButtonGroup,
   Divider,
@@ -122,6 +123,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [filterText, setFilterText] = useState("");
   const [providerNodes, setProviderNodes] = useState<TProviderNodes[]>([]);
   const [visibleNodes, setVisibleNodes] = useState<RosNode[]>([]);
+  const [countFilteredNodes, setCountFilteredNodes] = useState<number>(0);
   const [nodesToStart, setNodesToStart] = useState<RosNode[]>();
   const [progressQueueMain, setProgressQueueMain] = useState<number>(0);
   const queue = useQueue<TQueueAction>(setProgressQueueMain);
@@ -173,9 +175,11 @@ export default function HostTreeViewPanel(): JSX.Element {
   // search in the origin node list and create a new tree
   const onSearch = useCallback(
     (searchTerm: string) => {
+      let nodeCount = 0;
       const newVisibleNodes: RosNode[] = [];
       for (const item of providerNodes) {
         const { nodes } = item;
+        nodeCount += nodes.length;
         const filteredNodes = nodes.filter((node) => {
           // filter nodes by user text
           if (searchTerm.length > 0) {
@@ -195,6 +199,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           )
         );
       }
+      setCountFilteredNodes(nodeCount - newVisibleNodes.length);
       setVisibleNodes(newVisibleNodes);
     },
     [providerNodes]
@@ -1621,6 +1626,11 @@ export default function HostTreeViewPanel(): JSX.Element {
               </IconButton>
             </Stack>
           </Paper>
+        )}
+        {countFilteredNodes > 0 && (
+          <Alert severity="info" style={{ minWidth: 0 }}>
+            {countFilteredNodes} nodes hidden by the filter
+          </Alert>
         )}
         <Stack direction="row" height="100%" overflow="auto">
           {buttonLocation === BUTTON_LOCATIONS.LEFT && <Box height="100%">{createButtonBox}</Box>}
