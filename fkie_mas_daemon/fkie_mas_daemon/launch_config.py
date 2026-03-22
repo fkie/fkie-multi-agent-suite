@@ -836,6 +836,7 @@ class LaunchConfig(object):
                 node.timer_period = timer_period
                 self._nodes.append(node)
             elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
+                entity.execute(self.context)
                 # if entity.default_value is not None:
                 #     print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
                 #         self.context, entity.default_value))
@@ -855,7 +856,6 @@ class LaunchConfig(object):
                 #     print(f"la {la.name}: {la.default_value} {current_file}")
                 #     launch_file_obj.default_inc_args.append(la)
                 #     entity.execute(self.context)
-                pass
             elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                 # launch.actions.declare_launch_argument.DeclareLaunchArgument
                 self.context._push_launch_configurations()
@@ -875,10 +875,10 @@ class LaunchConfig(object):
                     include_line_number, position_in_file, raw_text = self.find_definition(
                         file_content, 'include', position_in_file)
                     # inc_launch_arguments = []
-                    # if cfg_actions is not None:
-                    #     for cac in cfg_actions:
-                    #         if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
-                    #             cac.execute(self.context)
+                    if cfg_actions is not None:
+                        for cac in cfg_actions:
+                            if isinstance(cac, launch.actions.set_launch_configuration.SetLaunchConfiguration):
+                                cac.execute(self.context)
                     #             arg_name = perform_substitutions(self.context, cac.name)
                     #             arg_value = perform_substitutions(self.context, cac.value)
                     #             if PRINT_DEBUG_LOAD:
@@ -944,7 +944,6 @@ class LaunchConfig(object):
             elif hasattr(entity, 'execute'):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
-                    print(f"  ***debug launch loading: {indent} LaunchDescription: {entity}: {dir(entity)}")
                 try:
 
                     # entity._perform_substitutions(self.context)
@@ -973,18 +972,28 @@ class LaunchConfig(object):
                 if last_included_file and last_included_file.inc_path == current_file:
                     launch_args = []
                     for arg_name, arg_value in current_launch_description.launch_arguments:
-                        la = LaunchArgument(perform_to_string(self.context, arg_name),
-                                            perform_to_string(self.context, arg_value))
-                        if PRINT_DEBUG_LOAD:
-                            print(f"    add launch arg: {la.name}: {la.value}")
-                        launch_args.append(la)
+                        try:
+                            la = LaunchArgument(perform_to_string(self.context, arg_name),
+                                                perform_to_string(self.context, arg_value))
+                            if PRINT_DEBUG_LOAD:
+                                print(f"    add launch arg: {la.name}: {la.value}")
+                            launch_args.append(la)
+                        except Exception as err:
+                            import traceback
+                            print(traceback.format_exc())
+                            raise LaunchConfigException(f"Error while resolve arguments in {current_file}: {err}")
                     default_args = []
                     for arg in entity.get_launch_arguments():
-                        da = LaunchArgument(perform_to_string(self.context, arg.name),
-                                            perform_to_string(self.context, arg.default_value))
-                        if PRINT_DEBUG_LOAD:
-                            print(f"    add default arg: {da.name}: {da.value}")
-                        default_args.append(da)
+                        try:
+                            da = LaunchArgument(perform_to_string(self.context, arg.name),
+                                                perform_to_string(self.context, arg.default_value))
+                            if PRINT_DEBUG_LOAD:
+                                print(f"    add default arg: {da.name}: {da.value}")
+                            default_args.append(da)
+                        except Exception as err:
+                            import traceback
+                            print(traceback.format_exc())
+                            raise LaunchConfigException(f"Error while resolve default arguments in {current_file}: {err}")
                     last_included_file.args = launch_args
                     last_included_file.default_inc_args = default_args
                 self._load(entity, launch_description=current_launch_description,

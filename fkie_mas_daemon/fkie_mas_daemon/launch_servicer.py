@@ -455,7 +455,6 @@ class LaunchServicer(LoggingEventHandler):
         '''
         Log.info(f"{self.__class__.__name__}: Request to [ros.launch.reload]")
         result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
-
         # Covert input dictionary into a proper python object
         request = request_json
 
@@ -478,10 +477,19 @@ class LaunchServicer(LoggingEventHandler):
                 pla: List[LaunchArgument] = []
                 for (a_name, a_value) in old_launch.provided_launch_arguments:
                     pla.append(LaunchArgument(a_name, a_value))
-                req_args = LaunchConfig.get_launch_arguments(
-                    launch_context, old_launch.filename,  provided_args=pla)
+                launch_arguments = []
+                req_args: List[LaunchArgument] = LaunchConfig.get_launch_arguments(launch_context, old_launch.filename, provided_args=[])
+                for arg in req_args:
+                    found = False
+                    for pa in pla:
+                        if arg.name == pa.name:
+                            launch_arguments.append((arg.name, pa.value))
+                            found = True
+                            break
+                    if not found:
+                        launch_arguments.append((arg.name, arg.value))
                 launch_config = LaunchConfig(
-                    old_launch.filename, context=launch_context, daemonuri=daemonuri, launch_arguments=[(arg.name, arg.value) for arg in req_args])
+                    old_launch.filename, context=launch_context, daemonuri=daemonuri, launch_arguments=launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 result.status.code = 'OK'
                 # change detection for nodes parameters

@@ -213,7 +213,7 @@ def get_internal_args(content: str, path: str = '', resolve_args: Dict[str, str]
 
 def get_arg_names(content: str) -> List[str]:
     '''
-    Searches for $(arg <name>) statements and returns a list with <name>.
+    Searches for $(var <name>) statements and returns a list with <name>.
     :rtype: [str]
     '''
     result = []
@@ -227,37 +227,13 @@ def replace_arg(content: str, resolve_args: Dict[str, str]) -> str:
     # test for if statement
     result = content
     for name, value in resolve_args.items():
-        result = result.replace(f'$(arg {name})', value)
         result = result.replace(f'$(var {name})', value)
     if (content != result):
         return replace_arg(result, resolve_args)
     return result
-    # re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
-    # for arg in re_if.findall(content):
-    #     if arg in resolve_args:
-    #         result = result.replace('$(arg %s)' % arg, resolve_args[arg])
-    # if content.startswith('$(eval'):
-    #     # resolve args in eval statement
-    #     re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
-    #     for arg in re_if.findall(content):
-    #         if arg in resolve_args:
-    #             result = result.replace("arg('%s')" %
-    #                                     arg, f"'{resolve_args[arg]}'")
-    #     re_items = '|'.join(
-    #         [f"({item})" for item in list(resolve_args.keys())])
-    #     re_if = re.compile(re_items)
-    #     for matches in re_if.findall(content):
-    #         for arg in matches:
-    #             if arg:
-    #                 if arg in resolve_args:
-    #                     result = result.replace(
-    #                         "%s" % arg, f"\'{resolve_args[arg]}\'")
-    #     result = result.replace('$(eval', '').rstrip(')')
-    #     result = 'true' if eval(result) else 'false'
-    # return result
 
 
-def __get_internal_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
+def _get_include_params(content: str, resolve_args: Dict[str, str]) -> List[str]:
     included_files = []
     try:
         xml_nodes = minidom.parseString(
@@ -294,8 +270,8 @@ def __get_internal_include_args(content: str, resolve_args: Dict[str, str]) -> L
                 if filename:
                     included_files.append((filename, resolved_inc_args))
     except Exception as err:
-        print(f"__get_internal_include_args reports: {err}")
-        Log.debug(f"__get_internal_include_args reports: {err}")
+        print(f"_get_include_params reports: {err}")
+        Log.debug(f"_get_include_params reports: {err}")
     return included_files
 
 
@@ -362,15 +338,14 @@ def find_included_files(string: str,
         pwd = os.path.dirname(filename)
         if '://' in pwd:
             pwd = re.sub(r"^.*://[^/]*", "", pwd)
-    inc_files_forward_args = []
+    inc_files_forward_params = []
     # replace the arguments and detect arguments for include-statements
     internal_args = {}
     if (string.endswith('.launch') or string.find('.launch.') > 0):
-        # intern args use only internal
+        # Determine the arguments defined inside the launch file
         internal_args = get_internal_args(content, filename, resolve_args, True)
-        # determine args wich are forwarded
-        inc_files_forward_args = __get_internal_include_args(
-            content, resolve_args)
+        # Determine the parameters that are used for loading
+        inc_files_forward_params = _get_include_params(content, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
         my_unique_files = list()
@@ -383,17 +358,17 @@ def find_included_files(string: str,
             rawname = fname
             if fname:
                 try:
-                    forward_args = {}
-                    if inc_files_forward_args and inc_files_forward_args[0][0] == fname:
-                        forward_args = inc_files_forward_args[0][1]
-                        inc_files_forward_args.pop(0)
+                    forward_params = {}
+                    if inc_files_forward_params and inc_files_forward_params[0][0] == fname:
+                        forward_params = inc_files_forward_params[0][1]
+                        inc_files_forward_params.pop(0)
                     resolve_args_all = dict(resolve_args)
-                    resolve_args_all.update(forward_args)
+                    resolve_args_all.update(forward_params)
                     try:
                         # try to resolve path
                         fname = replace_arg(fname, resolve_args_all)
                         fname = replace_arg(fname, internal_args)
-                        if fname.find('$(var ') == -1 and fname.find('$(arg ') == -1:
+                        if fname.find('$(var ') == -1:
                             # do not try to resolve if not all args are replaced
                             fname = interpret_path(fname, pwd)
                     except Exception as err:
@@ -412,7 +387,7 @@ def find_included_files(string: str,
                                 content_tmp = content.decode('utf-8')
                             position = content_tmp.count(
                                 "\n", 0, groups.start()) + 1
-                            yield IncludedFile(string, position, fname, exists, rawname, rec_depth, forward_args)
+                            yield IncludedFile(string, position, fname, exists, rawname, rec_depth, resolve_args_all)
                     # for recursive search
                     if exists:
                         if recursive:
