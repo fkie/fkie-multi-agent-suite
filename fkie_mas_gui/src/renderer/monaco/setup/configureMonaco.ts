@@ -356,8 +356,8 @@ export function registerLaunchHoverProvider(
                   if (result.contents.length === 0) {
                     result.contents.push({ value: `**${providerIdFromUriPath(model.uri.path)}**` });
                   }
-                  const existsStr = cached.match.exists ? "" : "**missing**";
-                  result.contents.push({ value: `- Resolved: (${existsStr})\`${cached.match.resolved}\`` });
+                  const existsStr = cached.match.exists ? "" : "(**missing**)";
+                  result.contents.push({ value: `- Resolved: ${existsStr}\`${cached.match.resolved}\`` });
                   countResolved += 1;
                   if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
                     result.contents.push({ value: `- Realpath: \`${cached.match.realpath}\`` });
@@ -390,9 +390,8 @@ export function registerLaunchHoverProvider(
                 }
               }
               if (arg) {
-                from = `(**${from}**)`;
                 result.contents.push({
-                  value: `\`${hoveredVar}\` = \`${String(arg.value ?? "")}\`${from}`,
+                  value: `\`${hoveredVar}\` = **\`${String(arg.value ?? "")}\`** (${from})`,
                 });
                 countResolved += 1;
               }
