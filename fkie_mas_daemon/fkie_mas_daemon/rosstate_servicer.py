@@ -55,6 +55,7 @@ import socket
 import sys
 import threading
 import time
+import rclpy
 
 from composition_interfaces.srv import ListNodes
 from composition_interfaces.srv import UnloadNode
@@ -259,7 +260,7 @@ class RosStateServicer:
         return -1
 
     def _check_discovery_node(self):
-        while not self._on_shutdown:
+        while not self._on_shutdown and rclpy.ok():
             try:
                 if self.topic_state_publisher_count:
                     # check if we have a discovery node

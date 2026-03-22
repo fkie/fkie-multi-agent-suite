@@ -101,7 +101,8 @@ class RosNodeLauncher(object):
                 # rclpy.spin(self.ros_node)
                 # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
-            self.exit_gracefully(-1, None)
+           # self.exit_gracefully(-1, None)
+           pass
         except rclpy.executors.ExternalShutdownException as error:
             err = str(error)
             if err:
@@ -117,7 +118,7 @@ class RosNodeLauncher(object):
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-            self.exit_gracefully(-1, None)
+        self.exit_gracefully(-1, None)
 
     def _run_tests(self):
         try:
