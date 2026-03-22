@@ -1,18 +1,18 @@
 <launch>
   <let name="use_gdb" value="1"/>
-  <arg name="sim" default="true" />
-  <arg name="sub" default="test2"/>
+  <arg name="sub2" default="test2"/>
+  <arg name="sim" default="false" />
   <group>
     <let name="launch-prefix" value="gdb -ex run -ex bt -batch --args" if="$(var use_gdb)"/>
     <node name="rviz2" pkg="rviz2" exec="rviz2" if="$(eval \'$(var sim)\')">
       <param name="capability_group" value="gui" />
-      <param from="$(find-pkg-share fkie_mas_daemon)/$(var sub)/launch/params.yaml"/>
+      <param from="$(find-pkg-share fkie_mas_daemon)/$(var sub2)/launch/params.yaml"/>
+      <param name="use_sim_time" value="$(var sim)" />
     </node>
   </group>
   <group>
-  <set_env name="TEST_INC" value="VALUE" />
-  <unset_env name="SCM_CHECK" />
+    <set_env name="TEST_INC" value="VALUE" />
+    <unset_env name="SCM_CHECK" />
     <executable cmd="env" name="env_inc"/>
   </group>
-
 </launch>

@@ -12,13 +12,14 @@ import unittest
 import json
 from types import SimpleNamespace
 
-from fkie_mas_pylib.launch import xml
 TEST_ROS1 = True
 try:
+    from fkie_mas_pylib.launch import xml_ros1 as xml
     TEST_ROS1 = os.environ["ROS_DISTRO"] == "noetic"
     from fkie_mas_daemon.file_servicer import FileServicer
 except ModuleNotFoundError:
     TEST_ROS1 = False
+    from fkie_mas_pylib.launch import xml
 
 PKG = 'fkie_mas_daemon'
 
