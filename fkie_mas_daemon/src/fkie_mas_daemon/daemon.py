@@ -14,7 +14,7 @@ from fkie_mas_msgs.srv import ListNodesResponse
 from fkie_mas_msgs.srv import LoadLaunch
 from fkie_mas_msgs.srv import LoadLaunchResponse
 from fkie_mas_msgs.srv import Task
-from fkie_mas_pylib.launch import xml
+from fkie_mas_pylib.launch import xml_ros1
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.timer import RepeatTimer
@@ -120,18 +120,18 @@ class MASDaemon:
 
     def load_launch_file(self, path, autostart=False):
         self.launch_servicer.load_launch_file(
-            xml.interpret_path(path), autostart)
+            xml_ros1.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
         Log.info(f"Service request to load and start {request.path}")
         self.launch_servicer.load_launch_file(
-            xml.interpret_path(request.path), True)
+            xml_ros1.interpret_path(request.path), True)
         return LoadLaunchResponse()
 
     def _rosservice_load_launch(self, request):
         Log.info(f"Service request to load {request.path}")
         self.launch_servicer.load_launch_file(
-            xml.interpret_path(request.path), False)
+            xml_ros1.interpret_path(request.path), False)
         return LoadLaunchResponse()
 
     def _rosservice_start_node(self, req):

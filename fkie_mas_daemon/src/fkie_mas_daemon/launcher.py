@@ -22,7 +22,7 @@ from rosgraph.network import get_local_addresses
 from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.defines import LOG_PATH
 from fkie_mas_pylib.defines import RESPAWN_SCRIPT
-from fkie_mas_pylib.launch import xml
+from fkie_mas_pylib.launch import xml_ros1
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import exceptions
 from fkie_mas_pylib.system import host
@@ -173,7 +173,7 @@ def run_node(startcfg):
         for arg in startcfg.args:
             new_arg = arg
             if arg.startswith('$(find'):
-                new_arg = xml.interpret_path(arg)
+                new_arg = xml_ros1.interpret_path(arg)
                 Log.debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
         # set name and namespace of the node
@@ -373,7 +373,7 @@ def _load_parameters(masteruri, params, clear_params):
             value = pval
             # resolve path elements
             if isstring(value) and (value.startswith('$')):
-                value = xml.interpret_path(value)
+                value = xml_ros1.interpret_path(value)
                 Log.debug("interpret parameter '%s' to '%s'" %
                           (value, pval))
             # add parameter to the multicall

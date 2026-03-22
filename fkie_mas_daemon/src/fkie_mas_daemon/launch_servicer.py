@@ -56,7 +56,7 @@ from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFile
 from fkie_mas_pylib.interface.launch_interface import LaunchMessageStruct
 from fkie_mas_pylib.interface.launch_interface import LaunchPublishMessage
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
-from fkie_mas_pylib.launch import xml
+from fkie_mas_pylib.launch import xml_ros1
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.names import ns_join
 from fkie_mas_pylib.system import exceptions
@@ -390,7 +390,7 @@ class LaunchServicer(LoggingEventHandler):
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in xml.find_included_files(
+            for inc_file in xml_ros1.find_included_files(
                 path, True, True, search_in_ext, resolve_args
             ):
                 if inc_file.exists:
@@ -409,7 +409,7 @@ class LaunchServicer(LoggingEventHandler):
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in xml.find_included_files(
+            for inc_file in xml_ros1.find_included_files(
                 path, True, True, search_in_ext, resolve_args
             ):
                 self._remove_file_from_observe(inc_file.inc_path)
@@ -691,7 +691,6 @@ class LaunchServicer(LoggingEventHandler):
                 self._remove_launch_from_observer(request.path)
                 del self._loaded_files[cfgid]
                 result.status.code = "OK"
-
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -956,7 +955,7 @@ class LaunchServicer(LoggingEventHandler):
                         resolve_args.update(lcfg.resolve_dict)
                         break
             # replay each file
-            for inc_file in xml.find_included_files(
+            for inc_file in xml_ros1.find_included_files(
                 request.path,
                 request.recursive,
                 request.unique,
@@ -1267,7 +1266,7 @@ class LaunchServicer(LoggingEventHandler):
         result = []
         if text:
             try:
-                for inc_file in xml.find_included_files(
+                for inc_file in xml_ros1.find_included_files(
                     text, False, False, search_in_ext=[]
                 ):
                     aval = inc_file.raw_inc_path
@@ -1276,7 +1275,7 @@ class LaunchServicer(LoggingEventHandler):
                         if not search_for:
                             continue
                         Log.debug("try to interpret: %s" % search_for)
-                        args_in_name = xml.get_arg_names(search_for)
+                        args_in_name = xml_ros1.get_arg_names(search_for)
                         request_args = False
                         for arg_name in args_in_name:
                             if not arg_name in args:
@@ -1298,7 +1297,7 @@ class LaunchServicer(LoggingEventHandler):
                             reply.status.code = "PARAMS_REQUIRED"
                             result.append(reply)
                         else:
-                            search_for_rpl = xml.replace_arg(search_for, args)
+                            search_for_rpl = xml_ros1.replace_arg(search_for, args)
                             reply = LaunchInterpretPathReply(
                                 text=search_for,
                                 status="OK",
