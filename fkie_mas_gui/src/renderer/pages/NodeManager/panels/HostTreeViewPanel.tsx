@@ -57,7 +57,7 @@ import { ConnectionState, EventProviderRestartNodes, EventProviderRosNodes } fro
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
-import { TFileRange, TLaunchArg } from "@/types";
+import { TFileRange } from "@/types";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
 
@@ -352,7 +352,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           rootLaunch,
           launchInfo.file_name || "",
           launchInfo.file_range,
-          launchInfo.launch_context_arg || [],
+          launchInfo.topLevelArgs,
           external
         );
       }
@@ -1805,7 +1805,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                   launch,
                   launchInfo?.file_name || "",
                   launchInfo?.file_range as TFileRange,
-                  launchInfo?.launch_context_arg as TLaunchArg[],
+                  launchInfo?.topLevelArgs || [],
                   editNodeWithMultipleLaunchInfos.external
                 );
               }

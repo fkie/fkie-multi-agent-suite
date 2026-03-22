@@ -3,6 +3,7 @@ import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor";
 import { createContext, useCallback, useEffect, useMemo, useRef } from "react";
 
+import { TLaunchArg } from "@/types";
 import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useRosContext } from "../hooks/useRosContext";
@@ -35,7 +36,7 @@ export interface IMonacoContext {
   isModifiedModel: (model: editor.ITextModel) => boolean;
   isReadOnly: (model: editor.ITextModel) => boolean;
   isInstallPath: (model: editor.ITextModel) => boolean;
-  updateResolver: (editorId: string, includedFiles: LaunchIncludedFile[]) => void;
+  updateResolver: (editorId: string, launchArgs: TLaunchArg[], includedFiles: LaunchIncludedFile[]) => void;
   getResolver: (editorId: string) => IncludeResolver | undefined;
 }
 
@@ -243,10 +244,10 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return filePath.search("/install/") !== -1;
   };
 
-  const updateResolver: (editorId: string, includedFiles: LaunchIncludedFile[]) => void = (editorId, includedFiles) => {
+  const updateResolver: (editorId: string, launchArgs: TLaunchArg[], includedFiles: LaunchIncludedFile[]) => void = (editorId, launchArgs, includedFiles) => {
     let resolver = resolvers.current.get(editorId);
     if (!resolver) {
-      resolver = createIncludeResolver(includedFiles);
+      resolver = createIncludeResolver(launchArgs, includedFiles);
       resolvers.current.set(editorId, resolver);
       return;
     }

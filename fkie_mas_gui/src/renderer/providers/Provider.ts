@@ -1238,6 +1238,7 @@ export default class Provider implements IProvider {
         let groupParameterFound = false;
         let nodesParametersFound = false;
         // const uniqueNodeName = launchNode.unique_name ? launchNode.unique_name : "";
+        launchNode.topLevelArgs = launchFile.args || [];
         const uniqueNodeName = launchNode.node_name ? launchNode.node_name : launchNode.unique_name;
         if (uniqueNodeName) {
           if (nodesCount[uniqueNodeName]) {

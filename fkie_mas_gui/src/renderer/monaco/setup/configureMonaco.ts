@@ -9,13 +9,7 @@ import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 import { IMonacoContext } from "@/renderer/context/MonacoContext";
 import { IRosContext } from "@/renderer/context/RosContext";
 import { getFileName, RosPackage } from "@/renderer/models";
-import {
-  createUriPath,
-  fileFromUriPath,
-  pathFromEditorId,
-  providerIdFromEditorId,
-  providerIdFromUriPath,
-} from "../utils";
+import { createUriPath, fileFromUriPath, providerIdFromEditorId, providerIdFromUriPath } from "../utils";
 import { extractIncludes, ResolverCacheEntry } from "./IncludeResolver";
 import { PythonLanguage } from "./languages/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "./languages/PythonLaunchProposals";
@@ -362,7 +356,8 @@ export function registerLaunchHoverProvider(
                   if (result.contents.length === 0) {
                     result.contents.push({ value: `**${providerIdFromUriPath(model.uri.path)}**` });
                   }
-                  result.contents.push({ value: `- Resolved: \`${cached.match.resolved}\`` });
+                  const existsStr = cached.match.exists ? "" : "**missing**";
+                  result.contents.push({ value: `- Resolved: (${existsStr})\`${cached.match.resolved}\`` });
                   countResolved += 1;
                   if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
                     result.contents.push({ value: `- Realpath: \`${cached.match.realpath}\`` });
@@ -378,19 +373,26 @@ export function registerLaunchHoverProvider(
               const argVar = resolver.getArgs(currentFile);
               if (!argVar) continue;
               let arg = argVar.args.find((a) => a.name === hoveredVar);
+              let from = "";
               if (arg) {
-                result.contents.push({
-                  value: `\`${hoveredVar}\` = \`${String(arg.value ?? "")}\` (**\`${getFileName(argVar.from)}\`**)`,
-                });
-                countResolved += 1;
-                continue;
+                from = getFileName(argVar.from);
+              }
+              if (!arg) {
+                arg = argVar.topLevel.find((a) => a.name === hoveredVar);
+                if (arg) {
+                  from = "top level";
+                }
               }
               if (!arg) {
                 arg = argVar.defaults.find((a) => a.name === hoveredVar);
+                if (arg) {
+                  from = "default";
+                }
               }
               if (arg) {
+                from = `(**${from}**)`;
                 result.contents.push({
-                  value: `\`${hoveredVar}\` = \`${String(arg.value ?? "")}\` (**default**)`,
+                  value: `\`${hoveredVar}\` = \`${String(arg.value ?? "")}\`${from}`,
                 });
                 countResolved += 1;
               }

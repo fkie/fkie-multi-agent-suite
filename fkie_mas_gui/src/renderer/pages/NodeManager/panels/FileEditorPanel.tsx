@@ -26,8 +26,8 @@ import {
   eventCloseComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { Provider } from "@/renderer/providers";
-import { EventProviderPathEvent } from "@/renderer/providers/events";
-import { EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
+import { EventProviderLaunchLoaded, EventProviderPathEvent } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_LAUNCH_LOADED, EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";
 import { TFileRange, TLaunchArg } from "@/types";
 import "./FileEditorPanel.css";
 
@@ -85,10 +85,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   } = useEditorLayout();
 
   const { includedFiles, fetchIncludedFiles, clearIncludedFiles } = useIncludedFiles(provider, rootFilePath);
+
   const mEditor = useMonacoEditor({
     editorId: editorId,
     editorRef: editorRef,
     includedFiles: includedFiles,
+    launchArgs: launchArgs,
     saveModel: (model) => {
       saveModel(model);
     },
@@ -203,6 +205,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     }
   });
 
+  useCustomEventListener(
+    EVENT_PROVIDER_LAUNCH_LOADED,
+    (data: EventProviderLaunchLoaded) => {
+      // reload included files to update provided parameters
+      if (data.provider.id === provider.id) {
+        if (data.launchFile === rootFilePath) {
+          loadFiles(mEditor.activeModel ? fileFromUriPath(mEditor.activeModel.uri.path) : currentFilePath);
+        }
+      }
+    },
+    [rootFilePath, provider, mEditor.activeModel, currentFilePath]
+  );
+
   /** Handle events caused by changed files. */
   useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, async (data: EventProviderPathEvent) => {
     if (data.provider.id !== provider.id) {
@@ -218,7 +233,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return;
       }
       if (!editorRef.current) return;
-
       const currentModelUri = editorRef.current.getModel()?.uri.path;
       const result = await provider.getFileContent(data.path.srcPath);
       if (result.error) {
@@ -265,12 +279,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         window.editorManager?.changed(id, path, false);
         // update model state
         mEditor.setCurrentModel(editorModel);
-        const resultFetchIncludes = await fetchIncludedFiles();
-        if (!resultFetchIncludes.result) {
-          setNotificationDescription({ message: resultFetchIncludes.error, messageSeverity: "warning" });
-        } else {
-          setNotificationDescription(undefined);
-        }
       } else {
         setSavedFiles((prev) => prev.filter((f) => f === editorModel.uri.path));
         setNotificationDescription({
@@ -320,7 +328,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   //  - check if include files are available (for xml and launch files for example)
   //  -   if available, download all include files and create their corresponding models
   // We download the models per request. On recursive text search all files will be downloaded
-  async function loadFiles(): Promise<void> {
+  async function loadFiles(filePath: string): Promise<void> {
     if (!editorRef.current) {
       return;
     }
@@ -357,22 +365,22 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     setProviderName(provider.name());
     setNotificationDescription({ message: "Getting file from provider...", messageSeverity: "info" });
     // get file content from provider and create monaco model
-    async function getFileAndIncludesAsync(): Promise<void> {
-      setCurrentFileState({ name: getFileName(currentFilePath), requesting: true, path: currentFilePath });
+    async function getFileAndIncludesAsync(filePath: string): Promise<void> {
+      setCurrentFileState({ name: getFileName(filePath), requesting: true, path: filePath });
       const resultFetchIncludes = await fetchIncludedFiles();
       if (!resultFetchIncludes.result) {
         setNotificationDescription({ message: resultFetchIncludes.error, messageSeverity: "warning" });
         return;
       }
-      const result: TModelResult = await monacoCtx.getModel(editorId, currentFilePath, false);
+      const result: TModelResult = await monacoCtx.getModel(editorId, filePath, false);
       if (!result.model && !result.file) {
         setNotificationDescription({
-          message: result.error || `Could not get file: [${currentFilePath}]`,
+          message: result.error || `Could not get file: [${filePath}]`,
           messageSeverity: "warning",
         });
         return;
       }
-      setCurrentFileState({ name: getFileName(currentFilePath), requesting: false, path: currentFilePath });
+      setCurrentFileState({ name: getFileName(filePath), requesting: false, path: filePath });
       if (!result.model && result.file) {
         console.error(`Could not create model for: [${result.file.fileName}]`);
         setNotificationDescription({
@@ -382,7 +390,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return;
       }
       if (result.model) {
-        setEditorModel(result.model.uri.path, fileRange, launchArgs);
+        setEditorModel(result.model.uri.path, filePath === currentFilePath ? fileRange : null, launchArgs);
       }
       // Ignore "non-launch" files
       // TODO: Add parameter Here
@@ -393,19 +401,14 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         return;
       }
     }
-    getFileAndIncludesAsync();
+    getFileAndIncludesAsync(filePath);
   }
-
-  // initialization of provider definitions
-  useEffect(() => {
-    if (!editorRef.current || !monacoCtx.monaco) return;
-    mEditor.setupMonacoEditor();
-    loadFiles();
-  }, [editorRef.current]);
 
   function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
+    mEditor.setupMonacoEditor();
     mEditor.setupContextMenu();
+    loadFiles(currentFilePath);
   }
 
   const handleEditorChange = useCallback(

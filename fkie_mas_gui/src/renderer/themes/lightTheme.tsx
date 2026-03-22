@@ -53,6 +53,7 @@ const lightThemeDef: ThemeOptionsExt = {
             // '--color-drag-rect-background': 'var(--color-4)',
             // '--color-popup-unselected-background': 'white',
             // '--color-popup-selected-background': 'var(--color-3)',
+            "--color-active-bg": "rgb(95, 134, 196)",
             "--color-select-bg": "#ddd",
             "--color-edge-marker": "#aaa",
             "--color-edge-icon": "#555",

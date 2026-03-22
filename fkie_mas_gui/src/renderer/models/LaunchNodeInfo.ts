@@ -59,6 +59,8 @@ export default class LaunchNodeInfo {
 
   file_range: TFileRange | null;
 
+  topLevelArgs: TLaunchArg[] = [];
+
   launch_context_arg: TLaunchArg[] | null;
 
   launch_name: string | null;

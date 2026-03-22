@@ -61,6 +61,7 @@ const darkThemeDef: ThemeOptionsExt = {
             // '--color-drag-rect-background': 'var(--color-4)',
             // '--color-popup-unselected-background': 'white',
             // '--color-popup-selected-background': 'var(--color-3)',
+            "--color-active-bg": "rgb(207, 232, 255)",
             "--color-select-bg": "#555555",
             "--color-edge-marker": "gray",
             "--color-edge-icon": "#d1d1d1",

@@ -3,12 +3,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LaunchIncludedFile } from "@/renderer/models";
 import { configureContextMenu, configureMonacoEditor } from "@/renderer/monaco/setup/configureMonacoEditor";
+import { TLaunchArg } from "@/types";
 import { providerIdFromEditorId } from "../../monaco/utils";
 import { useMonacoContext } from "../useMonacoContext";
 
 type UseMonacoEditorOptions = {
   editorId: string;
   editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | undefined>;
+  launchArgs: TLaunchArg[];
   includedFiles: LaunchIncludedFile[];
   saveModel: (model: editor.ITextModel) => void;
 };
@@ -16,6 +18,7 @@ type UseMonacoEditorOptions = {
 export function useMonacoEditor({
   editorId,
   editorRef,
+  launchArgs,
   includedFiles = [],
   saveModel = () => {},
 }: UseMonacoEditorOptions) {
@@ -146,8 +149,8 @@ export function useMonacoEditor({
     const providerId = providerIdFromEditorId(editorId);
     if (!providerId) return;
 
-    monacoCtx.updateResolver(editorId, includedFiles);
-  }, [monacoCtx, editorId, includedFiles]);
+    monacoCtx.updateResolver(editorId, launchArgs, includedFiles);
+  }, [monacoCtx, editorId, launchArgs, includedFiles]);
 
   // ---------------------------
   // dispose
