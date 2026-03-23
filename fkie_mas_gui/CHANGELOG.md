@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.2.6 - 23.03.2026
+
+Improved format of hovered description
+Fixed resolve arguments while load launch file
+Send notifications about launch load/reload/unload after action is complete
+Added hover info for $(var ...) statements
+Add info for filtered nodes by search bar
+Show alert component on errors while load launch file
+Fixed read default and launch arguments for included files
+Added hover with value for $(var ...) statements
+
 ## 5.2.5 - 19.03.2026
 
 Apply the multi-screen icon to the group

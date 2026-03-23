@@ -2,6 +2,13 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.2.2 (23.03.2026)
+------------------
+* updated test launch files
+* copied xml for ros1 to xml_ros1
+* changed shutdown process of the daemon node
+* fixed read default and launch arguments for included files
+
 5.2.1 (18.03.2026)
 ------------------
 * fixed searching for included files in yaml

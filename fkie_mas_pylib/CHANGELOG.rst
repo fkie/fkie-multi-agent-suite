@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.2.2 (23.03.2026)
+------------------
+* copied xml for ros1 to xml_ros1
+* fixed read default and launch arguments for included files
+
 5.2.1 (18.03.2026)
 ------------------
 * fixed searching for included files in yaml
