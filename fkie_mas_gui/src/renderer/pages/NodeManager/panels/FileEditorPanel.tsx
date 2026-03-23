@@ -18,12 +18,12 @@ import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName } from "@/renderer/models";
 import { cleanUpXmlComment } from "@/renderer/monaco/setup";
 import { TModelResult } from "@/renderer/monaco/types";
-import { createEditorEditorId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
+import { createEditorId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
 import {
-  EVENT_CLOSE_COMPONENT,
-  EVENT_EDITOR_SELECT_RANGE,
-  TEventEditorSelectRange,
-  eventCloseComponent,
+    EVENT_CLOSE_COMPONENT,
+    EVENT_EDITOR_SELECT_RANGE,
+    TEventEditorSelectRange,
+    eventCloseComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { Provider } from "@/renderer/providers";
 import { EventProviderLaunchLoaded, EventProviderPathEvent } from "@/renderer/providers/events";
@@ -105,7 +105,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   }, [provider, rootFilePath, includedFiles]);
 
   useEditorKeyboard(() => {
-    const id = createEditorEditorId(rootFilePath, provider.id);
+    const id = createEditorId(rootFilePath, provider.id);
     emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(id));
   });
 
@@ -275,7 +275,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       if (saveResult.result) {
         // update state of external window
         const path = fileFromUriPath(editorModel.uri.path);
-        const id = createEditorEditorId(rootFilePath, provider.id);
+        const id = createEditorId(rootFilePath, provider.id);
         window.editorManager?.changed(id, path, false);
         // update model state
         mEditor.setCurrentModel(editorModel);

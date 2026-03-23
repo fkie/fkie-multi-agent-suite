@@ -3,10 +3,10 @@ import React, { createContext, useCallback, useMemo, useState } from "react";
 
 import { getBaseName } from "@/renderer/models";
 import {
-  EVENT_EDITOR_SELECT_RANGE,
-  EVENT_OPEN_COMPONENT,
-  eventEditorSelectRange,
-  eventOpenComponent,
+    EVENT_EDITOR_SELECT_RANGE,
+    EVENT_OPEN_COMPONENT,
+    eventEditorSelectRange,
+    eventOpenComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel";
 import { xor } from "@/renderer/utils/index";
@@ -15,7 +15,7 @@ import { emitCustomEvent } from "react-custom-events";
 import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useRosContext } from "../hooks/useRosContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
-import { createEditorEditorId } from "../monaco/utils";
+import { createEditorId } from "../monaco/utils";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
 import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
@@ -131,7 +131,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;
 
-      const id = createEditorEditorId(rootLaunch, provider.id);
+      const id = createEditorId(rootLaunch, provider.id);
       const openExternal =
         xor(settingsCtx.get("editorOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
 

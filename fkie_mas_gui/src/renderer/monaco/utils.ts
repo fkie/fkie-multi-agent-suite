@@ -6,7 +6,7 @@ export function isEditorEditorId(editorId: string,): boolean {
   return editorId.startsWith(EDITOR_ID_PREFIX);
 }
 
-export function createEditorEditorId(rootPath: string, providerId: string): string {
+export function createEditorId(rootPath: string, providerId: string): string {
   return `${EDITOR_ID_PREFIX}${rootPath}${PROVIDER_SEP}${providerId}`;
 }
 
@@ -52,7 +52,8 @@ export function providerIdFromEditorId(editorId: string): string | undefined {
 
 export function pathFromEditorId(editorId: string): string | undefined {
   const sepIndex = editorId.indexOf(PROVIDER_SEP);
-  return sepIndex === -1 ? undefined : editorId.slice(0, sepIndex);
+  return sepIndex === -1 ? undefined : editorId.slice(0, sepIndex).replace(EDITOR_ID_PREFIX, '');
+
 }
 
 export function isUriPath(path: string): boolean {

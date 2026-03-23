@@ -4,7 +4,7 @@ import { Position } from "monaco-editor";
 
 export type ResolveType = { path: string; realpath: string; exists: boolean };
 export type ResolverCacheEntry = { start: Position; end: Position; match: IncludeMatch };
-export type ResolverIncludeArgs = { args: TLaunchArg[]; defaults: TLaunchArg[]; topLevel: TLaunchArg[], from: string };
+export type ResolverIncludeArgs = { args: TLaunchArg[]; defaults: TLaunchArg[]; topLevel: TLaunchArg[]; from: string };
 
 export type IncludeMatch = { value: string; offset: number; resolved: string; realpath: string; exists: boolean };
 
@@ -18,7 +18,11 @@ export type IncludeResolver = {
 // Type alias for the nested map: currentFile -> rawPath -> resolved include info
 type ResolveMap = Map<string, Map<string, ResolveType>>;
 
-export function createIncludeResolver(launchArgs: TLaunchArg[], includedFiles: LaunchIncludedFile[]): IncludeResolver {
+export function createIncludeResolver(
+  rootPath: string,
+  launchArgs: TLaunchArg[],
+  includedFiles: LaunchIncludedFile[]
+): IncludeResolver {
   // Nested map for resolving includes
   const map: ResolveMap = new Map();
   const mapIncludeArgs: Map<string, ResolverIncludeArgs> = new Map();
@@ -42,13 +46,19 @@ export function createIncludeResolver(launchArgs: TLaunchArg[], includedFiles: L
   }
 
   // Initialize the map with the provided included files
+  mapIncludeArgs.set(rootPath, { args: launchArgs, defaults: [], topLevel: launchArgs, from: "top level" });
   for (const f of includedFiles) {
     set(f.path, f.raw_inc_path, {
       path: f.inc_path,
       realpath: f.inc_realpath,
       exists: f.exists,
     });
-    mapIncludeArgs.set(f.inc_path, { args: f.args || [], defaults: f.default_inc_args || [], topLevel: topLevelArgs, from: f.path });
+    mapIncludeArgs.set(f.inc_path, {
+      args: f.args || [],
+      defaults: f.default_inc_args || [],
+      topLevel: topLevelArgs,
+      from: f.path,
+    });
   }
 
   /**
@@ -86,7 +96,12 @@ export function createIncludeResolver(launchArgs: TLaunchArg[], includedFiles: L
       s.add(f.raw_inc_path);
 
       // update include args
-      mapIncludeArgs.set(f.inc_path, { args: f.args || [], defaults: f.default_inc_args || [], topLevel: topLevelArgs, from: f.path });
+      mapIncludeArgs.set(f.inc_path, {
+        args: f.args || [],
+        defaults: f.default_inc_args || [],
+        topLevel: topLevelArgs,
+        from: f.path,
+      });
     }
 
     // Remove stale entries from the map and cache
@@ -214,7 +229,13 @@ export function extractPythonIncludeFiles(block: string, blockOffset: number, re
   for (const match of cleanBlock.matchAll(FILE_STRING_REGEX)) {
     if (!match[1]) continue;
     const offset = blockOffset + cleanBlock.indexOf(match[0]);
-    matches.push({ value: match[1], offset, resolved: resolved.path, realpath: resolved.realpath, exists: resolved.exists });
+    matches.push({
+      value: match[1],
+      offset,
+      resolved: resolved.path,
+      realpath: resolved.realpath,
+      exists: resolved.exists,
+    });
   }
 
   return matches;

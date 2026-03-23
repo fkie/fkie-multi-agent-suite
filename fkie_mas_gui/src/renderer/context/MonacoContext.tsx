@@ -14,6 +14,7 @@ import {
   createUriPath,
   createUriPathFromEditorId,
   fileFromUriPath,
+  pathFromEditorId,
   providerIdFromEditorId,
   providerIdFromUriPath,
 } from "../monaco/utils";
@@ -244,10 +245,15 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
     return filePath.search("/install/") !== -1;
   };
 
-  const updateResolver: (editorId: string, launchArgs: TLaunchArg[], includedFiles: LaunchIncludedFile[]) => void = (editorId, launchArgs, includedFiles) => {
+  const updateResolver: (editorId: string, launchArgs: TLaunchArg[], includedFiles: LaunchIncludedFile[]) => void = (
+    editorId,
+    launchArgs,
+    includedFiles
+  ) => {
     let resolver = resolvers.current.get(editorId);
     if (!resolver) {
-      resolver = createIncludeResolver(launchArgs, includedFiles);
+      const rootPath = pathFromEditorId(editorId) || "";
+      resolver = createIncludeResolver(rootPath, launchArgs, includedFiles);
       resolvers.current.set(editorId, resolver);
       return;
     }
