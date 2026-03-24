@@ -538,7 +538,7 @@ export default function DetailsPanel(): JSX.Element {
             }}
           >
             <Typography variant="caption" fontWeight="bold">
-              Launch Parameter:
+              Launch Info:
             </Typography>
           </Button>
         </Stack>
@@ -581,35 +581,89 @@ export default function DetailsPanel(): JSX.Element {
                       />
                     </Stack>
                   )}
-                  {launchInfo.parametersJoined && launchInfo.parametersJoined.length > 0 && (
-                    <JsonView
-                      src={launchInfo.parametersJoined?.reduce((dictionary, param: RosParameter) => {
-                        dictionary[param.name] = param.value;
-                        return dictionary;
-                      }, {})}
-                      dark={isDarkMode}
-                      theme="a11y"
-                      enableClipboard={false}
-                      ignoreLargeArray={false}
-                      collapseObjectsAfterLength={3}
-                      displaySize={"collapsed"}
-                      collapsed={(params: {
-                        node: Record<string, unknown> | Array<unknown>; // Object or array
-                        indexOrName: number | string | undefined;
-                        depth: number;
-                        size: number; // Object's size or array's length
-                      }) => {
-                        if (params.indexOrName === undefined) {
-                          // do not collapse root element
+                  {launchInfo.additional_env && (
+                    <Stack pt={1}>
+                      <Typography variant="caption" fontWeight="bold">
+                        additional environment:
+                      </Typography>
+                      <JsonView
+                        src={launchInfo.additional_env}
+                        dark={isDarkMode}
+                        theme="a11y"
+                        enableClipboard={false}
+                        ignoreLargeArray={false}
+                        collapseObjectsAfterLength={3}
+                        displaySize={"collapsed"}
+                        collapsed={(params: {
+                          node: Record<string, unknown> | Array<unknown>; // Object or array
+                          indexOrName: number | string | undefined;
+                          depth: number;
+                          size: number; // Object's size or array's length
+                        }) => {
+                          if (params.indexOrName === undefined) {
+                            // do not collapse root element
+                            return false;
+                          }
+                          if (Array.isArray(params.node) && params.node.length === 0) {
+                            return true;
+                          }
+                          if (params.depth > 3) return true;
                           return false;
-                        }
-                        if (Array.isArray(params.node) && params.node.length === 0) {
-                          return true;
-                        }
-                        if (params.depth > 3) return true;
-                        return false;
-                      }}
-                    />
+                        }}
+                      />
+                    </Stack>
+                  )}
+                  {launchInfo.remove_environment && launchInfo.remove_environment.length > 0 && (
+                    <Stack pt={1}>
+                      <Typography variant="caption" fontWeight="bold">
+                        removed environment:
+                      </Typography>
+                      <JsonView
+                        src={launchInfo.remove_environment}
+                        dark={isDarkMode}
+                        theme="a11y"
+                        enableClipboard={false}
+                        ignoreLargeArray={false}
+                        collapseObjectsAfterLength={3}
+                        displaySize={"collapsed"}
+                        collapsed={true}
+                      />
+                    </Stack>
+                  )}
+                  {launchInfo.parametersJoined && launchInfo.parametersJoined.length > 0 && (
+                    <Stack pt={1}>
+                      <Typography variant="caption" fontWeight="bold">
+                        parameter:{" "}
+                      </Typography>
+                      <JsonView
+                        src={launchInfo.parametersJoined?.reduce((dictionary, param: RosParameter) => {
+                          dictionary[param.name] = param.value;
+                          return dictionary;
+                        }, {})}
+                        dark={isDarkMode}
+                        theme="a11y"
+                        enableClipboard={false}
+                        ignoreLargeArray={false}
+                        collapseObjectsAfterLength={3}
+                        displaySize={"collapsed"}
+                        collapsed={(params: {
+                          node: Record<string, unknown> | Array<unknown>; // Object or array
+                          indexOrName: number | string | undefined;
+                          depth: number;
+                          size: number; // Object's size or array's length
+                        }) => {
+                          if (params.indexOrName === undefined) {
+                            // do not collapse root element
+                            return false;
+                          }
+                          if (Array.isArray(params.node) && params.node.length === 0) {
+                            return true;
+                          }
+                          if (params.depth > 3) return true;
+                          return false;
+                        }}
+                      />
+                    </Stack>
                   )}
                 </Stack>
               );

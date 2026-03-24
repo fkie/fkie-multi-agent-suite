@@ -33,9 +33,9 @@ export default class LaunchNodeInfo {
 
   parametersJoined?: RosParameter[];
 
-  env: JSONObject | null;
+  additional_env: JSONObject | null;
 
-  additional_env: unknown[] | null;
+  remove_environment: string[];
 
   launch_prefix: string | null;
 
@@ -82,8 +82,8 @@ export default class LaunchNodeInfo {
     args: string | null = null,
     remap_args: unknown[] | null = null,
     parameters: RosParameter[] | null = null,
-    env: JSONObject | null = null,
-    additional_env: unknown[] | null = null,
+    additional_env: JSONObject | null = null,
+    remove_environment: string[] = [],
     launch_prefix: string | null = null,
     output: string | null = null,
     output_format: string | null = null,
@@ -111,8 +111,8 @@ export default class LaunchNodeInfo {
     this.args = args;
     this.remap_args = remap_args;
     this.parameters = parameters;
-    this.env = env;
     this.additional_env = additional_env;
+    this.remove_environment = remove_environment;
     this.launch_prefix = launch_prefix;
     this.output = output;
     this.output_format = output_format;

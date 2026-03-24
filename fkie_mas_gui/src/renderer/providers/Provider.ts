@@ -1286,7 +1286,7 @@ export default class Provider implements IProvider {
               }
             }
           } else {
-            const env_capability_group = launchNode.env?.MAS_CAPABILITY_GROUP;
+            const env_capability_group = launchNode.additional_env?.MAS_CAPABILITY_GROUP;
             if (env_capability_group) {
               nodeGroup = this.toNodeGroup(`${env_capability_group}`);
             }
@@ -1363,7 +1363,7 @@ export default class Provider implements IProvider {
               killTime = LaunchNodeInfo.getParam(nodeParameters || [], launchNode.node_name || "", "nm/kill_on_stop");
             }
             if (killTime === undefined) {
-              killTime = LaunchNodeInfo.getEnvParam(launchNode.env, "MAS_KILL_ON_STOP");
+              killTime = LaunchNodeInfo.getEnvParam(launchNode.additional_env, "MAS_KILL_ON_STOP");
             }
             if (killTime !== undefined) {
               nodes[idxLn].sigkill_timeout = Number.parseInt(killTime as string);
