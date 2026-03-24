@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.3.1 - 24.03.2026
+
+Fixed start nodes with removing environment variables
+
 ## 5.3.0 - 24.03.2026
 
 Changed handling of environment provided by launch config

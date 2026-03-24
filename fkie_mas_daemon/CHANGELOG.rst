@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.3.1 (24.03.2026)
+------------------
+* Fixed start nodes with removing environment variables
+
 5.3.0 (24.03.2026)
 ------------------
 * Moved env from node to launch file and added remove_environment to node
