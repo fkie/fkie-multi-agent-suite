@@ -366,7 +366,7 @@ export function registerLaunchHoverProvider(
               }
             }
 
-            // 2. Wenn wir auf $(var meineVar) stehen, Args via Resolver holen
+            // 2. get name of $(var meineVar) via Resolver
             if (resolver) {
               const hoveredVar = getVarAtPosition(model, position);
               if (!hoveredVar) continue;
@@ -394,6 +394,35 @@ export function registerLaunchHoverProvider(
                   value: `\`${hoveredVar}\` = **\`${String(arg.value ?? "")}\`** (${from})`,
                 });
                 countResolved += 1;
+              } else {
+                // search for <let .../> declarations
+                // 1. Get the full model text
+                const fullText = model.getValue();
+                // 2. Remove XML comments, but keep the line structure (\n)
+                const textWithoutComments = fullText.replace(/<!--[\s\S]*?-->/g, (comment) =>
+                  "\n".repeat(comment.split("\n").length - 1)
+                );
+                // 3. Get text up to the current line
+                const lines = textWithoutComments.split("\n").slice(0, position.lineNumber);
+                const textUpToPos = lines.join("\n");
+                // 4. Regex for <let ... name="..." value="..."/>
+                const letRegex = /<let\b([^>]*)\/>/g;
+                let match: RegExpExecArray | null = letRegex.exec(textUpToPos);
+                while (match !== null) {
+                  const attrs = match[1];
+                  const nameMatch = /name\s*=\s*"([^"]+)"/.exec(attrs);
+                  const valueMatch = /value\s*=\s*"([^"]+)"/.exec(attrs);
+                  if (nameMatch && valueMatch && nameMatch[1] === hoveredVar) {
+                    // Determine line number
+                    const upto = textUpToPos.slice(0, match.index);
+                    const foundLine = upto.split("\n").length;
+                    result.contents.push({
+                      value: `__${foundLine}__: \`${hoveredVar}\` = **\`${valueMatch[1]}\`**`,
+                    });
+                    countResolved += 1;
+                  }
+                  match = letRegex.exec(textUpToPos);
+                }
               }
             }
           }
