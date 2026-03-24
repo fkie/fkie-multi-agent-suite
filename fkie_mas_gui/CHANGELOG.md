@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.3.0 - 24.03.2026
+
+Changed handling of environment provided by launch config
+Moved env from node to launch file and added remove_environment to node
+Fixed read includ files with let arguments in the name
+Search for <let .../> declarations and show in hovered info
+Added more document symbols
+
 ## 5.2.6 - 23.03.2026
 
 Improved format of hovered description

@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.3.0 (24.03.2026)
+------------------
+* Moved env from node to launch file and added remove_environment to node
+* Fixed read include files with let arguments in the name
+
 5.2.2 (23.03.2026)
 ------------------
 * updated test launch files
