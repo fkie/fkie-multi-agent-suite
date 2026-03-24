@@ -7,6 +7,7 @@ Moved env from node to launch file and added remove_environment to node
 Fixed read includ files with let arguments in the name
 Search for <let .../> declarations and show in hovered info
 Added more document symbols
+Fixed restart nodes if only one not running node should be restarted
 
 ## 5.2.6 - 23.03.2026
 
