@@ -1,4 +1,4 @@
-import { Stack } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
@@ -24,6 +24,7 @@ export default function TerminalApp(): JSX.Element {
   const settingsCtx = useSettingsContext();
   const logCtxRef = useAlwaysCurrentRef(logCtx);
   const settingsCtxRef = useAlwaysCurrentRef(settingsCtx);
+  const [connectingHost, setConnectingHost] = useState<string>("");
   const [paramInfo, setParamInfo] = useState<ITerminalInfo | null>(null);
 
   async function initProvider(): Promise<void> {
@@ -48,8 +49,10 @@ export default function TerminalApp(): JSX.Element {
     const nodeName = node ? node : "bash";
     document.title = `${info} - ${nodeName}`;
     const prov = new TerminalProvider(logCtxRef, settingsCtxRef, host, "", Number.parseInt(port), false);
+    setConnectingHost(`${prov.connection.uri}`);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
+      setConnectingHost("")
       setParamInfo({
         id: id,
         provider: prov,
@@ -77,6 +80,12 @@ export default function TerminalApp(): JSX.Element {
 
   return (
     <Stack width="100%" height="100vh">
+      {connectingHost && (
+        <Alert severity="info" style={{ minWidth: 0 }}>
+          connecting to {connectingHost}
+        </Alert>
+      )}
+
       {paramInfo && rosCtx.mapProviderRosNodes.size > 0 && (
         <SingleTerminalPanel
           id={paramInfo.id}

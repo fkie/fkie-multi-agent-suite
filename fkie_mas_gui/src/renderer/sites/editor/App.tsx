@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
@@ -33,6 +33,7 @@ export default function EditorApp(): JSX.Element {
   const settingsCtx = useSettingsContext();
   const logCtxRef = useAlwaysCurrentRef(logCtx);
   const settingsCtxRef = useAlwaysCurrentRef(settingsCtx);
+  const [connectingHost, setConnectingHost] = useState<string>("");
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [dirtyModels, setDirtyModels] = useState<monaco.editor.ITextModel[]>([]);
 
@@ -75,8 +76,10 @@ export default function EditorApp(): JSX.Element {
     }
     document.title = `Editor - ${getFileName(rootLaunch)}`;
     const prov = new EditorProvider(logCtxRef, settingsCtxRef, host, "", Number.parseInt(port), false);
+    setConnectingHost(`${prov.connection.uri}`);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
+      setConnectingHost("")
       setLaunchInfo({
         id: id,
         provider: prov,
@@ -135,6 +138,11 @@ export default function EditorApp(): JSX.Element {
 
   return (
     <Stack width="100%" height="100vh">
+      {connectingHost && (
+        <Alert severity="info" style={{ minWidth: 0 }}>
+          connecting to {connectingHost}
+        </Alert>
+      )}
       {launchInfo && (
         <FileEditorPanel
           editorId={launchInfo.id}

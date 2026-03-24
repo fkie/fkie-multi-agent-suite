@@ -1,4 +1,4 @@
-import { Stack } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
@@ -23,6 +23,7 @@ export default function SubscriberApp(): JSX.Element {
   const settingsCtx = useSettingsContext();
   const logCtxRef = useAlwaysCurrentRef(logCtx);
   const settingsCtxRef = useAlwaysCurrentRef(settingsCtx);
+  const [connectingHost, setConnectingHost] = useState<string>("");
   const [subInfo, setSubInfo] = useState<ISubscriberInfo | null>(null);
   const [stopRequested, setStopRequested] = useState<string>("");
 
@@ -52,8 +53,10 @@ export default function SubscriberApp(): JSX.Element {
     }
     document.title = `Echo - ${getFileName(topic)}`;
     const prov = new SubscriberProvider(logCtxRef, settingsCtxRef, host, "", Number.parseInt(port), false);
+    setConnectingHost(`${prov.connection.uri}`);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
+      setConnectingHost("");
       setSubInfo({
         id: id,
         provider: prov,
@@ -103,6 +106,11 @@ export default function SubscriberApp(): JSX.Element {
 
   return (
     <Stack width="100%" height="100vh">
+      {connectingHost && (
+        <Alert severity="info" style={{ minWidth: 0 }}>
+          connecting to {connectingHost}
+        </Alert>
+      )}
       {subInfo && rosCtx.mapProviderRosNodes.size > 0 && (
         <TopicEchoPanel
           showOptions
