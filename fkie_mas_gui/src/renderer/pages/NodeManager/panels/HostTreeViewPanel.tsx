@@ -188,7 +188,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           }
           return true;
         });
-
+        setCountFilteredNodes(nodeCount - filteredNodes.length);
         // remove nodes which are local in remote hosts
         newVisibleNodes.push(
           ...filteredNodes.filter(
@@ -199,7 +199,6 @@ export default function HostTreeViewPanel(): JSX.Element {
           )
         );
       }
-      setCountFilteredNodes(nodeCount - newVisibleNodes.length);
       setVisibleNodes(newVisibleNodes);
     },
     [providerNodes]
