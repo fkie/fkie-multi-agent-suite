@@ -600,6 +600,7 @@ class LaunchConfig(object):
         self.__launch_description = get_launch_description_from_any_launch_file(self.filename)
         self._included_files: List[LaunchIncludedFile] = []
         self.__launch_description.launch_name = self.filename
+        self.environment = {}
         self.load()
         self.argv = None
         if self.argv is None:
@@ -711,11 +712,11 @@ class LaunchConfig(object):
     def load(self) -> None:
         Log.info(
             f"load launch file: {self.filename}, arguments: {[f'{v.name}:={v.value}' for v in self.launch_arguments]}")
-        environment = os.environ.copy()
+        self.environment = os.environ.copy()
         self._load(current_file=self.filename)
         # restore environment after file was loaded. To avoid interaction if multiple files are loaded.
         os.environ.clear()
-        os.environ.update(environment)
+        os.environ.update(self.environment)
 
     def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0, timer_period=0, env: Dict[str, str] = {}, remove_env: List[str] = []) -> None:
         if PRINT_DEBUG_LOAD:
