@@ -954,6 +954,18 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
   }
 
+  /**
+   * Synchronizes providerNodes with the current provider list.
+   *
+   * Removes all nodes whose providerId is no longer present in
+   * rosCtx.providers. This prevents orphaned nodes from remaining
+   * in state when providers are removed or replaced.
+   */
+  const readNodes = useCallback(() => {
+    const providerIds = rosCtx.providers.map((p) => p.id);
+    setProviderNodes((oldValues) => oldValues.filter((item) => providerIds.includes(item.providerId)));
+  }, [rosCtx.providers]);
+
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
 
   useEffect(() => {
@@ -962,16 +974,9 @@ export default function HostTreeViewPanel(): JSX.Element {
   }, [filterText, providerNodes]);
 
   useEffect(() => {
-    /**
-     * Synchronizes providerNodes with the current provider list.
-     *
-     * Removes all nodes whose providerId is no longer present in
-     * rosCtx.providers. This prevents orphaned nodes from remaining
-     * in state when providers are removed or replaced.
-     */
-    const providerIds = rosCtx.providers.map((p) => p.id);
-    setProviderNodes((oldValues) => oldValues.filter((item) => providerIds.includes(item.providerId)));
+    readNodes();
   }, [rosCtx.providers]);
+
 
   useEffect(() => {
     if (!nodesToStart) return;
@@ -1549,7 +1554,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         )}
       </ButtonGroup>
     );
-  }, [navCtx.selectedNodes, navCtx.selectedProviders, providerNodes]);
+  }, [navCtx.selectedNodes, navCtx.selectedProviders, providerNodes, tooltipDelay]);
 
   return (
     <Box

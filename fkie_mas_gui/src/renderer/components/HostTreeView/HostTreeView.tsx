@@ -817,7 +817,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
               p = rosCtx.createProvider(item.providerId, rosCtx.rosInfo?.version || "2");
               p.id = item.providerId;
             } else {
-              return "";
+              return <></>;
             }
           }
           // loop through available hosts
