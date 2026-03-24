@@ -441,6 +441,7 @@ class LaunchServicer(LoggingEventHandler):
             result.status.code = 'ERROR'
             result.status.msg = err_details
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        result.env = dict(os.environ)
         result.status.code = 'OK'
         try:
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
@@ -652,6 +653,7 @@ class LaunchServicer(LoggingEventHandler):
                     if associations is not None:
                         reply_lc.associations.append(LaunchAssociations(item.node_name, associations))
             reply_lc.warnings = lc.load_exceptions
+            reply_lc.env = lc.environment
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
 

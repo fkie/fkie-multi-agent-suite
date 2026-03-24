@@ -148,7 +148,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
     # _unique_names: Set[str] = set()
     # _remapped_names: Dict[str, Set[str]] = {}
 
-    def __init__(self, entity: launch.actions.ExecuteProcess, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext, composable_container: str = None, environment: Dict = {}, position_in_file=0) -> None:
+    def __init__(self, entity: launch.actions.ExecuteProcess, *, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext, composable_container: str = None, environment: Dict = {}, remove_environment: List[str] = None, position_in_file=0) -> None:
         self._entity = entity
         self._launch_description = launch_description
         self._launch_context = launch_context
@@ -278,11 +278,12 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                         content = f"{err}"
                     self.parameters.append(RosParameter(node_name, param_file, content))
         self.cwd = perform_to_string(self._launch_context, getattr(self._entity, 'cwd', None))
-        self.env = dict(environment)
-        env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'env', None))
-        if env:
-            self.env.update(env)
-        self.additional_env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'additional_env', None))
+        self.remove_environment = [] if remove_environment is None else remove_environment
+        # perform_to_tuple_list(self._launch_context, getattr(self._entity, 'additional_env', {}))
+        self.additional_env = dict(environment)
+        add_env = perform_to_tuple_list(self._launch_context, getattr(self._entity, 'env', {}))
+        if add_env:
+            self.additional_env.update(add_env)
         self.launch_prefix = perform_to_string(self._launch_context, self._get_launch_prefix())
         self._load_node_request = None
         if self.composable_container:
@@ -716,13 +717,16 @@ class LaunchConfig(object):
         os.environ.clear()
         os.environ.update(environment)
 
-    def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0, timer_period=0) -> None:
+    def _load(self, sub_obj: Union[None, List[launch.frontend.Entity]] = None, *, launch_description=None, current_file: str = '', indent: str = '', launch_file_obj: Union[LaunchIncludedFile, None] = None, depth: int = -1, start_position_in_file=0, timer_period=0, env: Dict[str, str] = {}, remove_env: List[str] = []) -> None:
         if PRINT_DEBUG_LOAD:
             print(f"  ***debug launch loading: {indent}perform file {current_file}")
         current_launch_description = launch_description
         file_content = ""
         launch_prefix = ""
-        environment = os.environ
+        additional_environment = {}
+        additional_environment.update(env)
+        remove_environment = list(remove_env)
+
         if sub_obj is None:
             sub_obj = self.__launch_description
             self.context.extend_locals({'launch_file_path': self.filename})
@@ -815,7 +819,8 @@ class LaunchConfig(object):
                         print(f"  ***debug launch loading: {indent}  node after subst: {entity._Node__node_executable}")
                     # actions = entity.execute(self.context)
                     node = LaunchNodeWrapper(
-                        entity, current_launch_description, self.context, environment=environment, position_in_file=position_in_file)
+                        entity, launch_description=current_launch_description, launch_context=self.context,
+                        environment=additional_environment, remove_environment=remove_environment, position_in_file=position_in_file)
                     node.timer_period = timer_period
                     if launch_prefix:
                         node.launch_prefix = launch_prefix
@@ -825,8 +830,9 @@ class LaunchConfig(object):
 
                     if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
                         for cn in entity._ComposableNodeContainer__composable_node_descriptions:
-                            c_node = LaunchNodeWrapper(cn, current_launch_description, self.context,
-                                                       composable_container=node.unique_name, environment=environment, position_in_file=position_in_file)
+                            c_node = LaunchNodeWrapper(cn, launch_description=current_launch_description, launch_context=self.context,
+                                                       composable_container=node.unique_name, environment=additional_environment,
+                                                       remove_environment=remove_environment, position_in_file=position_in_file)
                             c_node.timer_period = timer_period
                             self._nodes.append(c_node)
                 except (SubstitutionFailure, PackageNotFoundError) as err:
@@ -842,22 +848,24 @@ class LaunchConfig(object):
                     container_name = ""
                     if isinstance(entity._LoadComposableNodes__target_container, launch_ros.actions.ComposableNodeContainer):
                         node = LaunchNodeWrapper(
-                            entity._LoadComposableNodes__target_container, current_launch_description, self.context, environment=environment, position_in_file=position_in_file)
+                            entity._LoadComposableNodes__target_container, launch_description=current_launch_description, launch_context=self.context,
+                            environment=additional_environment, remove_environment=remove_environment, position_in_file=position_in_file)
                         node.timer_period = timer_period
                         self._nodes.append(node)
                         container_name = node.node_name
                     else:
                         subs = normalize_to_list_of_substitutions(entity._LoadComposableNodes__target_container)
                         container_name = make_namespace_absolute(perform_substitutions(self.context, subs))
-                    node = LaunchNodeWrapper(cn, current_launch_description, self.context,
-                                             composable_container=container_name, environment=environment, position_in_file=position_in_file)
+                    node = LaunchNodeWrapper(cn, launch_description=current_launch_description, launch_context=self.context,
+                                             composable_container=container_name, environment=additional_environment,
+                                             remove_environment=remove_environment, position_in_file=position_in_file)
                     node.timer_period = timer_period
                     self._nodes.append(node)
             elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent}  add execute process")
-                node = LaunchNodeWrapper(entity, current_launch_description,
-                                         self.context, environment=environment, position_in_file=position_in_file)
+                node = LaunchNodeWrapper(entity, launch_description=current_launch_description, launch_context=self.context,
+                                         environment=additional_environment, remove_environment=remove_environment, position_in_file=position_in_file)
                 node.timer_period = timer_period
                 self._nodes.append(node)
             elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
@@ -927,7 +935,8 @@ class LaunchConfig(object):
                                                          )
                     self._included_files.append(launch_inc_file)
                     self._load(entity, launch_description=entity, current_file=entity._get_launch_file(),
-                               indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1, start_position_in_file=0, timer_period=timer_period)
+                               indent=indent+'  ', launch_file_obj=launch_inc_file, depth=depth+1, start_position_in_file=0,
+                               timer_period=timer_period, env=additional_environment, remove_env=remove_environment)
                     if current_file:
                         self.context.extend_locals({'current_launch_file_path': current_file})
                 except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
@@ -942,7 +951,9 @@ class LaunchConfig(object):
                 include_line_number, position_in_file, raw_text = self.find_definition(
                     file_content, 'group', position_in_file, include_close_bracket=False)
                 position_in_file = self._load(entity, launch_description=current_launch_description,
-                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
+                                              current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj,
+                                              depth=depth, start_position_in_file=position_in_file, timer_period=timer_period,
+                                              env=additional_environment, remove_env=remove_environment)
                 self.context._pop_launch_configurations()
             elif isinstance(entity, launch.actions.timer_action.TimerAction):
                 if PRINT_DEBUG_LOAD:
@@ -955,20 +966,25 @@ class LaunchConfig(object):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} actions count: {len(entity.actions)}")
                 position_in_file = self._load(entity.actions, launch_description=current_launch_description, current_file=current_file,
-                           indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=period)
+                                              indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file,
+                                              timer_period=period, env=additional_environment, remove_env=remove_environment)
                 # period: Union[float, SomeSubstitutionsType],
                 # actions: Iterable[LaunchDescriptionEntity],
                 # cancel_on_shutdown: Union[bool, SomeSubstitutionsType] = True,
             elif isinstance(entity, launch.actions.set_environment_variable.SetEnvironmentVariable):
                 name = perform_substitutions(self.context, getattr(entity, 'name', ''))
                 value = perform_substitutions(self.context, getattr(entity, 'value', ''))
-                environment[name] = value
+                additional_environment[name] = value
+                if name in remove_environment:
+                    remove_environment.remove(name)
             elif isinstance(entity, launch.actions.unset_environment_variable.UnsetEnvironmentVariable):
                 if hasattr(entity, 'execute'):
                     entity.execute(self.context)
                 name = perform_substitutions(self.context, getattr(entity, 'name', ''))
-                if name in environment:
-                    del environment[name]
+                if name in additional_environment:
+                    del additional_environment[name]
+                if name not in remove_environment:
+                    remove_environment.append(name)
             elif isinstance(entity, launch.launch_description.LaunchDescription):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} LaunchDescription: {entity}: {dir(entity)}")
@@ -998,11 +1014,14 @@ class LaunchConfig(object):
                         except Exception as err:
                             import traceback
                             print(traceback.format_exc())
-                            raise LaunchConfigException(f"Error while resolve default arguments in {current_file}: {err}")
+                            raise LaunchConfigException(
+                                f"Error while resolve default arguments in {current_file}: {err}")
                     last_included_file.args = launch_args
                     last_included_file.default_inc_args = default_args
                 self._load(entity, launch_description=current_launch_description,
-                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
+                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1,
+                           start_position_in_file=position_in_file, timer_period=timer_period,
+                           env=additional_environment, remove_env=remove_environment)
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
             elif isinstance(entity, launch.actions.set_launch_configuration.SetLaunchConfiguration):
@@ -1037,7 +1056,9 @@ class LaunchConfig(object):
                         if not isinstance(exec_result, List):
                             exec_result = [exec_result]
                         position_in_file = self._load(exec_result, launch_description=current_launch_description,
-                                   current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
+                                                      current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj,
+                                                      depth=depth, start_position_in_file=position_in_file, timer_period=timer_period,
+                                                      env=additional_environment, remove_env=remove_environment)
                 except:
                     import traceback
                     err_msg = traceback.format_exc()
@@ -1047,7 +1068,9 @@ class LaunchConfig(object):
             else:
                 print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,
-                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
+                           current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj,
+                           depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period,
+                           env=additional_environment, remove_env=remove_environment)
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
         return position_in_file
@@ -1235,17 +1258,17 @@ class LaunchConfig(object):
         screen_prefix = screen.get_cmd(node.unique_name)
         # set environment
         new_env = os.environ.copy()
-        if node.env:
-            new_env.update(node.env)
+        # add environment from launch
+        if node.additional_env:
+            new_env.update(dict(node.additional_env))
+        for env_name in node.remove_environment:
+            del new_env[env_name]
         # set display variable to local display
         if 'DISPLAY' in new_env:
             if not new_env['DISPLAY'] or new_env['DISPLAY'] == 'remote':
                 del new_env['DISPLAY']
         else:
             new_env['DISPLAY'] = ':0'
-        # add environment from launch
-        if node.additional_env:
-            new_env.update(dict(node.additional_env))
         if node.node_namespace:
             new_env['ROS_NAMESPACE'] = node.node_namespace
         # set logging

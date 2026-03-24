@@ -201,8 +201,8 @@ class LaunchNodeInfo:
                  args: str = None,
                  remap_args: List[Tuple[str, str]] = None,
                  parameters: List[RosParameter] = None,
-                 env: Dict[str, str] = None,
-                 additional_env: List[Tuple[str, str]] = None,
+                 additional_env: Dict[str, str] = None,
+                 remove_environment: List[str] = None,
                  launch_prefix: str = None,
                  output: str = None,
                  output_format: str = None,
@@ -234,8 +234,8 @@ class LaunchNodeInfo:
         self.args = args
         self.remap_args = remap_args
         self.parameters = parameters
-        self.env = env
         self.additional_env = additional_env
+        self.remove_environment = remove_environment
         self.launch_prefix = launch_prefix
         self.output = output
         self.output_format = output_format
@@ -279,6 +279,7 @@ class LaunchContent:
         self.parameters = parameters or []
         self.associations = associations or []
         self.warnings: List[str] = []
+        self.env: Dict[str, str] = None
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
