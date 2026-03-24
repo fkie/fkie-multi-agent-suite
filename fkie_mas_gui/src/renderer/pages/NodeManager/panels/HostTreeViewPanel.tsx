@@ -655,33 +655,34 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
 
     if (Object.keys(skipped).length > 0) {
-      logCtx.debug(`Skipped ${Object.keys(skipped).length} nodes`, JSON.stringify(skipped));
+      logCtx.debug(`Skipped stopping ${Object.keys(skipped).length} nodes`, JSON.stringify(skipped));
     }
 
-    if (!nodesToStop.length) return;
-
-    // Enqueue STOP
-    queue.update(nodesToStop.map((node) => ({ node, action: "STOP" })));
-
-    // Determine global max kill timeout (instead of per-node timer bug)
     let maxKillTime = 0;
-    const nodesKillTimeout: RosNode[] = [];
-    for (const node of nodesToStop) {
-      if (!node.pid) continue;
 
-      for (const launchInfo of node.launchInfo.values()) {
-        if (launchInfo.sigkill_timeout) {
-          nodesKillTimeout.push(node);
-          maxKillTime = Math.max(maxKillTime, launchInfo.sigkill_timeout);
+    if (nodesToStop.length > 0) {
+      // Enqueue STOP
+      queue.update(nodesToStop.map((node) => ({ node, action: "STOP" })));
+
+      // Determine global max kill timeout (instead of per-node timer bug)
+      const nodesKillTimeout: RosNode[] = [];
+      for (const node of nodesToStop) {
+        if (!node.pid) continue;
+
+        for (const launchInfo of node.launchInfo.values()) {
+          if (launchInfo.sigkill_timeout) {
+            nodesKillTimeout.push(node);
+            maxKillTime = Math.max(maxKillTime, launchInfo.sigkill_timeout);
+          }
         }
       }
-    }
 
-    // Add KILL step once after max timeout
-    if (maxKillTime > 0) {
-      setTimeout(() => {
-        queue.update(nodesKillTimeout.map((node) => ({ node, action: "KILL" })));
-      }, maxKillTime);
+      // Add KILL step once after max timeout
+      if (maxKillTime > 0) {
+        setTimeout(() => {
+          queue.update(nodesKillTimeout.map((node) => ({ node, action: "KILL" })));
+        }, maxKillTime);
+      }
     }
 
     // Restart logic
@@ -976,7 +977,6 @@ export default function HostTreeViewPanel(): JSX.Element {
   useEffect(() => {
     readNodes();
   }, [rosCtx.providers]);
-
 
   useEffect(() => {
     if (!nodesToStart) return;
