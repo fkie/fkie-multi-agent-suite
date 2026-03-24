@@ -502,8 +502,8 @@ class LaunchServicer(LoggingEventHandler):
                     for old_node in old_nodes:
                         if new_node.node_name == old_node.node_name:
                             found = True
-                            if new_node.env and old_node.env:
-                                if len(set(new_node.env.values()) - set(old_node.env.values())) > 0:
+                            if new_node.additional_env and old_node.additional_env:
+                                if len(set(new_node.additional_env.values()) - set(old_node.additional_env.values())) > 0:
                                     nodes2start.append(new_node.node_name)
                                     break
                             if new_node.launch_prefix != old_node.launch_prefix:
