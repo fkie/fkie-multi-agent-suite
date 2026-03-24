@@ -176,6 +176,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const onSearch = useCallback(
     (searchTerm: string) => {
       let nodeCount = 0;
+      let nodeFilteredCount = 0;
       const newVisibleNodes: RosNode[] = [];
       for (const item of providerNodes) {
         const { nodes } = item;
@@ -188,17 +189,18 @@ export default function HostTreeViewPanel(): JSX.Element {
           }
           return true;
         });
-        setCountFilteredNodes(nodeCount - filteredNodes.length);
+        nodeFilteredCount += filteredNodes.length;
         // remove nodes which are local in remote hosts
         newVisibleNodes.push(
           ...filteredNodes.filter(
             (node) =>
-              node.isLocal ||
-              rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
+              node.isLocal || node.launchInfo ||
+              rosCtx.localNodes.filter((lNode: TLocalNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
                 .length === 0
           )
         );
       }
+      setCountFilteredNodes(nodeCount - nodeFilteredCount);
       setVisibleNodes(newVisibleNodes);
     },
     [providerNodes]
@@ -211,7 +213,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     // Update local nodes in RosContext
     rosCtx.updateLocalNodes(
       data.provider.id,
-      data.nodes.filter((node) => node.isLocal).map((node) => node.name)
+      data.nodes.filter((node) => node.isLocal || node.launchInfo.size > 0).map((node) => node.name)
     );
     setProviderNodes((oldValues) => [
       ...oldValues.filter((item) => {
