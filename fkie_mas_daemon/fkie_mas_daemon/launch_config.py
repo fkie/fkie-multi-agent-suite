@@ -1263,7 +1263,8 @@ class LaunchConfig(object):
         if node.additional_env:
             new_env.update(dict(node.additional_env))
         for env_name in node.remove_environment:
-            del new_env[env_name]
+            if env_name in new_env:
+                del new_env[env_name]
         # set display variable to local display
         if 'DISPLAY' in new_env:
             if not new_env['DISPLAY'] or new_env['DISPLAY'] == 'remote':
