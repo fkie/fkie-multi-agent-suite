@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.3.2 - 24.03.2026
+
+Fixed show filter info in nodes tab
+
 ## 5.3.1 - 24.03.2026
 
 Fixed start nodes with removing environment variables
