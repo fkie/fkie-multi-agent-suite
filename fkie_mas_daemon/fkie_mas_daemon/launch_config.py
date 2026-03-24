@@ -411,7 +411,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
     def _get_node_package(self) -> str:
         """Getter for node_package."""
         result = getattr(self._entity, '_Node__package', '')
-        return result
+        return perform_to_string(self._launch_context, result)
 
     def _get_namespace(self) -> str:
         result = getattr(self._entity, 'expanded_node_namespace', None)
