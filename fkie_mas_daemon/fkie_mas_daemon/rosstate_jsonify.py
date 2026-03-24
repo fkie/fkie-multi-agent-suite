@@ -140,8 +140,8 @@ class RosStateJsonify:
         result = "rmw_fastrtps_cpp"
         if "RMW_IMPLEMENTATION" in os.environ:
             result = os.environ["RMW_IMPLEMENTATION"]
-        if not result:
-            if os.environ["ROS_DISTRO"] == "jazzy":
+        distro = os.environ.get("ROS_DISTRO", "")
+        if not result and distro == "jazzy":
                 result = "rmw_fastrtps_cpp"
         return result
 
@@ -593,7 +593,7 @@ class RosStateJsonify:
                                   srv_type=GetAvailableTransitions,
                                   request=GetAvailableTransitions.Request())
             # wait until all service are finished of timeouted
-            wait_until_futures_done(wait_futures, 3.0)
+            wait_until_futures_done(wait_futures, 10)
             # handle response
             lifecycle_state = RosLifecycleState(id=node_id, name=node_name)
             for wait_future in wait_futures:
@@ -652,7 +652,8 @@ class RosStateJsonify:
                                   srv_type=ListNodes,
                                   request=ListNodes.Request())
             # wait until all service are finished of timeouted
-            wait_until_futures_done(wait_futures, 1.5)
+            print(f"wait_futures: {len(wait_futures)}")
+            wait_until_futures_done(wait_futures, 10)
             # handle response
             composable = RosComposable(container_name=node_name, node_id=node_id)
             for wait_future in wait_futures:
@@ -675,13 +676,16 @@ class RosStateJsonify:
                                     f"{self.__class__.__name__}:-> failed to update composable nodes of '{node_name}': '{exception}'")
                 wait_future.client.destroy()
                 if not finished:
+                    print(f"  NOT FINISCHED")
                     if retry < 3:
+                        print(f"RETRY {retry}")
                         update_thread = threading.Thread(target=self._thread_update_composables_call,
                                                          args=(node_id, node_name, retry + 1), daemon=True)
                         update_thread.start()
                     else:
                         error_msgs.append(
                             f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} of '{node_name}'")
+                print(f"FINISCHED")
 
         except:
             import traceback

@@ -162,16 +162,27 @@ class Server:
         self._on_shutdown = True
         if self._endpoint_timer:
             self._endpoint_timer.cancel()
+        print("  publish shutdown state")
         self.publish_daemon_state(False)
+        print("  stop status timer")
         self._ws_send_status(False)
+        print('  version_servicer')
         self.version_servicer.stop()
+        print('  screen_servicer')
         self.screen_servicer.stop()
+        print('  launch_servicer')
         self.launch_servicer.stop()
+        print('  file_servicer')
         self.file_servicer.stop()
+        print('  monitor_servicer')
         self.monitor_servicer.stop()
+        print('  ros_state_servicer')
         self.ros_state_servicer.stop()
-        self.screen_servicer.stop()
+        print('  parameter_servicer')
         self.parameter_servicer.stop()
+        print('  web socket server')
+        self.ws_server.shutdown()
+        print("destroy publisher")
         self.ros_node.destroy_publisher(self.pub_endpoint)
 
     def load_launch_file(self, path, autostart=False):

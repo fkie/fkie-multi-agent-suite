@@ -36,6 +36,7 @@ class RosNodeLauncher(object):
     '''
 
     def __init__(self):
+        self._on_shutdown = False
         self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
         self.name = NM_DAEMON_NAME
@@ -75,12 +76,18 @@ class RosNodeLauncher(object):
         self.success_start = False
 
     def exit_gracefully(self, signum, frame):
+        if self._on_shutdown:
+            return
+        self._on_shutdown = True
         print('shutdown own server')
         if self._autostart and self._stop_on_shutdown:
             self.server.stop_all_nodes()
+        print('shutdown server')
         self.server.shutdown()
+        print('ros ok -> shutdown')
         if rclpy.ok():
             rclpy.shutdown()
+        print('destroy own node')
         self.ros_node.destroy_node()
         print('bye!')
 

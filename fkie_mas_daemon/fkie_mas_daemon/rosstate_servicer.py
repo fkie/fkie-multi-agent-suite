@@ -362,8 +362,7 @@ class RosStateServicer:
         :param msg: the received message
         :type msg: fkie_mas_msgs.Participants
         '''
-        with self._ros_node_list_mutex:
-            self._state_jsonify.apply_participants(msg)
+        self._state_jsonify.apply_participants(msg)
         if not self.topic_state_publisher_count:
             self.topic_state_publisher_count = 1
             self.publish_discovery_state()
