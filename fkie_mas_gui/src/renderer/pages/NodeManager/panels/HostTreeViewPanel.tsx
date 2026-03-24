@@ -194,7 +194,7 @@ export default function HostTreeViewPanel(): JSX.Element {
         newVisibleNodes.push(
           ...filteredNodes.filter(
             (node) =>
-              node.isLocal || node.launchInfo ||
+              node.isLocal || node.launchInfo.size > 0 ||
               rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
                 .length === 0
           )
