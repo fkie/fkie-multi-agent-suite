@@ -14,8 +14,8 @@ export async function createXMLDependencyProposalsR2(
   if (!monaco) return [];
   // List of suggestions
   return [
-    ...await createAttributeSuggestionsFromTag(monaco, range, lineContent),
-    ...await getTagProposals(monaco, range, lineContent),
+    ...(await createAttributeSuggestionsFromTag(monaco, range, lineContent)),
+    ...(await getTagProposals(monaco, range, lineContent)),
     ...createPackageList(packages, monaco, range),
   ];
 }
@@ -91,10 +91,10 @@ export function createDocumentSymbolsR2(model: editor.ITextModel /*, token*/): l
             endLineNumber: lineNumber,
             endColumn: 1,
           },
-          name: nodeName,
+          name: `<node> ${nodeName} exec="${typeName}" pkg="${packageName}"`,
           kind: 5,
           detail: "",
-          containerName: `(${typeName}) [${packageName}]`,
+          containerName: "",
           tags: [],
           selectionRange: {
             startLineNumber: lineNumber,
@@ -117,10 +117,10 @@ export function createDocumentSymbolsR2(model: editor.ITextModel /*, token*/): l
             endLineNumber: lineNumber,
             endColumn: 1,
           },
-          name: parameterName,
-          kind: 6,
+          name: `<param> ${parameterName}: ${parameterValue}`,
+          kind: 13,
           detail: "",
-          containerName: `[${parameterValue}]`,
+          containerName: "",
           tags: [],
           selectionRange: {
             startLineNumber: lineNumber,
@@ -144,10 +144,87 @@ export function createDocumentSymbolsR2(model: editor.ITextModel /*, token*/): l
             endLineNumber: lineNumber,
             endColumn: 1,
           },
-          name: argumentName,
-          kind: 9,
+          name: `<arg> ${argumentName}: ${argumentValue ? argumentValue : defaultValue}`,
+          kind: 13,
           detail: "",
-          containerName: argumentValue ? `[${argumentValue}]` : `[${defaultValue}]`,
+          containerName: "",
+          tags: [],
+          selectionRange: {
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: 1,
+          },
+        });
+      }
+
+      // Add lets as symbols
+      const letElement = xml.querySelector("let");
+      const letName = letElement?.getAttribute("name");
+      if (letName) {
+        const letValue = letElement?.getAttribute("value");
+        symbolList.push({
+          range: {
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: 1,
+          },
+          name: `<let> ${letName}: ${letValue}`,
+          kind: 14,
+          detail: "",
+          containerName: "",
+          tags: [],
+          selectionRange: {
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: 1,
+          },
+        });
+      }
+
+      // Add set_env as symbols
+      const setEnvElement = xml.querySelector("set_env");
+      const setEnvName = setEnvElement?.getAttribute("name");
+      if (setEnvName) {
+        const value = setEnvElement?.getAttribute("value");
+        symbolList.push({
+          range: {
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: 1,
+          },
+          name: `<set_env> ${setEnvName}: ${value}`,
+          kind: 12,
+          detail: "",
+          containerName: "",
+          tags: [],
+          selectionRange: {
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: 1,
+          },
+        });
+      }
+
+      // Add unset_env as symbols
+      const unsetEnvElement = xml.querySelector("unset_env");
+      const unsetEnvName = unsetEnvElement?.getAttribute("name");
+      if (unsetEnvName) {
+        symbolList.push({
+          range: {
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: 1,
+          },
+          name: `<unset_env> ${unsetEnvName}`,
+          kind: 12,
+          detail: "",
+          containerName: "",
           tags: [],
           selectionRange: {
             startLineNumber: lineNumber,
