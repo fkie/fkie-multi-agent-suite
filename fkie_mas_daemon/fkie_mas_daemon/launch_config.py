@@ -641,13 +641,35 @@ class LaunchConfig(object):
                 raise LaunchConfigException("not all argv are set properly!")
             return self.__launch_description
 
+    def remove_comments_preserve_lines(self, content):
+        def replacer(match):
+            # Ersetze jeden Kommentar mit der gleichen Anzahl Zeilenumbrüche
+            comment = match.group(0)
+            return '\n' * comment.count('\n')
+        return re.sub(r'<!--.*?-->', replacer, content, flags=re.DOTALL)
+
+    def find_definition_xml(self, content, identifier, start=0):
+        content_no_comments = self.remove_comments_preserve_lines(content)
+        pattern = re.compile(
+            r'<\s*' + re.escape(identifier) + r'\b[^>]*(?:/>|>.*?</\s*' + re.escape(identifier) + r'\s*>)',
+            re.DOTALL | re.IGNORECASE
+        )
+        match = pattern.search(content_no_comments, start)
+        if match:
+            line_number = content_no_comments[:match.start()].count('\n') + 1
+            end_position = match.end()
+            raw_text = content[match.start():match.end()]  # Originaltext zurückgeben
+            return line_number, end_position, raw_text
+        else:
+            return -1, start, ""
+
     def find_definition(self, content, identifier, start=0, include_close_bracket=True):
         # searches for identifier in launch file.
         # we use it to find e.g. include file directives
         identifier_pattern = None
         if self.launch_type == 'xml':
             # TODO: search for includes in XML files
-            return -1, -1, ""
+            return -1, start, ""
         elif self.launch_type == 'python':
             if identifier == 'include':
                 identifier_pattern = re.compile(
@@ -659,7 +681,7 @@ class LaunchConfig(object):
         else:
             identifier_pattern = re.compile(rf"[^#]\s{identifier}\s*?\(", re.DOTALL | re.MULTILINE | re.S)
         line_number = -1
-        end_position = -1
+        end_position = start
         raw_text = ""
         match = identifier_pattern.search(content, start)
         if match is not None:
@@ -712,7 +734,6 @@ class LaunchConfig(object):
                 file_content = f.read()
         if current_launch_description is None:
             current_launch_description = self.__launch_description
-
         # import traceback
         # print(traceback.format_stack())
         # print("Launch arguments:")
@@ -763,8 +784,12 @@ class LaunchConfig(object):
                             inc_file_exists = True
                             file_size = os.path.getsize(inc_file_name)
                             used_realpath = os.path.realpath(inc_file_name)
-                        include_line_number, position_in_file, raw_text = self.find_definition(
-                            file_content, 'include', position_in_file)
+                        if self.launch_type == 'xml':
+                            include_line_number, position_in_file, raw_text = self.find_definition_xml(
+                                file_content, 'include', position_in_file)
+                        else:
+                            include_line_number, position_in_file, raw_text = self.find_definition(
+                                file_content, 'include', position_in_file)
                         launch_inc_file = LaunchIncludedFile(path=current_file,
                                                              line_number=include_line_number,
                                                              inc_path=used_path,
@@ -857,7 +882,6 @@ class LaunchConfig(object):
                 #     launch_file_obj.default_inc_args.append(la)
                 #     entity.execute(self.context)
             elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
-                # launch.actions.declare_launch_argument.DeclareLaunchArgument
                 self.context._push_launch_configurations()
                 try:
                     cfg_actions = entity.execute(self.context)
@@ -872,8 +896,12 @@ class LaunchConfig(object):
                         inc_file_exists = True
                         used_realpath = os.path.realpath(used_path)
                         file_size = os.path.getsize(used_path)
-                    include_line_number, position_in_file, raw_text = self.find_definition(
-                        file_content, 'include', position_in_file)
+                    if self.launch_type == 'xml':
+                        include_line_number, position_in_file, raw_text = self.find_definition_xml(
+                            file_content, 'include', position_in_file)
+                    else:
+                        include_line_number, position_in_file, raw_text = self.find_definition(
+                            file_content, 'include', position_in_file)
                     # inc_launch_arguments = []
                     if cfg_actions is not None:
                         for cac in cfg_actions:
@@ -913,7 +941,7 @@ class LaunchConfig(object):
                     self.context.extend_locals({'current_launch_file_path': current_file})
                 include_line_number, position_in_file, raw_text = self.find_definition(
                     file_content, 'group', position_in_file, include_close_bracket=False)
-                self._load(entity, launch_description=current_launch_description,
+                position_in_file = self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
                 self.context._pop_launch_configurations()
             elif isinstance(entity, launch.actions.timer_action.TimerAction):
@@ -926,7 +954,7 @@ class LaunchConfig(object):
                     print(f"  ***debug launch loading: {indent} timer period (resolved): {period}")
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} actions count: {len(entity.actions)}")
-                self._load(entity.actions, launch_description=current_launch_description, current_file=current_file,
+                position_in_file = self._load(entity.actions, launch_description=current_launch_description, current_file=current_file,
                            indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=period)
                 # period: Union[float, SomeSubstitutionsType],
                 # actions: Iterable[LaunchDescriptionEntity],
@@ -941,29 +969,6 @@ class LaunchConfig(object):
                 name = perform_substitutions(self.context, getattr(entity, 'name', ''))
                 if name in environment:
                     del environment[name]
-            elif hasattr(entity, 'execute'):
-                if PRINT_DEBUG_LOAD:
-                    print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
-                try:
-
-                    # entity._perform_substitutions(self.context)
-                    exec_result = entity.execute(self.context)
-                    if not exec_result:
-                        name = perform_substitutions(self.context, getattr(entity, 'name', ''))
-                        if name == "launch-prefix":
-                            launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
-                    else:
-                        if PRINT_DEBUG_LOAD:
-                            print(f"  ***debug execute result: {exec_result}; {dir(exec_result)}")
-                        if not isinstance(exec_result, List):
-                            exec_result = [exec_result]
-                        self._load(exec_result, launch_description=current_launch_description,
-                                   current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
-                except:
-                    import traceback
-                    err_msg = traceback.format_exc()
-                    self.load_exceptions.append(err_msg)
-                    print(err_msg)
             elif isinstance(entity, launch.launch_description.LaunchDescription):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} LaunchDescription: {entity}: {dir(entity)}")
@@ -1000,12 +1005,52 @@ class LaunchConfig(object):
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
+            elif isinstance(entity, launch.actions.set_launch_configuration.SetLaunchConfiguration):
+                entity.execute(self.context)
+                if PRINT_DEBUG_LOAD:
+                    arg_name = perform_substitutions(self.context, entity.name)
+                    arg_value = perform_substitutions(self.context, entity.value)
+                    print(f"  ***debug launch loading: {indent}  SetLaunchConfiguration: {arg_name}: {arg_value}")
+            elif isinstance(entity, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent}  PopLaunchConfigurations: {dir(entity)}")
+                entity.execute(self.context)
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent}  PopLaunchConfigurations: {dir(entity)}")
+                    for sub_entity in entity.get_sub_entities():
+                        arg_name = perform_substitutions(self.context, sub_entity.name)
+                        print(f"  ***debug launch loading: {indent}    remove arg_name: {arg_name}")
+            elif hasattr(entity, 'execute'):
+                if PRINT_DEBUG_LOAD:
+                    print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
+                try:
+
+                    # entity._perform_substitutions(self.context)
+                    exec_result = entity.execute(self.context)
+                    if not exec_result:
+                        name = perform_substitutions(self.context, getattr(entity, 'name', ''))
+                        if name == "launch-prefix":
+                            launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
+                    else:
+                        if PRINT_DEBUG_LOAD:
+                            print(f"  ***debug execute result: {exec_result}; {dir(exec_result)}")
+                        if not isinstance(exec_result, List):
+                            exec_result = [exec_result]
+                        position_in_file = self._load(exec_result, launch_description=current_launch_description,
+                                   current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth, start_position_in_file=position_in_file, timer_period=timer_period)
+                except:
+                    import traceback
+                    err_msg = traceback.format_exc()
+                    self.load_exceptions.append(err_msg)
+                    print(err_msg)
+
             else:
                 print(f"  ***debug launch loading: {indent} unknown entity: {entity}")
                 self._load(entity, launch_description=current_launch_description,
                            current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj, depth=depth+1, start_position_in_file=position_in_file, timer_period=timer_period)
                 if current_file:
                     self.context.extend_locals({'current_launch_file_path': current_file})
+        return position_in_file
 
     def nodes(self) -> List[LaunchNodeWrapper]:
         return self._nodes

@@ -211,6 +211,14 @@ def get_internal_args(content: str, path: str = '', resolve_args: Dict[str, str]
     return resolve_args_intern
 
 
+def get_internal_lets(content: str, resolve_args: Dict[str, str] = {}) -> Dict[str, str]:
+    pattern = r'<let\s+name="([^"]+)"\s+value="([^"]+)"'
+    matches = re.findall(pattern, content)
+
+    let_dict = {name: replace_arg(value, resolve_args) for name, value in matches}
+    return let_dict
+
+
 def get_arg_names(content: str) -> List[str]:
     '''
     Searches for $(var <name>) statements and returns a list with <name>.
@@ -368,10 +376,17 @@ def find_included_files(string: str,
                         # try to resolve path
                         fname = replace_arg(fname, resolve_args_all)
                         fname = replace_arg(fname, internal_args)
+                        if fname.find('$(var ') > -1:
+                            idx = content.find(groups.groups()[index])
+                            if idx > -1:
+                                internal_lets = get_internal_lets(content[0:idx], resolve_args_all)
+                                fname = replace_arg(fname, internal_lets)
                         if fname.find('$(var ') == -1:
                             # do not try to resolve if not all args are replaced
                             fname = interpret_path(fname, pwd)
                     except Exception as err:
+                        import traceback
+                        print(traceback.format_exc())
                         Log.warn(f"Interpret file failed: {err}")
                     if os.path.isdir(fname):
                         fname = ''
