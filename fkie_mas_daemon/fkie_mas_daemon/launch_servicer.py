@@ -1106,14 +1106,14 @@ class LaunchServicer(LoggingEventHandler):
                 action_class, request_class = self._get_action_types(request.srv_type)
                 service_request = request_class()
                 data = json.loads(request.data)
-                response = nmd.launcher.call_action(request.service_name, action_class, service_request, 5)
+                response = nmd.launcher.call_action(request.service_name, action_class, service_request, 10)
             else:
                 # call service
                 request_class = get_service(request.srv_type)
                 service_request = request_class.Request()
                 data = json.loads(request.data)
                 set_message_fields(service_request, self._str_from_dict(data))
-                response = nmd.launcher.call_service(request.service_name, request_class, service_request, 5)
+                response = nmd.launcher.call_service(request.service_name, request_class, service_request, 10)
         except Exception as e:
             result.error_msg = 'Exception while calling service: %r' % e
         else:

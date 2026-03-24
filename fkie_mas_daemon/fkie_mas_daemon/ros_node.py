@@ -156,7 +156,7 @@ class RosNodeLauncher(object):
         for start_file in start_files:
             self.server.load_launch_file(start_file, autostart=True)
 
-    def call_service(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 1.0) -> SrvTypeResponse:
+    def call_service(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 10.0) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
 
@@ -186,7 +186,7 @@ class RosNodeLauncher(object):
         finally:
             self.ros_node.destroy_client(srv_name)
 
-    def call_action(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 1.0) -> SrvTypeResponse:
+    def call_action(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 10.0) -> SrvTypeResponse:
         [srv_name, action_type] = srv_name.split("/_action/")
         if action_type != "send_goal":
             raise Exception(f"Calling action service '{action_type}' not supported!")
