@@ -43,9 +43,6 @@ export default class WebsocketConnection extends ProviderConnection {
   /** Current number of reconnect attempts */
   private reconnectAttempts = 0;
 
-  /** Maximum number of reconnect attempts before giving up */
-  private maxReconnectAttempts = 3600;
-
   /** Base delay (in ms) used for reconnect backoff */
   private reconnectDelayMs = 2000;
 
@@ -209,16 +206,11 @@ export default class WebsocketConnection extends ProviderConnection {
       return;
     }
 
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.log().warn(`[${this.uri}] max reconnect attempts (${this.maxReconnectAttempts}) reached`, "");
-      return;
-    }
-
     const delay = this.reconnectDelayMs * (this.reconnectAttempts + 1);
     this.reconnectAttempts += 1;
 
     this.log().info(
-      `[${this.uri}] trying to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      `[${this.uri}] trying to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`,
       ""
     );
 
