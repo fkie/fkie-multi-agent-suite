@@ -52,6 +52,7 @@ class WebSocketHandler:
 
     def shutdown(self):
         self._shutdown = True
+        self.connection.close()
 
     def subscriptions(self) -> List[str]:
         return list(self._subscriptions)
@@ -162,8 +163,12 @@ class WebSocketHandler:
             self._shutdown = True
             Log.info(f"{self.address}: client removed")
             with self._lock:
-                for reg in self._registrations:
-                    self.server.unregister_rpc(reg, self)
+                try:
+                    for reg in self._registrations:
+                        self.server.unregister_rpc(reg, self)
+                except:
+                    import traceback
+                    print(traceback.format_exc())
 
     def handle_callback(self, id, callback, args=[]):
         Log.debug(f"{self.address}: handle callback {id}: {args}")
