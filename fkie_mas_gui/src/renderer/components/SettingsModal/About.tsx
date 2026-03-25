@@ -144,7 +144,7 @@ export default function About(): JSX.Element {
         )}
         {auCtx.autoUpdateManager && auCtx.isAppImage && auCtx.updateChannel === "prerelease" && (
           <Typography ml="1em" variant="body1" color="orange">
-            You must switch to the 'prerelease' branch for Daemon and Discovery
+            You must switch to the &lsquo;prerelease&rsquo; branch for Daemon and Discovery
           </Typography>
         )}
         {openErrorTooltip && auCtx.isAppImage && (
