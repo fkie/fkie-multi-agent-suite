@@ -40,7 +40,9 @@ interface IAutoUpdateProviderProps {
   children: React.ReactNode;
 }
 
-export const AutoUpdateProvider: React.FC<IAutoUpdateProviderProps> = ({ children }) => {
+export const AutoUpdateProvider = ({
+  children,
+}: IAutoUpdateProviderProps): ReturnType<React.FC<IAutoUpdateProviderProps>> => {
   const logCtx = useLoggingContext();
   const navCtx = useNavigationContext();
   const rosCtx = useRosContext();

@@ -40,7 +40,7 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
 
   isAppImage: () => Promise<boolean> = () => {
     return Promise.resolve(process.env.APPIMAGE !== undefined);
-  }
+  };
 
   onCheckingForUpdate: (callback: AuCheckingForUpdateCallback) => void = () => {
     // implemented in preload script
@@ -61,7 +61,7 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
     // implemented in preload script
   };
 
-  checkForUpdate = (): void => {
+  checkForUpdate = async (): Promise<void> => {
     if (this.isChecking) return;
     if (process.env.APPIMAGE === undefined) {
       this.mainWindow?.webContents.send(
@@ -74,6 +74,7 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
       this.isChecking = false;
     });
   };
+
   quitAndInstall = (): void => {
     autoUpdater.quitAndInstall();
   };
@@ -91,12 +92,9 @@ export default class AutoUpdateManager implements TAutoUpdateManager {
         this.setChannel(channel);
       }
     );
-    ipcMain.handle(
-      AutoUpdateManagerEvents.isAppImage,
-      (_event: Electron.IpcMainInvokeEvent) => {
-        return this.isAppImage();
-      }
-    );
+    ipcMain.handle(AutoUpdateManagerEvents.isAppImage, (_event: Electron.IpcMainInvokeEvent) => {
+      return this.isAppImage();
+    });
     autoUpdater.on("checking-for-update", () => {
       this.isChecking = true;
       this.mainWindow?.webContents.send(AutoUpdateManagerEvents.onCheckingForUpdate, this.isChecking);
