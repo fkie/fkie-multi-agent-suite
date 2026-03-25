@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.4.0 - 25.03.2026
+
+Added watchdog for websocket connection
+Added zenoh multicast prefix with port modified with ROS_DOMAIN_ID
+Fixed history in launch file dialog
+Fixed initialize monaco in external window
+Fixed use launch-prefix
+Add debug output to find blocking states
+Added reconnect for websocket
+Added info about connecting in extern windows
+Fixed display nodes the equal name on different hosts
+Fixed package name in node list
+
 ## 5.3.2 - 24.03.2026
 
 Fixed show filter info in nodes tab

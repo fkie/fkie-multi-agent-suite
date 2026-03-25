@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.4.0 (25.03.2026)
+------------------
+* Added watchdog for websocket connection
+* Add debug output to find blocking states
+
 5.2.2 (23.03.2026)
 ------------------
 * copied xml for ros1 to xml_ros1

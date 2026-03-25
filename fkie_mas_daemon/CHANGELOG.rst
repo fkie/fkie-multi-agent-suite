@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.4.0 (25.03.2026)
+------------------
+* Fixed use launch-prefix
+* Add debug output to find blocking states
+* Fixed package name in node list
+
 5.3.1 (24.03.2026)
 ------------------
 * Fixed start nodes with removing environment variables
