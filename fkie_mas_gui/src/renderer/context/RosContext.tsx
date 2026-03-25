@@ -771,6 +771,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       defaultCfg.terminal.enable = true;
       defaultCfg.autoConnect = true;
       defaultCfg.autostart = false;
+      defaultCfg.currentRmwImpl = provider.rosState?.rmw_implementation || "";
       return startConfig(defaultCfg, null);
     },
     [startConfig]

@@ -198,6 +198,10 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
   const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
     "http://{HOST}:11311",
   ]);
+  const [optionOverrideZenohConfig, setOptionOverrideZenohConfig] = useLocalStorage(
+    "ConnectToProviderModal:optionOverrideZenohConfig",
+    true
+  );
 
   const [tsList, setTSList] = useState<string[]>([]);
   const [topicList, setTopicList] = useState<string[]>([]);
@@ -219,6 +223,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
     startParameter.networkId = networkId;
     startParameter.rosVersion = rosVersion;
     startParameter.rmwImplementation = rmwImplementation;
+    startParameter.currentRmwImpl = optionOverrideZenohConfig ? rosCtx.rosInfo?.rmwImplementation || "" : "";
     setOptionNetworkId(networkId);
 
     updateStartParameter();
@@ -437,6 +442,8 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
       launchCfg.ros1MasterUri.enable = startParameter.ros1MasterUri.enable;
       launchCfg.ros1MasterUri.uri = startParameter.ros1MasterUri.uri.replace("{HOST}", host);
     }
+    launchCfg.currentRmwImpl = optionOverrideZenohConfig ? rosCtx.rosInfo?.rmwImplementation || "" : "";
+
     return launchCfg;
   }
 
@@ -1388,6 +1395,39 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                       labelPlacement="end"
                     />
                   </FormGroup>
+
+                  <Tooltip
+                    title={
+                      <Typography variant="body2">
+                        Prepend zenoh multicast configuration with new port (7447 + ROS_DOMAIN_ID)
+                      </Typography>
+                    }
+                    disableInteractive
+                  >
+                    <FormGroup
+                      aria-label="position"
+                      row
+                      sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+                    >
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={!!optionOverrideZenohConfig}
+                            onChange={(event) => {
+                              startParameter.currentRmwImpl = event.target.checked
+                                ? rosCtx.rosInfo?.rmwImplementation || ""
+                                : "";
+                              setOptionOverrideZenohConfig((prev) => !prev);
+                              updateStartParameter();
+                            }}
+                          />
+                        }
+                        label={"override zenoh config"}
+                        labelPlacement="end"
+                      />
+                    </FormGroup>
+                  </Tooltip>
 
                   <FormGroup
                     aria-label="position"
