@@ -135,11 +135,11 @@ class RosStateServicer:
                                        #    history=QoSHistoryPolicy.KEEP_LAST,
                                        #    reliability=QoSReliabilityPolicy.RELIABLE
                                        )
-        qos_endpoint_profile = QoSProfile(depth=100,
+        qos_endpoint_profile = QoSProfile(depth=1,
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                           # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
-        qos_participants_profile = QoSProfile(depth=10,
+        qos_participants_profile = QoSProfile(depth=1,
                                               durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                               history=QoSHistoryPolicy.KEEP_LAST,
                                               reliability=QoSReliabilityPolicy.RELIABLE)
