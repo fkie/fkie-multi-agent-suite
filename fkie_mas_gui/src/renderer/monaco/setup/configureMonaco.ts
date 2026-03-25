@@ -480,10 +480,10 @@ export function registerLaunchDefinitionProvider(
 export function initMonacoRuntime(
   monacoCtxRef: React.MutableRefObject<IMonacoContext | null>,
   rosCtxRef: React.MutableRefObject<IRosContext>
-): void {
-  if (runtimeState.initialized) return;
-  if (!monacoCtxRef.current) return;
-  if (!monacoCtxRef.current.monaco) return;
+): boolean {
+  if (runtimeState.initialized) return true;
+  if (!monacoCtxRef.current) return false;
+  if (!monacoCtxRef.current.monaco) return false;
 
   configureWorkers(monacoCtxRef.current.monaco);
 
@@ -496,6 +496,7 @@ export function initMonacoRuntime(
   runtimeState.disposables.push(...registerLaunchDefinitionProvider(monacoCtxRef));
 
   runtimeState.initialized = true;
+  return true;
 }
 
 export function disposeMonacoRuntime(): void {

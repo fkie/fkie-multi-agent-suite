@@ -27,12 +27,12 @@ type TLaunchInfo = {
 
 export default function EditorApp(): JSX.Element {
   const logCtx = useLoggingContext();
-  const monacoInitCtx = useMonacoInitContext();
-  const monacoCtx = monacoInitCtx.monacoCtx;
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const logCtxRef = useAlwaysCurrentRef(logCtx);
   const settingsCtxRef = useAlwaysCurrentRef(settingsCtx);
+  const monacoInitCtx = useMonacoInitContext();
+  const monacoCtx = monacoInitCtx.monacoCtx;
   const [connectingHost, setConnectingHost] = useState<string>("");
   const [launchInfo, setLaunchInfo] = useState<TLaunchInfo | null>(null);
   const [dirtyModels, setDirtyModels] = useState<monaco.editor.ITextModel[]>([]);

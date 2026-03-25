@@ -55,7 +55,6 @@ import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { ElectronContext } from "@/renderer/context/ElectronContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -85,6 +84,7 @@ import DetailsPanel from "./panels/DetailsPanel";
 import HostTreeViewPanel from "./panels/HostTreeViewPanel";
 import LoggingPanel from "./panels/LoggingPanel";
 // import OverflowMenuNodeDetails from "./panels/OverflowMenuNodeDetails";
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import PackageExplorerPanel from "./panels/PackageExplorerPanel";
 import ParameterPanel from "./panels/ParameterPanel";
 import ProviderPanel from "./panels/ProviderPanel";
@@ -107,8 +107,7 @@ export default function NodeManager(): JSX.Element {
   const electronCtx = useContext(ElectronContext);
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();
-  const monacoInitCtx = useMonacoInitContext();
-  const monacoCtx = monacoInitCtx.monacoCtx;
+  const monacoCtx = useMonacoContext();
   const navCtx = useNavigationContext();
   const settingsCtx = useSettingsContext();
 

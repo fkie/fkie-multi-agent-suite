@@ -13,17 +13,17 @@ import { useEditorKeyboard } from "@/renderer/hooks/editor/useEditorKeyboard";
 import { useEditorLayout } from "@/renderer/hooks/editor/useEditorLayout";
 import { useIncludedFiles } from "@/renderer/hooks/useIncludedFiles";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
+import { useMonacoInitContext } from "@/renderer/hooks/useMonacoInitContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName } from "@/renderer/models";
 import { cleanUpXmlComment } from "@/renderer/monaco/setup";
 import { TModelResult } from "@/renderer/monaco/types";
 import { createEditorId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
 import {
-    EVENT_CLOSE_COMPONENT,
-    EVENT_EDITOR_SELECT_RANGE,
-    TEventEditorSelectRange,
-    eventCloseComponent,
+  EVENT_CLOSE_COMPONENT,
+  EVENT_EDITOR_SELECT_RANGE,
+  TEventEditorSelectRange,
+  eventCloseComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { Provider } from "@/renderer/providers";
 import { EventProviderLaunchLoaded, EventProviderPathEvent } from "@/renderer/providers/events";
@@ -49,7 +49,8 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const { editorId, provider, rootFilePath, currentFilePath, fileRange, launchArgs } = props;
   const settingsCtx = useSettingsContext();
   const logCtx = useLoggingContext();
-  const monacoCtx = useMonacoContext();
+  const monacoInitCtx = useMonacoInitContext();
+  const monacoCtx = monacoInitCtx.monacoCtx;
 
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
 
@@ -60,6 +61,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [selectionRange, setSelectionRange] = useState<TFileRange>();
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
   const [notificationDescription, setNotificationDescription] = useState<TAlertNotification | undefined>();
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [historyModel, setHistoryModel] = useState<THistoryModel | undefined>();
   const [eventButton, setEventButton] = useState<React.MouseEvent<HTMLDivElement, MouseEvent> | undefined>(undefined);
@@ -111,12 +113,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
   }, [settingsCtx.changed]);
 
   useEffect(() => {
     return (): void => {
       editorRef.current?.setModel(null);
-      mEditor.dispose();
       // dispose all own models
       monacoCtx.closeEditors([editorId]);
     };
@@ -406,10 +408,19 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
     editorRef.current = editor;
-    mEditor.setupMonacoEditor();
-    mEditor.setupContextMenu();
-    loadFiles(currentFilePath);
   }
+
+  useEffect(() => {
+    if (monacoInitCtx.initialized && mEditor.initialized) {
+      loadFiles(currentFilePath);
+    }
+  }, [monacoInitCtx.initialized, mEditor.initialized]);
+
+  useEffect(() => {
+    if (monacoInitCtx.initialized && monacoInitCtx.monacoCtx.monaco) {
+      monacoInitCtx.monacoCtx.monaco.editor.setTheme(isDarkMode ? "vs-ros-dark" : "vs-ros-light");
+    }
+  }, [monacoInitCtx.initialized, isDarkMode]);
 
   const handleEditorChange = useCallback(
     async (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> => {

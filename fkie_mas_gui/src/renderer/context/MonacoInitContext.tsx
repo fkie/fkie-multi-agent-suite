@@ -1,4 +1,4 @@
-import { createContext, useEffect, useMemo } from "react";
+import { createContext, useEffect, useMemo, useState } from "react";
 
 import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
 import { useMonacoContext } from "../hooks/useMonacoContext";
@@ -9,6 +9,7 @@ import { IRosContext } from "./RosContext";
 
 export interface IMonacoInitContext {
   monacoCtx: IMonacoContext;
+  initialized: boolean;
 }
 
 export const MonacoInitContext = createContext<IMonacoInitContext | null>(null);
@@ -18,11 +19,13 @@ export function MonacoInitProvider({ children }: { children: React.ReactNode }) 
   const monacoCtx = useMonacoContext();
   const rosCtx = useRosContext();
 
+  const [initialized, setInitialized] = useState(false);
   const rosCtxRef = useAlwaysCurrentRef<IRosContext>(rosCtx);
   const monacoCtxRef = useAlwaysCurrentRef<IMonacoContext>(monacoCtx);
 
   useEffect(() => {
-    initMonacoRuntime(monacoCtxRef, rosCtxRef);
+
+    setInitialized(initMonacoRuntime(monacoCtxRef, rosCtxRef));
   }, [monacoCtxRef.current, rosCtxRef.current]);
 
   useEffect(() => {
@@ -37,8 +40,9 @@ export function MonacoInitProvider({ children }: { children: React.ReactNode }) 
   const contextValue: IMonacoInitContext = useMemo(
     () => ({
       monacoCtx,
+      initialized,
     }),
-    [monacoCtx]
+    [monacoCtx, initialized]
   );
 
   return <MonacoInitContext.Provider value={contextValue}>{children}</MonacoInitContext.Provider>;

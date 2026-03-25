@@ -26,6 +26,9 @@ export function useMonacoEditor({
 
   const [activeModel, setActiveModel] = useState<editor.ITextModel | null>(null);
   const [activeModelDirty, setActiveModelDirty] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const [initializedContextMenu, setInitializedContextMenu] = useState(false);
+  const [initializedMonacoEditor, setInitializedMonacoEditor] = useState(false);
   const [modifiedFiles, setModifiedFiles] = useState<string[]>([]);
 
   const monacoViewStates = useRef(new Map<string, editor.ICodeEditorViewState | null>());
@@ -51,6 +54,7 @@ export function useMonacoEditor({
     }
 
     contextDisposables.current = configureContextMenu(monacoCtx.monaco, editorRef, saveModel);
+    setInitializedContextMenu(true);
   }, [monacoCtx.monaco, editorRef, saveModel]);
 
   // ---------------------------
@@ -65,7 +69,20 @@ export function useMonacoEditor({
     }
 
     monacoDisposables.current = configureMonacoEditor(monacoCtx.monaco, editorId);
+    setInitializedMonacoEditor(true);
   }, [editorId, monacoCtx.monaco]);
+
+  useEffect(() => {
+    setupContextMenu();
+  }, [setupContextMenu]);
+
+  useEffect(() => {
+    setupMonacoEditor();
+  }, [setupMonacoEditor]);
+
+  useEffect(() => {
+    setInitialized(initializedContextMenu && initializedMonacoEditor);
+  }, [initializedContextMenu, initializedMonacoEditor]);
 
   // ---------------------------
   // set current model
@@ -168,7 +185,14 @@ export function useMonacoEditor({
     contextDisposables.current = [];
   }, []);
 
+  useEffect(() => {
+    return (): void => {
+      dispose();
+    };
+  }, []);
+
   return {
+    initialized,
     activeModel,
     activeModelDirty,
     modifiedFiles,
@@ -176,10 +200,5 @@ export function useMonacoEditor({
     setCurrentModel,
 
     monacoViewStates: monacoViewStates.current,
-
-    setupMonacoEditor,
-    setupContextMenu,
-
-    dispose,
   };
 }
