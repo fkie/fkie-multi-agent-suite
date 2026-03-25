@@ -571,6 +571,14 @@ export default function DetailsPanel(): JSX.Element {
                           </Stack>
                         </Typography>
                       )}
+                      {launchInfo.launch_prefix && (
+                        <Typography variant="caption">
+                          <Stack direction="row" spacing={0.5}>
+                            <Box sx={{ fontWeight: "bold", color: "orange" }}>launch prefix:</Box>
+                            <Box sx={{ fontWeight: "normal" }}>{launchInfo.launch_prefix}</Box>
+                          </Stack>
+                        </Typography>
+                      )}
                       <Tag
                         color="default"
                         title="CMD:"

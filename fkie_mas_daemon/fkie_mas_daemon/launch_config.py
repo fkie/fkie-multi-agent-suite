@@ -1027,8 +1027,11 @@ class LaunchConfig(object):
                     self.context.extend_locals({'current_launch_file_path': current_file})
             elif isinstance(entity, launch.actions.set_launch_configuration.SetLaunchConfiguration):
                 entity.execute(self.context)
+                # launch prefix is set by <let ... /> in a group
+                arg_name = perform_substitutions(self.context, entity.name)
+                if arg_name == "launch-prefix":
+                    launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
                 if PRINT_DEBUG_LOAD:
-                    arg_name = perform_substitutions(self.context, entity.name)
                     arg_value = perform_substitutions(self.context, entity.value)
                     print(f"  ***debug launch loading: {indent}  SetLaunchConfiguration: {arg_name}: {arg_value}")
             elif isinstance(entity, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
@@ -1036,7 +1039,6 @@ class LaunchConfig(object):
                     print(f"  ***debug launch loading: {indent}  PopLaunchConfigurations: {dir(entity)}")
                 entity.execute(self.context)
                 if PRINT_DEBUG_LOAD:
-                    print(f"  ***debug launch loading: {indent}  PopLaunchConfigurations: {dir(entity)}")
                     for sub_entity in entity.get_sub_entities():
                         arg_name = perform_substitutions(self.context, sub_entity.name)
                         print(f"  ***debug launch loading: {indent}    remove arg_name: {arg_name}")
@@ -1044,14 +1046,8 @@ class LaunchConfig(object):
                 if PRINT_DEBUG_LOAD:
                     print(f"  ***debug launch loading: {indent} parse execute entity: {entity}; {dir(entity)}")
                 try:
-
-                    # entity._perform_substitutions(self.context)
                     exec_result = entity.execute(self.context)
-                    if not exec_result:
-                        name = perform_substitutions(self.context, getattr(entity, 'name', ''))
-                        if name == "launch-prefix":
-                            launch_prefix = perform_substitutions(self.context, getattr(entity, 'value', ''))
-                    else:
+                    if exec_result:
                         if PRINT_DEBUG_LOAD:
                             print(f"  ***debug execute result: {exec_result}; {dir(exec_result)}")
                         if not isinstance(exec_result, List):
