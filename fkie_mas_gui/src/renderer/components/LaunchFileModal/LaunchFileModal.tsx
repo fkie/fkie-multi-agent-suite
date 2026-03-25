@@ -409,8 +409,8 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
             )}
             <Stack>
               {currentArgs.map((arg) => {
-                const optionsTmp = arg.choices ? arg.choices : arg.history;
-                const options = optionsTmp.filter((value) => value);
+                const optionsTmp = new Set([...arg.choices || [], ...arg.history]);
+                const options = Array.from(optionsTmp).filter((value) => value);
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
                     {options.length > 1 || (options.length === 1 && options[0] !== arg.value) ? (
