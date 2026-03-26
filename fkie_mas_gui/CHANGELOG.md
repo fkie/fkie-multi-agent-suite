@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.4.1 - 26.03.2026
+
+Improved connect dialog: added info about start commands
+Improved connect dialog: opens the host list box to top
+
 ## 5.4.0 - 25.03.2026
 
 Added watchdog for websocket connection
