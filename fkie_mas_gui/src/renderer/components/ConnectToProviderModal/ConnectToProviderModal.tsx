@@ -45,7 +45,7 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary from "@mui/material/AccordionSummary";
 import { grey } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { getDefaultPortFromRos } from "@/renderer/context/SettingsContext";
@@ -687,7 +687,6 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                 options={hostList}
                 freeSolo
                 clearOnBlur
-                ListboxProps={{ style: { maxHeight: 150 } }}
                 sx={{ margin: 0 }}
                 getOptionLabel={(option: string | THostIp) => host2label(option)}
                 renderInput={(params) => (
@@ -724,6 +723,14 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                     {`${host2label(option)}`}
                   </li>
                 )}
+                slotProps={{
+                  listbox: {
+                    style: { maxHeight: 150 },
+                  },
+                  popper: {
+                    placement: "top-start",
+                  },
+                }}
               />
             </Box>
 
@@ -972,7 +979,6 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                             options={hostList}
                             freeSolo
                             sx={{ margin: 0 }}
-                            ListboxProps={{ style: { maxHeight: 150 } }}
                             getOptionLabel={(option: string | THostIp) => host2label(option)}
                             renderInput={(params) => (
                               <TextField
@@ -1004,6 +1010,14 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                                 {`${host2label(option)}`}
                               </li>
                             )}
+                            slotProps={{
+                              listbox: {
+                                style: { maxHeight: 150 },
+                              },
+                              popper: {
+                                placement: "top-start",
+                              },
+                            }}
                           />
                         </Stack>
                       </AccordionDetails>
