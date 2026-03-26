@@ -89,6 +89,7 @@ export default function PackageExplorerPanel(): JSX.Element {
   const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] = useState<boolean>(false);
   const [packageItemsTree, setPackageItemsTree] = useState<TPackageItemsTree>({});
   const [packageItemList, setPackageItemList] = useState<PathItem[]>([]);
+  const [firstLaunchDirItem, setFirstLaunchDirItem] = useState<string>("");
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
@@ -278,7 +279,7 @@ export default function PackageExplorerPanel(): JSX.Element {
       // remove the package path from the file path
       // replace the file name by file id, to prevent name collisions in subfolders
       f.relativePath = f.path.replace(`${packagePath}/`, "/").replace(f.name, f.id);
-      pathItemMap.set(f.id, f);
+      if (f.type === "file") pathItemMap.set(f.id, f);
       return f;
     });
 
@@ -287,22 +288,26 @@ export default function PackageExplorerPanel(): JSX.Element {
 
     // create a tree structure
     // reference: https://stackoverflow.com/questions/57344694/create-a-tree-from-a-list-of-strings-containing-paths-of-files-javascript
+    let launchDirId: string = "";
     for (const item of itemList) {
       item.relativePath?.split("/").reduce((prev: TPackageTree, name, i, a) => {
         if (!prev[name]) {
           prev[name] = { packageTree: [] };
-
-          if (pathItemMap.has(name)) {
+          const fItem = pathItemMap.get(name);
+          if (fItem) {
             // file
             prev.packageTree.push({
-              name: pathItemMap.get(name)?.name as string,
+              name: fItem.name as string,
               children: [],
-              file: pathItemMap.get(name),
+              file: fItem,
               isDirectory: false,
               appendPackageName: false,
             });
           } else {
             // directory
+            if (name === "launch") {
+              launchDirId = item.id;
+            }
             prev.packageTree.push({
               name: name,
               children: prev[name].packageTree,
@@ -324,9 +329,11 @@ export default function PackageExplorerPanel(): JSX.Element {
     const pit: TPackageItemsTree = {};
     // eslint-disable-next-line prefer-destructuring
     pit[`${packageName}`] = packageTree;
-
     setPackageItemsTree(pit);
     setPackageItemList(itemList);
+    if (launchDirId) {
+      setFirstLaunchDirItem(launchDirId);
+    }
   }
 
   /**
@@ -674,6 +681,7 @@ export default function PackageExplorerPanel(): JSX.Element {
               selectedPackage={selectedPackage?.rosPackage}
               providerName={selectedPackage?.providerName}
               packageItemsTree={packageItemsTree}
+              selectedItem={firstLaunchDirItem}
               onNodeSelect={(itemId: string) => handleSelect(itemId)}
               onFileDoubleClick={(label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean) =>
                 onFileDoubleClick(label, itemId, ctrlKey, shiftKey)

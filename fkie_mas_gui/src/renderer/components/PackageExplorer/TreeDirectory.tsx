@@ -15,6 +15,7 @@ interface TreeDirectoryProps {
   packageItemsTree: TPackageItemsTree;
   selectedPackage: RosPackage | undefined;
   providerName: string | undefined;
+  selectedItem: string | null;
   onNodeSelect: (itemId: string) => void;
   onFileDoubleClick: (label: string, itemId: string, ctrlKey: boolean, shiftKey: boolean, altKey: boolean) => void;
 }
@@ -24,23 +25,31 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
     packageItemsTree,
     selectedPackage = undefined,
     providerName = undefined,
+    selectedItem = null,
     onNodeSelect = (): void => {},
     onFileDoubleClick = (): void => {},
   } = props;
 
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [selectedItems, setSelectedItems] = useState<string | null>(null);
+  const [selectedItems, setSelectedItems] = useState<string | null>(selectedItem);
 
   /**
    * Remove expanded items if tree items changed
    */
   useEffect(() => {
     if (packageItemsTree) {
+      if (selectedItem) {
+        const toExpand = findParentPathsInAllRoots(packageItemsTree, selectedItem);
+        if (toExpand.length > 0) {
+          setExpanded(toExpand);
+          return;
+        }
+      }
       setExpanded(Object.keys(packageItemsTree));
     } else {
       setExpanded([]);
     }
-  }, [packageItemsTree]);
+  }, [packageItemsTree, selectedItem]);
 
   /**
    * Callback when items on the tree are expanded/retracted
@@ -161,6 +170,39 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
     return [...jsxFolders, ...jsxFiles];
   }
 
+  function findParentPaths(
+    node: TPackageTreeItem,
+    targetId: string,
+    path: string[] = [],
+    result: string[] = []
+  ): string[] {
+    const currPath = [...path, node.name].filter(Boolean);
+    // Check Datei-ID
+    if (node.file?.id === targetId) {
+      // Ergebnis aufbauen, von tief nach oben
+      for (let i = currPath.length; i > 0; i--) {
+        result.push(currPath.slice(0, i).join("#"));
+      }
+      return result;
+    }
+    // Kinder durchsuchen
+    for (const child of node.children || []) {
+      const found = findParentPaths(child, targetId, currPath, result);
+      if (found.length) return found;
+    }
+    return [];
+  }
+
+  function findParentPathsInAllRoots(obj: Record<string, TPackageTreeItem[]>, targetId: string): string[] {
+    for (const key in obj) {
+      for (const root of obj[key]) {
+        const result = findParentPaths(root, targetId, [key]);
+        if (result.length) return result;
+      }
+    }
+    return [];
+  }
+
   /**
    * Memoize the generation of the tree to improve render performance
    * The idea is to prevent rerendering when scrolling/focusing the component
@@ -203,11 +245,7 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
             }
             if (appendPackageName && name) {
               return (
-                <HistoryGroupItem
-                  key={name}
-                  itemId={name}
-                  providerName={name}
-                >
+                <HistoryGroupItem key={name} itemId={name} providerName={name}>
                   {itemTree?.children && buildPackageTree(itemTree.children, packageName)}
                 </HistoryGroupItem>
               );
