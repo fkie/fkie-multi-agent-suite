@@ -1,6 +1,7 @@
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -45,7 +46,7 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary from "@mui/material/AccordionSummary";
 import { grey } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import { getDefaultPortFromRos } from "@/renderer/context/SettingsContext";
@@ -68,7 +69,7 @@ const AccordionAdv = styled((props: AccordionProps) => <MuiAccordion disableGutt
     "&:before": {
       display: "none",
     },
-    paddingTop: "12px",
+    paddingTop: "9px",
   })
 );
 
@@ -87,7 +88,7 @@ const Accordion = styled((props: AccordionProps) => <MuiAccordion disableGutters
 const AccordionSummary = styled(MuiAccordionSummary)(() => ({
   paddingTop: 0,
   margin: 0,
-  minHeight: 32,
+  minHeight: 26,
   // borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));
 
@@ -159,6 +160,9 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
 
   const [open, setOpen] = useState(true);
   const [openTerminalTooltip, setOpenTerminalTooltip] = useState(false);
+  const [startCmdDaemon, setStartCmdDaemon] = useState<string>("");
+  const [startCmdDiscovery, setStartCmdDiscovery] = useState<string>("");
+  const [startCmdTtyd, setStartCmdTtyd] = useState<string>("");
 
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [hostValues, setHostValues] = useState<THostIp[]>(
@@ -200,6 +204,10 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
   ]);
   const [optionOverrideZenohConfig, setOptionOverrideZenohConfig] = useLocalStorage(
     "ConnectToProviderModal:optionOverrideZenohConfig",
+    true
+  );
+  const [startCmdInfoExpanded, setStartCmdInfoExpanded] = useLocalStorage(
+    "ConnectToProviderModal:startCmdInfoExpanded",
     true
   );
 
@@ -345,6 +353,10 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
 
   function updateStartParameter(): void {
     setStartParameter(JSON.parse(JSON.stringify(startParameter)));
+    const launchCfg = createLaunchConfigFor("localhost");
+    setStartCmdDaemon(launchCfg.daemonStartCmd().message);
+    setStartCmdDiscovery(launchCfg.masterDiscoveryStartCmd().message);
+    setStartCmdTtyd(launchCfg.terminalStartCmd().message);
   }
 
   const setRosVersion = useCallback(
@@ -442,7 +454,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
       launchCfg.ros1MasterUri.enable = startParameter.ros1MasterUri.enable;
       launchCfg.ros1MasterUri.uri = startParameter.ros1MasterUri.uri.replace("{HOST}", host);
     }
-    launchCfg.currentRmwImpl = optionOverrideZenohConfig ? rosCtx.rosInfo?.rmwImplementation || "" : "";
+    launchCfg.currentRmwImpl = startParameter.currentRmwImpl;
 
     return launchCfg;
   }
@@ -1432,7 +1444,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                               startParameter.currentRmwImpl = event.target.checked
                                 ? rosCtx.rosInfo?.rmwImplementation || ""
                                 : "";
-                              setOptionOverrideZenohConfig((prev) => !prev);
+                              setOptionOverrideZenohConfig(event.target.checked);
                               updateStartParameter();
                             }}
                           />
@@ -1535,6 +1547,78 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                       Reset advanced parameters to default
                     </Button>
                   </Box>
+                </Stack>
+              </AccordionDetails>
+            </AccordionAdv>
+            <AccordionAdv
+              disabled={!window.commandExecutor}
+              expanded={startCmdInfoExpanded}
+              onChange={(_event, expanded) => {
+                setStartCmdInfoExpanded(expanded);
+              }}
+            >
+              <AccordionSummary
+                // disabled={!startSystemNodes}
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="start-commands"
+                id="start-commands"
+                sx={{ pl: 0, paddingBottom: 0 }}
+              >
+                <Stack direction="row" alignItems="center" spacing="0.3em">
+                  <ChevronRightIcon fontSize="inherit" />
+                  <Typography variant="subtitle1">Start commands:</Typography>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack
+                  direction="column"
+                  // divider={<Divider orientation="horizontal" />}
+                >
+                  <Typography
+                    variant="body2"
+                    component="pre"
+                    sx={{
+                      fontFamily: "monospace",
+                      backgroundColor: "#f5f5f5",
+                      padding: 1,
+                      borderRadius: 1,
+                      overflowWrap: "break-word",
+                      wordBreak: "break-word",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {startCmdDaemon}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    component="pre"
+                    sx={{
+                      fontFamily: "monospace",
+                      backgroundColor: "#f5f5f5",
+                      padding: 1,
+                      borderRadius: 1,
+                      overflowWrap: "break-word",
+                      wordBreak: "break-word",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {startCmdDiscovery}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    component="pre"
+                    sx={{
+                      fontFamily: "monospace",
+                      backgroundColor: "#f5f5f5",
+                      padding: 1,
+                      borderRadius: 1,
+                      overflowWrap: "break-word",
+                      wordBreak: "break-word",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {startCmdTtyd}
+                  </Typography>
                 </Stack>
               </AccordionDetails>
             </AccordionAdv>
