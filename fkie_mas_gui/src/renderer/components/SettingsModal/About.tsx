@@ -2,7 +2,6 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { Autocomplete, Box, Button, IconButton, Link, Stack, TextField, Typography } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import LinearProgress from "@mui/material/LinearProgress";
-import { MuiMarkdown } from "mui-markdown";
 import PropTypes from "prop-types";
 import { useState } from "react";
 
@@ -33,6 +32,42 @@ export default function About(): JSX.Element {
 
   const updateCli = auCtx.getUpdateCli(true, true);
   const updateCliRobot = auCtx.getUpdateCli(false, true);
+
+  function changelog(data: string[]) {
+    return (
+      <Box>
+        {data.map((entry) => {
+          const [header, ...lines] = entry.split("\r\n").filter(Boolean);
+
+          const match = header.match(/\*\*Changes in version (.+) \((.+)\) (.+):\*\*/);
+
+          const version = match?.[1] ?? "unknown";
+          const date = match?.[2] ?? "unknown";
+          const type = match?.[3] ?? "unknown";
+
+          return (
+            <Box key={`${version}-${date}`} sx={{ mb: 3 }}>
+              <Typography variant="h6" fontWeight="bold">
+                Version {version}
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                {date} • {type}
+              </Typography>
+
+              <Box sx={{ mt: 1, pl: 2 }}>
+                {lines.map((line) => (
+                  <Typography key={line} variant="body2">
+                    • {line}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  }
 
   return (
     <Stack height="100%" padding="0.3em" overflow="auto">
@@ -198,7 +233,7 @@ export default function About(): JSX.Element {
         )}
         {auCtx?.updateAvailable?.releaseNotes && (
           <Stack ml="1em" mt="0.6em" spacing={0.2} color="grey" direction="column">
-            <MuiMarkdown>{auCtx?.updateAvailable?.releaseNotes as string}</MuiMarkdown>
+            {changelog(auCtx?.updateAvailable?.releaseNotes as unknown as string [] || [])}
           </Stack>
         )}
       </Stack>

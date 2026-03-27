@@ -120,18 +120,16 @@ export const AutoUpdateProvider = ({
       else release = data.find((r) => r.name === channel);
 
       if (!release) throw new Error(`No ${channel} release found`);
-
-      if (packageJson.version !== release.name) {
+      const pkgVersion = packageJson.version;
+      if (pkgVersion !== release.name) {
         // build changelog for all newer versions
         const changes = data
-          .filter((r) => semver.gt(r.name, packageJson.version))
-          .map((r) => r.body?.replace("Changes", getTitle(r)).replace("\r\n\r\n", "<br/>").replaceAll("\r\n", "<br/>"))
-          .join("<br/><br/>");
-
+          .filter((r) => semver.gt(r.name, pkgVersion))
+          .map((r) => r.body?.replace("Changes", getTitle(r)));
         setUpdateAvailable({
           version: release.name,
           releaseDate: release.published_at,
-          releaseNotes: changes || release.body,
+          releaseNotes: changes,
         } as UpdateInfo);
       }
     } catch (e) {

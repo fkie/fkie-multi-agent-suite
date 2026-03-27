@@ -17,7 +17,6 @@ import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileName, LaunchContent } from "@/renderer/models";
-import MuiMarkdown from "mui-markdown";
 
 function compareLaunchFiles(a: LaunchContent, b: LaunchContent): number {
   if (getFileName(a.path) < getFileName(b.path)) {
@@ -83,6 +82,22 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
   //   },
   //   [rosCtx]
   // );
+
+  function formatWarnings(data: string[]) {
+    return (
+      <Box>
+        {data.map((entry) => {
+          return (
+            <Box key={`${entry}`} sx={{ mt: 1 }}>
+              <Typography variant="body2">
+                {entry}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -162,9 +177,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
                             <Typography fontWeight="bold" fontSize="inherit">
                               [{lc.warnings.length}] warnings while load launch file:
                             </Typography>
-                            <MuiMarkdown>
-                              {lc.warnings.join("<br/><br/>").replaceAll("\n", "<br/>").replaceAll("_", "\\_")}
-                            </MuiMarkdown>
+                            {formatWarnings(lc.warnings)}
                           </div>
                         }
                         placement="bottom"
