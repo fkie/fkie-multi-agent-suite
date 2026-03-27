@@ -89,9 +89,7 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
         {data.map((entry) => {
           return (
             <Box key={`${entry}`} sx={{ mt: 1 }}>
-              <Typography variant="body2">
-                {entry}
-              </Typography>
+              <Typography variant="body2">{entry}</Typography>
             </Box>
           );
         })}
@@ -181,7 +179,14 @@ export default function LaunchFileList(props: LaunchFileListProps): JSX.Element 
                           </div>
                         }
                         placement="bottom"
-                        disableInteractive
+                        // disableInteractive
+                        slotProps={{
+                          tooltip: {
+                            sx: {
+                              maxWidth: 1200,
+                            },
+                          },
+                        }}
                       >
                         <IconButton
                           edge="end"
