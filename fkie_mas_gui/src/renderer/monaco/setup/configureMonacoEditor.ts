@@ -64,7 +64,6 @@ export function configureContextMenu(
 export function configureMonacoEditor(m: MonacoReact.Monaco, editorId: string): IDisposable[] {
   if (!m) return [];
   const newDisposables: IDisposable[] = [];
-
   newDisposables.push(
     m.editor.registerLinkOpener({
       open(resource: Uri): boolean | Promise<boolean> {

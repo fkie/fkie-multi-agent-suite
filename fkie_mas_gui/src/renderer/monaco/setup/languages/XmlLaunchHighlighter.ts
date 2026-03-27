@@ -143,6 +143,15 @@ export const Ros1XmlLanguage: languages.IMonarchLanguage = {
       ],
       [/(@qualifiedTags)(\s*)(>)/, [{ token: "delimiter.end", bracket: "@close" }]],
       [/<!--/, "comment", "@comment"],
+      // unknown tags
+      [
+        /<[^>]+\/>/, // self-closing unbekannte Tags
+        { token: "tag.unknown" },
+      ],
+      [
+        /<[^>]+>/, // normale unbekannte Tags
+        { token: "tag.unknown" },
+      ],
     ],
 
     // Standard tag

@@ -86,13 +86,12 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     setSavedSideBarUserWidth,
   } = useEditorLayout();
 
-  const { includedFiles, fetchIncludedFiles, clearIncludedFiles } = useIncludedFiles(provider, rootFilePath);
+  const includeResolver = useIncludedFiles(provider, rootFilePath, launchArgs);
+  monacoCtx.setResolver(editorId, includeResolver);
 
   const mEditor = useMonacoEditor({
     editorId: editorId,
     editorRef: editorRef,
-    includedFiles: includedFiles,
-    launchArgs: launchArgs,
     saveModel: (model) => {
       saveModel(model);
     },
@@ -101,10 +100,10 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const ownUriPaths: Set<string> = useMemo(() => {
     const result = new Set([
       rootFilePath,
-      ...(includedFiles?.map((f) => createUriPath(provider.id, f.inc_path)) || []),
+      ...(includeResolver.includedFiles?.map((f) => createUriPath(provider.id, f.inc_path)) || []),
     ]);
     return result;
-  }, [provider, rootFilePath, includedFiles]);
+  }, [provider, rootFilePath, includeResolver.includedFiles]);
 
   useEditorKeyboard(() => {
     const id = createEditorId(rootFilePath, provider.id);
@@ -369,7 +368,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     // get file content from provider and create monaco model
     async function getFileAndIncludesAsync(filePath: string): Promise<void> {
       setCurrentFileState({ name: getFileName(filePath), requesting: true, path: filePath });
-      const resultFetchIncludes = await fetchIncludedFiles();
+      const resultFetchIncludes = await includeResolver.fetchIncludedFiles();
       if (!resultFetchIncludes.result) {
         setNotificationDescription({ message: resultFetchIncludes.error, messageSeverity: "warning" });
         return;
@@ -398,7 +397,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       // TODO: Add parameter Here
       if (result.file && !["launch", "xml", "xacro", "py"].includes(result.file.extension)) {
         console.log(`wrong extension: ${result.file.extension} of ${result.file}`);
-        clearIncludedFiles();
+        includeResolver.clearIncludedFiles();
         setNotificationDescription(undefined);
         return;
       }
@@ -476,7 +475,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             editorId={editorId}
             provider={provider}
             rootFilePath={rootFilePath}
-            includedFiles={includedFiles}
+            includedFiles={includeResolver.includedFiles}
             selectedUriPath={mEditor.activeModel?.uri.path ? mEditor.activeModel?.uri.path : ""}
             launchArgs={currentLaunchArgs}
             modifiedUriPaths={mEditor.modifiedFiles}
@@ -502,7 +501,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             activeModel={mEditor.activeModel}
             activeModelDirty={mEditor.activeModelDirty}
             historyModel={historyModel}
-            includedFiles={includedFiles}
+            includedFiles={includeResolver.includedFiles}
             modifiedFiles={mEditor.modifiedFiles}
             eventButton={eventButton}
             setEditorModel={setEditorModel}

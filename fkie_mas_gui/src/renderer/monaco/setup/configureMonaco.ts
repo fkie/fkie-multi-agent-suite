@@ -10,7 +10,6 @@ import { IMonacoContext } from "@/renderer/context/MonacoContext";
 import { IRosContext } from "@/renderer/context/RosContext";
 import { getFileName, RosPackage } from "@/renderer/models";
 import { createUriPath, fileFromUriPath, providerIdFromEditorId, providerIdFromUriPath } from "../utils";
-import { extractIncludes, ResolverCacheEntry } from "./IncludeResolver";
 import { PythonLanguage } from "./languages/PythonLaunchHighlighter";
 import { createPythonLaunchProposals } from "./languages/PythonLaunchProposals";
 import XmlBeautify from "./languages/XmlBeautify";
@@ -18,6 +17,7 @@ import { Ros1XmlLanguage } from "./languages/XmlLaunchHighlighter";
 import { Ros2XmlLanguage } from "./languages/XmlLaunchHighlighterR2";
 import { createDocumentSymbols, createXMLDependencyProposals } from "./languages/XmlLaunchProposals";
 import { createDocumentSymbolsR2, createXMLDependencyProposalsR2 } from "./languages/XmlLaunchProposalsR2";
+import { replaceAllXmlVars, ResolverCacheEntry } from "./resolveUtils";
 
 export const SUPPORTED_FILES = ["ros2xml", "ros1xml", "launch", "python", "yaml"];
 
@@ -71,6 +71,7 @@ function initThemes(m: MonacoReact.Monaco): void {
       { token: "delimiter.start", foreground: "#008000", fontStyle: "bold" },
       { token: "delimiter.end", foreground: "#008000", fontStyle: "bold" },
       { token: "tag", foreground: "#008000", fontStyle: "bold" },
+      { token: "tag.unknown", foreground: "#BB4D1A", fontStyle: "bold" },
       { token: "attribute.name", foreground: "#7D9029" },
       { token: "attribute.value", foreground: "#BA2121" },
       { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
@@ -88,6 +89,7 @@ function initThemes(m: MonacoReact.Monaco): void {
       { token: "delimiter.start", foreground: "#008000", fontStyle: "bold" },
       { token: "delimiter.end", foreground: "#008000", fontStyle: "bold" },
       { token: "tag", foreground: "#008000", fontStyle: "bold" },
+      { token: "tag.unknown", foreground: "#BB4D1A", fontStyle: "bold" },
       { token: "attribute.name", foreground: "#7D9029" },
       { token: "subst.key", foreground: "#009000", fontStyle: "bold" },
       { token: "subst.arg", foreground: "#996633", fontStyle: "bold" },
@@ -273,7 +275,7 @@ export function registerLaunchLinkProvider(monacoCtxRef: React.MutableRefObject<
             }
             // TODO: Should the cache be created when the resolver is created?
             const cache: ResolverCacheEntry[] = [];
-            for (const match of extractIncludes(text, e, resolver, currentFile)) {
+            for (const match of resolver.extractIncludes(text, e, currentFile)) {
               const start = model.getPositionAt(match.offset);
               const end = model.getPositionAt(match.offset + match.value.length);
               cache.push({ start, end, match });
@@ -349,24 +351,8 @@ export function registerLaunchHoverProvider(
           for (const editorId of editorIds || []) {
             const resolver = monacoCtxRef.current.getResolver(editorId);
             if (!resolver) continue;
-            const poseCache = resolver.cache.get(currentFile);
-            for (const cached of poseCache || []) {
-              if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
-                if (position.column >= cached.start.column && position.column <= cached.end.column) {
-                  if (result.contents.length === 0) {
-                    result.contents.push({ value: `**${providerIdFromUriPath(model.uri.path)}**` });
-                  }
-                  const existsStr = cached.match.exists ? "" : "(**missing**)";
-                  result.contents.push({ value: `- Resolved: ${existsStr}\`${cached.match.resolved}\`` });
-                  countResolved += 1;
-                  if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
-                    result.contents.push({ value: `- Realpath: \`${cached.match.realpath}\`` });
-                  }
-                }
-              }
-            }
 
-            // 2. get name of $(var meineVar) via Resolver
+            // 1. get name of $(var meineVar) via Resolver
             if (resolver) {
               const hoveredVar = getVarAtPosition(model, position);
               if (!hoveredVar) continue;
@@ -416,9 +402,13 @@ export function registerLaunchHoverProvider(
                     // Determine line number
                     const upto = textUpToPos.slice(0, match.index);
                     const foundLine = upto.split("\n").length;
-                    result.contents.push({
-                      value: `__${foundLine}__: \`${hoveredVar}\` = **\`${valueMatch[1]}\`**`,
-                    });
+                    const vLInes = textWithoutComments.split("\n").slice(0, foundLine);
+                    const values = replaceAllXmlVars(valueMatch[1], currentFile, argVar, vLInes.join("\n"));
+                    for (const value of values) {
+                      result.contents.push({
+                        value: `__${foundLine}__: \`${hoveredVar}\` = **\`${value}\`**`,
+                      });
+                    }
                     countResolved += 1;
                   }
                   match = letRegex.exec(textUpToPos);
@@ -426,6 +416,31 @@ export function registerLaunchHoverProvider(
               }
             }
           }
+          for (const editorId of editorIds || []) {
+            const resolver = monacoCtxRef.current.getResolver(editorId);
+            if (!resolver) continue;
+
+            // 2. add include files
+            const poseCache = resolver.cache.get(currentFile);
+            for (const cached of poseCache || []) {
+              if (position.lineNumber >= cached.start.lineNumber && position.lineNumber <= cached.end.lineNumber) {
+                if (position.column >= cached.start.column && position.column <= cached.end.column) {
+                  if (result.contents.length === 0) {
+                    result.contents.push({ value: `**${providerIdFromUriPath(model.uri.path)}**` });
+                  }
+                  const existsStr = cached.match.exists ? "" : "(**missing**)";
+                  result.contents.push({
+                    value: `- ${cached.match.resolver === "daemon" ? "Resolved" : "⎇"}: ${existsStr}\`${cached.match.resolved}\``,
+                  });
+                  countResolved += 1;
+                  if (cached.match.realpath && cached.match.resolved !== cached.match.realpath) {
+                    result.contents.push({ value: ` -> Realpath: \`${cached.match.realpath}\`` });
+                  }
+                }
+              }
+            }
+          }
+
           return countResolved ? result : { contents: [] };
         },
       })

@@ -58,6 +58,7 @@ import {
   EVENT_PROVIDER_LAUNCH_LIST,
   EVENT_PROVIDER_LAUNCH_LOADED,
   EVENT_PROVIDER_NODE_STARTED,
+  EVENT_PROVIDER_PACKAGES,
   EVENT_PROVIDER_PATH_EVENT,
   EVENT_PROVIDER_REMOVED,
   EVENT_PROVIDER_ROS_NODES,
@@ -79,6 +80,7 @@ import {
   EventProviderPathEvent,
   EventProviderRemoved,
   EventProviderRosNodes,
+  EventProviderRosPackages,
   EventProviderRosServices,
   EventProviderRosTopics,
   EventProviderScreens,
@@ -1028,6 +1030,7 @@ export default class Provider implements IProvider {
       return [];
     });
     this.packages = result;
+    emitCustomEvent(EVENT_PROVIDER_PACKAGES, new EventProviderRosPackages(this, this.packages));
     return Promise.resolve(result);
   };
 

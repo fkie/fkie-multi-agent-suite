@@ -1,27 +1,16 @@
 import { editor, IDisposable } from "monaco-editor";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { LaunchIncludedFile } from "@/renderer/models";
 import { configureContextMenu, configureMonacoEditor } from "@/renderer/monaco/setup/configureMonacoEditor";
-import { TLaunchArg } from "@/types";
-import { providerIdFromEditorId } from "../../monaco/utils";
 import { useMonacoContext } from "../useMonacoContext";
 
 type UseMonacoEditorOptions = {
   editorId: string;
   editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | undefined>;
-  launchArgs: TLaunchArg[];
-  includedFiles: LaunchIncludedFile[];
   saveModel: (model: editor.ITextModel) => void;
 };
 
-export function useMonacoEditor({
-  editorId,
-  editorRef,
-  launchArgs,
-  includedFiles = [],
-  saveModel = () => {},
-}: UseMonacoEditorOptions) {
+export function useMonacoEditor({ editorId, editorRef, saveModel = () => {} }: UseMonacoEditorOptions) {
   const monacoCtx = useMonacoContext();
 
   const [activeModel, setActiveModel] = useState<editor.ITextModel | null>(null);
@@ -155,19 +144,7 @@ export function useMonacoEditor({
     return () => {
       dirtyManager.removeDirtyListener(editorId);
     };
-  }, [editorId, monacoCtx]);
-
-  // ---------------------------
-  // link provider (updated on changes of included files)
-  // ---------------------------
-
-  useEffect(() => {
-    if (!monacoCtx.monaco) return;
-    const providerId = providerIdFromEditorId(editorId);
-    if (!providerId) return;
-
-    monacoCtx.updateResolver(editorId, launchArgs, includedFiles);
-  }, [monacoCtx, editorId, launchArgs, includedFiles]);
+  }, [editorId, monacoCtx, handleDirtyChange]);
 
   // ---------------------------
   // dispose
