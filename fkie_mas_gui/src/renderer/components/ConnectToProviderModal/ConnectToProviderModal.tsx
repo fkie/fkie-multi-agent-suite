@@ -98,7 +98,7 @@ const AccordionDetails = styled(MuiAccordionDetails)(() => ({
 }));
 
 type THostIp = { host: string; ip?: string };
-type TSavedStartConfiguration = {
+export type TSavedStartConfiguration = {
   id: string;
   hosts: THostIp[];
   params: ProviderLaunchConfiguration;

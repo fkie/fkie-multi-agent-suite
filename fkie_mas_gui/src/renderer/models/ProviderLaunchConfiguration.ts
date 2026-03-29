@@ -1,9 +1,12 @@
 import { TResult } from "@/types";
+import { generateUniqueId } from "../utils";
 
 /**
  * ProviderLaunchConfiguration models launch configuration to start ROS system nodes
  */
 export default class ProviderLaunchConfiguration {
+  id: string = generateUniqueId();
+
   /** Name of the provider, usually set after the provider was launched. */
   providerName: string | undefined;
 
@@ -248,7 +251,7 @@ export default class ProviderLaunchConfiguration {
     if (this.rmwImplementation) {
       return ` RMW_IMPLEMENTATION=${this.rmwImplementation} `;
     }
-    return ""
+    return "";
   }
 
   public getZenohPrefix(): string {

@@ -1,24 +1,74 @@
+import AddIcon from "@mui/icons-material/Add";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
-import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@mui/material";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip, Typography } from "@mui/material";
+import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
+import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import MuiAccordionSummary from "@mui/material/AccordionSummary";
+import { styled } from "@mui/material/styles";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useEffect, useMemo, useState } from "react";
-import { useCustomEventListener } from "react-custom-events";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal/ConnectToProviderModal";
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { ProviderLaunchConfiguration } from "@/renderer/models";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import Provider from "@/renderer/providers/Provider";
-import { EVENT_OPEN_CONNECT } from "../layout/events";
+import { LAYOUT_TAB_SETS } from "../layout";
+import { EVENT_OPEN_COMPONENT, EVENT_OPEN_CONNECT, eventOpenComponent } from "../layout/events";
+import ProviderLaunchConfigPanel from "./ProviderLaunchConfigPanel";
 import ProviderPanelRow from "./ProviderPanelRow";
+import ProviderPanelRowCfg from "./ProviderPanelRowCfg";
+
+const AccordionAdv = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
+  ({ theme }) => ({
+    border: "none",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
+    ".MuiAccordionSummary-content": { margin: 0 },
+    "&:before": {
+      display: "none",
+    },
+    paddingTop: "9px",
+  })
+);
+
+const Accordion = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
+  ({ theme }) => ({
+    border: "none",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
+    ".MuiAccordionSummary-content": { margin: 0 },
+    "&:before": {
+      display: "none",
+    },
+    "&:hover": { backgroundColor: theme.palette.action.hover },
+  })
+);
+
+const AccordionSummary = styled(MuiAccordionSummary)(({ theme }) => ({
+  paddingTop: 0,
+  margin: 0,
+  minHeight: 26,
+  borderTop: "1px solid rgba(0, 0, 0, .125)",
+  background: theme.palette.background.default,
+}));
+
+const AccordionDetails = styled(MuiAccordionDetails)(() => ({
+  paddingTop: 0,
+  // borderTop: '1px solid rgba(0, 0, 0, .125)',
+}));
 
 export default function ProviderPanel(): JSX.Element {
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
+  const [expandedProviderCfg, setExpandedProviderCfg] = useState(false);
   const [openConnect, setOpenConnect] = useState(false);
   const [noSourcedROS, setNoSourcedROS] = useState(false);
   const [noRosVersion, setNoRosVersion] = useState(false);
@@ -27,6 +77,11 @@ export default function ProviderPanel(): JSX.Element {
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
+  const [startConfigurations, setStartConfigurations] = useLocalStorage<ProviderLaunchConfiguration[]>(
+    "ConnectToProviderModal:launchConfigurations",
+    []
+  );
+  const [showStartConfigurations, setShowStartConfigurations] = useState<ProviderLaunchConfiguration[]>([]);
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
@@ -37,6 +92,10 @@ export default function ProviderPanel(): JSX.Element {
   useCustomEventListener(EVENT_OPEN_CONNECT, () => {
     setOpenConnect(true);
   });
+
+  useEffect(() => {
+    setShowStartConfigurations(startConfigurations.filter((cfg) => rosCtx.providers.filter((prov) => prov.host() === cfg.host).length === 0));
+  }, [startConfigurations, rosCtx.providers]);
 
   async function getDomainId(): Promise<void> {
     if (rosCtx.providers.length === 0) {
@@ -121,6 +180,24 @@ export default function ProviderPanel(): JSX.Element {
     }
   }, 300);
 
+  const saveLaunchConfiguration = useCallback((config: ProviderLaunchConfiguration) => {
+    setStartConfigurations((prev) => {
+      const idx = prev.findIndex((c) => c.id === config.id);
+      const next = [...prev];
+
+      if (idx !== -1) {
+        // replace
+        next[idx] = config;
+      } else {
+        // add new
+        next.push(config);
+      }
+
+      // sort
+      return next.sort((a, b) => a.host.localeCompare(b.host));
+    });
+  }, []);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_STATE, () => {
     debouncedCallbackFilterText([...rosCtx.providers], filterText);
@@ -181,6 +258,22 @@ export default function ProviderPanel(): JSX.Element {
     return result;
   }, [providerRowsFiltered, rosCtx]);
 
+  const createProviderStartTable = useMemo(() => {
+    const result = (
+      // <TableContainer  height="100%" style={{ overflowX: 'scroll', flexGrow: 1 }}>
+      <TableContainer style={{ flexGrow: 1 }}>
+        <Table aria-label="configs table">
+          <TableBody>
+            {showStartConfigurations.map((config) => {
+              return <ProviderPanelRowCfg key={config.id} startConfig={config} />;
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+    return result;
+  }, [showStartConfigurations, rosCtx]);
+
   return (
     <Stack
       spacing={1}
@@ -234,7 +327,66 @@ export default function ProviderPanel(): JSX.Element {
           />
         )}
       </Stack>
-      <Stack height="100%">{createProviderTable}</Stack>
+      <Stack>{createProviderTable}</Stack>
+      <AccordionAdv
+        disabled={!window.commandExecutor}
+        expanded={expandedProviderCfg}
+        onChange={(_event, expanded) => {
+          console.log("asd");
+          setExpandedProviderCfg(expanded);
+        }}
+      >
+        <AccordionSummary
+          // disabled={!startSystemNodes}
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="start-commands"
+          id="start-commands"
+          sx={{ pl: 0, paddingBottom: 0 }}
+        >
+          <Stack direction="row" alignItems="center" spacing="0.3em" flexGrow={1}>
+            <SettingsOutlinedIcon fontSize="inherit" />
+            <Typography variant="subtitle1" flexGrow={1}>
+              Provider Configurations - {startConfigurations.length}
+            </Typography>
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                const launchCfg = new ProviderLaunchConfiguration("localhost", "2");
+                emitCustomEvent(
+                  EVENT_OPEN_COMPONENT,
+                  eventOpenComponent(
+                    launchCfg.id,
+                    "New provider launch configuration",
+                    <ProviderLaunchConfigPanel
+                      config={launchCfg}
+                      onDelete={() => {}}
+                      onSave={(config) => {
+                        saveLaunchConfiguration(config);
+                      }}
+                    />,
+                    true,
+                    LAYOUT_TAB_SETS.CENTER,
+                    undefined
+                  )
+                );
+              }}
+              onTouchEnd={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Stack>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack
+            direction="column"
+            // divider={<Divider orientation="horizontal" />}
+          >
+            {createProviderStartTable}
+          </Stack>
+        </AccordionDetails>
+      </AccordionAdv>
     </Stack>
   );
 }

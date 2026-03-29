@@ -617,6 +617,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     async (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null = null): Promise<boolean> => {
       if (!window.commandExecutor) return false;
 
+      console.log(`config: ${JSON.stringify(config)}`);
       let allStarted = true;
       try {
         const isLocal = isLocalHost(config.host);
